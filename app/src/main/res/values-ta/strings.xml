@@ -4,6 +4,7 @@
     <string name="brand_name">Owner Note</string>
 
     <string name="nav_home">முகப்பு</string>
+    <string name="nav_discover">கண்டுபிடி</string>
     <string name="nav_customers">வாடிக்கையாளர்</string>
     <string name="nav_suppliers">சப்ளையர்</string>
     <string name="nav_more">மேலும்</string>
@@ -157,6 +158,19 @@
     <string name="reminder_section_upcoming">இன்னும் வரப்போவது</string>
     <string name="reminder_done">முடிந்தது</string>
     <string name="error_load_reminders">நினைவூட்டல்களை கொண்டு வர முடியல.</string>
+
+    <string name="discover_title">கண்டுபிடி</string>
+    <string name="discover_subtitle">உங்கள் கடைக்கான பொருட்கள், சலுகைகள், நிகழ்வுகள் மற்றும் கொண்டாட்டங்கள்</string>
+    <string name="discover_error">கண்டுபிடி தகவலை ஏற்ற முடியவில்லை. மீண்டும் முயற்சிக்கவும்.</string>
+    <string name="discover_empty">இந்த வகையில் இன்னும் தகவல் இல்லை.</string>
+    <string name="discover_filter_products">பொருட்கள்</string>
+    <string name="discover_filter_offers">சலுகைகள்</string>
+    <string name="discover_filter_events">நிகழ்வுகள்</string>
+    <string name="discover_filter_celebrations">கொண்டாட்டங்கள்</string>
+    <string name="discover_type_product">பொருள்</string>
+    <string name="discover_type_offer">சலுகை</string>
+    <string name="discover_type_event">நிகழ்வு</string>
+    <string name="discover_type_celebration">கொண்டாட்டம்</string>
 
     <string name="ai_insights_title">AI பரிந்துரைகள்</string>
     <string name="filter_all">அனைத்தும்</string>

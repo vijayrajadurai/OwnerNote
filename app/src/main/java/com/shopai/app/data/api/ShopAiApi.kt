@@ -8,6 +8,7 @@ import com.shopai.app.data.model.BusinessHealth
 import com.shopai.app.data.model.BusinessInput
 import com.shopai.app.data.model.CashFlowSummary
 import com.shopai.app.data.model.CreateCreditInput
+import com.shopai.app.data.model.DiscoverItem
 import com.shopai.app.data.model.CreateDebitInput
 import com.shopai.app.data.model.CreateReminderRequest
 import com.shopai.app.data.model.DashboardSnapshot
@@ -66,6 +67,9 @@ interface ShopAiApi {
 
     @GET("seasonal-insights")
     suspend fun getSeasonalInsights(): ApiEnvelope<List<SeasonalInsightItem>>
+
+    @GET("discover")
+    suspend fun getDiscoverFeed(): ApiEnvelope<List<DiscoverItem>>
 
     @GET("customers")
     suspend fun getCustomers(): ApiEnvelope<List<PartySummary>>

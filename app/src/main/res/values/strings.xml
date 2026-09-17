@@ -5,6 +5,7 @@
 
     <!-- Navigation -->
     <string name="nav_home">Home</string>
+    <string name="nav_discover">Discover</string>
     <string name="nav_customers">Customers</string>
     <string name="nav_suppliers">Suppliers</string>
     <string name="nav_more">More</string>
@@ -172,6 +173,19 @@
 
     <!-- AI Insights -->
     <string name="ai_insights_title">AI insights</string>
+    <string name="discover_title">Discover</string>
+    <string name="discover_subtitle">Products, offers, events and shop celebrations for your store</string>
+    <string name="discover_error">Could not load discover feed. Try again.</string>
+    <string name="discover_empty">No items in this category yet.</string>
+    <string name="discover_filter_products">Products</string>
+    <string name="discover_filter_offers">Offers</string>
+    <string name="discover_filter_events">Events</string>
+    <string name="discover_filter_celebrations">Celebrations</string>
+    <string name="discover_type_product">Product</string>
+    <string name="discover_type_offer">Offer</string>
+    <string name="discover_type_event">Event</string>
+    <string name="discover_type_celebration">Celebration</string>
+
     <string name="filter_all">All</string>
     <string name="filter_cash_flow">Cash flow</string>
     <string name="filter_business_health">Business health</string>

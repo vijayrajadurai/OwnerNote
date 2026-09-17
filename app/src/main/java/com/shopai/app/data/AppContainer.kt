@@ -9,6 +9,7 @@ import com.shopai.app.data.local.UserPreferencesStore
 import com.shopai.app.data.repository.AuthRepository
 import com.shopai.app.data.repository.PreferencesRepository
 import com.shopai.app.data.repository.BusinessRepository
+import com.shopai.app.data.repository.DiscoverRepository
 import com.shopai.app.data.repository.FundingRepository
 import com.shopai.app.data.repository.InsightsRepository
 import com.shopai.app.data.repository.PartyRepository
@@ -72,6 +73,7 @@ class AppContainer(context: Context) {
     val authRepository = AuthRepository(api, tokenStore, apiErrorHandler)
     val businessRepository = BusinessRepository(api)
     val insightsRepository = InsightsRepository(api)
+    val discoverRepository = DiscoverRepository(api)
     val partyRepository = PartyRepository(api)
     val transactionRepository = TransactionRepository(api)
     val voiceRepository = VoiceRepository(api)

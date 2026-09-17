@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Inventory2
@@ -137,6 +138,7 @@ fun ShopCard(
 
 enum class BottomNavTab(@androidx.annotation.StringRes val labelRes: Int, val icon: ImageVector) {
     Home(R.string.nav_home, Icons.Default.Home),
+    Discover(R.string.nav_discover, Icons.Default.Explore),
     Customers(R.string.nav_customers, Icons.Default.Groups),
     Suppliers(R.string.nav_suppliers, Icons.Default.Inventory2),
     More(R.string.nav_more, Icons.Default.MoreHoriz),
