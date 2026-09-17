@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Owner Note</string>
+    <string name="brand_name">Owner Note</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_customers">Customers</string>
+    <string name="nav_suppliers">Suppliers</string>
+    <string name="nav_more">More</string>
+    <string name="action_back">Back</string>
+    <string name="exit_app_title">Exit app?</string>
+    <string name="exit_app_message">Do you want to exit the application?</string>
+    <string name="exit_app_confirm">Exit</string>
+
+    <!-- Splash -->
+    <string name="splash_tagline">Speak up. I\'ll watch your business.</string>
+
+    <!-- Login -->
+    <string name="login_subtitle">Your AI business assistant. Enter your mobile number.</string>
+    <string name="login_mode_phone">Mobile</string>
+    <string name="login_mode_test">Test login</string>
+    <string name="login_phone_label">Mobile number</string>
+    <string name="login_phone_placeholder">98765 43210</string>
+    <string name="login_send_otp">Send OTP</string>
+    <string name="login_username_label">Username</string>
+    <string name="login_username_placeholder">test</string>
+    <string name="login_password_label">Password</string>
+    <string name="login_password_placeholder">••••••••</string>
+    <string name="login_test_submit">Test login</string>
+    <string name="error_send_otp">Could not send OTP. Check the number and try again.</string>
+    <string name="error_test_login">Incorrect test username or password.</string>
+
+    <!-- OTP -->
+    <string name="otp_title">Enter OTP</string>
+    <string name="otp_subtitle">Enter the 6-digit code sent to your phone</string>
+    <string name="otp_label">OTP</string>
+    <string name="otp_placeholder">6-digit code</string>
+    <string name="otp_verify">Verify and continue</string>
+    <string name="error_invalid_otp">Invalid OTP. Please try again.</string>
+
+    <!-- Business setup -->
+    <string name="business_setup_title">Tell us about your business</string>
+    <string name="business_setup_subtitle">This helps personalize your AI recommendations.</string>
+    <string name="business_owner_name">Your name</string>
+    <string name="business_owner_placeholder">Kumar</string>
+    <string name="business_name">Business / shop name</string>
+    <string name="business_name_placeholder">Kumar Textiles</string>
+    <string name="business_category">Business category</string>
+    <string name="business_city">City</string>
+    <string name="business_city_placeholder">Coimbatore</string>
+    <string name="business_since_year">Years running (optional)</string>
+    <string name="business_since_placeholder">2018</string>
+    <string name="business_monthly_volume">Approx. monthly business (₹, optional)</string>
+    <string name="business_volume_placeholder">200000</string>
+    <string name="business_save_continue">Save and continue</string>
+    <string name="error_save_business">Could not save business details. Please try again.</string>
+
+    <!-- Categories -->
+    <string name="category_textile">Textile shop</string>
+    <string name="category_grocery">Grocery store</string>
+    <string name="category_hardware">Hardware</string>
+    <string name="category_electrical">Electrical</string>
+    <string name="category_mobile_accessories">Mobile / accessories</string>
+    <string name="category_auto_parts">Auto parts</string>
+    <string name="category_furniture">Furniture</string>
+    <string name="category_footwear">Footwear shop</string>
+    <string name="category_pharmacy">Pharmacy</string>
+    <string name="category_stationery">Stationery</string>
+    <string name="category_restaurant_food">Hotel / food</string>
+    <string name="category_beauty_salon">Beauty / salon</string>
+    <string name="category_other">Other</string>
+
+    <!-- Home -->
+    <string name="home_fallback_name">Owner Note</string>
+    <string name="home_greeting">Hello, %1$s 👋</string>
+    <string name="home_receivable">To collect</string>
+    <string name="home_payable">To pay</string>
+    <string name="home_business_health">Business health</string>
+    <string name="health_stable">Stable</string>
+    <string name="health_watch">Watch</string>
+    <string name="health_pressure">Pressure</string>
+    <string name="health_high_pressure">High pressure</string>
+    <string name="home_today_priorities">Today\'s priorities</string>
+    <string name="home_quick_actions">Quick actions</string>
+    <string name="home_voice_record">Voice entry</string>
+    <string name="home_add_credit">Credit</string>
+    <string name="home_add_debit">Debit</string>
+    <string name="funding_opportunity">Funding opportunity</string>
+    <string name="funding_learn_more">Learn more</string>
+    <string name="funding_not_now">Not now</string>
+    <string name="error_load_dashboard">Could not load business data.</string>
+    <string name="cd_notifications">Reminders</string>
+    <string name="cd_voice_entry_fab">Voice entry</string>
+
+    <!-- Customers / Suppliers -->
+    <string name="customers_title">Customers</string>
+    <string name="customers_add">+ Credit</string>
+    <string name="customers_empty">No customers yet.</string>
+    <string name="customers_error">Could not load customer list.</string>
+    <string name="suppliers_title">Suppliers</string>
+    <string name="suppliers_add">+ Debit</string>
+    <string name="suppliers_empty">No suppliers yet.</string>
+    <string name="suppliers_error">Could not load supplier list.</string>
+    <string name="pending_amount">Pending: %1$s</string>
+
+    <!-- More -->
+    <string name="more_title">More</string>
+    <string name="more_ai_insights">AI insights</string>
+    <string name="more_ai_insights_caption">Cash flow, business health, seasonal trends</string>
+    <string name="more_reminders">Reminders</string>
+    <string name="more_reminders_caption">Follow-ups, collections, payments</string>
+    <string name="more_voice">Speak</string>
+    <string name="more_voice_caption">Voice and text transaction entry</string>
+    <string name="more_settings">Settings</string>
+    <string name="more_settings_caption">Language, appearance, about</string>
+    <string name="more_subscription">Subscription</string>
+    <string name="more_subscription_caption">Plans and premium benefits</string>
+    <string name="logout">Log out</string>
+
+    <!-- Add credit / debit -->
+    <string name="add_credit_title">Credit to customer</string>
+    <string name="add_credit_subtitle">Use when goods are given on credit.</string>
+    <string name="add_debit_title">Debit to supplier</string>
+    <string name="add_debit_subtitle">Use when you owe a supplier.</string>
+    <string name="confirm_save_credit_title">Save credit?</string>
+    <string name="confirm_save_credit_message">Add credit of %2$s for %1$s?</string>
+    <string name="confirm_save_debit_title">Save debit?</string>
+    <string name="confirm_save_debit_message">Add debit of %2$s to %1$s?</string>
+    <string name="customer_name">Customer name</string>
+    <string name="supplier_name">Supplier name</string>
+    <string name="amount_label">Amount (₹)</string>
+    <string name="note_optional">Note (optional)</string>
+    <string name="due_date_optional">Due date (optional)</string>
+    <string name="due_date_placeholder">Tap to choose a date</string>
+    <string name="select_date">Select date</string>
+    <string name="clear_date">Clear</string>
+    <string name="save">Save</string>
+    <string name="error_save_transaction">Could not save this entry.</string>
+
+    <!-- Voice -->
+    <string name="voice_title">Speak</string>
+    <string name="voice_subtitle">Tamil / Tanglish / English — speak or type to parse.</string>
+    <string name="voice_speak">Speak</string>
+    <string name="voice_parse">Parse</string>
+    <string name="voice_sentence">Your sentence</string>
+    <string name="voice_sentence_placeholder">Kumar-ku 2000-ku tharanum</string>
+    <string name="voice_parsed">Parsed result</string>
+    <string name="voice_intent">Intent: %1$s</string>
+    <string name="voice_confidence">Confidence: %1$d%%</string>
+    <string name="name_label">Name</string>
+    <string name="note_label">Note</string>
+    <string name="due_date_label">Due date</string>
+    <string name="voice_speech_prompt">Speak — tell me a credit or debit entry</string>
+    <string name="error_speech_unavailable">Speech recognition is not available on this device. Please type instead.</string>
+    <string name="error_mic_permission">Microphone permission is required.</string>
+    <string name="error_voice_parse">Could not understand. Please try again.</string>
+    <string name="error_voice_save">Could not save.</string>
+
+    <!-- Reminders -->
+    <string name="reminders_title">Reminders</string>
+    <string name="reminders_add">+ New reminder</string>
+    <string name="reminder_title_label">Title</string>
+    <string name="reminder_title_placeholder">Pay supplier</string>
+    <string name="reminder_date_label">Date</string>
+    <string name="cancel">Cancel</string>
+    <string name="reminder_section_today">Today</string>
+    <string name="reminder_section_tomorrow">Tomorrow</string>
+    <string name="reminder_section_upcoming">Upcoming</string>
+    <string name="reminder_done">Done</string>
+    <string name="error_load_reminders">Could not load reminders.</string>
+
+    <!-- AI Insights -->
+    <string name="ai_insights_title">AI insights</string>
+    <string name="filter_all">All</string>
+    <string name="filter_cash_flow">Cash flow</string>
+    <string name="filter_business_health">Business health</string>
+    <string name="filter_customers">Customers</string>
+    <string name="filter_suppliers">Suppliers</string>
+    <string name="filter_seasonal">Seasonal</string>
+    <string name="cash_flow">Cash flow</string>
+    <string name="net_position">Net: %1$s</string>
+    <string name="collections_7d">7-day collections: %1$s</string>
+    <string name="dismiss">Dismiss</string>
+    <string name="seasonal">Seasonal</string>
+    <string name="days_away">In %1$d days</string>
+    <string name="error_load_insights">Could not load AI insights.</string>
+
+    <!-- Funding -->
+    <string name="funding_title_fallback">Funding opportunity</string>
+    <string name="funding_details_optional">Optional details</string>
+    <string name="funding_working_capital">Working capital needed (₹)</string>
+    <string name="funding_amount">Approx. funding needed (₹)</string>
+    <string name="funding_callback">When can we call?</string>
+    <string name="funding_callback_placeholder">e.g. 4 PM</string>
+    <string name="funding_call_me">Have someone call me</string>
+    <string name="funding_explore">Show options only</string>
+    <string name="error_funding_load">Could not load funding opportunity.</string>
+    <string name="error_funding_submit">Could not submit your request.</string>
+    <string name="funding_disclaimer">This is not financial advice. Recommendations are based on your business data.</string>
+
+    <!-- Settings -->
+    <string name="settings">Settings</string>
+    <string name="language">Language</string>
+    <string name="choose_app_language">Choose app language</string>
+    <string name="english">English</string>
+    <string name="tamil">Tamil</string>
+    <string name="appearance">Appearance</string>
+    <string name="appearance_system">Default (System)</string>
+    <string name="appearance_dark">Dark</string>
+    <string name="about_app">About App</string>
+    <string name="version">Version</string>
+    <string name="version_format">%1$s (%2$d)</string>
+    <string name="privacy_policy">Privacy Policy</string>
+    <string name="terms_and_conditions">Terms and Conditions</string>
+    <string name="about_description">AI business assistant for Indian shop owners — voice-first transactions, cash flow, and insights.</string>
+    <string name="cd_app_icon">Application icon</string>
+
+    <!-- Subscription -->
+    <string name="subscription">Subscription</string>
+    <string name="subscription_description">Unlock premium insights, priority support, and advanced business tools.</string>
+    <string name="current_plan">Current Plan</string>
+    <string name="current_plan_free">Free</string>
+    <string name="monthly_plan">Monthly Plan</string>
+    <string name="yearly_plan">Yearly Plan</string>
+    <string name="best_value">Best Value</string>
+    <string name="subscribe">Subscribe</string>
+    <string name="restore_purchases">Restore Purchases</string>
+    <string name="manage_subscription">Manage Subscription</string>
+    <string name="status_active">Active</string>
+    <string name="status_expired">Expired</string>
+    <string name="try_again">Try Again</string>
+    <string name="something_went_wrong">Something went wrong</string>
+    <string name="subscription_unavailable">Subscriptions are not configured yet.</string>
+    <string name="subscription_loading">Loading plans…</string>
+    <string name="subscription_benefit_1">Advanced AI business insights</string>
+    <string name="subscription_benefit_2">Seasonal preparation alerts</string>
+    <string name="subscription_benefit_3">Priority customer support</string>
+    <string name="price_not_configured">Price not configured</string>
+
+    <!-- Network & server errors -->
+    <string name="error_alert_title">Connection problem</string>
+    <string name="error_no_internet">No internet connection. Check your network and try again.</string>
+    <string name="error_server_down">Server is temporarily unavailable. Please try again later.</string>
+    <string name="error_timeout">Connection timed out. Check your network and try again.</string>
+    <string name="error_server_error">Something went wrong on the server. Please try again later.</string>
+
+    <!-- Generic -->
+    <string name="error_generic">Something went wrong. Please try again.</string>
+</resources>
