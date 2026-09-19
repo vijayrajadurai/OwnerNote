@@ -4,9 +4,17 @@ import android.Manifest
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.net.Uri
 import android.speech.RecognizerIntent
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Photo
+import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material3.Icon
+import androidx.compose.runtime.DisposableEffect
 import androidx.core.content.ContextCompat
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -45,6 +53,7 @@ import com.shopai.app.ui.components.ShopTextField
 import com.shopai.app.ui.components.TransactionSaveType
 import com.shopai.app.ui.theme.Danger
 import com.shopai.app.ui.theme.ShopAiThemeColors
+import com.shopai.app.util.DeviceTextRecognizer
 import com.shopai.app.util.localDateToIsoInstant
 import com.shopai.app.util.parseIsoToLocalDate
 import java.time.LocalDate
@@ -63,6 +72,7 @@ fun VoiceEntryScreen(
     var dueDate by remember { mutableStateOf<LocalDate?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var parsing by remember { mutableStateOf(false) }
+    var ocrProcessing by remember { mutableStateOf(false) }
     var saving by remember { mutableStateOf(false) }
     var showConfirmDialog by remember { mutableStateOf(false) }
     var alertError by remember { mutableStateOf<String?>(null) }
@@ -73,6 +83,90 @@ fun VoiceEntryScreen(
     val errorMicPermission = stringResource(R.string.error_mic_permission)
     val errorVoiceParse = stringResource(R.string.error_voice_parse)
     val errorVoiceSave = stringResource(R.string.error_voice_save)
+    val errorOcrEmpty = stringResource(R.string.error_ocr_empty)
+    val errorOcrFailed = stringResource(R.string.error_ocr_failed)
+    val errorCameraPermission = stringResource(R.string.error_camera_permission)
+    val textRecognizer = remember { DeviceTextRecognizer(context) }
+
+    DisposableEffect(Unit) {
+        onDispose { textRecognizer.release() }
+    }
+
+    fun parseInput(fromOcr: Boolean = false) {
+        val text = inputText.trim()
+        if (text.isBlank()) return
+        scope.launch {
+            parsing = true
+            error = null
+            runCatching {
+                val result = if (fromOcr) {
+                    container.voiceRepository.parseOcrText(text)
+                } else {
+                    container.voiceRepository.parseVoiceText(text)
+                }
+                applyParsed(result)
+            }.onFailure {
+                container.presentApiError(it, errorVoiceParse, { msg -> error = msg }, { msg -> alertError = msg })
+            }
+            parsing = false
+        }
+    }
+
+    fun runOcrOnBitmap(bitmap: Bitmap) {
+        scope.launch {
+            ocrProcessing = true
+            error = null
+            runCatching {
+                val result = textRecognizer.recognizeFromBitmap(bitmap)
+                if (!result.success) {
+                    error = errorOcrEmpty
+                } else {
+                    inputText = result.text
+                    parseInput(fromOcr = true)
+                }
+            }.onFailure {
+                error = errorOcrFailed
+            }
+            ocrProcessing = false
+        }
+    }
+
+    fun runOcrOnUri(uri: Uri) {
+        scope.launch {
+            ocrProcessing = true
+            error = null
+            runCatching {
+                val result = textRecognizer.recognizeFromUri(uri)
+                if (!result.success) {
+                    error = errorOcrEmpty
+                } else {
+                    inputText = result.text
+                    parseInput(fromOcr = true)
+                }
+            }.onFailure {
+                error = errorOcrFailed
+            }
+            ocrProcessing = false
+        }
+    }
+
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+    ) { uri ->
+        if (uri != null) runOcrOnUri(uri)
+    }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview(),
+    ) { bitmap ->
+        if (bitmap != null) runOcrOnBitmap(bitmap)
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) cameraLauncher.launch(null) else error = errorCameraPermission
+    }
 
     val speechLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult(),
@@ -142,21 +236,58 @@ fun VoiceEntryScreen(
             }
             PrimaryButton(
                 label = stringResource(R.string.voice_parse),
-                loading = parsing,
-                enabled = inputText.isNotBlank(),
+                loading = parsing || ocrProcessing,
+                enabled = inputText.isNotBlank() && !ocrProcessing,
                 modifier = Modifier.weight(1f),
+                onClick = { parseInput() },
+            )
+        }
+
+        Text(
+            stringResource(R.string.ocr_scan_bill),
+            style = MaterialTheme.typography.labelLarge,
+            color = ShopAiThemeColors.onSurfaceVariant,
+            modifier = Modifier.padding(top = 12.dp),
+        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+        ) {
+            OutlinedButton(
                 onClick = {
-                    scope.launch {
-                        parsing = true
-                        error = null
-                        runCatching {
-                            applyParsed(container.voiceRepository.parseVoiceText(inputText.trim()))
-                        }.onFailure {
-                            container.presentApiError(it, errorVoiceParse, { msg -> error = msg }, { msg -> alertError = msg })
-                        }
-                        parsing = false
+                    when {
+                        ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
+                            PackageManager.PERMISSION_GRANTED -> cameraLauncher.launch(null)
+                        else -> cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
                     }
                 },
+                enabled = !ocrProcessing,
+                modifier = Modifier.weight(1f),
+            ) {
+                Icon(Icons.Default.PhotoCamera, contentDescription = null)
+                Text(stringResource(R.string.ocr_camera), modifier = Modifier.padding(start = 6.dp))
+            }
+            OutlinedButton(
+                onClick = {
+                    galleryLauncher.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                    )
+                },
+                enabled = !ocrProcessing,
+                modifier = Modifier.weight(1f),
+            ) {
+                Icon(Icons.Default.Photo, contentDescription = null)
+                Text(stringResource(R.string.ocr_gallery), modifier = Modifier.padding(start = 6.dp))
+            }
+        }
+        if (ocrProcessing) {
+            Text(
+                stringResource(R.string.ocr_status_processing),
+                style = MaterialTheme.typography.bodySmall,
+                color = ShopAiThemeColors.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
             )
         }
 

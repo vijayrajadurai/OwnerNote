@@ -70,6 +70,8 @@ dependencies {
     implementation(libs.okhttp.logging)
     implementation(libs.datastore.preferences)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.androidx.exifinterface)
+    implementation(libs.tesseract4android)
 
     debugImplementation(libs.androidx.compose.ui.tooling.preview)
 

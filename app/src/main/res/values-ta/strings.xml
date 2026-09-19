@@ -145,6 +145,13 @@
     <string name="error_mic_permission">மைக்ரோஃபோன் அனுமதி தேவை.</string>
     <string name="error_voice_parse">புரிஞ்சுக்க முடியல. மறுபடி சொல்லுங்க.</string>
     <string name="error_voice_save">சேமிக்க முடியல.</string>
+    <string name="ocr_scan_bill">பில் / புகைப்படம் ஸ்கேன்</string>
+    <string name="ocr_camera">கேமரா</string>
+    <string name="ocr_gallery">கேலரி</string>
+    <string name="ocr_status_processing">படத்திலிருந்து எழுத்து படிக்கிறது…</string>
+    <string name="error_ocr_empty">இந்த படத்தில் எழுத்து கிடைக்கல. தெளிவான புகைப்படம் எடுங்க.</string>
+    <string name="error_ocr_failed">படத்தை படிக்க முடியல. மீண்டும் முயற்சிக்கவும்.</string>
+    <string name="error_camera_permission">பில் ஸ்கேன் செய்ய கேமரா அனுமதி தேவை.</string>
 
     <string name="reminders_title">நினைவூட்டல்கள்</string>
     <string name="reminders_add">+ புதிய நினைவூட்டல்</string>

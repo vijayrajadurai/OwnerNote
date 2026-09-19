@@ -14,6 +14,7 @@ import com.shopai.app.data.model.DashboardSnapshot
 import com.shopai.app.data.model.FundingOpportunity
 import com.shopai.app.data.model.LeadQualificationInput
 import com.shopai.app.data.model.LoanLead
+import com.shopai.app.data.model.ParseOcrRequest
 import com.shopai.app.data.model.ParseVoiceRequest
 import com.shopai.app.data.model.ParsedTransaction
 import com.shopai.app.data.model.PartySummary
@@ -81,6 +82,9 @@ interface ShopAiApi {
 
     @POST("voice/parse")
     suspend fun parseVoice(@Body body: ParseVoiceRequest): ApiEnvelope<ParsedTransaction>
+
+    @POST("ocr/parse")
+    suspend fun parseOcr(@Body body: ParseOcrRequest): ApiEnvelope<ParsedTransaction>
 
     @GET("reminders")
     suspend fun listReminders(): ApiEnvelope<List<ReminderItem>>

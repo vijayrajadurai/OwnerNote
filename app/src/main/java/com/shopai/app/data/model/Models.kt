@@ -102,6 +102,8 @@ data class CreateDebitInput(
 
 data class ParseVoiceRequest(val text: String)
 
+data class ParseOcrRequest(val text: String)
+
 data class ParsedTransaction(
     val intent: String,
     val partyName: String?,

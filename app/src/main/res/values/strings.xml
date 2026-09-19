@@ -156,6 +156,13 @@
     <string name="error_mic_permission">Microphone permission is required.</string>
     <string name="error_voice_parse">Could not understand. Please try again.</string>
     <string name="error_voice_save">Could not save.</string>
+    <string name="ocr_scan_bill">Scan bill / photo</string>
+    <string name="ocr_camera">Camera</string>
+    <string name="ocr_gallery">Gallery</string>
+    <string name="ocr_status_processing">Reading text from image…</string>
+    <string name="error_ocr_empty">No text found in this image. Try a clearer photo.</string>
+    <string name="error_ocr_failed">Could not read the image. Please try again.</string>
+    <string name="error_camera_permission">Camera permission is required to scan a bill.</string>
 
     <!-- Reminders -->
     <string name="reminders_title">Reminders</string>
