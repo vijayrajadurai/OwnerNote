@@ -6,6 +6,7 @@ object Routes {
     const val Otp = "otp"
     const val BusinessSetup = "business_setup"
     const val Home = "home"
+    const val Discover = "discover"
     const val Customers = "customers"
     const val Suppliers = "suppliers"
     const val More = "more"

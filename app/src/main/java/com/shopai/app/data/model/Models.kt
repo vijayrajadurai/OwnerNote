@@ -196,6 +196,18 @@ data class LoanLead(
     val createdAt: String,
 )
 
+data class DiscoverItem(
+    val id: String,
+    val type: String,
+    val title: String,
+    val summary: String,
+    val detail: String? = null,
+    val priceLabel: String? = null,
+    val validUntil: String? = null,
+    val sortOrder: Int = 0,
+    val createdAt: String,
+)
+
 enum class BusinessCategory(val apiValue: String, @StringRes val labelRes: Int) {
     TEXTILE("TEXTILE", R.string.category_textile),
     GROCERY("GROCERY", R.string.category_grocery),

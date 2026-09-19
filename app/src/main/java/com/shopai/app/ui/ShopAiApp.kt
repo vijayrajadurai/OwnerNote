@@ -25,6 +25,7 @@ import com.shopai.app.ui.screens.AddDebitScreen
 import com.shopai.app.ui.screens.AiInsightsScreen
 import com.shopai.app.ui.screens.BusinessSetupScreen
 import com.shopai.app.ui.screens.CustomersScreen
+import com.shopai.app.ui.screens.DiscoverScreen
 import com.shopai.app.ui.screens.FundingQualificationScreen
 import com.shopai.app.ui.screens.HomeScreen
 import com.shopai.app.ui.screens.LoginScreen
@@ -96,6 +97,12 @@ fun ShopAiApp(container: AppContainer) {
         }
         composable(Routes.Home) {
             HomeScreen(
+                container = container,
+                onNavigate = { route -> navController.navigateMainTab(route) },
+            )
+        }
+        composable(Routes.Discover) {
+            DiscoverScreen(
                 container = container,
                 onNavigate = { route -> navController.navigateMainTab(route) },
             )

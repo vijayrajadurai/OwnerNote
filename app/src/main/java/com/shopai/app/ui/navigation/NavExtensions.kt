@@ -4,6 +4,7 @@ import androidx.navigation.NavController
 
 val mainTabRoutes = setOf(
     Routes.Home,
+    Routes.Discover,
     Routes.Customers,
     Routes.Suppliers,
     Routes.More,

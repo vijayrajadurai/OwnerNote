@@ -41,6 +41,7 @@ fun MainTabScaffold(
             onTabSelected = { tab ->
                 val route = when (tab) {
                     BottomNavTab.Home -> Routes.Home
+                    BottomNavTab.Discover -> Routes.Discover
                     BottomNavTab.Customers -> Routes.Customers
                     BottomNavTab.Suppliers -> Routes.Suppliers
                     BottomNavTab.More -> Routes.More
