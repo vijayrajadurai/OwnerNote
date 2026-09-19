@@ -15,8 +15,8 @@ android {
         versionCode = 1
         versionName = "0.1.0"
 
-        // Emulator: 10.0.2.2 maps to host localhost. Override in local.properties or build config for physical devices.
-        buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:4000\"")
+        // Production API (Render). For local dev: http://10.0.2.2:4000 (emulator) or http://<lan-ip>:4000 (device)
+        buildConfigField("String", "API_BASE_URL", "\"https://shop-ai-api.onrender.com\"")
         // Sarvam AI TTS proxy (same values as EXPO_PUBLIC_TTS_PROXY_* in apps/mobile/eas.json).
         buildConfigField("String", "TTS_PROXY_URL", "\"https://store-accountant-tts-proxy.vercel.app\"")
         buildConfigField("String", "TTS_PROXY_KEY", "\"newonx2026secret\"")

@@ -104,6 +104,15 @@ data class ParseVoiceRequest(val text: String)
 
 data class ParseOcrRequest(val text: String)
 
+data class AskAnswer(
+    val question: String,
+    val matchedIntent: String,
+    val answer: String,
+    val confidence: Double,
+)
+
+data class AskBusinessRequest(val question: String)
+
 data class ParsedTransaction(
     val intent: String,
     val partyName: String?,

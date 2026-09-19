@@ -27,7 +27,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.shopai.app.R
 import com.shopai.app.data.AppContainer
@@ -42,6 +41,9 @@ import com.shopai.app.ui.components.BottomNavTab
 import com.shopai.app.ui.components.EyebrowLabel
 import com.shopai.app.ui.components.HomeBackHandler
 import com.shopai.app.ui.components.ShopCard
+import com.shopai.app.ui.components.HomeCreditDebitActions
+import com.shopai.app.ui.components.HomePriorityList
+import com.shopai.app.ui.components.VoiceFabBottomSpacer
 import com.shopai.app.ui.navigation.Routes
 import com.shopai.app.ui.theme.Danger
 import com.shopai.app.ui.theme.Pressure
@@ -49,9 +51,7 @@ import com.shopai.app.ui.theme.ShopAiThemeColors
 import com.shopai.app.ui.theme.Success
 import com.shopai.app.ui.theme.Warning
 import com.shopai.app.util.DailyBriefVoice
-import com.shopai.app.util.PriorityAmountTone
 import com.shopai.app.util.formatInr
-import com.shopai.app.util.toRowDisplay
 import kotlinx.coroutines.launch
 
 private object HomeTtsSession {
@@ -170,30 +170,30 @@ fun HomeScreen(
                 }
 
                 if (priorities.isNotEmpty()) {
-                    Text(stringResource(R.string.home_today_priorities), fontWeight = FontWeight.Bold, color = ShopAiThemeColors.onSurface)
-                    priorities.take(3).forEach { item ->
-                        val row = item.toRowDisplay()
-                        ShopCard(modifier = Modifier.clickable {
+                    Text(
+                        stringResource(R.string.home_today_priorities),
+                        fontWeight = FontWeight.Bold,
+                        color = ShopAiThemeColors.onSurface,
+                        modifier = Modifier.padding(bottom = 4.dp),
+                    )
+                    HomePriorityList(
+                        items = priorities.take(3),
+                        onItemClick = { item ->
                             when (item.kind) {
                                 "REMINDER" -> onNavigate(Routes.Reminders)
                                 "PAYMENT_DUE" -> onNavigate(Routes.Suppliers)
                                 else -> onNavigate(Routes.Customers)
                             }
-                        }) {
-                            PriorityListRow(
-                                name = row.name,
-                                amount = row.amount,
-                                tone = row.tone,
-                            )
-                        }
-                    }
+                        },
+                    )
                 }
 
                 Text(stringResource(R.string.home_quick_actions), style = MaterialTheme.typography.labelSmall, color = ShopAiThemeColors.onSurfaceVariant)
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    QuickAction("↑", stringResource(R.string.home_add_credit), Modifier.weight(1f)) { onNavigate(Routes.AddCredit) }
-                    QuickAction("↓", stringResource(R.string.home_add_debit), Modifier.weight(1f)) { onNavigate(Routes.AddDebit) }
-                }
+                HomeCreditDebitActions(
+                    onCreditClick = { onNavigate(Routes.AddCredit) },
+                    onDebitClick = { onNavigate(Routes.AddDebit) },
+                    modifier = Modifier.padding(top = 4.dp),
+                )
 
                 funding?.let { opp ->
                     ShopCard {
@@ -222,43 +222,9 @@ fun HomeScreen(
                         }
                     }
                 }
-            }
-        }
-    }
-}
 
-@Composable
-private fun PriorityListRow(
-    name: String,
-    amount: Double?,
-    tone: PriorityAmountTone,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = name,
-            style = MaterialTheme.typography.bodyLarge,
-            color = ShopAiThemeColors.onSurface,
-            modifier = Modifier
-                .weight(1f)
-                .padding(end = 8.dp),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        if (amount != null) {
-            Text(
-                text = formatInr(amount),
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = when (tone) {
-                    PriorityAmountTone.CREDIT -> Success
-                    PriorityAmountTone.DEBIT -> Danger
-                    PriorityAmountTone.NEUTRAL -> ShopAiThemeColors.onSurfaceVariant
-                },
-            )
+                VoiceFabBottomSpacer()
+            }
         }
     }
 }
@@ -274,21 +240,6 @@ private fun StatTile(label: String, value: String, tint: Color, modifier: Modifi
     ) {
         Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = ShopAiThemeColors.onSurface)
         Text(label, color = ShopAiThemeColors.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
-    }
-}
-
-@Composable
-private fun QuickAction(icon: String, label: String, modifier: Modifier, onClick: () -> Unit) {
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(14.dp))
-            .background(ShopAiThemeColors.primaryMutedBackground)
-            .clickable(onClick = onClick)
-            .padding(12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(icon, style = MaterialTheme.typography.headlineMedium)
-        Text(label, style = MaterialTheme.typography.bodyMedium, color = ShopAiThemeColors.primary, fontWeight = FontWeight.SemiBold)
     }
 }
 

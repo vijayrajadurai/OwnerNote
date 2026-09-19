@@ -1,6 +1,8 @@
 package com.shopai.app.data.api
 
 import com.shopai.app.data.model.AiInsight
+import com.shopai.app.data.model.AskAnswer
+import com.shopai.app.data.model.AskBusinessRequest
 import com.shopai.app.data.model.ApiEnvelope
 import com.shopai.app.data.model.AuthResponse
 import com.shopai.app.data.model.Business
@@ -71,6 +73,9 @@ interface ShopAiApi {
 
     @GET("discover")
     suspend fun getDiscoverFeed(): ApiEnvelope<List<DiscoverItem>>
+
+    @POST("ask-my-business")
+    suspend fun askMyBusiness(@Body body: AskBusinessRequest): ApiEnvelope<AskAnswer>
 
     @GET("customers")
     suspend fun getCustomers(): ApiEnvelope<List<PartySummary>>
