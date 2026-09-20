@@ -1,6 +1,7 @@
 package com.shopai.app.data.network
 
 import android.content.Context
+import com.google.firebase.FirebaseException
 import com.shopai.app.R
 import com.shopai.app.data.AppContainer
 import retrofit2.HttpException
@@ -59,11 +60,15 @@ class ApiErrorHandler(private val context: Context) {
                 in 500..599 -> ErrorKind.SERVER_ERROR
                 else -> ErrorKind.HTTP_CLIENT
             }
+            is FirebaseException -> ErrorKind.HTTP_CLIENT
             else -> ErrorKind.UNKNOWN
         }
     }
 
     private fun parseHttpMessage(throwable: Throwable): String? {
+        if (throwable is FirebaseException) {
+            return throwable.localizedMessage?.takeIf { it.isNotBlank() }
+        }
         if (throwable !is HttpException) return null
         val body = throwable.response()?.errorBody()?.string()
         if (body != null && body.contains("\"message\"")) {
