@@ -24,6 +24,7 @@ import com.shopai.app.data.model.PartySummary
 import com.shopai.app.data.model.PriorityItem
 import com.shopai.app.data.model.ReminderItem
 import com.shopai.app.data.model.SeasonalInsightItem
+import com.shopai.app.data.model.FirebaseLoginRequest
 import com.shopai.app.data.model.SendOtpRequest
 import com.shopai.app.data.model.SendOtpResponse
 import com.shopai.app.data.model.TestLoginRequest
@@ -40,6 +41,9 @@ interface ShopAiApi {
 
     @POST("auth/verify-otp")
     suspend fun verifyOtp(@Body body: VerifyOtpRequest): ApiEnvelope<AuthResponse>
+
+    @POST("auth/firebase")
+    suspend fun firebaseLogin(@Body body: FirebaseLoginRequest): ApiEnvelope<AuthResponse>
 
     @POST("auth/test-login")
     suspend fun testLogin(@Body body: TestLoginRequest): ApiEnvelope<AuthResponse>

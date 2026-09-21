@@ -1,5 +1,8 @@
 package com.shopai.app.ui.screens
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -18,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -25,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.shopai.app.R
 import com.shopai.app.data.AppContainer
 import com.shopai.app.data.network.presentApiError
+import com.shopai.app.data.repository.PhoneOtpSendResult
 import com.shopai.app.ui.components.ApiErrorAlertDialog
 import com.shopai.app.ui.components.PrimaryButton
 import com.shopai.app.ui.components.ScreenContainer
@@ -52,6 +57,7 @@ fun LoginScreen(
     var alertError by remember { mutableStateOf<String?>(null) }
     var loading by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     val errorSendOtp = stringResource(R.string.error_send_otp)
     val errorTestLogin = stringResource(R.string.error_test_login)
 
@@ -99,8 +105,10 @@ fun LoginScreen(
                             loading = true
                             error = null
                             runCatching {
-                                container.authRepository.sendOtp(phone)
-                                onNavigateOtp()
+                                when (val result = container.authRepository.sendOtp(context.findActivity(), phone)) {
+                                    is PhoneOtpSendResult.CodeSent -> onNavigateOtp()
+                                    is PhoneOtpSendResult.SignedIn -> goHomeOrSetup(result.auth.isNewUser)
+                                }
                             }.onFailure {
                                 container.presentApiError(it, errorSendOtp, { msg -> error = msg }, { msg -> alertError = msg })
                             }
@@ -166,4 +174,13 @@ fun LoginScreen(
             }
         }
     }
+}
+
+private fun Context.findActivity(): Activity {
+    var current: Context = this
+    while (current is ContextWrapper) {
+        if (current is Activity) return current
+        current = current.baseContext
+    }
+    error("Login requires an Activity")
 }

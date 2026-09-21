@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "757704330186",
+    "project_id": "owner-note",
+    "storage_bucket": "owner-note.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:757704330186:android:15a1716c13b82ecac0dd33",
+        "android_client_info": {
+          "package_name": "com.shopai.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAxAjE3RrNs8YqC4mA4KmhohT24b3Dwhjc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

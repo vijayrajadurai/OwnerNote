@@ -20,6 +20,7 @@ data class SendOtpRequest(val phone: String)
 data class SendOtpResponse(val phone: String, val expiresInSeconds: Int)
 
 data class VerifyOtpRequest(val phone: String, val code: String)
+data class FirebaseLoginRequest(val idToken: String)
 data class AuthResponse(val token: String, val isNewUser: Boolean)
 
 data class TestLoginRequest(val username: String, val password: String)
