@@ -88,18 +88,88 @@ data class PartySummary(
 )
 
 data class CreateCreditInput(
-    val customerName: String,
+    val customerId: String? = null,
+    val customerName: String? = null,
     val amount: Double,
     val description: String? = null,
     val dueDate: String? = null,
 )
 
 data class CreateDebitInput(
-    val supplierName: String,
+    val supplierId: String? = null,
+    val supplierName: String? = null,
     val amount: Double,
     val description: String? = null,
     val dueDate: String? = null,
 )
+
+data class CreatePartyInput(
+    val name: String,
+    val phone: String? = null,
+)
+
+/** Response from POST /customers or POST /suppliers (no nested transactions). */
+data class PartyRecord(
+    val id: String,
+    val name: String,
+    val phone: String?,
+)
+
+data class AddPaymentInput(
+    val amount: Double,
+    val note: String? = null,
+)
+
+data class PaymentRecord(
+    val id: String,
+    val amount: String,
+    val note: String?,
+    val createdAt: String,
+)
+
+data class CreditTransactionDetail(
+    val id: String,
+    val amount: String,
+    val paidAmount: String,
+    val description: String?,
+    val dueDate: String?,
+    val status: String,
+    val createdAt: String,
+    val payments: List<PaymentRecord> = emptyList(),
+)
+
+data class DebitTransactionDetail(
+    val id: String,
+    val amount: String,
+    val paidAmount: String,
+    val description: String?,
+    val dueDate: String?,
+    val status: String,
+    val createdAt: String,
+    val payments: List<PaymentRecord> = emptyList(),
+)
+
+data class CustomerDetail(
+    val id: String,
+    val name: String,
+    val phone: String?,
+    val transactions: List<CreditTransactionDetail> = emptyList(),
+)
+
+data class SupplierDetail(
+    val id: String,
+    val name: String,
+    val phone: String?,
+    val transactions: List<DebitTransactionDetail> = emptyList(),
+)
+
+fun parseMoney(value: String): Double = value.toDoubleOrNull() ?: 0.0
+
+fun CreditTransactionDetail.pendingAmount(): Double =
+    parseMoney(amount) - parseMoney(paidAmount)
+
+fun DebitTransactionDetail.pendingAmount(): Double =
+    parseMoney(amount) - parseMoney(paidAmount)
 
 data class ParseVoiceRequest(val text: String)
 

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.activity.compose.BackHandler
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -53,7 +54,8 @@ fun ScreenContainer(
             .then(insetModifier)
             .imePadding()
             .then(scrollModifier)
-            .padding(horizontal = 24.dp, vertical = 24.dp),
+            .padding(horizontal = 24.dp)
+            .padding(top = 12.dp, bottom = 24.dp),
     ) {
         content()
     }
@@ -66,6 +68,8 @@ fun DetailScaffold(
     onBack: () -> Unit,
     content: @Composable (Modifier) -> Unit,
 ) {
+    BackHandler(onBack = onBack)
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets.safeDrawing,

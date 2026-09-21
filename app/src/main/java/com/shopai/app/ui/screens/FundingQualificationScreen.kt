@@ -1,9 +1,7 @@
 package com.shopai.app.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -21,7 +19,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.shopai.app.R
 import com.shopai.app.data.AppContainer
@@ -29,6 +26,7 @@ import com.shopai.app.data.network.presentApiError
 import com.shopai.app.data.model.FundingOpportunity
 import com.shopai.app.data.model.LeadQualificationInput
 import com.shopai.app.ui.components.ApiErrorAlertDialog
+import com.shopai.app.ui.components.DetailScaffold
 import com.shopai.app.ui.components.PrimaryButton
 import com.shopai.app.ui.components.ShopCard
 import com.shopai.app.ui.components.ShopTextField
@@ -40,6 +38,7 @@ import kotlinx.coroutines.launch
 fun FundingQualificationScreen(
     container: AppContainer,
     opportunityId: String,
+    onBack: () -> Unit,
     onComplete: () -> Unit,
 ) {
     var opportunity by remember { mutableStateOf<FundingOpportunity?>(null) }
@@ -88,71 +87,72 @@ fun FundingQualificationScreen(
 
     ApiErrorAlertDialog(message = alertError, onDismiss = { alertError = null })
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
-    ) {
+    DetailScaffold(
+        title = opportunity?.title ?: fundingTitleFallback,
+        onBack = onBack,
+    ) { contentModifier ->
         if (loadingOpp) {
-            CircularProgressIndicator(color = ShopAiThemeColors.primary, modifier = Modifier.align(Alignment.CenterHorizontally))
-            return
+            CircularProgressIndicator(
+                color = ShopAiThemeColors.primary,
+                modifier = contentModifier.padding(24.dp),
+            )
+            return@DetailScaffold
         }
 
-        val opp = opportunity
-        Text(
-            opp?.title ?: fundingTitleFallback,
-            style = MaterialTheme.typography.headlineMedium,
-            color = ShopAiThemeColors.onSurface,
-            fontWeight = FontWeight.Bold,
-        )
-        ShopCard(modifier = Modifier.padding(vertical = 16.dp)) {
-            Text(opp?.explanation ?: "", color = ShopAiThemeColors.onSurfaceVariant)
+        Column(
+            modifier = contentModifier
+                .padding(horizontal = 24.dp)
+                .verticalScroll(rememberScrollState())
+                .padding(top = 8.dp, bottom = 24.dp),
+        ) {
+            val opp = opportunity
+            ShopCard(modifier = Modifier.padding(bottom = 16.dp)) {
+                Text(opp?.explanation ?: "", color = ShopAiThemeColors.onSurfaceVariant)
+            }
+
+            Text(
+                stringResource(R.string.funding_details_optional),
+                color = ShopAiThemeColors.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
+            ShopTextField(
+                stringResource(R.string.funding_working_capital),
+                workingCapital,
+                { workingCapital = it.filter { ch -> ch.isDigit() } },
+            )
+            ShopTextField(
+                stringResource(R.string.funding_amount),
+                fundingMax,
+                { fundingMax = it.filter { ch -> ch.isDigit() } },
+            )
+            ShopTextField(
+                stringResource(R.string.funding_callback),
+                callbackTime,
+                { callbackTime = it },
+                placeholder = stringResource(R.string.funding_callback_placeholder),
+            )
+
+            if (error != null) Text(error!!, color = Danger, modifier = Modifier.padding(bottom = 8.dp))
+
+            PrimaryButton(
+                label = stringResource(R.string.funding_call_me),
+                loading = loading == "TALK_TO_SOMEONE",
+                enabled = loading == null,
+                onClick = { submit("TALK_TO_SOMEONE") },
+            )
+            Spacer(Modifier.height(12.dp))
+            PrimaryButton(
+                label = stringResource(R.string.funding_explore),
+                loading = loading == "EXPLORE_OPTIONS",
+                enabled = loading == null,
+                onClick = { submit("EXPLORE_OPTIONS") },
+            )
+            Spacer(Modifier.height(16.dp))
+            Text(
+                stringResource(R.string.funding_disclaimer),
+                style = MaterialTheme.typography.bodyMedium,
+                color = ShopAiThemeColors.onSurfaceVariant,
+            )
         }
-
-        Text(
-            stringResource(R.string.funding_details_optional),
-            color = ShopAiThemeColors.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 8.dp),
-        )
-        ShopTextField(
-            stringResource(R.string.funding_working_capital),
-            workingCapital,
-            { workingCapital = it.filter { ch -> ch.isDigit() } },
-        )
-        ShopTextField(
-            stringResource(R.string.funding_amount),
-            fundingMax,
-            { fundingMax = it.filter { ch -> ch.isDigit() } },
-        )
-        ShopTextField(
-            stringResource(R.string.funding_callback),
-            callbackTime,
-            { callbackTime = it },
-            placeholder = stringResource(R.string.funding_callback_placeholder),
-        )
-
-        if (error != null) Text(error!!, color = Danger, modifier = Modifier.padding(bottom = 8.dp))
-
-        PrimaryButton(
-            label = stringResource(R.string.funding_call_me),
-            loading = loading == "TALK_TO_SOMEONE",
-            enabled = loading == null,
-            onClick = { submit("TALK_TO_SOMEONE") },
-        )
-        Spacer(Modifier.height(12.dp))
-        PrimaryButton(
-            label = stringResource(R.string.funding_explore),
-            loading = loading == "EXPLORE_OPTIONS",
-            enabled = loading == null,
-            onClick = { submit("EXPLORE_OPTIONS") },
-        )
-        Spacer(Modifier.height(16.dp))
-        Text(
-            stringResource(R.string.funding_disclaimer),
-            style = MaterialTheme.typography.bodyMedium,
-            color = ShopAiThemeColors.onSurfaceVariant,
-        )
     }
 }

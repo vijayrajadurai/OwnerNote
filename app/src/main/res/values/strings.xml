@@ -34,7 +34,7 @@
 
     <!-- OTP -->
     <string name="otp_title">Enter OTP</string>
-    <string name="otp_subtitle">Enter the 6-digit code sent to your phone</string>
+    <string name="otp_subtitle">Enter the 6-digit code sent to your phone. When the SMS arrives, tap Allow to fill it automatically.</string>
     <string name="otp_label">OTP</string>
     <string name="otp_placeholder">6-digit code</string>
     <string name="otp_verify">Verify and continue</string>
@@ -77,12 +77,21 @@
     <string name="home_greeting">Hello, %1$s 👋</string>
     <string name="home_receivable">To collect</string>
     <string name="home_payable">To pay</string>
+    <string name="home_net_position">Net position</string>
+    <string name="home_reminders_carousel_title">Upcoming reminders</string>
+    <string name="txn_chooser_title_credit">Add customer credit</string>
+    <string name="txn_chooser_title_debit">Add supplier debit</string>
+    <string name="txn_chooser_subtitle">Pick from contacts or enter details manually.</string>
+    <string name="txn_chooser_from_contact">From contacts</string>
+    <string name="txn_chooser_manual">Enter manually</string>
     <string name="home_business_health">Business health</string>
     <string name="health_stable">Stable</string>
     <string name="health_watch">Watch</string>
     <string name="health_pressure">Pressure</string>
     <string name="health_high_pressure">High pressure</string>
     <string name="home_today_priorities">Today\'s priorities</string>
+    <string name="view_all">View all</string>
+    <string name="show_less">Show less</string>
     <string name="priority_due_today">Due today</string>
     <string name="priority_due_tomorrow">Due tomorrow</string>
     <string name="priority_overdue">Overdue · %1$s</string>
@@ -105,13 +114,37 @@
     <!-- Customers / Suppliers -->
     <string name="customers_title">Customers</string>
     <string name="customers_add">+ Credit</string>
-    <string name="customers_empty">No customers yet.</string>
+    <string name="customers_add_contact">+ Contact credit</string>
+    <string name="customers_empty">No customers yet. Add from contacts or record a credit.</string>
     <string name="customers_error">Could not load customer list.</string>
+    <string name="customers_import_success">Customer added from contacts.</string>
+    <string name="customers_import_exists">This contact is already in your customer list.</string>
+    <string name="contacts_pick_failed">Could not read the selected contact. Check contacts permission and try again.</string>
     <string name="suppliers_title">Suppliers</string>
     <string name="suppliers_add">+ Debit</string>
-    <string name="suppliers_empty">No suppliers yet.</string>
+    <string name="suppliers_add_contact">+ Contact debit</string>
+    <string name="suppliers_empty">No suppliers yet. Add from contacts or record a debit.</string>
     <string name="suppliers_error">Could not load supplier list.</string>
+    <string name="suppliers_import_success">Supplier added from contacts.</string>
+    <string name="suppliers_import_exists">This contact is already in your supplier list.</string>
     <string name="pending_amount">Pending: %1$s</string>
+    <string name="party_total_pending">Total pending: %1$s</string>
+    <string name="party_transactions_title">Transactions</string>
+    <string name="party_history_title">History</string>
+    <string name="party_no_transactions">No transactions yet.</string>
+    <string name="party_add_credit">Add credit</string>
+    <string name="party_add_debit">Add debit</string>
+    <string name="party_add_payment">Add payment</string>
+    <string name="party_mark_paid">Mark fully paid</string>
+    <string name="party_confirm_payment">Confirm payment</string>
+    <string name="party_payment_amount">Amount received (₹)</string>
+    <string name="party_payment_error">Could not record payment.</string>
+    <string name="party_txn_pending">Pending: %1$s</string>
+    <string name="party_due_date">Due: %1$s</string>
+    <string name="party_running_balance">Balance: %1$s</string>
+    <string name="party_status_paid">Paid</string>
+    <string name="party_status_partial">Partially paid</string>
+    <string name="party_status_pending">Pending</string>
 
     <!-- More -->
     <string name="more_title">More</string>
@@ -288,4 +321,37 @@
 
     <!-- Generic -->
     <string name="error_generic">Something went wrong. Please try again.</string>
+    <string name="delete">Delete</string>
+
+    <!-- Daily Cash Note -->
+    <string name="cash_note_title">Daily Cash Note</string>
+    <string name="cash_note_home_empty">No cash in/out recorded for today yet</string>
+    <string name="cash_note_home_cta">Record today\'s cash →</string>
+    <string name="cash_note_home_subtitle">Track real cash &amp; UPI in/out — separate from credit ledger</string>
+    <string name="cash_note_in">In</string>
+    <string name="cash_note_out">Out</string>
+    <string name="cash_note_net">Net</string>
+    <string name="cash_note_money_in">+ Money In</string>
+    <string name="cash_note_money_out">− Money Out</string>
+    <string name="cash_note_add_title">New entry</string>
+    <string name="cash_note_edit_title">Edit entry</string>
+    <string name="cash_note_amount">Amount (₹)</string>
+    <string name="cash_note_payment_mode">Payment mode</string>
+    <string name="cash_note_cash">Cash</string>
+    <string name="cash_note_upi">UPI</string>
+    <string name="cash_note_note">Note (optional)</string>
+    <string name="cash_note_note_placeholder">What for?</string>
+    <string name="cash_note_save">Save</string>
+    <string name="cash_note_delete">Delete this entry</string>
+    <string name="cash_note_delete_title">Delete this entry?</string>
+    <string name="cash_note_delete_body">This cannot be undone.</string>
+    <string name="cash_note_totals_title">Day totals</string>
+    <string name="cash_note_section_total">Total</string>
+    <string name="cash_note_list_empty">No entries for this day.</string>
+    <string name="cash_note_day_submitted">This day\'s report was sent to the server.</string>
+    <string name="cash_note_close_day">Close day &amp; send report</string>
+    <string name="cash_note_close_confirm_title">Send today\'s report?</string>
+    <string name="cash_note_close_confirm_body">This sends all %1$d entries to the server (In %2$s · Out %3$s · Net %4$s). You cannot edit after sending.</string>
+    <string name="cash_note_submit_error">Could not send report. Check internet and try again.</string>
+    <string name="cash_note_submit_success">Today\'s report sent successfully.</string>
 </resources>

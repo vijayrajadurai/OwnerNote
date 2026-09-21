@@ -76,6 +76,8 @@
     <string name="health_pressure">அழுத்தம்</string>
     <string name="health_high_pressure">அதிக அழுத்தம்</string>
     <string name="home_today_priorities">இன்றைய செய்யவேண்டியது</string>
+    <string name="view_all">முழுவதும் பார்க்க</string>
+    <string name="show_less">குறைவா காட்டு</string>
     <string name="priority_due_today">இன்று கடைசி நாள்</string>
     <string name="priority_due_tomorrow">நாளை கடைசி நாள்</string>
     <string name="priority_overdue">தாமதம் · %1$s</string>
@@ -269,4 +271,36 @@
     <string name="error_timeout">இணைப்பு நேரம் முடிந்தது. உங்கள் நெட்வொர்க்கை சரிபார்த்து மீண்டும் முயற்சிக்கவும்.</string>
     <string name="error_server_error">சர்வரில் பிழை ஏற்பட்டுள்ளது. பிறகு மீண்டும் முயற்சிக்கவும்.</string>
     <string name="error_generic">ஏதோ தவறு ஏற்பட்டுள்ளது. மீண்டும் முயற்சிக்கவும்.</string>
+    <string name="delete">நீக்கு</string>
+
+    <string name="cash_note_title">இன்றைய கணக்கு</string>
+    <string name="cash_note_home_empty">இன்று இன்னும் எந்த பண வரவு/செலவும் பதிவு செய்யவில்லை</string>
+    <string name="cash_note_home_cta">இன்றைய பணம் பதிவு செய்யுங்க →</string>
+    <string name="cash_note_home_subtitle">உண்மையான பண/UPI வரவு செலவு — கடன் கணக்கில் இல்லை</string>
+    <string name="cash_note_in">வரவு</string>
+    <string name="cash_note_out">செலவு</string>
+    <string name="cash_note_net">நிகரம்</string>
+    <string name="cash_note_money_in">+ பணம் வரவு</string>
+    <string name="cash_note_money_out">− பணம் செலவு</string>
+    <string name="cash_note_add_title">புதிய பதிவு</string>
+    <string name="cash_note_edit_title">பதிவை திருத்து</string>
+    <string name="cash_note_amount">தொகை (₹)</string>
+    <string name="cash_note_payment_mode">பணம் செலுத்தும் வழி</string>
+    <string name="cash_note_cash">பணம்</string>
+    <string name="cash_note_upi">UPI</string>
+    <string name="cash_note_note">குறிப்பு (விரும்பினால்)</string>
+    <string name="cash_note_note_placeholder">எதற்காக?</string>
+    <string name="cash_note_save">சேமி</string>
+    <string name="cash_note_delete">இந்த பதிவை நீக்கு</string>
+    <string name="cash_note_delete_title">இந்த பதிவை நீக்கவா?</string>
+    <string name="cash_note_delete_body">இதை திரும்ப பெற முடியாது.</string>
+    <string name="cash_note_totals_title">இன்றைய மொத்தம்</string>
+    <string name="cash_note_section_total">மொத்தம்</string>
+    <string name="cash_note_list_empty">இந்த நாளுக்கு பதிவுகள் இல்லை.</string>
+    <string name="cash_note_day_submitted">இந்த நாளின் அறிக்கை சர்வருக்கு அனுப்பப்பட்டது.</string>
+    <string name="cash_note_close_day">நாளை முடித்து அறிக்கை அனுப்பு</string>
+    <string name="cash_note_close_confirm_title">இன்றைய அறிக்கையை அனுப்பவா?</string>
+    <string name="cash_note_close_confirm_body">%1$d பதிவுகள் சர்வருக்கு அனுப்பப்படும் (வரவு %2$s · செலவு %3$s · நிகரம் %4$s). அனுப்பிய பிறகு திருத்த முடியாது.</string>
+    <string name="cash_note_submit_error">அறிக்கை அனுப்ப முடியவில்லை. இணையம் சரிபார்த்து மீண்டும் முயற்சிக்கவும்.</string>
+    <string name="cash_note_submit_success">இன்றைய அறிக்கை வெற்றிகரமாக அனுப்பப்பட்டது.</string>
 </resources>

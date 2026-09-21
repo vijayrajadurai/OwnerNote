@@ -32,11 +32,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.shopai.app.R
-import com.shopai.app.ui.theme.Danger
-import com.shopai.app.ui.theme.DangerMuted
-import com.shopai.app.ui.theme.PrimaryMuted
+import com.shopai.app.ui.theme.LedgerCredit
+import com.shopai.app.ui.theme.LedgerCreditMuted
+import com.shopai.app.ui.theme.LedgerDebit
+import com.shopai.app.ui.theme.LedgerDebitMuted
 import com.shopai.app.ui.theme.ShopAiThemeColors
-import com.shopai.app.ui.theme.Success
 
 @Composable
 fun HomeCreditDebitActions(
@@ -69,17 +69,17 @@ private fun HomeTxnQuickActionCard(
 ) {
     val palette = when (type) {
         TransactionSaveType.CREDIT -> HomeTxnPalette(
-            accent = Success,
-            background = PrimaryMuted,
-            gradient = listOf(Color(0xFF1E6B4E), Color(0xFF2E9F6E)),
+            accent = LedgerCredit,
+            background = LedgerCreditMuted,
+            gradient = listOf(Color(0xFFD6503C), Color(0xFFE88A5A)),
             icon = "↑",
             titleRes = R.string.home_credit_action_title,
             captionRes = R.string.home_credit_action_caption,
         )
         TransactionSaveType.DEBIT -> HomeTxnPalette(
-            accent = Danger,
-            background = DangerMuted,
-            gradient = listOf(Color(0xFFD6503C), Color(0xFFE88A5A)),
+            accent = LedgerDebit,
+            background = LedgerDebitMuted,
+            gradient = listOf(Color(0xFF1E6B4E), Color(0xFF2E9F6E)),
             icon = "↓",
             titleRes = R.string.home_debit_action_title,
             captionRes = R.string.home_debit_action_caption,

@@ -6,7 +6,9 @@ import com.shopai.app.data.api.ShopAiApi
 import com.shopai.app.data.network.ApiErrorHandler
 import com.shopai.app.data.auth.FirebasePhoneAuthClient
 import com.shopai.app.data.local.TokenStore
+import com.shopai.app.data.local.room.ShopAiLocalDatabase
 import com.shopai.app.data.local.UserPreferencesStore
+import com.shopai.app.data.repository.DailyCashRepository
 import com.shopai.app.data.repository.AuthRepository
 import com.shopai.app.data.repository.PreferencesRepository
 import com.shopai.app.data.repository.BusinessRepository
@@ -48,8 +50,10 @@ class AppContainer(context: Context) {
     }
 
     private val okHttp = OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
+        // Render free tier can take 30–60s to wake from sleep.
+        .connectTimeout(60, TimeUnit.SECONDS)
+        .readTimeout(60, TimeUnit.SECONDS)
+        .writeTimeout(60, TimeUnit.SECONDS)
         .addInterceptor(authInterceptor)
         .apply {
             if (BuildConfig.DEBUG) {
@@ -81,6 +85,8 @@ class AppContainer(context: Context) {
     val reminderRepository = ReminderRepository(api)
     val fundingRepository = FundingRepository(api)
     val naturalTtsSpeaker = NaturalTtsSpeaker(appContext)
+    private val localDatabase = ShopAiLocalDatabase.get(appContext)
+    val dailyCashRepository = DailyCashRepository(localDatabase.dailyCashDao(), api)
 
     private fun ensureTrailingSlash(url: String): String =
         if (url.endsWith("/")) url else "$url/"

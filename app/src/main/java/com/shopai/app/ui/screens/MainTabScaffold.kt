@@ -32,7 +32,8 @@ fun MainTabScaffold(
             modifier = Modifier
                 .weight(1f)
                 .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
-                .padding(horizontal = 20.dp, vertical = 16.dp),
+                .padding(horizontal = 20.dp)
+                .padding(top = 16.dp, bottom = 8.dp),
         ) {
             content()
         }

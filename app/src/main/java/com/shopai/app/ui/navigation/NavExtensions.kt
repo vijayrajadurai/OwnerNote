@@ -26,6 +26,13 @@ fun shouldShowVoiceEntryFab(route: String?): Boolean {
     return true
 }
 
+/** Pops one screen, or returns to Home if the stack cannot go back. */
+fun NavController.navigateUpOrHome() {
+    if (!popBackStack()) {
+        navigateToHomeAsRoot()
+    }
+}
+
 /** Clears the entire back stack and sets Home as the only destination. */
 fun NavController.navigateToHomeAsRoot() {
     navigate(Routes.Home) {

@@ -17,5 +17,14 @@ val Border = Color(0xFFE8E3D8)
 val Danger = Color(0xFFD6503C)
 val DangerMuted = Color(0x1AD6503C)
 val Success = Color(0xFF1E6B4E)
+val SuccessMuted = Color(0x1A1E6B4E)
 val Warning = Color(0xFFC4841E)
 val Pressure = Color(0xFFD9793C)
+
+// Ledger semantics used across customer/supplier flows:
+// credit = you gave (receivable), debit = you got (payable), pending = outstanding amount.
+val LedgerCredit = Danger
+val LedgerCreditMuted = DangerMuted
+val LedgerDebit = Success
+val LedgerDebitMuted = SuccessMuted
+val LedgerPending = Danger

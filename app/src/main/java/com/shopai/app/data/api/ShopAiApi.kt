@@ -9,11 +9,20 @@ import com.shopai.app.data.model.Business
 import com.shopai.app.data.model.BusinessHealth
 import com.shopai.app.data.model.BusinessInput
 import com.shopai.app.data.model.CashFlowSummary
+import com.shopai.app.data.model.AddPaymentInput
 import com.shopai.app.data.model.CreateCreditInput
-import com.shopai.app.data.model.DiscoverItem
 import com.shopai.app.data.model.CreateDebitInput
+import com.shopai.app.data.model.CreatePartyInput
+import com.shopai.app.data.model.PartyRecord
+import com.shopai.app.data.model.CreditTransactionDetail
+import com.shopai.app.data.model.CustomerDetail
+import com.shopai.app.data.model.DebitTransactionDetail
+import com.shopai.app.data.model.DiscoverItem
+import com.shopai.app.data.model.SupplierDetail
 import com.shopai.app.data.model.CreateReminderRequest
 import com.shopai.app.data.model.DashboardSnapshot
+import com.shopai.app.data.model.DailyCashReportResponse
+import com.shopai.app.data.model.SubmitDailyCashReportRequest
 import com.shopai.app.data.model.FundingOpportunity
 import com.shopai.app.data.model.LeadQualificationInput
 import com.shopai.app.data.model.LoanLead
@@ -84,14 +93,44 @@ interface ShopAiApi {
     @GET("customers")
     suspend fun getCustomers(): ApiEnvelope<List<PartySummary>>
 
+    @GET("customers/{id}")
+    suspend fun getCustomer(@Path("id") id: String): ApiEnvelope<CustomerDetail>
+
+    @POST("customers")
+    suspend fun createCustomer(@Body body: CreatePartyInput): ApiEnvelope<PartyRecord>
+
     @GET("suppliers")
     suspend fun getSuppliers(): ApiEnvelope<List<PartySummary>>
 
+    @GET("suppliers/{id}")
+    suspend fun getSupplier(@Path("id") id: String): ApiEnvelope<SupplierDetail>
+
+    @POST("suppliers")
+    suspend fun createSupplier(@Body body: CreatePartyInput): ApiEnvelope<PartyRecord>
+
     @POST("transactions/credit")
-    suspend fun createCredit(@Body body: CreateCreditInput): ApiEnvelope<Unit>
+    suspend fun createCredit(@Body body: CreateCreditInput): ApiEnvelope<CreditTransactionDetail>
+
+    @POST("transactions/credit/{id}/payments")
+    suspend fun addCreditPayment(
+        @Path("id") id: String,
+        @Body body: AddPaymentInput,
+    ): ApiEnvelope<CreditTransactionDetail>
+
+    @POST("transactions/credit/{id}/mark-paid")
+    suspend fun markCreditPaid(@Path("id") id: String): ApiEnvelope<CreditTransactionDetail>
 
     @POST("transactions/debit")
-    suspend fun createDebit(@Body body: CreateDebitInput): ApiEnvelope<Unit>
+    suspend fun createDebit(@Body body: CreateDebitInput): ApiEnvelope<DebitTransactionDetail>
+
+    @POST("transactions/debit/{id}/payments")
+    suspend fun addDebitPayment(
+        @Path("id") id: String,
+        @Body body: AddPaymentInput,
+    ): ApiEnvelope<DebitTransactionDetail>
+
+    @POST("transactions/debit/{id}/mark-paid")
+    suspend fun markDebitPaid(@Path("id") id: String): ApiEnvelope<DebitTransactionDetail>
 
     @POST("voice/parse")
     suspend fun parseVoice(@Body body: ParseVoiceRequest): ApiEnvelope<ParsedTransaction>
@@ -125,4 +164,7 @@ interface ShopAiApi {
         @Path("id") id: String,
         @Body body: LeadQualificationInput,
     ): ApiEnvelope<LoanLead>
+
+    @POST("daily-cash/reports")
+    suspend fun submitDailyCashReport(@Body body: SubmitDailyCashReportRequest): ApiEnvelope<DailyCashReportResponse>
 }

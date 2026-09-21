@@ -9,6 +9,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -45,7 +46,9 @@ import com.shopai.app.ui.components.ApiErrorAlertDialog
 import com.shopai.app.ui.components.FutureDatePickerField
 import com.shopai.app.ui.components.PrimaryButton
 import com.shopai.app.ui.components.SaveTransactionConfirmDialog
-import com.shopai.app.ui.components.ScreenContainer
+import com.shopai.app.ui.components.DetailScaffold
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import com.shopai.app.ui.components.ShopCard
 import com.shopai.app.ui.components.ShopTextField
 import com.shopai.app.ui.components.TransactionSaveType
@@ -63,6 +66,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun VoiceEntryScreen(
     container: AppContainer,
+    onBack: () -> Unit,
     onDone: () -> Unit,
 ) {
     var inputText by remember { mutableStateOf("") }
@@ -279,18 +283,21 @@ fun VoiceEntryScreen(
 
     ApiErrorAlertDialog(message = alertError, onDismiss = { alertError = null })
 
-    ScreenContainer {
-        Text(
-            stringResource(R.string.voice_title),
-            style = MaterialTheme.typography.headlineMedium,
-            color = ShopAiThemeColors.primary,
-            fontWeight = FontWeight.ExtraBold,
-        )
+    DetailScaffold(
+        title = stringResource(R.string.voice_title),
+        onBack = onBack,
+    ) { contentModifier ->
+        Column(
+            modifier = contentModifier
+                .padding(horizontal = 24.dp)
+                .verticalScroll(rememberScrollState())
+                .padding(top = 8.dp, bottom = 24.dp),
+        ) {
         Text(
             stringResource(R.string.voice_subtitle),
             style = MaterialTheme.typography.bodyMedium,
             color = ShopAiThemeColors.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 8.dp, top = 4.dp),
+            modifier = Modifier.padding(bottom = 8.dp),
         )
 
         VoiceListeningOrb(
@@ -421,6 +428,7 @@ fun VoiceEntryScreen(
         if (error != null) {
             Text(error!!, color = Danger, modifier = Modifier.padding(top = 8.dp))
         }
+        }
     }
 
     val parsedTransaction = parsed
@@ -445,10 +453,20 @@ fun VoiceEntryScreen(
                         val due = dueDate?.let { localDateToIsoInstant(it) }
                         when (p.intent) {
                             "CREATE_DEBIT" -> container.transactionRepository.createDebit(
-                                CreateDebitInput(partyName.trim(), amt, description.ifBlank { null }, due),
+                                CreateDebitInput(
+                                    supplierName = partyName.trim(),
+                                    amount = amt,
+                                    description = description.ifBlank { null },
+                                    dueDate = due,
+                                ),
                             )
                             else -> container.transactionRepository.createCredit(
-                                CreateCreditInput(partyName.trim(), amt, description.ifBlank { null }, due),
+                                CreateCreditInput(
+                                    customerName = partyName.trim(),
+                                    amount = amt,
+                                    description = description.ifBlank { null },
+                                    dueDate = due,
+                                ),
                             )
                         }
                         onDone()

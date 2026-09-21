@@ -19,12 +19,16 @@ import com.shopai.app.ui.navigation.Routes
 import com.shopai.app.ui.navigation.isMainTabRoute
 import com.shopai.app.ui.navigation.navigateMainTab
 import com.shopai.app.ui.navigation.navigateToHomeAsRoot
+import com.shopai.app.ui.navigation.navigateUpOrHome
 import com.shopai.app.ui.navigation.shouldShowVoiceEntryFab
 import com.shopai.app.ui.screens.AddCreditScreen
 import com.shopai.app.ui.screens.AddDebitScreen
 import com.shopai.app.ui.screens.AiInsightsScreen
 import com.shopai.app.ui.screens.BusinessSetupScreen
+import com.shopai.app.ui.screens.CustomerDetailScreen
 import com.shopai.app.ui.screens.CustomersScreen
+import com.shopai.app.ui.screens.DailyCashNoteScreen
+import com.shopai.app.ui.screens.SupplierDetailScreen
 import com.shopai.app.ui.screens.DiscoverScreen
 import com.shopai.app.ui.screens.FundingQualificationScreen
 import com.shopai.app.ui.screens.HomeScreen
@@ -81,6 +85,7 @@ fun ShopAiApp(container: AppContainer) {
         composable(Routes.Otp) {
             OtpScreen(
                 container = container,
+                onNavigateBack = { navController.navigateUpOrHome() },
                 onNavigateHome = { navController.navigateToHomeAsRoot() },
                 onNavigateBusinessSetup = {
                     navController.navigate(Routes.BusinessSetup) {
@@ -99,6 +104,12 @@ fun ShopAiApp(container: AppContainer) {
             HomeScreen(
                 container = container,
                 onNavigate = { route -> navController.navigateMainTab(route) },
+                onAddCredit = { id, name, phone ->
+                    navController.navigate(Routes.addCredit(id, name.takeIf { it.isNotBlank() }, phone))
+                },
+                onAddDebit = { id, name, phone ->
+                    navController.navigate(Routes.addDebit(id, name.takeIf { it.isNotBlank() }, phone))
+                },
             )
         }
         composable(Routes.Discover) {
@@ -111,12 +122,44 @@ fun ShopAiApp(container: AppContainer) {
             CustomersScreen(
                 container = container,
                 onNavigate = { route -> navController.navigateMainTab(route) },
+                onOpenCustomer = { customerId -> navController.navigate(Routes.customerDetail(customerId)) },
+                onAddCredit = { id, name, phone ->
+                    navController.navigate(Routes.addCredit(id, name.takeIf { it.isNotBlank() }, phone))
+                },
+            )
+        }
+        composable(
+            route = Routes.CustomerDetail,
+            arguments = listOf(navArgument("customerId") { type = NavType.StringType }),
+        ) { entry ->
+            val customerId = entry.arguments?.getString("customerId") ?: return@composable
+            CustomerDetailScreen(
+                container = container,
+                customerId = customerId,
+                onBack = { navController.navigateUpOrHome() },
+                onAddCredit = { id, name -> navController.navigate(Routes.addCredit(id, name, null)) },
             )
         }
         composable(Routes.Suppliers) {
             SuppliersScreen(
                 container = container,
                 onNavigate = { route -> navController.navigateMainTab(route) },
+                onOpenSupplier = { supplierId -> navController.navigate(Routes.supplierDetail(supplierId)) },
+                onAddDebit = { id, name, phone ->
+                    navController.navigate(Routes.addDebit(id, name.takeIf { it.isNotBlank() }, phone))
+                },
+            )
+        }
+        composable(
+            route = Routes.SupplierDetail,
+            arguments = listOf(navArgument("supplierId") { type = NavType.StringType }),
+        ) { entry ->
+            val supplierId = entry.arguments?.getString("supplierId") ?: return@composable
+            SupplierDetailScreen(
+                container = container,
+                supplierId = supplierId,
+                onBack = { navController.popBackStack() },
+                onAddDebit = { id, name -> navController.navigate(Routes.addDebit(id, name, null)) },
             )
         }
         composable(Routes.More) {
@@ -130,30 +173,71 @@ fun ShopAiApp(container: AppContainer) {
                 },
             )
         }
-        composable(Routes.AddCredit) {
-            AddCreditScreen(container = container, onDone = { navController.popBackStack() })
+        composable(
+            route = Routes.AddCredit,
+            arguments = listOf(
+                navArgument("customerId") { type = NavType.StringType; defaultValue = "" },
+                navArgument("customerName") { type = NavType.StringType; defaultValue = "" },
+                navArgument("customerPhone") { type = NavType.StringType; defaultValue = "" },
+            ),
+        ) { entry ->
+            val customerId = entry.arguments?.getString("customerId")?.takeIf { it.isNotEmpty() }
+            val customerName = entry.arguments?.getString("customerName")?.takeIf { it.isNotEmpty() }
+            val customerPhone = entry.arguments?.getString("customerPhone")?.takeIf { it.isNotEmpty() }
+            AddCreditScreen(
+                container = container,
+                prefillCustomerId = customerId,
+                prefillCustomerName = customerName,
+                prefillCustomerPhone = customerPhone,
+                onBack = { navController.navigateUpOrHome() },
+                onDone = { navController.navigateUpOrHome() },
+            )
         }
-        composable(Routes.AddDebit) {
-            AddDebitScreen(container = container, onDone = { navController.popBackStack() })
+        composable(
+            route = Routes.AddDebit,
+            arguments = listOf(
+                navArgument("supplierId") { type = NavType.StringType; defaultValue = "" },
+                navArgument("supplierName") { type = NavType.StringType; defaultValue = "" },
+                navArgument("supplierPhone") { type = NavType.StringType; defaultValue = "" },
+            ),
+        ) { entry ->
+            val supplierId = entry.arguments?.getString("supplierId")?.takeIf { it.isNotEmpty() }
+            val supplierName = entry.arguments?.getString("supplierName")?.takeIf { it.isNotEmpty() }
+            val supplierPhone = entry.arguments?.getString("supplierPhone")?.takeIf { it.isNotEmpty() }
+            AddDebitScreen(
+                container = container,
+                prefillSupplierId = supplierId,
+                prefillSupplierName = supplierName,
+                prefillSupplierPhone = supplierPhone,
+                onBack = { navController.navigateUpOrHome() },
+                onDone = { navController.navigateUpOrHome() },
+            )
         }
         composable(Routes.VoiceEntry) {
-            VoiceEntryScreen(container = container, onDone = { navController.popBackStack() })
+            VoiceEntryScreen(
+                container = container,
+                onBack = { navController.navigateUpOrHome() },
+                onDone = { navController.navigateUpOrHome() },
+            )
         }
         composable(Routes.Reminders) {
-            RemindersScreen(container = container, onBack = { navController.popBackStack() })
+            RemindersScreen(container = container, onBack = { navController.navigateUpOrHome() })
+        }
+        composable(Routes.DailyCashNote) {
+            DailyCashNoteScreen(container = container, onBack = { navController.navigateUpOrHome() })
         }
         composable(Routes.AiInsights) {
-            AiInsightsScreen(container = container, onBack = { navController.popBackStack() })
+            AiInsightsScreen(container = container, onBack = { navController.navigateUpOrHome() })
         }
         composable(Routes.Settings) {
             SettingsScreen(
                 container = container,
-                onBack = { navController.popBackStack() },
+                onBack = { navController.navigateUpOrHome() },
                 onOpenSubscription = { navController.navigate(Routes.Subscription) },
             )
         }
         composable(Routes.Subscription) {
-            SubscriptionScreen(onBack = { navController.popBackStack() })
+            SubscriptionScreen(onBack = { navController.navigateUpOrHome() })
         }
         composable(
             route = Routes.FundingQualification,
@@ -163,6 +247,7 @@ fun ShopAiApp(container: AppContainer) {
             FundingQualificationScreen(
                 container = container,
                 opportunityId = opportunityId,
+                onBack = { navController.navigateUpOrHome() },
                 onComplete = { navController.navigateToHomeAsRoot() },
             )
         }
