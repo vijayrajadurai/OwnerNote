@@ -14,6 +14,9 @@ interface DailyCashDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertEntry(entry: DailyCashEntryEntity)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertEntries(entries: List<DailyCashEntryEntity>)
+
     @Update
     suspend fun updateEntry(entry: DailyCashEntryEntity)
 

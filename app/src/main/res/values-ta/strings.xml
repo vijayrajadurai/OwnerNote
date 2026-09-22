@@ -68,6 +68,22 @@
 
     <string name="home_fallback_name">Owner Note</string>
     <string name="home_greeting">வணக்கம், %1$s 👋</string>
+    <string name="home_good_morning">காலை வணக்கம்!</string>
+    <string name="home_good_afternoon">மதிய வணக்கம்!</string>
+    <string name="home_good_evening">மாலை வணக்கம்!</string>
+    <string name="home_payment_reminders_heading">இன்றைய பணம் நினைவூட்டல்கள்</string>
+    <string name="home_payment_reminders_empty">இப்போது பணம் நினைவூட்டல்கள் இல்லை.</string>
+    <string name="reminder_badge_due_today">இன்று கடைசி நாள்</string>
+    <string name="reminder_badge_overdue">தாமதம்</string>
+    <string name="reminder_badge_upcoming">வரவிருக்கும்</string>
+    <string name="reminder_due_prefix">கடைசி நாள்: %1$s</string>
+    <string name="reminder_view_details">விவரம் பார்க்க</string>
+    <string name="reminder_mark_paid">பணம் கட்டியதாக குறி</string>
+    <string name="reminder_details_title">நினைவூட்டல் விவரம்</string>
+    <string name="reminder_not_found">இந்த நினைவூட்டல் இப்போது இல்லை.</string>
+    <string name="reminder_open_ledger">கணக்கைத் திற</string>
+    <string name="cd_payment_reminder_card">%1$s க்கான பண நினைவூட்டல், %2$s, %3$s</string>
+    <string name="cd_notifications_unread">அறிவிப்புகள், %1$d படிக்காதவை</string>
     <string name="home_receivable">வரவேண்டியது</string>
     <string name="home_payable">கொடுப்பது</string>
     <string name="home_business_health">வியாபார நிலை</string>
@@ -106,6 +122,10 @@
     <string name="suppliers_empty">இன்னும் சப்ளையர் இல்லை.</string>
     <string name="suppliers_error">சப்ளையர் பட்டியல் லோட் ஆகல.</string>
     <string name="pending_amount">நிலுவை: %1$s</string>
+    <string name="party_section_today">இன்று</string>
+    <string name="party_section_yesterday">நேற்று</string>
+    <string name="party_section_tomorrow">நாளை</string>
+    <string name="party_section_no_due">கடைசி நாள் இல்லை</string>
 
     <string name="more_title">மேலும்</string>
     <string name="more_ai_insights">AI பரிந்துரைகள்</string>
@@ -119,6 +139,8 @@
     <string name="more_subscription">சந்தா</string>
     <string name="more_subscription_caption">திட்டங்கள் மற்றும் பிரீமியம் நன்மைகள்</string>
     <string name="logout">வெளியேறு</string>
+    <string name="notification_channel_name">Owner Note அறிவிப்புகள்</string>
+    <string name="notification_channel_description">நினைவூட்டல்கள் மற்றும் முக்கிய வியாபார தகவல்கள்</string>
 
     <string name="add_credit_title">வாடிக்கையாளருக்கு கடன்</string>
     <string name="add_credit_subtitle">சாமான் கொடுத்துட்டு, தொகை பாக்கி இருந்தா இதை பயன்படுத்துங்க.</string>

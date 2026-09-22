@@ -20,6 +20,7 @@ class AuthRepository(
     private val tokenStore: TokenStore,
     private val apiErrorHandler: ApiErrorHandler,
     private val firebasePhoneAuth: FirebasePhoneAuthClient,
+    private val pushTokenRepository: PushTokenRepository,
 ) {
     suspend fun hydrate(): String? = tokenStore.getToken()
 
@@ -49,10 +50,12 @@ class AuthRepository(
             com.shopai.app.data.model.TestLoginRequest(username, password),
         )
         tokenStore.setToken(response.data.token)
+        runCatching { pushTokenRepository.registerCurrent() }
         return response.data
     }
 
     suspend fun logout() {
+        runCatching { pushTokenRepository.unregister() }
         runCatching { firebasePhoneAuth.signOut() }
         tokenStore.setToken(null)
         tokenStore.setPendingPhone(null)
@@ -64,6 +67,7 @@ class AuthRepository(
     private suspend fun exchangeFirebaseToken(idToken: String): AuthResponse {
         val response = api.firebaseLogin(FirebaseLoginRequest(idToken))
         tokenStore.setToken(response.data.token)
+        runCatching { pushTokenRepository.registerCurrent() }
         return response.data
     }
 }

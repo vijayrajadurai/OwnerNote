@@ -37,6 +37,9 @@ import com.shopai.app.data.model.FirebaseLoginRequest
 import com.shopai.app.data.model.SendOtpRequest
 import com.shopai.app.data.model.SendOtpResponse
 import com.shopai.app.data.model.TestLoginRequest
+import com.shopai.app.data.model.RegisterFcmTokenRequest
+import com.shopai.app.data.model.UnregisterFcmTokenRequest
+import com.shopai.app.data.model.DeviceTokenAck
 import com.shopai.app.data.model.VerifyOtpRequest
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -167,4 +170,13 @@ interface ShopAiApi {
 
     @POST("daily-cash/reports")
     suspend fun submitDailyCashReport(@Body body: SubmitDailyCashReportRequest): ApiEnvelope<DailyCashReportResponse>
+
+    @GET("daily-cash/reports/{date}")
+    suspend fun getDailyCashReport(@Path("date") date: String): ApiEnvelope<DailyCashReportResponse>
+
+    @POST("devices/fcm")
+    suspend fun registerFcmToken(@Body body: RegisterFcmTokenRequest): ApiEnvelope<DeviceTokenAck>
+
+    @POST("devices/fcm/unregister")
+    suspend fun unregisterFcmToken(@Body body: UnregisterFcmTokenRequest): ApiEnvelope<DeviceTokenAck>
 }

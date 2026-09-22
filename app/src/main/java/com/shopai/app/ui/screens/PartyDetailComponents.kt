@@ -16,6 +16,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -27,8 +28,10 @@ import com.shopai.app.data.model.pendingAmount
 import com.shopai.app.ui.components.PrimaryButton
 import com.shopai.app.ui.components.ShopCard
 import com.shopai.app.ui.components.ShopTextField
+import com.shopai.app.ui.theme.LedgerCredit
 import com.shopai.app.ui.theme.LedgerDebit
 import com.shopai.app.ui.theme.LedgerPending
+import com.shopai.app.ui.theme.Success
 import com.shopai.app.ui.theme.ShopAiThemeColors
 import com.shopai.app.util.LedgerEntryKind
 import com.shopai.app.util.LedgerLine
@@ -45,6 +48,7 @@ fun CreditTransactionCard(
 ) {
     TransactionCard(
         amount = parseMoney(transaction.amount),
+        amountColor = LedgerCredit,
         status = transaction.status,
         description = transaction.description,
         dueDate = transaction.dueDate,
@@ -64,6 +68,7 @@ fun DebitTransactionCard(
 ) {
     TransactionCard(
         amount = parseMoney(transaction.amount),
+        amountColor = LedgerDebit,
         status = transaction.status,
         description = transaction.description,
         dueDate = transaction.dueDate,
@@ -77,6 +82,7 @@ fun DebitTransactionCard(
 @Composable
 private fun TransactionCard(
     amount: Double,
+    amountColor: Color,
     status: String,
     description: String?,
     dueDate: String?,
@@ -99,13 +105,13 @@ private fun TransactionCard(
                 text = formatInr(amount),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = ShopAiThemeColors.onSurface,
+                color = amountColor,
             )
             Text(
                 text = transactionStatusLabel(status),
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
-                color = if (status == "PAID") LedgerDebit else LedgerPending,
+                color = if (status == "PAID") Success else LedgerPending,
             )
         }
         if (!description.isNullOrBlank()) {
@@ -129,7 +135,7 @@ private fun TransactionCard(
                 text = stringResource(R.string.party_txn_pending, formatInr(pending)),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
-                color = LedgerPending,
+                color = amountColor,
                 modifier = Modifier.padding(top = 8.dp),
             )
             if (isPaying) {
@@ -231,10 +237,12 @@ fun LedgerHistorySection(lines: List<LedgerLine>) {
                         text = ledgerAmountLabel(line),
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold,
-                        color = if (line.kind == LedgerEntryKind.PAYMENT_RECEIVED || line.kind == LedgerEntryKind.PAYMENT_MADE) {
-                            LedgerDebit
-                        } else {
-                            ShopAiThemeColors.onSurface
+                        color = when (line.kind) {
+                            LedgerEntryKind.CREDIT_GIVEN -> LedgerCredit
+                            LedgerEntryKind.DEBIT_OWED -> LedgerDebit
+                            LedgerEntryKind.PAYMENT_RECEIVED,
+                            LedgerEntryKind.PAYMENT_MADE,
+                            -> Success
                         },
                     )
                     Text(

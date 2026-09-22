@@ -25,6 +25,17 @@ data class AuthResponse(val token: String, val isNewUser: Boolean)
 
 data class TestLoginRequest(val username: String, val password: String)
 
+data class RegisterFcmTokenRequest(val token: String, val platform: String = "ANDROID")
+
+data class UnregisterFcmTokenRequest(val token: String)
+
+data class DeviceTokenAck(
+    val id: String? = null,
+    val platform: String? = null,
+    val updatedAt: String? = null,
+    val ok: Boolean? = null,
+)
+
 data class Business(
     val id: String,
     val ownerUserId: String,

@@ -71,16 +71,16 @@ private fun HomeTxnQuickActionCard(
         TransactionSaveType.CREDIT -> HomeTxnPalette(
             accent = LedgerCredit,
             background = LedgerCreditMuted,
-            gradient = listOf(Color(0xFFD6503C), Color(0xFFE88A5A)),
-            icon = "↑",
+            gradient = listOf(Color(0xFF1E6B4E), Color(0xFF2E9F6E)),
+            icon = "↓",
             titleRes = R.string.home_credit_action_title,
             captionRes = R.string.home_credit_action_caption,
         )
         TransactionSaveType.DEBIT -> HomeTxnPalette(
             accent = LedgerDebit,
             background = LedgerDebitMuted,
-            gradient = listOf(Color(0xFF1E6B4E), Color(0xFF2E9F6E)),
-            icon = "↓",
+            gradient = listOf(Color(0xFFD6503C), Color(0xFFE88A5A)),
+            icon = "↑",
             titleRes = R.string.home_debit_action_title,
             captionRes = R.string.home_debit_action_caption,
         )

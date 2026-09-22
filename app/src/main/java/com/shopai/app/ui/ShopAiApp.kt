@@ -36,11 +36,13 @@ import com.shopai.app.ui.screens.LoginScreen
 import com.shopai.app.ui.screens.MoreScreen
 import com.shopai.app.ui.screens.OtpScreen
 import com.shopai.app.ui.screens.RemindersScreen
+import com.shopai.app.ui.screens.ReminderDetailScreen
 import com.shopai.app.ui.screens.SplashScreen
 import com.shopai.app.ui.screens.SuppliersScreen
 import com.shopai.app.ui.screens.VoiceEntryScreen
 import com.shopai.app.ui.settings.SettingsScreen
 import com.shopai.app.ui.subscription.SubscriptionScreen
+import com.shopai.app.push.EnsurePushRegistration
 
 @Composable
 fun ShopAiApp(container: AppContainer) {
@@ -223,6 +225,25 @@ fun ShopAiApp(container: AppContainer) {
         composable(Routes.Reminders) {
             RemindersScreen(container = container, onBack = { navController.navigateUpOrHome() })
         }
+        composable(
+            route = Routes.ReminderDetail,
+            arguments = listOf(navArgument("reminderId") { type = NavType.StringType }),
+        ) { entry ->
+            val reminderId = entry.arguments?.getString("reminderId") ?: return@composable
+            ReminderDetailScreen(
+                container = container,
+                reminderId = reminderId,
+                onBack = { navController.navigateUpOrHome() },
+                onOpenLedger = { kind ->
+                    val route = if (kind.equals("PAYMENT", ignoreCase = true)) {
+                        Routes.Suppliers
+                    } else {
+                        Routes.Customers
+                    }
+                    navController.navigateMainTab(route)
+                },
+            )
+        }
         composable(Routes.DailyCashNote) {
             DailyCashNoteScreen(container = container, onBack = { navController.navigateUpOrHome() })
         }
@@ -259,6 +280,10 @@ fun ShopAiApp(container: AppContainer) {
                 modifier = Modifier.align(Alignment.BottomEnd),
                 bottomPadding = if (isMainTabRoute(currentRoute)) 88.dp else 24.dp,
             )
+        }
+
+        if (isMainTabRoute(currentRoute)) {
+            EnsurePushRegistration(container)
         }
     }
 }

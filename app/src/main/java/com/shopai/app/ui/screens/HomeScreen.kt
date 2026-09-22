@@ -14,9 +14,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -34,6 +38,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.shopai.app.R
 import com.shopai.app.data.AppContainer
@@ -47,28 +52,30 @@ import com.shopai.app.data.model.TodayCashSummary
 import com.shopai.app.data.network.presentApiError
 import com.shopai.app.ui.components.ApiErrorAlertDialog
 import com.shopai.app.ui.components.BottomNavTab
+import com.shopai.app.ui.components.DashboardGreetingHeader
 import com.shopai.app.ui.components.HomeBackHandler
-import com.shopai.app.ui.components.HomeCreditDebitActions
 import com.shopai.app.ui.components.HomePriorityList
+// import com.shopai.app.ui.components.HomeCreditDebitActions
+// import com.shopai.app.ui.components.TransactionEntryChooserDialog
+// import com.shopai.app.ui.components.TransactionEntryType
 import com.shopai.app.ui.components.ReminderCarousel
-import com.shopai.app.ui.components.ReminderCarouselItem
 import com.shopai.app.ui.components.ShopCard
-import com.shopai.app.ui.components.TransactionEntryChooserDialog
-import com.shopai.app.ui.components.TransactionEntryType
+// import com.shopai.app.ui.components.TransactionEntryChooserDialog
+// import com.shopai.app.ui.components.TransactionEntryType
 import com.shopai.app.ui.components.VoiceFabBottomSpacer
 import com.shopai.app.ui.navigation.Routes
+import com.shopai.app.ui.reminders.ReminderUrgency
+import com.shopai.app.ui.reminders.samplePaymentReminders
+import com.shopai.app.ui.reminders.toSortedPaymentReminders
 import com.shopai.app.ui.theme.Danger
 import com.shopai.app.ui.theme.LedgerCredit
 import com.shopai.app.ui.theme.LedgerDebit
 import com.shopai.app.ui.theme.Primary
-import com.shopai.app.ui.theme.PrimaryDark
-import com.shopai.app.ui.theme.Pressure
+import com.shopai.app.ui.theme.ShopAiTheme
 import com.shopai.app.ui.theme.ShopAiThemeColors
-import com.shopai.app.ui.theme.Warning
 import com.shopai.app.util.DailyBriefVoice
-import com.shopai.app.util.normalizeIndianPhone
-import com.shopai.app.util.rememberContactPicker
-import com.shopai.app.util.formatDisplayDate
+// import com.shopai.app.util.normalizeIndianPhone
+// import com.shopai.app.util.rememberContactPicker
 import com.shopai.app.util.formatInr
 import com.shopai.app.util.localDateKey
 import kotlinx.coroutines.launch
@@ -93,12 +100,12 @@ fun HomeScreen(
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var alertError by remember { mutableStateOf<String?>(null) }
-    var entryChooser by remember { mutableStateOf<TransactionEntryType?>(null) }
+    // var entryChooser by remember { mutableStateOf<TransactionEntryType?>(null) }
     var cashNoteSummary by remember { mutableStateOf<TodayCashSummary?>(null) }
     var showAllPriorities by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val errorLoadDashboard = stringResource(R.string.error_load_dashboard)
-    val contactPickFailed = stringResource(R.string.contacts_pick_failed)
+    // val contactPickFailed = stringResource(R.string.contacts_pick_failed)
 
     fun reload() {
         scope.launch {
@@ -136,6 +143,7 @@ fun HomeScreen(
         )
     }
 
+    /*
     val pickContactForCredit = rememberContactPicker(
         onContactPicked = { contact ->
             val phone = contact.phone?.let(::normalizeIndianPhone)
@@ -172,12 +180,16 @@ fun HomeScreen(
             onDismiss = { entryChooser = null },
         )
     }
+    */
 
     HomeBackHandler()
     ApiErrorAlertDialog(message = alertError, onDismiss = { alertError = null })
 
     val carouselItems = remember(reminders, priorities) {
-        buildReminderCarouselItems(reminders, priorities)
+        reminders.toSortedPaymentReminders(priorities)
+    }
+    val unreadReminders = carouselItems.count {
+        it.urgency == ReminderUrgency.OVERDUE || it.urgency == ReminderUrgency.DUE_TODAY
     }
 
     MainTabScaffold(activeTab = BottomNavTab.Home, onNavigate = onNavigate) {
@@ -185,14 +197,27 @@ fun HomeScreen(
             modifier = Modifier.verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            DashboardHeroCard(
-                businessName = business?.businessName ?: stringResource(R.string.home_fallback_name),
-                ownerName = business?.ownerName ?: "",
+            DashboardGreetingHeader(
+                ownerName = business?.ownerName.orEmpty(),
+                unreadCount = unreadReminders,
+                onNotificationsClick = { onNavigate(Routes.Reminders) },
             )
 
             ReminderCarousel(
                 items = carouselItems,
-                onOpenReminders = { onNavigate(Routes.Reminders) },
+                onOpenDetails = { reminder -> onNavigate(Routes.reminderDetail(reminder.id)) },
+                onMarkPaid = { reminder ->
+                    if (reminder.kind.equals("CUSTOM", ignoreCase = true)) {
+                        scope.launch {
+                            runCatching {
+                                container.reminderRepository.markDone(reminder.id)
+                                reload()
+                            }
+                        }
+                    } else {
+                        onNavigate(Routes.reminderDetail(reminder.id))
+                    }
+                },
             )
 
             DailyCashHomeCard(
@@ -221,6 +246,7 @@ fun HomeScreen(
                             label = stringResource(R.string.home_receivable),
                             value = formatInr(cf.pendingReceivables),
                             accent = LedgerCredit,
+                            arrowDown = true,
                             modifier = Modifier.weight(1f),
                             onClick = { onNavigate(Routes.Customers) },
                         )
@@ -228,6 +254,7 @@ fun HomeScreen(
                             label = stringResource(R.string.home_payable),
                             value = formatInr(cf.pendingPayables),
                             accent = LedgerDebit,
+                            arrowDown = false,
                             modifier = Modifier.weight(1f),
                             onClick = { onNavigate(Routes.Suppliers) },
                         )
@@ -262,11 +289,13 @@ fun HomeScreen(
                     }
                 }
 
+                /*
                 HomeSectionHeader(title = stringResource(R.string.home_quick_actions))
                 HomeCreditDebitActions(
                     onCreditClick = { entryChooser = TransactionEntryType.CREDIT },
                     onDebitClick = { entryChooser = TransactionEntryType.DEBIT },
                 )
+                */
 
                 funding?.let { opp ->
                     ShopCard {
@@ -316,49 +345,11 @@ fun HomeScreen(
 }
 
 @Composable
-private fun DashboardHeroCard(businessName: String, ownerName: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(22.dp))
-            .background(
-                Brush.linearGradient(
-                    colors = listOf(PrimaryDark, Primary, Color(0xFF2E9F6E)),
-                ),
-            )
-            .padding(20.dp),
-    ) {
-        Column {
-            Text(
-                text = stringResource(R.string.brand_name),
-                style = MaterialTheme.typography.labelMedium,
-                color = Color.White.copy(alpha = 0.85f),
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                text = businessName,
-                style = MaterialTheme.typography.headlineMedium,
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(top = 4.dp),
-            )
-            if (ownerName.isNotBlank()) {
-                Text(
-                    text = stringResource(R.string.home_greeting, ownerName),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Color.White.copy(alpha = 0.92f),
-                    modifier = Modifier.padding(top = 8.dp),
-                )
-            }
-        }
-    }
-}
-
-@Composable
 private fun DashboardStatCard(
     label: String,
     value: String,
     accent: Color,
+    arrowDown: Boolean,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
@@ -369,46 +360,24 @@ private fun DashboardStatCard(
             .clickable(onClick = onClick)
             .padding(16.dp),
     ) {
-        Box(
-            modifier = Modifier
-                .size(8.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .background(accent),
+        Icon(
+            imageVector = if (arrowDown) Icons.Filled.ArrowDownward else Icons.Filled.ArrowUpward,
+            contentDescription = null,
+            tint = accent,
+            modifier = Modifier.size(22.dp),
         )
         Spacer(modifier = Modifier.height(10.dp))
         Text(
             text = value,
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
-            color = ShopAiThemeColors.onSurface,
+            color = accent,
         )
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
             color = ShopAiThemeColors.onSurfaceVariant,
             modifier = Modifier.padding(top = 2.dp),
-        )
-    }
-}
-
-private fun buildReminderCarouselItems(
-    reminders: List<ReminderItem>,
-    priorities: List<PriorityItem>,
-): List<ReminderCarouselItem> {
-    val fromReminders = reminders.map { reminder ->
-        ReminderCarouselItem(
-            title = reminder.title,
-            dueDateLabel = formatDisplayDate(reminder.dueDate),
-            amountLabel = reminder.amount?.let { formatInr(it) },
-        )
-    }
-    if (fromReminders.isNotEmpty()) return fromReminders.take(8)
-
-    return priorities.take(5).map { priority ->
-        ReminderCarouselItem(
-            title = priority.message,
-            dueDateLabel = priority.dueDate?.let { formatDisplayDate(it) } ?: "",
-            amountLabel = priority.amount?.let { formatInr(it) },
         )
     }
 }
@@ -583,5 +552,58 @@ private fun CashNoteStatChip(
             color = Color.White,
             modifier = Modifier.padding(top = 2.dp),
         )
+    }
+}
+
+@Preview(showBackground = true, name = "Owner Note dashboard")
+@Composable
+private fun OwnerNoteDashboardPreview() {
+    ShopAiTheme {
+        Column(
+            modifier = Modifier
+                .background(MaterialTheme.colorScheme.background)
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            DashboardGreetingHeader(
+                ownerName = "Priya",
+                unreadCount = 2,
+                onNotificationsClick = {},
+            )
+            ReminderCarousel(
+                items = samplePaymentReminders(),
+                onOpenDetails = {},
+                onMarkPaid = {},
+            )
+        }
+    }
+}
+
+@Preview(
+    showBackground = true,
+    uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES,
+    name = "Owner Note dashboard dark",
+)
+@Composable
+private fun OwnerNoteDashboardDarkPreview() {
+    ShopAiTheme {
+        Column(
+            modifier = Modifier
+                .background(MaterialTheme.colorScheme.background)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            DashboardGreetingHeader(
+                ownerName = "Priya",
+                unreadCount = 2,
+                onNotificationsClick = {},
+            )
+            ReminderCarousel(
+                items = samplePaymentReminders(),
+                onOpenDetails = {},
+                onMarkPaid = {},
+            )
+        }
     }
 }

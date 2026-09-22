@@ -35,6 +35,7 @@ fun SplashScreen(
             onNavigateLogin()
             return@LaunchedEffect
         }
+        runCatching { container.pushTokenRepository.registerCurrent() }
         val business = runCatching {
             container.businessRepository.getMyBusiness()
         }.getOrElse {

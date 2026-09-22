@@ -9,13 +9,17 @@ import com.shopai.app.data.model.DailyCashDayStatus
 import com.shopai.app.data.model.DailyCashEntry
 import com.shopai.app.data.model.DailyCashEntryType
 import com.shopai.app.data.model.DailyCashPaymentMode
+import com.shopai.app.data.model.DailyCashReportResponse
 import com.shopai.app.data.model.SubmitDailyCashReportEntry
 import com.shopai.app.data.model.SubmitDailyCashReportRequest
 import com.shopai.app.data.model.TodayCashSummary
+import com.shopai.app.data.local.room.toEntity
+import retrofit2.HttpException
 import com.shopai.app.util.computeDailyCashTotals
 import com.shopai.app.util.localDateKey
 import com.shopai.app.util.sortEntriesNewestFirst
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -24,12 +28,18 @@ class DailyCashRepository(
     private val api: ShopAiApi,
 ) {
     suspend fun listDailyCashEntries(dateKey: String): List<DailyCashEntry> = withContext(Dispatchers.IO) {
+        val local = dao.listEntriesByDate(dateKey)
+        val submitted = getDayStatus(dateKey) == DailyCashDayStatus.SUBMITTED
+        val shouldFetchRemote = submitted || (local.isEmpty() && dateKey < localDateKey())
+        if (shouldFetchRemote) {
+            runCatching { refreshSubmittedDayFromServer(dateKey) }
+        }
         sortEntriesNewestFirst(dao.listEntriesByDate(dateKey).map { it.toDomain() })
     }
 
     suspend fun getTodayCashSummary(dateKey: String): TodayCashSummary = withContext(Dispatchers.IO) {
-        val entries = dao.listEntriesByDate(dateKey)
-        val totals = computeDailyCashTotals(entries.map { it.toDomain() })
+        val entries = listDailyCashEntries(dateKey)
+        val totals = computeDailyCashTotals(entries)
         TodayCashSummary(
             date = dateKey,
             totalIn = totals.totalIn,
@@ -56,7 +66,7 @@ class DailyCashRepository(
         dao.ensureDayOpen(DailyCashDayEntity(date = date, status = "OPEN", submittedAt = null))
         val trimmedNote = note?.trim()?.takeIf { it.isNotEmpty() }
         val id = "cash-${System.currentTimeMillis()}-${(Math.random() * 1_000_000).toInt()}"
-        val createdAt = Instant.now().toString()
+        val createdAt = isoMillisNow()
         val entity = DailyCashEntryEntity(
             id = id,
             date = date,
@@ -97,15 +107,22 @@ class DailyCashRepository(
     }
 
     /** Manually closes a day and sends the full report to the server. */
-    suspend fun submitDayReport(dateKey: String): Unit = withContext(Dispatchers.IO) {
-        if (getDayStatus(dateKey) == DailyCashDayStatus.SUBMITTED) return@withContext
+    suspend fun submitDayReport(dateKey: String): List<DailyCashEntry> = withContext(Dispatchers.IO) {
+        if (getDayStatus(dateKey) == DailyCashDayStatus.SUBMITTED) {
+            return@withContext listDailyCashEntries(dateKey)
+        }
         val entries = dao.listEntriesByDate(dateKey).map { it.toDomain() }
         if (entries.isEmpty()) {
             throw IllegalStateException("No entries to submit")
         }
-        pushReportToServer(dateKey, entries)
+        val report = pushReportToServer(dateKey, entries)
         markSubmitted(dateKey)
-        dao.deleteEntriesForDate(dateKey)
+        if (report.entries.isNotEmpty()) {
+            cacheRemoteReport(dateKey, report)
+        }
+        sortEntriesNewestFirst(
+            report.toDomainEntries(dateKey).ifEmpty { entries },
+        )
     }
 
     /** Submits all completed days (before today) that still have local entries. */
@@ -119,17 +136,17 @@ class DailyCashRepository(
                 markSubmitted(date)
                 continue
             }
-            pushReportToServer(date, entries)
+            val report = pushReportToServer(date, entries)
             markSubmitted(date)
-            dao.deleteEntriesForDate(date)
+            cacheRemoteReport(date, report)
             syncedCount += 1
         }
         syncedCount
     }
 
-    private suspend fun pushReportToServer(dateKey: String, entries: List<DailyCashEntry>) {
+    private suspend fun pushReportToServer(dateKey: String, entries: List<DailyCashEntry>): DailyCashReportResponse {
         val totals = computeDailyCashTotals(entries)
-        api.submitDailyCashReport(
+        return api.submitDailyCashReport(
             SubmitDailyCashReportRequest(
                 date = dateKey,
                 totalIn = totals.totalIn,
@@ -145,22 +162,62 @@ class DailyCashRepository(
                         amount = entry.amount,
                         paymentMode = entry.paymentMode.name,
                         note = entry.note,
-                        createdAt = entry.createdAt,
+                        createdAt = toIsoMillis(entry.createdAt),
                     )
                 },
             ),
         ).data
     }
 
+    private suspend fun refreshSubmittedDayFromServer(dateKey: String) {
+        try {
+            val report = api.getDailyCashReport(dateKey).data
+            markSubmitted(dateKey)
+            if (report.entries.isNotEmpty()) {
+                cacheRemoteReport(dateKey, report)
+            }
+        } catch (e: HttpException) {
+            if (e.code() != 404) throw e
+        }
+    }
+
+    private suspend fun cacheRemoteReport(dateKey: String, report: DailyCashReportResponse) {
+        dao.deleteEntriesForDate(dateKey)
+        val entities = report.toDomainEntries(dateKey).map { it.toEntity() }
+        if (entities.isNotEmpty()) {
+            dao.insertEntries(entities)
+        }
+    }
+
+    private fun DailyCashReportResponse.toDomainEntries(dateKey: String): List<DailyCashEntry> =
+        entries.mapNotNull { entry ->
+            val type = runCatching { DailyCashEntryType.valueOf(entry.type) }.getOrNull() ?: return@mapNotNull null
+            val mode = runCatching { DailyCashPaymentMode.valueOf(entry.paymentMode) }.getOrNull() ?: return@mapNotNull null
+            DailyCashEntry(
+                id = entry.id,
+                date = dateKey,
+                type = type,
+                amount = entry.amount,
+                paymentMode = mode,
+                note = entry.note,
+                createdAt = entry.createdAt,
+            )
+        }
+
     private suspend fun markSubmitted(dateKey: String) {
         dao.upsertDay(
             DailyCashDayEntity(
                 date = dateKey,
                 status = "SUBMITTED",
-                submittedAt = Instant.now().toString(),
+                submittedAt = isoMillisNow(),
             ),
         )
     }
+
+    private fun isoMillisNow(): String = Instant.now().truncatedTo(ChronoUnit.MILLIS).toString()
+
+    private fun toIsoMillis(iso: String): String =
+        runCatching { Instant.parse(iso).truncatedTo(ChronoUnit.MILLIS).toString() }.getOrDefault(iso)
 
     private suspend fun requireOpenDay(dateKey: String) {
         if (getDayStatus(dateKey) == DailyCashDayStatus.SUBMITTED) {

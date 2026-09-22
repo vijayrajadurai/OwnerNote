@@ -29,7 +29,7 @@ import com.shopai.app.ui.components.ApiErrorAlertDialog
 import com.shopai.app.ui.components.DetailScaffold
 import com.shopai.app.ui.components.PrimaryButton
 import com.shopai.app.ui.theme.Danger
-import com.shopai.app.ui.theme.LedgerPending
+import com.shopai.app.ui.theme.LedgerCredit
 import com.shopai.app.ui.theme.ShopAiThemeColors
 import com.shopai.app.util.buildReceivableLedger
 import com.shopai.app.util.formatInr
@@ -105,7 +105,7 @@ fun CustomerDetailScreen(
                         text = stringResource(R.string.party_total_pending, formatInr(totalPending)),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
-                        color = LedgerPending,
+                        color = LedgerCredit,
                     )
                     PrimaryButton(
                         label = stringResource(R.string.party_add_credit),

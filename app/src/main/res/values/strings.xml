@@ -79,6 +79,22 @@
     <string name="home_payable">To pay</string>
     <string name="home_net_position">Net position</string>
     <string name="home_reminders_carousel_title">Upcoming reminders</string>
+    <string name="home_payment_reminders_heading">Today’s Payment Reminders</string>
+    <string name="home_payment_reminders_empty">No payment reminders right now.</string>
+    <string name="home_good_morning">Good Morning!</string>
+    <string name="home_good_afternoon">Good Afternoon!</string>
+    <string name="home_good_evening">Good Evening!</string>
+    <string name="reminder_badge_due_today">DUE TODAY</string>
+    <string name="reminder_badge_overdue">OVERDUE</string>
+    <string name="reminder_badge_upcoming">UPCOMING</string>
+    <string name="reminder_due_prefix">Due: %1$s</string>
+    <string name="reminder_view_details">View Details</string>
+    <string name="reminder_mark_paid">Mark as Paid</string>
+    <string name="reminder_details_title">Reminder details</string>
+    <string name="reminder_not_found">This reminder is no longer available.</string>
+    <string name="reminder_open_ledger">Open ledger</string>
+    <string name="cd_payment_reminder_card">Payment reminder for %1$s, %2$s, %3$s</string>
+    <string name="cd_notifications_unread">Notifications, %1$d unread</string>
     <string name="txn_chooser_title_credit">Add customer credit</string>
     <string name="txn_chooser_title_debit">Add supplier debit</string>
     <string name="txn_chooser_subtitle">Pick from contacts or enter details manually.</string>
@@ -141,6 +157,10 @@
     <string name="party_payment_error">Could not record payment.</string>
     <string name="party_txn_pending">Pending: %1$s</string>
     <string name="party_due_date">Due: %1$s</string>
+    <string name="party_section_today">Today</string>
+    <string name="party_section_yesterday">Yesterday</string>
+    <string name="party_section_tomorrow">Tomorrow</string>
+    <string name="party_section_no_due">No due date</string>
     <string name="party_running_balance">Balance: %1$s</string>
     <string name="party_status_paid">Paid</string>
     <string name="party_status_partial">Partially paid</string>
@@ -159,6 +179,8 @@
     <string name="more_subscription">Subscription</string>
     <string name="more_subscription_caption">Plans and premium benefits</string>
     <string name="logout">Log out</string>
+    <string name="notification_channel_name">Owner Note alerts</string>
+    <string name="notification_channel_description">Reminders and important business updates</string>
 
     <!-- Add credit / debit -->
     <string name="add_credit_title">Credit to customer</string>

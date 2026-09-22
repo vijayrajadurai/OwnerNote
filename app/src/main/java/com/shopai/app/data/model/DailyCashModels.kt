@@ -64,11 +64,25 @@ data class SubmitDailyCashReportRequest(
     val entries: List<SubmitDailyCashReportEntry>,
 )
 
+data class DailyCashReportEntryResponse(
+    val id: String,
+    val type: String,
+    val amount: Double,
+    val paymentMode: String,
+    val note: String? = null,
+    val createdAt: String,
+)
+
 data class DailyCashReportResponse(
     val id: String,
     val date: String,
     val totalIn: Double,
     val totalOut: Double,
     val net: Double,
+    val cashIn: Double = 0.0,
+    val cashOut: Double = 0.0,
+    val upiIn: Double = 0.0,
+    val upiOut: Double = 0.0,
     val submittedAt: String,
+    val entries: List<DailyCashReportEntryResponse> = emptyList(),
 )

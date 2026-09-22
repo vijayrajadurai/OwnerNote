@@ -20,6 +20,7 @@ object Routes {
         "add_debit?supplierId={supplierId}&supplierName={supplierName}&supplierPhone={supplierPhone}"
     const val VoiceEntry = "voice_entry"
     const val Reminders = "reminders"
+    const val ReminderDetail = "reminder_detail/{reminderId}"
     const val AiInsights = "ai_insights"
     const val DailyCashNote = "daily_cash_note"
     const val Settings = "settings"
@@ -28,6 +29,8 @@ object Routes {
 
     fun fundingQualification(opportunityId: String): String =
         "funding_qualification/$opportunityId"
+
+    fun reminderDetail(reminderId: String): String = "reminder_detail/${Uri.encode(reminderId)}"
 
     fun customerDetail(customerId: String): String = "customer_detail/$customerId"
 

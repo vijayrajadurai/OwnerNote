@@ -169,11 +169,7 @@ fun DailyCashNoteScreen(
                 )
             } else if (entries.isEmpty()) {
                 Text(
-                    text = if (dayStatus == DailyCashDayStatus.SUBMITTED) {
-                        stringResource(R.string.cash_note_day_submitted)
-                    } else {
-                        stringResource(R.string.cash_note_list_empty)
-                    },
+                    text = stringResource(R.string.cash_note_list_empty),
                     color = ShopAiThemeColors.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 24.dp),
                 )
@@ -262,10 +258,11 @@ fun DailyCashNoteScreen(
                             isSubmitting = true
                             runCatching {
                                 container.dailyCashRepository.submitDayReport(dateKey)
-                            }.onSuccess {
+                            }.onSuccess { savedEntries ->
                                 showCloseConfirm = false
                                 submitSuccess = true
-                                reload()
+                                dayStatus = DailyCashDayStatus.SUBMITTED
+                                entries = savedEntries
                             }.onFailure {
                                 container.presentApiError(
                                     it,

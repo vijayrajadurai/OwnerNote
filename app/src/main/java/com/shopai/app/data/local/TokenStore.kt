@@ -15,6 +15,7 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 class TokenStore(private val context: Context) {
     private val tokenKey = stringPreferencesKey("auth_token")
     private val phoneKey = stringPreferencesKey("pending_phone")
+    private val fcmTokenKey = stringPreferencesKey("fcm_token")
 
     val tokenFlow: Flow<String?> = context.dataStore.data.map { prefs ->
         prefs[tokenKey]
@@ -43,4 +44,16 @@ class TokenStore(private val context: Context) {
     }
 
     suspend fun getPendingPhone(): String? = context.dataStore.data.first()[phoneKey]
+
+    suspend fun getFcmToken(): String? = context.dataStore.data.first()[fcmTokenKey]
+
+    suspend fun setFcmToken(token: String?) {
+        context.dataStore.edit { prefs ->
+            if (token == null) {
+                prefs.remove(fcmTokenKey)
+            } else {
+                prefs[fcmTokenKey] = token
+            }
+        }
+    }
 }

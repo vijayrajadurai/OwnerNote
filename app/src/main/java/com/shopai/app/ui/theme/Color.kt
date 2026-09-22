@@ -22,9 +22,10 @@ val Warning = Color(0xFFC4841E)
 val Pressure = Color(0xFFD9793C)
 
 // Ledger semantics used across customer/supplier flows:
-// credit = you gave (receivable), debit = you got (payable), pending = outstanding amount.
-val LedgerCredit = Danger
-val LedgerCreditMuted = DangerMuted
-val LedgerDebit = Success
-val LedgerDebitMuted = SuccessMuted
+// credit / vaanganum / to collect = money coming in (green).
+// debit / kodukkanum / to pay = money going out (red).
+val LedgerCredit = Success
+val LedgerCreditMuted = SuccessMuted
+val LedgerDebit = Danger
+val LedgerDebitMuted = DangerMuted
 val LedgerPending = Danger

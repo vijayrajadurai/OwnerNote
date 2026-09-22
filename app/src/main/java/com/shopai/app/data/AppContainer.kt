@@ -16,6 +16,7 @@ import com.shopai.app.data.repository.DiscoverRepository
 import com.shopai.app.data.repository.FundingRepository
 import com.shopai.app.data.repository.InsightsRepository
 import com.shopai.app.data.repository.PartyRepository
+import com.shopai.app.data.repository.PushTokenRepository
 import com.shopai.app.data.repository.ReminderRepository
 import com.shopai.app.data.repository.TransactionRepository
 import com.shopai.app.data.repository.VoiceRepository
@@ -75,7 +76,8 @@ class AppContainer(context: Context) {
     val api: ShopAiApi = retrofit.create(ShopAiApi::class.java)
 
     val preferencesRepository = PreferencesRepository(userPreferencesStore)
-    val authRepository = AuthRepository(api, tokenStore, apiErrorHandler, FirebasePhoneAuthClient())
+    val pushTokenRepository = PushTokenRepository(api, tokenStore)
+    val authRepository = AuthRepository(api, tokenStore, apiErrorHandler, FirebasePhoneAuthClient(), pushTokenRepository)
     val businessRepository = BusinessRepository(api)
     val insightsRepository = InsightsRepository(api)
     val discoverRepository = DiscoverRepository(api)

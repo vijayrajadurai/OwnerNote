@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import com.shopai.app.data.AppContainer
 import com.shopai.app.data.local.AppThemeMode
+import com.shopai.app.push.PushNotifications
 import kotlinx.coroutines.runBlocking
 
 class ShopAiApplication : Application() {
@@ -15,6 +16,7 @@ class ShopAiApplication : Application() {
         super.onCreate()
         container = AppContainer(this)
         container.naturalTtsSpeaker.warmUp()
+        PushNotifications.ensureChannel(this)
         runBlocking {
             val language = container.preferencesRepository.getLanguage()
             val theme = container.preferencesRepository.getTheme()
