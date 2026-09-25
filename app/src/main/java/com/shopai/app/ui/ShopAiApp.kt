@@ -34,9 +34,11 @@ import com.shopai.app.ui.screens.FundingQualificationScreen
 import com.shopai.app.ui.screens.GroupBuyingResultScreen
 import com.shopai.app.ui.screens.GroupBuyingScreen
 import com.shopai.app.ui.screens.HomeScreen
+import com.shopai.app.ui.screens.InventoryScreen
 import com.shopai.app.ui.screens.LoginScreen
 import com.shopai.app.ui.screens.MoreScreen
 import com.shopai.app.ui.screens.NewGroupBuyingRequestScreen
+import com.shopai.app.ui.screens.OffersScreen
 import com.shopai.app.ui.screens.OtpScreen
 import com.shopai.app.ui.screens.ProfileEditScreen
 import com.shopai.app.ui.screens.RemindersScreen
@@ -295,6 +297,12 @@ fun ShopAiApp(container: AppContainer) {
                 requestId = requestId,
                 onBack = { navController.navigateUpOrHome() },
             )
+        }
+        composable(Routes.Inventory) {
+            InventoryScreen(container = container, onBack = { navController.navigateUpOrHome() })
+        }
+        composable(Routes.LocalOffers) {
+            OffersScreen(container = container, onBack = { navController.navigateUpOrHome() })
         }
         composable(Routes.Settings) {
             SettingsScreen(

@@ -442,3 +442,122 @@ data class GroupBuyingInviteRespondResult(
     val shopName: String = "",
     val ownerName: String = "",
 )
+
+data class InventoryProduct(
+    val id: String,
+    val businessId: String,
+    val name: String,
+    val category: String,
+    val unit: String,
+    val currentStock: Double,
+    val minimumStock: Double,
+    val createdAt: String,
+    val updatedAt: String,
+)
+
+data class InventoryMovement(
+    val id: String,
+    val productId: String,
+    val type: String,
+    val quantity: Double,
+    val reason: String,
+    val referenceType: String? = null,
+    val referenceId: String? = null,
+    val createdAt: String,
+)
+
+data class CreateInventoryProductInput(
+    val name: String,
+    val category: String,
+    val unit: String,
+    val currentStock: Double,
+    val minimumStock: Double,
+)
+
+data class UpdateInventoryProductInput(
+    val name: String? = null,
+    val category: String? = null,
+    val unit: String? = null,
+    val minimumStock: Double? = null,
+)
+
+data class StockChangeInput(
+    val quantity: Double,
+    val reason: String,
+    val occurredAt: String? = null,
+)
+
+data class ProductIntelligenceDto(
+    val productId: String,
+    val productName: String,
+    val currentStock: Double,
+    val minimumStock: Double,
+    val unit: String,
+    val status: String,
+    val usage7Days: Double,
+    val usage30Days: Double,
+    val averageDailyUsage: Double?,
+    val estimatedDaysRemaining: Int?,
+    val hasEnoughHistory: Boolean,
+    val isHighUsage: Boolean,
+    val insights: List<String>,
+)
+
+data class InventoryIntelligenceSummaryDto(
+    val totalProducts: Int,
+    val lowStockCount: Int,
+    val outOfStockCount: Int,
+    val healthyCount: Int,
+    val attentionProducts: List<ProductIntelligenceDto>,
+    val topUsageProducts: List<ProductIntelligenceDto>,
+    val insights: List<String>,
+)
+
+data class LocalOffer(
+    val id: String,
+    val businessId: String,
+    val businessName: String = "",
+    val category: String,
+    val offerType: String,
+    val title: String,
+    val description: String? = null,
+    val price: Double,
+    val imageUri: String? = null,
+    val todayOnly: Boolean,
+    val timeWindowLabel: String,
+    val startAt: String,
+    val expiresAt: String,
+    val latitude: Double,
+    val longitude: Double,
+    val areaLabel: String,
+    val status: String,
+    val createdAt: String,
+    val updatedAt: String,
+    val viewCount: Int = 0,
+    val directionsCount: Int = 0,
+    val callCount: Int = 0,
+)
+
+data class OfferWithDistanceDto(
+    val offer: LocalOffer,
+    val distanceKm: Double,
+)
+
+data class CreateLocalOfferInput(
+    val category: String,
+    val offerType: String,
+    val title: String,
+    val description: String? = null,
+    val price: Double,
+    val imageUri: String? = null,
+    val todayOnly: Boolean = true,
+    val startHour: Int? = null,
+    val endHour: Int? = null,
+)
+
+data class NearbyOffersQuery(
+    val latitude: Double,
+    val longitude: Double,
+    val radiusKm: Double,
+    val category: String? = null,
+)

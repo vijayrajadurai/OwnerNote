@@ -50,11 +50,23 @@ import com.shopai.app.data.model.GroupBuyingInviteRespondResult
 import com.shopai.app.data.model.GroupBuyingJoinResponse
 import com.shopai.app.data.model.GroupBuyingMatchesResponse
 import com.shopai.app.data.model.GroupBuyingRequest
+import com.shopai.app.data.model.CreateInventoryProductInput
+import com.shopai.app.data.model.UpdateInventoryProductInput
+import com.shopai.app.data.model.StockChangeInput
+import com.shopai.app.data.model.InventoryProduct
+import com.shopai.app.data.model.InventoryMovement
+import com.shopai.app.data.model.ProductIntelligenceDto
+import com.shopai.app.data.model.InventoryIntelligenceSummaryDto
+import com.shopai.app.data.model.CreateLocalOfferInput
+import com.shopai.app.data.model.LocalOffer
+import com.shopai.app.data.model.OfferWithDistanceDto
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface ShopAiApi {
     @POST("auth/send-otp")
@@ -218,4 +230,66 @@ interface ShopAiApi {
 
     @POST("group-buying/requests/{id}/cancel")
     suspend fun cancelGroupBuyingRequest(@Path("id") id: String): ApiEnvelope<GroupBuyingRequest>
+
+    @GET("inventory/products")
+    suspend fun listInventoryProducts(): ApiEnvelope<List<InventoryProduct>>
+
+    @GET("inventory/products/low-stock")
+    suspend fun listLowStockProducts(): ApiEnvelope<List<InventoryProduct>>
+
+    @POST("inventory/products")
+    suspend fun createInventoryProduct(@Body body: CreateInventoryProductInput): ApiEnvelope<InventoryProduct>
+
+    @GET("inventory/products/{id}")
+    suspend fun getInventoryProduct(@Path("id") id: String): ApiEnvelope<InventoryProduct>
+
+    @PATCH("inventory/products/{id}")
+    suspend fun updateInventoryProduct(
+        @Path("id") id: String,
+        @Body body: UpdateInventoryProductInput,
+    ): ApiEnvelope<InventoryProduct>
+
+    @POST("inventory/products/{id}/stock-in")
+    suspend fun stockIn(@Path("id") id: String, @Body body: StockChangeInput): ApiEnvelope<InventoryProduct>
+
+    @POST("inventory/products/{id}/stock-out")
+    suspend fun stockOut(@Path("id") id: String, @Body body: StockChangeInput): ApiEnvelope<InventoryProduct>
+
+    @GET("inventory/products/{id}/movements")
+    suspend fun listInventoryMovements(@Path("id") id: String): ApiEnvelope<List<InventoryMovement>>
+
+    @GET("inventory/products/{id}/intelligence")
+    suspend fun getProductIntelligence(@Path("id") id: String): ApiEnvelope<ProductIntelligenceDto>
+
+    @GET("inventory/intelligence/summary")
+    suspend fun getInventoryIntelligenceSummary(): ApiEnvelope<InventoryIntelligenceSummaryDto>
+
+    @GET("offers/mine")
+    suspend fun listMyOffers(): ApiEnvelope<List<LocalOffer>>
+
+    @GET("offers/nearby")
+    suspend fun getNearbyOffers(
+        @Query("latitude") latitude: Double,
+        @Query("longitude") longitude: Double,
+        @Query("radiusKm") radiusKm: Double,
+        @Query("category") category: String? = null,
+    ): ApiEnvelope<List<OfferWithDistanceDto>>
+
+    @GET("offers/{id}")
+    suspend fun getOffer(@Path("id") id: String): ApiEnvelope<LocalOffer>
+
+    @POST("offers")
+    suspend fun createOffer(@Body body: CreateLocalOfferInput): ApiEnvelope<LocalOffer>
+
+    @POST("offers/{id}/end")
+    suspend fun endOffer(@Path("id") id: String): ApiEnvelope<LocalOffer>
+
+    @POST("offers/{id}/view")
+    suspend fun recordOfferView(@Path("id") id: String): ApiEnvelope<LocalOffer>
+
+    @POST("offers/{id}/directions")
+    suspend fun recordOfferDirections(@Path("id") id: String): ApiEnvelope<LocalOffer>
+
+    @POST("offers/{id}/call")
+    suspend fun recordOfferCall(@Path("id") id: String): ApiEnvelope<LocalOffer>
 }
