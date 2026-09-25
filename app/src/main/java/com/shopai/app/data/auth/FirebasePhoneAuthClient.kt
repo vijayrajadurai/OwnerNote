@@ -9,6 +9,7 @@ import com.google.firebase.auth.PhoneAuthProvider
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -26,15 +27,32 @@ class FirebasePhoneAuthClient(
     @Volatile
     private var resendToken: PhoneAuthProvider.ForceResendingToken? = null
 
+    fun warmupAppVerification() {
+        runCatching { auth.initializeRecaptchaConfig() }
+    }
+
     suspend fun sendOtp(activity: Activity, e164Phone: String): FirebasePhoneSendResult {
+        if (activity.isFinishing || activity.isDestroyed) {
+            throw IllegalStateException("Login screen closed before OTP could be sent.")
+        }
+        val settled = AtomicBoolean(false)
         val outcome = suspendCancellableCoroutine<SendOutcome> { cont ->
+            fun complete(result: Result<SendOutcome>) {
+                if (!settled.compareAndSet(false, true)) return
+                if (!cont.isActive) return
+                result.fold(
+                    onSuccess = { cont.resume(it) },
+                    onFailure = { cont.resumeWithException(it) },
+                )
+            }
+
             val callbacks = object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
                 override fun onVerificationCompleted(credential: PhoneAuthCredential) {
-                    if (cont.isActive) cont.resume(SendOutcome.AutoCredential(credential))
+                    complete(Result.success(SendOutcome.AutoCredential(credential)))
                 }
 
                 override fun onVerificationFailed(e: FirebaseException) {
-                    if (cont.isActive) cont.resumeWithException(e)
+                    complete(Result.failure(e))
                 }
 
                 override fun onCodeSent(
@@ -43,13 +61,13 @@ class FirebasePhoneAuthClient(
                 ) {
                     verificationId = id
                     resendToken = token
-                    if (cont.isActive) cont.resume(SendOutcome.CodeSent)
+                    complete(Result.success(SendOutcome.CodeSent))
                 }
             }
 
             val builder = PhoneAuthOptions.newBuilder(auth)
                 .setPhoneNumber(e164Phone)
-                .setTimeout(60L, TimeUnit.SECONDS)
+                .setTimeout(120L, TimeUnit.SECONDS)
                 .setActivity(activity)
                 .setCallbacks(callbacks)
             resendToken?.let { builder.setForceResendingToken(it) }

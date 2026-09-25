@@ -70,4 +70,25 @@ class DailyCashNoteTest {
         assertTrue(isValidAmount("12.5"))
         assertTrue(isValidAmount("  100  "))
     }
+
+    @Test
+    fun isValidNonNegativeAmount_allowsZero() {
+        assertTrue(isValidNonNegativeAmount("0"))
+        assertTrue(isValidNonNegativeAmount("2500"))
+        assertFalse(isValidNonNegativeAmount("-1"))
+        assertFalse(isValidNonNegativeAmount(""))
+    }
+
+    @Test
+    fun computeCashBoxAmount_addsCashInAndSubtractsCashOut() {
+        val box = computeCashBoxAmount(
+            openingBalance = 1000.0,
+            entries = listOf(
+                entry(DailyCashEntryType.IN, 200.0, DailyCashPaymentMode.CASH),
+                entry(DailyCashEntryType.IN, 50.0, DailyCashPaymentMode.UPI),
+                entry(DailyCashEntryType.OUT, 80.0, DailyCashPaymentMode.CASH),
+            ),
+        )
+        assertEquals(1120.0, box, 0.01)
+    }
 }

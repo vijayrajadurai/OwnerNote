@@ -15,6 +15,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import com.shopai.app.R
 import com.shopai.app.data.AppContainer
 import com.shopai.app.data.model.CreateDebitInput
@@ -28,6 +30,7 @@ import com.shopai.app.ui.components.SaveTransactionConfirmDialog
 import com.shopai.app.ui.components.ShopTextField
 import com.shopai.app.ui.components.TransactionSaveType
 import com.shopai.app.ui.theme.ShopAiThemeColors
+import com.shopai.app.util.exceedsMaxLedgerAmount
 import com.shopai.app.util.localDateToIsoInstant
 import java.time.LocalDate
 import kotlinx.coroutines.launch
@@ -52,8 +55,14 @@ fun AddDebitScreen(
     var alertError by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val errorSaveTransaction = stringResource(R.string.error_save_transaction)
+    val enteredAmount = amount.toDoubleOrNull() ?: 0.0
+    val amountTooLarge = exceedsMaxLedgerAmount(enteredAmount)
+    val amountError = if (amountTooLarge) stringResource(R.string.amount_max_one_crore) else null
     val isValid = (lockedToSupplier || supplierName.trim().length >= 2) &&
-        (amount.toDoubleOrNull() ?: 0.0) > 0
+        enteredAmount > 0 &&
+        !amountTooLarge &&
+        description.trim().isNotEmpty() &&
+        dueDate != null
 
     ApiErrorAlertDialog(message = alertError, onDismiss = { alertError = null })
 
@@ -90,19 +99,21 @@ fun AddDebitScreen(
                 stringResource(R.string.amount_label),
                 amount,
                 { amount = it.filter { ch -> ch.isDigit() || ch == '.' } },
+                error = amountError,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             )
             ShopTextField(
-                stringResource(R.string.note_optional),
+                stringResource(R.string.note_label),
                 description,
                 { description = it },
             )
             FutureDatePickerField(
-                label = stringResource(R.string.due_date_optional),
+                label = stringResource(R.string.due_date_label),
                 selectedDate = dueDate,
                 onDateSelected = { dueDate = it },
                 placeholder = stringResource(R.string.due_date_placeholder),
                 error = error,
-                allowEmpty = true,
+                allowEmpty = false,
             )
 
             PrimaryButton(
@@ -137,7 +148,7 @@ fun AddDebitScreen(
                                 supplierId = supplierId,
                                 supplierName = if (supplierId == null) name else null,
                                 amount = amount.toDouble(),
-                                description = description.trim().ifBlank { null },
+                                description = description.trim(),
                                 dueDate = dueDate?.let { localDateToIsoInstant(it) },
                             ),
                         )

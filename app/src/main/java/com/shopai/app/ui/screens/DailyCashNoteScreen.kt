@@ -3,21 +3,26 @@ package com.shopai.app.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -28,8 +33,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -46,18 +53,25 @@ import com.shopai.app.ui.components.CashEntrySheetMode
 import com.shopai.app.ui.components.CashTotalsSheet
 import com.shopai.app.ui.components.DetailScaffold
 import com.shopai.app.ui.components.PrimaryButton
+import com.shopai.app.ui.components.ShopAlertDialog
 import com.shopai.app.ui.theme.Danger
 import com.shopai.app.data.model.DailyCashTotals
 import com.shopai.app.ui.theme.ShopAiThemeColors
 import com.shopai.app.ui.theme.Success
+import com.shopai.app.util.buildDailyCashShareCaption
 import com.shopai.app.util.computeDailyCashTotals
+import com.shopai.app.util.createDailyCashNotePdf
 import com.shopai.app.util.dateKeyToLocalDate
 import com.shopai.app.util.formatInr
 import com.shopai.app.util.formatLocalDateForDisplay
 import com.shopai.app.util.isFutureDateKey
+import com.shopai.app.util.isValidNonNegativeAmount
 import com.shopai.app.util.localDateKey
+import com.shopai.app.util.shareDailyCashNoteToWhatsApp
 import com.shopai.app.util.shiftDateKey
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -80,12 +94,21 @@ fun DailyCashNoteScreen(
     var alertError by remember { mutableStateOf<String?>(null) }
     var submitSuccess by remember { mutableStateOf(false) }
     var dayStatus by remember { mutableStateOf(DailyCashDayStatus.OPEN) }
+    var cashBoxAmount by remember { mutableStateOf<Double?>(null) }
+    var openingBalance by remember { mutableStateOf<Double?>(null) }
+    var showOpeningSheet by remember { mutableStateOf(false) }
+    var openingDraft by remember { mutableStateOf("") }
+    var sharing by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val shareFailed = stringResource(R.string.cash_note_share_failed)
     val scope = rememberCoroutineScope()
     val totals = remember(entries) { computeDailyCashTotals(entries) }
     val nextDisabled = isFutureDateKey(shiftDateKey(dateKey, 1))
     val todayKey = localDateKey()
+    val cashBoxReady = cashBoxAmount != null
     val canEdit = dayStatus == DailyCashDayStatus.OPEN && dateKey == todayKey
-    val canCloseDay = canEdit && entries.isNotEmpty()
+    val canMoveMoney = canEdit && cashBoxReady
+    val canCloseDay = canMoveMoney && entries.isNotEmpty()
     val submitErrorMessage = stringResource(R.string.cash_note_submit_error)
 
     fun reload() {
@@ -94,6 +117,9 @@ fun DailyCashNoteScreen(
             runCatching { container.dailyCashRepository.syncPendingReports() }
             dayStatus = container.dailyCashRepository.getDayStatus(dateKey)
             entries = container.dailyCashRepository.listDailyCashEntries(dateKey)
+            val snapshot = container.dailyCashRepository.getCashBoxSnapshot(dateKey)
+            openingBalance = snapshot?.opening
+            cashBoxAmount = snapshot?.current
             loading = false
         }
     }
@@ -105,7 +131,45 @@ fun DailyCashNoteScreen(
 
     ApiErrorAlertDialog(message = alertError, onDismiss = { alertError = null })
 
-    DetailScaffold(title = stringResource(R.string.cash_note_title), onBack = onBack) { contentModifier ->
+    DetailScaffold(
+        title = stringResource(R.string.cash_note_title),
+        onBack = onBack,
+        actions = {
+            IconButton(
+                enabled = !sharing && (cashBoxReady || entries.isNotEmpty()),
+                onClick = {
+                    scope.launch {
+                        sharing = true
+                        runCatching {
+                            val dateLabel = formatLocalDateForDisplay(dateKeyToLocalDate(dateKey))
+                            val boxLabel = cashBoxAmount?.let { formatInr(it) } ?: "—"
+                            val openingLabel = openingBalance?.let { formatInr(it) } ?: "—"
+                            val caption = buildDailyCashShareCaption(dateLabel, boxLabel)
+                            val pdf = withContext(Dispatchers.Default) {
+                                createDailyCashNotePdf(
+                                    context = context,
+                                    dateLabel = dateLabel,
+                                    openingLabel = openingLabel,
+                                    cashBoxLabel = boxLabel,
+                                    totals = totals,
+                                    entries = entries,
+                                )
+                            }
+                            shareDailyCashNoteToWhatsApp(context, pdf, caption)
+                        }.onFailure {
+                            alertError = shareFailed
+                        }
+                        sharing = false
+                    }
+                },
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Share,
+                    contentDescription = stringResource(R.string.cash_note_share_whatsapp),
+                )
+            }
+        },
+    ) { contentModifier ->
         Column(
             modifier = contentModifier
                 .padding(horizontal = 20.dp)
@@ -129,7 +193,25 @@ fun DailyCashNoteScreen(
                 )
             }
 
-            if (canEdit) {
+            CashBoxCard(
+                amount = cashBoxAmount,
+                opening = openingBalance,
+                canSetOpening = canEdit && !cashBoxReady,
+                onEnterOpening = {
+                    openingDraft = ""
+                    showOpeningSheet = true
+                },
+            )
+
+            if (canEdit && !cashBoxReady) {
+                Text(
+                    text = stringResource(R.string.cash_note_kallapetti_needed),
+                    color = ShopAiThemeColors.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+
+            if (canMoveMoney) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     MoneyActionButton(
                         label = stringResource(R.string.cash_note_money_in),
@@ -236,7 +318,7 @@ fun DailyCashNoteScreen(
     }
 
     if (showCloseConfirm) {
-        AlertDialog(
+        ShopAlertDialog(
             onDismissRequest = { if (!isSubmitting) showCloseConfirm = false },
             title = { Text(stringResource(R.string.cash_note_close_confirm_title)) },
             text = {
@@ -298,7 +380,7 @@ fun DailyCashNoteScreen(
     }
 
     deleteTarget?.let { entry ->
-        AlertDialog(
+        ShopAlertDialog(
             onDismissRequest = { deleteTarget = null },
             title = { Text(stringResource(R.string.cash_note_delete_title)) },
             text = { Text(stringResource(R.string.cash_note_delete_body)) },
@@ -322,6 +404,97 @@ fun DailyCashNoteScreen(
                 }
             },
         )
+    }
+
+    if (showOpeningSheet) {
+        ShopAlertDialog(
+            onDismissRequest = { if (!isSaving) showOpeningSheet = false },
+            title = { Text(stringResource(R.string.cash_note_kallapetti_enter)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.cash_note_kallapetti_hint))
+                    OutlinedTextField(
+                        value = openingDraft,
+                        onValueChange = { openingDraft = it.filter { ch -> ch.isDigit() || ch == '.' } },
+                        label = { Text(stringResource(R.string.cash_note_amount)) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !isSaving && isValidNonNegativeAmount(openingDraft),
+                    onClick = {
+                        val amount = openingDraft.trim().toDoubleOrNull() ?: return@TextButton
+                        scope.launch {
+                            isSaving = true
+                            runCatching {
+                                container.dailyCashRepository.setOpeningBalance(dateKey, amount)
+                                showOpeningSheet = false
+                                reload()
+                            }.onFailure {
+                                alertError = it.message
+                            }
+                            isSaving = false
+                        }
+                    },
+                ) {
+                    Text(stringResource(R.string.cash_note_kallapetti_save))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    enabled = !isSaving,
+                    onClick = { showOpeningSheet = false },
+                ) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+        )
+    }
+}
+
+@Composable
+private fun CashBoxCard(
+    amount: Double?,
+    opening: Double?,
+    canSetOpening: Boolean,
+    onEnterOpening: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.cash_note_kallapetti),
+            style = MaterialTheme.typography.labelMedium,
+            color = ShopAiThemeColors.onSurfaceVariant,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Text(
+            text = amount?.let { formatInr(it) } ?: "—",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = ShopAiThemeColors.onSurface,
+        )
+        if (opening != null) {
+            Text(
+                text = stringResource(R.string.cash_note_kallapetti_opening, formatInr(opening)),
+                style = MaterialTheme.typography.bodySmall,
+                color = ShopAiThemeColors.onSurfaceVariant,
+            )
+        }
+        if (canSetOpening) {
+            PrimaryButton(
+                label = stringResource(R.string.cash_note_kallapetti_enter),
+                onClick = onEnterOpening,
+            )
+        }
     }
 }
 

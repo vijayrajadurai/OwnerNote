@@ -19,30 +19,27 @@
 
     <!-- Login -->
     <string name="login_subtitle">Your AI business assistant. Enter your mobile number.</string>
-    <string name="login_mode_phone">Mobile</string>
-    <string name="login_mode_test">Test login</string>
     <string name="login_phone_label">Mobile number</string>
     <string name="login_phone_placeholder">98765 43210</string>
+    <string name="login_country_code">+91</string>
     <string name="login_send_otp">Send OTP</string>
-    <string name="login_username_label">Username</string>
-    <string name="login_username_placeholder">test</string>
-    <string name="login_password_label">Password</string>
-    <string name="login_password_placeholder">••••••••</string>
-    <string name="login_test_submit">Test login</string>
+    <string name="powered_by_newonx">Powered By NewonX</string>
     <string name="error_send_otp">Could not send OTP. Check the number and try again.</string>
-    <string name="error_test_login">Incorrect test username or password.</string>
+    <string name="error_otp_app_not_verified">This install is not verified for SMS. Add this app’s SHA-1 and SHA-256 in Firebase, then reinstall.</string>
+    <string name="error_otp_blocked">Too many OTP attempts from this phone. Wait 1–2 hours, then try once. For testing, add a test number in Firebase Authentication.</string>
 
     <!-- OTP -->
     <string name="otp_title">Enter OTP</string>
-    <string name="otp_subtitle">Enter the 6-digit code sent to your phone. When the SMS arrives, tap Allow to fill it automatically.</string>
-    <string name="otp_label">OTP</string>
-    <string name="otp_placeholder">6-digit code</string>
+    <string name="otp_subtitle">Enter the 6-digit code sent to your phone.</string>
+    <string name="otp_sent_to">Enter the 6-digit code sent to +91 %1$s</string>
     <string name="otp_verify">Verify and continue</string>
+    <string name="otp_resend">Resend OTP</string>
+    <string name="otp_resend_in">Resend OTP in %1$ds</string>
     <string name="error_invalid_otp">Invalid OTP. Please try again.</string>
 
     <!-- Business setup -->
     <string name="business_setup_title">Tell us about your business</string>
-    <string name="business_setup_subtitle">This helps personalize your AI recommendations.</string>
+    <string name="business_setup_subtitle">This helps personalize your AI recommendations and find nearby shops for group buying.</string>
     <string name="business_owner_name">Your name</string>
     <string name="business_owner_placeholder">Kumar</string>
     <string name="business_name">Business / shop name</string>
@@ -55,6 +52,12 @@
     <string name="business_monthly_volume">Approx. monthly business (₹, optional)</string>
     <string name="business_volume_placeholder">200000</string>
     <string name="business_save_continue">Save and continue</string>
+    <string name="business_use_location">Use shop location</string>
+    <string name="business_location_needed">Allow location so nearby shops in your category can get group-buying requests.</string>
+    <string name="business_location_ready">Shop location is saved for this account. Nearby group-buying requests use this pin.</string>
+    <string name="business_location_marked">Shop location marked</string>
+    <string name="business_location_change">Change location</string>
+    <string name="business_location_required">Shop location is required to continue.</string>
     <string name="error_save_business">Could not save business details. Please try again.</string>
 
     <!-- Categories -->
@@ -93,6 +96,11 @@
     <string name="reminder_details_title">Reminder details</string>
     <string name="reminder_not_found">This reminder is no longer available.</string>
     <string name="reminder_open_ledger">Open ledger</string>
+    <string name="reminder_share_whatsapp">Share on WhatsApp</string>
+    <string name="reminder_share_failed">Could not share this reminder.</string>
+    <string name="reminder_share_card_title">Payment Reminder</string>
+    <string name="reminder_share_card_on">on %1$s</string>
+    <string name="reminder_share_card_sent_by">send by %1$s</string>
     <string name="cd_payment_reminder_card">Payment reminder for %1$s, %2$s, %3$s</string>
     <string name="cd_notifications_unread">Notifications, %1$d unread</string>
     <string name="txn_chooser_title_credit">Add customer credit</string>
@@ -152,8 +160,11 @@
     <string name="party_add_debit">Add debit</string>
     <string name="party_add_payment">Add payment</string>
     <string name="party_mark_paid">Mark fully paid</string>
+    <string name="party_mark_paid_confirm_title">Mark fully paid?</string>
+    <string name="party_mark_paid_confirm_message">This will clear the remaining balance. Continue?</string>
     <string name="party_confirm_payment">Confirm payment</string>
     <string name="party_payment_amount">Amount received (₹)</string>
+    <string name="party_payment_excess">You entered an excess amount. Please check.</string>
     <string name="party_payment_error">Could not record payment.</string>
     <string name="party_txn_pending">Pending: %1$s</string>
     <string name="party_due_date">Due: %1$s</string>
@@ -170,6 +181,8 @@
     <string name="more_title">More</string>
     <string name="more_ai_insights">AI insights</string>
     <string name="more_ai_insights_caption">Cash flow, business health, seasonal trends</string>
+    <string name="more_group_buying">Group buying</string>
+    <string name="more_group_buying_caption">Find nearby shops buying the same stock</string>
     <string name="more_reminders">Reminders</string>
     <string name="more_reminders_caption">Follow-ups, collections, payments</string>
     <string name="more_voice">Speak</string>
@@ -194,6 +207,7 @@
     <string name="customer_name">Customer name</string>
     <string name="supplier_name">Supplier name</string>
     <string name="amount_label">Amount (₹)</string>
+    <string name="amount_max_one_crore">Amount cannot be more than ₹1 crore.</string>
     <string name="note_optional">Note (optional)</string>
     <string name="due_date_optional">Due date (optional)</string>
     <string name="due_date_placeholder">Tap to choose a date</string>
@@ -274,6 +288,15 @@
     <string name="filter_customers">Customers</string>
     <string name="filter_suppliers">Suppliers</string>
     <string name="filter_seasonal">Seasonal</string>
+    <string name="filter_loan_offers">Loan offers</string>
+    <string name="profile_title">Profile</string>
+    <string name="profile_subtitle">Edit your name and shop details</string>
+    <string name="profile_phone_hint">This is the mobile number used to sign in. It cannot be changed here.</string>
+    <string name="profile_save">Save profile</string>
+    <string name="error_load_profile">Could not load profile.</string>
+    <string name="cd_open_profile">Open profile</string>
+    <string name="insight_open_suggestion_call">Request a call →</string>
+    <string name="suggestion_call_title">Suggestion call</string>
     <string name="cash_flow">Cash flow</string>
     <string name="net_position">Net: %1$s</string>
     <string name="collections_7d">7-day collections: %1$s</string>
@@ -349,7 +372,7 @@
     <string name="cash_note_title">Daily Cash Note</string>
     <string name="cash_note_home_empty">No cash in/out recorded for today yet</string>
     <string name="cash_note_home_cta">Record today\'s cash →</string>
-    <string name="cash_note_home_subtitle">Track real cash &amp; UPI in/out — separate from credit ledger</string>
+    <string name="cash_note_home_subtitle">Track real cash &amp; UPI</string>
     <string name="cash_note_in">In</string>
     <string name="cash_note_out">Out</string>
     <string name="cash_note_net">Net</string>
@@ -376,4 +399,78 @@
     <string name="cash_note_close_confirm_body">This sends all %1$d entries to the server (In %2$s · Out %3$s · Net %4$s). You cannot edit after sending.</string>
     <string name="cash_note_submit_error">Could not send report. Check internet and try again.</string>
     <string name="cash_note_submit_success">Today\'s report sent successfully.</string>
+    <string name="cash_note_kallapetti">Kallapetti</string>
+    <string name="cash_note_kallapetti_opening">Opening %1$s</string>
+    <string name="cash_note_kallapetti_needed">Enter today\'s cash box (kallapetti) amount first. Money in and out unlock after that.</string>
+    <string name="cash_note_kallapetti_enter">Enter kallapetti amount</string>
+    <string name="cash_note_kallapetti_save">Save kallapetti</string>
+    <string name="cash_note_kallapetti_hint">Current cash in the box</string>
+    <string name="cash_note_share_whatsapp">Share PDF on WhatsApp</string>
+    <string name="cash_note_share_failed">Could not share today\'s cash note.</string>
+    <string name="cash_note_entries_heading">Entries</string>
+
+    <string name="gb_title">Group buying</string>
+    <string name="gb_subtitle">Post what you need. Nearby shops in the same business category (within 5 km) get the request — this is not a payment.</string>
+    <string name="gb_new_request">New request</string>
+    <string name="gb_empty">No group-buying requests yet. Post what your shop needs.</string>
+    <string name="gb_error_load">Could not load group-buying requests.</string>
+    <string name="gb_error_save">Could not post this request. Check details and try again.</string>
+    <string name="gb_error_matches">Could not load nearby shops.</string>
+    <string name="gb_error_location">Shop location is required. Allow location, or set it on your business profile.</string>
+    <string name="gb_request_qty">%1$s %2$s</string>
+    <string name="gb_needed_by">Needed by %1$s</string>
+    <string name="gb_status_active">Open</string>
+    <string name="gb_status_matched">Matched</string>
+    <string name="gb_status_joined">Joined</string>
+    <string name="gb_status_closed">Closed</string>
+    <string name="gb_status_cancelled">Cancelled</string>
+    <string name="gb_cancel_title">Cancel this request?</string>
+    <string name="gb_cancel_body">Other shops will no longer see it. This is not a payment.</string>
+    <string name="gb_cancel_confirm">Cancel request</string>
+    <string name="gb_new_title">What do you need?</string>
+    <string name="gb_new_subtitle">Only shops within your radius can match. We never share your exact map pin with them.</string>
+    <string name="gb_product">Product</string>
+    <string name="gb_product_cement">Cement</string>
+    <string name="gb_product_paint">Paint</string>
+    <string name="gb_product_steel">Steel</string>
+    <string name="gb_product_rice">Rice</string>
+    <string name="gb_product_oil">Oil</string>
+    <string name="gb_product_tiles">Tiles</string>
+    <string name="gb_quantity">Quantity</string>
+    <string name="gb_unit">Unit</string>
+    <string name="gb_required_date">Needed by</string>
+    <string name="gb_radius">Search radius</string>
+    <string name="gb_radius_km">%1$d km</string>
+    <string name="gb_area">Area</string>
+    <string name="gb_area_placeholder">Ambattur</string>
+    <string name="gb_location_ready">Shop location is set. Nearby shops will only see your area name and distance.</string>
+    <string name="gb_location_needed">Allow location so we can find shops near you. Exact coordinates stay on the server.</string>
+    <string name="gb_use_location">Use current location</string>
+    <string name="gb_post_request">Post request</string>
+    <string name="gb_results_title">Nearby shops</string>
+    <string name="gb_totals_title">Combined need</string>
+    <string name="gb_totals_line">%1$s %2$s across %3$d shops</string>
+    <string name="gb_privacy_note">Shop name and interest are shown. Exact map pins stay private.</string>
+    <string name="gb_no_matches">No nearby shops in your category yet. Leave the request open; they can mark interest from their inbox.</string>
+    <string name="gb_nearby_shops">Nearby shops in your category</string>
+    <string name="gb_match_qty">%1$s %2$s</string>
+    <string name="gb_match_distance">About %1$s km away</string>
+    <string name="gb_join_cta">Join this group</string>
+    <string name="gb_join_title">Join this group?</string>
+    <string name="gb_join_body">This is not a payment or a purchase. It only groups nearby shops that need the same item.</string>
+    <string name="gb_join_confirm">Join</string>
+    <string name="gb_joined_done">You joined this group. It is still not a payment.</string>
+    <string name="gb_inbox_title">Requests from nearby shops</string>
+    <string name="gb_inbox_need">%1$s — %2$s %3$s</string>
+    <string name="gb_interested">Interested</string>
+    <string name="gb_not_interested">Not interested</string>
+    <string name="gb_interested_title">How many pieces?</string>
+    <string name="gb_interested_body">%1$s asked nearby shops. Enter the quantity or pieces you want (%2$s).</string>
+    <string name="gb_your_quantity">Your quantity / pieces</string>
+    <string name="gb_your_qty_line">Your quantity: %1$s %2$s</string>
+    <string name="gb_shop_phone">Phone %1$s</string>
+    <string name="gb_status_pending">Waiting</string>
+    <string name="gb_status_interested">Interested</string>
+    <string name="gb_status_not_interested">Not interested</string>
+    <string name="gb_status_posted">Posted a request</string>
 </resources>

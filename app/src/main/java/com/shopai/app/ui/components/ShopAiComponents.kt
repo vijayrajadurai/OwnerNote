@@ -15,11 +15,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Explore
-import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Inventory2
-import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.outlined.Explore
+import androidx.compose.material.icons.outlined.Groups
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Inventory2
+import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -34,8 +34,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.shopai.app.R
@@ -83,6 +86,9 @@ fun ShopTextField(
     placeholder: String = "",
     error: String? = null,
     singleLine: Boolean = true,
+    readOnly: Boolean = false,
+    enabled: Boolean = true,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
@@ -97,7 +103,10 @@ fun ShopTextField(
             placeholder = { Text(placeholder, color = MaterialTheme.colorScheme.onSurfaceVariant) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = singleLine,
+            readOnly = readOnly,
+            enabled = enabled,
             isError = error != null,
+            keyboardOptions = keyboardOptions,
             shape = RoundedCornerShape(14.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -139,48 +148,78 @@ fun ShopCard(
 }
 
 enum class BottomNavTab(@androidx.annotation.StringRes val labelRes: Int, val icon: ImageVector) {
-    Home(R.string.nav_home, Icons.Default.Home),
-    Discover(R.string.nav_discover, Icons.Default.Explore),
-    Customers(R.string.nav_customers, Icons.Default.Groups),
-    Suppliers(R.string.nav_suppliers, Icons.Default.Inventory2),
-    More(R.string.nav_more, Icons.Default.MoreHoriz),
+    Home(R.string.nav_home, Icons.Outlined.Home),
+    Discover(R.string.nav_discover, Icons.Outlined.Explore),
+    Customers(R.string.nav_customers, Icons.Outlined.Groups),
+    Suppliers(R.string.nav_suppliers, Icons.Outlined.Inventory2),
+    More(R.string.nav_more, Icons.Outlined.MoreHoriz),
 }
 
 @Composable
 fun BottomNavBar(
     active: BottomNavTab,
     onTabSelected: (BottomNavTab) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier = Modifier
+    val pillShape = RoundedCornerShape(999.dp)
+    Box(
+        modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
-            .border(width = 0.5.dp, color = MaterialTheme.colorScheme.outline)
             .navigationBarsPadding()
-            .padding(top = 8.dp, bottom = 4.dp),
+            .padding(start = 20.dp, end = 20.dp, bottom = 14.dp),
+        contentAlignment = Alignment.Center,
     ) {
-        BottomNavTab.entries.forEach { tab ->
-            val isActive = tab == active
-            val label = stringResource(tab.labelRes)
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .clickable { onTabSelected(tab) }
-                    .padding(vertical = 4.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Icon(
-                    imageVector = tab.icon,
-                    contentDescription = label,
-                    tint = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(22.dp),
+        Row(
+            modifier = Modifier
+                .shadow(
+                    elevation = 18.dp,
+                    shape = pillShape,
+                    ambientColor = Color.Black.copy(alpha = 0.12f),
+                    spotColor = Color.Black.copy(alpha = 0.18f),
                 )
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
-                    color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                .clip(pillShape)
+                .background(MaterialTheme.colorScheme.surface)
+                .padding(horizontal = 8.dp, vertical = 7.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            BottomNavTab.entries.forEach { tab ->
+                val isActive = tab == active
+                val label = stringResource(tab.labelRes)
+                Row(
+                    modifier = Modifier
+                        .clip(pillShape)
+                        .background(
+                            if (isActive) MaterialTheme.colorScheme.primary else Color.Transparent,
+                        )
+                        .clickable { onTabSelected(tab) }
+                        .padding(
+                            horizontal = if (isActive) 16.dp else 12.dp,
+                            vertical = 10.dp,
+                        ),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Icon(
+                        imageVector = tab.icon,
+                        contentDescription = label,
+                        tint = if (isActive) {
+                            MaterialTheme.colorScheme.onPrimary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                        modifier = Modifier.size(22.dp),
+                    )
+                    if (isActive) {
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            maxLines = 1,
+                        )
+                    }
+                }
             }
         }
     }

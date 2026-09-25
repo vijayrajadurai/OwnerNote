@@ -21,6 +21,8 @@ import com.shopai.app.data.model.DiscoverItem
 import com.shopai.app.data.model.SupplierDetail
 import com.shopai.app.data.model.CreateReminderRequest
 import com.shopai.app.data.model.DashboardSnapshot
+import com.shopai.app.data.model.DailyCashOpeningRequest
+import com.shopai.app.data.model.DailyCashOpeningResponse
 import com.shopai.app.data.model.DailyCashReportResponse
 import com.shopai.app.data.model.SubmitDailyCashReportRequest
 import com.shopai.app.data.model.FundingOpportunity
@@ -41,6 +43,13 @@ import com.shopai.app.data.model.RegisterFcmTokenRequest
 import com.shopai.app.data.model.UnregisterFcmTokenRequest
 import com.shopai.app.data.model.DeviceTokenAck
 import com.shopai.app.data.model.VerifyOtpRequest
+import com.shopai.app.data.model.CreateGroupBuyingRequestInput
+import com.shopai.app.data.model.GroupBuyingInboxItem
+import com.shopai.app.data.model.GroupBuyingInviteRespondInput
+import com.shopai.app.data.model.GroupBuyingInviteRespondResult
+import com.shopai.app.data.model.GroupBuyingJoinResponse
+import com.shopai.app.data.model.GroupBuyingMatchesResponse
+import com.shopai.app.data.model.GroupBuyingRequest
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -168,6 +177,12 @@ interface ShopAiApi {
         @Body body: LeadQualificationInput,
     ): ApiEnvelope<LoanLead>
 
+    @PUT("daily-cash/openings")
+    suspend fun upsertDailyCashOpening(@Body body: DailyCashOpeningRequest): ApiEnvelope<DailyCashOpeningResponse>
+
+    @GET("daily-cash/openings/{date}")
+    suspend fun getDailyCashOpening(@Path("date") date: String): ApiEnvelope<DailyCashOpeningResponse>
+
     @POST("daily-cash/reports")
     suspend fun submitDailyCashReport(@Body body: SubmitDailyCashReportRequest): ApiEnvelope<DailyCashReportResponse>
 
@@ -179,4 +194,28 @@ interface ShopAiApi {
 
     @POST("devices/fcm/unregister")
     suspend fun unregisterFcmToken(@Body body: UnregisterFcmTokenRequest): ApiEnvelope<DeviceTokenAck>
+
+    @POST("group-buying/requests")
+    suspend fun createGroupBuyingRequest(@Body body: CreateGroupBuyingRequestInput): ApiEnvelope<GroupBuyingRequest>
+
+    @GET("group-buying/requests")
+    suspend fun listGroupBuyingRequests(): ApiEnvelope<List<GroupBuyingRequest>>
+
+    @GET("group-buying/inbox")
+    suspend fun listGroupBuyingInbox(): ApiEnvelope<List<GroupBuyingInboxItem>>
+
+    @POST("group-buying/invites/{id}/respond")
+    suspend fun respondGroupBuyingInvite(
+        @Path("id") id: String,
+        @Body body: GroupBuyingInviteRespondInput,
+    ): ApiEnvelope<GroupBuyingInviteRespondResult>
+
+    @GET("group-buying/requests/{id}/matches")
+    suspend fun listGroupBuyingMatches(@Path("id") id: String): ApiEnvelope<GroupBuyingMatchesResponse>
+
+    @POST("group-buying/requests/{id}/join")
+    suspend fun joinGroupBuyingRequest(@Path("id") id: String): ApiEnvelope<GroupBuyingJoinResponse>
+
+    @POST("group-buying/requests/{id}/cancel")
+    suspend fun cancelGroupBuyingRequest(@Path("id") id: String): ApiEnvelope<GroupBuyingRequest>
 }

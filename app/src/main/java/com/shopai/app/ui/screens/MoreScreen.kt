@@ -20,6 +20,7 @@ import com.shopai.app.data.AppContainer
 import com.shopai.app.ui.components.BottomNavTab
 import com.shopai.app.ui.components.PrimaryButton
 import com.shopai.app.ui.components.ShopCard
+import com.shopai.app.ui.components.VoiceFabBottomSpacer
 import com.shopai.app.ui.navigation.Routes
 import com.shopai.app.ui.theme.ShopAiThemeColors
 import kotlinx.coroutines.launch
@@ -39,6 +40,8 @@ fun MoreScreen(
     val scope = rememberCoroutineScope()
     val menuItems = listOf(
         MenuItem(R.string.more_ai_insights, R.string.more_ai_insights_caption, Routes.AiInsights),
+        MenuItem(R.string.profile_title, R.string.profile_subtitle, Routes.Profile),
+        MenuItem(R.string.more_group_buying, R.string.more_group_buying_caption, Routes.GroupBuying),
         MenuItem(R.string.more_reminders, R.string.more_reminders_caption, Routes.Reminders),
         MenuItem(R.string.more_voice, R.string.more_voice_caption, Routes.VoiceEntry),
         MenuItem(R.string.more_settings, R.string.more_settings_caption, Routes.Settings),
@@ -80,6 +83,7 @@ fun MoreScreen(
                     }
                 },
             )
+            VoiceFabBottomSpacer()
         }
     }
 }

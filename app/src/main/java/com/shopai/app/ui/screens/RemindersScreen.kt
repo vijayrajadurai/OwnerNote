@@ -39,6 +39,7 @@ import com.shopai.app.ui.theme.Danger
 import com.shopai.app.ui.theme.ShopAiThemeColors
 import com.shopai.app.util.formatDisplayDate
 import com.shopai.app.util.localDateToIsoInstant
+import com.shopai.app.util.parseIsoToLocalDate
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
@@ -58,9 +59,7 @@ private fun groupReminders(items: List<ReminderItem>): List<ReminderSection> {
     val upcoming = mutableListOf<ReminderItem>()
 
     items.filter { !it.isDone }.forEach { item ->
-        val due = runCatching {
-            LocalDate.parse(item.dueDate.take(10))
-        }.getOrNull() ?: return@forEach
+        val due = parseIsoToLocalDate(item.dueDate) ?: return@forEach
         when {
             !due.isAfter(today) -> todayItems.add(item)
             due == tomorrow -> tomorrowItems.add(item)
@@ -173,17 +172,6 @@ fun RemindersScreen(
                         ShopCard(modifier = Modifier.padding(bottom = 8.dp)) {
                             Text(item.title, style = MaterialTheme.typography.titleMedium, color = ShopAiThemeColors.onSurface)
                             Text(formatDisplayDate(item.dueDate), color = ShopAiThemeColors.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
-                            Spacer(Modifier.height(8.dp))
-                            OutlinedButton(onClick = {
-                                scope.launch {
-                                    runCatching {
-                                        container.reminderRepository.markDone(item.id)
-                                        reload()
-                                    }
-                                }
-                            }) {
-                                Text(stringResource(R.string.reminder_done))
-                            }
                         }
                     }
                 }

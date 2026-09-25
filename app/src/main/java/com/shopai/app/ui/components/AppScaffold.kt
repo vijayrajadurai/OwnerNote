@@ -3,6 +3,7 @@ package com.shopai.app.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.exclude
@@ -68,6 +69,7 @@ fun ScreenContainer(
 fun DetailScaffold(
     title: String,
     onBack: () -> Unit,
+    actions: @Composable RowScope.() -> Unit = {},
     content: @Composable (Modifier) -> Unit,
 ) {
     BackHandler(onBack = onBack)
@@ -86,6 +88,7 @@ fun DetailScaffold(
                         )
                     }
                 },
+                actions = actions,
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                     scrolledContainerColor = MaterialTheme.colorScheme.background,
@@ -96,6 +99,6 @@ fun DetailScaffold(
             )
         },
     ) { padding ->
-        content(Modifier.padding(padding).imePadding())
+        content(Modifier.padding(padding).imePadding().padding(bottom = 112.dp))
     }
 }

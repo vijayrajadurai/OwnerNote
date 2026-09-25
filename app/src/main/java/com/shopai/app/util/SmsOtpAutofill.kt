@@ -3,7 +3,6 @@ package com.shopai.app.util
 import android.app.Activity
 import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.ContextWrapper
 import android.content.Intent
 import android.content.IntentFilter
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -76,13 +75,4 @@ fun SmsOtpAutofillEffect(onOtpReceived: (String) -> Unit) {
             runCatching { activity.unregisterReceiver(receiver) }
         }
     }
-}
-
-private fun Context.findActivity(): Activity {
-    var current: Context = this
-    while (current is ContextWrapper) {
-        if (current is Activity) return current
-        current = current.baseContext
-    }
-    error("SMS autofill requires an Activity context")
 }

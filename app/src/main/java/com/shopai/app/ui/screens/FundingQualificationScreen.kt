@@ -52,7 +52,6 @@ fun FundingQualificationScreen(
     val scope = rememberCoroutineScope()
     val errorFundingLoad = stringResource(R.string.error_funding_load)
     val errorFundingSubmit = stringResource(R.string.error_funding_submit)
-    val fundingTitleFallback = stringResource(R.string.funding_title_fallback)
 
     LaunchedEffect(opportunityId) {
         runCatching {
@@ -88,7 +87,7 @@ fun FundingQualificationScreen(
     ApiErrorAlertDialog(message = alertError, onDismiss = { alertError = null })
 
     DetailScaffold(
-        title = opportunity?.title ?: fundingTitleFallback,
+        title = opportunity?.title ?: stringResource(R.string.suggestion_call_title),
         onBack = onBack,
     ) { contentModifier ->
         if (loadingOpp) {

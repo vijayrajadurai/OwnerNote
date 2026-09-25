@@ -9,12 +9,14 @@ import com.shopai.app.data.model.DailyCashDayStatus
 import com.shopai.app.data.model.DailyCashEntry
 import com.shopai.app.data.model.DailyCashEntryType
 import com.shopai.app.data.model.DailyCashPaymentMode
+import com.shopai.app.data.model.DailyCashOpeningRequest
 import com.shopai.app.data.model.DailyCashReportResponse
 import com.shopai.app.data.model.SubmitDailyCashReportEntry
 import com.shopai.app.data.model.SubmitDailyCashReportRequest
 import com.shopai.app.data.model.TodayCashSummary
 import com.shopai.app.data.local.room.toEntity
 import retrofit2.HttpException
+import com.shopai.app.util.computeCashBoxAmount
 import com.shopai.app.util.computeDailyCashTotals
 import com.shopai.app.util.localDateKey
 import com.shopai.app.util.sortEntriesNewestFirst
@@ -63,7 +65,12 @@ class DailyCashRepository(
         note: String?,
     ): DailyCashEntry = withContext(Dispatchers.IO) {
         requireOpenDay(date)
-        dao.ensureDayOpen(DailyCashDayEntity(date = date, status = "OPEN", submittedAt = null))
+        if (getCashBoxSnapshot(date) == null) {
+            throw IllegalStateException("Set kallapetti amount first")
+        }
+        dao.ensureDayOpen(
+            DailyCashDayEntity(date = date, status = "OPEN", submittedAt = null, openingBalance = null),
+        )
         val trimmedNote = note?.trim()?.takeIf { it.isNotEmpty() }
         val id = "cash-${System.currentTimeMillis()}-${(Math.random() * 1_000_000).toInt()}"
         val createdAt = isoMillisNow()
@@ -156,6 +163,7 @@ class DailyCashRepository(
                 cashOut = totals.cashOut,
                 upiIn = totals.upiIn,
                 upiOut = totals.upiOut,
+                openingBalance = dao.getDay(dateKey)?.openingBalance,
                 entries = entries.map { entry ->
                     SubmitDailyCashReportEntry(
                         type = entry.type.name,
@@ -187,6 +195,7 @@ class DailyCashRepository(
         if (entities.isNotEmpty()) {
             dao.insertEntries(entities)
         }
+        report.openingBalance?.let { persistLocalOpening(dateKey, it) }
     }
 
     private fun DailyCashReportResponse.toDomainEntries(dateKey: String): List<DailyCashEntry> =
@@ -204,12 +213,70 @@ class DailyCashRepository(
             )
         }
 
+    data class CashBoxSnapshot(
+        val opening: Double,
+        val current: Double,
+    )
+
+    suspend fun getCashBoxSnapshot(dateKey: String): CashBoxSnapshot? = withContext(Dispatchers.IO) {
+        val opening = resolveOpeningBalance(dateKey) ?: return@withContext null
+        val current = computeCashBoxAmount(opening, dao.listEntriesByDate(dateKey).map { it.toDomain() })
+        CashBoxSnapshot(opening = opening, current = current)
+    }
+
+    suspend fun getOpeningBalance(dateKey: String): Double? =
+        getCashBoxSnapshot(dateKey)?.opening
+
+    /** Current physical cash-box amount, or null until the owner sets it the first time. */
+    suspend fun getCashBoxAmount(dateKey: String): Double? =
+        getCashBoxSnapshot(dateKey)?.current
+
+    suspend fun setOpeningBalance(dateKey: String, amount: Double): Double = withContext(Dispatchers.IO) {
+        requireOpenDay(dateKey)
+        require(amount.isFinite() && amount >= 0) { "Opening balance must be zero or more" }
+        persistLocalOpening(dateKey, amount)
+        api.upsertDailyCashOpening(DailyCashOpeningRequest(date = dateKey, openingBalance = amount))
+        computeCashBoxAmount(amount, dao.listEntriesByDate(dateKey).map { it.toDomain() })
+    }
+
+    private suspend fun resolveOpeningBalance(dateKey: String): Double? {
+        dao.getDay(dateKey)?.openingBalance?.let { return it }
+        val fromOpeningApi = runCatching { api.getDailyCashOpening(dateKey).data.openingBalance }.getOrElse { error ->
+            if (error is HttpException && error.code() != 404) return null
+            null
+        }
+        if (fromOpeningApi != null) {
+            persistLocalOpening(dateKey, fromOpeningApi)
+            return fromOpeningApi
+        }
+        if (dateKey >= localDateKey()) return null
+        val fromReport = runCatching { api.getDailyCashReport(dateKey).data.openingBalance }.getOrNull()
+        if (fromReport != null) {
+            persistLocalOpening(dateKey, fromReport)
+        }
+        return fromReport
+    }
+
+    private suspend fun persistLocalOpening(dateKey: String, amount: Double) {
+        val existing = dao.getDay(dateKey)
+        dao.upsertDay(
+            DailyCashDayEntity(
+                date = dateKey,
+                status = existing?.status ?: "OPEN",
+                submittedAt = existing?.submittedAt,
+                openingBalance = amount,
+            ),
+        )
+    }
+
     private suspend fun markSubmitted(dateKey: String) {
+        val existing = dao.getDay(dateKey)
         dao.upsertDay(
             DailyCashDayEntity(
                 date = dateKey,
                 status = "SUBMITTED",
                 submittedAt = isoMillisNow(),
+                openingBalance = existing?.openingBalance,
             ),
         )
     }

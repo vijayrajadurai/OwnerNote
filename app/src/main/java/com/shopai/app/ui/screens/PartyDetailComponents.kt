@@ -2,12 +2,17 @@ package com.shopai.app.ui.screens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -19,13 +24,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.shopai.app.R
 import com.shopai.app.data.model.CreditTransactionDetail
 import com.shopai.app.data.model.DebitTransactionDetail
 import com.shopai.app.data.model.parseMoney
 import com.shopai.app.data.model.pendingAmount
 import com.shopai.app.ui.components.PrimaryButton
+import com.shopai.app.ui.components.ShopAlertDialog
 import com.shopai.app.ui.components.ShopCard
 import com.shopai.app.ui.components.ShopTextField
 import com.shopai.app.ui.theme.LedgerCredit
@@ -37,6 +46,7 @@ import com.shopai.app.util.LedgerEntryKind
 import com.shopai.app.util.LedgerLine
 import com.shopai.app.util.formatDisplayDate
 import com.shopai.app.util.formatInr
+import com.shopai.app.util.isExcessPayment
 import kotlinx.coroutines.launch
 
 @Composable
@@ -94,7 +104,11 @@ private fun TransactionCard(
     var isPaying by remember { mutableStateOf(false) }
     var paymentAmount by remember { mutableStateOf("") }
     var submitting by remember { mutableStateOf(false) }
+    var confirmMarkPaid by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val enteredAmount = paymentAmount.toDoubleOrNull() ?: 0.0
+    val excessPayment = isExcessPayment(enteredAmount, pending)
+    val excessMessage = stringResource(R.string.party_payment_excess)
 
     ShopCard {
         Row(
@@ -143,13 +157,16 @@ private fun TransactionCard(
                     label = stringResource(R.string.party_payment_amount),
                     value = paymentAmount,
                     onValueChange = { paymentAmount = it.filter { ch -> ch.isDigit() || ch == '.' } },
+                    error = if (excessPayment) excessMessage else null,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 )
                 PrimaryButton(
                     label = stringResource(R.string.party_confirm_payment),
                     loading = submitting,
-                    enabled = (paymentAmount.toDoubleOrNull() ?: 0.0) > 0,
+                    enabled = enteredAmount > 0 && !excessPayment,
                     onClick = {
                         val value = paymentAmount.toDoubleOrNull() ?: return@PrimaryButton
+                        if (isExcessPayment(value, pending)) return@PrimaryButton
                         scope.launch {
                             submitting = true
                             runCatching { onAddPayment(value) }
@@ -185,17 +202,60 @@ private fun TransactionCard(
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier
                             .weight(1f)
-                            .clickable(enabled = !submitting) {
-                                scope.launch {
-                                    submitting = true
-                                    runCatching { onMarkPaid() }.onFailure(onError)
-                                    submitting = false
-                                }
-                            }
+                            .clickable(enabled = !submitting) { confirmMarkPaid = true }
                             .padding(vertical = 10.dp),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
+            }
+        }
+    }
+
+    if (confirmMarkPaid) {
+        ShopAlertDialog(
+            onDismissRequest = { if (!submitting) confirmMarkPaid = false },
+            title = { Text(stringResource(R.string.party_mark_paid_confirm_title)) },
+            text = { Text(stringResource(R.string.party_mark_paid_confirm_message)) },
+            confirmButton = {
+                TextButton(
+                    enabled = !submitting,
+                    onClick = {
+                        confirmMarkPaid = false
+                        scope.launch {
+                            submitting = true
+                            runCatching { onMarkPaid() }.onFailure(onError)
+                            submitting = false
+                        }
+                    },
+                ) {
+                    Text(stringResource(R.string.party_mark_paid))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    enabled = !submitting,
+                    onClick = { confirmMarkPaid = false },
+                ) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+        )
+    }
+
+    if (submitting) {
+        Dialog(
+            onDismissRequest = {},
+            properties = DialogProperties(
+                dismissOnBackPress = false,
+                dismissOnClickOutside = false,
+                usePlatformDefaultWidth = false,
+            ),
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
         }
     }

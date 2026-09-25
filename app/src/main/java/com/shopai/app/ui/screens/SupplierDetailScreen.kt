@@ -1,8 +1,10 @@
 package com.shopai.app.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -28,6 +30,7 @@ import com.shopai.app.data.network.presentApiError
 import com.shopai.app.ui.components.ApiErrorAlertDialog
 import com.shopai.app.ui.components.DetailScaffold
 import com.shopai.app.ui.components.PrimaryButton
+import com.shopai.app.ui.components.VoiceFabBottomSpacer
 import com.shopai.app.ui.theme.Danger
 import com.shopai.app.ui.theme.LedgerDebit
 import com.shopai.app.ui.theme.ShopAiThemeColors
@@ -71,10 +74,12 @@ fun SupplierDetailScreen(
         onBack = onBack,
     ) { contentModifier ->
         when {
-            loading -> CircularProgressIndicator(
-                color = ShopAiThemeColors.primary,
-                modifier = contentModifier.padding(24.dp),
-            )
+            loading -> Box(
+                modifier = contentModifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator(color = ShopAiThemeColors.primary)
+            }
             error != null -> Text(
                 text = error!!,
                 color = Danger,
@@ -146,6 +151,7 @@ fun SupplierDetailScreen(
                         }
                     }
                     LedgerHistorySection(lines = ledger)
+                    VoiceFabBottomSpacer()
                 }
             }
         }

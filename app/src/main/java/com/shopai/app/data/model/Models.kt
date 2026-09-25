@@ -45,6 +45,11 @@ data class Business(
     val city: String,
     val runningSinceYear: Int?,
     val monthlyVolumeApprox: String?,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val areaLabel: String? = null,
+    val locationSource: String? = null,
+    val phone: String? = null,
 )
 
 data class BusinessInput(
@@ -54,6 +59,10 @@ data class BusinessInput(
     val city: String,
     val runningSinceYear: Int? = null,
     val monthlyVolumeApprox: Int? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val areaLabel: String? = null,
+    val locationSource: String? = null,
 )
 
 data class DashboardSnapshot(
@@ -312,5 +321,124 @@ enum class BusinessCategory(val apiValue: String, @StringRes val labelRes: Int) 
     STATIONERY("STATIONERY", R.string.category_stationery),
     RESTAURANT_FOOD("RESTAURANT_FOOD", R.string.category_restaurant_food),
     BEAUTY_SALON("BEAUTY_SALON", R.string.category_beauty_salon),
-    OTHER("OTHER", R.string.category_other),
+    OTHER("OTHER", R.string.category_other);
+
+    companion object {
+        fun fromApi(value: String): BusinessCategory =
+            entries.find { it.apiValue == value } ?: OTHER
+    }
 }
+
+data class CreateGroupBuyingRequestInput(
+    val productId: String,
+    val quantity: Double,
+    val unit: String,
+    val requiredDate: String,
+    val latitude: Double,
+    val longitude: Double,
+    val areaLabel: String,
+    val radiusKm: Double,
+)
+
+data class GroupBuyingRequest(
+    val id: String,
+    val businessId: String,
+    val productId: String,
+    val quantity: Double,
+    val unit: String,
+    val requiredDate: String,
+    val latitude: Double,
+    val longitude: Double,
+    val areaLabel: String,
+    val radiusKm: Double,
+    val status: String,
+    val createdAt: String,
+    val updatedAt: String,
+)
+
+/** Public match from another business — no coordinate fields. */
+data class GroupBuyingMatchPublic(
+    val requestId: String,
+    val businessId: String,
+    val shopName: String = "",
+    val ownerName: String = "",
+    val phone: String = "",
+    val areaLabel: String,
+    val quantity: Double,
+    val unit: String,
+    val requiredDate: String,
+    val distanceKm: Double,
+    val interestStatus: String = "POSTED",
+)
+
+data class GroupBuyingMatchTotals(
+    val totalQuantity: Double,
+    val businessCount: Int,
+    val unit: String,
+)
+
+data class GroupBuyingMatchesResponse(
+    val matches: List<GroupBuyingMatchPublic>,
+    val totals: GroupBuyingMatchTotals,
+    val requestStatus: String = "ACTIVE",
+)
+
+data class GroupBuyingGroupSummary(
+    val id: String,
+    val productId: String,
+    val requiredDate: String,
+    val areaLabel: String,
+    val status: String,
+)
+
+data class GroupBuyingMemberPublic(
+    val id: String,
+    val groupId: String,
+    val requestId: String,
+    val businessId: String,
+    val quantity: Double,
+    val status: String,
+    val joinedAt: String,
+)
+
+data class GroupBuyingJoinResponse(
+    val group: GroupBuyingGroupSummary,
+    val members: List<GroupBuyingMemberPublic>,
+    val request: GroupBuyingRequest,
+    val matches: List<GroupBuyingMatchPublic>,
+    val totals: GroupBuyingMatchTotals,
+)
+
+data class GroupBuyingInboxRequest(
+    val id: String,
+    val productId: String,
+    val quantity: Double,
+    val unit: String,
+    val requiredDate: String,
+    val areaLabel: String,
+    val shopName: String,
+    val ownerName: String,
+    val phone: String = "",
+)
+
+data class GroupBuyingInboxItem(
+    val id: String,
+    val status: String,
+    val quantity: Double? = null,
+    val distanceKm: Double,
+    val request: GroupBuyingInboxRequest,
+)
+
+data class GroupBuyingInviteRespondInput(
+    val interested: Boolean,
+    val quantity: Double? = null,
+)
+
+data class GroupBuyingInviteRespondResult(
+    val id: String,
+    val status: String,
+    val quantity: Double? = null,
+    val requestId: String,
+    val shopName: String = "",
+    val ownerName: String = "",
+)

@@ -45,3 +45,13 @@ fun isValidAmount(raw: String): Boolean {
     val value = trimmed.toDoubleOrNull() ?: return false
     return value.isFinite() && value > 0
 }
+
+fun isValidNonNegativeAmount(raw: String): Boolean {
+    val trimmed = raw.trim()
+    if (trimmed.isEmpty()) return false
+    val value = trimmed.toDoubleOrNull() ?: return false
+    return value.isFinite() && value >= 0
+}
+
+fun computeCashBoxAmount(openingBalance: Double, entries: List<DailyCashEntry>): Double =
+    openingBalance + computeDailyCashTotals(entries).cashNet

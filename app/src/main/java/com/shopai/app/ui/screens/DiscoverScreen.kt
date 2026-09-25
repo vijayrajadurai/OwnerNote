@@ -34,6 +34,7 @@ import com.shopai.app.ui.components.ApiErrorAlertDialog
 import com.shopai.app.ui.components.BottomNavTab
 import com.shopai.app.ui.components.EyebrowLabel
 import com.shopai.app.ui.components.ShopCard
+import com.shopai.app.ui.components.VoiceFabBottomSpacer
 import com.shopai.app.ui.theme.Danger
 import com.shopai.app.ui.theme.Primary
 import com.shopai.app.ui.theme.ShopAiThemeColors
@@ -135,6 +136,7 @@ fun DiscoverScreen(
                     }
                 }
             }
+            VoiceFabBottomSpacer()
         }
     }
 }

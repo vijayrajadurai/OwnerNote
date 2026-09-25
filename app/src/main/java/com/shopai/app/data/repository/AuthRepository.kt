@@ -1,6 +1,7 @@
 package com.shopai.app.data.repository
 
 import android.app.Activity
+import com.shopai.app.crash.CrashReporting
 import com.shopai.app.data.api.ShopAiApi
 import com.shopai.app.data.auth.FirebasePhoneAuthClient
 import com.shopai.app.data.auth.FirebasePhoneSendResult
@@ -22,7 +23,17 @@ class AuthRepository(
     private val firebasePhoneAuth: FirebasePhoneAuthClient,
     private val pushTokenRepository: PushTokenRepository,
 ) {
-    suspend fun hydrate(): String? = tokenStore.getToken()
+    fun warmupPhoneVerification() {
+        firebasePhoneAuth.warmupAppVerification()
+    }
+
+    suspend fun getLoginPhone(): String? = tokenStore.getPendingPhone()
+
+    suspend fun hydrate(): String? {
+        val token = tokenStore.getToken()
+        CrashReporting.setSession(if (token != null) tokenStore.getPendingPhone() else null)
+        return token
+    }
 
     suspend fun sendOtp(activity: Activity, phone: String): PhoneOtpSendResult {
         val normalized = phone.filter { it.isDigit() }.takeLast(10)
@@ -59,6 +70,7 @@ class AuthRepository(
         runCatching { firebasePhoneAuth.signOut() }
         tokenStore.setToken(null)
         tokenStore.setPendingPhone(null)
+        CrashReporting.setSession(null)
     }
 
     fun apiErrorMessage(throwable: Throwable, fallback: String): String =
@@ -67,6 +79,7 @@ class AuthRepository(
     private suspend fun exchangeFirebaseToken(idToken: String): AuthResponse {
         val response = api.firebaseLogin(FirebaseLoginRequest(idToken))
         tokenStore.setToken(response.data.token)
+        CrashReporting.setSession(tokenStore.getPendingPhone())
         runCatching { pushTokenRepository.registerCurrent() }
         return response.data
     }

@@ -12,21 +12,21 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.outlined.AccessTime
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
-import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -37,11 +37,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -55,15 +61,25 @@ import androidx.compose.ui.util.lerp
 import com.shopai.app.R
 import com.shopai.app.ui.reminders.PaymentReminder
 import com.shopai.app.ui.reminders.ReminderUrgency
+import com.shopai.app.ui.reminders.isCustomerCredit
 import com.shopai.app.ui.reminders.samplePaymentReminders
+import com.shopai.app.ui.theme.LedgerCredit
+import com.shopai.app.ui.theme.LedgerDebit
+import com.shopai.app.ui.theme.PrimaryDark
 import com.shopai.app.ui.theme.ShopAiTheme
 import com.shopai.app.ui.theme.ShopAiThemeColors
 import com.shopai.app.util.formatDisplayDate
 import com.shopai.app.util.formatInr
 import kotlin.math.absoluteValue
 
-private val LimeBorder = Color(0xFFB8F53D)
 private val CardRadius = 28.dp
+private val PastelCardRadius = 32.dp
+private val HeaderPastels = listOf(
+    Color(0xFFD4EDC9),
+    Color(0xFFF2E6B8),
+    Color(0xFFF6F1EA),
+    Color(0xFFE9D5C8),
+)
 private val OverdueRed = Color(0xFFE53935)
 private val DueTodayOrange = Color(0xFFFF6A3D)
 private val UpcomingGreen = Color(0xFF2E9F6E)
@@ -75,55 +91,82 @@ fun ReminderCarousel(
     onOpenDetails: (PaymentReminder) -> Unit,
     onMarkPaid: (PaymentReminder) -> Unit = {},
     modifier: Modifier = Modifier,
+    onHeader: Boolean = false,
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        verticalArrangement = Arrangement.spacedBy(if (onHeader) 0.dp else 14.dp),
     ) {
-        Text(
-            text = stringResource(R.string.home_payment_reminders_heading),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = ShopAiThemeColors.onSurface,
-        )
+        if (!onHeader) {
+            Text(
+                text = stringResource(R.string.home_payment_reminders_heading),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = ShopAiThemeColors.onSurface,
+            )
+        }
 
         if (items.isEmpty()) {
-            Text(
-                text = stringResource(R.string.home_payment_reminders_empty),
-                style = MaterialTheme.typography.bodyMedium,
-                color = ShopAiThemeColors.onSurfaceVariant,
-            )
+            if (!onHeader) {
+                Text(
+                    text = stringResource(R.string.home_payment_reminders_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = ShopAiThemeColors.onSurfaceVariant,
+                )
+            }
             return@Column
         }
 
-        val peekFraction = 0.18f
-        val peekWidth = (LocalConfiguration.current.screenWidthDp * peekFraction).dp
+        val inspectionMode = LocalInspectionMode.current
+        val screenWidthDp = LocalConfiguration.current.screenWidthDp
+        val peekWidth = (screenWidthDp * 0.18f).dp
         val initialPage = items.indexOfFirst { it.urgency == ReminderUrgency.DUE_TODAY }
             .takeIf { it >= 0 } ?: 0
         val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { items.size })
-        HorizontalPager(
-            state = pagerState,
-            contentPadding = PaddingValues(horizontal = peekWidth),
-            pageSpacing = 12.dp,
-            beyondViewportPageCount = 1,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(312.dp),
-        ) { page ->
-            val reminder = items[page]
-            val pageOffset = (
-                (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
-                ).absoluteValue
-            ReminderCard(
-                reminder = reminder,
-                pageOffset = pageOffset,
-                onOpenDetails = { onOpenDetails(reminder) },
-            )
+        if (onHeader) {
+            HorizontalPager(
+                state = pagerState,
+                contentPadding = PaddingValues(horizontal = peekWidth),
+                pageSpacing = 14.dp,
+                beyondViewportPageCount = 1,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight(),
+            ) { page ->
+                val reminder = items[page]
+                HeaderPastelReminderCard(
+                    reminder = reminder,
+                    fillColor = HeaderPastels[page % HeaderPastels.size],
+                    onOpenDetails = { onOpenDetails(reminder) },
+                )
+            }
+        } else {
+            HorizontalPager(
+                state = pagerState,
+                contentPadding = PaddingValues(horizontal = peekWidth),
+                pageSpacing = 12.dp,
+                beyondViewportPageCount = 1,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(if (inspectionMode) Modifier.height(340.dp) else Modifier),
+            ) { page ->
+                val reminder = items[page]
+                val pageOffset = (
+                    (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
+                    ).absoluteValue
+                ReminderCard(
+                    reminder = reminder,
+                    pageOffset = pageOffset,
+                    onOpenDetails = { onOpenDetails(reminder) },
+                )
+            }
         }
 
-        if (items.size > 1) {
+        if (!onHeader && items.size > 1) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(if (onHeader) Modifier.padding(horizontal = 20.dp) else Modifier),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -136,9 +179,13 @@ fun ReminderCarousel(
                     )
                     val dotColor by animateColorAsState(
                         targetValue = if (selected) {
-                            MaterialTheme.colorScheme.primary
+                            if (onHeader) Color.White else MaterialTheme.colorScheme.primary
                         } else {
-                            ShopAiThemeColors.onSurfaceVariant.copy(alpha = 0.35f)
+                            if (onHeader) {
+                                Color.White.copy(alpha = 0.35f)
+                            } else {
+                                ShopAiThemeColors.onSurfaceVariant.copy(alpha = 0.35f)
+                            }
                         },
                         animationSpec = tween(durationMillis = 280),
                         label = "dotColor",
@@ -161,6 +208,116 @@ fun ReminderCarousel(
 }
 
 @Composable
+private fun HeaderPastelReminderCard(
+    reminder: PaymentReminder,
+    fillColor: Color,
+    onOpenDetails: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val amount = reminder.amount?.let { formatInr(it) } ?: "—"
+    val dueLabel = formatDisplayDate(reminder.dueDateIso)
+    val cardCd = stringResource(
+        R.string.cd_payment_reminder_card,
+        reminder.partyName,
+        amount,
+        stringResource(R.string.reminder_due_prefix, dueLabel),
+    )
+    val isCredit = reminder.isCustomerCredit()
+    val financeIcon = if (isCredit) {
+        Icons.Outlined.AccountBalanceWallet
+    } else {
+        Icons.Outlined.Payments
+    }
+    val kindLabel = stringResource(if (isCredit) R.string.home_receivable else R.string.home_payable)
+    val iconTint = Color(0xFF1C1C1A).copy(alpha = 0.72f)
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .wrapContentHeight()
+            .clip(RoundedCornerShape(PastelCardRadius))
+            .background(fillColor)
+            .clickable(onClick = onOpenDetails)
+            .semantics { contentDescription = cardCd },
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                ReminderUrgencyBadge(urgency = reminder.urgency)
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(Color.White)
+                        .clickable(onClick = onOpenDetails),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = stringResource(R.string.reminder_view_details),
+                        tint = Color(0xFF1C1C1A),
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color.White.copy(alpha = 0.72f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = financeIcon,
+                        contentDescription = kindLabel,
+                        tint = iconTint,
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = reminder.partyName,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF1C1C1A).copy(alpha = 0.7f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = amount,
+                        fontSize = 26.sp,
+                        lineHeight = 30.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1C1C1A),
+                        maxLines = 1,
+                    )
+                }
+            }
+            Text(
+                text = kindLabel,
+                style = MaterialTheme.typography.labelSmall,
+                color = Color(0xFF1C1C1A).copy(alpha = 0.55f),
+                modifier = Modifier.padding(top = 8.dp),
+            )
+        }
+    }
+}
+
+@Composable
 fun ReminderCard(
     reminder: PaymentReminder,
     onOpenDetails: () -> Unit,
@@ -172,17 +329,11 @@ fun ReminderCard(
     val selectedFraction = 1f - pageOffset.coerceIn(0f, 1f)
     val scale = lerp(0.88f, 1f, selectedFraction)
     val cardAlpha = lerp(0.62f, 1f, selectedFraction)
-    val elevation = lerp(2f, 14f, selectedFraction)
-    val borderColor = androidx.compose.ui.graphics.lerp(
-        Color.White.copy(alpha = if (dark) 0.10f else 0.18f),
-        LimeBorder,
-        selectedFraction,
-    )
-    val fill = if (dark) {
-        listOf(Color(0xFF163226), Color(0xFF0B0F0C))
-    } else {
-        listOf(Color(0xFF2FA36C), Color(0xFF1A5C40))
-    }
+    val pay = reminder.kind.equals("PAYMENT", ignoreCase = true) ||
+        reminder.kind.equals("DEBIT", ignoreCase = true)
+    val accent = if (pay) LedgerDebit else LedgerCredit
+    val bodyColor = if (dark) Color.White else Color(0xFF1C1C1A)
+    val muted = bodyColor.copy(alpha = 0.78f)
     val amount = reminder.amount?.let { formatInr(it) } ?: "—"
     val dueLabel = formatDisplayDate(reminder.dueDateIso)
     val cardCd = stringResource(
@@ -191,128 +342,111 @@ fun ReminderCard(
         amount,
         stringResource(R.string.reminder_due_prefix, dueLabel),
     )
+    val innerStroke = Brush.linearGradient(
+        colors = listOf(PrimaryDark, Color(0xFF1E6B4E), PrimaryDark),
+    )
+    val outerBorder = PrimaryDark
 
     Box(
         modifier = modifier
-            .fillMaxSize()
+            .fillMaxWidth()
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
                 alpha = cardAlpha
             },
     ) {
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .offset(y = 10.dp)
-                .clip(RoundedCornerShape(CardRadius))
-                .background(
-                    Brush.radialGradient(
-                        colors = listOf(
-                            Color(0x662E9F6E),
-                            Color.Transparent,
-                        ),
-                    ),
-                ),
-        )
         Card(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
                 .semantics { contentDescription = cardCd }
-                .clickable(onClick = onOpenDetails),
+                .clickable(onClick = onOpenDetails)
+                .drawWithContent {
+                    drawContent()
+                    val inset = 3.5.dp.toPx()
+                    val radius = (CardRadius.toPx() - inset).coerceAtLeast(0f)
+                    drawRoundRect(
+                        brush = innerStroke,
+                        topLeft = Offset(inset, inset),
+                        size = Size(size.width - inset * 2f, size.height - inset * 2f),
+                        cornerRadius = CornerRadius(radius, radius),
+                        style = Stroke(width = 1.4.dp.toPx()),
+                    )
+                },
             shape = RoundedCornerShape(CardRadius),
             colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-            elevation = CardDefaults.cardElevation(defaultElevation = elevation.dp),
-            border = BorderStroke(1.6.dp, borderColor),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            border = BorderStroke(1.4.dp, outerBorder),
         ) {
-            Box(
+            Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .background(Brush.linearGradient(fill)),
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
             ) {
-                Icon(
-                    imageVector = Icons.Outlined.AccountBalanceWallet,
-                    contentDescription = null,
-                    tint = Color.White.copy(alpha = 0.08f),
+                Text(
+                    text = amount,
+                    fontSize = 38.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = accent,
+                    maxLines = 1,
+                    textAlign = TextAlign.Center,
                     modifier = Modifier
-                        .size(120.dp)
-                        .align(Alignment.TopEnd)
-                        .offset(x = 18.dp, y = (-12).dp),
+                        .fillMaxWidth()
+                        .padding(top = 10.dp),
                 )
-                Column(
+
+                Text(
+                    text = reminder.partyName,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = bodyColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 10.dp),
+                )
+                Text(
+                    text = reminder.description,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = muted,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+                Row(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
+                        .fillMaxWidth()
+                        .padding(top = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    ReminderUrgencyBadge(urgency = reminder.urgency)
-
+                    Icon(
+                        imageVector = Icons.Outlined.AccessTime,
+                        contentDescription = null,
+                        tint = muted,
+                        modifier = Modifier.size(20.dp),
+                    )
                     Text(
-                        text = amount,
-                        fontSize = 38.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        maxLines = 1,
-                        textAlign = TextAlign.Center,
+                        text = dueLabel,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = muted,
+                        modifier = Modifier.padding(start = 8.dp),
+                    )
+                }
+                if (showArrow) {
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 16.dp),
-                    )
-
-                    Text(
-                        text = reminder.partyName,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(top = 14.dp),
-                    )
-                    Text(
-                        text = reminder.description,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = Color.White.copy(alpha = 0.78f),
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(top = 4.dp),
-                    )
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
+                            .padding(top = 6.dp),
+                        contentAlignment = Alignment.CenterEnd,
                     ) {
                         Icon(
-                            imageVector = Icons.Outlined.CalendarMonth,
-                            contentDescription = null,
-                            tint = Color.White.copy(alpha = 0.85f),
-                            modifier = Modifier.size(20.dp),
-                        )
-                        Text(
-                            text = dueLabel,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Medium,
-                            color = Color.White.copy(alpha = 0.90f),
+                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = stringResource(R.string.reminder_view_details),
+                            tint = accent,
                             modifier = Modifier
-                                .padding(start = 8.dp)
-                                .weight(1f),
+                                .size(22.dp)
+                                .clickable(onClick = onOpenDetails),
                         )
-                        if (showArrow) {
-                            Box(
-                                modifier = Modifier
-                                    .size(28.dp)
-                                    .clip(CircleShape)
-                                    .background(LimeBorder)
-                                    .clickable(onClick = onOpenDetails),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                                    contentDescription = stringResource(R.string.reminder_view_details),
-                                    tint = Color(0xFF123224),
-                                    modifier = Modifier.size(14.dp),
-                                )
-                            }
-                        }
                     }
                 }
             }
@@ -331,7 +465,7 @@ fun PaymentReminderCard(
     ReminderCard(
         reminder = reminder,
         onOpenDetails = onOpenDetails,
-        modifier = modifier.fillMaxWidth().height(280.dp),
+        modifier = modifier.fillMaxWidth(),
         pageOffset = 0f,
         showArrow = showActions,
     )
@@ -362,7 +496,7 @@ fun ReminderUrgencyBadge(
     }
 }
 
-@Preview(showBackground = true, name = "Reminder carousel light")
+@Preview(showBackground = true, widthDp = 390, heightDp = 520, name = "Reminder carousel light")
 @Composable
 private fun ReminderCarouselPreview() {
     ShopAiTheme {
@@ -376,6 +510,8 @@ private fun ReminderCarouselPreview() {
 
 @Preview(
     showBackground = true,
+    widthDp = 390,
+    heightDp = 520,
     uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES,
     name = "Reminder carousel dark",
 )

@@ -95,3 +95,15 @@ private fun List<MutableLedgerEvent>.toRunningBalanceLines(): List<LedgerLine> {
     }
     return lines.reversed()
 }
+
+const val MAX_LEDGER_AMOUNT = 10_000_000.0
+
+fun exceedsMaxLedgerAmount(amount: Double): Boolean {
+    if (!amount.isFinite() || amount <= 0) return false
+    return amount > MAX_LEDGER_AMOUNT + 0.009
+}
+
+fun isExcessPayment(amount: Double, pending: Double): Boolean {
+    if (!amount.isFinite() || amount <= 0) return false
+    return amount > pending + 0.009
+}

@@ -24,11 +24,18 @@ object Routes {
     const val AiInsights = "ai_insights"
     const val DailyCashNote = "daily_cash_note"
     const val Settings = "settings"
+    const val Profile = "profile"
     const val Subscription = "subscription"
     const val FundingQualification = "funding_qualification/{opportunityId}"
+    const val GroupBuying = "group_buying"
+    const val GroupBuyingNew = "group_buying_new"
+    const val GroupBuyingResult = "group_buying_result/{requestId}"
 
     fun fundingQualification(opportunityId: String): String =
-        "funding_qualification/$opportunityId"
+        "funding_qualification/${Uri.encode(opportunityId)}"
+
+    fun groupBuyingResult(requestId: String): String =
+        "group_buying_result/${Uri.encode(requestId)}"
 
     fun reminderDetail(reminderId: String): String = "reminder_detail/${Uri.encode(reminderId)}"
 

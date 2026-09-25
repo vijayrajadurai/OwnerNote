@@ -32,6 +32,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.material3.Icon
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -58,6 +60,7 @@ import com.shopai.app.ui.theme.Danger
 import com.shopai.app.ui.theme.ShopAiThemeColors
 import com.shopai.app.util.DeviceSpeechRecognizer
 import com.shopai.app.util.DeviceTextRecognizer
+import com.shopai.app.util.exceedsMaxLedgerAmount
 import com.shopai.app.util.localDateToIsoInstant
 import com.shopai.app.util.parseIsoToLocalDate
 import java.time.LocalDate
@@ -76,6 +79,8 @@ fun VoiceEntryScreen(
     var partyName by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
+    val enteredAmount = amount.toDoubleOrNull() ?: 0.0
+    val amountTooLarge = exceedsMaxLedgerAmount(enteredAmount)
     var dueDate by remember { mutableStateOf<LocalDate?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var parsing by remember { mutableStateOf(false) }
@@ -405,6 +410,8 @@ fun VoiceEntryScreen(
                         stringResource(R.string.amount_label),
                         amount,
                         { amount = it.filter { ch -> ch.isDigit() || ch == '.' } },
+                        error = if (amountTooLarge) stringResource(R.string.amount_max_one_crore) else null,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     )
                     ShopTextField(stringResource(R.string.note_label), description, { description = it })
                     FutureDatePickerField(
@@ -412,14 +419,18 @@ fun VoiceEntryScreen(
                         selectedDate = dueDate,
                         onDateSelected = { dueDate = it },
                         placeholder = stringResource(R.string.due_date_placeholder),
-                        allowEmpty = true,
+                        allowEmpty = false,
                     )
                 }
 
                 PrimaryButton(
                     label = stringResource(R.string.save),
                     loading = saving,
-                    enabled = partyName.isNotBlank() && (amount.toDoubleOrNull() ?: 0.0) > 0,
+                    enabled = partyName.isNotBlank() &&
+                        enteredAmount > 0 &&
+                        !amountTooLarge &&
+                        description.trim().isNotEmpty() &&
+                        dueDate != null,
                     onClick = { showConfirmDialog = true },
                 )
             }
@@ -456,7 +467,7 @@ fun VoiceEntryScreen(
                                 CreateDebitInput(
                                     supplierName = partyName.trim(),
                                     amount = amt,
-                                    description = description.ifBlank { null },
+                                    description = description.trim(),
                                     dueDate = due,
                                 ),
                             )
@@ -464,7 +475,7 @@ fun VoiceEntryScreen(
                                 CreateCreditInput(
                                     customerName = partyName.trim(),
                                     amount = amt,
-                                    description = description.ifBlank { null },
+                                    description = description.trim(),
                                     dueDate = due,
                                 ),
                             )

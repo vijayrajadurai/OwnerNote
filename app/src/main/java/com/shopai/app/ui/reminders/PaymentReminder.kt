@@ -1,7 +1,7 @@
 package com.shopai.app.ui.reminders
 
-import com.shopai.app.data.model.PriorityItem
 import com.shopai.app.data.model.ReminderItem
+import com.shopai.app.util.parseIsoToLocalDate
 import java.time.LocalDate
 import java.util.Locale
 
@@ -21,8 +21,13 @@ data class PaymentReminder(
     val urgency: ReminderUrgency,
 )
 
+fun PaymentReminder.isCustomerCredit(): Boolean {
+    val k = kind.uppercase(Locale.ROOT)
+    return k == "COLLECTION" || k == "CREDIT"
+}
+
 fun reminderUrgency(dueDateIso: String, today: LocalDate = LocalDate.now()): ReminderUrgency {
-    val due = runCatching { LocalDate.parse(dueDateIso.take(10)) }.getOrNull() ?: return ReminderUrgency.UPCOMING
+    val due = parseIsoToLocalDate(dueDateIso) ?: return ReminderUrgency.UPCOMING
     return when {
         due.isBefore(today) -> ReminderUrgency.OVERDUE
         due.isEqual(today) -> ReminderUrgency.DUE_TODAY
@@ -44,27 +49,9 @@ fun ReminderItem.toPaymentReminder(today: LocalDate = LocalDate.now()): PaymentR
 }
 
 fun List<ReminderItem>.toSortedPaymentReminders(
-    priorities: List<PriorityItem> = emptyList(),
     today: LocalDate = LocalDate.now(),
 ): List<PaymentReminder> {
-    val fromReminders = filter { !it.isDone }.map { it.toPaymentReminder(today) }
-    val source = if (fromReminders.isNotEmpty()) {
-        fromReminders
-    } else {
-        priorities.take(8).mapIndexed { index, priority ->
-            val due = priority.dueDate ?: today.toString()
-            PaymentReminder(
-                id = "priority-$index",
-                kind = priority.kind,
-                amount = priority.amount,
-                partyName = priority.message.substringBefore(" —").ifBlank { priority.message },
-                description = priority.message,
-                dueDateIso = due,
-                urgency = reminderUrgency(due, today),
-            )
-        }
-    }
-    return source.sortedWith(
+    return filter { !it.isDone }.map { it.toPaymentReminder(today) }.sortedWith(
         compareBy<PaymentReminder> {
             when (it.urgency) {
                 ReminderUrgency.OVERDUE -> 0
@@ -78,7 +65,7 @@ fun List<ReminderItem>.toSortedPaymentReminders(
 fun samplePaymentReminders(today: LocalDate = LocalDate.of(2026, 9, 22)): List<PaymentReminder> = listOf(
     PaymentReminder(
         id = "sample-overdue",
-        kind = "COLLECTION",
+        kind = "PAYMENT",
         amount = 8_200.0,
         partyName = "Suresh Traders",
         description = "Monthly stock balance",

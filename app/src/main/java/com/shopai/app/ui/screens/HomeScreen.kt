@@ -7,8 +7,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -36,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -54,7 +62,7 @@ import com.shopai.app.ui.components.ApiErrorAlertDialog
 import com.shopai.app.ui.components.BottomNavTab
 import com.shopai.app.ui.components.DashboardGreetingHeader
 import com.shopai.app.ui.components.HomeBackHandler
-import com.shopai.app.ui.components.HomePriorityList
+// import com.shopai.app.ui.components.HomePriorityList
 // import com.shopai.app.ui.components.HomeCreditDebitActions
 // import com.shopai.app.ui.components.TransactionEntryChooserDialog
 // import com.shopai.app.ui.components.TransactionEntryType
@@ -85,6 +93,16 @@ private object HomeTtsSession {
 }
 
 @Composable
+private fun homeHealthStatusLabel(status: String): String = stringResource(
+    when (status.uppercase()) {
+        "WATCH" -> R.string.health_watch
+        "PRESSURE" -> R.string.health_pressure
+        "HIGH_PRESSURE" -> R.string.health_high_pressure
+        else -> R.string.health_stable
+    },
+)
+
+@Composable
 fun HomeScreen(
     container: AppContainer,
     onNavigate: (String) -> Unit,
@@ -102,7 +120,7 @@ fun HomeScreen(
     var alertError by remember { mutableStateOf<String?>(null) }
     // var entryChooser by remember { mutableStateOf<TransactionEntryType?>(null) }
     var cashNoteSummary by remember { mutableStateOf<TodayCashSummary?>(null) }
-    var showAllPriorities by remember { mutableStateOf(false) }
+    // var showAllPriorities by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val errorLoadDashboard = stringResource(R.string.error_load_dashboard)
     // val contactPickFailed = stringResource(R.string.contacts_pick_failed)
@@ -185,45 +203,55 @@ fun HomeScreen(
     HomeBackHandler()
     ApiErrorAlertDialog(message = alertError, onDismiss = { alertError = null })
 
-    val carouselItems = remember(reminders, priorities) {
-        reminders.toSortedPaymentReminders(priorities)
+    val carouselItems = remember(reminders) {
+        reminders.toSortedPaymentReminders()
     }
     val unreadReminders = carouselItems.count {
         it.urgency == ReminderUrgency.OVERDUE || it.urgency == ReminderUrgency.DUE_TODAY
     }
 
-    MainTabScaffold(activeTab = BottomNavTab.Home, onNavigate = onNavigate) {
+    MainTabScaffold(
+        activeTab = BottomNavTab.Home,
+        onNavigate = onNavigate,
+        padContent = false,
+        applyTopInset = false,
+    ) {
         Column(
-            modifier = Modifier.verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
         ) {
-            DashboardGreetingHeader(
-                ownerName = business?.ownerName.orEmpty(),
-                unreadCount = unreadReminders,
-                onNotificationsClick = { onNavigate(Routes.Reminders) },
-            )
+            HomeGradientHeader {
+                DashboardGreetingHeader(
+                    ownerName = business?.ownerName.orEmpty(),
+                    unreadCount = unreadReminders,
+                    onNotificationsClick = { onNavigate(Routes.Reminders) },
+                    onProfileClick = { onNavigate(Routes.Profile) },
+                    onGradient = false,
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                )
 
-            ReminderCarousel(
-                items = carouselItems,
-                onOpenDetails = { reminder -> onNavigate(Routes.reminderDetail(reminder.id)) },
-                onMarkPaid = { reminder ->
-                    if (reminder.kind.equals("CUSTOM", ignoreCase = true)) {
-                        scope.launch {
-                            runCatching {
-                                container.reminderRepository.markDone(reminder.id)
-                                reload()
-                            }
-                        }
-                    } else {
-                        onNavigate(Routes.reminderDetail(reminder.id))
-                    }
-                },
-            )
+                if (carouselItems.isNotEmpty()) {
+                    ReminderCarousel(
+                        items = carouselItems,
+                        onOpenDetails = { reminder -> onNavigate(Routes.reminderDetail(reminder.id)) },
+                        onHeader = true,
+                    )
+                }
+            }
 
-            DailyCashHomeCard(
-                summary = cashNoteSummary,
-                onClick = { onNavigate(Routes.DailyCashNote) },
-            )
+            Column(
+                modifier = Modifier
+                    .offset(y = (-8).dp)
+                    .clip(RoundedCornerShape(topStart = 36.dp, topEnd = 36.dp))
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                DailyCashHomeCard(
+                    summary = cashNoteSummary,
+                    onClick = { onNavigate(Routes.DailyCashNote) },
+                )
 
             if (loading) {
                 CircularProgressIndicator(
@@ -261,6 +289,23 @@ fun HomeScreen(
                     }
                 }
 
+                health?.let { h ->
+                    HomeSectionHeader(title = stringResource(R.string.home_business_health))
+                    ShopCard {
+                        Text(
+                            text = homeHealthStatusLabel(h.status),
+                            fontWeight = FontWeight.Bold,
+                            color = ShopAiThemeColors.primary,
+                        )
+                        Text(
+                            text = h.explanation,
+                            color = ShopAiThemeColors.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
+                    }
+                }
+
+                /*
                 if (priorities.isNotEmpty()) {
                     HomeSectionHeader(
                         title = stringResource(R.string.home_today_priorities),
@@ -288,6 +333,7 @@ fun HomeScreen(
                         )
                     }
                 }
+                */
 
                 /*
                 HomeSectionHeader(title = stringResource(R.string.home_quick_actions))
@@ -340,6 +386,37 @@ fun HomeScreen(
 
                 VoiceFabBottomSpacer()
             }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeGradientHeader(
+    content: @Composable () -> Unit,
+) {
+    val view = LocalView.current
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.background),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(
+                    if (view.isInEditMode) {
+                        Modifier
+                    } else {
+                        Modifier.windowInsetsPadding(
+                            WindowInsets.safeDrawing.only(WindowInsetsSides.Top),
+                        )
+                    },
+                )
+                .padding(top = 8.dp, bottom = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+        ) {
+            content()
         }
     }
 }
@@ -370,7 +447,7 @@ private fun DashboardStatCard(
         Text(
             text = value,
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.SemiBold,
             color = accent,
         )
         Text(
@@ -555,33 +632,38 @@ private fun CashNoteStatChip(
     }
 }
 
-@Preview(showBackground = true, name = "Owner Note dashboard")
+@Preview(showBackground = true, widthDp = 390, heightDp = 844, name = "Owner Note dashboard")
 @Composable
 private fun OwnerNoteDashboardPreview() {
     ShopAiTheme {
         Column(
             modifier = Modifier
-                .background(MaterialTheme.colorScheme.background)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background),
         ) {
-            DashboardGreetingHeader(
-                ownerName = "Priya",
-                unreadCount = 2,
-                onNotificationsClick = {},
-            )
-            ReminderCarousel(
-                items = samplePaymentReminders(),
-                onOpenDetails = {},
-                onMarkPaid = {},
-            )
+            HomeGradientHeader {
+                DashboardGreetingHeader(
+                    ownerName = "Priya",
+                    unreadCount = 2,
+                    onNotificationsClick = {},
+                    onGradient = false,
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                )
+                ReminderCarousel(
+                    items = samplePaymentReminders(),
+                    onOpenDetails = {},
+                    onMarkPaid = {},
+                    onHeader = true,
+                )
+            }
         }
     }
 }
 
 @Preview(
     showBackground = true,
+    widthDp = 390,
+    heightDp = 844,
     uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES,
     name = "Owner Note dashboard dark",
 )
@@ -590,20 +672,24 @@ private fun OwnerNoteDashboardDarkPreview() {
     ShopAiTheme {
         Column(
             modifier = Modifier
-                .background(MaterialTheme.colorScheme.background)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background),
         ) {
-            DashboardGreetingHeader(
-                ownerName = "Priya",
-                unreadCount = 2,
-                onNotificationsClick = {},
-            )
-            ReminderCarousel(
-                items = samplePaymentReminders(),
-                onOpenDetails = {},
-                onMarkPaid = {},
-            )
+            HomeGradientHeader {
+                DashboardGreetingHeader(
+                    ownerName = "Priya",
+                    unreadCount = 2,
+                    onNotificationsClick = {},
+                    onGradient = false,
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                )
+                ReminderCarousel(
+                    items = samplePaymentReminders(),
+                    onOpenDetails = {},
+                    onMarkPaid = {},
+                    onHeader = true,
+                )
+            }
         }
     }
 }

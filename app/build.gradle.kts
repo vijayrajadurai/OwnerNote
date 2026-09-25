@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
     alias(libs.plugins.ksp)
 }
 
@@ -17,7 +18,8 @@ android {
         versionCode = 1
         versionName = "0.1.0"
 
-        // Production API (Render). For local dev: http://10.0.2.2:4000 (emulator) or http://<lan-ip>:4000 (device)
+        // Production API (Render). Debug defaults to the local Owner Note backend.
+        // Override with -PAPI_BASE_URL=http://<lan-ip>:4000 when testing on a physical device.
         buildConfigField("String", "API_BASE_URL", "\"https://shop-ai-api.onrender.com\"")
         // Sarvam AI TTS proxy (same values as EXPO_PUBLIC_TTS_PROXY_* in apps/mobile/eas.json).
         buildConfigField("String", "TTS_PROXY_URL", "\"https://store-accountant-tts-proxy.vercel.app\"")
@@ -25,8 +27,13 @@ android {
     }
 
     buildTypes {
+        debug {
+            val localUrl = (project.findProperty("API_BASE_URL") as String?) ?: "https://shop-ai-api.onrender.com"
+            buildConfigField("String", "API_BASE_URL", "\"$localUrl\"")
+        }
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
@@ -82,8 +89,11 @@ dependencies {
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.auth)
     implementation(libs.firebase.messaging)
+    implementation(libs.firebase.crashlytics)
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.play.services.auth.api.phone)
+    implementation(libs.play.integrity)
+    implementation(libs.androidx.browser)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)

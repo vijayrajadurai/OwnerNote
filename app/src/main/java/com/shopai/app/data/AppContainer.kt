@@ -14,6 +14,7 @@ import com.shopai.app.data.repository.PreferencesRepository
 import com.shopai.app.data.repository.BusinessRepository
 import com.shopai.app.data.repository.DiscoverRepository
 import com.shopai.app.data.repository.FundingRepository
+import com.shopai.app.data.repository.GroupBuyingRepository
 import com.shopai.app.data.repository.InsightsRepository
 import com.shopai.app.data.repository.PartyRepository
 import com.shopai.app.data.repository.PushTokenRepository
@@ -24,12 +25,16 @@ import com.shopai.app.data.tts.NaturalTtsSpeaker
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 class AppContainer(context: Context) {
     private val appContext = context.applicationContext
+    val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val tokenStore = TokenStore(appContext)
     private val userPreferencesStore = UserPreferencesStore(appContext)
     val apiErrorHandler = ApiErrorHandler(appContext)
@@ -86,6 +91,7 @@ class AppContainer(context: Context) {
     val voiceRepository = VoiceRepository(api)
     val reminderRepository = ReminderRepository(api)
     val fundingRepository = FundingRepository(api)
+    val groupBuyingRepository = GroupBuyingRepository(api)
     val naturalTtsSpeaker = NaturalTtsSpeaker(appContext)
     private val localDatabase = ShopAiLocalDatabase.get(appContext)
     val dailyCashRepository = DailyCashRepository(localDatabase.dailyCashDao(), api)

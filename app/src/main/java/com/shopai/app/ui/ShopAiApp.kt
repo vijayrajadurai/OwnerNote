@@ -31,10 +31,14 @@ import com.shopai.app.ui.screens.DailyCashNoteScreen
 import com.shopai.app.ui.screens.SupplierDetailScreen
 import com.shopai.app.ui.screens.DiscoverScreen
 import com.shopai.app.ui.screens.FundingQualificationScreen
+import com.shopai.app.ui.screens.GroupBuyingResultScreen
+import com.shopai.app.ui.screens.GroupBuyingScreen
 import com.shopai.app.ui.screens.HomeScreen
 import com.shopai.app.ui.screens.LoginScreen
 import com.shopai.app.ui.screens.MoreScreen
+import com.shopai.app.ui.screens.NewGroupBuyingRequestScreen
 import com.shopai.app.ui.screens.OtpScreen
+import com.shopai.app.ui.screens.ProfileEditScreen
 import com.shopai.app.ui.screens.RemindersScreen
 import com.shopai.app.ui.screens.ReminderDetailScreen
 import com.shopai.app.ui.screens.SplashScreen
@@ -248,7 +252,49 @@ fun ShopAiApp(container: AppContainer) {
             DailyCashNoteScreen(container = container, onBack = { navController.navigateUpOrHome() })
         }
         composable(Routes.AiInsights) {
-            AiInsightsScreen(container = container, onBack = { navController.navigateUpOrHome() })
+            AiInsightsScreen(
+                container = container,
+                onBack = { navController.navigateUpOrHome() },
+                onOpenLoanOffer = { opportunityId ->
+                    navController.navigate(Routes.fundingQualification(opportunityId))
+                },
+            )
+        }
+        composable(Routes.Profile) {
+            ProfileEditScreen(
+                container = container,
+                onBack = { navController.navigateUpOrHome() },
+            )
+        }
+        composable(Routes.GroupBuying) {
+            GroupBuyingScreen(
+                container = container,
+                onBack = { navController.navigateUpOrHome() },
+                onNewRequest = { navController.navigate(Routes.GroupBuyingNew) },
+                onOpenRequest = { requestId -> navController.navigate(Routes.groupBuyingResult(requestId)) },
+            )
+        }
+        composable(Routes.GroupBuyingNew) {
+            NewGroupBuyingRequestScreen(
+                container = container,
+                onBack = { navController.navigateUpOrHome() },
+                onCreated = { requestId ->
+                    navController.navigate(Routes.groupBuyingResult(requestId)) {
+                        popUpTo(Routes.GroupBuying) { inclusive = false }
+                    }
+                },
+            )
+        }
+        composable(
+            route = Routes.GroupBuyingResult,
+            arguments = listOf(navArgument("requestId") { type = NavType.StringType }),
+        ) { entry ->
+            val requestId = entry.arguments?.getString("requestId") ?: return@composable
+            GroupBuyingResultScreen(
+                container = container,
+                requestId = requestId,
+                onBack = { navController.navigateUpOrHome() },
+            )
         }
         composable(Routes.Settings) {
             SettingsScreen(
@@ -277,12 +323,12 @@ fun ShopAiApp(container: AppContainer) {
         if (shouldShowVoiceEntryFab(currentRoute)) {
             VoiceEntryFab(
                 onClick = { navController.navigate(Routes.VoiceEntry) },
-                modifier = Modifier.align(Alignment.BottomEnd),
-                bottomPadding = if (isMainTabRoute(currentRoute)) 88.dp else 24.dp,
+                modifier = Modifier.align(Alignment.BottomCenter),
+                bottomPadding = if (isMainTabRoute(currentRoute)) 78.dp else 24.dp,
             )
         }
 
-        if (isMainTabRoute(currentRoute)) {
+        if (isMainTabRoute(currentRoute) || currentRoute == Routes.BusinessSetup) {
             EnsurePushRegistration(container)
         }
     }

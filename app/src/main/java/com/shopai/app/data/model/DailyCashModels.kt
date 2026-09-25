@@ -61,6 +61,7 @@ data class SubmitDailyCashReportRequest(
     val cashOut: Double,
     val upiIn: Double,
     val upiOut: Double,
+    val openingBalance: Double? = null,
     val entries: List<SubmitDailyCashReportEntry>,
 )
 
@@ -83,6 +84,18 @@ data class DailyCashReportResponse(
     val cashOut: Double = 0.0,
     val upiIn: Double = 0.0,
     val upiOut: Double = 0.0,
+    val openingBalance: Double? = null,
     val submittedAt: String,
     val entries: List<DailyCashReportEntryResponse> = emptyList(),
+)
+
+data class DailyCashOpeningRequest(
+    val date: String,
+    val openingBalance: Double,
+)
+
+data class DailyCashOpeningResponse(
+    val date: String,
+    val openingBalance: Double,
+    val updatedAt: String? = null,
 )

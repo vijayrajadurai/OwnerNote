@@ -8,4 +8,5 @@ data class DailyCashDayEntity(
     @PrimaryKey val date: String,
     val status: String,
     val submittedAt: String?,
+    val openingBalance: Double? = null,
 )

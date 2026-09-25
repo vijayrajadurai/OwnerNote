@@ -1,6 +1,7 @@
 package com.shopai.app.ui.screens
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -33,6 +34,7 @@ import com.shopai.app.data.network.presentApiError
 import com.shopai.app.data.model.AiInsight
 import com.shopai.app.data.model.BusinessHealth
 import com.shopai.app.data.model.CashFlowSummary
+import com.shopai.app.data.model.FundingOpportunity
 import com.shopai.app.data.model.SeasonalInsightItem
 import com.shopai.app.ui.components.ApiErrorAlertDialog
 import com.shopai.app.ui.components.DetailScaffold
@@ -53,6 +55,7 @@ private val categories = listOf(
     InsightCategory("CUSTOMERS", R.string.filter_customers),
     InsightCategory("SUPPLIERS", R.string.filter_suppliers),
     InsightCategory("SEASONAL", R.string.filter_seasonal),
+    InsightCategory("FUNDING", R.string.filter_loan_offers),
 )
 
 private fun categoryOf(type: String): String = when (type) {
@@ -60,18 +63,32 @@ private fun categoryOf(type: String): String = when (type) {
     "COLLECTION_DUE" -> "CUSTOMERS"
     "PAYMENT_DUE" -> "SUPPLIERS"
     "SEASONAL_PREPARATION", "UPCOMING_NEED" -> "SEASONAL"
+    "FUNDING", "LOAN", "WORKING_CAPITAL" -> "FUNDING"
     else -> "BUSINESS_HEALTH"
+}
+
+private fun AiInsight.isLoanOffer(): Boolean {
+    val typeKey = type.uppercase()
+    val blob = "$title $description".lowercase()
+    return typeKey.contains("FUND") ||
+        typeKey.contains("LOAN") ||
+        blob.contains("loan") ||
+        blob.contains("funding") ||
+        blob.contains("working capital") ||
+        blob.contains("கடன்")
 }
 
 @Composable
 fun AiInsightsScreen(
     container: AppContainer,
     onBack: () -> Unit,
+    onOpenLoanOffer: (opportunityId: String) -> Unit,
 ) {
     var health by remember { mutableStateOf<BusinessHealth?>(null) }
     var cashFlow by remember { mutableStateOf<CashFlowSummary?>(null) }
     var insights by remember { mutableStateOf<List<AiInsight>>(emptyList()) }
     var seasonal by remember { mutableStateOf<List<SeasonalInsightItem>>(emptyList()) }
+    var loanOffers by remember { mutableStateOf<List<FundingOpportunity>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var alertError by remember { mutableStateOf<String?>(null) }
@@ -88,6 +105,7 @@ fun AiInsightsScreen(
                 cashFlow = container.insightsRepository.getCashFlow()
                 insights = container.insightsRepository.getAiInsights()
                 seasonal = container.insightsRepository.getSeasonalInsights()
+                loanOffers = container.fundingRepository.getOpportunities()
             }.onFailure {
                 container.presentApiError(it, errorLoadInsights, { msg -> error = msg }, { msg -> alertError = msg })
             }
@@ -147,8 +165,51 @@ fun AiInsightsScreen(
                             )
                         }
                     }
+                    if ((category == "ALL" || category == "FUNDING") && loanOffers.isNotEmpty()) {
+                        Text(
+                            stringResource(R.string.filter_loan_offers),
+                            fontWeight = FontWeight.Bold,
+                            color = ShopAiThemeColors.primary,
+                            modifier = Modifier.padding(bottom = 8.dp),
+                        )
+                        loanOffers.forEach { offer ->
+                            ShopCard(
+                                modifier = Modifier
+                                    .padding(bottom = 8.dp)
+                                    .clickable { onOpenLoanOffer(offer.id) },
+                            ) {
+                                Text(offer.title, fontWeight = FontWeight.Bold, color = ShopAiThemeColors.onSurface)
+                                Text(
+                                    offer.explanation,
+                                    color = ShopAiThemeColors.onSurfaceVariant,
+                                    modifier = Modifier.padding(top = 4.dp),
+                                )
+                                Text(
+                                    stringResource(R.string.insight_open_suggestion_call),
+                                    color = ShopAiThemeColors.primary,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.padding(top = 8.dp),
+                                )
+                            }
+                        }
+                    }
                     filtered.forEach { insight ->
-                        ShopCard(modifier = Modifier.padding(bottom = 8.dp)) {
+                        val openLoan = {
+                            if (insight.isLoanOffer()) {
+                                loanOffers.firstOrNull()?.id?.let(onOpenLoanOffer)
+                            }
+                        }
+                        ShopCard(
+                            modifier = Modifier
+                                .padding(bottom = 8.dp)
+                                .then(
+                                    if (insight.isLoanOffer() && loanOffers.isNotEmpty()) {
+                                        Modifier.clickable(onClick = openLoan)
+                                    } else {
+                                        Modifier
+                                    },
+                                ),
+                        ) {
                             Text(insight.title, fontWeight = FontWeight.Bold, color = severityColor(insight.severity))
                             Text(insight.description, color = ShopAiThemeColors.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
                             OutlinedButton(

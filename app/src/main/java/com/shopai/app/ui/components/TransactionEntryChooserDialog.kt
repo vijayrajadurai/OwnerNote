@@ -3,7 +3,6 @@ package com.shopai.app.ui.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -32,7 +31,7 @@ fun TransactionEntryChooserDialog(
         TransactionEntryType.DEBIT -> stringResource(R.string.txn_chooser_title_debit)
     }
 
-    AlertDialog(
+    ShopAlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
