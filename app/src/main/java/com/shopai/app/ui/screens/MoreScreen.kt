@@ -39,6 +39,7 @@ fun MoreScreen(
 ) {
     val scope = rememberCoroutineScope()
     val menuItems = listOf(
+        MenuItem(R.string.more_ask_business, R.string.more_ask_business_caption, Routes.AskBusiness),
         MenuItem(R.string.more_ai_insights, R.string.more_ai_insights_caption, Routes.AiInsights),
         MenuItem(R.string.profile_title, R.string.profile_subtitle, Routes.Profile),
         MenuItem(R.string.more_group_buying, R.string.more_group_buying_caption, Routes.GroupBuying),

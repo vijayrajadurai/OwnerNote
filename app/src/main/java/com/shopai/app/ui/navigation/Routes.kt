@@ -32,6 +32,7 @@ object Routes {
     const val GroupBuyingResult = "group_buying_result/{requestId}"
     const val Inventory = "inventory"
     const val LocalOffers = "local_offers"
+    const val AskBusiness = "ask_business"
 
     fun fundingQualification(opportunityId: String): String =
         "funding_qualification/${Uri.encode(opportunityId)}"

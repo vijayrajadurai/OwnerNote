@@ -183,6 +183,8 @@
     <string name="more_ai_insights_caption">Cash flow, business health, seasonal trends</string>
     <string name="more_group_buying">Group buying</string>
     <string name="more_group_buying_caption">Find nearby shops buying the same stock</string>
+    <string name="more_ask_business">Ask My Business</string>
+    <string name="more_ask_business_caption">Ask a question, get an instant real answer</string>
     <string name="more_inventory">Inventory / Stock</string>
     <string name="more_inventory_caption">Track stock and get AI usage insights</string>
     <string name="more_local_offers">Today offer</string>
@@ -544,4 +546,21 @@
     <string name="offer_no_nearby">No nearby offers right now.</string>
     <string name="offer_distance_line">%1$s away · %2$s</string>
     <string name="offer_from_shop">From %1$s</string>
+
+    <string name="ask_title">Ask My Business</string>
+    <string name="ask_subtitle">Your business, always with you.</string>
+    <string name="ask_placeholder">Owner, what do you want to ask?</string>
+    <string name="ask_send">Ask</string>
+    <string name="ask_speak">Speak</string>
+    <string name="ask_error">Could not get an answer. Check your connection and try again.</string>
+    <string name="ask_chip_today">Today</string>
+    <string name="ask_chip_collections">Collections</string>
+    <string name="ask_chip_stock">Stock</string>
+    <string name="ask_chip_sales">Sales</string>
+    <string name="ask_chip_expenses">Expenses</string>
+    <string name="ask_sample_today">How is my business today?</string>
+    <string name="ask_sample_collections">Who should I collect from?</string>
+    <string name="ask_sample_stock">How is my inventory stock?</string>
+    <string name="ask_sample_sales">Has my business improved compared to last month?</string>
+    <string name="ask_sample_expenses">Is there a risk of cash shortage?</string>
 </resources>

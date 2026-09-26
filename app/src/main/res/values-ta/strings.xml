@@ -143,6 +143,8 @@
     <string name="more_ai_insights_caption">பணப்புழக்கம், வியாபார ஆரோக்கியம், சீசன் மாற்றங்கள்</string>
     <string name="more_group_buying">கூட்டாக வாங்குதல்</string>
     <string name="more_group_buying_caption">அதே பொருள் வாங்கும் அருகில் உள்ள கடைகளைக் கண்டுபிடிக்கவும்</string>
+    <string name="more_ask_business">Ask My Business</string>
+    <string name="more_ask_business_caption">ஒரு கேள்வி கேளுங்கள், உடனே உண்மையான பதில் பெறுங்கள்</string>
     <string name="more_inventory">இருப்பு / ஸ்டாக்</string>
     <string name="more_inventory_caption">ஸ்டாக்கை கண்காணித்து AI பயன்பாடு பரிந்துரைகளைப் பெறுங்கள்</string>
     <string name="more_local_offers">இன்றைய சலுகை</string>
@@ -492,4 +494,21 @@
     <string name="offer_no_nearby">இப்போது அருகில் சலுகை இல்லை.</string>
     <string name="offer_distance_line">%1$s தொலைவு · %2$s</string>
     <string name="offer_from_shop">%1$s இடமிருந்து</string>
+
+    <string name="ask_title">Ask My Business</string>
+    <string name="ask_subtitle">உங்கள் தொழில், எப்போதும் உங்களுடன்.</string>
+    <string name="ask_placeholder">Owner, என்ன கேட்கணும்?</string>
+    <string name="ask_send">கேளுங்கள்</string>
+    <string name="ask_speak">பேசு</string>
+    <string name="ask_error">பதில் கிடைக்கவில்லை. Connection சரிபார்த்து மீண்டும் முயற்சிக்கவும்.</string>
+    <string name="ask_chip_today">இன்று</string>
+    <string name="ask_chip_collections">வசூல்</string>
+    <string name="ask_chip_stock">ஸ்டாக்</string>
+    <string name="ask_chip_sales">விற்பனை</string>
+    <string name="ask_chip_expenses">செலவு</string>
+    <string name="ask_sample_today">இன்னைக்கு என் business எப்படி இருக்கு?</string>
+    <string name="ask_sample_collections">யார் கிட்ட வசூல் பண்ணணும்?</string>
+    <string name="ask_sample_stock">என் inventory stock எப்படி இருக்கு?</string>
+    <string name="ask_sample_sales">கடந்த மாதத்தை விட business improve ஆகிடுச்சா?</string>
+    <string name="ask_sample_expenses">Cash shortage risk ஏதாவது இருக்கா?</string>
 </resources>
