@@ -8,10 +8,10 @@ import org.junit.Test
 import java.util.Calendar
 import java.util.Date
 
-class OffersLogicTest {
-    private val ambatturLat = 13.1143
-    private val ambatturLon = 80.1548
+private const val ambatturLat = 13.1143
+private const val ambatturLon = 80.1548
 
+class OffersLogicTest {
     private fun offsetKm(northKm: Double) = ambatturLat + northKm / 111.32
 
     private data class Offer(
