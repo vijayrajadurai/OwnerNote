@@ -20,4 +20,10 @@ class SmsOtpAutofillTest {
     fun ignoresMessagesWithoutOtp() {
         assertNull(extractOtpFromMessage("Your code will arrive shortly."))
     }
+
+    @Test
+    fun ignoresNullOrBlankMessage() {
+        assertNull(extractOtpFromMessage(null))
+        assertNull(extractOtpFromMessage("   "))
+    }
 }

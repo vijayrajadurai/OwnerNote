@@ -1,6 +1,5 @@
 package com.shopai.app.data.repository
 
-import android.app.Activity
 import com.shopai.app.crash.CrashReporting
 import com.shopai.app.data.api.ShopAiApi
 import com.shopai.app.data.auth.FirebasePhoneAuthClient
@@ -35,11 +34,11 @@ class AuthRepository(
         return token
     }
 
-    suspend fun sendOtp(activity: Activity, phone: String): PhoneOtpSendResult {
+    suspend fun sendOtp(phone: String): PhoneOtpSendResult {
         val normalized = phone.filter { it.isDigit() }.takeLast(10)
         val e164 = "+91$normalized"
         tokenStore.setPendingPhone(normalized)
-        return when (val firebase = firebasePhoneAuth.sendOtp(activity, e164)) {
+        return when (val firebase = firebasePhoneAuth.sendOtp(e164)) {
             FirebasePhoneSendResult.CodeSent -> {
                 PhoneOtpSendResult.CodeSent(SendOtpResponse(phone = normalized, expiresInSeconds = 60))
             }

@@ -40,7 +40,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -57,7 +56,6 @@ import com.shopai.app.data.repository.PhoneOtpSendResult
 import com.shopai.app.ui.components.ApiErrorAlertDialog
 import com.shopai.app.ui.components.PrimaryButton
 import com.shopai.app.util.SmsOtpAutofillEffect
-import com.shopai.app.util.findActivity
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -80,7 +78,6 @@ fun OtpScreen(
     var resendEpoch by remember { mutableIntStateOf(0) }
     var secondsLeft by remember { mutableIntStateOf(ResendSeconds) }
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current
     val errorInvalidOtp = stringResource(R.string.error_invalid_otp)
     val errorSendOtp = stringResource(R.string.error_send_otp)
     val focusRequester = remember { FocusRequester() }
@@ -128,7 +125,7 @@ fun OtpScreen(
             resending = true
             error = null
             runCatching {
-                when (val result = container.authRepository.sendOtp(context.findActivity(), phone)) {
+                when (val result = container.authRepository.sendOtp(phone)) {
                     is PhoneOtpSendResult.CodeSent -> {
                         code = ""
                         resendEpoch++

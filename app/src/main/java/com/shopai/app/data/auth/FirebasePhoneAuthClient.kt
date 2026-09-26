@@ -1,6 +1,5 @@
 package com.shopai.app.data.auth
 
-import android.app.Activity
 import com.google.firebase.FirebaseException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.PhoneAuthCredential
@@ -28,13 +27,11 @@ class FirebasePhoneAuthClient(
     private var resendToken: PhoneAuthProvider.ForceResendingToken? = null
 
     fun warmupAppVerification() {
-        runCatching { auth.initializeRecaptchaConfig() }
+        // Never force the web reCAPTCHA/browser flow. OTP uses Play Integrity only.
+        auth.firebaseAuthSettings.forceRecaptchaFlowForTesting(false)
     }
 
-    suspend fun sendOtp(activity: Activity, e164Phone: String): FirebasePhoneSendResult {
-        if (activity.isFinishing || activity.isDestroyed) {
-            throw IllegalStateException("Login screen closed before OTP could be sent.")
-        }
+    suspend fun sendOtp(e164Phone: String): FirebasePhoneSendResult {
         val settled = AtomicBoolean(false)
         val outcome = suspendCancellableCoroutine<SendOutcome> { cont ->
             fun complete(result: Result<SendOutcome>) {
@@ -65,10 +62,13 @@ class FirebasePhoneAuthClient(
                 }
             }
 
+            // Do not call setActivity(). With an Activity, Firebase opens a browser
+            // for reCAPTCHA when Play Integrity fails. Without it, recaptcha cannot start.
+            // Timeout 0 disables Firebase SMS Retriever auto-read. Their receiver
+            // NPEs on a null SMS body (SMS_RETRIEVED / user-consent extras).
             val builder = PhoneAuthOptions.newBuilder(auth)
                 .setPhoneNumber(e164Phone)
-                .setTimeout(120L, TimeUnit.SECONDS)
-                .setActivity(activity)
+                .setTimeout(0L, TimeUnit.SECONDS)
                 .setCallbacks(callbacks)
             resendToken?.let { builder.setForceResendingToken(it) }
             PhoneAuthProvider.verifyPhoneNumber(builder.build())

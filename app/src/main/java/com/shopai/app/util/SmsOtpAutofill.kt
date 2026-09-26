@@ -21,8 +21,9 @@ import com.google.android.gms.common.api.Status
  * Reads a 6-digit OTP from Firebase / carrier SMS bodies without the READ_SMS permission.
  * Uses the SMS User Consent API: the user taps once to allow reading a single incoming message.
  */
-fun extractOtpFromMessage(message: String): String? {
-    val normalized = message.trim()
+fun extractOtpFromMessage(message: String?): String? {
+    val normalized = message?.trim().orEmpty()
+    if (normalized.isEmpty()) return null
     if (normalized.length == 6 && normalized.all { it.isDigit() }) return normalized
     return Regex("""\b(\d{6})\b""").find(normalized)?.groupValues?.get(1)
 }
@@ -44,20 +45,23 @@ fun SmsOtpAutofillEffect(onOtpReceived: (String) -> Unit) {
     DisposableEffect(activity, consentLauncher) {
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(ctx: Context?, intent: Intent?) {
-                if (intent?.action != SmsRetriever.SMS_RETRIEVED_ACTION) return
-                val extras = intent.extras ?: return
-                val status = BundleCompat.getParcelable(extras, SmsRetriever.EXTRA_STATUS, Status::class.java) ?: return
-                when (status.statusCode) {
-                    CommonStatusCodes.SUCCESS -> {
-                        val consentIntent = BundleCompat.getParcelable(
-                            extras,
-                            SmsRetriever.EXTRA_CONSENT_INTENT,
-                            Intent::class.java,
-                        )
-                        consentIntent?.let { consentLauncher.launch(it) }
-                    }
-                    CommonStatusCodes.TIMEOUT -> {
-                        SmsRetriever.getClient(activity).startSmsUserConsent(null)
+                runCatching {
+                    if (intent?.action != SmsRetriever.SMS_RETRIEVED_ACTION) return
+                    val extras = intent.extras ?: return
+                    val status = BundleCompat.getParcelable(extras, SmsRetriever.EXTRA_STATUS, Status::class.java)
+                        ?: return
+                    when (status.statusCode) {
+                        CommonStatusCodes.SUCCESS -> {
+                            val consentIntent = BundleCompat.getParcelable(
+                                extras,
+                                SmsRetriever.EXTRA_CONSENT_INTENT,
+                                Intent::class.java,
+                            ) ?: return
+                            consentLauncher.launch(consentIntent)
+                        }
+                        CommonStatusCodes.TIMEOUT -> {
+                            SmsRetriever.getClient(activity).startSmsUserConsent(null)
+                        }
                     }
                 }
             }

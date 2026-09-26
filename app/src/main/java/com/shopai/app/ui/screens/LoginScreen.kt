@@ -29,7 +29,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -43,7 +42,6 @@ import com.shopai.app.data.network.presentApiError
 import com.shopai.app.data.repository.PhoneOtpSendResult
 import com.shopai.app.ui.components.ApiErrorAlertDialog
 import com.shopai.app.ui.components.PrimaryButton
-import com.shopai.app.util.findActivity
 import kotlinx.coroutines.launch
 
 @Composable
@@ -57,7 +55,6 @@ fun LoginScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var alertError by remember { mutableStateOf<String?>(null) }
     var loading by remember { mutableStateOf(false) }
-    val context = LocalContext.current
     val errorSendOtp = stringResource(R.string.error_send_otp)
     val navigateOtp = rememberUpdatedState(onNavigateOtp)
     val navigateHome = rememberUpdatedState(onNavigateHome)
@@ -78,7 +75,7 @@ fun LoginScreen(
             loading = true
             error = null
             runCatching {
-                when (val result = container.authRepository.sendOtp(context.findActivity(), phone)) {
+                when (val result = container.authRepository.sendOtp(phone)) {
                     is PhoneOtpSendResult.CodeSent -> navigateOtp.value()
                     is PhoneOtpSendResult.SignedIn -> goHomeOrSetup(result.auth.isNewUser)
                 }

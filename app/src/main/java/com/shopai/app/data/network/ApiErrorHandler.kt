@@ -88,7 +88,9 @@ class ApiErrorHandler(private val context: Context) {
                     raw.contains("too-many-requests", ignoreCase = true) ->
                     context.getString(R.string.error_otp_blocked)
                 raw.contains("play_integrity", ignoreCase = true) ||
-                    raw.contains("not authorized to use Firebase Authentication", ignoreCase = true) ->
+                    raw.contains("not authorized to use Firebase Authentication", ignoreCase = true) ||
+                    raw.contains("MissingActivityForRecaptcha", ignoreCase = true) ||
+                    raw.contains("reCAPTCHA", ignoreCase = true) ->
                     context.getString(R.string.error_otp_app_not_verified)
                 else -> raw.takeIf { it.isNotBlank() }
             }
