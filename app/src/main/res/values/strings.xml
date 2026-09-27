@@ -25,6 +25,7 @@
     <string name="login_send_otp">Send OTP</string>
     <string name="powered_by_newonx">Powered By NewonX</string>
     <string name="error_send_otp">Could not send OTP. Check the number and try again.</string>
+    <string name="login_slow_hint">This can take up to a minute the first time — please wait…</string>
     <string name="error_otp_app_not_verified">This install is not verified for SMS. Add this app’s SHA-1 and SHA-256 in Firebase, then reinstall.</string>
     <string name="error_otp_blocked">Too many OTP attempts from this phone. Wait 1–2 hours, then try once. For testing, add a test number in Firebase Authentication.</string>
 

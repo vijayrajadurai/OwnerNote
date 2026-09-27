@@ -21,6 +21,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,6 +43,7 @@ import com.shopai.app.data.network.presentApiError
 import com.shopai.app.data.repository.PhoneOtpSendResult
 import com.shopai.app.ui.components.ApiErrorAlertDialog
 import com.shopai.app.ui.components.PrimaryButton
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
@@ -55,6 +57,7 @@ fun LoginScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var alertError by remember { mutableStateOf<String?>(null) }
     var loading by remember { mutableStateOf(false) }
+    var showSlowHint by remember { mutableStateOf(false) }
     val errorSendOtp = stringResource(R.string.error_send_otp)
     val navigateOtp = rememberUpdatedState(onNavigateOtp)
     val navigateHome = rememberUpdatedState(onNavigateHome)
@@ -83,6 +86,14 @@ fun LoginScreen(
                 container.presentApiError(it, errorSendOtp, { msg -> error = msg }, { msg -> alertError = msg })
             }
             loading = false
+        }
+    }
+
+    LaunchedEffect(loading) {
+        showSlowHint = false
+        if (loading) {
+            delay(4_000)
+            showSlowHint = true
         }
     }
 
@@ -175,6 +186,15 @@ fun LoginScreen(
             enabled = phone.length >= 10,
             onClick = { sendOtp() },
         )
+        if (showSlowHint) {
+            Text(
+                text = stringResource(R.string.login_slow_hint),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 12.dp),
+            )
+        }
 
         Spacer(modifier = Modifier.weight(1f))
 

@@ -22,6 +22,7 @@
     <string name="login_send_otp">OTP அனுப்பு</string>
     <string name="powered_by_newonx">Powered By NewonX</string>
     <string name="error_send_otp">OTP அனுப்ப முடியல. நம்பரை சரி பார்த்து மறுபடியும் முயற்சி பண்ணுங்க.</string>
+    <string name="login_slow_hint">முதல் தடவை இதற்கு ஒரு நிமிடம் வரை ஆகலாம் — கொஞ்சம் பொறுங்க…</string>
     <string name="error_otp_app_not_verified">இந்த ஆப் SMS-க்கு verify ஆகல. Firebase-ல SHA-1 மற்றும் SHA-256 சேர்த்து ஆப்பை மறுபடியும் install பண்ணுங்க.</string>
     <string name="error_otp_blocked">இந்த போன்னிலிருந்து அதிக OTP முயற்சி. 1–2 மணி நேரம் காத்திருந்து ஒரு தடவை முயற்சி பண்ணுங்க. டெஸ்ட்-க்கு Firebase-ல test number சேர்க்கலாம்.</string>
 

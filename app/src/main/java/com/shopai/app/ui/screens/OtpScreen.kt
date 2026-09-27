@@ -74,6 +74,7 @@ fun OtpScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var alertError by remember { mutableStateOf<String?>(null) }
     var loading by remember { mutableStateOf(false) }
+    var showSlowHint by remember { mutableStateOf(false) }
     var resending by remember { mutableStateOf(false) }
     var resendEpoch by remember { mutableIntStateOf(0) }
     var secondsLeft by remember { mutableIntStateOf(ResendSeconds) }
@@ -93,6 +94,14 @@ fun OtpScreen(
         while (secondsLeft > 0) {
             delay(1_000)
             secondsLeft--
+        }
+    }
+
+    LaunchedEffect(loading) {
+        showSlowHint = false
+        if (loading) {
+            delay(4_000)
+            showSlowHint = true
         }
     }
 
@@ -218,6 +227,15 @@ fun OtpScreen(
             enabled = code.length == OtpLength,
             onClick = { verifyCode(code) },
         )
+        if (showSlowHint) {
+            Text(
+                text = stringResource(R.string.login_slow_hint),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 12.dp),
+            )
+        }
 
         Spacer(modifier = Modifier.height(20.dp))
         if (secondsLeft > 0) {
@@ -263,7 +281,7 @@ private fun OtpDigitBoxes(
             .fillMaxWidth()
             .focusRequester(focusRequester),
         keyboardOptions = KeyboardOptions(
-            keyboardType = KeyboardType.NumberPassword,
+            keyboardType = KeyboardType.Number,
             imeAction = ImeAction.Done,
         ),
         singleLine = true,
