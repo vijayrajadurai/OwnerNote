@@ -14,6 +14,7 @@
     <string name="exit_app_confirm">வெளியேறு</string>
 
     <string name="splash_tagline">பேசுங்க. வியாபாரத்தை நான் கவனிச்சுக்கறேன்.</string>
+    <string name="splash_get_started">தொடங்குவோம் →</string>
 
     <string name="login_subtitle">உங்க வியாபாரத்துக்கு AI உதவியாளர். மொபைல் நம்பர் கொடுங்க.</string>
     <string name="login_phone_label">மொபைல் நம்பர்</string>

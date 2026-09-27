@@ -16,6 +16,7 @@
 
     <!-- Splash -->
     <string name="splash_tagline">Speak up. I\'ll watch your business.</string>
+    <string name="splash_get_started">Get Started →</string>
 
     <!-- Login -->
     <string name="login_subtitle">Your AI business assistant. Enter your mobile number.</string>

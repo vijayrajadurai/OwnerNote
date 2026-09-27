@@ -1,26 +1,30 @@
 package com.shopai.app.ui.screens
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.foundation.background
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.dp
 import com.shopai.app.R
 import com.shopai.app.data.AppContainer
-import com.shopai.app.ui.theme.OnPrimary
-import com.shopai.app.ui.theme.Primary
-import com.shopai.app.ui.theme.PrimaryLight
+import com.shopai.app.ui.components.PrimaryButton
+
+// Sampled from the welcome artwork's own background so the real button
+// area below the cropped image has no visible seam.
+private val WelcomeBackground = Color(0xFFEEFDF7)
 
 @Composable
 fun SplashScreen(
@@ -32,7 +36,8 @@ fun SplashScreen(
     LaunchedEffect(Unit) {
         val token = container.authRepository.hydrate()
         if (token == null) {
-            onNavigateLogin()
+            // No session — stay on the welcome screen; the owner taps
+            // "Get Started" themselves instead of being redirected.
             return@LaunchedEffect
         }
         runCatching { container.pushTokenRepository.registerCurrent() }
@@ -48,22 +53,26 @@ fun SplashScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Primary)
+            .background(WelcomeBackground)
             .windowInsetsPadding(WindowInsets.safeDrawing),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
     ) {
-        Text(
-            text = stringResource(R.string.brand_name),
-            color = OnPrimary,
-            fontSize = 36.sp,
-            fontWeight = FontWeight.ExtraBold,
-            letterSpacing = 0.5.sp,
+        Image(
+            painter = painterResource(R.drawable.img_splash_welcome),
+            contentDescription = stringResource(R.string.brand_name),
+            contentScale = ContentScale.FillWidth,
+            modifier = Modifier.fillMaxWidth(),
         )
-        Text(
-            text = stringResource(R.string.splash_tagline),
-            color = PrimaryLight,
-            style = MaterialTheme.typography.bodyMedium,
-        )
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 20.dp),
+            verticalArrangement = Arrangement.Bottom,
+        ) {
+            PrimaryButton(
+                label = stringResource(R.string.splash_get_started),
+                onClick = onNavigateLogin,
+            )
+        }
     }
 }
