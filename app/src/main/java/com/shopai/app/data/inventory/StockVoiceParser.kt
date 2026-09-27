@@ -174,7 +174,24 @@ object StockVoiceParser {
 
     private fun numericValueOf(word: String): Double? = NUMERIC_TOKEN_REGEX.find(word)?.value?.toDoubleOrNull()
 
-    private fun stripPunctuation(word: String): String = word.trim { ch -> !ch.isLetterOrDigit() }
+    /**
+     * Trims leading/trailing punctuation only. Tamil dependent vowel signs
+     * and the pulli (்) are Unicode combining marks, not letters, so a naive
+     * `!ch.isLetterOrDigit()` trim strips them off real Tamil words (e.g.
+     * "வாங்கினேன்" -> "வாங்கினேன", "பை" -> "ப") and breaks every exact-string
+     * match against the keyword/number-word/unit maps below. Combining
+     * marks are explicitly kept.
+     */
+    private fun stripPunctuation(word: String): String = word.trim { ch ->
+        !ch.isLetterOrDigit() && !isCombiningMark(ch)
+    }
+
+    private fun isCombiningMark(ch: Char): Boolean {
+        val type = Character.getType(ch)
+        return type == Character.NON_SPACING_MARK.toInt() ||
+            type == Character.COMBINING_SPACING_MARK.toInt() ||
+            type == Character.ENCLOSING_MARK.toInt()
+    }
 
     private fun matchesKeywordAt(words: List<String>, startIndex: Int, keywordWords: List<String>): Boolean {
         if (startIndex + keywordWords.size > words.size) return false
