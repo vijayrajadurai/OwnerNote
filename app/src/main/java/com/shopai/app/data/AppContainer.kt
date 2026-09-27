@@ -16,10 +16,13 @@ import com.shopai.app.data.repository.DiscoverRepository
 import com.shopai.app.data.repository.FundingRepository
 import com.shopai.app.data.repository.GroupBuyingRepository
 import com.shopai.app.data.repository.InsightsRepository
+import com.shopai.app.data.repository.InventoryRepository
+import com.shopai.app.data.repository.OffersRepository
 import com.shopai.app.data.repository.PartyRepository
 import com.shopai.app.data.repository.PushTokenRepository
 import com.shopai.app.data.repository.ReminderRepository
 import com.shopai.app.data.repository.TransactionRepository
+import com.shopai.app.data.repository.VoiceCheckinRepository
 import com.shopai.app.data.repository.VoiceRepository
 import com.shopai.app.data.tts.NaturalTtsSpeaker
 import okhttp3.Interceptor
@@ -92,9 +95,12 @@ class AppContainer(context: Context) {
     val reminderRepository = ReminderRepository(api)
     val fundingRepository = FundingRepository(api)
     val groupBuyingRepository = GroupBuyingRepository(api)
+    val inventoryRepository = InventoryRepository(api)
+    val offersRepository = OffersRepository(api, businessRepository)
     val naturalTtsSpeaker = NaturalTtsSpeaker(appContext)
     private val localDatabase = ShopAiLocalDatabase.get(appContext)
     val dailyCashRepository = DailyCashRepository(localDatabase.dailyCashDao(), api)
+    val voiceCheckinRepository = VoiceCheckinRepository(appContext, localDatabase.voiceCheckinDao())
 
     private fun ensureTrailingSlash(url: String): String =
         if (url.endsWith("/")) url else "$url/"
