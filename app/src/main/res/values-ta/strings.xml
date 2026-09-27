@@ -255,6 +255,7 @@
     <string name="profile_title">சுயவிவரம்</string>
     <string name="profile_subtitle">பெயர் மற்றும் கடை விவரத்தை திருத்துங்கள்</string>
     <string name="profile_save">சுயவிவரம் சேமி</string>
+    <string name="profile_photo_change">படத்தை மாற்று</string>
     <string name="error_load_profile">சுயவிவரத்தை ஏற்ற முடியவில்லை.</string>
     <string name="cd_open_profile">சுயவிவரம் திற</string>
     <string name="insight_open_suggestion_call">அழைப்பு கோருங்கள் →</string>

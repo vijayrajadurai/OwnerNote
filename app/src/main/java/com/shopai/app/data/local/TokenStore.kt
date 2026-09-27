@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "shop_ai_prefs")
+internal val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "shop_ai_prefs")
 
 class TokenStore(private val context: Context) {
     private val tokenKey = stringPreferencesKey("auth_token")

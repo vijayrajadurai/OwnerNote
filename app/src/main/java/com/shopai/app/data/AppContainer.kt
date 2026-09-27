@@ -5,6 +5,7 @@ import com.shopai.app.BuildConfig
 import com.shopai.app.data.api.ShopAiApi
 import com.shopai.app.data.network.ApiErrorHandler
 import com.shopai.app.data.auth.FirebasePhoneAuthClient
+import com.shopai.app.data.local.ProfilePhotoStore
 import com.shopai.app.data.local.TokenStore
 import com.shopai.app.data.local.room.ShopAiLocalDatabase
 import com.shopai.app.data.local.UserPreferencesStore
@@ -40,6 +41,7 @@ class AppContainer(context: Context) {
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val tokenStore = TokenStore(appContext)
     private val userPreferencesStore = UserPreferencesStore(appContext)
+    val profilePhotoStore = ProfilePhotoStore(appContext)
     val apiErrorHandler = ApiErrorHandler(appContext)
 
     private val authInterceptor = Interceptor { chain ->

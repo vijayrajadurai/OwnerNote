@@ -1,17 +1,25 @@
 package com.shopai.app.ui.screens
 
 import android.Manifest
+import android.graphics.BitmapFactory
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
@@ -27,8 +35,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.shopai.app.R
@@ -45,9 +57,11 @@ import com.shopai.app.ui.components.ShopTextField
 import com.shopai.app.ui.theme.Danger
 import com.shopai.app.ui.theme.ShopAiThemeColors
 import com.shopai.app.util.ShopCoordinates
+import com.shopai.app.util.copyPickedImageInto
 import com.shopai.app.util.currentShopCoordinates
 import com.shopai.app.util.displayIndianPhone
 import com.shopai.app.util.hasLocationPermission
+import com.shopai.app.util.partyInitialLetter
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -58,6 +72,7 @@ fun ProfileEditScreen(
 ) {
     var loaded by remember { mutableStateOf(false) }
     var existing by remember { mutableStateOf<Business?>(null) }
+    var photoPath by remember { mutableStateOf<String?>(null) }
     var ownerName by remember { mutableStateOf("") }
     var businessName by remember { mutableStateOf("") }
     var category by remember { mutableStateOf<BusinessCategory?>(null) }
@@ -98,7 +113,24 @@ fun ProfileEditScreen(
         if (grants.values.any { it }) readDeviceLocation() else error = errorLocation
     }
 
+    val photoPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia(),
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val previousPath = photoPath
+            val destination = container.profilePhotoStore.newPhotoFile()
+            val ok = copyPickedImageInto(context, uri, destination)
+            if (ok) {
+                container.profilePhotoStore.setPhotoPath(destination.absolutePath)
+                photoPath = destination.absolutePath
+                previousPath?.let { runCatching { java.io.File(it).delete() } }
+            }
+        }
+    }
+
     LaunchedEffect(Unit) {
+        photoPath = container.profilePhotoStore.getPhotoPath()
         runCatching { container.businessRepository.getMyBusiness() }
             .onSuccess { business ->
                 existing = business
@@ -160,6 +192,52 @@ fun ProfileEditScreen(
                 color = ShopAiThemeColors.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 16.dp),
             )
+
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp),
+            ) {
+                val photoBitmap = remember(photoPath) {
+                    photoPath?.let { path -> runCatching { BitmapFactory.decodeFile(path)?.asImageBitmap() }.getOrNull() }
+                }
+                Box(
+                    modifier = Modifier
+                        .size(88.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f))
+                        .clickable {
+                            photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (photoBitmap != null) {
+                        Image(
+                            bitmap = photoBitmap,
+                            contentDescription = stringResource(R.string.profile_photo_change),
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    } else {
+                        Text(
+                            text = partyInitialLetter(ownerName.ifBlank { stringResource(R.string.home_fallback_name) }),
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+                Text(
+                    text = stringResource(R.string.profile_photo_change),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier
+                        .padding(top = 8.dp)
+                        .clickable {
+                            photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                        },
+                )
+            }
 
             ShopTextField(
                 label = stringResource(R.string.business_owner_name),

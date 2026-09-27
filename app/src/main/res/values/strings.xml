@@ -300,6 +300,7 @@
     <string name="profile_subtitle">Edit your name and shop details</string>
     <string name="profile_phone_hint">This is the mobile number used to sign in. It cannot be changed here.</string>
     <string name="profile_save">Save profile</string>
+    <string name="profile_photo_change">Change photo</string>
     <string name="error_load_profile">Could not load profile.</string>
     <string name="cd_open_profile">Open profile</string>
     <string name="insight_open_suggestion_call">Request a call →</string>
