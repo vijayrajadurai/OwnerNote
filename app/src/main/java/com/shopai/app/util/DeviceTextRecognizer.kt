@@ -46,7 +46,13 @@ class DeviceTextRecognizer(private val context: Context) {
         val prepared = OcrImagePreprocessor.prepare(context, bitmap, imageUri)
         return runCatching {
             api.setImage(prepared)
-            val text = api.utF8Text?.trim()?.replace(Regex("\\s+"), " ") ?: ""
+            // Keep line breaks: bill parsing depends on the header line and
+            // the "Total" line staying separate.
+            val text = api.utF8Text.orEmpty()
+                .lines()
+                .map { it.replace(Regex("[ \\t]+"), " ").trim() }
+                .filter { it.isNotEmpty() }
+                .joinToString("\n")
             api.clear()
             OcrRecognitionResult(text = text, success = text.isNotBlank())
         }.getOrElse {
