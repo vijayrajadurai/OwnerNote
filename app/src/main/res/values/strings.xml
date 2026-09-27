@@ -533,6 +533,26 @@
     <string name="inv_no_attention">Nothing needs attention right now.</string>
     <string name="inv_duplicate_product">A product with this name already exists.</string>
 
+    <!-- Voice Stock In/Out -->
+    <string name="stock_voice_entry_title">Voice Stock Entry</string>
+    <string name="stock_voice_entry_subtitle">Speak or type a stock line, like \"Cement 50 bags vanginen\" — confirm before it saves.</string>
+    <string name="stock_voice_entry_input_label">Stock line</string>
+    <string name="stock_voice_entry_placeholder">Cement 50 bags vanginen</string>
+    <string name="stock_voice_entry_send">Understand</string>
+    <string name="stock_voice_current_stock">Current stock: %1$s %2$s</string>
+    <string name="stock_voice_after_add">After adding: %1$s %2$s</string>
+    <string name="stock_voice_after_remove">Remaining: %1$s %2$s</string>
+    <string name="stock_voice_not_understood">Couldn\'t understand that. Try saying it more clearly, like \"Cement 50 bags vanginen\".</string>
+    <string name="stock_voice_product_not_found">This product isn\'t in your inventory yet.</string>
+    <string name="stock_voice_add_product">Add Product</string>
+    <string name="stock_voice_ask_unit">What unit — bags, kg, pieces?</string>
+    <string name="stock_voice_insufficient_stock">Current stock is only %1$s %2$s — cannot remove %3$s %2$s.</string>
+    <string name="stock_voice_change_quantity">Change Quantity</string>
+    <string name="stock_voice_success_add">Done Owner 👍\n%1$s +%2$s %3$s added.\nCurrent stock: %4$s %3$s.</string>
+    <string name="stock_voice_success_remove">Done Owner 👍\n%1$s %2$s %3$s removed.\nRemaining stock: %4$s %3$s.</string>
+    <string name="stock_voice_tts_add">Done Owner. %1$s %2$s stock-la add panniten.</string>
+    <string name="stock_voice_tts_remove">Done Owner. %1$s %2$s stock-la irundhu remove panniten.</string>
+
     <string name="offer_title">Today offer</string>
     <string name="offer_subtitle">Post a local offer for nearby shoppers to discover, or see what nearby shops are offering right now.</string>
     <string name="offer_tab_mine">My offers</string>

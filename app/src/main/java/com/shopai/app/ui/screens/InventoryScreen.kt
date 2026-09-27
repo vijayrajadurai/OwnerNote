@@ -12,7 +12,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -57,12 +61,14 @@ import com.shopai.app.ui.theme.Danger
 import com.shopai.app.ui.theme.ShopAiThemeColors
 import com.shopai.app.ui.theme.Success
 import com.shopai.app.ui.theme.Warning
+import com.shopai.app.util.formatQty
 import kotlinx.coroutines.launch
 
 @Composable
 fun InventoryScreen(
     container: AppContainer,
     onBack: () -> Unit,
+    onOpenVoiceStockEntry: () -> Unit = {},
 ) {
     var products by remember { mutableStateOf<List<InventoryProduct>>(emptyList()) }
     var summary by remember { mutableStateOf<InventoryIntelligenceSummaryDto?>(null) }
@@ -156,7 +162,15 @@ fun InventoryScreen(
         )
     }
 
-    DetailScaffold(title = stringResource(R.string.inv_title), onBack = onBack) { contentModifier ->
+    DetailScaffold(
+        title = stringResource(R.string.inv_title),
+        onBack = onBack,
+        actions = {
+            IconButton(onClick = onOpenVoiceStockEntry) {
+                Icon(Icons.Default.Mic, contentDescription = stringResource(R.string.stock_voice_entry_title))
+            }
+        },
+    ) { contentModifier ->
         Column(
             modifier = contentModifier
                 .padding(horizontal = 20.dp)
@@ -401,5 +415,3 @@ private fun StockChangeDialog(
     )
 }
 
-private fun formatQty(quantity: Double): String =
-    if (quantity % 1.0 == 0.0) quantity.toInt().toString() else quantity.toString()

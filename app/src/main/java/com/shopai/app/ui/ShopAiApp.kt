@@ -47,6 +47,7 @@ import com.shopai.app.ui.screens.ReminderDetailScreen
 import com.shopai.app.ui.screens.SplashScreen
 import com.shopai.app.ui.screens.SuppliersScreen
 import com.shopai.app.ui.screens.VoiceEntryScreen
+import com.shopai.app.ui.screens.VoiceStockEntryScreen
 import com.shopai.app.ui.settings.SettingsScreen
 import com.shopai.app.ui.subscription.SubscriptionScreen
 import com.shopai.app.push.EnsurePushRegistration
@@ -300,7 +301,22 @@ fun ShopAiApp(container: AppContainer) {
             )
         }
         composable(Routes.Inventory) {
-            InventoryScreen(container = container, onBack = { navController.navigateUpOrHome() })
+            InventoryScreen(
+                container = container,
+                onBack = { navController.navigateUpOrHome() },
+                onOpenVoiceStockEntry = { navController.navigate(Routes.VoiceStockEntry) },
+            )
+        }
+        composable(Routes.VoiceStockEntry) {
+            VoiceStockEntryScreen(
+                container = container,
+                onBack = { navController.navigateUpOrHome() },
+                onOpenInventory = {
+                    navController.navigate(Routes.Inventory) {
+                        popUpTo(Routes.Inventory) { inclusive = true }
+                    }
+                },
+            )
         }
         composable(Routes.AskBusiness) {
             AskBusinessScreen(

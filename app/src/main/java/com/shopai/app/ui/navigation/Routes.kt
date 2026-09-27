@@ -31,6 +31,7 @@ object Routes {
     const val GroupBuyingNew = "group_buying_new"
     const val GroupBuyingResult = "group_buying_result/{requestId}"
     const val Inventory = "inventory"
+    const val VoiceStockEntry = "voice_stock_entry"
     const val LocalOffers = "local_offers"
     const val AskBusiness = "ask_business"
 
