@@ -2,6 +2,7 @@ package com.shopai.app.data.tts
 
 import android.content.Context
 import android.media.AudioAttributes
+import android.media.AudioManager
 import android.media.MediaPlayer
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
@@ -64,18 +65,25 @@ class NaturalTtsSpeaker(context: Context) {
     /**
      * Speaks on an app-scoped coroutine so playback is not cancelled when
      * the calling screen leaves composition mid-request.
+     *
+     * [useAlarmStream] routes playback through STREAM_ALARM instead of the
+     * default media stream — the same mechanism alarm-clock apps use to be
+     * heard over silent/DND mode. Only the Daily Voice Check-in feature
+     * passes true; every other caller keeps today's default (unchanged)
+     * media-stream behavior.
      */
     fun speakNatural(
         text: String,
         languageCode: String = "ta-IN",
         fallbackText: String = text,
         fallbackLanguage: String = "ta-IN",
+        useAlarmStream: Boolean = false,
         onStart: (() -> Unit)? = null,
         onDone: (() -> Unit)? = null,
     ) {
         scope.launch {
             withContext(NonCancellable) {
-                speakNaturalInternal(text, languageCode, fallbackText, fallbackLanguage, onStart, onDone)
+                speakNaturalInternal(text, languageCode, fallbackText, fallbackLanguage, useAlarmStream, onStart, onDone)
             }
         }
     }
@@ -101,6 +109,7 @@ class NaturalTtsSpeaker(context: Context) {
         languageCode: String,
         fallbackText: String,
         fallbackLanguage: String,
+        useAlarmStream: Boolean,
         onStart: (() -> Unit)?,
         onDone: (() -> Unit)?,
     ) {
@@ -113,7 +122,7 @@ class NaturalTtsSpeaker(context: Context) {
 
         val proxyAudio = fetchProxyAudio(trimmed, languageCode)
         if (proxyAudio != null) {
-            val played = playWavFile(proxyAudio)
+            val played = playWavFile(proxyAudio, useAlarmStream)
             proxyAudio.delete()
             if (played) {
                 onDone?.invoke()
@@ -127,6 +136,7 @@ class NaturalTtsSpeaker(context: Context) {
         val spokeOnDevice = speakWithDeviceTts(
             fallbackText.trim().ifEmpty { trimmed },
             fallbackLanguage,
+            useAlarmStream,
         )
         if (!spokeOnDevice) {
             logDebug("Device TTS also failed.")
@@ -152,7 +162,7 @@ class NaturalTtsSpeaker(context: Context) {
         }
     }
 
-    private suspend fun playWavFile(file: File): Boolean = suspendCancellableCoroutine { cont ->
+    private suspend fun playWavFile(file: File, useAlarmStream: Boolean): Boolean = suspendCancellableCoroutine { cont ->
         val finished = AtomicBoolean(false)
         fun finish(result: Boolean) {
             if (finished.compareAndSet(false, true)) {
@@ -166,7 +176,7 @@ class NaturalTtsSpeaker(context: Context) {
             mediaPlayer = player
             player.setAudioAttributes(
                 AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setUsage(if (useAlarmStream) AudioAttributes.USAGE_ALARM else AudioAttributes.USAGE_MEDIA)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
                     .build(),
             )
@@ -200,7 +210,7 @@ class NaturalTtsSpeaker(context: Context) {
         }
     }
 
-    private suspend fun speakWithDeviceTts(text: String, languageTag: String): Boolean {
+    private suspend fun speakWithDeviceTts(text: String, languageTag: String, useAlarmStream: Boolean): Boolean {
         if (text.isEmpty()) return false
         val engine = ensureTts() ?: return false
 
@@ -236,6 +246,9 @@ class NaturalTtsSpeaker(context: Context) {
             )
             val params = Bundle().apply {
                 putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId)
+                if (useAlarmStream) {
+                    putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, AudioManager.STREAM_ALARM)
+                }
             }
             val result = engine.speak(text, TextToSpeech.QUEUE_FLUSH, params, utteranceId)
             if (result == TextToSpeech.ERROR) {

@@ -341,6 +341,22 @@
     <string name="about_description">AI business assistant for Indian shop owners — voice-first transactions, cash flow, and insights.</string>
     <string name="cd_app_icon">Application icon</string>
 
+    <!-- Daily Voice Check-in -->
+    <string name="voice_checkin_title">Daily Voice Check-in</string>
+    <string name="voice_checkin_subtitle">App speaks a short business summary at 4 fixed times, even on silent/DND — like an alarm.</string>
+    <string name="voice_checkin_master_toggle">Enable daily voice check-in</string>
+    <string name="voice_checkin_slot_8am">8:00 AM</string>
+    <string name="voice_checkin_slot_12pm">12:00 PM</string>
+    <string name="voice_checkin_slot_4pm">4:00 PM</string>
+    <string name="voice_checkin_slot_8pm">8:00 PM</string>
+    <string name="voice_checkin_battery_dialog_title">Allow background alarms</string>
+    <string name="voice_checkin_battery_dialog_body">To make sure your daily voice check-in speaks on time, allow this app to ignore battery optimization.</string>
+    <string name="voice_checkin_battery_dialog_confirm">Allow</string>
+    <string name="voice_checkin_battery_dialog_dismiss">Not now</string>
+    <string name="voice_checkin_exact_alarm_denied">Exact alarm permission is off. Turn it on in system settings so check-ins fire on time.</string>
+    <string name="voice_checkin_notification_title">Daily voice check-in</string>
+    <string name="voice_checkin_channel_name">Daily Voice Check-in</string>
+
     <!-- Subscription -->
     <string name="subscription">Subscription</string>
     <string name="subscription_description">Unlock premium insights, priority support, and advanced business tools.</string>

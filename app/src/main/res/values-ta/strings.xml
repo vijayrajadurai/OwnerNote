@@ -294,6 +294,22 @@
     <string name="about_description">இந்திய கடை உரிமையாளர்களுக்கான AI வியாபார உதவியாளர் — குரல் பரிவர்த்தனை, பணப்புழக்கம், பரிந்துரைகள்.</string>
     <string name="cd_app_icon">செயலி சின்னம்</string>
 
+    <!-- Daily Voice Check-in -->
+    <string name="voice_checkin_title">தினசரி குரல் Check-in</string>
+    <string name="voice_checkin_subtitle">Silent/DND-ல இருந்தாலும் 4 நேரங்களில் ஆப் ஒரு சின்ன business summary பேசும் — alarm போல.</string>
+    <string name="voice_checkin_master_toggle">தினசரி குரல் check-in ஆன் பண்ணு</string>
+    <string name="voice_checkin_slot_8am">காலை 8:00</string>
+    <string name="voice_checkin_slot_12pm">மதியம் 12:00</string>
+    <string name="voice_checkin_slot_4pm">மாலை 4:00</string>
+    <string name="voice_checkin_slot_8pm">இரவு 8:00</string>
+    <string name="voice_checkin_battery_dialog_title">Background alarms அனுமதிக்கவும்</string>
+    <string name="voice_checkin_battery_dialog_body">உங்க தினசரி voice check-in சரியான நேரத்தில் பேச, battery optimization-ல இருந்து இந்த ஆப்-க்கு விலக்கு கொடுங்க.</string>
+    <string name="voice_checkin_battery_dialog_confirm">அனுமதி</string>
+    <string name="voice_checkin_battery_dialog_dismiss">இப்போது வேண்டாம்</string>
+    <string name="voice_checkin_exact_alarm_denied">Exact alarm permission ஆஃப் ஆக இருக்கு. Check-in சரியான நேரத்தில் வர, system settings-ல ஆன் பண்ணுங்க.</string>
+    <string name="voice_checkin_notification_title">தினசரி குரல் check-in</string>
+    <string name="voice_checkin_channel_name">தினசரி குரல் Check-in</string>
+
     <string name="subscription">சந்தா</string>
     <string name="subscription_description">பிரீமியம் பரிந்துரைகள், முன்னுரிமை ஆதரவு, மேம்பட்ட கருவிகள்.</string>
     <string name="current_plan">தற்போதைய திட்டம்</string>
