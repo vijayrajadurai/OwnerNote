@@ -1,5 +1,6 @@
 package com.shopai.app.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,12 +14,17 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenu
+import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,6 +51,7 @@ import com.shopai.app.data.inventory.computeStockStatus
 import com.shopai.app.data.model.CreateInventoryProductInput
 import com.shopai.app.data.model.InventoryIntelligenceSummaryDto
 import com.shopai.app.data.model.InventoryProduct
+import com.shopai.app.data.model.PartySummary
 import com.shopai.app.data.network.presentApiError
 import com.shopai.app.data.repository.StockChangeResult
 import com.shopai.app.ui.components.ApiErrorAlertDialog
@@ -63,9 +70,11 @@ import kotlinx.coroutines.launch
 fun InventoryScreen(
     container: AppContainer,
     onBack: () -> Unit,
+    onOpenProduct: (String) -> Unit = {},
 ) {
     var products by remember { mutableStateOf<List<InventoryProduct>>(emptyList()) }
     var summary by remember { mutableStateOf<InventoryIntelligenceSummaryDto?>(null) }
+    var suppliers by remember { mutableStateOf<List<PartySummary>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var alertError by remember { mutableStateOf<String?>(null) }
@@ -90,6 +99,10 @@ fun InventoryScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        runCatching { suppliers = container.partyRepository.getSuppliers() }
+    }
+
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -103,13 +116,12 @@ fun InventoryScreen(
 
     if (showNewProduct) {
         NewProductDialog(
+            suppliers = suppliers,
             onDismiss = { showNewProduct = false },
-            onSave = { name, category, unit, opening, minimum ->
+            onSave = { input ->
                 scope.launch {
                     runCatching {
-                        container.inventoryRepository.createProduct(
-                            CreateInventoryProductInput(name, category, unit, opening, minimum),
-                        )
+                        container.inventoryRepository.createProduct(input)
                     }.onSuccess {
                         showNewProduct = false
                         reload()
@@ -231,7 +243,9 @@ fun InventoryScreen(
                     color = ShopAiThemeColors.onSurfaceVariant,
                 )
                 else -> products.forEach { product ->
-                    ShopCard {
+                    ShopCard(
+                        modifier = Modifier.clickable { onOpenProduct(product.id) },
+                    ) {
                         Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                             Text(
                                 text = product.name,
@@ -302,24 +316,46 @@ private fun insightColor(insight: String) = when (insight) {
     else -> Success
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun NewProductDialog(
+    suppliers: List<PartySummary>,
     onDismiss: () -> Unit,
-    onSave: (name: String, category: String, unit: String, opening: Double, minimum: Double) -> Unit,
+    onSave: (CreateInventoryProductInput) -> Unit,
 ) {
     var name by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("") }
+    var subCategory by remember { mutableStateOf("") }
+    var brand by remember { mutableStateOf("") }
+    var sku by remember { mutableStateOf("") }
+    var barcode by remember { mutableStateOf("") }
     var unit by remember { mutableStateOf("") }
     var opening by remember { mutableStateOf("") }
     var minimum by remember { mutableStateOf("") }
+    var purchasePrice by remember { mutableStateOf("") }
+    var sellingPrice by remember { mutableStateOf("") }
+    var mrp by remember { mutableStateOf("") }
+    var gstRate by remember { mutableStateOf("") }
+    var imageUri by remember { mutableStateOf("") }
+    var notes by remember { mutableStateOf("") }
+    var selectedSupplier by remember { mutableStateOf<PartySummary?>(null) }
+    var supplierMenuExpanded by remember { mutableStateOf(false) }
+    val decimalOnly: (String) -> String = { it.filter { ch -> ch.isDigit() || ch == '.' } }
 
     ShopAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.inv_new_product)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+            ) {
                 ShopTextField(label = stringResource(R.string.inv_product_name), value = name, onValueChange = { name = it })
                 ShopTextField(label = stringResource(R.string.inv_category), value = category, onValueChange = { category = it })
+                ShopTextField(label = stringResource(R.string.inv_sub_category), value = subCategory, onValueChange = { subCategory = it })
+                ShopTextField(label = stringResource(R.string.inv_brand), value = brand, onValueChange = { brand = it })
+                ShopTextField(label = stringResource(R.string.inv_sku), value = sku, onValueChange = { sku = it })
+                ShopTextField(label = stringResource(R.string.inv_barcode), value = barcode, onValueChange = { barcode = it })
                 ShopTextField(
                     label = stringResource(R.string.inv_unit),
                     value = unit,
@@ -329,15 +365,68 @@ private fun NewProductDialog(
                 ShopTextField(
                     label = stringResource(R.string.inv_opening_stock),
                     value = opening,
-                    onValueChange = { opening = it.filter { ch -> ch.isDigit() || ch == '.' } },
+                    onValueChange = { opening = decimalOnly(it) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 )
                 ShopTextField(
                     label = stringResource(R.string.inv_minimum_stock),
                     value = minimum,
-                    onValueChange = { minimum = it.filter { ch -> ch.isDigit() || ch == '.' } },
+                    onValueChange = { minimum = decimalOnly(it) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 )
+                ShopTextField(
+                    label = stringResource(R.string.inv_purchase_price),
+                    value = purchasePrice,
+                    onValueChange = { purchasePrice = decimalOnly(it) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                )
+                ShopTextField(
+                    label = stringResource(R.string.inv_selling_price),
+                    value = sellingPrice,
+                    onValueChange = { sellingPrice = decimalOnly(it) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                )
+                ShopTextField(
+                    label = stringResource(R.string.inv_mrp),
+                    value = mrp,
+                    onValueChange = { mrp = decimalOnly(it) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                )
+                ShopTextField(
+                    label = stringResource(R.string.inv_gst_rate),
+                    value = gstRate,
+                    onValueChange = { gstRate = decimalOnly(it) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                )
+                ExposedDropdownMenuBox(
+                    expanded = supplierMenuExpanded,
+                    onExpandedChange = { supplierMenuExpanded = it },
+                ) {
+                    ShopTextField(
+                        label = stringResource(R.string.inv_supplier),
+                        value = selectedSupplier?.name ?: stringResource(R.string.inv_supplier_none),
+                        onValueChange = {},
+                        readOnly = true,
+                        modifier = Modifier.menuAnchor(),
+                    )
+                    ExposedDropdownMenu(
+                        expanded = supplierMenuExpanded,
+                        onDismissRequest = { supplierMenuExpanded = false },
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.inv_supplier_none)) },
+                            onClick = { selectedSupplier = null; supplierMenuExpanded = false },
+                        )
+                        suppliers.forEach { supplier ->
+                            DropdownMenuItem(
+                                text = { Text(supplier.name) },
+                                onClick = { selectedSupplier = supplier; supplierMenuExpanded = false },
+                            )
+                        }
+                    }
+                }
+                ShopTextField(label = stringResource(R.string.inv_image_uri), value = imageUri, onValueChange = { imageUri = it })
+                ShopTextField(label = stringResource(R.string.inv_notes), value = notes, onValueChange = { notes = it }, singleLine = false)
             }
         },
         confirmButton = {
@@ -345,11 +434,24 @@ private fun NewProductDialog(
                 enabled = name.isNotBlank() && category.isNotBlank() && unit.isNotBlank(),
                 onClick = {
                     onSave(
-                        name.trim(),
-                        category.trim(),
-                        unit.trim(),
-                        opening.toDoubleOrNull() ?: 0.0,
-                        minimum.toDoubleOrNull() ?: 0.0,
+                        CreateInventoryProductInput(
+                            name = name.trim(),
+                            category = category.trim(),
+                            subCategory = subCategory.trim().ifBlank { null },
+                            brand = brand.trim().ifBlank { null },
+                            sku = sku.trim().ifBlank { null },
+                            barcode = barcode.trim().ifBlank { null },
+                            unit = unit.trim(),
+                            currentStock = opening.toDoubleOrNull() ?: 0.0,
+                            minimumStock = minimum.toDoubleOrNull() ?: 0.0,
+                            purchasePrice = purchasePrice.toDoubleOrNull(),
+                            sellingPrice = sellingPrice.toDoubleOrNull(),
+                            mrp = mrp.toDoubleOrNull(),
+                            gstRate = gstRate.toDoubleOrNull(),
+                            supplierId = selectedSupplier?.id,
+                            imageUri = imageUri.trim().ifBlank { null },
+                            notes = notes.trim().ifBlank { null },
+                        ),
                     )
                 },
             ) { Text(stringResource(R.string.inv_save)) }

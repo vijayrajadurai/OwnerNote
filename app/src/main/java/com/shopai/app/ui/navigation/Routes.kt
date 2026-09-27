@@ -31,6 +31,7 @@ object Routes {
     const val GroupBuyingNew = "group_buying_new"
     const val GroupBuyingResult = "group_buying_result/{requestId}"
     const val Inventory = "inventory"
+    const val ProductDetail = "product_detail/{productId}"
     const val LocalOffers = "local_offers"
     const val AskBusiness = "ask_business"
 
@@ -45,6 +46,8 @@ object Routes {
     fun customerDetail(customerId: String): String = "customer_detail/$customerId"
 
     fun supplierDetail(supplierId: String): String = "supplier_detail/$supplierId"
+
+    fun productDetail(productId: String): String = "product_detail/${Uri.encode(productId)}"
 
     fun addCredit(
         customerId: String? = null,

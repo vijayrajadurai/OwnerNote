@@ -1,5 +1,6 @@
 package com.shopai.app.data.inventory
 
+import com.shopai.app.data.model.CreateInventoryProductInput
 import com.shopai.app.data.model.InventoryMovement
 import com.shopai.app.data.model.InventoryProduct
 import com.shopai.app.data.model.ProductIntelligenceDto
@@ -26,34 +27,49 @@ class InventoryLocalStore {
     fun getProduct(businessId: String, productId: String): InventoryProduct? =
         products[productId]?.takeIf { it.businessId == businessId }
 
-    fun createProduct(businessId: String, name: String, category: String, unit: String, openingStock: Double, minimumStock: Double): InventoryProduct {
+    fun createProduct(businessId: String, input: CreateInventoryProductInput): InventoryProduct {
         val existing = listProducts(businessId)
-        val duplicate = findDuplicateProduct(name, existing.map { LocalDuplicateProduct(it.id, it.name) })
+        val duplicate = findDuplicateProduct(input.name, existing.map { LocalDuplicateProduct(it.id, it.name) })
         require(duplicate == null) { "A product with this name already exists." }
         val now = Instant.now().toString()
         val product = InventoryProduct(
             id = UUID.randomUUID().toString(),
             businessId = businessId,
-            name = name,
-            category = category,
-            unit = unit,
-            currentStock = openingStock,
-            minimumStock = minimumStock,
+            name = input.name,
+            category = input.category,
+            subCategory = input.subCategory,
+            brand = input.brand,
+            sku = input.sku,
+            barcode = input.barcode,
+            unit = input.unit,
+            currentStock = input.currentStock,
+            minimumStock = input.minimumStock,
+            purchasePrice = input.purchasePrice,
+            sellingPrice = input.sellingPrice,
+            mrp = input.mrp,
+            gstRate = input.gstRate,
+            // Local/offline mode has no local supplier store to resolve a name
+            // from — the id is kept but never fabricated into a display name.
+            supplierId = input.supplierId,
+            supplierName = null,
+            imageUri = input.imageUri,
+            notes = input.notes,
             createdAt = now,
             updatedAt = now,
         )
         products[product.id] = product
-        if (openingStock > 0) {
-            recordMovement(product.id, "IN", openingStock, "OPENING_STOCK")
+        if (input.currentStock > 0) {
+            recordMovement(product.id, "IN", input.currentStock, "OPENING_STOCK", input.currentStock)
         }
         return product
     }
 
     fun addStock(businessId: String, productId: String, quantity: Double, reason: String): InventoryProduct {
         val product = getProduct(businessId, productId) ?: error("Product not found")
-        val updated = product.copy(currentStock = product.currentStock + quantity, updatedAt = Instant.now().toString())
+        val newBalance = product.currentStock + quantity
+        val updated = product.copy(currentStock = newBalance, updatedAt = Instant.now().toString())
         products[productId] = updated
-        recordMovement(productId, "IN", quantity, reason)
+        recordMovement(productId, "IN", quantity, reason, newBalance)
         return updated
     }
 
@@ -61,9 +77,10 @@ class InventoryLocalStore {
         val product = getProduct(businessId, productId) ?: error("Product not found")
         val decision = canRemoveStock(product.currentStock, quantity)
         if (!decision.ok) return InventoryStockChangeOutcome.InsufficientStock(decision.available)
-        val updated = product.copy(currentStock = product.currentStock - quantity, updatedAt = Instant.now().toString())
+        val newBalance = product.currentStock - quantity
+        val updated = product.copy(currentStock = newBalance, updatedAt = Instant.now().toString())
         products[productId] = updated
-        recordMovement(productId, "OUT", quantity, reason)
+        recordMovement(productId, "OUT", quantity, reason, newBalance)
         return InventoryStockChangeOutcome.Ok(updated)
     }
 
@@ -118,7 +135,7 @@ class InventoryLocalStore {
         insights = insights,
     )
 
-    private fun recordMovement(productId: String, type: String, quantity: Double, reason: String) {
+    private fun recordMovement(productId: String, type: String, quantity: Double, reason: String, balanceAfter: Double) {
         val list = movements.getOrPut(productId) { mutableListOf() }
         list.add(
             InventoryMovement(
@@ -129,6 +146,7 @@ class InventoryLocalStore {
                 reason = reason,
                 referenceType = null,
                 referenceId = null,
+                balanceAfter = balanceAfter,
                 createdAt = Instant.now().toString(),
             ),
         )

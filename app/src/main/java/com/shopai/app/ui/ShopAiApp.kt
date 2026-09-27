@@ -36,6 +36,7 @@ import com.shopai.app.ui.screens.GroupBuyingScreen
 import com.shopai.app.ui.screens.AskBusinessScreen
 import com.shopai.app.ui.screens.HomeScreen
 import com.shopai.app.ui.screens.InventoryScreen
+import com.shopai.app.ui.screens.ProductDetailScreen
 import com.shopai.app.ui.screens.LoginScreen
 import com.shopai.app.ui.screens.MoreScreen
 import com.shopai.app.ui.screens.NewGroupBuyingRequestScreen
@@ -300,7 +301,22 @@ fun ShopAiApp(container: AppContainer) {
             )
         }
         composable(Routes.Inventory) {
-            InventoryScreen(container = container, onBack = { navController.navigateUpOrHome() })
+            InventoryScreen(
+                container = container,
+                onBack = { navController.navigateUpOrHome() },
+                onOpenProduct = { productId -> navController.navigate(Routes.productDetail(productId)) },
+            )
+        }
+        composable(
+            route = Routes.ProductDetail,
+            arguments = listOf(navArgument("productId") { type = NavType.StringType }),
+        ) { entry ->
+            val productId = entry.arguments?.getString("productId") ?: return@composable
+            ProductDetailScreen(
+                container = container,
+                productId = productId,
+                onBack = { navController.navigateUpOrHome() },
+            )
         }
         composable(Routes.AskBusiness) {
             AskBusinessScreen(

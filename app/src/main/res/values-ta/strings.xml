@@ -480,6 +480,24 @@
     <string name="inv_usage_30d">கடந்த 30 நாட்களில் %1$s %2$s பயன்படுத்தப்பட்டது</string>
     <string name="inv_no_attention">இப்போது கவனம் தேவையான பொருள் இல்லை.</string>
     <string name="inv_duplicate_product">இந்த பெயரில் ஒரு பொருள் ஏற்கனவே உள்ளது.</string>
+    <string name="inv_sub_category">துணை வகை</string>
+    <string name="inv_brand">பிராண்ட்</string>
+    <string name="inv_sku">SKU</string>
+    <string name="inv_barcode">பார்கோடு</string>
+    <string name="inv_purchase_price">வாங்கிய விலை</string>
+    <string name="inv_selling_price">விற்பனை விலை</string>
+    <string name="inv_mrp">MRP</string>
+    <string name="inv_gst_rate">GST விகிதம் (%)</string>
+    <string name="inv_supplier">சப்ளையர்</string>
+    <string name="inv_supplier_none">ஏதுமில்லை</string>
+    <string name="inv_image_uri">பொருள் படம் URL</string>
+    <string name="inv_notes">குறிப்புகள்</string>
+    <string name="inv_current_stock_label">இப்போதைய இருப்பு</string>
+    <string name="inv_minimum_stock_label">குறைந்தபட்ச இருப்பு</string>
+    <string name="inv_history_title">ஸ்டாக் நடமாட்ட வரலாறு</string>
+    <string name="inv_history_empty">இந்த பொருளுக்கு இன்னும் ஸ்டாக் நடமாட்டங்கள் இல்லை.</string>
+    <string name="inv_history_balance">இருப்பு: %1$s</string>
+    <string name="inv_history_balance_unknown">இருப்பு: —</string>
 
     <string name="offer_title">இன்றைய சலுகை</string>
     <string name="offer_subtitle">அருகிலுள்ள வாடிக்கையாளர்கள் காணும்படி உள்ளூர் சலுகையை இடுங்கள், அல்லது அருகில் உள்ள கடைகள் என்ன சலுகை தருகின்றன என்று பாருங்கள்.</string>

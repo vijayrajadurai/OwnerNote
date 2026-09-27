@@ -45,15 +45,24 @@ class InventoryRepository(
 
     suspend fun createProduct(input: CreateInventoryProductInput): InventoryProduct {
         if (isLocalMode()) {
-            return local.createProduct(localBusinessId, input.name, input.category, input.unit, input.currentStock, input.minimumStock)
+            return local.createProduct(localBusinessId, input)
         }
         return runCatching { api.createInventoryProduct(input).data }
             .recoverCatching { error ->
                 if (error is IOException) {
-                    local.createProduct(localBusinessId, input.name, input.category, input.unit, input.currentStock, input.minimumStock)
+                    local.createProduct(localBusinessId, input)
                 } else {
                     throw error
                 }
+            }
+            .getOrThrow()
+    }
+
+    suspend fun getProduct(productId: String): InventoryProduct {
+        if (isLocalMode()) return local.getProduct(localBusinessId, productId) ?: error("Product not found")
+        return runCatching { api.getInventoryProduct(productId).data }
+            .recoverCatching { cause ->
+                if (cause is IOException) local.getProduct(localBusinessId, productId) ?: error("Product not found") else throw cause
             }
             .getOrThrow()
     }

@@ -448,9 +448,21 @@ data class InventoryProduct(
     val businessId: String,
     val name: String,
     val category: String,
+    val subCategory: String? = null,
+    val brand: String? = null,
+    val sku: String? = null,
+    val barcode: String? = null,
     val unit: String,
     val currentStock: Double,
     val minimumStock: Double,
+    val purchasePrice: Double? = null,
+    val sellingPrice: Double? = null,
+    val mrp: Double? = null,
+    val gstRate: Double? = null,
+    val supplierId: String? = null,
+    val supplierName: String? = null,
+    val imageUri: String? = null,
+    val notes: String? = null,
     val createdAt: String,
     val updatedAt: String,
 )
@@ -463,22 +475,47 @@ data class InventoryMovement(
     val reason: String,
     val referenceType: String? = null,
     val referenceId: String? = null,
+    // Null only for movements written before this column existed on the
+    // backend — never backfilled/guessed.
+    val balanceAfter: Double? = null,
     val createdAt: String,
 )
 
 data class CreateInventoryProductInput(
     val name: String,
     val category: String,
+    val subCategory: String? = null,
+    val brand: String? = null,
+    val sku: String? = null,
+    val barcode: String? = null,
     val unit: String,
     val currentStock: Double,
     val minimumStock: Double,
+    val purchasePrice: Double? = null,
+    val sellingPrice: Double? = null,
+    val mrp: Double? = null,
+    val gstRate: Double? = null,
+    val supplierId: String? = null,
+    val imageUri: String? = null,
+    val notes: String? = null,
 )
 
 data class UpdateInventoryProductInput(
     val name: String? = null,
     val category: String? = null,
+    val subCategory: String? = null,
+    val brand: String? = null,
+    val sku: String? = null,
+    val barcode: String? = null,
     val unit: String? = null,
     val minimumStock: Double? = null,
+    val purchasePrice: Double? = null,
+    val sellingPrice: Double? = null,
+    val mrp: Double? = null,
+    val gstRate: Double? = null,
+    val supplierId: String? = null,
+    val imageUri: String? = null,
+    val notes: String? = null,
 )
 
 data class StockChangeInput(

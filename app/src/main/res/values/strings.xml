@@ -532,6 +532,24 @@
     <string name="inv_usage_30d">%1$s %2$s used in last 30 days</string>
     <string name="inv_no_attention">Nothing needs attention right now.</string>
     <string name="inv_duplicate_product">A product with this name already exists.</string>
+    <string name="inv_sub_category">Sub-category</string>
+    <string name="inv_brand">Brand</string>
+    <string name="inv_sku">SKU</string>
+    <string name="inv_barcode">Barcode</string>
+    <string name="inv_purchase_price">Purchase price</string>
+    <string name="inv_selling_price">Selling price</string>
+    <string name="inv_mrp">MRP</string>
+    <string name="inv_gst_rate">GST rate (%)</string>
+    <string name="inv_supplier">Supplier</string>
+    <string name="inv_supplier_none">None</string>
+    <string name="inv_image_uri">Product image URL</string>
+    <string name="inv_notes">Notes</string>
+    <string name="inv_current_stock_label">Current stock</string>
+    <string name="inv_minimum_stock_label">Minimum stock</string>
+    <string name="inv_history_title">Stock movement history</string>
+    <string name="inv_history_empty">No stock movements yet for this product.</string>
+    <string name="inv_history_balance">Balance: %1$s</string>
+    <string name="inv_history_balance_unknown">Balance: —</string>
 
     <string name="offer_title">Today offer</string>
     <string name="offer_subtitle">Post a local offer for nearby shoppers to discover, or see what nearby shops are offering right now.</string>
