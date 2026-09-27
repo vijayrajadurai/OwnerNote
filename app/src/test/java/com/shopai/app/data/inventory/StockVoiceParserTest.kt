@@ -110,13 +110,13 @@ class StockVoiceParserTest {
     @Test
     fun englishNumberWordsParsed() {
         val result = StockVoiceParser.parse("Cement fifty bags vanginen")
-        assertEquals(50.0, result?.quantity, 0.001)
+        assertEquals(50.0, result!!.quantity, 0.001)
     }
 
     @Test
     fun tamilNumberWordsParsed() {
         val result = StockVoiceParser.parse("சிமெண்ட் ஐம்பது பை வாங்கினேன்")
-        assertEquals(50.0, result?.quantity, 0.001)
+        assertEquals(50.0, result!!.quantity, 0.001)
     }
 
     @Test
@@ -162,7 +162,7 @@ class StockVoiceParserTest {
         // is simply left as part of the unmatched leftover text, and the real
         // quantity is still parsed correctly.
         val result = StockVoiceParser.parse("Cement 50 bags vanginen nalaikku")
-        assertEquals(50.0, result?.quantity, 0.001)
-        assertTrue(result!!.productName.contains("Cement"))
+        assertEquals(50.0, result!!.quantity, 0.001)
+        assertTrue(result.productName.contains("Cement"))
     }
 }
