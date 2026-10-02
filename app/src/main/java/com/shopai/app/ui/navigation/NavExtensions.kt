@@ -10,26 +10,7 @@ val mainTabRoutes = setOf(
     Routes.More,
 )
 
-private val authRoutes = setOf(
-    Routes.Splash,
-    Routes.Login,
-    Routes.Otp,
-    Routes.BusinessSetup,
-)
-
 fun isMainTabRoute(route: String?): Boolean = route in mainTabRoutes
-
-fun shouldShowVoiceEntryFab(route: String?): Boolean {
-    if (route == null) return false
-    val path = route.substringBefore("?")
-    if (path in authRoutes) return false
-    if (path == Routes.VoiceEntry) return false
-    // Kai Chat has its own text box at the bottom.
-    if (path == Routes.KaiChat) return false
-    if (path == Routes.GroupBuyingNew) return false
-    if (path == Routes.Profile) return false
-    return true
-}
 
 /** Pops one screen, or returns to Home if the stack cannot go back. */
 fun NavController.navigateUpOrHome() {

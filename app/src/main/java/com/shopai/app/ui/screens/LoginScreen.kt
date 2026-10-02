@@ -1,6 +1,5 @@
 package com.shopai.app.ui.screens
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -8,8 +7,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -42,7 +39,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
@@ -58,11 +54,8 @@ import androidx.compose.ui.unit.sp
 import com.shopai.app.R
 import com.shopai.app.data.AppContainer
 import com.shopai.app.ui.components.AuthBackgroundBrush
+import com.shopai.app.ui.components.AuthBrandHeader
 import com.shopai.app.ui.components.GradientActionButton
-import com.shopai.app.ui.components.LogoSrcSize
-import com.shopai.app.ui.components.KaiSrcSize
-import com.shopai.app.ui.components.fadeEdges
-import com.shopai.app.ui.components.rememberWelcomeArtwork
 import com.shopai.app.ui.theme.Border
 import com.shopai.app.ui.theme.Primary
 import com.shopai.app.ui.theme.TextPrimary
@@ -78,7 +71,6 @@ fun LoginScreen(
     var navigating by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val navigateOtp = rememberUpdatedState(onNavigateOtp)
-    val artwork = rememberWelcomeArtwork()
 
     // The OTP page does the actual sending, so the owner lands there right
     // away instead of waiting here for Firebase.
@@ -101,17 +93,10 @@ fun LoginScreen(
             .padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(20.dp))
+        AuthBrandHeader()
 
-        Image(
-            painter = artwork.logo,
-            contentDescription = stringResource(R.string.brand_name),
-            contentScale = ContentScale.Fit,
-            modifier = Modifier
-                .width(230.dp)
-                .aspectRatio(LogoSrcSize.width.toFloat() / LogoSrcSize.height)
-                .fadeEdges(horizontal = 0.12f, vertical = 0.08f),
-        )
+        Spacer(modifier = Modifier.weight(1f))
 
         Text(
             text = stringResource(R.string.login_title_line1),
@@ -119,7 +104,6 @@ fun LoginScreen(
             fontWeight = FontWeight.ExtraBold,
             color = TextPrimary,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 12.dp),
         )
         Text(
             text = stringResource(R.string.login_title_line2),
@@ -133,30 +117,8 @@ fun LoginScreen(
             style = MaterialTheme.typography.bodyLarge,
             color = TextSecondary,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 8.dp),
+            modifier = Modifier.padding(top = 8.dp, bottom = 20.dp),
         )
-
-        // Takes whatever height is left, so it shrinks when the keyboard opens.
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .padding(top = 8.dp),
-            contentAlignment = Alignment.BottomCenter,
-        ) {
-            Image(
-                painter = artwork.kai,
-                contentDescription = null,
-                contentScale = ContentScale.Fit,
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .aspectRatio(
-                        KaiSrcSize.width.toFloat() / KaiSrcSize.height,
-                        matchHeightConstraintsFirst = true,
-                    )
-                    .fadeEdges(horizontal = 0.18f, vertical = 0.10f),
-            )
-        }
 
         PhoneNumberField(
             phone = phone,
@@ -172,12 +134,14 @@ fun LoginScreen(
             onClick = { goToOtp() },
         )
 
+        Spacer(modifier = Modifier.weight(1f))
+
         Text(
             text = stringResource(R.string.powered_by_newonx),
             style = MaterialTheme.typography.bodySmall,
             color = TextSecondary,
             fontWeight = FontWeight.Medium,
-            modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
+            modifier = Modifier.padding(top = 8.dp, bottom = 8.dp),
         )
     }
 }
