@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import androidx.activity.compose.BackHandler
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -35,7 +34,7 @@ fun HomeBackHandler() {
     }
 
     if (showExitDialog) {
-        AlertDialog(
+        ShopAlertDialog(
             onDismissRequest = { showExitDialog = false },
             title = { Text(stringResource(R.string.exit_app_title)) },
             text = { Text(stringResource(R.string.exit_app_message)) },

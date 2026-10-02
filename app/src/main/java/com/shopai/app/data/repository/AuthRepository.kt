@@ -1,6 +1,6 @@
 package com.shopai.app.data.repository
 
-import android.app.Activity
+import com.shopai.app.crash.CrashReporting
 import com.shopai.app.data.api.ShopAiApi
 import com.shopai.app.data.auth.FirebasePhoneAuthClient
 import com.shopai.app.data.auth.FirebasePhoneSendResult
@@ -9,6 +9,8 @@ import com.shopai.app.data.model.AuthResponse
 import com.shopai.app.data.model.FirebaseLoginRequest
 import com.shopai.app.data.model.SendOtpResponse
 import com.shopai.app.data.network.ApiErrorHandler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 sealed class PhoneOtpSendResult {
     data class CodeSent(val data: SendOtpResponse) : PhoneOtpSendResult()
@@ -20,14 +22,34 @@ class AuthRepository(
     private val tokenStore: TokenStore,
     private val apiErrorHandler: ApiErrorHandler,
     private val firebasePhoneAuth: FirebasePhoneAuthClient,
+    private val pushTokenRepository: PushTokenRepository,
+    private val backgroundScope: CoroutineScope,
+    /** Lets the next account on this phone open its own books. */
+    private val onSignedOut: () -> Unit = {},
 ) {
-    suspend fun hydrate(): String? = tokenStore.getToken()
+    fun warmupPhoneVerification() {
+        firebasePhoneAuth.warmupAppVerification()
+    }
 
-    suspend fun sendOtp(activity: Activity, phone: String): PhoneOtpSendResult {
+    suspend fun getLoginPhone(): String? = tokenStore.getPendingPhone()
+
+    suspend fun isLoggedIn(): Boolean = tokenStore.getToken() != null
+
+    suspend fun setLoginPhone(phone: String) {
+        tokenStore.setPendingPhone(phone.filter { it.isDigit() }.takeLast(10))
+    }
+
+    suspend fun hydrate(): String? {
+        val token = tokenStore.getToken()
+        CrashReporting.setSession(if (token != null) tokenStore.getPendingPhone() else null)
+        return token
+    }
+
+    suspend fun sendOtp(phone: String): PhoneOtpSendResult {
         val normalized = phone.filter { it.isDigit() }.takeLast(10)
         val e164 = "+91$normalized"
         tokenStore.setPendingPhone(normalized)
-        return when (val firebase = firebasePhoneAuth.sendOtp(activity, e164)) {
+        return when (val firebase = firebasePhoneAuth.sendOtp(e164)) {
             FirebasePhoneSendResult.CodeSent -> {
                 PhoneOtpSendResult.CodeSent(SendOtpResponse(phone = normalized, expiresInSeconds = 60))
             }
@@ -49,13 +71,17 @@ class AuthRepository(
             com.shopai.app.data.model.TestLoginRequest(username, password),
         )
         tokenStore.setToken(response.data.token)
+        registerPushTokenInBackground()
         return response.data
     }
 
     suspend fun logout() {
+        runCatching { pushTokenRepository.unregister() }
         runCatching { firebasePhoneAuth.signOut() }
         tokenStore.setToken(null)
         tokenStore.setPendingPhone(null)
+        CrashReporting.setSession(null)
+        onSignedOut()
     }
 
     fun apiErrorMessage(throwable: Throwable, fallback: String): String =
@@ -64,6 +90,13 @@ class AuthRepository(
     private suspend fun exchangeFirebaseToken(idToken: String): AuthResponse {
         val response = api.firebaseLogin(FirebaseLoginRequest(idToken))
         tokenStore.setToken(response.data.token)
+        CrashReporting.setSession(tokenStore.getPendingPhone())
+        registerPushTokenInBackground()
         return response.data
+    }
+
+    // Login does not need to wait for the FCM token fetch + register call.
+    private fun registerPushTokenInBackground() {
+        backgroundScope.launch { runCatching { pushTokenRepository.registerCurrent() } }
     }
 }

@@ -3,6 +3,8 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -16,7 +18,8 @@ android {
         versionCode = 1
         versionName = "0.1.0"
 
-        // Production API (Render). For local dev: http://10.0.2.2:4000 (emulator) or http://<lan-ip>:4000 (device)
+        // Production API (Render). Debug defaults to the local Owner Note backend.
+        // Override with -PAPI_BASE_URL=http://<lan-ip>:4000 when testing on a physical device.
         buildConfigField("String", "API_BASE_URL", "\"https://shop-ai-api.onrender.com\"")
         // Sarvam AI TTS proxy (same values as EXPO_PUBLIC_TTS_PROXY_* in apps/mobile/eas.json).
         buildConfigField("String", "TTS_PROXY_URL", "\"https://store-accountant-tts-proxy.vercel.app\"")
@@ -24,8 +27,13 @@ android {
     }
 
     buildTypes {
+        debug {
+            val localUrl = (project.findProperty("API_BASE_URL") as String?) ?: "https://shop-ai-api.onrender.com"
+            buildConfigField("String", "API_BASE_URL", "\"$localUrl\"")
+        }
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
@@ -38,10 +46,16 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
     }
 
+    lint {
+        // Lifecycle 2.9 (via the Rive runtime) ships a LiveData lint check that crashes on this AGP; no LiveData is used.
+        disable += "NullSafeMutableLiveData"
+    }
     buildFeatures {
         compose = true
         buildConfig = true
@@ -60,6 +74,7 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
+    implementation("androidx.compose.foundation:foundation")
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
@@ -73,14 +88,37 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.exifinterface)
     implementation(libs.tesseract4android)
+    // Handwritten notes only (free, on-device). Printed bills stay on Tesseract.
+    implementation(libs.mlkit.text.recognition)
+    // Product barcodes: Google's code scanner UI (no camera permission, model via Play services).
+    implementation(libs.play.services.code.scanner)
+    // KAI's animation rig (docs/KAI_RIVE_SPEC.md).
+    implementation(libs.rive.android)
 
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.auth)
+    implementation(libs.firebase.messaging)
+    implementation(libs.firebase.crashlytics)
+    implementation(libs.kotlinx.coroutines.play.services)
+    implementation(libs.play.services.auth.api.phone)
+    implementation(libs.play.integrity)
     implementation(libs.androidx.browser)
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
 
     debugImplementation(libs.androidx.compose.ui.tooling.preview)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    // Books engine tests run real Room/SQLite on the JVM.
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+
+    // On-device checks of the real OCR engines against sample photos.
+    androidTestImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
 }

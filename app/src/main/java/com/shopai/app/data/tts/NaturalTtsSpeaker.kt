@@ -2,6 +2,7 @@ package com.shopai.app.data.tts
 
 import android.content.Context
 import android.media.AudioAttributes
+import android.media.AudioManager
 import android.media.MediaPlayer
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
@@ -15,8 +16,14 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.resume
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
@@ -39,6 +46,43 @@ class NaturalTtsSpeaker(context: Context) {
     private var ttsReady = false
     private val ttsInitMutex = Mutex()
     private var mediaPlayer: MediaPlayer? = null
+
+    // KAI's lip-sync: how open his mouth is (0..1) while the voice is audible,
+    // and whether a voice is playing right now. Read-only for the UI.
+    private val _mouthLevel = MutableStateFlow(0f)
+    val mouthLevel: StateFlow<Float> = _mouthLevel.asStateFlow()
+    private val _speaking = MutableStateFlow(false)
+    val speaking: StateFlow<Boolean> = _speaking.asStateFlow()
+    private var lipSyncJob: Job? = null
+
+    /** Drives [mouthLevel] until [stopLipSync]: from the audio's loudness, or a natural talking rhythm. */
+    private fun startLipSync(envelope: SpeechEnvelope?, position: () -> Int?) {
+        lipSyncJob?.cancel()
+        _speaking.value = true
+        val started = System.currentTimeMillis()
+        lipSyncJob = scope.launch {
+            while (isActive) {
+                val at = position() ?: (System.currentTimeMillis() - started).toInt()
+                _mouthLevel.value = envelope?.levelAt(at) ?: talkingRhythm(at)
+                delay(33)
+            }
+        }
+    }
+
+    private fun stopLipSync() {
+        lipSyncJob?.cancel()
+        lipSyncJob = null
+        _mouthLevel.value = 0f
+        _speaking.value = false
+    }
+
+    // Syllables at roughly 4–5 per second with small pauses, when the audio can't be measured.
+    private fun talkingRhythm(millis: Int): Float {
+        val t = millis / 1000.0
+        val syllable = kotlin.math.abs(kotlin.math.sin(t * Math.PI * 4.6))
+        val phrase = 0.55 + 0.45 * kotlin.math.sin(t * Math.PI * 0.9 + 1.3)
+        return (syllable * phrase).toFloat().coerceIn(0f, 1f)
+    }
 
     private val proxyUrl = BuildConfig.TTS_PROXY_URL.trim().removeSuffix("/")
     private val proxyKey = BuildConfig.TTS_PROXY_KEY.trim()
@@ -64,23 +108,31 @@ class NaturalTtsSpeaker(context: Context) {
     /**
      * Speaks on an app-scoped coroutine so playback is not cancelled when
      * the calling screen leaves composition mid-request.
+     *
+     * [useAlarmStream] routes playback through STREAM_ALARM instead of the
+     * default media stream — the same mechanism alarm-clock apps use to be
+     * heard over silent/DND mode. Only the Daily Voice Check-in feature
+     * passes true; every other caller keeps today's default (unchanged)
+     * media-stream behavior.
      */
     fun speakNatural(
         text: String,
         languageCode: String = "ta-IN",
         fallbackText: String = text,
         fallbackLanguage: String = "ta-IN",
+        useAlarmStream: Boolean = false,
         onStart: (() -> Unit)? = null,
         onDone: (() -> Unit)? = null,
     ) {
         scope.launch {
             withContext(NonCancellable) {
-                speakNaturalInternal(text, languageCode, fallbackText, fallbackLanguage, onStart, onDone)
+                speakNaturalInternal(text, languageCode, fallbackText, fallbackLanguage, useAlarmStream, onStart, onDone)
             }
         }
     }
 
     fun stop() {
+        stopLipSync()
         mediaPlayer?.runCatching {
             if (isPlaying) stop()
             release()
@@ -101,6 +153,7 @@ class NaturalTtsSpeaker(context: Context) {
         languageCode: String,
         fallbackText: String,
         fallbackLanguage: String,
+        useAlarmStream: Boolean,
         onStart: (() -> Unit)?,
         onDone: (() -> Unit)?,
     ) {
@@ -113,7 +166,7 @@ class NaturalTtsSpeaker(context: Context) {
 
         val proxyAudio = fetchProxyAudio(trimmed, languageCode)
         if (proxyAudio != null) {
-            val played = playWavFile(proxyAudio)
+            val played = playWavFile(proxyAudio, useAlarmStream)
             proxyAudio.delete()
             if (played) {
                 onDone?.invoke()
@@ -127,6 +180,7 @@ class NaturalTtsSpeaker(context: Context) {
         val spokeOnDevice = speakWithDeviceTts(
             fallbackText.trim().ifEmpty { trimmed },
             fallbackLanguage,
+            useAlarmStream,
         )
         if (!spokeOnDevice) {
             logDebug("Device TTS also failed.")
@@ -152,7 +206,7 @@ class NaturalTtsSpeaker(context: Context) {
         }
     }
 
-    private suspend fun playWavFile(file: File): Boolean = suspendCancellableCoroutine { cont ->
+    private suspend fun playWavFile(file: File, useAlarmStream: Boolean): Boolean = suspendCancellableCoroutine { cont ->
         val finished = AtomicBoolean(false)
         fun finish(result: Boolean) {
             if (finished.compareAndSet(false, true)) {
@@ -161,32 +215,39 @@ class NaturalTtsSpeaker(context: Context) {
         }
 
         stop()
+        val envelope = runCatching { SpeechEnvelope.fromWav(file.readBytes()) }.getOrNull()
         try {
             val player = MediaPlayer()
             mediaPlayer = player
             player.setAudioAttributes(
                 AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setUsage(if (useAlarmStream) AudioAttributes.USAGE_ALARM else AudioAttributes.USAGE_MEDIA)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
                     .build(),
             )
             player.setDataSource(file.absolutePath)
             player.setOnPreparedListener { prepared ->
-                runCatching { prepared.start() }
+                runCatching {
+                    prepared.start()
+                    startLipSync(envelope) { runCatching { mediaPlayer?.currentPosition }.getOrNull() }
+                }
                     .onFailure {
                         logDebug("MediaPlayer start failed: ${it.message}")
+                        stopLipSync()
                         prepared.release()
                         mediaPlayer = null
                         finish(false)
                     }
             }
             player.setOnCompletionListener {
+                stopLipSync()
                 it.release()
                 mediaPlayer = null
                 finish(true)
             }
             player.setOnErrorListener { mp, what, extra ->
                 logDebug("MediaPlayer error what=$what extra=$extra")
+                stopLipSync()
                 mp.release()
                 mediaPlayer = null
                 finish(false)
@@ -200,7 +261,7 @@ class NaturalTtsSpeaker(context: Context) {
         }
     }
 
-    private suspend fun speakWithDeviceTts(text: String, languageTag: String): Boolean {
+    private suspend fun speakWithDeviceTts(text: String, languageTag: String, useAlarmStream: Boolean): Boolean {
         if (text.isEmpty()) return false
         val engine = ensureTts() ?: return false
 
@@ -221,21 +282,36 @@ class NaturalTtsSpeaker(context: Context) {
 
             engine.setOnUtteranceProgressListener(
                 object : UtteranceProgressListener() {
-                    override fun onStart(spokenId: String?) = Unit
+                    // Device TTS audio can't be measured: KAI talks in a natural rhythm.
+                    override fun onStart(spokenId: String?) {
+                        if (spokenId == utteranceId) scope.launch { startLipSync(null) { null } }
+                    }
                     override fun onDone(spokenId: String?) {
-                        if (spokenId == utteranceId) finish(true)
+                        if (spokenId == utteranceId) {
+                            scope.launch { stopLipSync() }
+                            finish(true)
+                        }
                     }
                     @Deprecated("Deprecated in Java")
                     override fun onError(spokenId: String?) {
-                        if (spokenId == utteranceId) finish(false)
+                        if (spokenId == utteranceId) {
+                            scope.launch { stopLipSync() }
+                            finish(false)
+                        }
                     }
                     override fun onError(spokenId: String?, errorCode: Int) {
-                        if (spokenId == utteranceId) finish(false)
+                        if (spokenId == utteranceId) {
+                            scope.launch { stopLipSync() }
+                            finish(false)
+                        }
                     }
                 },
             )
             val params = Bundle().apply {
                 putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId)
+                if (useAlarmStream) {
+                    putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, AudioManager.STREAM_ALARM)
+                }
             }
             val result = engine.speak(text, TextToSpeech.QUEUE_FLUSH, params, utteranceId)
             if (result == TextToSpeech.ERROR) {

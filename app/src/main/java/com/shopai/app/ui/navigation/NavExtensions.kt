@@ -21,9 +21,21 @@ fun isMainTabRoute(route: String?): Boolean = route in mainTabRoutes
 
 fun shouldShowVoiceEntryFab(route: String?): Boolean {
     if (route == null) return false
-    if (route in authRoutes) return false
-    if (route == Routes.VoiceEntry) return false
+    val path = route.substringBefore("?")
+    if (path in authRoutes) return false
+    if (path == Routes.VoiceEntry) return false
+    // Kai Chat has its own text box at the bottom.
+    if (path == Routes.KaiChat) return false
+    if (path == Routes.GroupBuyingNew) return false
+    if (path == Routes.Profile) return false
     return true
+}
+
+/** Pops one screen, or returns to Home if the stack cannot go back. */
+fun NavController.navigateUpOrHome() {
+    if (!popBackStack()) {
+        navigateToHomeAsRoot()
+    }
 }
 
 /** Clears the entire back stack and sets Home as the only destination. */
@@ -34,12 +46,14 @@ fun NavController.navigateToHomeAsRoot() {
     }
 }
 
-/** Switches bottom tabs without building a deep back stack. */
+/** Switches bottom tabs without restoring leftover detail screens (e.g. reminder details). */
 fun NavController.navigateMainTab(route: String) {
     if (route !in mainTabRoutes) {
         navigate(route)
         return
     }
+    popBackStack(Routes.Home, inclusive = false)
+    if (currentDestination?.route == route) return
     navigate(route) {
         popUpTo(Routes.Home) {
             saveState = true

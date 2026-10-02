@@ -20,6 +20,7 @@ import com.shopai.app.data.AppContainer
 import com.shopai.app.ui.components.BottomNavTab
 import com.shopai.app.ui.components.PrimaryButton
 import com.shopai.app.ui.components.ShopCard
+import com.shopai.app.ui.components.VoiceFabBottomSpacer
 import com.shopai.app.ui.navigation.Routes
 import com.shopai.app.ui.theme.ShopAiThemeColors
 import kotlinx.coroutines.launch
@@ -38,8 +39,17 @@ fun MoreScreen(
 ) {
     val scope = rememberCoroutineScope()
     val menuItems = listOf(
+        MenuItem(R.string.more_ask_business, R.string.more_ask_business_caption, Routes.AskBusiness),
         MenuItem(R.string.more_ai_insights, R.string.more_ai_insights_caption, Routes.AiInsights),
+        MenuItem(R.string.profile_title, R.string.profile_subtitle, Routes.Profile),
+        MenuItem(R.string.more_group_buying, R.string.more_group_buying_caption, Routes.GroupBuying),
+        MenuItem(R.string.bill_home_title, R.string.bill_home_caption, Routes.Billing),
+        MenuItem(R.string.more_inventory, R.string.more_inventory_caption, Routes.Inventory),
+        MenuItem(R.string.books_hsn_master, R.string.books_hsn_master_menu_caption, Routes.HsnMaster),
+        MenuItem(R.string.books_settings, R.string.books_settings_caption, Routes.BooksSettings),
+        MenuItem(R.string.more_local_offers, R.string.more_local_offers_caption, Routes.LocalOffers),
         MenuItem(R.string.more_reminders, R.string.more_reminders_caption, Routes.Reminders),
+        MenuItem(R.string.more_handwritten, R.string.more_handwritten_caption, Routes.HandwrittenNotes),
         MenuItem(R.string.more_voice, R.string.more_voice_caption, Routes.VoiceEntry),
         MenuItem(R.string.more_settings, R.string.more_settings_caption, Routes.Settings),
         MenuItem(R.string.more_subscription, R.string.more_subscription_caption, Routes.Subscription),
@@ -76,10 +86,15 @@ fun MoreScreen(
                 onClick = {
                     scope.launch {
                         container.authRepository.logout()
+                        container.reminderAlarms.clear()
+                        // Captured bills/notes live only on this phone; don't show them to the next account.
+                        runCatching { container.capturedDocumentRepository.clear() }
+                        runCatching { container.handwrittenNotesRepository.clear() }
                         onLogout()
                     }
                 },
             )
+            VoiceFabBottomSpacer()
         }
     }
 }

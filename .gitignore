@@ -6,3 +6,7 @@ app/build/
 build/
 *.apk
 *.aab
+
+# JVM crash dumps
+hs_err_pid*.log
+replay_pid*.log

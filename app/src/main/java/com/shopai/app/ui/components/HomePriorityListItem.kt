@@ -25,12 +25,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.shopai.app.R
 import com.shopai.app.data.model.PriorityItem
-import com.shopai.app.ui.theme.Danger
-import com.shopai.app.ui.theme.DangerMuted
+import com.shopai.app.ui.theme.LedgerCredit
+import com.shopai.app.ui.theme.LedgerCreditMuted
+import com.shopai.app.ui.theme.LedgerDebit
+import com.shopai.app.ui.theme.LedgerDebitMuted
 import com.shopai.app.ui.theme.Primary
 import com.shopai.app.ui.theme.PrimaryMuted
 import com.shopai.app.ui.theme.ShopAiThemeColors
-import com.shopai.app.ui.theme.Success
 import com.shopai.app.util.PriorityAmountTone
 import com.shopai.app.util.PriorityRowDisplay
 import com.shopai.app.util.formatDisplayDate
@@ -72,8 +73,8 @@ fun HomePriorityListItem(
 ) {
     val avatarColors = avatarColorsFor(row.tone)
     val amountColor = when (row.tone) {
-        PriorityAmountTone.CREDIT -> Success
-        PriorityAmountTone.DEBIT -> Danger
+        PriorityAmountTone.CREDIT -> LedgerCredit
+        PriorityAmountTone.DEBIT -> LedgerDebit
         PriorityAmountTone.NEUTRAL -> ShopAiThemeColors.onSurfaceVariant
     }
 
@@ -156,7 +157,7 @@ private fun priorityDueLabel(dueDateIso: String?): String {
 private data class AvatarColors(val background: Color, val foreground: Color)
 
 private fun avatarColorsFor(tone: PriorityAmountTone): AvatarColors = when (tone) {
-    PriorityAmountTone.CREDIT -> AvatarColors(Success.copy(alpha = 0.15f), Success)
-    PriorityAmountTone.DEBIT -> AvatarColors(DangerMuted, Danger)
+    PriorityAmountTone.CREDIT -> AvatarColors(LedgerCreditMuted, LedgerCredit)
+    PriorityAmountTone.DEBIT -> AvatarColors(LedgerDebitMuted, LedgerDebit)
     PriorityAmountTone.NEUTRAL -> AvatarColors(PrimaryMuted, Primary)
 }

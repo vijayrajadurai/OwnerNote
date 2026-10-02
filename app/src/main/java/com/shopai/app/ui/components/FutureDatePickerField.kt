@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -18,6 +19,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -32,10 +34,17 @@ import androidx.compose.ui.unit.dp
 import com.shopai.app.R
 import com.shopai.app.util.FutureSelectableDates
 import com.shopai.app.util.formatLocalDateForDisplay
-import com.shopai.app.util.toEpochMillis
 import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneId
+import java.time.ZoneOffset
+
+@OptIn(ExperimentalMaterial3Api::class)
+private class PastSelectableDates(private val maxDate: LocalDate) : SelectableDates {
+    override fun isSelectableDate(utcTimeMillis: Long): Boolean =
+        !Instant.ofEpochMilli(utcTimeMillis).atZone(ZoneOffset.UTC).toLocalDate().isAfter(maxDate)
+
+    override fun isSelectableYear(year: Int): Boolean = year <= maxDate.year
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,6 +56,10 @@ fun FutureDatePickerField(
     placeholder: String = "",
     error: String? = null,
     allowEmpty: Boolean = true,
+    // For dates something already happened on (bill date): today or earlier.
+    pastOnly: Boolean = false,
+    // Any date, past or future (dates written on handwritten notes).
+    anyDate: Boolean = false,
 ) {
     var showDialog by remember { mutableStateOf(false) }
     val displayText = selectedDate?.let { formatLocalDateForDisplay(it) } ?: ""
@@ -88,6 +101,8 @@ fun FutureDatePickerField(
                 unfocusedBorderColor = MaterialTheme.colorScheme.outline,
                 focusedContainerColor = MaterialTheme.colorScheme.surface,
                 unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
                 disabledContainerColor = MaterialTheme.colorScheme.surface,
                 disabledTextColor = MaterialTheme.colorScheme.onSurface,
             ),
@@ -105,23 +120,37 @@ fun FutureDatePickerField(
 
     if (showDialog) {
         val today = LocalDate.now()
-        val initialMillis = selectedDate?.toEpochMillis() ?: today.toEpochMillis()
+        // The picker works in UTC days; local midnight in IST is the previous
+        // UTC day, which highlighted the wrong date.
+        val initialMillis = (selectedDate ?: today).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
         val datePickerState = rememberDatePickerState(
             initialSelectedDateMillis = initialMillis,
-            selectableDates = FutureSelectableDates(today),
+            selectableDates = when {
+                anyDate -> DatePickerDefaults.AllDates
+                pastOnly -> PastSelectableDates(today)
+                else -> FutureSelectableDates(today)
+            },
         )
 
         DatePickerDialog(
             onDismissRequest = { showDialog = false },
+            colors = DatePickerDefaults.colors(
+                containerColor = MaterialTheme.colorScheme.background,
+            ),
             confirmButton = {
                 TextButton(
                     onClick = {
                         val millis = datePickerState.selectedDateMillis
                         if (millis != null) {
                             val picked = Instant.ofEpochMilli(millis)
-                                .atZone(ZoneId.systemDefault())
+                                .atZone(ZoneOffset.UTC)
                                 .toLocalDate()
-                            if (!picked.isBefore(today)) {
+                            val allowed = when {
+                                anyDate -> true
+                                pastOnly -> !picked.isAfter(today)
+                                else -> !picked.isBefore(today)
+                            }
+                            if (allowed) {
                                 onDateSelected(picked)
                             }
                         }
@@ -149,7 +178,12 @@ fun FutureDatePickerField(
                 }
             },
         ) {
-            DatePicker(state = datePickerState)
+            DatePicker(
+                state = datePickerState,
+                colors = DatePickerDefaults.colors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                ),
+            )
         }
     }
 }

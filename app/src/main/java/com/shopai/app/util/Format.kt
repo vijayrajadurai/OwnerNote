@@ -8,3 +8,6 @@ private val inrFormat = NumberFormat.getCurrencyInstance(Locale("en", "IN")).app
 }
 
 fun formatInr(amount: Double): String = inrFormat.format(amount)
+
+fun formatQty(quantity: Double): String =
+    if (quantity % 1.0 == 0.0) quantity.toInt().toString() else quantity.toString()

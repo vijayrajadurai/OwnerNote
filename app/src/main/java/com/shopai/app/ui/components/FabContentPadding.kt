@@ -6,8 +6,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-/** Keeps scrollable tab content above the global Speak FAB (bottom-right). */
+/** Keeps scrollable tab content above the centered Speak FAB and floating bottom bar. */
 @Composable
 fun VoiceFabBottomSpacer() {
-    Spacer(Modifier.height(96.dp))
+    Spacer(Modifier.height(168.dp))
 }

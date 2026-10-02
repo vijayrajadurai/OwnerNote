@@ -1,16 +1,14 @@
 package com.shopai.app.data.auth
 
-import android.app.Activity
-import com.google.android.gms.tasks.Task
 import com.google.firebase.FirebaseException
-import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.GetTokenResult
 import com.google.firebase.auth.PhoneAuthCredential
 import com.google.firebase.auth.PhoneAuthOptions
 import com.google.firebase.auth.PhoneAuthProvider
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.tasks.await
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -28,31 +26,49 @@ class FirebasePhoneAuthClient(
     @Volatile
     private var resendToken: PhoneAuthProvider.ForceResendingToken? = null
 
-    suspend fun sendOtp(activity: Activity, e164Phone: String): FirebasePhoneSendResult {
+    fun warmupAppVerification() {
+        // Never force the web reCAPTCHA/browser flow. OTP uses Play Integrity only.
+        auth.firebaseAuthSettings.forceRecaptchaFlowForTesting(false)
+    }
+
+    suspend fun sendOtp(e164Phone: String): FirebasePhoneSendResult {
+        val settled = AtomicBoolean(false)
         val outcome = suspendCancellableCoroutine<SendOutcome> { cont ->
+            fun complete(result: Result<SendOutcome>) {
+                if (!settled.compareAndSet(false, true)) return
+                if (!cont.isActive) return
+                result.fold(
+                    onSuccess = { cont.resume(it) },
+                    onFailure = { cont.resumeWithException(it) },
+                )
+            }
+
             val callbacks = object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
                 override fun onVerificationCompleted(credential: PhoneAuthCredential) {
-                    if (cont.isActive) cont.resume(SendOutcome.AutoCredential(credential))
+                    complete(Result.success(SendOutcome.AutoCredential(credential)))
                 }
 
-                override fun onVerificationFailed(exception: FirebaseException) {
-                    if (cont.isActive) cont.resumeWithException(exception)
+                override fun onVerificationFailed(e: FirebaseException) {
+                    complete(Result.failure(e))
                 }
 
                 override fun onCodeSent(
-                    verificationId: String,
-                    forceResendingToken: PhoneAuthProvider.ForceResendingToken,
+                    id: String,
+                    token: PhoneAuthProvider.ForceResendingToken,
                 ) {
-                    this@FirebasePhoneAuthClient.verificationId = verificationId
-                    resendToken = forceResendingToken
-                    if (cont.isActive) cont.resume(SendOutcome.CodeSent)
+                    verificationId = id
+                    resendToken = token
+                    complete(Result.success(SendOutcome.CodeSent))
                 }
             }
 
+            // Do not call setActivity(). With an Activity, Firebase opens a browser
+            // for reCAPTCHA when Play Integrity fails. Without it, recaptcha cannot start.
+            // Timeout 0 disables Firebase SMS Retriever auto-read. Their receiver
+            // NPEs on a null SMS body (SMS_RETRIEVED / user-consent extras).
             val builder = PhoneAuthOptions.newBuilder(auth)
                 .setPhoneNumber(e164Phone)
-                .setTimeout(60L, TimeUnit.SECONDS)
-                .setActivity(activity)
+                .setTimeout(0L, TimeUnit.SECONDS)
                 .setCallbacks(callbacks)
             resendToken?.let { builder.setForceResendingToken(it) }
             PhoneAuthProvider.verifyPhoneNumber(builder.build())
@@ -73,17 +89,16 @@ class FirebasePhoneAuthClient(
         return signInAndGetIdToken(credential)
     }
 
-    fun signOut() {
+    suspend fun signOut() {
         auth.signOut()
         verificationId = null
         resendToken = null
     }
 
     private suspend fun signInAndGetIdToken(credential: PhoneAuthCredential): String {
-        val authResult: AuthResult = auth.signInWithCredential(credential).awaitTask()
-        val user = authResult.user ?: throw IllegalStateException("Firebase sign-in returned no user")
-        val tokenResult: GetTokenResult = user.getIdToken(true).awaitTask()
-        return tokenResult.getToken()
+        val result = auth.signInWithCredential(credential).await()
+        val user = result.user ?: throw IllegalStateException("Firebase sign-in returned no user")
+        return user.getIdToken(true).await().token
             ?: throw IllegalStateException("Firebase did not return an ID token")
     }
 
@@ -92,16 +107,3 @@ class FirebasePhoneAuthClient(
         data class AutoCredential(val credential: PhoneAuthCredential) : SendOutcome()
     }
 }
-
-private suspend fun <T> Task<T>.awaitTask(): T =
-    suspendCancellableCoroutine { cont ->
-        addOnCompleteListener { task ->
-            if (!cont.isActive) return@addOnCompleteListener
-            val error = task.exception
-            when {
-                error != null -> cont.resumeWithException(error)
-                task.isCanceled -> cont.cancel()
-                else -> cont.resume(task.result)
-            }
-        }
-    }

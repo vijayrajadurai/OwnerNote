@@ -61,14 +61,43 @@ class ApiErrorHandler(private val context: Context) {
                 else -> ErrorKind.HTTP_CLIENT
             }
             is FirebaseException -> ErrorKind.HTTP_CLIENT
-            else -> ErrorKind.UNKNOWN
+            // The books refused an entry: show its own reason (e.g. "Only ₹500 is due").
+            is com.shopai.app.books.integration.BooksRejectedException -> ErrorKind.HTTP_CLIENT
+            else -> {
+                val message = throwable.message.orEmpty()
+                if (
+                    message.contains("play_integrity", ignoreCase = true) ||
+                    message.contains("BILLING_NOT_ENABLED", ignoreCase = true) ||
+                    message.contains("Recaptcha", ignoreCase = true) ||
+                    message.contains("not authorized to use Firebase Authentication", ignoreCase = true)
+                ) {
+                    ErrorKind.HTTP_CLIENT
+                } else {
+                    ErrorKind.UNKNOWN
+                }
+            }
         }
     }
 
     private fun parseHttpMessage(throwable: Throwable): String? {
         if (throwable is FirebaseException) {
-            return throwable.localizedMessage?.takeIf { it.isNotBlank() }
+            val raw = throwable.localizedMessage.orEmpty()
+            return when {
+                raw.contains("BILLING_NOT_ENABLED", ignoreCase = true) ->
+                    context.getString(R.string.error_send_otp)
+                raw.contains("blocked all requests from this device", ignoreCase = true) ||
+                    raw.contains("unusual activity", ignoreCase = true) ||
+                    raw.contains("too-many-requests", ignoreCase = true) ->
+                    context.getString(R.string.error_otp_blocked)
+                raw.contains("play_integrity", ignoreCase = true) ||
+                    raw.contains("not authorized to use Firebase Authentication", ignoreCase = true) ||
+                    raw.contains("MissingActivityForRecaptcha", ignoreCase = true) ||
+                    raw.contains("reCAPTCHA", ignoreCase = true) ->
+                    context.getString(R.string.error_otp_app_not_verified)
+                else -> raw.takeIf { it.isNotBlank() }
+            }
         }
+        if (throwable is com.shopai.app.books.integration.BooksRejectedException) return throwable.message
         if (throwable !is HttpException) return null
         val body = throwable.response()?.errorBody()?.string()
         if (body != null && body.contains("\"message\"")) {

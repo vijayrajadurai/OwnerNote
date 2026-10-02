@@ -1,6 +1,5 @@
 package com.shopai.app.ui.components
 
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -14,7 +13,7 @@ fun ApiErrorAlertDialog(
 ) {
     if (message == null) return
 
-    AlertDialog(
+    ShopAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.error_alert_title)) },
         text = { Text(message) },
