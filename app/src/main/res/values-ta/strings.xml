@@ -576,6 +576,26 @@
     <string name="inv_history_balance">இருப்பு: %1$s</string>
     <string name="inv_history_balance_unknown">இருப்பு: —</string>
 
+    <!-- Voice Stock In/Out -->
+    <string name="stock_voice_entry_title">குரல் மூலம் Stock Entry</string>
+    <string name="stock_voice_entry_subtitle">\"Cement 50 bags vanginen\" மாதிரி பேசுங்க அல்லது டைப் பண்ணுங்க — confirm பண்ணின பிறகே save ஆகும்.</string>
+    <string name="stock_voice_entry_input_label">Stock வரி</string>
+    <string name="stock_voice_entry_placeholder">Cement 50 bags vanginen</string>
+    <string name="stock_voice_entry_send">புரிஞ்சிக்க</string>
+    <string name="stock_voice_current_stock">Current stock: %1$s %2$s</string>
+    <string name="stock_voice_after_add">Add பண்ணின பிறகு: %1$s %2$s</string>
+    <string name="stock_voice_after_remove">மீதி: %1$s %2$s</string>
+    <string name="stock_voice_not_understood">புரியல, தெளிவா மறுபடி சொல்லுங்க — \"Cement 50 bags vanginen\" மாதிரி.</string>
+    <string name="stock_voice_product_not_found">இந்த product இன்னும் உங்க inventory-ல கிடையாது.</string>
+    <string name="stock_voice_add_product">Product Add பண்ணு</string>
+    <string name="stock_voice_ask_unit">எந்த unit — bags, kg, pieces?</string>
+    <string name="stock_voice_insufficient_stock">Current stock %1$s %2$s தான் இருக்கு — %3$s %2$s remove பண்ண முடியாது.</string>
+    <string name="stock_voice_change_quantity">Quantity மாத்து</string>
+    <string name="stock_voice_success_add">Done Owner 👍\n%1$s +%2$s %3$s add ஆச்சு.\nCurrent stock: %4$s %3$s.</string>
+    <string name="stock_voice_success_remove">Done Owner 👍\n%1$s %2$s %3$s remove ஆச்சு.\nமீதி stock: %4$s %3$s.</string>
+    <string name="stock_voice_tts_add">Done Owner. %1$s %2$s stock-la add panniten.</string>
+    <string name="stock_voice_tts_remove">Done Owner. %1$s %2$s stock-la irundhu remove panniten.</string>
+
     <string name="offer_title">இன்றைய சலுகை</string>
     <string name="offer_subtitle">அருகிலுள்ள வாடிக்கையாளர்கள் காணும்படி உள்ளூர் சலுகையை இடுங்கள், அல்லது அருகில் உள்ள கடைகள் என்ன சலுகை தருகின்றன என்று பாருங்கள்.</string>
     <string name="offer_tab_mine">என் சலுகைகள்</string>
