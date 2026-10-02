@@ -6,7 +6,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -14,13 +13,11 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.shopai.app.data.AppContainer
-import com.shopai.app.ui.components.VoiceEntryFab
 import com.shopai.app.ui.navigation.Routes
 import com.shopai.app.ui.navigation.isMainTabRoute
 import com.shopai.app.ui.navigation.navigateMainTab
 import com.shopai.app.ui.navigation.navigateToHomeAsRoot
 import com.shopai.app.ui.navigation.navigateUpOrHome
-import com.shopai.app.ui.navigation.shouldShowVoiceEntryFab
 import com.shopai.app.ui.screens.AddCreditScreen
 import com.shopai.app.ui.screens.AddDebitScreen
 import com.shopai.app.ui.screens.AiInsightsScreen
@@ -607,14 +604,6 @@ fun ShopAiApp(container: AppContainer) {
                 onComplete = { navController.navigateToHomeAsRoot() },
             )
         }
-        }
-
-        if (shouldShowVoiceEntryFab(currentRoute)) {
-            VoiceEntryFab(
-                onClick = { navController.navigate(Routes.VoiceEntry) },
-                modifier = Modifier.align(Alignment.BottomCenter),
-                bottomPadding = if (isMainTabRoute(currentRoute)) 78.dp else 24.dp,
-            )
         }
 
         // Kai speaks up after manual entries, bills and notes (app-wide, never permanent).

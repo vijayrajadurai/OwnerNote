@@ -19,6 +19,9 @@
     <string name="guide_skip">தவிர்</string>
     <string name="guide_next">அடுத்தது</string>
     <string name="guide_get_started">தொடங்குவோம்</string>
+    <string name="guide_step_of">படி %1$d / %2$d</string>
+    <string name="guide_welcome_title">Owner Note-க்கு வரவேற்கிறோம்</string>
+    <string name="guide_welcome_body">உங்கள் கடை உதவியாளர் தயார். வியாபாரத்தை அமைக்கலாம்.</string>
     <string name="cd_guide_funding">உங்கள் வியாபாரத்திற்கு நிதி பெறுங்கள்</string>
     <string name="cd_guide_kai">Kai உடன் வியாபாரத்தை எளிதாக நிர்வகிக்கவும்</string>
     <string name="cd_guide_group">கூட்டாக வாங்கி சிறப்பாக வாங்குங்கள்</string>
@@ -47,6 +50,9 @@
 
     <string name="business_setup_title">உங்க வியாபாரத்தை பத்தி சொல்லுங்க</string>
     <string name="business_setup_subtitle">இது உங்க AI பரிந்துரைகளை உங்களுக்கே தனியா set பண்ணும்.</string>
+    <string name="business_setup_step1_subtitle">உங்க பெயர், கடை பெயர் மற்றும் வகை.</string>
+    <string name="business_setup_step2_subtitle">ஊர், பின்கோடு மற்றும் கடை இருப்பிடம்.</string>
+    <string name="business_setup_step3_subtitle">தொடங்கிய வருடம் மற்றும் மாதாந்திர வருமானம்.</string>
     <string name="business_owner_name">உங்க பெயர்</string>
     <string name="business_owner_placeholder">குமார்</string>
     <string name="business_name">வியாபாரம் / கடை பெயர்</string>
@@ -54,9 +60,11 @@
     <string name="business_category">வியாபார வகை</string>
     <string name="business_city">ஊர்</string>
     <string name="business_city_placeholder">கோயம்புத்தூர்</string>
-    <string name="business_since_year">எத்தனை வருஷமா நடத்துறீங்க (வேண்டுமானா)</string>
+    <string name="business_pincode">பின்கோடு</string>
+    <string name="business_pincode_placeholder">641001</string>
+    <string name="business_since_year">வியாபாரம் தொடங்கிய வருடம்</string>
     <string name="business_since_placeholder">2018</string>
-    <string name="business_monthly_volume">மாசாமாசம் ஏறக்குறைய எவ்வளவு வியாபாரம் (₹, வேண்டுமானா)</string>
+    <string name="business_monthly_volume">மாதாந்திர வருமானம் (₹)</string>
     <string name="business_volume_placeholder">200000</string>
     <string name="business_save_continue">சேமித்து தொடரவும்</string>
     <string name="business_use_location">கடை இருப்பிடத்தைப் பயன்படுத்து</string>
@@ -86,6 +94,10 @@
     <string name="home_good_morning">காலை வணக்கம்!</string>
     <string name="home_good_afternoon">மதிய வணக்கம்!</string>
     <string name="home_good_evening">மாலை வணக்கம்!</string>
+    <string name="home_view_profile">சுயவிவரம்</string>
+    <string name="home_location_unknown">கடை இருப்பிடம் சேர்க்கவும்</string>
+    <string name="cd_shop_banner">%1$s கடை படம்</string>
+    <string name="cd_open_settings">அமைப்புகள்</string>
     <string name="home_payment_reminders_heading">இன்றைய பணம் நினைவூட்டல்கள்</string>
     <string name="home_payment_reminders_empty">இப்போது பணம் நினைவூட்டல்கள் இல்லை.</string>
     <string name="reminder_badge_due_today">இன்று கடைசி நாள்</string>
@@ -119,6 +131,8 @@
     <string name="priority_overdue">தாமதம் · %1$s</string>
     <string name="priority_follow_up">பின்தொடரவும்</string>
     <string name="home_quick_actions">உடனடி செயல்கள்</string>
+    <string name="home_quick_links">விரைவு இணைப்புகள்</string>
+    <string name="home_quick_loans">கடன்கள்</string>
     <string name="home_voice_record">பேசி பதிவு</string>
     <string name="home_add_credit">கடன்</string>
     <string name="home_add_debit">பாக்கி</string>
@@ -131,7 +145,6 @@
     <string name="funding_not_now">இப்போ வேண்டாம்</string>
     <string name="error_load_dashboard">வியாபார தகவலை கொண்டு வர முடியல.</string>
     <string name="cd_notifications">நினைவூட்டல்கள்</string>
-    <string name="cd_voice_entry_fab">குரல் பதிவு</string>
 
     <string name="customers_title">வாடிக்கையாளர்</string>
     <string name="customers_add">+ கடன்</string>
@@ -151,6 +164,9 @@
     <string name="party_mark_paid_confirm_message">மீதி தொகை கழிக்கப்படும். தொடரவா?</string>
 
     <string name="more_title">மேலும்</string>
+    <string name="more_eyebrow">மேலும்</string>
+    <string name="more_headline">உங்கள் வியாபாரத்தை நிர்வகிக்கவும்</string>
+    <string name="more_subtitle">அனைத்து கருவிகளும் ஒரே இடத்தில்</string>
     <string name="more_tools_section">வியாபார கருவிகள்</string>
     <string name="more_categories">வகைகள்</string>
     <string name="more_transactions">பரிவர்த்தனைகள்</string>
@@ -190,12 +206,20 @@
     <string name="more_inventory_caption">ஸ்டாக்கை கண்காணித்து AI பயன்பாடு பரிந்துரைகளைப் பெறுங்கள்</string>
     <string name="more_local_offers">இன்றைய சலுகை</string>
     <string name="more_local_offers_caption">உள்ளூர் சலுகையை இடுங்கள் அல்லது அருகில் உள்ளதைப் பார்க்கவும்</string>
+    <string name="more_profile_caption">வியாபார மற்றும் கணக்கு விவரங்கள்</string>
+    <string name="more_categories_caption">வியாபார வகைகளை நிர்வகிக்கவும்</string>
+    <string name="more_transactions_caption">அனைத்து பரிவர்த்தனைகளையும் பார்த்து நிர்வகிக்கவும்</string>
+    <string name="more_reports_caption">வியாபார பரிந்துரைகள் மற்றும் அறிக்கைகள்</string>
+    <string name="more_notifications_caption">எச்சரிக்கைகள் மற்றும் புதுப்பிப்புகள்</string>
+    <string name="more_help_caption">உதவி பெற்று எங்களை தொடர்பு கொள்ளவும்</string>
+    <string name="more_about_caption">நாங்கள் யார், Owner Note என்ன செய்கிறது</string>
+    <string name="more_privacy_caption">உங்கள் கடை தரவை எப்படி பயன்படுத்துகிறோம்</string>
     <string name="more_reminders">நினைவூட்டல்கள்</string>
-    <string name="more_reminders_caption">பின்தொடர்தல், வாங்கணும், கொடுக்கணும்</string>
+    <string name="more_reminders_caption">கட்டணம் மற்றும் வியாபார நினைவூட்டல்கள்</string>
     <string name="more_voice">பேசுங்க</string>
     <string name="more_voice_caption">குரல் மற்றும் உரை பரிவர்த்தனை பதிவு</string>
     <string name="more_settings">அமைப்புகள்</string>
-    <string name="more_settings_caption">மொழி, தோற்றம், செயலி பற்றி</string>
+    <string name="more_settings_caption">செயலி மற்றும் வியாபார அமைப்புகள்</string>
     <string name="more_subscription">சந்தா</string>
     <string name="more_subscription_caption">திட்டங்கள் மற்றும் பிரீமியம் நன்மைகள்</string>
     <string name="logout">வெளியேறு</string>

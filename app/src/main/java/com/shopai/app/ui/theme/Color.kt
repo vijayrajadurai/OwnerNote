@@ -34,7 +34,7 @@ val LedgerPending = Danger
 // Redesign: the brand gradient (buttons) — deep green to emerald — and its soft glow.
 val BrandGradientStart = Primary
 val BrandGradientEnd = Color(0xFF2FB27A)
-val BrandGlow = Color(0x661E6B4E)
+val BrandGlow = Color(0x66FFFFFF)
 
 // Redesign: the soft page wash (white → mint → pale sea-green) and the glass surfaces on it.
 val AppBackgroundTop = Color(0xFFFBFEFC)

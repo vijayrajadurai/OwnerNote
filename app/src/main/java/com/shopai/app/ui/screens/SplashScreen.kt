@@ -1,30 +1,41 @@
 package com.shopai.app.ui.screens
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.background
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.shopai.app.R
 import com.shopai.app.data.AppContainer
-import com.shopai.app.ui.components.PrimaryButton
+import com.shopai.app.ui.components.AuthBackgroundBrush
+import com.shopai.app.ui.components.AuthBrandHeader
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 
-// Sampled from the welcome artwork's own background so the real button
-// area below the cropped image has no visible seam.
-private val WelcomeBackground = Color(0xFFEEFDF7)
+private const val SplashHoldMs = 3_000L
+
+private sealed interface SplashDest {
+    data object Login : SplashDest
+    data object Home : SplashDest
+    data object UserGuide : SplashDest
+    data object BusinessSetup : SplashDest
+}
 
 @Composable
 fun SplashScreen(
@@ -35,49 +46,53 @@ fun SplashScreen(
     onNavigateBusinessSetup: () -> Unit,
 ) {
     LaunchedEffect(Unit) {
-        val token = container.authRepository.hydrate()
-        if (token == null) {
-            // No session — stay on the welcome screen; the owner taps
-            // "Get Started" themselves instead of being redirected.
-            return@LaunchedEffect
+        val dest = coroutineScope {
+            val resolved = async { resolveSplashDest(container) }
+            delay(SplashHoldMs)
+            resolved.await()
         }
-        runCatching { container.pushTokenRepository.registerCurrent() }
-        if (!container.preferencesRepository.hasCompletedUserGuide()) {
-            onNavigateUserGuide()
-            return@LaunchedEffect
+        when (dest) {
+            SplashDest.Login -> onNavigateLogin()
+            SplashDest.Home -> onNavigateHome()
+            SplashDest.UserGuide -> onNavigateUserGuide()
+            SplashDest.BusinessSetup -> onNavigateBusinessSetup()
         }
-        val business = runCatching {
-            container.businessRepository.getMyBusiness()
-        }.getOrElse {
-            onNavigateLogin()
-            return@LaunchedEffect
-        }
-        if (business != null) onNavigateHome() else onNavigateBusinessSetup()
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(WelcomeBackground)
-            .windowInsetsPadding(WindowInsets.safeDrawing),
+            .background(AuthBackgroundBrush)
+            .windowInsetsPadding(WindowInsets.safeDrawing)
+            .padding(horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Image(
-            painter = painterResource(R.drawable.img_splash_welcome),
-            contentDescription = stringResource(R.string.brand_name),
-            contentScale = ContentScale.FillWidth,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Column(
+        Spacer(modifier = Modifier.height(28.dp))
+        AuthBrandHeader(tagline = stringResource(R.string.splash_tagline))
+        Box(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 20.dp),
-            verticalArrangement = Arrangement.Bottom,
+                .padding(top = 12.dp, bottom = 24.dp),
+            contentAlignment = Alignment.BottomCenter,
         ) {
-            PrimaryButton(
-                label = stringResource(R.string.splash_get_started),
-                onClick = onNavigateLogin,
+            Image(
+                painter = painterResource(R.drawable.kai_point),
+                contentDescription = stringResource(R.string.kai_content_description),
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxSize(),
             )
         }
     }
+}
+
+private suspend fun resolveSplashDest(container: AppContainer): SplashDest {
+    val token = container.authRepository.hydrate()
+    if (token == null) return SplashDest.Login
+    runCatching { container.pushTokenRepository.registerCurrent() }
+    if (!container.preferencesRepository.hasCompletedUserGuide()) return SplashDest.UserGuide
+    val business = runCatching {
+        container.businessRepository.getMyBusiness()
+    }.getOrElse { return SplashDest.Login }
+    return if (business != null) SplashDest.Home else SplashDest.BusinessSetup
 }
