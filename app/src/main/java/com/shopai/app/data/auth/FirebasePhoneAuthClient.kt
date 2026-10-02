@@ -1,13 +1,15 @@
 package com.shopai.app.data.auth
 
 import android.app.Activity
+import com.google.android.gms.tasks.Task
 import com.google.firebase.FirebaseException
+import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GetTokenResult
 import com.google.firebase.auth.PhoneAuthCredential
 import com.google.firebase.auth.PhoneAuthOptions
 import com.google.firebase.auth.PhoneAuthProvider
 import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.tasks.await
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -33,16 +35,16 @@ class FirebasePhoneAuthClient(
                     if (cont.isActive) cont.resume(SendOutcome.AutoCredential(credential))
                 }
 
-                override fun onVerificationFailed(e: FirebaseException) {
-                    if (cont.isActive) cont.resumeWithException(e)
+                override fun onVerificationFailed(exception: FirebaseException) {
+                    if (cont.isActive) cont.resumeWithException(exception)
                 }
 
                 override fun onCodeSent(
-                    id: String,
-                    token: PhoneAuthProvider.ForceResendingToken,
+                    verificationId: String,
+                    forceResendingToken: PhoneAuthProvider.ForceResendingToken,
                 ) {
-                    verificationId = id
-                    resendToken = token
+                    this@FirebasePhoneAuthClient.verificationId = verificationId
+                    resendToken = forceResendingToken
                     if (cont.isActive) cont.resume(SendOutcome.CodeSent)
                 }
             }
@@ -71,16 +73,17 @@ class FirebasePhoneAuthClient(
         return signInAndGetIdToken(credential)
     }
 
-    suspend fun signOut() {
+    fun signOut() {
         auth.signOut()
         verificationId = null
         resendToken = null
     }
 
     private suspend fun signInAndGetIdToken(credential: PhoneAuthCredential): String {
-        val result = auth.signInWithCredential(credential).await()
-        val user = result.user ?: throw IllegalStateException("Firebase sign-in returned no user")
-        return user.getIdToken(true).await().token
+        val authResult: AuthResult = auth.signInWithCredential(credential).awaitTask()
+        val user = authResult.user ?: throw IllegalStateException("Firebase sign-in returned no user")
+        val tokenResult: GetTokenResult = user.getIdToken(true).awaitTask()
+        return tokenResult.getToken()
             ?: throw IllegalStateException("Firebase did not return an ID token")
     }
 
@@ -89,3 +92,16 @@ class FirebasePhoneAuthClient(
         data class AutoCredential(val credential: PhoneAuthCredential) : SendOutcome()
     }
 }
+
+private suspend fun <T> Task<T>.awaitTask(): T =
+    suspendCancellableCoroutine { cont ->
+        addOnCompleteListener { task ->
+            if (!cont.isActive) return@addOnCompleteListener
+            val error = task.exception
+            when {
+                error != null -> cont.resumeWithException(error)
+                task.isCanceled -> cont.cancel()
+                else -> cont.resume(task.result)
+            }
+        }
+    }
