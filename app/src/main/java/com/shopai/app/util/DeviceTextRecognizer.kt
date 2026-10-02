@@ -62,7 +62,8 @@ class DeviceTextRecognizer(
         val prepared = OcrImagePreprocessor.prepare(context, bitmap, imageUri)
         return runCatching {
             api.setImage(prepared)
-            // Keep line breaks: bill/note parsing reads the text line by line.
+            // Keep line breaks: bill/note parsing reads the text line by line
+            // (the header line and the "Total" line must stay separate).
             val text = api.utF8Text.orEmpty()
                 .lines()
                 .map { it.replace(Regex("[ \\t]+"), " ").trim() }

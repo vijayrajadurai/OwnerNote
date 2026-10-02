@@ -133,6 +133,7 @@ fun VoiceEntryScreen(
         description = p.description ?: ""
         val today = LocalDate.now()
         dueDate = parseIsoToLocalDate(p.dueDate)?.takeIf { !it.isBefore(today) }
+            ?: today.takeIf { p.billDetected }
     }
 
     /**

@@ -213,6 +213,7 @@ data class ParsedTransaction(
     val description: String?,
     val confidence: Double,
     val rawText: String,
+    val billDetected: Boolean = false,
 )
 
 data class ReminderItem(
