@@ -14,6 +14,8 @@ import kotlinx.coroutines.withContext
 data class OcrRecognitionResult(
     val text: String,
     val success: Boolean,
+    /** Tesseract's own mean word confidence (0–100); -1 when unknown. */
+    val meanConfidence: Int = -1,
 )
 
 /**
@@ -69,8 +71,9 @@ class DeviceTextRecognizer(
                 .map { it.replace(Regex("[ \\t]+"), " ").trim() }
                 .filter { it.isNotEmpty() }
                 .joinToString("\n")
+            val confidence = runCatching { api.meanConfidence() }.getOrDefault(-1)
             api.clear()
-            OcrRecognitionResult(text = text, success = text.isNotBlank())
+            OcrRecognitionResult(text = text, success = text.isNotBlank(), meanConfidence = confidence)
         }.getOrElse {
             OcrRecognitionResult("", success = false)
         }

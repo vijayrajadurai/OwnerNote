@@ -87,6 +87,8 @@ fun MoreScreen(
                     scope.launch {
                         container.authRepository.logout()
                         container.reminderAlarms.clear()
+                        container.kaiReminders.clear()
+                        runCatching { container.kaiActionLog.clear() }
                         // Captured bills/notes live only on this phone; don't show them to the next account.
                         runCatching { container.capturedDocumentRepository.clear() }
                         runCatching { container.handwrittenNotesRepository.clear() }

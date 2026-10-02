@@ -102,11 +102,6 @@ fun AddDebitScreen(
                 error = amountError,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             )
-            ShopTextField(
-                stringResource(R.string.note_label),
-                description,
-                { description = it },
-            )
             FutureDatePickerField(
                 label = stringResource(R.string.due_date_label),
                 selectedDate = dueDate,

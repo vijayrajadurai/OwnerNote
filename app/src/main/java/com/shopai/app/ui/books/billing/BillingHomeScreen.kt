@@ -177,9 +177,18 @@ private fun DocRow(t: TxnEntity, due: Long?, onClick: () -> Unit) {
                 when {
                     t.status == "VOID" -> Text(stringResource(R.string.bill_cancelled), color = Danger, style = MaterialTheme.typography.bodySmall)
                     due == null -> Unit
-                    due == 0L -> Text(stringResource(R.string.bill_status_paid), color = Success, style = MaterialTheme.typography.bodySmall)
-                    due < t.totalPaise -> Text(stringResource(R.string.bill_status_partial, InvoicePdf.money(due)), color = Danger, style = MaterialTheme.typography.bodySmall)
-                    else -> Text(stringResource(R.string.bill_status_due), color = Danger, style = MaterialTheme.typography.bodySmall)
+                    else -> {
+                        // Paid / Overdue / Partially paid / Upcoming, from the books and the due date.
+                        val s = com.shopai.app.util.PaymentStatus.of(
+                            java.math.BigDecimal.valueOf(t.totalPaise, 2), java.math.BigDecimal.valueOf(t.totalPaise - due, 2),
+                            t.dueDate?.let { LocalDate.ofEpochDay(it.toLong()) },
+                        )
+                        Text(
+                            com.shopai.app.ui.components.paymentStateLabel(s.state) + if (due > 0) " · " + InvoicePdf.money(due) else "",
+                            color = com.shopai.app.ui.components.paymentStateColor(s.state),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
                 }
             }
         }

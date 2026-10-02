@@ -134,7 +134,9 @@ class BillTotalOcrTest {
         val state = BillEntryState()
         // No "Total" line read; server guessed an item amount.
         state.applyScan(BillTextParser.parse("SHOP\nCement 8,400.00\n31,930.00"), serverName = null, serverAmount = 8400.0)
-        assertEquals("31930.00", state.total)
+        // Not written as "Total": never filled in — the phone's reading is offered for the owner to confirm.
+        assertEquals("", state.total)
+        assertEquals("31930.00", state.totalSuggestion?.toPlainString())
         assertTrue(BillScanWarning.TOTAL_GUESSED in state.warnings)
     }
 

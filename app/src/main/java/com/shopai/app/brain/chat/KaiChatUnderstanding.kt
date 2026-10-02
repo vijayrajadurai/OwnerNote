@@ -174,7 +174,7 @@ object KaiChatUnderstanding {
         val inWords = has(" in ", " in?", " vandh", " vanth", " received", " came", " varavu", " வந்த")
         val outWords = has(" out", " poch", " pona", " ponadhu", " sent", " paid", " selavu", " spent", " போன", " செலவு")
         val important = has(" important", " mukkiyam", " முக்கியம்")
-        val today = has(" inniku", " innaikku", " innaiku", " inniki", " today", " இன்னைக்கு", " இன்று")
+        val today = has(" inniku", " innikku", " innaikku", " innaiku", " inniki", " today", " இன்னைக்கு", " இன்று")
         return when {
             kalla -> CashAsk.KALLAPETTI
             opening -> CashAsk.OPENING
@@ -206,7 +206,7 @@ object KaiChatUnderstanding {
             runCatching { nextMonthStart.withDayOfMonth(day) }.getOrNull()?.let { return ChatPeriod(it, it, ChatPeriod.Kind.DATE) }
         }
         when {
-            has(" innaikku", " innaiku", " inniki", " indru ", " today", " இன்னைக்கு", " இன்று") -> return ChatPeriod(today, today, ChatPeriod.Kind.TODAY)
+            has(" innaikku", " innaiku", " inniki", " inniku ", " innikku", " indru ", " today", " இன்னைக்கு", " இன்று") -> return ChatPeriod(today, today, ChatPeriod.Kind.TODAY)
             has(" naalaikku", " nalaiku", " naalaiku", " tomorrow", " நாளைக்கு", " நாளை") -> return today.plusDays(1).let { ChatPeriod(it, it, ChatPeriod.Kind.TOMORROW) }
             has(" nethu", " netru", " yesterday", " நேத்து", " நேற்று") -> return today.minusDays(1).let { ChatPeriod(it, it, ChatPeriod.Kind.YESTERDAY) }
             has(" next week", " adutha vaaram", " aduththa vaaram", " adutha week", " next vaaram", " அடுத்த வாரம்") ->
@@ -239,7 +239,7 @@ object KaiChatUnderstanding {
 
     private val notNames = setOf(
         "evlo", "evvalavu", "tharanum", "kudukkanum", "kodukkanum", "varanum", "balance", "enna", "pending", "eppo", "eppa", "last", "payment",
-        "yaaru", "yaar", "yaarukku", "enakku", "ennaku", "total", "innaikku", "innaiku", "inniki", "naalaikku", "next", "week", "month", "maasam",
+        "yaaru", "yaar", "yaarukku", "enakku", "ennaku", "total", "innaikku", "innaiku", "inniki", "inniku", "innikku", "indru", "naalaikku", "next", "week", "month", "maasam",
         "vaaram", "adutha", "indha", "intha", "avan", "aval", "avar", "avanga", "already", "edhavadhu", "kuduthana", "history", "sollu", "sollunga",
         "cash", "collection", "collect", "kitta", "kita", "irukku", "iruku", "ungalukku", "naan", "owner", "sir", "how", "much", "what", "when",
         "who", "does", "did", "is", "the", "a", "an", "to", "me", "my", "i", "owe", "owes", "due", "date", "today", "tomorrow", "yesterday",

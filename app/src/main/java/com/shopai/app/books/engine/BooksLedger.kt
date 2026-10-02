@@ -31,6 +31,31 @@ data class AgeingBuckets(
     }
 }
 
+/** What is still open on one side (to collect or to pay), by when it falls due. */
+data class DueSummary(
+    val overduePaise: Long = 0,
+    val overdueCount: Int = 0,
+    /** Due today or within the next 7 days. */
+    val dueSoonPaise: Long = 0,
+    val dueSoonCount: Int = 0,
+    /** Due later, or no due date written. */
+    val laterPaise: Long = 0,
+    val laterCount: Int = 0,
+) {
+    val totalPaise: Long get() = overduePaise + dueSoonPaise + laterPaise
+    val count: Int get() = overdueCount + dueSoonCount + laterCount
+
+    fun add(doc: OpenDoc, today: LocalDate): DueSummary {
+        val due = doc.dueDate?.toLong()
+        val amount = doc.outstandingPaise
+        return when {
+            due != null && due < today.toEpochDay() -> copy(overduePaise = overduePaise + amount, overdueCount = overdueCount + 1)
+            due != null && due <= today.toEpochDay() + 7 -> copy(dueSoonPaise = dueSoonPaise + amount, dueSoonCount = dueSoonCount + 1)
+            else -> copy(laterPaise = laterPaise + amount, laterCount = laterCount + 1)
+        }
+    }
+}
+
 data class CashBook(val openingPaise: Long, val inPaise: Long, val outPaise: Long) {
     val closingPaise: Long get() = openingPaise + inPaise - outPaise
 }
@@ -87,6 +112,16 @@ class BooksLedger(private val db: BooksDatabase, private val businessId: String)
     suspend fun payableAgeing(today: LocalDate): AgeingBuckets =
         dao.openDocsAll(businessId, listOf(TxnType.PURCHASE.name, TxnType.OPENING_BALANCE.name), PartyKind.SUPPLIER.name)
             .fold(AgeingBuckets()) { acc, d -> acc.add(d, today) }
+
+    /** Everything customers still owe, split into overdue / due in 7 days / later. */
+    suspend fun receivableDue(today: LocalDate): DueSummary =
+        dao.openDocsAll(businessId, listOf(TxnType.SALE.name, TxnType.OPENING_BALANCE.name), PartyKind.CUSTOMER.name)
+            .fold(DueSummary()) { acc, d -> acc.add(d, today) }
+
+    /** Everything owed to suppliers, split the same way. */
+    suspend fun payableDue(today: LocalDate): DueSummary =
+        dao.openDocsAll(businessId, listOf(TxnType.PURCHASE.name, TxnType.OPENING_BALANCE.name), PartyKind.SUPPLIER.name)
+            .fold(DueSummary()) { acc, d -> acc.add(d, today) }
 
     /** Balance of one cash / bank / UPI account at the end of [upTo] (default: everything). */
     suspend fun moneyBalance(moneyAccountId: String, upTo: LocalDate? = null): Long =

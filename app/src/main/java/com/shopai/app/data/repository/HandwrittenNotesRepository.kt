@@ -30,7 +30,15 @@ data class NotePageToSave(
     val imageHash: String,
     val extractedText: String,
     val transactions: List<NoteTransactionEntity>,
+    /** Per row (same order): a handwritten bill's paid part and due date, else null. */
+    val terms: List<BillTerms?> = emptyList(),
 )
+
+/** Note on the payment recorded for the part already paid on a handwritten bill. */
+private const val PAID_ON_BILL = "Paid on bill"
+
+/** A handwritten bill's payment terms, applied when it is added to the books. */
+data class BillTerms(val paid: java.math.BigDecimal?, val dueDate: LocalDate?)
 
 /**
  * Handwritten notes and their transactions, stored on this phone (Room).
@@ -97,13 +105,14 @@ class HandwrittenNotesRepository(
         pages: List<NotePageToSave>,
         manual: List<NoteTransactionEntity>,
         syncToLedger: Boolean,
+        manualTerms: List<BillTerms?> = emptyList(),
     ): SaveOutcome {
         fun prepare(row: NoteTransactionEntity) = row.copy(
             ledgerSyncStatus = if (syncToLedger && row.transactionType in listOf(TYPE_CREDIT, TYPE_DEBIT)) SYNC_PENDING else SYNC_NOT_SYNCED,
             createdAt = System.currentTimeMillis(),
             updatedAt = System.currentTimeMillis(),
         )
-        dao.saveNotesWithTransactions(
+        val ids = dao.saveNotesWithTransactions(
             notes = pages.map {
                 HandwrittenNoteEntity(
                     originalImagePath = it.originalImagePath,
@@ -116,7 +125,11 @@ class HandwrittenNotesRepository(
             transactionsByNote = pages.map { page -> page.transactions.map(::prepare) },
             manualTransactions = manual.map(::prepare),
         )
-        val failed = if (syncToLedger) syncPending() else 0
+        // Row ids come back in the order the rows were given: pages' rows, then manual ones.
+        val terms = pages.flatMap { p -> p.transactions.indices.map { p.terms.getOrNull(it) } } +
+            manual.indices.map { manualTerms.getOrNull(it) }
+        val termsById = ids.zip(terms).mapNotNull { (id, t) -> t?.let { id to it } }.toMap()
+        val failed = if (syncToLedger) syncPending(termsById) else 0
         return SaveOutcome(saved = pages.sumOf { it.transactions.size } + manual.size, syncFailed = failed)
     }
 
@@ -132,7 +145,7 @@ class HandwrittenNotesRepository(
      * Adds not-yet-synced rows to the server ledger. Returns how many failed
      * (they stay FAILED and are retried next time). Never posts a row twice.
      */
-    suspend fun syncPending(): Int {
+    suspend fun syncPending(termsById: Map<Long, BillTerms> = emptyMap()): Int {
         var failed = 0
         for (row in dao.transactionsToSync()) {
             val amount = row.amount?.toBigDecimalOrNull()
@@ -140,28 +153,45 @@ class HandwrittenNotesRepository(
                 if (row.ledgerTransactionId != null) dao.updateTransaction(row.copy(ledgerSyncStatus = SYNC_SYNCED))
                 continue
             }
+            val terms = termsById[row.id]
             val date = row.date?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
-            // The ledger's due date must be today or later; older dates go in the description.
-            val due = date?.takeIf { !it.isBefore(LocalDate.now()) }?.let { localDateToIsoInstant(it) }
+            // A handwritten bill's written due date is the due date (it can be past: then it is overdue).
+            // Otherwise the ledger's due date must be today or later; older dates go in the description.
+            val plainDue = date?.takeIf { !it.isBefore(LocalDate.now()) }?.let { localDateToIsoInstant(it) }
+            val due = terms?.dueDate?.let { localDateToIsoInstant(it) } ?: plainDue
             val description = listOfNotNull(
                 "Handwritten note" + (row.date?.let { " – $it" } ?: ""),
                 row.description?.takeIf { it.isNotBlank() },
             ).joinToString(" · ")
-            val result = runCatching {
-                if (row.transactionType == TYPE_CREDIT) {
-                    transactionRepository.createCredit(
-                        CreateCreditInput(customerName = row.personName, amount = amount.toDouble(), description = description, dueDate = due),
-                        source = com.shopai.app.books.model.TxnSource.OCR,
-                    ).id
-                } else {
-                    transactionRepository.createDebit(
-                        CreateDebitInput(supplierName = row.personName, amount = amount.toDouble(), description = description, dueDate = due),
-                        source = com.shopai.app.books.model.TxnSource.OCR,
-                    ).id
-                }
+            suspend fun create(dueDate: String?) = if (row.transactionType == TYPE_CREDIT) {
+                transactionRepository.createCredit(
+                    CreateCreditInput(customerName = row.personName, amount = amount.toDouble(), description = description, dueDate = dueDate),
+                    source = com.shopai.app.books.model.TxnSource.OCR,
+                ).id
+            } else {
+                transactionRepository.createDebit(
+                    CreateDebitInput(supplierName = row.personName, amount = amount.toDouble(), description = description, dueDate = dueDate),
+                    source = com.shopai.app.books.model.TxnSource.OCR,
+                ).id
             }
+            // A past due date may be refused (server ledger): then save without it; it stays in the description.
+            val first = runCatching { create(due) }
+            val result = if (first.isFailure && due != plainDue) runCatching { create(plainDue) } else first
             result.onSuccess { id ->
                 dao.updateTransaction(row.copy(ledgerTransactionId = id, ledgerSyncStatus = SYNC_SYNCED, updatedAt = System.currentTimeMillis()))
+                // Paid on the bill: all of it → marked paid; part → a payment, so only the balance stays pending.
+                val paid = terms?.paid?.takeIf { it.signum() > 0 }
+                if (paid != null) {
+                    val credit = row.transactionType == TYPE_CREDIT
+                    val recorded = runCatching {
+                        when {
+                            paid >= amount -> if (credit) transactionRepository.markCreditPaid(id) else transactionRepository.markDebitPaid(id)
+                            credit -> transactionRepository.addCreditPayment(id, paid.toDouble(), PAID_ON_BILL)
+                            else -> transactionRepository.addDebitPayment(id, paid.toDouble(), PAID_ON_BILL)
+                        }
+                    }.isSuccess
+                    if (!recorded) failed++
+                }
             }.onFailure {
                 failed++
                 dao.updateTransaction(row.copy(ledgerSyncStatus = SYNC_FAILED, updatedAt = System.currentTimeMillis()))

@@ -77,6 +77,7 @@ fun VoiceEntryScreen(
     onOpenHandwrittenNotes: () -> Unit = {},
     onScanNoteForBill: (billId: Long) -> Unit = {},
     onOpenNotePerson: (name: String) -> Unit = {},
+    onHandwrittenDetected: () -> Unit = {},
 ) {
     var inputText by remember { mutableStateOf("") }
     var partialText by remember { mutableStateOf<String?>(null) }
@@ -295,6 +296,7 @@ fun VoiceEntryScreen(
             onOpenHandwrittenNotes = onOpenHandwrittenNotes,
             onScanNoteForBill = onScanNoteForBill,
             onOpenNotePerson = onOpenNotePerson,
+            onHandwrittenDetected = onHandwrittenDetected,
         )
 
         ShopTextField(
@@ -357,7 +359,6 @@ fun VoiceEntryScreen(
                         error = if (amountTooLarge) stringResource(R.string.amount_max_one_crore) else null,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     )
-                    ShopTextField(stringResource(R.string.note_label), description, { description = it })
                     FutureDatePickerField(
                         label = stringResource(R.string.due_date_label),
                         selectedDate = dueDate,

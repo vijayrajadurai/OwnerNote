@@ -245,6 +245,8 @@ fun ShopAiApp(container: AppContainer) {
                 onOpenHandwrittenNotes = { navController.navigate(Routes.HandwrittenNotes) },
                 onScanNoteForBill = { billId -> navController.navigate(Routes.handwrittenScan(billId)) },
                 onOpenNotePerson = { name -> navController.navigate(Routes.handwrittenPerson(name)) },
+                // The bill photo turned out handwritten: the handwriting reader takes it.
+                onHandwrittenDetected = { navController.navigate(Routes.handwrittenScan()) },
             )
         }
         composable(Routes.HandwrittenNotes) { entry ->
@@ -266,6 +268,14 @@ fun ShopAiApp(container: AppContainer) {
                 container = container,
                 linkedBillId = entry.arguments?.getLong("billId")?.takeIf { it > 0 },
                 onBack = { navController.navigateUpOrHome() },
+                // The note photo is a printed bill: the Shop bill reader (on the Speak screen) takes it.
+                onPrintedBillDetected = {
+                    if (!navController.popBackStack(Routes.VoiceEntry, inclusive = false)) {
+                        navController.navigate(Routes.VoiceEntry) {
+                            popUpTo(Routes.HandwrittenScan) { inclusive = true }
+                        }
+                    }
+                },
                 onSaved = { count, failed ->
                     // The ledger changed: Kai re-reads it, and confirms the save.
                     container.kaiBrain.forget()
@@ -548,7 +558,12 @@ fun ShopAiApp(container: AppContainer) {
             OffersScreen(container = container, onBack = { navController.navigateUpOrHome() })
         }
         composable(Routes.KaiChat) {
-            com.shopai.app.ui.kaichat.KaiChatScreen(container = container, onBack = { navController.navigateUpOrHome() })
+            com.shopai.app.ui.kaichat.KaiChatScreen(
+                container = container,
+                onBack = { navController.navigateUpOrHome() },
+                // "Indha bill add pannu": the existing Shop bill scanner (OCR → draft → review → confirm).
+                onOpenScanner = { navController.navigate(Routes.VoiceEntry) },
+            )
         }
         composable(Routes.Settings) {
             SettingsScreen(
