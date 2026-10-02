@@ -1,35 +1,29 @@
 package com.shopai.app.ui.screens
 
-import androidx.annotation.StringRes
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.shopai.app.R
 import com.shopai.app.data.AppContainer
 import com.shopai.app.ui.components.BottomNavTab
 import com.shopai.app.ui.components.PrimaryButton
-import com.shopai.app.ui.components.ShopCard
-import com.shopai.app.ui.components.VoiceFabBottomSpacer
-import com.shopai.app.ui.navigation.Routes
+import com.shopai.app.ui.more.MoreMenuItem
+import com.shopai.app.ui.more.MoreViewModel
 import com.shopai.app.ui.theme.ShopAiThemeColors
-import kotlinx.coroutines.launch
-
-private data class MenuItem(
-    @StringRes val labelRes: Int,
-    @StringRes val captionRes: Int,
-    val route: String,
-)
 
 @Composable
 fun MoreScreen(
@@ -37,64 +31,56 @@ fun MoreScreen(
     onNavigate: (String) -> Unit,
     onLogout: () -> Unit,
 ) {
-    val scope = rememberCoroutineScope()
-    val menuItems = listOf(
-        MenuItem(R.string.more_ask_business, R.string.more_ask_business_caption, Routes.AskBusiness),
-        MenuItem(R.string.more_ai_insights, R.string.more_ai_insights_caption, Routes.AiInsights),
-        MenuItem(R.string.profile_title, R.string.profile_subtitle, Routes.Profile),
-        MenuItem(R.string.more_group_buying, R.string.more_group_buying_caption, Routes.GroupBuying),
-        MenuItem(R.string.bill_home_title, R.string.bill_home_caption, Routes.Billing),
-        MenuItem(R.string.more_inventory, R.string.more_inventory_caption, Routes.Inventory),
-        MenuItem(R.string.books_hsn_master, R.string.books_hsn_master_menu_caption, Routes.HsnMaster),
-        MenuItem(R.string.books_settings, R.string.books_settings_caption, Routes.BooksSettings),
-        MenuItem(R.string.more_local_offers, R.string.more_local_offers_caption, Routes.LocalOffers),
-        MenuItem(R.string.more_reminders, R.string.more_reminders_caption, Routes.Reminders),
-        MenuItem(R.string.more_handwritten, R.string.more_handwritten_caption, Routes.HandwrittenNotes),
-        MenuItem(R.string.more_voice, R.string.more_voice_caption, Routes.VoiceEntry),
-        MenuItem(R.string.more_settings, R.string.more_settings_caption, Routes.Settings),
-        MenuItem(R.string.more_subscription, R.string.more_subscription_caption, Routes.Subscription),
+    val viewModel: MoreViewModel = viewModel(
+        factory = MoreViewModel.Factory(
+            container.authRepository,
+            container.reminderAlarms,
+            container.capturedDocumentRepository,
+            container.handwrittenNotesRepository,
+        ),
     )
 
     MainTabScaffold(activeTab = BottomNavTab.More, onNavigate = onNavigate) {
-        Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(
-                stringResource(R.string.more_title),
-                style = MaterialTheme.typography.headlineMedium,
-                color = ShopAiThemeColors.onSurface,
-                fontWeight = FontWeight.Bold,
-            )
-
-            menuItems.forEach { item ->
-                ShopCard(modifier = Modifier.clickable { onNavigate(item.route) }) {
-                    Text(
-                        stringResource(item.labelRes),
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = ShopAiThemeColors.onSurface,
-                    )
-                    Text(
-                        stringResource(item.captionRes),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = ShopAiThemeColors.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 2.dp),
-                    )
-                }
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 168.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Text(
+                    text = stringResource(R.string.more_title),
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = ShopAiThemeColors.onSurface,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 4.dp),
+                )
             }
-
-            PrimaryButton(
-                label = stringResource(R.string.logout),
-                onClick = {
-                    scope.launch {
-                        container.authRepository.logout()
-                        container.reminderAlarms.clear()
-                        // Captured bills/notes live only on this phone; don't show them to the next account.
-                        runCatching { container.capturedDocumentRepository.clear() }
-                        runCatching { container.handwrittenNotesRepository.clear() }
-                        onLogout()
-                    }
-                },
-            )
-            VoiceFabBottomSpacer()
+            items(viewModel.primaryItems, key = { it.id }) { item ->
+                MoreMenuItem(item = item, onClick = { onNavigate(item.route) })
+            }
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Text(
+                    text = stringResource(R.string.more_tools_section),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = ShopAiThemeColors.onSurface,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+                )
+            }
+            items(viewModel.toolItems, key = { it.id }) { item ->
+                MoreMenuItem(item = item, onClick = { onNavigate(item.route) })
+            }
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                PrimaryButton(
+                    label = stringResource(R.string.logout),
+                    onClick = { viewModel.logout(onLogout) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                )
+            }
         }
     }
 }

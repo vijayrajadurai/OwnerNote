@@ -38,6 +38,7 @@ import com.shopai.app.ui.screens.HomeScreen
 import com.shopai.app.ui.screens.InventoryScreen
 import com.shopai.app.ui.screens.ProductDetailScreen
 import com.shopai.app.ui.screens.LoginScreen
+import com.shopai.app.ui.more.MoreInfoScreen
 import com.shopai.app.ui.screens.MoreScreen
 import com.shopai.app.ui.screens.NewGroupBuyingRequestScreen
 import com.shopai.app.ui.screens.OffersScreen
@@ -45,6 +46,7 @@ import com.shopai.app.ui.screens.OtpScreen
 import com.shopai.app.ui.screens.ProfileEditScreen
 import com.shopai.app.ui.screens.RemindersScreen
 import com.shopai.app.ui.screens.ReminderDetailScreen
+import com.shopai.app.ui.screens.UserGuideScreen
 import com.shopai.app.ui.screens.SplashScreen
 import com.shopai.app.ui.screens.SuppliersScreen
 import com.shopai.app.ui.screens.VoiceEntryScreen
@@ -83,6 +85,11 @@ fun ShopAiApp(container: AppContainer) {
                     }
                 },
                 onNavigateHome = { navController.navigateToHomeAsRoot() },
+                onNavigateUserGuide = {
+                    navController.navigate(Routes.UserGuide) {
+                        popUpTo(Routes.Splash) { inclusive = true }
+                    }
+                },
                 onNavigateBusinessSetup = {
                     navController.navigate(Routes.BusinessSetup) {
                         popUpTo(Routes.Splash) { inclusive = true }
@@ -103,11 +110,27 @@ fun ShopAiApp(container: AppContainer) {
                 container = container,
                 onNavigateBack = { navController.navigateUpOrHome() },
                 onNavigateHome = { navController.navigateToHomeAsRoot() },
+                onNavigateUserGuide = {
+                    navController.navigate(Routes.UserGuide) {
+                        popUpTo(Routes.Login) { inclusive = true }
+                    }
+                },
                 onNavigateBusinessSetup = {
                     navController.navigate(Routes.BusinessSetup) {
                         popUpTo(Routes.Login) { inclusive = true }
                     }
                 },
+            )
+        }
+        composable(Routes.UserGuide) {
+            UserGuideScreen(
+                container = container,
+                onNavigateOnboarding = {
+                    navController.navigate(Routes.BusinessSetup) {
+                        popUpTo(Routes.UserGuide) { inclusive = true }
+                    }
+                },
+                onNavigateHome = { navController.navigateToHomeAsRoot() },
             )
         }
         composable(Routes.BusinessSetup) {
@@ -195,6 +218,18 @@ fun ShopAiApp(container: AppContainer) {
                         popUpTo(0) { inclusive = true }
                     }
                 },
+            )
+        }
+        composable(
+            route = Routes.MoreInfo,
+            arguments = listOf(navArgument("page") { type = NavType.StringType }),
+        ) { entry ->
+            val page = entry.arguments?.getString("page").orEmpty()
+            MoreInfoScreen(
+                page = page,
+                onBack = { navController.navigateUpOrHome() },
+                onOpenReminders = { navController.navigate(Routes.Reminders) },
+                onOpenSettings = { navController.navigate(Routes.Settings) },
             )
         }
         composable(

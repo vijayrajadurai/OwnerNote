@@ -31,6 +31,7 @@ fun SplashScreen(
     container: AppContainer,
     onNavigateLogin: () -> Unit,
     onNavigateHome: () -> Unit,
+    onNavigateUserGuide: () -> Unit,
     onNavigateBusinessSetup: () -> Unit,
 ) {
     LaunchedEffect(Unit) {
@@ -41,6 +42,10 @@ fun SplashScreen(
             return@LaunchedEffect
         }
         runCatching { container.pushTokenRepository.registerCurrent() }
+        if (!container.preferencesRepository.hasCompletedUserGuide()) {
+            onNavigateUserGuide()
+            return@LaunchedEffect
+        }
         val business = runCatching {
             container.businessRepository.getMyBusiness()
         }.getOrElse {

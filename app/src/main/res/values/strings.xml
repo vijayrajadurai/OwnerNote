@@ -18,6 +18,14 @@
     <string name="splash_tagline">Speak up. I\'ll watch your business.</string>
     <string name="splash_get_started">Get Started →</string>
 
+    <!-- User guide (after OTP) -->
+    <string name="guide_skip">Skip</string>
+    <string name="guide_next">Next</string>
+    <string name="guide_get_started">Get Started</string>
+    <string name="cd_guide_funding">Get funding for your business</string>
+    <string name="cd_guide_kai">Manage your business easily with Kai</string>
+    <string name="cd_guide_group">Buy smarter with group buying</string>
+
     <!-- Login -->
     <string name="login_title_line1">Enter Your</string>
     <string name="login_title_line2">Mobile Number</string>
@@ -184,6 +192,35 @@
 
     <!-- More -->
     <string name="more_title">More</string>
+    <string name="more_tools_section">Business tools</string>
+    <string name="more_categories">Categories</string>
+    <string name="more_transactions">Transactions</string>
+    <string name="more_reports">Reports</string>
+    <string name="more_notifications">Notifications</string>
+    <string name="more_help_support">Help &amp; Support</string>
+    <string name="more_about_us">About Us</string>
+    <string name="more_help_body">Need a hand with Owner Note? Use Reminders for follow-ups, Sales &amp; purchases for bills, and Settings to change language or appearance. Voice entry on the home screen lets you add credit and debit by speaking.</string>
+    <string name="more_about_body">Owner Note is an AI business assistant for Indian shop owners — voice-first transactions, cash flow, billing, and insights. Built to keep day-to-day books simple on your phone.</string>
+    <string name="more_privacy_body">We use your shop data only to run Owner Note on this device and our API — ledger, reminders, and sign-in. Open the full privacy policy for details. Exact map pins are never shown in group buying.</string>
+    <string name="more_notifications_body">Reminders and important business alerts appear here as notifications. Daily voice check-in can speak a short summary at set times — turn it on in Settings.</string>
+    <string name="cd_more_profile">Profile</string>
+    <string name="cd_more_categories">Categories</string>
+    <string name="cd_more_transactions">Transactions</string>
+    <string name="cd_more_reports">Reports</string>
+    <string name="cd_more_reminders">Reminders</string>
+    <string name="cd_more_notifications">Notifications</string>
+    <string name="cd_more_settings">Settings</string>
+    <string name="cd_more_help">Help and support</string>
+    <string name="cd_more_about">About us</string>
+    <string name="cd_more_privacy">Privacy policy</string>
+    <string name="cd_more_ask_business">Ask my business</string>
+    <string name="cd_more_group_buying">Group buying</string>
+    <string name="cd_more_handwritten">Handwritten notes</string>
+    <string name="cd_more_voice">Voice entry</string>
+    <string name="cd_more_subscription">Subscription</string>
+    <string name="cd_more_hsn">HSN and SAC master</string>
+    <string name="cd_more_books_settings">Billing and tax settings</string>
+    <string name="cd_more_offers">Today offer</string>
     <string name="more_ai_insights">AI insights</string>
     <string name="more_ai_insights_caption">Cash flow, business health, seasonal trends</string>
     <string name="more_group_buying">Group buying</string>

@@ -93,6 +93,7 @@ fun OtpScreen(
     container: AppContainer,
     onNavigateBack: () -> Unit,
     onNavigateHome: () -> Unit,
+    onNavigateUserGuide: () -> Unit,
     onNavigateBusinessSetup: () -> Unit,
 ) {
     var code by remember { mutableStateOf("") }
@@ -130,6 +131,10 @@ fun OtpScreen(
     }
 
     suspend fun completeLogin(result: AuthResponse) {
+        if (!container.preferencesRepository.hasCompletedUserGuide()) {
+            onNavigateUserGuide()
+            return
+        }
         if (result.isNewUser) {
             onNavigateBusinessSetup()
         } else {

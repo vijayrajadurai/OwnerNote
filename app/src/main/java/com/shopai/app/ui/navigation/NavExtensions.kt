@@ -14,6 +14,7 @@ private val authRoutes = setOf(
     Routes.Splash,
     Routes.Login,
     Routes.Otp,
+    Routes.UserGuide,
     Routes.BusinessSetup,
 )
 
