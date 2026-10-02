@@ -143,7 +143,7 @@ fun AddDebitScreen(
                                 CreatePartyInput(name = name, phone = prefillSupplierPhone),
                             ).id
                         }
-                        container.transactionRepository.createDebit(
+                        val saved = container.transactionRepository.createDebit(
                             CreateDebitInput(
                                 supplierId = supplierId,
                                 supplierName = if (supplierId == null) name else null,
@@ -152,6 +152,19 @@ fun AddDebitScreen(
                                 dueDate = dueDate?.let { localDateToIsoInstant(it) },
                             ),
                         )
+                        // Kai reacts from the saved values (the database is the source of truth).
+                        val brain = container.kaiBrain
+                        container.appScope.launch {
+                            brain.announce(
+                                brain.saved(
+                                    name = supplierName.trim(),
+                                    amount = saved.amount.toDoubleOrNull() ?: amount.toDouble(),
+                                    direction = com.shopai.app.brain.Direction.PAYABLE,
+                                    dueDate = com.shopai.app.util.parseIsoToLocalDate(saved.dueDate) ?: dueDate,
+                                    lang = com.shopai.app.brain.KaiLanguage.forAppLocale(),
+                                ),
+                            )
+                        }
                         onDone()
                     }.onFailure {
                         container.presentApiError(it, errorSaveTransaction, { msg -> error = msg }, { msg -> alertError = msg })

@@ -24,6 +24,8 @@ fun shouldShowVoiceEntryFab(route: String?): Boolean {
     val path = route.substringBefore("?")
     if (path in authRoutes) return false
     if (path == Routes.VoiceEntry) return false
+    // Kai Chat has its own text box at the bottom.
+    if (path == Routes.KaiChat) return false
     if (path == Routes.GroupBuyingNew) return false
     if (path == Routes.Profile) return false
     return true

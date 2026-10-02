@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.shopai.app.ui.components.BottomNavBar
 import com.shopai.app.ui.components.BottomNavTab
+import com.shopai.app.ui.components.appBackground
 import com.shopai.app.ui.navigation.Routes
 
 @Composable
@@ -30,7 +31,7 @@ fun MainTabScaffold(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .appBackground(),
     ) {
         val contentModifier = Modifier
             .fillMaxSize()

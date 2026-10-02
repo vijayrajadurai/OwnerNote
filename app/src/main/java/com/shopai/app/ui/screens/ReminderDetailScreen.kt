@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.OutlinedButton
+import com.shopai.app.ui.components.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -67,6 +67,7 @@ fun ReminderDetailScreen(
     val context = LocalContext.current
     val errorLoad = stringResource(R.string.error_load_reminders)
     val shareFailed = stringResource(R.string.reminder_share_failed)
+    val errorMarkDone = stringResource(R.string.error_mark_reminder_done)
 
     fun reload() {
         scope.launch {
@@ -74,17 +75,34 @@ fun ReminderDetailScreen(
             error = null
             runCatching {
                 val fromApi = container.reminderRepository.listReminders()
-                    .firstOrNull { it.id == reminderId }
+                    .firstOrNull { it.id == reminderId && !it.isDone }
                 reminder = fromApi?.toPaymentReminder()
-                val business = container.businessRepository.getMyBusiness()
-                senderName = business?.businessName?.trim().orEmpty()
-                    .ifBlank { business?.ownerName?.trim().orEmpty() }
-                senderPhone = displayIndianPhone(business?.phone)
-                    .ifBlank { displayIndianPhone(container.authRepository.getLoginPhone()) }
             }.onFailure {
                 container.presentApiError(it, errorLoad, { msg -> error = msg }, { msg -> alertError = msg })
             }
+            // Only needed for the WhatsApp card, so a failure here must not
+            // hide a reminder that loaded fine.
+            val business = runCatching { container.businessRepository.getMyBusiness() }.getOrNull()
+            senderName = business?.businessName?.trim().orEmpty()
+                .ifBlank { business?.ownerName?.trim().orEmpty() }
+            senderPhone = displayIndianPhone(business?.phone)
+                .ifBlank { displayIndianPhone(container.authRepository.getLoginPhone()) }
             loading = false
+        }
+    }
+
+    fun markDone() {
+        if (processing) return
+        scope.launch {
+            processing = true
+            runCatching {
+                container.reminderRepository.markDone(reminderId)
+            }.onSuccess {
+                onBack()
+            }.onFailure {
+                container.presentApiError(it, errorMarkDone, { msg -> alertError = msg }, { msg -> alertError = msg })
+            }
+            processing = false
         }
     }
 
@@ -102,6 +120,7 @@ fun ReminderDetailScreen(
                 error = error,
                 reminder = reminder,
                 onOpenLedger = { reminder?.let { onOpenLedger(it.kind) } },
+                onMarkDone = { markDone() },
                 onShareWhatsApp = {
                     val item = reminder ?: return@ReminderDetailBody
                     scope.launch {
@@ -145,6 +164,7 @@ private fun ReminderDetailBody(
     error: String?,
     reminder: PaymentReminder?,
     onOpenLedger: () -> Unit,
+    onMarkDone: () -> Unit,
     onShareWhatsApp: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -183,6 +203,12 @@ private fun ReminderDetailBody(
                             Text(stringResource(R.string.reminder_open_ledger))
                         }
                     }
+                    OutlinedButton(
+                        onClick = onMarkDone,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(stringResource(R.string.reminder_mark_done))
+                    }
                 }
             }
         }
@@ -198,6 +224,7 @@ private fun ReminderDetailPreview() {
             error = null,
             reminder = samplePaymentReminders()[1],
             onOpenLedger = {},
+            onMarkDone = {},
             onShareWhatsApp = {},
             modifier = Modifier.padding(20.dp),
         )

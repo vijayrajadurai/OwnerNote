@@ -17,6 +17,7 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // Production API (Render). Debug defaults to the local Owner Note backend.
         // Override with -PAPI_BASE_URL=http://<lan-ip>:4000 when testing on a physical device.
@@ -52,6 +53,10 @@ android {
         }
     }
 
+    lint {
+        // Lifecycle 2.9 (via the Rive runtime) ships a LiveData lint check that crashes on this AGP; no LiveData is used.
+        disable += "NullSafeMutableLiveData"
+    }
     buildFeatures {
         compose = true
         buildConfig = true
@@ -84,6 +89,12 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.exifinterface)
     implementation(libs.tesseract4android)
+    // Handwritten notes only (free, on-device). Printed bills stay on Tesseract.
+    implementation(libs.mlkit.text.recognition)
+    // Product barcodes: Google's code scanner UI (no camera permission, model via Play services).
+    implementation(libs.play.services.code.scanner)
+    // KAI's animation rig (docs/KAI_RIVE_SPEC.md).
+    implementation(libs.rive.android)
 
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
@@ -102,4 +113,13 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    // Books engine tests run real Room/SQLite on the JVM.
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+
+    // On-device checks of the real OCR engines against sample photos.
+    androidTestImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
 }

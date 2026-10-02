@@ -43,7 +43,39 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.shopai.app.R
 import com.shopai.app.ui.theme.OnPrimary
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.ButtonElevation
+import androidx.compose.material3.ProvideTextStyle
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.sp
+import com.shopai.app.ui.theme.BrandGlow
+import com.shopai.app.ui.theme.BrandGradientEnd
+import com.shopai.app.ui.theme.BrandGradientStart
+import com.shopai.app.ui.theme.OutfitFamily
+import com.shopai.app.ui.theme.AppBackgroundBottom
+import com.shopai.app.ui.theme.AppBackgroundMid
+import com.shopai.app.ui.theme.AppBackgroundTop
+import com.shopai.app.ui.theme.Background
+import com.shopai.app.ui.theme.GlassBorder
+import com.shopai.app.ui.theme.GlassFill
+import com.shopai.app.ui.theme.GlassShadow
 
+/**
+ * The Owner Note primary action: a gradient pill (deep green → emerald)
+ * with a soft green glow, pressing in slightly when tapped.
+ */
 @Composable
 fun PrimaryButton(
     label: String,
@@ -52,18 +84,37 @@ fun PrimaryButton(
     enabled: Boolean = true,
     loading: Boolean = false,
 ) {
-    Button(
-        onClick = onClick,
-        enabled = enabled && !loading,
+    val shape = RoundedCornerShape(percent = 50)
+    val active = enabled && !loading
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(if (pressed) 0.96f else 1f, label = "primaryPress")
+    Box(
         modifier = modifier
             .then(Modifier.fillMaxWidth())
-            .height(52.dp),
-        shape = RoundedCornerShape(14.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
-            disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
-        ),
+            .height(52.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+                alpha = if (enabled || loading) 1f else 0.6f
+            }
+            .shadow(
+                elevation = if (active) 10.dp else 0.dp,
+                shape = shape,
+                clip = false,
+                ambientColor = BrandGlow,
+                spotColor = BrandGlow,
+            )
+            .clip(shape)
+            .background(Brush.linearGradient(listOf(BrandGradientStart, BrandGradientEnd)))
+            .clickable(
+                interactionSource = interaction,
+                indication = LocalIndication.current,
+                enabled = active,
+                role = Role.Button,
+                onClick = onClick,
+            ),
+        contentAlignment = Alignment.Center,
     ) {
         if (loading) {
             CircularProgressIndicator(
@@ -72,7 +123,52 @@ fun PrimaryButton(
                 strokeWidth = 2.dp,
             )
         } else {
-            Text(text = label, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+            Text(
+                text = label,
+                color = OnPrimary,
+                fontFamily = OutfitFamily,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 0.16.sp,
+            )
+        }
+    }
+}
+
+/**
+ * The Owner Note secondary ("ghost") button: a pill with a light glass
+ * fill, a soft green border and green text. Same parameters as Material's
+ * OutlinedButton, so screens only switch the import.
+ */
+@Composable
+fun OutlinedButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    shape: Shape = RoundedCornerShape(percent = 50),
+    colors: ButtonColors = ButtonDefaults.outlinedButtonColors(
+        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+        contentColor = MaterialTheme.colorScheme.primary,
+    ),
+    elevation: ButtonElevation? = null,
+    border: BorderStroke? = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = if (enabled) 0.28f else 0.12f)),
+    contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
+    interactionSource: MutableInteractionSource? = null,
+    content: @Composable RowScope.() -> Unit,
+) {
+    androidx.compose.material3.OutlinedButton(
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        shape = shape,
+        colors = colors,
+        elevation = elevation,
+        border = border,
+        contentPadding = contentPadding,
+        interactionSource = interactionSource,
+    ) {
+        ProvideTextStyle(MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold)) {
+            content()
         }
     }
 }
@@ -130,20 +226,49 @@ fun ShopTextField(
     }
 }
 
+/** True while the light (green + white) theme is showing. */
+@Composable
+fun isRedesignLight(): Boolean = MaterialTheme.colorScheme.background == Background
+
+/**
+ * The page background: in the light theme a soft white → mint wash
+ * (the redesign), in dark mode the plain theme background.
+ */
+@Composable
+fun Modifier.appBackground(): Modifier =
+    if (isRedesignLight()) {
+        background(Brush.linearGradient(listOf(AppBackgroundTop, AppBackgroundMid, AppBackgroundBottom)))
+    } else {
+        background(MaterialTheme.colorScheme.background)
+    }
+
+/**
+ * A glass surface: translucent white with a bright edge and a soft green
+ * shadow (light theme); the plain surface colour in dark mode.
+ */
+@Composable
+fun Modifier.glassSurface(shape: Shape = RoundedCornerShape(24.dp)): Modifier =
+    if (isRedesignLight()) {
+        shadow(elevation = 10.dp, shape = shape, clip = false, ambientColor = GlassShadow, spotColor = GlassShadow)
+            .clip(shape)
+            .background(GlassFill)
+            .border(1.dp, GlassBorder, shape)
+    } else {
+        clip(shape).background(MaterialTheme.colorScheme.surface)
+    }
+
 @Composable
 fun ShopCard(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .glassSurface()
+            .padding(16.dp),
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            content()
-        }
+        content()
     }
 }
 

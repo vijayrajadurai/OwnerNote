@@ -143,7 +143,7 @@ fun AddCreditScreen(
                                 CreatePartyInput(name = name, phone = prefillCustomerPhone),
                             ).id
                         }
-                        container.transactionRepository.createCredit(
+                        val saved = container.transactionRepository.createCredit(
                             CreateCreditInput(
                                 customerId = customerId,
                                 customerName = if (customerId == null) name else null,
@@ -152,6 +152,19 @@ fun AddCreditScreen(
                                 dueDate = dueDate?.let { localDateToIsoInstant(it) },
                             ),
                         )
+                        // Kai reacts from the saved values (the database is the source of truth).
+                        val brain = container.kaiBrain
+                        container.appScope.launch {
+                            brain.announce(
+                                brain.saved(
+                                    name = customerName.trim(),
+                                    amount = saved.amount.toDoubleOrNull() ?: amount.toDouble(),
+                                    direction = com.shopai.app.brain.Direction.RECEIVABLE,
+                                    dueDate = com.shopai.app.util.parseIsoToLocalDate(saved.dueDate) ?: dueDate,
+                                    lang = com.shopai.app.brain.KaiLanguage.forAppLocale(),
+                                ),
+                            )
+                        }
                         onDone()
                     }.onFailure {
                         container.presentApiError(it, errorSaveTransaction, { msg -> error = msg }, { msg -> alertError = msg })

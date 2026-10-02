@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.Icon
@@ -127,7 +128,8 @@ fun DashboardGreetingHeader(
                                 .clip(CircleShape)
                                 .background(Color.White.copy(alpha = 0.22f))
                         } else {
-                            Modifier
+                            // Redesign: a small glass tile for the bell.
+                            Modifier.glassSurface(RoundedCornerShape(16.dp))
                         },
                     )
                     .semantics { contentDescription = notificationsCd },
@@ -135,7 +137,7 @@ fun DashboardGreetingHeader(
                 Icon(
                     imageVector = Icons.Outlined.Notifications,
                     contentDescription = null,
-                    tint = onHeader,
+                    tint = if (onGradient) onHeader else MaterialTheme.colorScheme.primary,
                 )
             }
             if (unreadCount > 0) {

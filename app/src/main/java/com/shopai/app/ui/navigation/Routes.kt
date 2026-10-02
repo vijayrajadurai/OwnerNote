@@ -19,6 +19,8 @@ object Routes {
     const val AddDebit =
         "add_debit?supplierId={supplierId}&supplierName={supplierName}&supplierPhone={supplierPhone}"
     const val VoiceEntry = "voice_entry"
+    /** Kai Chat: business conversation with KAI (text; no AI service). */
+    const val KaiChat = "kai_chat"
     const val Reminders = "reminders"
     const val ReminderDetail = "reminder_detail/{reminderId}"
     const val AiInsights = "ai_insights"
@@ -34,6 +36,44 @@ object Routes {
     const val ProductDetail = "product_detail/{productId}"
     const val LocalOffers = "local_offers"
     const val AskBusiness = "ask_business"
+    const val HandwrittenNotes = "handwritten_notes"
+    const val HandwrittenScan = "handwritten_scan?billId={billId}"
+    const val HandwrittenPerson = "handwritten_person/{name}"
+
+    // OwnerNote Books masters.
+    const val ProductForm = "product_form?productId={productId}"
+    const val PartyForm = "party_form/{kind}?partyId={partyId}"
+    const val HsnMaster = "hsn_master"
+    const val BooksSettings = "books_settings"
+
+    // OwnerNote Books billing.
+    const val Billing = "billing"
+    const val BillEditor = "bill_editor/{kind}?partyId={partyId}&draftId={draftId}"
+    const val BooksDocument = "books_document/{txnId}"
+    const val ReturnEditor = "return_editor/{txnId}"
+    const val Payment = "payment/{direction}?partyId={partyId}&docId={docId}"
+
+    /** [kind] = SALE or PURCHASE. */
+    fun billEditor(kind: String, partyId: String? = null, draftId: String? = null): String =
+        "bill_editor/$kind?partyId=${partyId?.let(Uri::encode).orEmpty()}&draftId=${draftId?.let(Uri::encode).orEmpty()}"
+
+    fun booksDocument(txnId: String): String = "books_document/${Uri.encode(txnId)}"
+
+    fun returnEditor(txnId: String): String = "return_editor/${Uri.encode(txnId)}"
+
+    /** [direction] = IN (from a customer) or OUT (to a supplier). */
+    fun payment(direction: String, partyId: String? = null, docId: String? = null): String =
+        "payment/$direction?partyId=${partyId?.let(Uri::encode).orEmpty()}&docId=${docId?.let(Uri::encode).orEmpty()}"
+
+    fun productForm(productId: String? = null): String = "product_form?productId=${productId?.let(Uri::encode).orEmpty()}"
+
+    /** [kind] = CUSTOMER or SUPPLIER. */
+    fun partyForm(kind: String, partyId: String? = null): String = "party_form/$kind?partyId=${partyId?.let(Uri::encode).orEmpty()}"
+
+    /** Scan/upload a handwritten note; [billId] links its rows to a saved shop bill. */
+    fun handwrittenScan(billId: Long? = null): String = "handwritten_scan?billId=${billId ?: -1}"
+
+    fun handwrittenPerson(name: String): String = "handwritten_person/${Uri.encode(name)}"
 
     fun fundingQualification(opportunityId: String): String =
         "funding_qualification/${Uri.encode(opportunityId)}"

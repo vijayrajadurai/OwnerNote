@@ -51,6 +51,15 @@ import com.shopai.app.ui.screens.VoiceEntryScreen
 import com.shopai.app.ui.settings.SettingsScreen
 import com.shopai.app.ui.subscription.SubscriptionScreen
 import com.shopai.app.push.EnsurePushRegistration
+import com.shopai.app.R
+import com.shopai.app.ui.notes.HandwrittenNoteScanScreen
+import com.shopai.app.ui.notes.HandwrittenNotesScreen
+import com.shopai.app.ui.notes.HandwrittenPersonScreen
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalContext
+
+/** Passes "N transactions saved" from the scan screen back to the notes list. */
+private const val HW_SAVED_KEY = "hw_saved_message"
 
 @Composable
 fun ShopAiApp(container: AppContainer) {
@@ -83,12 +92,8 @@ fun ShopAiApp(container: AppContainer) {
         composable(Routes.Login) {
             LoginScreen(
                 container = container,
-                onNavigateOtp = { navController.navigate(Routes.Otp) },
-                onNavigateHome = { navController.navigateToHomeAsRoot() },
-                onNavigateBusinessSetup = {
-                    navController.navigate(Routes.BusinessSetup) {
-                        popUpTo(Routes.Login) { inclusive = true }
-                    }
+                onNavigateOtp = {
+                    navController.navigate(Routes.Otp) { launchSingleTop = true }
                 },
             )
         }
@@ -133,6 +138,7 @@ fun ShopAiApp(container: AppContainer) {
                 container = container,
                 onNavigate = { route -> navController.navigateMainTab(route) },
                 onOpenCustomer = { customerId -> navController.navigate(Routes.customerDetail(customerId)) },
+                onNewCustomer = { navController.navigate(Routes.partyForm("CUSTOMER")) },
                 onAddCredit = { id, name, phone ->
                     navController.navigate(Routes.addCredit(id, name.takeIf { it.isNotBlank() }, phone))
                 },
@@ -148,6 +154,9 @@ fun ShopAiApp(container: AppContainer) {
                 customerId = customerId,
                 onBack = { navController.navigateUpOrHome() },
                 onAddCredit = { id, name -> navController.navigate(Routes.addCredit(id, name, null)) },
+                onEdit = { id -> navController.navigate(Routes.partyForm("CUSTOMER", id)) },
+                onNewBill = { id -> navController.navigate(Routes.billEditor("SALE", id)) },
+                onPayment = { id -> navController.navigate(Routes.payment("IN", id)) },
             )
         }
         composable(Routes.Suppliers) {
@@ -155,6 +164,7 @@ fun ShopAiApp(container: AppContainer) {
                 container = container,
                 onNavigate = { route -> navController.navigateMainTab(route) },
                 onOpenSupplier = { supplierId -> navController.navigate(Routes.supplierDetail(supplierId)) },
+                onNewSupplier = { navController.navigate(Routes.partyForm("SUPPLIER")) },
                 onAddDebit = { id, name, phone ->
                     navController.navigate(Routes.addDebit(id, name.takeIf { it.isNotBlank() }, phone))
                 },
@@ -170,6 +180,9 @@ fun ShopAiApp(container: AppContainer) {
                 supplierId = supplierId,
                 onBack = { navController.popBackStack() },
                 onAddDebit = { id, name -> navController.navigate(Routes.addDebit(id, name, null)) },
+                onEdit = { id -> navController.navigate(Routes.partyForm("SUPPLIER", id)) },
+                onNewBill = { id -> navController.navigate(Routes.billEditor("PURCHASE", id)) },
+                onPayment = { id -> navController.navigate(Routes.payment("OUT", id)) },
             )
         }
         composable(Routes.More) {
@@ -228,10 +241,73 @@ fun ShopAiApp(container: AppContainer) {
                 container = container,
                 onBack = { navController.navigateUpOrHome() },
                 onDone = { navController.navigateUpOrHome() },
+                onOpenHandwrittenNotes = { navController.navigate(Routes.HandwrittenNotes) },
+                onScanNoteForBill = { billId -> navController.navigate(Routes.handwrittenScan(billId)) },
+                onOpenNotePerson = { name -> navController.navigate(Routes.handwrittenPerson(name)) },
+            )
+        }
+        composable(Routes.HandwrittenNotes) { entry ->
+            val saved by entry.savedStateHandle.getStateFlow<String?>(HW_SAVED_KEY, null).collectAsState()
+            HandwrittenNotesScreen(
+                container = container,
+                onBack = { navController.navigateUpOrHome() },
+                onScan = { navController.navigate(Routes.handwrittenScan()) },
+                onOpenPerson = { name -> navController.navigate(Routes.handwrittenPerson(name)) },
+                savedMessage = saved,
+            )
+        }
+        composable(
+            route = Routes.HandwrittenScan,
+            arguments = listOf(navArgument("billId") { type = NavType.LongType; defaultValue = -1L }),
+        ) { entry ->
+            val context = LocalContext.current
+            HandwrittenNoteScanScreen(
+                container = container,
+                linkedBillId = entry.arguments?.getLong("billId")?.takeIf { it > 0 },
+                onBack = { navController.navigateUpOrHome() },
+                onSaved = { count, failed ->
+                    // The ledger changed: Kai re-reads it, and confirms the save.
+                    container.kaiBrain.forget()
+                    if (count > 0) {
+                        container.kaiBrain.announce(
+                            com.shopai.app.brain.KaiResponder.photoSaved(count, com.shopai.app.brain.KaiLanguage.forAppLocale()),
+                        )
+                    }
+                    val message = if (failed > 0) {
+                        context.getString(R.string.hw_saved_sync_failed, count, failed)
+                    } else {
+                        context.getString(R.string.hw_saved_message, count)
+                    }
+                    // Back to the notes list (opening it if we came from elsewhere).
+                    val hub = runCatching { navController.getBackStackEntry(Routes.HandwrittenNotes) }.getOrNull()
+                    if (hub != null) {
+                        hub.savedStateHandle[HW_SAVED_KEY] = message
+                        navController.popBackStack(Routes.HandwrittenNotes, inclusive = false)
+                    } else {
+                        navController.navigate(Routes.HandwrittenNotes) {
+                            popUpTo(Routes.HandwrittenScan) { inclusive = true }
+                        }
+                        navController.currentBackStackEntry?.savedStateHandle?.set(HW_SAVED_KEY, message)
+                    }
+                },
+            )
+        }
+        composable(
+            route = Routes.HandwrittenPerson,
+            arguments = listOf(navArgument("name") { type = NavType.StringType }),
+        ) { entry ->
+            HandwrittenPersonScreen(
+                container = container,
+                name = entry.arguments?.getString("name").orEmpty(),
+                onBack = { navController.navigateUpOrHome() },
             )
         }
         composable(Routes.Reminders) {
-            RemindersScreen(container = container, onBack = { navController.navigateUpOrHome() })
+            RemindersScreen(
+                container = container,
+                onBack = { navController.navigateUpOrHome() },
+                onOpenReminder = { id -> navController.navigate(Routes.reminderDetail(id)) },
+            )
         }
         composable(
             route = Routes.ReminderDetail,
@@ -305,6 +381,7 @@ fun ShopAiApp(container: AppContainer) {
                 container = container,
                 onBack = { navController.navigateUpOrHome() },
                 onOpenProduct = { productId -> navController.navigate(Routes.productDetail(productId)) },
+                onNewProduct = { navController.navigate(Routes.productForm()) },
             )
         }
         composable(
@@ -316,7 +393,136 @@ fun ShopAiApp(container: AppContainer) {
                 container = container,
                 productId = productId,
                 onBack = { navController.navigateUpOrHome() },
+                onEdit = { id -> navController.navigate(Routes.productForm(id)) },
             )
+        }
+        composable(
+            route = Routes.ProductForm,
+            arguments = listOf(navArgument("productId") { type = NavType.StringType; defaultValue = "" }),
+        ) { entry ->
+            val productId = entry.arguments?.getString("productId")?.takeIf { it.isNotEmpty() }
+            com.shopai.app.ui.books.ProductFormScreen(
+                container = container,
+                productId = productId,
+                onBack = { navController.popBackStack() },
+                onSaved = { id ->
+                    navController.popBackStack()
+                    if (productId == null) navController.navigate(Routes.productDetail(id))
+                },
+            )
+        }
+        composable(
+            route = Routes.PartyForm,
+            arguments = listOf(
+                navArgument("kind") { type = NavType.StringType },
+                navArgument("partyId") { type = NavType.StringType; defaultValue = "" },
+            ),
+        ) { entry ->
+            val kind = com.shopai.app.books.model.PartyKind.valueOf(entry.arguments?.getString("kind") ?: "CUSTOMER")
+            val partyId = entry.arguments?.getString("partyId")?.takeIf { it.isNotEmpty() }
+            com.shopai.app.ui.books.PartyFormScreen(
+                container = container,
+                kind = kind,
+                partyId = partyId,
+                onBack = { navController.popBackStack() },
+                onSaved = { id ->
+                    navController.popBackStack()
+                    if (partyId == null) {
+                        navController.navigate(
+                            if (kind == com.shopai.app.books.model.PartyKind.CUSTOMER) Routes.customerDetail(id) else Routes.supplierDetail(id),
+                        )
+                    }
+                },
+            )
+        }
+        composable(Routes.HsnMaster) {
+            com.shopai.app.ui.books.HsnMasterScreen(
+                container = container,
+                onBack = { navController.navigateUpOrHome() },
+                onOpenProduct = { id -> navController.navigate(Routes.productDetail(id)) },
+            )
+        }
+        composable(Routes.Billing) {
+            com.shopai.app.ui.books.billing.BillingHomeScreen(
+                container = container,
+                onBack = { navController.navigateUpOrHome() },
+                onNewBill = { kind, partyId -> navController.navigate(Routes.billEditor(kind.name, partyId)) },
+                onResume = { d -> navController.navigate(Routes.billEditor(d.kind, draftId = d.id)) },
+                onPayment = { incoming -> navController.navigate(Routes.payment(if (incoming) "IN" else "OUT")) },
+                onOpen = { id -> navController.navigate(Routes.booksDocument(id)) },
+            )
+        }
+        composable(
+            route = Routes.BillEditor,
+            arguments = listOf(
+                navArgument("kind") { type = NavType.StringType },
+                navArgument("partyId") { type = NavType.StringType; defaultValue = "" },
+                navArgument("draftId") { type = NavType.StringType; defaultValue = "" },
+            ),
+        ) { entry ->
+            com.shopai.app.ui.books.billing.BillEditorScreen(
+                container = container,
+                kind = com.shopai.app.books.billing.DraftKind.valueOf(entry.arguments?.getString("kind") ?: "SALE"),
+                partyId = entry.arguments?.getString("partyId")?.takeIf { it.isNotEmpty() },
+                draftId = entry.arguments?.getString("draftId")?.takeIf { it.isNotEmpty() },
+                onBack = { navController.popBackStack() },
+                onPosted = { id ->
+                    navController.popBackStack()
+                    navController.navigate(Routes.booksDocument(id))
+                },
+            )
+        }
+        composable(
+            route = Routes.BooksDocument,
+            arguments = listOf(navArgument("txnId") { type = NavType.StringType }),
+        ) { entry ->
+            val txnId = entry.arguments?.getString("txnId") ?: return@composable
+            com.shopai.app.ui.books.billing.DocumentScreen(
+                container = container,
+                txnId = txnId,
+                onBack = { navController.popBackStack() },
+                onOpen = { id -> navController.navigate(Routes.booksDocument(id)) },
+                onPayment = { incoming, partyId, docId -> navController.navigate(Routes.payment(if (incoming) "IN" else "OUT", partyId, docId)) },
+                onReturn = { id -> navController.navigate(Routes.returnEditor(id)) },
+            )
+        }
+        composable(
+            route = Routes.ReturnEditor,
+            arguments = listOf(navArgument("txnId") { type = NavType.StringType }),
+        ) { entry ->
+            val txnId = entry.arguments?.getString("txnId") ?: return@composable
+            com.shopai.app.ui.books.billing.ReturnEditorScreen(
+                container = container,
+                originalTxnId = txnId,
+                onBack = { navController.popBackStack() },
+                onPosted = { id ->
+                    navController.popBackStack()
+                    navController.navigate(Routes.booksDocument(id))
+                },
+            )
+        }
+        composable(
+            route = Routes.Payment,
+            arguments = listOf(
+                navArgument("direction") { type = NavType.StringType },
+                navArgument("partyId") { type = NavType.StringType; defaultValue = "" },
+                navArgument("docId") { type = NavType.StringType; defaultValue = "" },
+            ),
+        ) { entry ->
+            com.shopai.app.ui.books.billing.PaymentScreen(
+                container = container,
+                incoming = entry.arguments?.getString("direction") != "OUT",
+                partyId = entry.arguments?.getString("partyId")?.takeIf { it.isNotEmpty() },
+                docId = entry.arguments?.getString("docId")?.takeIf { it.isNotEmpty() },
+                onBack = { navController.popBackStack() },
+                onPosted = { id ->
+                    navController.popBackStack()
+                    navController.navigate(Routes.booksDocument(id))
+                },
+            )
+        }
+        composable(Routes.BooksSettings) {
+            com.shopai.app.ui.books.BooksSettingsScreen(container = container, onBack = { navController.navigateUpOrHome() })
         }
         composable(Routes.AskBusiness) {
             AskBusinessScreen(
@@ -327,6 +533,9 @@ fun ShopAiApp(container: AppContainer) {
         }
         composable(Routes.LocalOffers) {
             OffersScreen(container = container, onBack = { navController.navigateUpOrHome() })
+        }
+        composable(Routes.KaiChat) {
+            com.shopai.app.ui.kaichat.KaiChatScreen(container = container, onBack = { navController.navigateUpOrHome() })
         }
         composable(Routes.Settings) {
             SettingsScreen(
@@ -359,6 +568,9 @@ fun ShopAiApp(container: AppContainer) {
                 bottomPadding = if (isMainTabRoute(currentRoute)) 78.dp else 24.dp,
             )
         }
+
+        // Kai speaks up after manual entries, bills and notes (app-wide, never permanent).
+        com.shopai.app.ui.kai.KaiAnnouncementOverlay(container, Modifier.align(Alignment.TopCenter))
 
         if (isMainTabRoute(currentRoute) || currentRoute == Routes.BusinessSetup) {
             EnsurePushRegistration(container)

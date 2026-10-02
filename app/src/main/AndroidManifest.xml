@@ -115,6 +115,14 @@
             android:exported="false" />
 
         <receiver
+            android:name=".receiver.ReminderAlarmReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".receiver.ReminderDoneReceiver"
+            android:exported="false" />
+
+        <receiver
             android:name=".receiver.BootCompletedReceiver"
             android:exported="false">
             <intent-filter>

@@ -136,6 +136,9 @@ fun PartyDirectoryBody(
     onAddClick: () -> Unit,
     onPartyClick: (String) -> Unit,
     modifier: Modifier = Modifier,
+    /** Full customer / supplier master form (OwnerNote Books). */
+    newPartyLabel: String? = null,
+    onNewParty: (() -> Unit)? = null,
 ) {
     Column(
         modifier = modifier.fillMaxSize(),
@@ -155,6 +158,9 @@ fun PartyDirectoryBody(
             onContactClick = onContactClick,
             onAddClick = onAddClick,
         )
+        if (newPartyLabel != null && onNewParty != null) {
+            androidx.compose.material3.TextButton(onClick = onNewParty) { Text(newPartyLabel) }
+        }
         Box(
             modifier = Modifier
                 .weight(1f)

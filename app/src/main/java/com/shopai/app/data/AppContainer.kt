@@ -21,7 +21,10 @@ import com.shopai.app.data.repository.InventoryRepository
 import com.shopai.app.data.repository.OffersRepository
 import com.shopai.app.data.repository.PartyRepository
 import com.shopai.app.data.repository.PushTokenRepository
+import com.shopai.app.data.repository.CapturedDocumentRepository
+import com.shopai.app.data.repository.HandwrittenNotesRepository
 import com.shopai.app.data.repository.ReminderRepository
+import com.shopai.app.notifications.ReminderAlarms
 import com.shopai.app.data.repository.TransactionRepository
 import com.shopai.app.data.repository.VoiceCheckinRepository
 import com.shopai.app.data.repository.VoiceRepository
@@ -85,24 +88,44 @@ class AppContainer(context: Context) {
 
     val api: ShopAiApi = retrofit.create(ShopAiApi::class.java)
 
+    /** OwnerNote Books: the on-device accounting engine (source of truth after the one-time import). */
+    val books = com.shopai.app.books.integration.BooksModule(appContext)
+
     val preferencesRepository = PreferencesRepository(userPreferencesStore)
     val pushTokenRepository = PushTokenRepository(api, tokenStore)
-    val authRepository = AuthRepository(api, tokenStore, apiErrorHandler, FirebasePhoneAuthClient(), pushTokenRepository)
+    val authRepository = AuthRepository(api, tokenStore, apiErrorHandler, FirebasePhoneAuthClient(), pushTokenRepository, appScope, onSignedOut = { books.signOut() })
     val businessRepository = BusinessRepository(api)
-    val insightsRepository = InsightsRepository(api)
+    val insightsRepository = InsightsRepository(api, books)
     val discoverRepository = DiscoverRepository(api)
-    val partyRepository = PartyRepository(api)
-    val transactionRepository = TransactionRepository(api)
+    val partyRepository = PartyRepository(api, books)
+    val transactionRepository = TransactionRepository(api, books)
     val voiceRepository = VoiceRepository(api)
-    val reminderRepository = ReminderRepository(api)
+    val reminderAlarms = ReminderAlarms(appContext)
+    val reminderRepository = ReminderRepository(api, reminderAlarms)
     val fundingRepository = FundingRepository(api)
     val groupBuyingRepository = GroupBuyingRepository(api)
-    val inventoryRepository = InventoryRepository(api)
+    val inventoryRepository = InventoryRepository(api, books = books)
     val offersRepository = OffersRepository(api, businessRepository)
     val naturalTtsSpeaker = NaturalTtsSpeaker(appContext)
+
+    /** One-time move of the backend customers / suppliers / products into the books. */
+    val booksImporter by lazy {
+        com.shopai.app.books.integration.BooksImporter(books, com.shopai.app.books.integration.ApiLegacyLedgerSource(api, businessRepository))
+    }
+
+    /** KAI — the one Business Brain every screen talks to. */
+    val kaiBrain = com.shopai.app.brain.KaiBrain(partyRepository, reminderRepository, insightsRepository, voiceRepository, naturalTtsSpeaker)
     private val localDatabase = ShopAiLocalDatabase.get(appContext)
     val dailyCashRepository = DailyCashRepository(localDatabase.dailyCashDao(), api)
     val voiceCheckinRepository = VoiceCheckinRepository(appContext, localDatabase.voiceCheckinDao())
+    val capturedDocumentRepository = CapturedDocumentRepository(localDatabase.capturedDocumentDao())
+    val handwrittenNotesRepository = HandwrittenNotesRepository(appContext, localDatabase.handwrittenNotesDao(), transactionRepository)
+
+    /** Kai Chat's books: the existing ledger, party details and Daily Cash Note (no AI service). */
+    val kaiBooks by lazy { com.shopai.app.brain.chat.RepositoryKaiBooks(kaiBrain, partyRepository, dailyCashRepository) }
+
+    /** Kai Chat conversation for this app session — KAI's own Business Brain, text only. */
+    val kaiChat by lazy { com.shopai.app.ui.kaichat.KaiChatSession(com.shopai.app.brain.chat.KaiBusinessBrain(kaiBooks)) }
 
     private fun ensureTrailingSlash(url: String): String =
         if (url.endsWith("/")) url else "$url/"

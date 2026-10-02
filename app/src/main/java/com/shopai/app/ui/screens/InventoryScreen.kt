@@ -18,7 +18,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import com.shopai.app.ui.components.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -70,6 +70,8 @@ fun InventoryScreen(
     container: AppContainer,
     onBack: () -> Unit,
     onOpenProduct: (String) -> Unit = {},
+    /** Full Product Master form — used once the books are in use. */
+    onNewProduct: () -> Unit = {},
 ) {
     var products by remember { mutableStateOf<List<InventoryProduct>>(emptyList()) }
     var summary by remember { mutableStateOf<InventoryIntelligenceSummaryDto?>(null) }
@@ -80,6 +82,25 @@ fun InventoryScreen(
     var showNewProduct by remember { mutableStateOf(false) }
     var stockChangeTarget by remember { mutableStateOf<Pair<InventoryProduct, Boolean>?>(null) }
     val scope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var booksOn by remember { mutableStateOf(false) }
+    var query by remember { mutableStateOf("") }
+    // Product ids matching the search (name, SKU, barcode or HSN); null = no search.
+    var matches by remember { mutableStateOf<Set<String>?>(null) }
+    LaunchedEffect(Unit) { booksOn = container.books.session() != null }
+    var archived by remember { mutableStateOf(emptyList<com.shopai.app.books.data.ProductEntity>()) }
+    var showArchived by remember { mutableStateOf(false) }
+    LaunchedEffect(showArchived) {
+        archived = if (!showArchived) emptyList() else container.books.session()?.let { s -> s.dao.products(s.ctx.businessId, archived = true, limit = 1000, offset = 0) }.orEmpty()
+    }
+    LaunchedEffect(query) {
+        val s = container.books.session()
+        matches = if (s == null || query.isBlank()) null else {
+            val q = query.trim()
+            s.dao.searchProducts(s.ctx.businessId, com.shopai.app.books.engine.nameKey(q), 500, 0).map { it.id }.toSet() +
+                s.dao.searchProducts(s.ctx.businessId, q, 500, 0).map { it.id }
+        }
+    }
     val errorLoad = stringResource(R.string.inv_error_load)
     val errorSave = stringResource(R.string.inv_error_save)
     val insufficientStockTemplate = stringResource(R.string.inv_insufficient_stock)
@@ -179,7 +200,28 @@ fun InventoryScreen(
                 style = MaterialTheme.typography.bodyMedium,
                 color = ShopAiThemeColors.onSurfaceVariant,
             )
-            PrimaryButton(label = stringResource(R.string.inv_new_product), onClick = { showNewProduct = true })
+            PrimaryButton(label = stringResource(R.string.inv_new_product), onClick = { if (booksOn) onNewProduct() else showNewProduct = true })
+            if (booksOn) {
+                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ShopTextField(
+                        label = stringResource(R.string.books_product_search),
+                        value = query,
+                        onValueChange = { query = it },
+                        modifier = Modifier.weight(1f),
+                    )
+                    OutlinedButton(onClick = {
+                        com.shopai.app.ui.books.scanBarcode(context) { code ->
+                            code ?: return@scanBarcode
+                            scope.launch {
+                                // A barcode belongs to one active product: open it straight away.
+                                val s = container.books.session() ?: return@launch
+                                val hit = s.dao.activeProductsByBarcode(s.ctx.businessId, code).singleOrNull()
+                                if (hit != null) onOpenProduct(hit.id) else query = code
+                            }
+                        }
+                    }) { Text(stringResource(R.string.books_scan)) }
+                }
+            }
 
             summary?.let { s ->
                 if (s.totalProducts > 0) {
@@ -241,7 +283,7 @@ fun InventoryScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = ShopAiThemeColors.onSurfaceVariant,
                 )
-                else -> products.forEach { product ->
+                else -> products.filter { p -> matches?.contains(p.id) ?: true }.forEach { product ->
                     ShopCard(
                         modifier = Modifier.clickable { onOpenProduct(product.id) },
                     ) {
@@ -291,6 +333,14 @@ fun InventoryScreen(
                             }
                         }
                     }
+                }
+            }
+            if (booksOn) {
+                TextButton(onClick = { showArchived = !showArchived }) {
+                    Text(stringResource(if (showArchived) R.string.books_hide_archived else R.string.books_show_archived))
+                }
+                archived.forEach { p ->
+                    TextButton(onClick = { onOpenProduct(p.id) }) { Text(p.name, color = ShopAiThemeColors.onSurfaceVariant) }
                 }
             }
             Spacer(Modifier.height(24.dp))

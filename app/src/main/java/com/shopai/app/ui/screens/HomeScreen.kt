@@ -29,7 +29,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import com.shopai.app.ui.components.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -72,6 +72,9 @@ import com.shopai.app.ui.components.HomeBackHandler
 // import com.shopai.app.ui.components.TransactionEntryType
 import com.shopai.app.ui.components.ReminderCarousel
 import com.shopai.app.ui.components.ShopCard
+import com.shopai.app.ui.books.BooksImportDialogs
+import com.shopai.app.ui.components.glassSurface
+import com.shopai.app.ui.components.isRedesignLight
 // import com.shopai.app.ui.components.TransactionEntryChooserDialog
 // import com.shopai.app.ui.components.TransactionEntryType
 import com.shopai.app.ui.components.VoiceFabBottomSpacer
@@ -85,6 +88,12 @@ import com.shopai.app.ui.theme.LedgerDebit
 import com.shopai.app.ui.theme.Primary
 import com.shopai.app.ui.theme.ShopAiTheme
 import com.shopai.app.ui.theme.ShopAiThemeColors
+import com.shopai.app.ui.kai.KaiBriefCard
+import com.shopai.app.brain.KaiLanguage
+import com.shopai.app.brain.KaiReply
+import com.shopai.app.ui.kai.KaiState
+import com.shopai.app.ui.kai.state
+import androidx.compose.runtime.collectAsState
 import com.shopai.app.util.DailyBriefVoice
 // import com.shopai.app.util.normalizeIndianPhone
 // import com.shopai.app.util.rememberContactPicker
@@ -125,6 +134,9 @@ fun HomeScreen(
     // var entryChooser by remember { mutableStateOf<TransactionEntryType?>(null) }
     var cashNoteSummary by remember { mutableStateOf<TodayCashSummary?>(null) }
     var profilePhotoPath by remember { mutableStateOf<String?>(null) }
+    // One-time move of the ledger into OwnerNote Books (null = not running / nothing to show).
+    var importing by remember { mutableStateOf(false) }
+    var imported by remember { mutableStateOf<com.shopai.app.books.integration.ImportOutcome.Imported?>(null) }
     // var showAllPriorities by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val errorLoadDashboard = stringResource(R.string.error_load_dashboard)
@@ -134,6 +146,16 @@ fun HomeScreen(
         scope.launch {
             loading = true
             error = null
+            if (container.books.needsImport()) {
+                importing = true
+                val outcome = container.booksImporter.runIfNeeded()
+                importing = false
+                if (outcome is com.shopai.app.books.integration.ImportOutcome.Imported) {
+                    imported = outcome
+                    container.kaiBrain.forget()
+                }
+                // Failed (offline): nothing changed — the old ledger stays in use and the import retries next time.
+            }
             runCatching {
                 business = container.businessRepository.getMyBusiness()
                 cashFlow = container.insightsRepository.getCashFlow()
@@ -165,16 +187,32 @@ fun HomeScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    LaunchedEffect(loading, health, priorities) {
-        if (loading || HomeTtsSession.hasSpokenThisSession) return@LaunchedEffect
+    // KAI greets, speaks the daily brief (lip-synced), then settles small and idle.
+    val kaiMouth by container.naturalTtsSpeaker.mouthLevel.collectAsState()
+    val kaiSpeaking by container.naturalTtsSpeaker.speaking.collectAsState()
+    var kaiBriefDone by remember { mutableStateOf(HomeTtsSession.hasSpokenThisSession) }
+    // Kai's brief, from the Business Brain over the real ledger (never sample data).
+    var kaiBrief by remember { mutableStateOf<KaiReply?>(null) }
+
+    LaunchedEffect(loading) {
+        if (loading) return@LaunchedEffect
+        val brief = container.kaiBrain.briefing(KaiLanguage.forAppLocale())
+        kaiBrief = brief
+        if (HomeTtsSession.hasSpokenThisSession) return@LaunchedEffect
         HomeTtsSession.hasSpokenThisSession = true
-        val voiceText = DailyBriefVoice.buildVoiceText(priorities, health)
-        container.naturalTtsSpeaker.speakNatural(
-            text = voiceText,
-            languageCode = "ta-IN",
-            fallbackText = voiceText,
-            fallbackLanguage = "ta-IN",
-        )
+        if (brief != null) {
+            container.kaiBrain.say(brief) { kaiBriefDone = true }
+        } else {
+            // Ledger unreachable: the previous short brief from priorities.
+            val voiceText = DailyBriefVoice.buildVoiceText(priorities, health)
+            container.naturalTtsSpeaker.speakNatural(
+                text = voiceText,
+                languageCode = "ta-IN",
+                fallbackText = voiceText,
+                fallbackLanguage = "ta-IN",
+                onDone = { kaiBriefDone = true },
+            )
+        }
     }
 
     /*
@@ -218,6 +256,7 @@ fun HomeScreen(
 
     HomeBackHandler()
     ApiErrorAlertDialog(message = alertError, onDismiss = { alertError = null })
+    BooksImportDialogs(importing = importing, imported = imported, onDismiss = { imported = null })
 
     val carouselItems = remember(reminders) {
         reminders.toSortedPaymentReminders()
@@ -261,10 +300,30 @@ fun HomeScreen(
                 modifier = Modifier
                     .offset(y = (-8).dp)
                     .clip(RoundedCornerShape(topStart = 36.dp, topEnd = 36.dp))
-                    .background(MaterialTheme.colorScheme.background)
+                    .then(if (isRedesignLight()) Modifier else Modifier.background(MaterialTheme.colorScheme.background))
                     .padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
+                KaiBriefCard(
+                    state = when {
+                        kaiBriefDone -> KaiState.IDLE
+                        kaiSpeaking -> KaiState.SPEAKING
+                        else -> KaiState.GREETING
+                    },
+                    line = when {
+                        !kaiBriefDone && !kaiSpeaking -> stringResource(R.string.kai_greeting)
+                        kaiBrief != null -> kaiBrief!!.display
+                        priorities.isEmpty() -> stringResource(R.string.kai_brief_clear)
+                        else -> stringResource(R.string.kai_brief_count, priorities.size)
+                    },
+                    mouthLevel = if (kaiBriefDone) 0f else kaiMouth,
+                    compact = kaiBriefDone,
+                    // While speaking the brief, KAI's face follows its meaning.
+                    speakingAs = kaiBrief?.mood?.state(),
+                    onTap = { onNavigate(Routes.VoiceEntry) },
+                )
+                // Kai Chat: ask KAI about the business (text, keyboard mic).
+                com.shopai.app.ui.kaichat.AskKaiCard(onClick = { onNavigate(Routes.KaiChat) })
                 DailyCashHomeCard(
                     summary = cashNoteSummary,
                     onClick = { onNavigate(Routes.DailyCashNote) },
@@ -416,7 +475,7 @@ private fun HomeGradientHeader(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.background),
+            .then(if (isRedesignLight()) Modifier else Modifier.background(MaterialTheme.colorScheme.background)),
     ) {
         Column(
             modifier = Modifier
@@ -449,17 +508,24 @@ private fun DashboardStatCard(
 ) {
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(18.dp))
-            .background(accent.copy(alpha = 0.08f))
+            .glassSurface()
             .clickable(onClick = onClick)
             .padding(16.dp),
     ) {
-        Icon(
-            imageVector = if (arrowDown) Icons.Filled.ArrowDownward else Icons.Filled.ArrowUpward,
-            contentDescription = null,
-            tint = accent,
-            modifier = Modifier.size(22.dp),
-        )
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(accent.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = if (arrowDown) Icons.Filled.ArrowDownward else Icons.Filled.ArrowUpward,
+                contentDescription = null,
+                tint = accent,
+                modifier = Modifier.size(20.dp),
+            )
+        }
         Spacer(modifier = Modifier.height(10.dp))
         Text(
             text = value,

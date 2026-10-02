@@ -43,12 +43,29 @@ fun SupplierDetailScreen(
     supplierId: String,
     onBack: () -> Unit,
     onAddDebit: (supplierId: String, supplierName: String) -> Unit,
+    /** Customer / supplier master form (OwnerNote Books). */
+    onEdit: (String) -> Unit = {},
+    /** OwnerNote Books: a full invoice / bill and a payment for this party. */
+    onNewBill: (String) -> Unit = {},
+    onPayment: (String) -> Unit = {},
 ) {
     var supplier by remember { mutableStateOf<SupplierDetail?>(null) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var alertError by remember { mutableStateOf<String?>(null) }
     var reloadKey by remember { mutableIntStateOf(0) }
+    var booksOn by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { booksOn = container.books.session() != null }
+    // Back from editing the party: show the saved details.
+    val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+        var first = true
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) { if (first) first = false else reloadKey++ }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
     val errorLoad = stringResource(R.string.suppliers_error)
     val paymentError = stringResource(R.string.party_payment_error)
 
@@ -72,6 +89,9 @@ fun SupplierDetailScreen(
     DetailScaffold(
         title = supplier?.name ?: stringResource(R.string.suppliers_title),
         onBack = onBack,
+        actions = {
+            if (booksOn) androidx.compose.material3.TextButton(onClick = { onEdit(supplier?.id ?: supplierId) }) { Text(stringResource(R.string.books_edit)) }
+        },
     ) { contentModifier ->
         when {
             loading -> Box(
@@ -106,6 +126,7 @@ fun SupplierDetailScreen(
                             color = ShopAiThemeColors.onSurfaceVariant,
                         )
                     }
+                    com.shopai.app.ui.books.PartyMasterInfo(container, detail.id, reloadKey)
                     Text(
                         text = stringResource(R.string.party_total_pending, formatInr(totalPending)),
                         style = MaterialTheme.typography.headlineSmall,
@@ -116,6 +137,12 @@ fun SupplierDetailScreen(
                         label = stringResource(R.string.party_add_debit),
                         onClick = { onAddDebit(detail.id, detail.name) },
                     )
+                    if (booksOn) {
+                        androidx.compose.foundation.layout.Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            com.shopai.app.ui.components.OutlinedButton(onClick = { onNewBill(detail.id) }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.bill_new_purchase)) }
+                            com.shopai.app.ui.components.OutlinedButton(onClick = { onPayment(detail.id) }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.bill_make_payment)) }
+                        }
+                    }
                     Text(
                         text = stringResource(R.string.party_transactions_title),
                         style = MaterialTheme.typography.titleMedium,
@@ -132,12 +159,29 @@ fun SupplierDetailScreen(
                             DebitTransactionCard(
                                 transaction = txn,
                                 onAddPayment = { amount ->
-                                    container.transactionRepository.addDebitPayment(txn.id, amount)
+                                    val saved = container.transactionRepository.addDebitPayment(txn.id, amount)
                                     reloadKey++
+                                    // Kai: what came in / went out and what is still pending (saved values).
+                                    container.kaiBrain.forget()
+                                    container.kaiBrain.announce(
+                                        com.shopai.app.brain.KaiResponder.paymentRecorded(
+                                            detail.name, amount,
+                                            (saved.amount.toDoubleOrNull() ?: 0.0) - (saved.paidAmount.toDoubleOrNull() ?: 0.0),
+                                            com.shopai.app.brain.Direction.PAYABLE, com.shopai.app.brain.KaiLanguage.forAppLocale(),
+                                        ),
+                                    )
                                 },
                                 onMarkPaid = {
+                                    val before = (txn.amount.toDoubleOrNull() ?: 0.0) - (txn.paidAmount.toDoubleOrNull() ?: 0.0)
                                     container.transactionRepository.markDebitPaid(txn.id)
                                     reloadKey++
+                                    container.kaiBrain.forget()
+                                    container.kaiBrain.announce(
+                                        com.shopai.app.brain.KaiResponder.paymentRecorded(
+                                            detail.name, before, 0.0,
+                                            com.shopai.app.brain.Direction.PAYABLE, com.shopai.app.brain.KaiLanguage.forAppLocale(),
+                                        ),
+                                    )
                                 },
                                 onError = { err ->
                                     container.presentApiError(

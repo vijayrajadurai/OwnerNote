@@ -20,6 +20,7 @@ class ShopAiApplication : Application() {
         container.authRepository.warmupPhoneVerification()
         container.naturalTtsSpeaker.warmUp()
         PushNotifications.ensureChannel(this)
+        container.reminderAlarms.ensureScheduled()
         runBlocking {
             val language = container.preferencesRepository.getLanguage()
             val theme = container.preferencesRepository.getTheme()

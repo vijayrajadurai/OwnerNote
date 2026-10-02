@@ -2,24 +2,14 @@ package com.shopai.app.ui.screens
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.net.Uri
 import android.speech.SpeechRecognizer
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Photo
-import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -34,7 +24,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.material3.Icon
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -54,23 +43,40 @@ import androidx.compose.foundation.verticalScroll
 import com.shopai.app.ui.components.ShopCard
 import com.shopai.app.ui.components.ShopTextField
 import com.shopai.app.ui.components.TransactionSaveType
-import com.shopai.app.ui.components.VoiceListeningOrb
-import com.shopai.app.ui.components.VoiceOrbState
+import com.shopai.app.ui.kai.KaiEvent
+import com.shopai.app.ui.kai.KaiReaction
+import com.shopai.app.ui.kai.KaiScene
+import com.shopai.app.ui.kai.KaiStage
+import com.shopai.app.ui.kai.KaiState
+import com.shopai.app.ui.kai.reaction
+import com.shopai.app.brain.Direction
+import com.shopai.app.brain.KaiLanguage
+import com.shopai.app.brain.KaiReply
+import com.shopai.app.brain.KaiResponder
+import com.shopai.app.brain.KaiTurn
 import com.shopai.app.ui.theme.Danger
 import com.shopai.app.ui.theme.ShopAiThemeColors
 import com.shopai.app.util.DeviceSpeechRecognizer
-import com.shopai.app.util.DeviceTextRecognizer
 import com.shopai.app.util.exceedsMaxLedgerAmount
 import com.shopai.app.util.localDateToIsoInstant
 import com.shopai.app.util.parseIsoToLocalDate
 import java.time.LocalDate
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
+/** The microphone / request side of Pesunga (KAI shows it). */
+private enum class MicState { Idle, Listening, Processing }
 
 @Composable
 fun VoiceEntryScreen(
     container: AppContainer,
     onBack: () -> Unit,
     onDone: () -> Unit,
+    onOpenHandwrittenNotes: () -> Unit = {},
+    onScanNoteForBill: (billId: Long) -> Unit = {},
+    onOpenNotePerson: (name: String) -> Unit = {},
 ) {
     var inputText by remember { mutableStateOf("") }
     var partialText by remember { mutableStateOf<String?>(null) }
@@ -84,35 +90,39 @@ fun VoiceEntryScreen(
     var dueDate by remember { mutableStateOf<LocalDate?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var parsing by remember { mutableStateOf(false) }
-    var ocrProcessing by remember { mutableStateOf(false) }
     var saving by remember { mutableStateOf(false) }
     var showConfirmDialog by remember { mutableStateOf(false) }
     var alertError by remember { mutableStateOf<String?>(null) }
-    var orbState by remember { mutableStateOf(VoiceOrbState.Idle) }
+    var orbState by remember { mutableStateOf(MicState.Idle) }
     var audioLevel by remember { mutableFloatStateOf(0f) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val speechRecognizer = remember { DeviceSpeechRecognizer(context) }
-    val textRecognizer = remember { DeviceTextRecognizer(context) }
+
+    // KAI: listens → thinks → speaks → reacts → back to idle.
+    var kai by remember { mutableStateOf(KaiScene()) }
+    var kaiLine by remember { mutableStateOf<String?>(null) }
+    val kaiMouth by container.naturalTtsSpeaker.mouthLevel.collectAsState()
+    fun kai(event: KaiEvent) { kai = kai.on(event) }
+    LaunchedEffect(kai) {
+        val hold = kai.holdMillis ?: return@LaunchedEffect
+        delay(hold)
+        kai(KaiEvent.HoldElapsed)
+    }
+    val brain = container.kaiBrain
+    /** Kai shows and says [reply] — the same words; [then] runs when his voice ends. */
+    fun kaiSay(reply: KaiReply, then: KaiEvent = KaiEvent.SpeechEnded) {
+        kaiLine = reply.display
+        brain.say(reply) { kai(then) }
+    }
     val errorSpeechUnavailable = stringResource(R.string.error_speech_unavailable)
-    val errorOcrEmpty = stringResource(R.string.error_ocr_empty)
-    val errorOcrFailed = stringResource(R.string.error_ocr_failed)
-    val errorCameraPermission = stringResource(R.string.error_camera_permission)
-    val ocrStatusProcessing = stringResource(R.string.ocr_status_processing)
     val errorMicPermission = stringResource(R.string.error_mic_permission)
     val errorVoiceParse = stringResource(R.string.error_voice_parse)
-    val errorVoiceAsk = stringResource(R.string.error_voice_ask)
     val errorVoiceSave = stringResource(R.string.error_voice_save)
     val errorVoiceNoSpeech = stringResource(R.string.error_voice_no_speech)
-    val statusIdle = stringResource(R.string.voice_status_idle)
-    val statusListening = stringResource(R.string.voice_status_listening)
-    val statusProcessing = stringResource(R.string.voice_status_processing)
 
     DisposableEffect(Unit) {
-        onDispose {
-            speechRecognizer.stopListening()
-            textRecognizer.release()
-        }
+        onDispose { speechRecognizer.stopListening() }
     }
 
     fun applyParsed(p: ParsedTransaction) {
@@ -125,99 +135,52 @@ fun VoiceEntryScreen(
         dueDate = parseIsoToLocalDate(p.dueDate)?.takeIf { !it.isBefore(today) }
     }
 
-    fun parseInput(fromOcr: Boolean = false) {
+    /**
+     * Everything the owner says or types goes to Kai's Business Brain: an
+     * entry comes back as a proposal (filled into the form to confirm), a
+     * question as an answer from the ledger, a gap as one short question.
+     */
+    fun parseInput() {
         val text = inputText.trim()
         if (text.isBlank()) {
-            orbState = VoiceOrbState.Idle
+            orbState = MicState.Idle
+            kai(KaiEvent.Cancel)
             return
         }
         scope.launch {
             parsing = true
-            if (!fromOcr) orbState = VoiceOrbState.Processing
+            orbState = MicState.Processing
+            kai(KaiEvent.Think)
+            kaiLine = context.getString(R.string.kai_processing)
             error = null
             queryAnswer = null
-            runCatching {
-                val result = if (fromOcr) {
-                    container.voiceRepository.parseOcrText(text)
-                } else {
-                    container.voiceRepository.parseVoiceText(text)
+            val turn = runCatching { brain.hear(text) }.getOrNull()
+            when (turn) {
+                null -> {
+                    kai(KaiEvent.Understood(KaiReaction.CLARIFY))
+                    kaiSay(KaiResponder.couldNotLoad(KaiLanguage.detect(text)))
+                    error = errorVoiceParse
                 }
-                if (result.intent == "ASK_QUERY") {
-                    parsed = result
-                    runCatching {
-                        val answer = container.insightsRepository.askMyBusiness(text)
-                        queryAnswer = answer.answer
-                        container.naturalTtsSpeaker.speakNatural(answer.answer, "ta-IN")
-                    }.onFailure {
-                        container.presentApiError(it, errorVoiceAsk, { msg -> error = msg }, { msg -> alertError = msg })
-                    }
-                } else {
-                    applyParsed(result)
+                is KaiTurn.Proposal -> {
+                    applyParsed(turn.transaction)
+                    kai(KaiEvent.Understood(turn.reply.mood.reaction()))
+                    kaiSay(turn.reply)
                 }
-            }.onFailure {
-                container.presentApiError(it, errorVoiceParse, { msg -> error = msg }, { msg -> alertError = msg })
+                is KaiTurn.Clarify -> {
+                    kai(KaiEvent.Understood(KaiReaction.CLARIFY))
+                    kaiSay(turn.reply)
+                }
+                is KaiTurn.Answer -> {
+                    parsed = null
+                    queryAnswer = turn.reply.display
+                    kai(KaiEvent.Understood(turn.reply.mood.reaction()))
+                    kaiSay(turn.reply)
+                }
             }
             parsing = false
-            if (!fromOcr) orbState = VoiceOrbState.Idle
+            orbState = MicState.Idle
         }
     }
-
-    fun runOcrOnBitmap(bitmap: Bitmap) {
-        scope.launch {
-            ocrProcessing = true
-            error = null
-            runCatching {
-                val result = textRecognizer.recognizeFromBitmap(bitmap)
-                if (!result.success) {
-                    error = errorOcrEmpty
-                } else {
-                    inputText = result.text
-                    parseInput(fromOcr = true)
-                }
-            }.onFailure {
-                error = errorOcrFailed
-            }
-            ocrProcessing = false
-        }
-    }
-
-    fun runOcrOnUri(uri: Uri) {
-        scope.launch {
-            ocrProcessing = true
-            error = null
-            runCatching {
-                val result = textRecognizer.recognizeFromUri(uri)
-                if (!result.success) {
-                    error = errorOcrEmpty
-                } else {
-                    inputText = result.text
-                    parseInput(fromOcr = true)
-                }
-            }.onFailure {
-                error = errorOcrFailed
-            }
-            ocrProcessing = false
-        }
-    }
-
-    val galleryLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia(),
-    ) { uri ->
-        if (uri != null) runOcrOnUri(uri)
-    }
-
-    val cameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicturePreview(),
-    ) { bitmap ->
-        if (bitmap != null) runOcrOnBitmap(bitmap)
-    }
-
-    val cameraPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-    ) { granted ->
-        if (granted) cameraLauncher.launch(null) else error = errorCameraPermission
-    }
-
     fun normalizeAudioLevel(rmsdB: Float): Float {
         return ((rmsdB + 2f) / 12f).coerceIn(0f, 1f)
     }
@@ -229,11 +192,15 @@ fun VoiceEntryScreen(
         }
         error = null
         partialText = null
-        orbState = VoiceOrbState.Listening
+        orbState = MicState.Listening
         audioLevel = 0f
+        // KAI stops talking and listens (his voice never competes with the mic).
+        container.naturalTtsSpeaker.stop()
+        kai(KaiEvent.Listen)
+        kaiLine = context.getString(R.string.kai_listening)
         speechRecognizer.startListening(
             languageTag = "ta-IN",
-            onReady = { orbState = VoiceOrbState.Listening },
+            onReady = { orbState = MicState.Listening },
             onRmsChanged = { audioLevel = normalizeAudioLevel(it) },
             onPartialResult = { partialText = it },
             onResult = { spoken ->
@@ -242,8 +209,9 @@ fun VoiceEntryScreen(
                 parseInput()
             },
             onError = { code ->
-                orbState = VoiceOrbState.Idle
+                orbState = MicState.Idle
                 audioLevel = 0f
+                if (code == SpeechRecognizer.ERROR_CLIENT) kai(KaiEvent.Cancel) else { kai(KaiEvent.Understood(KaiReaction.CLARIFY)); kaiSay(KaiResponder.didNotUnderstand(KaiLanguage.forAppLocale())) }
                 if (code != SpeechRecognizer.ERROR_CLIENT) {
                     error = when (code) {
                         SpeechRecognizer.ERROR_NO_MATCH,
@@ -264,13 +232,14 @@ fun VoiceEntryScreen(
 
     fun onOrbClick() {
         when (orbState) {
-            VoiceOrbState.Listening -> {
+            MicState.Listening -> {
                 speechRecognizer.stopListening()
-                orbState = VoiceOrbState.Idle
+                orbState = MicState.Idle
                 audioLevel = 0f
+                kai(KaiEvent.Cancel)
             }
-            VoiceOrbState.Processing -> Unit
-            VoiceOrbState.Idle -> {
+            MicState.Processing -> Unit
+            MicState.Idle -> {
                 when {
                     ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
                         PackageManager.PERMISSION_GRANTED -> startListening()
@@ -280,10 +249,13 @@ fun VoiceEntryScreen(
         }
     }
 
-    val statusText = when (orbState) {
-        VoiceOrbState.Idle -> statusIdle
-        VoiceOrbState.Listening -> statusListening
-        VoiceOrbState.Processing -> statusProcessing
+    // What KAI says: his last line while he speaks or reacts, otherwise his state's line.
+    val kaiIdleLine = stringResource(R.string.kai_idle)
+    val kaiText = when (kai.state) {
+        KaiState.IDLE -> kaiIdleLine
+        KaiState.LISTENING -> stringResource(R.string.kai_listening)
+        KaiState.PROCESSING -> stringResource(R.string.kai_processing)
+        else -> kaiLine ?: kaiIdleLine
     }
 
     ApiErrorAlertDialog(message = alertError, onDismiss = { alertError = null })
@@ -305,53 +277,24 @@ fun VoiceEntryScreen(
             modifier = Modifier.padding(bottom = 8.dp),
         )
 
-        VoiceListeningOrb(
-            state = orbState,
-            audioLevel = audioLevel,
-            statusText = if (ocrProcessing) ocrStatusProcessing else statusText,
-            partialText = if (orbState == VoiceOrbState.Listening) partialText else null,
-            onOrbClick = { onOrbClick() },
+        // KAI is the speaking interface: tap him to talk.
+        KaiStage(
+            state = kai.state,
+            line = kaiText,
+            mouthLevel = kaiMouth,
+            speakingAs = kai.speakingAs,
+            heard = if (orbState == MicState.Listening) partialText else null,
+            enabled = orbState != MicState.Processing,
+            onTap = { onOrbClick() },
         )
 
-        Text(
-            stringResource(R.string.ocr_scan_bill),
-            style = MaterialTheme.typography.labelLarge,
-            color = ShopAiThemeColors.onSurfaceVariant,
-            modifier = Modifier.padding(top = 8.dp),
+        // Shop bills and handwritten notes: capture, read, link, and the saved list.
+        DocumentCaptureSection(
+            container = container,
+            onOpenHandwrittenNotes = onOpenHandwrittenNotes,
+            onScanNoteForBill = onScanNoteForBill,
+            onOpenNotePerson = onOpenNotePerson,
         )
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            OutlinedButton(
-                onClick = {
-                    when {
-                        ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
-                            PackageManager.PERMISSION_GRANTED -> cameraLauncher.launch(null)
-                        else -> cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-                    }
-                },
-                enabled = !ocrProcessing && orbState != VoiceOrbState.Listening,
-                modifier = Modifier.weight(1f),
-            ) {
-                Icon(Icons.Default.PhotoCamera, contentDescription = null)
-                Text(stringResource(R.string.ocr_camera), modifier = Modifier.padding(start = 6.dp))
-            }
-            OutlinedButton(
-                onClick = {
-                    galleryLauncher.launch(
-                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
-                    )
-                },
-                enabled = !ocrProcessing && orbState != VoiceOrbState.Listening,
-                modifier = Modifier.weight(1f),
-            ) {
-                Icon(Icons.Default.Photo, contentDescription = null)
-                Text(stringResource(R.string.ocr_gallery), modifier = Modifier.padding(start = 6.dp))
-            }
-        }
 
         ShopTextField(
             stringResource(R.string.voice_sentence),
@@ -363,8 +306,8 @@ fun VoiceEntryScreen(
 
         PrimaryButton(
             label = stringResource(R.string.voice_parse),
-            loading = parsing || ocrProcessing,
-            enabled = inputText.isNotBlank() && orbState != VoiceOrbState.Listening && !ocrProcessing,
+            loading = parsing,
+            enabled = inputText.isNotBlank() && orbState != MicState.Listening,
             modifier = Modifier.padding(top = 8.dp),
             onClick = { parseInput() },
         )
@@ -470,6 +413,7 @@ fun VoiceEntryScreen(
                                     description = description.trim(),
                                     dueDate = due,
                                 ),
+                                source = com.shopai.app.books.model.TxnSource.VOICE,
                             )
                             else -> container.transactionRepository.createCredit(
                                 CreateCreditInput(
@@ -478,16 +422,29 @@ fun VoiceEntryScreen(
                                     description = description.trim(),
                                     dueDate = due,
                                 ),
+                                source = com.shopai.app.books.model.TxnSource.VOICE,
                             )
                         }
+                        // Kai: thumbs up and says what was saved — the saved values, a reminder only if one exists.
+                        val direction = if (p.intent == "CREATE_DEBIT") Direction.PAYABLE else Direction.RECEIVABLE
+                        val reply = brain.saved(partyName.trim(), amt, direction, dueDate, KaiLanguage.detect(inputText.ifBlank { p.rawText }))
+                        kai(KaiEvent.Saved)
+                        kaiLine = reply.display
+                        // Announced app-wide, so Kai finishes speaking on the next screen.
+                        brain.announce(reply)
+                        delay(1_500)
                         onDone()
                     }.onFailure {
+                        kai(KaiEvent.NeedsClarification)
                         container.presentApiError(it, errorVoiceSave, { msg -> error = msg }, { msg -> alertError = msg })
                     }
                     saving = false
                 }
             },
-            onDismiss = { showConfirmDialog = false },
+            onDismiss = {
+                showConfirmDialog = false
+                kai(KaiEvent.Cancel)
+            },
         )
     }
 }

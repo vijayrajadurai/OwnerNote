@@ -43,6 +43,8 @@ fun ProductDetailScreen(
     container: AppContainer,
     productId: String,
     onBack: () -> Unit,
+    /** Product Master form — offered once the books are in use. */
+    onEdit: (String) -> Unit = {},
 ) {
     var product by remember { mutableStateOf<InventoryProduct?>(null) }
     var movements by remember { mutableStateOf<List<InventoryMovement>>(emptyList()) }
@@ -50,8 +52,21 @@ fun ProductDetailScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var alertError by remember { mutableStateOf<String?>(null) }
     val errorLoad = stringResource(R.string.inv_error_load)
+    var booksOn by remember { mutableStateOf(false) }
+    var refresh by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    LaunchedEffect(Unit) { booksOn = container.books.session() != null }
+    // Back from editing: show the saved product.
+    val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+        var first = true
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) { if (first) first = false else refresh++ }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
-    LaunchedEffect(productId) {
+    LaunchedEffect(productId, refresh) {
         loading = true
         error = null
         runCatching {
@@ -65,7 +80,13 @@ fun ProductDetailScreen(
 
     ApiErrorAlertDialog(message = alertError, onDismiss = { alertError = null })
 
-    DetailScaffold(title = product?.name ?: stringResource(R.string.inv_title), onBack = onBack) { contentModifier ->
+    DetailScaffold(
+        title = product?.name ?: stringResource(R.string.inv_title),
+        onBack = onBack,
+        actions = {
+            if (booksOn && product != null) androidx.compose.material3.TextButton(onClick = { onEdit(product!!.id) }) { Text(stringResource(R.string.books_edit)) }
+        },
+    ) { contentModifier ->
         when {
             loading -> Box(modifier = contentModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = ShopAiThemeColors.primary)
@@ -106,6 +127,7 @@ fun ProductDetailScreen(
                         DetailRow(stringResource(R.string.inv_image_uri), p.imageUri)
                         DetailRow(stringResource(R.string.inv_notes), p.notes)
                     }
+                    if (booksOn) com.shopai.app.ui.books.ProductMasterInfo(container, p.id, refresh)
 
                     Text(
                         text = stringResource(R.string.inv_history_title),

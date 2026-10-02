@@ -25,6 +25,8 @@ fun SuppliersScreen(
     container: AppContainer,
     onNavigate: (String) -> Unit,
     onOpenSupplier: (String) -> Unit,
+    /** Full master form; only offered once the books are in use. */
+    onNewSupplier: () -> Unit = {},
     onAddDebit: (supplierId: String?, supplierName: String, supplierPhone: String?) -> Unit,
 ) {
     var suppliers by remember { mutableStateOf<List<PartySummary>>(emptyList()) }
@@ -32,6 +34,8 @@ fun SuppliersScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var alertError by remember { mutableStateOf<String?>(null) }
     var reloadKey by remember { mutableIntStateOf(0) }
+    var booksOn by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { booksOn = container.books.session() != null }
     val errorLoadSuppliers = stringResource(R.string.suppliers_error)
     val contactPickFailed = stringResource(R.string.contacts_pick_failed)
 
@@ -82,6 +86,8 @@ fun SuppliersScreen(
             onContactClick = pickContact,
             onAddClick = { onAddDebit(null, "", null) },
             onPartyClick = onOpenSupplier,
+            newPartyLabel = if (booksOn) stringResource(R.string.books_supplier_new) else null,
+            onNewParty = onNewSupplier,
         )
     }
 }

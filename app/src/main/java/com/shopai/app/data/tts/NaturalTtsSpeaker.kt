@@ -16,8 +16,14 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.resume
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
@@ -40,6 +46,43 @@ class NaturalTtsSpeaker(context: Context) {
     private var ttsReady = false
     private val ttsInitMutex = Mutex()
     private var mediaPlayer: MediaPlayer? = null
+
+    // KAI's lip-sync: how open his mouth is (0..1) while the voice is audible,
+    // and whether a voice is playing right now. Read-only for the UI.
+    private val _mouthLevel = MutableStateFlow(0f)
+    val mouthLevel: StateFlow<Float> = _mouthLevel.asStateFlow()
+    private val _speaking = MutableStateFlow(false)
+    val speaking: StateFlow<Boolean> = _speaking.asStateFlow()
+    private var lipSyncJob: Job? = null
+
+    /** Drives [mouthLevel] until [stopLipSync]: from the audio's loudness, or a natural talking rhythm. */
+    private fun startLipSync(envelope: SpeechEnvelope?, position: () -> Int?) {
+        lipSyncJob?.cancel()
+        _speaking.value = true
+        val started = System.currentTimeMillis()
+        lipSyncJob = scope.launch {
+            while (isActive) {
+                val at = position() ?: (System.currentTimeMillis() - started).toInt()
+                _mouthLevel.value = envelope?.levelAt(at) ?: talkingRhythm(at)
+                delay(33)
+            }
+        }
+    }
+
+    private fun stopLipSync() {
+        lipSyncJob?.cancel()
+        lipSyncJob = null
+        _mouthLevel.value = 0f
+        _speaking.value = false
+    }
+
+    // Syllables at roughly 4–5 per second with small pauses, when the audio can't be measured.
+    private fun talkingRhythm(millis: Int): Float {
+        val t = millis / 1000.0
+        val syllable = kotlin.math.abs(kotlin.math.sin(t * Math.PI * 4.6))
+        val phrase = 0.55 + 0.45 * kotlin.math.sin(t * Math.PI * 0.9 + 1.3)
+        return (syllable * phrase).toFloat().coerceIn(0f, 1f)
+    }
 
     private val proxyUrl = BuildConfig.TTS_PROXY_URL.trim().removeSuffix("/")
     private val proxyKey = BuildConfig.TTS_PROXY_KEY.trim()
@@ -89,6 +132,7 @@ class NaturalTtsSpeaker(context: Context) {
     }
 
     fun stop() {
+        stopLipSync()
         mediaPlayer?.runCatching {
             if (isPlaying) stop()
             release()
@@ -171,6 +215,7 @@ class NaturalTtsSpeaker(context: Context) {
         }
 
         stop()
+        val envelope = runCatching { SpeechEnvelope.fromWav(file.readBytes()) }.getOrNull()
         try {
             val player = MediaPlayer()
             mediaPlayer = player
@@ -182,21 +227,27 @@ class NaturalTtsSpeaker(context: Context) {
             )
             player.setDataSource(file.absolutePath)
             player.setOnPreparedListener { prepared ->
-                runCatching { prepared.start() }
+                runCatching {
+                    prepared.start()
+                    startLipSync(envelope) { runCatching { mediaPlayer?.currentPosition }.getOrNull() }
+                }
                     .onFailure {
                         logDebug("MediaPlayer start failed: ${it.message}")
+                        stopLipSync()
                         prepared.release()
                         mediaPlayer = null
                         finish(false)
                     }
             }
             player.setOnCompletionListener {
+                stopLipSync()
                 it.release()
                 mediaPlayer = null
                 finish(true)
             }
             player.setOnErrorListener { mp, what, extra ->
                 logDebug("MediaPlayer error what=$what extra=$extra")
+                stopLipSync()
                 mp.release()
                 mediaPlayer = null
                 finish(false)
@@ -231,16 +282,28 @@ class NaturalTtsSpeaker(context: Context) {
 
             engine.setOnUtteranceProgressListener(
                 object : UtteranceProgressListener() {
-                    override fun onStart(spokenId: String?) = Unit
+                    // Device TTS audio can't be measured: KAI talks in a natural rhythm.
+                    override fun onStart(spokenId: String?) {
+                        if (spokenId == utteranceId) scope.launch { startLipSync(null) { null } }
+                    }
                     override fun onDone(spokenId: String?) {
-                        if (spokenId == utteranceId) finish(true)
+                        if (spokenId == utteranceId) {
+                            scope.launch { stopLipSync() }
+                            finish(true)
+                        }
                     }
                     @Deprecated("Deprecated in Java")
                     override fun onError(spokenId: String?) {
-                        if (spokenId == utteranceId) finish(false)
+                        if (spokenId == utteranceId) {
+                            scope.launch { stopLipSync() }
+                            finish(false)
+                        }
                     }
                     override fun onError(spokenId: String?, errorCode: Int) {
-                        if (spokenId == utteranceId) finish(false)
+                        if (spokenId == utteranceId) {
+                            scope.launch { stopLipSync() }
+                            finish(false)
+                        }
                     }
                 },
             )

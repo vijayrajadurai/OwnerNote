@@ -9,6 +9,8 @@ import com.shopai.app.data.model.AuthResponse
 import com.shopai.app.data.model.FirebaseLoginRequest
 import com.shopai.app.data.model.SendOtpResponse
 import com.shopai.app.data.network.ApiErrorHandler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 sealed class PhoneOtpSendResult {
     data class CodeSent(val data: SendOtpResponse) : PhoneOtpSendResult()
@@ -21,12 +23,21 @@ class AuthRepository(
     private val apiErrorHandler: ApiErrorHandler,
     private val firebasePhoneAuth: FirebasePhoneAuthClient,
     private val pushTokenRepository: PushTokenRepository,
+    private val backgroundScope: CoroutineScope,
+    /** Lets the next account on this phone open its own books. */
+    private val onSignedOut: () -> Unit = {},
 ) {
     fun warmupPhoneVerification() {
         firebasePhoneAuth.warmupAppVerification()
     }
 
     suspend fun getLoginPhone(): String? = tokenStore.getPendingPhone()
+
+    suspend fun isLoggedIn(): Boolean = tokenStore.getToken() != null
+
+    suspend fun setLoginPhone(phone: String) {
+        tokenStore.setPendingPhone(phone.filter { it.isDigit() }.takeLast(10))
+    }
 
     suspend fun hydrate(): String? {
         val token = tokenStore.getToken()
@@ -60,7 +71,7 @@ class AuthRepository(
             com.shopai.app.data.model.TestLoginRequest(username, password),
         )
         tokenStore.setToken(response.data.token)
-        runCatching { pushTokenRepository.registerCurrent() }
+        registerPushTokenInBackground()
         return response.data
     }
 
@@ -70,6 +81,7 @@ class AuthRepository(
         tokenStore.setToken(null)
         tokenStore.setPendingPhone(null)
         CrashReporting.setSession(null)
+        onSignedOut()
     }
 
     fun apiErrorMessage(throwable: Throwable, fallback: String): String =
@@ -79,7 +91,12 @@ class AuthRepository(
         val response = api.firebaseLogin(FirebaseLoginRequest(idToken))
         tokenStore.setToken(response.data.token)
         CrashReporting.setSession(tokenStore.getPendingPhone())
-        runCatching { pushTokenRepository.registerCurrent() }
+        registerPushTokenInBackground()
         return response.data
+    }
+
+    // Login does not need to wait for the FCM token fetch + register call.
+    private fun registerPushTokenInBackground() {
+        backgroundScope.launch { runCatching { pushTokenRepository.registerCurrent() } }
     }
 }

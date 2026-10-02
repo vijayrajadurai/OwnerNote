@@ -25,6 +25,8 @@ fun CustomersScreen(
     container: AppContainer,
     onNavigate: (String) -> Unit,
     onOpenCustomer: (String) -> Unit,
+    /** Full master form; only offered once the books are in use. */
+    onNewCustomer: () -> Unit = {},
     onAddCredit: (customerId: String?, customerName: String, customerPhone: String?) -> Unit,
 ) {
     var customers by remember { mutableStateOf<List<PartySummary>>(emptyList()) }
@@ -32,6 +34,8 @@ fun CustomersScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var alertError by remember { mutableStateOf<String?>(null) }
     var reloadKey by remember { mutableIntStateOf(0) }
+    var booksOn by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { booksOn = container.books.session() != null }
     val errorLoadCustomers = stringResource(R.string.customers_error)
     val contactPickFailed = stringResource(R.string.contacts_pick_failed)
 
@@ -82,6 +86,8 @@ fun CustomersScreen(
             onContactClick = pickContact,
             onAddClick = { onAddCredit(null, "", null) },
             onPartyClick = onOpenCustomer,
+            newPartyLabel = if (booksOn) stringResource(R.string.books_customer_new) else null,
+            onNewParty = onNewCustomer,
         )
     }
 }

@@ -61,6 +61,8 @@ class ApiErrorHandler(private val context: Context) {
                 else -> ErrorKind.HTTP_CLIENT
             }
             is FirebaseException -> ErrorKind.HTTP_CLIENT
+            // The books refused an entry: show its own reason (e.g. "Only ₹500 is due").
+            is com.shopai.app.books.integration.BooksRejectedException -> ErrorKind.HTTP_CLIENT
             else -> {
                 val message = throwable.message.orEmpty()
                 if (
@@ -95,6 +97,7 @@ class ApiErrorHandler(private val context: Context) {
                 else -> raw.takeIf { it.isNotBlank() }
             }
         }
+        if (throwable is com.shopai.app.books.integration.BooksRejectedException) return throwable.message
         if (throwable !is HttpException) return null
         val body = throwable.response()?.errorBody()?.string()
         if (body != null && body.contains("\"message\"")) {
