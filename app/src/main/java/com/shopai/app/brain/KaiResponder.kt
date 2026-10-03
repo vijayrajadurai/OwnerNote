@@ -379,9 +379,9 @@ object KaiResponder {
         )
         else -> reply(
             lang, KaiMood.EXPLAINING,
-            "ஓனர், ${shop ?: "பில்"} — மொத்தம் ${ta(total)}. சரிபார்த்து சேவ் பண்ணுங்க.",
-            "Owner, ${shop ?: "bill"} — total ${rupees(total)}. Check panni save pannunga.",
-            "Owner, ${shop ?: "the bill"} — total ${rupees(total)}. Check and save.",
+            "ஓனர், பில் விவரம் ரெடி — ${shop ?: "பில்"}, மொத்தம் ${ta(total)}. சரிபார்த்து உறுதி செய்யுங்க.",
+            "Owner, bill details ready — ${shop ?: "bill"}, total ${rupees(total)}. Review pannitu Confirm pannunga.",
+            "Owner, bill details ready — ${shop ?: "the bill"}, total ${rupees(total)}. Review and confirm.",
         )
     }
 

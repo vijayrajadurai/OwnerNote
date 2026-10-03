@@ -50,3 +50,23 @@ and small talk to the same Kai Chat conversation.
 10. "'ramba' nu enna meaning?" → "romba nu sonna mari" → Aama → "innaiku ramba busy" understood.
 11. Log out, log in as another owner → "ramba" is not known.
 12. Kai Chat header has no "My Kai language" button.
+
+## Final production fix (one router, every language)
+
+- Router (`KaiIntents.classify`, same order as `KaiAgent.ask`): LEARN_SLANG → MORNING_WORK →
+  CREATE / LIST / CANCEL / UPDATE_REMINDER → SCAN_STOCK → STOCK_IN → STOCK_OUT → SCAN_BILL →
+  CALL_CONTACT → FINANCIAL_ENTRY → PAYMENT / CUSTOMER / SUPPLIER / BUSINESS_QUERY → CALCULATE → CHAT → UNKNOWN.
+- Reminders ask only the missing field: "2 minutes la remind pannu" → "Enna remind pannanum?" (time kept);
+  "Ruthran-ku call remind pannu" → "Eppo remind pannanum?". The reminder card shows Reminder / What /
+  When / Status with Cancel and Edit.
+- Stock: "Colgate vandhuduchu", "New Colgate stock", "Colgate rendu sell panniten", "Colgate 2 pieces out",
+  "2 pieces Colgate kuduthuten" (stock out only when a product is named and nobody is given it — otherwise it is
+  a payment). "Colgate photo edu", "stock photo edu", "new stock add pannu" open the product camera (SCAN_STOCK).
+  The photo form adds Pack size; the product name is brand + variant ("Colgate Strong Teeth"), the category is
+  the product type ("Toothpaste").
+- Bill draft also reads the invoice number and the tax; the form has Confirm / Cancel ("Owner, bill details
+  ready … Review pannitu Confirm pannunga.").
+- Learning: "'ramba' na romba" → "Seri Owner 😄 `ramba` = `romba` nu save pannava?" → aama → saved for this
+  owner only. "puli = customer payment" → asked as a business meaning with its own buttons.
+- Voice: Kai speaks only when the owner spoke (`KaiSpeech`); typed messages get text only.
+- Tests: `app/src/test/java/com/shopai/app/brain/chat/KaiFinalFixesTest.kt`.

@@ -103,7 +103,7 @@ object KaiTime {
         """hours?|hrs?|hr|mani\s*nera\p{L}*|days?|naal|naatkal)"""
     private val relative = Regex(
         """$B(?:innum\s+|inum\s+|in\s+|after\s+)?(\d+(?:\.\d+)?|$numberAlt|half(?:\s+an)?|ara|arai)\s*$relativeUnit""" +
-            """(?:\s*(?:later|kalichu|kalichi|kazhichu|kazhithu|apram|aprom|appuram|after|time|la|le|il))?$E""",
+            """(?:\s*(?:later|kalichu|kalichi|kazhichu|kazhithu|apram|aprom|appuram|piragu|piragau|after|time|la|le|il))?$E""",
         RegexOption.IGNORE_CASE,
     )
     private val tamilRelative = Regex("""(\d+)\s*(வினாடி|நிமிடம்|நிமிஷம்|மணி\s*நேரம்)\s*(?:கழிச்சு|கழித்து|பிறகு|ல)?""")
@@ -125,7 +125,7 @@ object KaiTime {
 
     private val partWords: List<Pair<DayPart, Regex>> = listOf(
         DayPart.NIGHT to Regex("""$B(tonight|night|iravu|raathiri|rathiri|raatri|nite)$E|இரவு|ராத்திரி""", RegexOption.IGNORE_CASE),
-        DayPart.EVENING to Regex("""$B(evening|saayangalam|sayangalam|saayangaalam|saayandhiram|maalai|eve)$E|சாயங்காலம்|மாலை""", RegexOption.IGNORE_CASE),
+        DayPart.EVENING to Regex("""$B(evening|saayangalam|sayangalam|saayangaalam|saayandhiram|maalai|maalaila|malaila|eve)$E|சாயங்காலம்|மாலை""", RegexOption.IGNORE_CASE),
         DayPart.AFTERNOON to Regex("""$B(afternoon|madhiyam|mathiyam|madhiyanam|after\s*lunch|lunch\s*kalichu)$E|மதியம்""", RegexOption.IGNORE_CASE),
         DayPart.MORNING to Regex("""$B(morning|kaalaila|kalaila|kaalaiyil|kaalai|kalai|kaathaala)$E|காலை""", RegexOption.IGNORE_CASE),
     )
@@ -203,7 +203,7 @@ object KaiTime {
             Regex("""(?i)$B(next|this|indha|intha|adutha|aduththa|on)$E"""),
             Regex("""(?i)$B(tonight|today|tomorrow|day after tomorrow|after lunch|lunch kalichu|morning|afternoon|evening|night|""" +
                 """inniku|innaikku|innaiku|innikku|indru|naalaikku|naalaiku|nalaiku|naalai|naalanniku|nalanniku|marunaal|""" +
-                """kaalaila|kalaila|kaalaiyil|kaalai|kalai|madhiyam|mathiyam|madhiyanam|saayangalam|sayangalam|saayangaalam|saayandhiram|maalai|""" +
+                """kaalaila|kalaila|kaalaiyil|kaalai|kalai|madhiyam|mathiyam|madhiyanam|saayangalam|sayangalam|saayangaalam|saayandhiram|maalaila|maalai|""" +
                 """iravu|raathiri|rathiri|raatri|nite)$E"""),
             Regex("""(?i)$B(at\s+|@\s*)?\d{1,2}([:.]\d{2})?\s*(am|pm|a\.m\.?|p\.m\.?|mani(kku|ku|kki|ki)?|manikku|o'?\s*clock)$E"""),
             Regex("""(?i)$B($numberAlt)\s+(mani(kku|ku|kki|ki)?|manikku)$E"""),
@@ -265,7 +265,7 @@ object KaiTime {
             s.startsWith("a") -> false
             else -> null
         }
-        val partAlt = """morning|kaalaila|kalaila|kaalai|kalai|afternoon|madhiyam|mathiyam|evening|saayangalam|sayangalam|maalai|night|tonight|iravu|raathiri|rathiri"""
+        val partAlt = """morning|kaalaila|kalaila|kaalai|kalai|afternoon|madhiyam|mathiyam|evening|saayangalam|sayangalam|maalaila|maalai|night|tonight|iravu|raathiri|rathiri"""
         val m1 = Regex("""(?<![\d.])(\d{1,2})[:.](\d{2})\s*(am|pm|a\.m\.?|p\.m\.?)?(?![\d])""").find(t)
         val m2 = Regex("""(?<![\d.])(\d{1,2})\s*(am|pm|a\.m\.?|p\.m\.?)$E""").find(t)
         val m3 = Regex("""(?<![\d.])(\d{1,2})\s*(?:mani(?:kku|ku|kki|ki)?|manikku|o'?\s*clock|மணிக்கு|மணி)(?!\s*nera)$E""").find(t)

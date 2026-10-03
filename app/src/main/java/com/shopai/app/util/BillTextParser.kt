@@ -26,6 +26,10 @@ data class ExtractedBill(
      * Paid/Advance, Change and Balance lines. Null when the bill doesn't say.
      */
     val paid: BigDecimal? = null,
+    /** "Invoice No: INV-2041" / "Bill No. 118". */
+    val invoiceNumber: String? = null,
+    /** The tax on the bill: CGST + SGST, or IGST, or a "Tax / GST" line. */
+    val tax: BigDecimal? = null,
 )
 
 /** What could be read from a handwritten note. */
@@ -149,7 +153,33 @@ object BillTextParser {
             date = DocumentDates.find(lines.joinToString("\n")),
             customerName = findCustomerName(lines),
             paid = findPaid(lines, total),
+            invoiceNumber = findInvoiceNumber(lines),
+            tax = findTax(lines),
         )
+    }
+
+    // ---- Invoice number / tax ----
+
+    private val invoiceNo = Regex(
+        """(?i)(?<![\p{L}])(?:tax\s*)?(?:invoice|inv|bill|receipt)\s*(?:no|number|num|#)\.?\s*[:\-#.]?\s*([A-Za-z0-9][A-Za-z0-9/\-]{0,19})""",
+    )
+
+    private fun findInvoiceNumber(lines: List<String>): String? = lines.firstNotNullOfOrNull { line ->
+        invoiceNo.find(line)?.groupValues?.get(1)?.takeIf { it.any(Char::isDigit) }
+    }
+
+    /** CGST + SGST (or UTGST), or IGST, or a "Total tax / GST" line; null when the bill shows no tax. */
+    private fun findTax(lines: List<String>): BigDecimal? {
+        fun taxLine(word: String): BigDecimal? = lines.firstNotNullOfOrNull { line ->
+            val key = labelKey(line)
+            if (!key.startsWith(word) || isTaxSummaryRow(line)) null else lastAmount(line)
+        }
+        val cgst = taxLine("cgst")
+        val sgst = taxLine("sgst") ?: taxLine("utgst")
+        return when {
+            cgst != null && sgst != null -> cgst + sgst
+            else -> taxLine("igst") ?: taxLine("total tax") ?: taxLine("tax amount") ?: taxLine("gst amount") ?: taxLine("gst")
+        }
     }
 
     // ---- Customer name ----

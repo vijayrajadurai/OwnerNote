@@ -13,14 +13,14 @@ import java.util.Locale
  */
 object KaiSmallTalk {
 
-    enum class Kind { ATE, DOING, BUSY, TIRED, GREETING_MORNING, GREETING_AFTERNOON, GREETING_EVENING, GREETING_NIGHT, HELLO, HOW_ARE_YOU, THANKS, OK, BYE, WHO }
+    enum class Kind { ATE, DOING, BUSY, TIRED, PRAISE, GREETING_MORNING, GREETING_AFTERNOON, GREETING_EVENING, GREETING_NIGHT, HELLO, HOW_ARE_YOU, THANKS, OK, BYE, WHO }
 
     private fun r(p: String) = Regex("""(?i)(?<![\p{L}])(?:$p)(?![\p{L}])""")
 
     private val rules: List<Pair<Kind, Regex>> = listOf(
         Kind.ATE to r("""saaptiya|saptiya|sapteya|saapteengala|sapteengala|saptingala|saaptingala|saapiteengala|saapadu\s*aachaa|saapadu\s*achaa|""" +
             """saaptacha|saaptachaa|sapta|saapta|did you eat|have you eaten|had (?:your )?(?:lunch|dinner|breakfast)|lunch\s*aachaa|tiffin\s*aachaa"""),
-        Kind.HOW_ARE_YOU to r("""eppadi\s*irukk?eenga|eppadi\s*irukk?a|eppadi\s*iruka|nalla\s*irukk?eengala|nalla\s*irukk?iya|how are you|how r u|hows it going|how is it going"""),
+        Kind.HOW_ARE_YOU to r("""(?:eppadi|epdi|eppdi|yepdi)\s*irukk?eenga|(?:epdi|eppdi|yepdi)\s*irukk?a|eppadi\s*irukk?a|eppadi\s*iruka|nalla\s*irukk?eengala|nalla\s*irukk?iya|how are you|how r u|hows it going|how is it going"""),
         Kind.DOING to r("""enna\s*panra|enna\s*panre|enna\s*panreenga|enna\s*pannitu\s*irukk?a|enna\s*pannikitu\s*irukk?a|what are you doing|wat r u doing|what's up|whats up|wassup"""),
         Kind.BUSY to r("""busy|bijy|velai\s*adhigam|romba\s*velai|neraya\s*velai|time\s*illa"""),
         Kind.TIRED to r("""tired|kalaippa|kalaipa|tiredah|tired-ah|soarvaa|sorva|mudiyala|thookam\s*varudhu|thookama"""),
@@ -31,8 +31,9 @@ object KaiSmallTalk {
         Kind.THANKS to r("""thanks|thank\s*you|thank u|thx|nandri|romba\s*nandri"""),
         Kind.BYE to r("""bye|bye\s*bye|poitu\s*varen|poittu\s*varen|see you|apram\s*pesalam|appuram\s*pesalam"""),
         Kind.WHO to r("""nee\s*yaaru|nee\s*yaar|neenga\s*yaaru|who are you|unga\s*peru\s*enna|un\s*peru\s*enna|your name"""),
+        Kind.PRAISE to r("""super|semma|nice|great|awesome|good\s*job|well\s*done|sema"""),
         Kind.HELLO to r("""hi|hii|hello|helo|hey|vanakkam|vanakam|kai"""),
-        Kind.OK to r("""ok|okay|okk|seri|sari|super|nice|good|semma"""),
+        Kind.OK to r("""ok|okay|okk|seri|sari|good"""),
     )
 
     /** Words that make a message business, not chit-chat. */
@@ -80,10 +81,11 @@ object KaiSmallTalk {
                 "Take a little rest, Owner ☕ I'll keep track of the shop work.",
             )
             Kind.GREETING_MORNING -> pick(
-                "குட் மார்னிங் ஓனர் ☀️ இன்னைக்கு நல்ல வியாபாரம் ஆகட்டும்!",
-                "Good morning Owner ☀️ Innaiku nalla vyabaaram aagattum!",
-                "Good morning, Owner ☀️ Wishing you a great business day!",
+                "குட் மார்னிங் ஓனர் ☀️ இன்னைக்கு business-ஐ ஆரம்பிக்கலாமா?",
+                "Good morning Owner ☀️ Innaiku business-a start pannalama?",
+                "Good morning, Owner ☀️ Shall we start today's business?",
             )
+            Kind.PRAISE -> pick("நன்றி ஓனர் 😄", "Thanks Owner 😄", "Thanks, Owner 😄")
             Kind.GREETING_AFTERNOON -> pick("குட் ஆஃப்டர்நூன் ஓனர் 🙂", "Good afternoon Owner 🙂 Saaptingala?", "Good afternoon, Owner 🙂")
             Kind.GREETING_EVENING -> pick("குட் ஈவினிங் ஓனர் 🌆 இன்னைக்கு வியாபாரம் எப்படி?", "Good evening Owner 🌆 Innaiku vyabaaram eppadi?", "Good evening, Owner 🌆 How was business today?")
             Kind.GREETING_NIGHT -> pick("குட் நைட் ஓனர் 🌙 நல்லா தூங்குங்க.", "Good night Owner 🌙 Nalla thoongunga.", "Good night, Owner 🌙 Sleep well.")

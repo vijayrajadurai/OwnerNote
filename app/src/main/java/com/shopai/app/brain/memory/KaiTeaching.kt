@@ -67,17 +67,50 @@ object KaiTeaching {
      * An action hidden in an answer ("kuduthen maadhiri" = Payment Out, "stock vandhiruku" = Stock In):
      * such a word is never saved as a plain word — it gets the action question and its own confirmation.
      */
-    fun actionMeaningOf(words: String): KaiMeaning? {
-        meaningIn(words)?.let { return it }
+    fun actionMeaningOf(words: String): KaiMeaning? = actionOptions(words).firstOrNull()
+
+    /** Every action [words] could mean ("payment" alone: money in or out — the owner picks). Empty: not an action. */
+    fun actionOptions(words: String): List<KaiMeaning> {
+        meaningIn(words)?.let { return listOf(it) }
         val w = " " + KaiPrivateMemory.normalize(words) + " "
         fun has(vararg s: String) = s.any { w.contains(" $it ") }
-        return when {
+        if (has("payment", "panam", "cash", "money", "kaasu") && !has("kuduthen", "koduthen", "gave", "paid", "vanginen", "received")) {
+            return when {
+                has("customer", "vaadikkaiyalar", "collection", "vasool") -> listOf(KaiMeaning.PAYMENT_IN)
+                has("supplier", "vendor") -> listOf(KaiMeaning.PAYMENT_OUT)
+                else -> listOf(KaiMeaning.PAYMENT_IN, KaiMeaning.PAYMENT_OUT)
+            }
+        }
+        return listOfNotNull(when {
             has("kuduthen", "koduthen", "kuduthutten", "kuduthuten", "gave", "paid", "pay", "anuppinen", "anupinen", "kudu", "kodu", "kudukkanum") -> KaiMeaning.PAYMENT_OUT
             has("vanginen", "vaanginen", "received", "vandhuchu", "vanthuchu", "vangu", "vaangu", "thandhan") -> KaiMeaning.PAYMENT_IN
             has("vandhiruku", "vandhirukku", "add", "serthu", "pudhu stock", "new stock") -> KaiMeaning.STOCK_IN
             has("pochu", "sold", "vithuten", "sale", "out", "eduthutanga") -> KaiMeaning.STOCK_OUT
             else -> null
-        }
+        })
+    }
+
+    private val questionWords = setOf("enna", "yenna", "yaar", "yaaru", "edhu", "ethu", "eppo", "evlo", "what", "who", "when", "how", "why", "which")
+
+    /**
+     * "'ramba' na romba", "ramba means romba", "puli = customer payment" → (word, meaning). Only short
+     * sentences; an unquoted one must be exactly "X na Y". Null: not a teaching. Never saved without a yes.
+     */
+    fun wordTeach(text: String, entities: List<KnownEntity>): Pair<String, String>? {
+        val t = text.trim().trimEnd('.', '!', ' ')
+        if (t.any(Char::isDigit) || t.endsWith("?")) return null
+        val quoted = Regex("""^\s*[`'"‘“]""").containsMatchIn(t)
+        val m = Regex("""(?i)^\s*[`'"‘“]?([\p{L}\p{M}]+(?:\s[\p{L}\p{M}]+)?)[`'"’”]?\s*(?:-?\s*(?:na|nna|naa|means?)\s|=)\s*[`'"‘“]?([\p{L}\p{M}]+(?:\s[\p{L}\p{M}]+){0,2})[`'"’”]?\s*$""").find(t) ?: return null
+        val x = m.groupValues[1].trim()
+        val y = m.groupValues[2].trim()
+        val xn = KaiPrivateMemory.normalize(x)
+        val yn = KaiPrivateMemory.normalize(y)
+        if (xn.isEmpty() || yn.isEmpty() || xn == yn) return null
+        if ((xn.split(' ') + yn.split(' ')).any { it in questionWords }) return null
+        if (!quoted && !t.contains('=') && KaiPrivateMemory.normalize(t).split(' ').size != 3) return null
+        // A name of the business's own records is a nickname question, not a word ("Kumar na Kumar Traders" is taught elsewhere).
+        if (entities.any { e -> KaiPrivateMemory.normalize(e.name).split(' ').firstOrNull() == xn.split(' ').first() }) return null
+        return x to y
     }
 
     /** One of the business's records named in [words] (exact name, any case). */

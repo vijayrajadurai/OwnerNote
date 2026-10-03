@@ -161,11 +161,10 @@ fun KaiChatScreen(
         input = ""
         scope.launch {
             session.send(q, voice)
-            if (voice) {
-                session.messages.lastOrNull { !it.fromOwner }?.let { a ->
-                    val lang = if (a.text.any { it in '\u0B80'..'\u0BFF' }) "ta-IN" else "en-IN"
-                    val spoken = a.text.replace("`", "").replace(Regex("""[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}]"""), "")
-                    container.kaiBrain.say(com.shopai.app.brain.KaiReply(a.text, spoken, lang, a.mood ?: com.shopai.app.brain.KaiMood.NEUTRAL))
+            // Spoken only when the owner spoke; a typed message gets text only (same answer either way).
+            session.messages.lastOrNull { !it.fromOwner }?.let { a ->
+                com.shopai.app.brain.chat.KaiSpeech.forReply(a.text, voice)?.let { line ->
+                    container.kaiBrain.say(com.shopai.app.brain.KaiReply(a.text, line.speech, line.languageTag, a.mood ?: com.shopai.app.brain.KaiMood.NEUTRAL))
                 }
             }
         }

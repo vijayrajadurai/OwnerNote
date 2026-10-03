@@ -63,6 +63,11 @@ class BillEntryState {
         private set
     var shopName by mutableStateOf("")
     var customerName by mutableStateOf("")
+    /** "Invoice No" read from the bill (editable). */
+    var invoiceNumber by mutableStateOf("")
+    /** The tax printed on the bill (shown for checking; the total already includes it). */
+    var tax by mutableStateOf<BigDecimal?>(null)
+        private set
     var billDate by mutableStateOf<LocalDate?>(null)
     var total by mutableStateOf("")
     var paid by mutableStateOf("")
@@ -163,6 +168,8 @@ class BillEntryState {
     fun reset() {
         shopName = ""
         customerName = ""
+        invoiceNumber = ""
+        tax = null
         billDate = null
         total = ""
         paid = ""
@@ -207,6 +214,8 @@ class BillEntryState {
 
         shopName = shop.orEmpty()
         customerName = person.orEmpty()
+        invoiceNumber = bill.invoiceNumber.orEmpty()
+        tax = bill.tax
         billDate = bill.date?.takeIf { !it.isAfter(LocalDate.now()) }
         // Only a total written as "Total / Grand total / Net amount" is filled in.
         total = labelledTotal?.toPlainString().orEmpty()
@@ -234,6 +243,8 @@ fun BillEntrySection(
     state: BillEntryState,
     saving: Boolean,
     onSave: () -> Unit,
+    /** Drop the draft without saving anything. */
+    onCancel: (() -> Unit)? = null,
 ) {
     val required = stringResource(R.string.bill_required)
     val isSupplier = state.type == TransactionSaveType.DEBIT
@@ -313,6 +324,12 @@ fun BillEntrySection(
             error = if (!isSupplier && state.customerName.isBlank()) required else null,
         )
         VerifyNote(state, BillField.PERSON)
+        ShopTextField(
+            stringResource(R.string.bill_invoice_number),
+            state.invoiceNumber,
+            { state.invoiceNumber = it },
+            placeholder = "—",
+        )
         FutureDatePickerField(
             label = stringResource(R.string.bill_date),
             selectedDate = state.billDate,
@@ -352,6 +369,14 @@ fun BillEntrySection(
             TextButton(onClick = { state.useTotalInWords() }) {
                 Text(stringResource(R.string.bill_use_words_total, wordsText), fontWeight = FontWeight.SemiBold)
             }
+        }
+        state.tax?.let { t ->
+            Text(
+                stringResource(R.string.bill_tax_read, BillNotesFormatter.rupees(t)),
+                style = MaterialTheme.typography.bodyMedium,
+                color = ShopAiThemeColors.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
+            )
         }
         ShopTextField(
             stringResource(R.string.bill_paid),
@@ -411,6 +436,9 @@ fun BillEntrySection(
         modifier = Modifier.padding(top = 12.dp),
         onClick = onSave,
     )
+    onCancel?.let { cancel ->
+        TextButton(onClick = cancel, enabled = !saving, modifier = Modifier.padding(top = 4.dp)) { Text(stringResource(R.string.bill_cancel)) }
+    }
 }
 
 /** Under a field read from the bill but not certain: check it, then confirm (or just edit it). */

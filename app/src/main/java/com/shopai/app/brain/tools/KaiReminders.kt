@@ -60,6 +60,8 @@ data class ReminderDraft(
     val role: PartyRole?,
     val time: KaiWhen?,
     val sourceText: String,
+    /** False: only "remind pannu" (+ a time) was said — Kai asks what to remind about. */
+    val taskSaid: Boolean = true,
 )
 
 /** Which reminder the owner means: the one just talked about / rang ("andha", "that", "Done"), or by words ("Kumar call"). */
@@ -166,13 +168,15 @@ object KaiReminderUnderstanding {
             else -> null
         }
         val person = KaiCommands.personIn(text, people)
-        val task = cleanTask(KaiTime.strip(text)).ifBlank { text }
+        val cleaned = cleanTask(KaiTime.strip(text))
+        val taskSaid = cleaned.any(Char::isLetter)
+        val task = cleaned.ifBlank { text }
         val title = when (action) {
             ReminderAction.CALL -> person?.let { "Call $it" }
             ReminderAction.MESSAGE -> person?.let { "Message $it" }
             else -> null
         } ?: task.replaceFirstChar { it.titlecase(Locale.ROOT) }
-        return ReminderDraft(task, title, action, person, role, time, text)
+        return ReminderDraft(task, title, action, person, role, time, text, taskSaid || person != null || action != ReminderAction.TASK)
     }
 
     private fun target(text: String, people: List<String>): ReminderTarget {

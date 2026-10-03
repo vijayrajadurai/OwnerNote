@@ -112,13 +112,13 @@ class KaiProductionFixesTest {
     fun stockArrivedWithoutNumberIsStockInNotNotFound() = runBlocking {
         val t = kai.ask("Colgate stock vandhiruku add pannu")
         assertFalse(t.reply.text, t.reply.text.contains("isn't in your inventory") || t.reply.text.contains("inventory-la illa"))
-        assertTrue(t.reply.text, t.reply.text.contains("Colgate evlo vandhiruku"))
+        assertTrue(t.reply.text, t.reply.text.contains("Colgate stock add pannalam.\nEvlo pieces vandhirukku?"))
         // The quantity completes it — still a draft.
         val d = kai.ask("12")
-        assertTrue(d.reply.text, d.reply.text.startsWith("Colgate — 12 PCS Stock In"))
+        assertEquals("Colgate — 12 pieces stock-in draft ready. Confirm pannunga.", d.reply.text)
         assertTrue(tools.stockChanges.isEmpty())
         val done = kai.act(d.actions().filterIsInstance<KaiAction.ConfirmStock>().single(), KaiLang.TANGLISH)!!
-        assertEquals("Done Owner ✅ Colgate stock-la 12 pieces add panniten. Ippo stock 20 PCS.", done.reply.text)
+        assertEquals("Done Owner ✅ Colgate stock-la 12 pieces add panniten. Ippo stock 20 pieces.", done.reply.text)
         assertEquals(Triple("p1", BigDecimal("12"), true), tools.stockChanges.single())
         assertTrue(tools.logs.any { it.first == KaiIntents.STOCK_IN && it.second == ActionStatus.CONFIRMED })
     }
@@ -129,7 +129,7 @@ class KaiProductionFixesTest {
             "Colgate 5 inventory-ku podu", "Colgate 5 pieces stock add pannu")) {
             val a = KaiAgent(KaiBusinessBrain(Books()), Books(), tools, { now }, access)
             val t = a.ask(s)
-            assertTrue("$s → ${t.reply.text}", t.reply.text.startsWith("Colgate — 5 PCS Stock In"))
+            assertTrue("$s → ${t.reply.text}", t.reply.text.startsWith("Colgate — 5 pieces stock-in draft ready"))
             assertTrue(t.actions().any { it is KaiAction.ConfirmStock } && t.actions().any { it is KaiAction.EditStock } && t.actions().any { it is KaiAction.CancelStock })
         }
         assertTrue(tools.stockChanges.isEmpty())
@@ -138,7 +138,7 @@ class KaiProductionFixesTest {
     @Test
     fun newProductOpensTheCameraDirectly() = runBlocking {
         val t = kai.ask("Pepsodent stock vandhiruku add pannu")
-        assertTrue(t.reply.text, t.reply.text.contains("Pepsodent") && t.reply.text.contains("pudhu product"))
+        assertTrue(t.reply.text, t.reply.text.startsWith("Owner, Pepsodent new product madhiri theriyudhu.\nPhoto eduthu details auto-fill pannava? 📷"))
         val camera = t.direct as KaiAction.OpenStockCamera
         assertEquals("Pepsodent", camera.prefill.name)
         assertTrue(t.actions().any { it is KaiAction.CreateProduct })
@@ -157,7 +157,7 @@ class KaiProductionFixesTest {
         val key = d.actions().filterIsInstance<KaiAction.EditStock>().single().key
         assertEquals(Triple("Colgate", BigDecimal("10"), "PCS"), kai.stockDraftOf(key))
         val edited = kai.reviseStock(key, BigDecimal("6"), "BOX", KaiLang.TANGLISH)!!
-        assertTrue(edited.reply.text, edited.reply.text.startsWith("Colgate — 6 BOX Stock In"))
+        assertTrue(edited.reply.text, edited.reply.text.startsWith("Colgate — 6 box stock-in"))
         assertTrue(tools.stockChanges.isEmpty())
     }
 
@@ -168,7 +168,8 @@ class KaiProductionFixesTest {
         for (s in listOf("Colgate 2 out pannu", "2 Colgate pochu", "Colgate rendu sale aachu", "Colgate 2 pieces sold", "Colgate 2 eduthutanga")) {
             val a = KaiAgent(KaiBusinessBrain(Books()), Books(), tools, { now }, access)
             val t = a.ask(s)
-            assertTrue("$s → ${t.reply.text}", t.reply.text.startsWith("Colgate — 2 PCS Stock Out. Meedham 6 PCS irukkum."))
+            assertEquals(s, "Seri Owner. Colgate — 2 pieces stock-out. Remaining: 6 pieces.", t.reply.text)
+            assertEquals(s, listOf("Colgate", "Stock Out: 2 pieces", "Remaining: 6 pieces"), t.card!!.lines)
         }
         assertTrue(tools.stockChanges.isEmpty())
     }
@@ -200,7 +201,7 @@ class KaiProductionFixesTest {
             val t = kai.ask(s)
             assertEquals(s, KaiAction.OpenScanner, t.direct)
             assertTrue(s, t.reply.text.contains("📷"))
-            assertEquals(s, KaiIntentKind.OPEN_BILL_SCANNER, KaiIntents.classify(s, now, emptyList(), tools.products))
+            assertEquals(s, KaiIntentKind.SCAN_BILL, KaiIntents.classify(s, now, emptyList(), tools.products))
         }
         assertEquals("Sure Owner, bill scan pannalam 📷", kai.ask("bill scan pannu").reply.text)
         assertTrue(tools.logs.any { it.first == KaiIntents.OPEN_BILL_SCANNER && it.second == ActionStatus.OPENED })
@@ -292,7 +293,7 @@ class KaiProductionFixesTest {
         assertEquals("சாப்டேன் ஓனர் 😄 நீங்க சாப்டீங்களா?", kai.ask("சாப்டியா?").reply.text)
         for (s in listOf("saaptiya?", "enna panra?", "innaiku romba busy", "good morning")) {
             assertFalse(s, kai.ask(s).reply.text.contains("clear-ah sollunga"))
-            assertEquals(s, KaiIntentKind.CONVERSATION, KaiIntents.classify(s, now, emptyList(), tools.products))
+            assertEquals(s, KaiIntentKind.CHAT, KaiIntents.classify(s, now, emptyList(), tools.products))
         }
         // Business words are never small talk.
         assertNull(KaiSmallTalk.kindOf("innaiku sales evlo?"))
@@ -307,11 +308,11 @@ class KaiProductionFixesTest {
         val q = kai.ask("'ramba' nu enna meaning?")
         assertTrue(q.reply.text, q.reply.text.contains("`ramba`-na enna?"))
         val confirm = kai.ask("romba nu sonna mari")
-        assertTrue(confirm.reply.text, confirm.reply.text.contains("`ramba`-na `romba`"))
+        assertEquals("Seri Owner 😄 `ramba` = `romba` nu save pannava?", confirm.reply.text)
         assertNull("nothing saved before yes", access.memory.find("ramba"))
         val yes = confirm.actions().filterIsInstance<KaiAction.LearnWord>().single()
         val saved = kai.act(yes, KaiLang.TANGLISH)!!
-        assertTrue(saved.reply.text, saved.reply.text.contains("ungalukku mattum"))
+        assertEquals("Done Owner 👍 Inime neenga `ramba` sonna `romba` nu purinjukuren.", saved.reply.text)
         val m = access.memory.find("ramba")!!
         assertEquals(MemoryType.WORD, m.memoryType)
         assertEquals("romba", m.meaningValue)
@@ -343,7 +344,7 @@ class KaiProductionFixesTest {
         assertEquals(listOf("Yes, add stock", "No"), t.card!!.buttons.map { it.label })
         assertTrue(tools.stockChanges.isEmpty())
         val learned = kai.act(t.actions().filterIsInstance<KaiAction.LearnMeaning>().single(), KaiLang.TANGLISH)!!
-        assertTrue(learned.reply.text, learned.reply.text.contains("Colgate — 5 BOX Stock In"))
+        assertTrue(learned.reply.text, learned.reply.text.contains("Colgate — 5 box stock-in"))
         assertTrue(tools.stockChanges.isEmpty())
     }
 
@@ -368,12 +369,12 @@ class KaiProductionFixesTest {
             assertEquals(s, KaiIntentKind.STOCK_IN, KaiIntents.classify(s, now, emptyList(), p))
         }
         for (s in listOf("2 minutes la Kumar-ku call remind pannu", "remind me to call Kumar in 2 minutes", "2 நிமிஷத்துல குமாருக்கு கால் பண்ண ஞாபகப்படுத்து")) {
-            assertEquals(s, KaiIntentKind.REMINDER, KaiIntents.classify(s, now, emptyList(), p))
+            assertEquals(s, KaiIntentKind.CREATE_REMINDER, KaiIntents.classify(s, now, emptyList(), p))
         }
         // Priority: a reminder about stock is a reminder; a bill reminder is not the scanner.
-        assertEquals(KaiIntentKind.REMINDER, KaiIntents.classify("10 nimisham apram Colgate stock check panna remind pannu", now, emptyList(), p))
-        assertEquals(KaiIntentKind.REMINDER, KaiIntents.classify("naalaikku bill kattanum remind pannu", now, emptyList(), p))
-        assertEquals(KaiIntentKind.CALCULATOR, KaiIntents.classify("25 * 4", now, emptyList(), p))
+        assertEquals(KaiIntentKind.CREATE_REMINDER, KaiIntents.classify("10 nimisham apram Colgate stock check panna remind pannu", now, emptyList(), p))
+        assertEquals(KaiIntentKind.CREATE_REMINDER, KaiIntents.classify("naalaikku bill kattanum remind pannu", now, emptyList(), p))
+        assertEquals(KaiIntentKind.CALCULATE, KaiIntents.classify("25 * 4", now, emptyList(), p))
         assertEquals("2 minutes la ருத்ரன்-ku call pannanum reminder pannu", KaiSpokenWords.normalize("2 நிமிஷத்துல ருத்ரனுக்கு கால் பண்ணனும் ரிமைண்டர் பண்ணு"))
         assertEquals("Colgate 2 out pannu", KaiSpokenWords.normalize("Colgate 2 out pannu"))
     }

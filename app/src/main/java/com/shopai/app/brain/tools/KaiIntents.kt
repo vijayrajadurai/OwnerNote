@@ -3,17 +3,31 @@ package com.shopai.app.brain.tools
 import com.shopai.app.brain.chat.KaiSmallTalk
 import java.time.LocalDateTime
 
-/** What the owner wants, in Kai's priority order (an explicit button tap is handled before any words). */
+/**
+ * Kai's central action router: what the owner wants. Voice, typed text, Tamil
+ * script, Tanglish, English and mixed sentences all reach the same intent.
+ * An explicit button tap is handled before any words.
+ */
 enum class KaiIntentKind {
-    REMINDER,
+    LEARN_SLANG,
+    MORNING_WORK,
+    CREATE_REMINDER,
+    LIST_REMINDERS,
+    CANCEL_REMINDER,
+    UPDATE_REMINDER,
     STOCK_IN,
     STOCK_OUT,
-    OPEN_BILL_SCANNER,
-    CALL,
-    FINANCIAL,
+    SCAN_STOCK,
+    SCAN_BILL,
+    CALL_CONTACT,
+    /** A money entry ("Ramesh ku 5000 kuduthen") — always draft → confirm. */
+    FINANCIAL_ENTRY,
+    PAYMENT_QUERY,
+    CUSTOMER_QUERY,
+    SUPPLIER_QUERY,
     BUSINESS_QUERY,
-    CALCULATOR,
-    CONVERSATION,
+    CALCULATE,
+    CHAT,
     UNKNOWN,
 }
 
@@ -22,13 +36,17 @@ enum class KaiIntentKind {
  * spoken Tamil script, or mixed — reach the same intent. The order is the
  * priority: reminder → stock in → stock out → bill scanner → call →
  * financial transaction → business question → calculator → conversation →
- * unknown (Kai asks / learns).
+ * unknown (Kai asks / learns). Pipeline: input → language → Tamil/Tanglish
+ * normalization ([KaiSpokenWords]) → context (Kai's pending question) →
+ * intent → entities → validation → action (draft / confirm) → reply → voice
+ * or text (the same result either way).
  */
 object KaiIntents {
     // Action-log intent names.
     const val STOCK_IN = "STOCK_IN"
     const val STOCK_OUT = "STOCK_OUT"
     const val STOCK_IN_CAMERA = "STOCK_IN_CAMERA"
+    const val SCAN_STOCK = "SCAN_STOCK"
     const val CREATE_PRODUCT = "CREATE_PRODUCT"
     const val OPEN_BILL_SCANNER = "OPEN_BILL_SCANNER"
     const val CREATE_REMINDER = "CREATE_REMINDER"
@@ -49,31 +67,55 @@ object KaiIntents {
         return !Regex("""(?i)(?<![\p{L}])(evlo|evvalavu|how much|remind|reminder|pending|baaki|due)(?![\p{L}])""").containsMatchIn(t)
     }
 
-    /** The intent of [raw] (after the owner's private words were applied). */
+    /** The intent of [raw] (after the owner's private words were applied). [products] = the inventory. */
     fun classify(raw: String, now: LocalDateTime, people: List<String>, products: List<ProductRef>): KaiIntentKind {
         val text = KaiSpokenWords.normalize(raw.trim())
         if (text.isEmpty()) return KaiIntentKind.UNKNOWN
-        if (KaiReminderUnderstanding.understand(text, now, people) != null) return KaiIntentKind.REMINDER
+        if (com.shopai.app.brain.memory.KaiTeaching.wordQuestion(text) != null ||
+            com.shopai.app.brain.memory.KaiTeaching.parse(text, emptyList()) != null ||
+            com.shopai.app.brain.memory.KaiTeaching.wordTeach(text, emptyList()) != null
+        ) return KaiIntentKind.LEARN_SLANG
+        if (com.shopai.app.brain.morning.MorningCommands.morningRequest(text) != null) return KaiIntentKind.MORNING_WORK
+        KaiReminderUnderstanding.understand(text, now, people)?.let { return reminderKind(it) }
+        if (KaiStock.scanRequest(text, products) != null) return KaiIntentKind.SCAN_STOCK
         KaiStock.understand(text, products)?.let { req ->
             if (req.product != null || KaiCommands.personIn(text, people) == null) return if (req.incoming) KaiIntentKind.STOCK_IN else KaiIntentKind.STOCK_OUT
         }
-        if (isBillScan(text)) return KaiIntentKind.OPEN_BILL_SCANNER
-        return when (KaiCommands.route(text, now, people)) {
-            is KaiCommand.Call -> KaiIntentKind.CALL
-            is KaiCommand.Payment -> KaiIntentKind.FINANCIAL
-            is KaiCommand.Calculate -> KaiIntentKind.CALCULATOR
-            is KaiCommand.Reminder -> KaiIntentKind.REMINDER
-            is KaiCommand.ScanBill -> KaiIntentKind.OPEN_BILL_SCANNER
+        if (isBillScan(text)) return KaiIntentKind.SCAN_BILL
+        return when (val cmd = KaiCommands.route(text, now, people)) {
+            is KaiCommand.Call -> KaiIntentKind.CALL_CONTACT
+            is KaiCommand.Payment -> KaiIntentKind.FINANCIAL_ENTRY
+            is KaiCommand.Calculate -> KaiIntentKind.CALCULATE
+            is KaiCommand.Reminder -> reminderKind(cmd.request)
+            is KaiCommand.ScanBill -> KaiIntentKind.SCAN_BILL
             is KaiCommand.Stock, KaiCommand.LowStock, is KaiCommand.MoneyBalance, KaiCommand.TopProducts -> KaiIntentKind.BUSINESS_QUERY
             KaiCommand.Question -> when {
-                KaiSmallTalk.kindOf(text) != null -> KaiIntentKind.CONVERSATION
-                else -> KaiIntentKind.BUSINESS_QUERY
+                KaiSmallTalk.kindOf(text) != null -> KaiIntentKind.CHAT
+                else -> when (com.shopai.app.brain.chat.KaiChatUnderstanding.understand(raw, now.toLocalDate(), people).intent) {
+                    com.shopai.app.brain.chat.ChatIntent.CUSTOMER_DUE_DATE, com.shopai.app.brain.chat.ChatIntent.SUPPLIER_DUE_DATE,
+                    com.shopai.app.brain.chat.ChatIntent.CUSTOMER_PAYMENTS, com.shopai.app.brain.chat.ChatIntent.CUSTOMER_LAST_PAYMENT,
+                    com.shopai.app.brain.chat.ChatIntent.TODAY_COLLECTIONS, com.shopai.app.brain.chat.ChatIntent.UPCOMING_COLLECTIONS,
+                    com.shopai.app.brain.chat.ChatIntent.OVERDUE_COLLECTIONS, com.shopai.app.brain.chat.ChatIntent.TOTAL_RECEIVABLE,
+                    com.shopai.app.brain.chat.ChatIntent.TOTAL_PAYABLE -> KaiIntentKind.PAYMENT_QUERY
+                    com.shopai.app.brain.chat.ChatIntent.CUSTOMER_BALANCE, com.shopai.app.brain.chat.ChatIntent.CUSTOMER_HISTORY -> KaiIntentKind.CUSTOMER_QUERY
+                    com.shopai.app.brain.chat.ChatIntent.SUPPLIER_BALANCE, com.shopai.app.brain.chat.ChatIntent.SUPPLIER_HISTORY -> KaiIntentKind.SUPPLIER_QUERY
+                    com.shopai.app.brain.chat.ChatIntent.UNKNOWN -> KaiIntentKind.UNKNOWN
+                    else -> KaiIntentKind.BUSINESS_QUERY
+                }
             }
         }
     }
 
+    private fun reminderKind(r: ReminderRequest) = when (r) {
+        is ReminderRequest.Create -> KaiIntentKind.CREATE_REMINDER
+        is ReminderRequest.ListAll -> KaiIntentKind.LIST_REMINDERS
+        is ReminderRequest.Cancel -> KaiIntentKind.CANCEL_REMINDER
+        else -> KaiIntentKind.UPDATE_REMINDER
+    }
+
     /** Intents Kai Chat handles for the voice screen too (one conversation for voice and text). */
     fun handledByKai(kind: KaiIntentKind) = kind in setOf(
-        KaiIntentKind.REMINDER, KaiIntentKind.STOCK_IN, KaiIntentKind.STOCK_OUT, KaiIntentKind.OPEN_BILL_SCANNER, KaiIntentKind.CONVERSATION,
+        KaiIntentKind.CREATE_REMINDER, KaiIntentKind.LIST_REMINDERS, KaiIntentKind.CANCEL_REMINDER, KaiIntentKind.UPDATE_REMINDER,
+        KaiIntentKind.STOCK_IN, KaiIntentKind.STOCK_OUT, KaiIntentKind.SCAN_STOCK, KaiIntentKind.SCAN_BILL, KaiIntentKind.CHAT, KaiIntentKind.LEARN_SLANG,
     )
 }

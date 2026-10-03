@@ -19,11 +19,11 @@ class ProductLabelReaderTest {
             Mfd: 08/2026
             """.trimIndent(),
         )
-        assertEquals("Colgate", label.name)
+        assertEquals("Colgate Strong Teeth", label.name)
         assertEquals("Colgate", label.brand)
         assertEquals("Strong Teeth", label.variant)
         assertEquals("200 g", label.weight)
-        assertEquals("Personal Care", label.category)
+        assertEquals("Toothpaste", label.category)
     }
 
     @Test
@@ -32,12 +32,12 @@ class ProductLabelReaderTest {
         assertEquals("Surf Excel", label.brand)
         assertEquals("Easy Wash", label.variant)
         assertEquals("1 kg", label.weight)
-        assertEquals("Home Care", label.category)
+        assertEquals("Detergent", label.category)
 
         val oil = ProductLabelReader.read("Gold Winner\nRefined Sunflower Oil\n1 L Pouch")
         assertEquals("Gold Winner", oil.brand)
         assertEquals("1 L", oil.weight)
-        assertEquals("Groceries", oil.category)
+        assertEquals("Oil", oil.category)
     }
 
     @Test

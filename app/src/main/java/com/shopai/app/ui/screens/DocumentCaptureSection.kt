@@ -236,19 +236,19 @@ fun DocumentCaptureSection(
     // Camera permission refused: "Owner, bill scan panna camera permission venum." + Allow Camera.
     var permissionDenied by rememberSaveable { mutableStateOf(false) }
     val cameraPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) {
-            permissionDenied = false
-            cameraLauncher.launch(photoUri)
-        } else if (permissionDenied) {
+        when (com.shopai.app.util.CameraPermissionFlow.onResult(granted, permissionDenied)) {
+            com.shopai.app.util.CameraStep.OPEN_CAMERA -> {
+                permissionDenied = false
+                cameraLauncher.launch(photoUri)
+            }
             // Refused for good: Android no longer asks — the app's settings page is the only way.
-            runCatching {
+            com.shopai.app.util.CameraStep.OPEN_SETTINGS -> runCatching {
                 context.startActivity(
                     android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + context.packageName))
                         .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
                 )
             }
-        } else {
-            permissionDenied = true
+            else -> permissionDenied = true
         }
     }
 
@@ -290,7 +290,8 @@ fun DocumentCaptureSection(
             val party = bill.partyName
             val shop = bill.shopName.trim()
             val type = bill.type
-            val description = billDescriptionFormat.format(shop.ifBlank { party }, formatLocalDateForDisplay(date))
+            val description = billDescriptionFormat.format(shop.ifBlank { party }, formatLocalDateForDisplay(date)) +
+                bill.invoiceNumber.trim().takeIf { it.isNotEmpty() }?.let { " · Inv $it" }.orEmpty()
             val due = bill.dueDate?.let { com.shopai.app.util.localDateToIsoInstant(it) }
             val transactionId = runCatching {
                 when (type) {
@@ -471,7 +472,7 @@ fun DocumentCaptureSection(
     info?.let { Text(it, color = ShopAiThemeColors.primary, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 8.dp)) }
 
     if (bill.visible) {
-        BillEntrySection(state = bill, saving = billSaving, onSave = { saveBill() })
+        BillEntrySection(state = bill, saving = billSaving, onSave = { saveBill() }, onCancel = { bill.reset() })
     }
 }
 

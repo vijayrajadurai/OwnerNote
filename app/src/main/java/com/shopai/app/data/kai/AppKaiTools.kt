@@ -137,7 +137,11 @@ class AppKaiTools(
         val inv = inventory ?: return null
         val name = listOfNotNull(product.name.trim(), product.variant?.trim()?.takeIf { it.isNotEmpty() && !product.name.contains(it, true) })
             .joinToString(" ")
-        val notes = listOfNotNull(product.weight?.takeIf { it.isNotBlank() }?.let { "Weight: $it" }, "Added by Kai").joinToString(" · ")
+        val notes = listOfNotNull(
+            product.weight?.takeIf { it.isNotBlank() }?.let { "Weight: $it" },
+            product.packSize?.takeIf { it.isNotBlank() }?.let { "Pack: $it" },
+            "Added by Kai",
+        ).joinToString(" · ")
         return runCatching {
             val p = inv.createProduct(
                 com.shopai.app.data.model.CreateInventoryProductInput(

@@ -210,8 +210,10 @@ fun VoiceEntryScreen(
                 answer?.let { a ->
                     val mood = a.mood ?: com.shopai.app.brain.KaiMood.EXPLAINING
                     kai(KaiEvent.Understood(mood.reaction()))
-                    val speech = a.text.replace("`", "").replace(Regex("""[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}]"""), "")
-                    kaiSay(com.shopai.app.brain.KaiReply(a.text, speech, if (a.text.any { it in '\u0B80'..'\u0BFF' }) "ta-IN" else "en-IN", mood))
+                    // Spoken when the owner spoke; typed → the answer is shown as text only.
+                    com.shopai.app.brain.chat.KaiSpeech.forReply(a.text, spoken)?.let { line ->
+                        kaiSay(com.shopai.app.brain.KaiReply(a.text, line.speech, line.languageTag, mood))
+                    }
                 }
                 parsing = false
                 orbState = MicState.Idle

@@ -34,6 +34,7 @@ object KaiStock {
         "new stock", "pudhu stock", "puthu stock", "pudhusa", "puthusa", "pudhusaa", "fresh stock", "stock vandhachu", "stock vanthachu",
         "inventory ku podu", "inventory-ku podu", "inventoryku podu", "stock la podu", "stock-la podu", "stockla podu", "inventory la podu",
         "purchase panninen", "purchase pannen", "received", "in pannu", "inward", "restock", "restocked",
+        "vandhuduchu", "vanthuduchu", "vandhachu", "vanthachu", "vandhurukku",
         "ஸ்டாக் உள்ளே", "சேர்", "வந்திருக்கு", "புது ஸ்டாக்",
     )
     /** Stock going out: "Colgate 2 out pannu", "2 Colgate pochu", "rendu sale aachu", "2 pieces sold", "eduthutanga". */
@@ -41,8 +42,16 @@ object KaiStock {
         "stock out", "stock remove", "remove pannu", "remove panniten", "sale panniten", "sale pannen", "sold", "out pannu", "out panniten",
         "out aachu", "out aagiduchu", "poiduchu", "poiduchchu", "pochu", "poachu", "pochi", "pochchu", "sale aachu", "sale achu", "sale aagiduchu",
         "vithuduchu", "vithachu", "vithuten", "vitthuten", "eduthutanga", "eduthuttanga", "eduthaanga", "eduthanga", "eduthuttaanga", "outward",
+        "sell panniten", "sell pannen", "sell aachu", "sell achu", "sell panni", "sold out", "out",
         "ஸ்டாக் வெளியே", "விற்றுவிட்டேன்", "போயிடுச்சு", "போச்சு",
     )
+    /** "2 pieces Colgate kuduthuten": stock out only when a known product is named (otherwise it is money). */
+    private val gaveWords = listOf("kuduthen", "kuduthuten", "kuduthutten", "koduthen", "koduthuten", "kuduthachu", "kuduthaachu", "gave", "given")
+    /** "New Colgate stock", "Colgate pudhu stock": new / fresh with a stock word is stock coming in. */
+    private val newWords = Regex("""(?i)(?<![\p{L}])(new|pudhu|puthu|pudhusa|puthusa|fresh)(?![\p{L}])""")
+    private val photoWords = Regex("""(?i)(?<![\p{L}])(photo|foto|camera|cam|pic|picture|scan|click)(?![\p{L}])|போட்டோ|கேமரா""")
+    private val billWords = Regex("""(?i)(?<![\p{L}])(bill|bills|invoice|receipt)(?![\p{L}])|பில்""")
+
     private val units = mapOf(
         "pcs" to "PCS", "pc" to "PCS", "piece" to "PCS", "pieces" to "PCS", "peice" to "PCS", "peices" to "PCS", "nos" to "PCS",
         "kg" to "KG", "kgs" to "KG", "kilo" to "KG", "bag" to "BAG", "bags" to "BAG", "mootai" to "BAG", "moottai" to "BAG",
@@ -60,7 +69,8 @@ object KaiStock {
         "serthu", "sethu", "serthudu", "inward", "outward", "owner", "kai", "please", "pls", "ah", "aa", "la", "ku", "kku", "na", "new", "pudhu",
         "puthu", "pudhusa", "puthusa", "pudhusaa", "fresh", "inventory", "inventoryku", "inventory-ku", "podu", "stockla", "stock-la", "aachu", "achu",
         "aagiduchu", "vandhachu", "vanthachu", "restock", "restocked", "the", "my", "of", "some", "konjam", "indha", "intha", "innaiku", "inniku", "today",
-        "kadaiku", "kadaila", "shop", "irukku", "iruku", "vandhu", "vanthu", "mattum", "ellam", "items",
+        "kadaiku", "kadaila", "shop", "irukku", "iruku", "vandhu", "vanthu", "mattum", "ellam", "items", "photo", "edu", "edunga", "camera", "open",
+        "sell", "kuduthen", "kuduthuten", "kuduthutten", "koduthen", "koduthuten", "gave", "given", "vandhuduchu", "vanthuduchu",
     )
     /** Words that make it money or a question, not a stock change ("cash 500 pochu", "sale evlo aachu?"). */
     private val notStock = Regex(
@@ -69,24 +79,58 @@ object KaiStock {
     )
     private val stockContext = Regex("""(?i)(?<![\p{L}])(stock|inventory|iruppu|product)(?![\p{L}])""")
 
+    private fun lowerOf(text: String) = " " + text.lowercase(Locale.ROOT).replace(Regex("""[!,;.]"""), " ").replace(Regex("""\s+"""), " ").trim() + " "
+
+    private fun has(lower: String, list: List<String>) = list.any { w -> Regex("""(?<![\p{L}])${Regex.escape(w)}(?![\p{L}])""").containsMatchIn(lower) }
+
+    /** The longest real product name in the words (names may contain numbers: "Colgate 200g"). */
+    private fun productIn(lower: String, products: List<ProductRef>) = products.filter { it.name.isNotBlank() }
+        .sortedByDescending { it.name.length }
+        .firstOrNull { p -> Regex("""(?<![\p{L}\p{N}])${Regex.escape(p.name.lowercase(Locale.ROOT))}(?![\p{L}])""").containsMatchIn(lower) }
+
+    /** The words left once stock words, numbers and units are taken out — the product's name as said. */
+    private fun spokenName(rest: String): String = rest.split(' ').filter { it.isNotEmpty() }.filter { w ->
+        w !in fillers && w !in units && w !in numberWords && w.none(Char::isDigit) &&
+            (inWords + outWords).none { k -> k.split(' ').contains(w) }
+    }.joinToString(" ").trim().trim('-')
+
+    private fun direction(lower: String, product: ProductRef?): Boolean? {
+        val isIn = has(lower, inWords) || (newWords.containsMatchIn(lower) && stockContext.containsMatchIn(lower))
+        // "out of stock" is a question about stock, not stock going out.
+        val outText = lower.replace(Regex("""(?<![\p{L}])out\s+of(?![\p{L}])"""), " ")
+        // "kuduthen" is money unless a known product is named and nobody is given it ("Selvam-ku … kuduthen" is a payment).
+        val toSomeone = Regex("""(?<![\p{L}])[\p{L}]+\s*-?\s*(?:ku|kku|kitta)(?![\p{L}])""", RegexOption.IGNORE_CASE).containsMatchIn(lower)
+        val isOut = has(outText, outWords) || (product != null && !toSomeone && has(lower, gaveWords))
+        return if (isIn == isOut) null else isIn
+    }
+
+    /**
+     * SCAN_STOCK: "Colgate photo edu", "stock photo edu", "new stock add pannu" (no name) → the product
+     * camera, with the product's name when one was said ("" when not). Null: not a stock photo request.
+     */
+    fun scanRequest(text: String, products: List<ProductRef>): String? {
+        val lower = lowerOf(text)
+        if (billWords.containsMatchIn(lower) || notStock.containsMatchIn(lower)) return null
+        val product = productIn(lower, products)
+        if (photoWords.containsMatchIn(lower)) {
+            if (product != null) return product.name
+            if (stockContext.containsMatchIn(lower) || newWords.containsMatchIn(lower)) return spokenName(lower).takeIf { it.split(' ').size <= 3 }.orEmpty().let(::displayName)
+            return null
+        }
+        // A stock-in sentence with no product at all ("new stock add pannu", "pudhu stock vandhiruku").
+        if (product == null && direction(lower, null) == true && stockContext.containsMatchIn(lower) && spokenName(lower).isEmpty() && quantityIn(lower) == null) return ""
+        return null
+    }
+
     fun understand(text: String, products: List<ProductRef>): StockRequest? {
-        val lower = " " + text.lowercase(Locale.ROOT).replace(Regex("""[!,;.]"""), " ").replace(Regex("""\s+"""), " ").trim() + " "
-        fun has(list: List<String>) = list.any { w -> Regex("""(?<![\p{L}])${Regex.escape(w)}(?![\p{L}])""").containsMatchIn(lower) }
-        val isIn = has(inWords)
-        val isOut = has(outWords)
-        if (isIn == isOut) return null
+        val lower = lowerOf(text)
         if (notStock.containsMatchIn(lower)) return null
-        // The product: the longest real product name in the words (names may contain numbers: "Colgate 200g").
-        val product = products.filter { it.name.isNotBlank() }
-            .sortedByDescending { it.name.length }
-            .firstOrNull { p -> Regex("""(?<![\p{L}\p{N}])${Regex.escape(p.name.lowercase(Locale.ROOT))}(?![\p{L}])""").containsMatchIn(lower) }
+        val product = productIn(lower, products)
+        val isIn = direction(lower, product) ?: return null
         val rest = product?.let { lower.replace(it.name.lowercase(Locale.ROOT), " ") } ?: lower
         val words = rest.split(' ').filter { it.isNotEmpty() }
         val (qty, saidUnit) = quantityIn(rest) ?: (null to words.firstNotNullOfOrNull { units[it] })
-        val spoken = product?.name ?: words.filter { w ->
-            w !in fillers && w !in units && w !in numberWords && w.none(Char::isDigit) &&
-                (inWords + outWords).none { k -> k.split(' ').contains(w) }
-        }.joinToString(" ").trim().trim('-')
+        val spoken = product?.name ?: spokenName(rest)
         if (spoken.isEmpty()) return null
         if (product == null) {
             // A name Kai doesn't have: only when it clearly is stock ("Pepsodent stock vandhiruku", "2 Pepsodent box pochu").
@@ -118,6 +162,12 @@ object KaiStock {
         "DOZEN" -> "dozen"
         "BOTTLE" -> "bottles"
         else -> unit.lowercase(Locale.ROOT)
+    }
+
+    /** "12 pieces", "2 kg" — how Kai shows a quantity. */
+    fun shown(q: BigDecimal, unit: String?): String {
+        val n = q.stripTrailingZeros().let { if (it.scale() < 0) it.setScale(0) else it }.toPlainString()
+        return "$n ${unitWord(unit)}"
     }
 
     private fun displayName(s: String) = s.split(' ').joinToString(" ") { w -> w.replaceFirstChar { it.titlecase(Locale.ROOT) } }

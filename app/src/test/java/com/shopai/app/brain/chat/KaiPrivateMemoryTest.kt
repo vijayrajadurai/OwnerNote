@@ -190,10 +190,10 @@ class KaiPrivateMemoryTest {
         val t = kai.ask("Colgate 200g")
         assertTrue(t.reply.text, t.reply.text.contains("`Colgate Paste` = Colgate 200g"))
         assertEquals("p1", access.memory.find("colgate paste")!!.referenceEntityId)
-        assertTrue(t.reply.text.contains("Colgate 200g — 10 PCS Stock In"))
+        assertTrue(t.reply.text.contains("Colgate 200g — 10 pieces stock-in"))
         // Next time it resolves straight away — still a draft.
         val out = kai.ask("colgate paste 5 stock out")
-        assertTrue(out.reply.text, out.reply.text.contains("Colgate 200g — 5 PCS Stock Out"))
+        assertTrue(out.reply.text, out.reply.text.contains("Colgate 200g — 5 pieces stock-out"))
         assertTrue(tools.stockChanges.isEmpty())
         kai.act(out.buttonActions().filterIsInstance<KaiAction.ConfirmStock>().single(), com.shopai.app.brain.KaiLang.TANGLISH)
         assertEquals(Triple("p1", BigDecimal("5"), false), tools.stockChanges.single())
@@ -246,7 +246,7 @@ class KaiPrivateMemoryTest {
         assertEquals(PlanKind.PAYMENT_OUT, tools.prepared.single().kind)
         kai.ask("pottudu na stock in") // spoken
         val typed = kai.ask("Colgate 200g 10 pottudu") // typed
-        assertTrue(typed.reply.text.contains("Stock In"))
+        assertTrue(typed.reply.text.contains("stock-in"))
     }
 
     // 16 + 17 + 22 + 27
@@ -261,7 +261,7 @@ class KaiPrivateMemoryTest {
         assertTrue(tools.prepared.isEmpty())
         kaiB.ask("thooki kudu na stock out")
         val stock = kaiB.ask("Colgate 200g 2 thooki kudu")
-        assertTrue(stock.reply.text, stock.reply.text.contains("Stock Out"))
+        assertTrue(stock.reply.text, stock.reply.text.contains("stock-out"))
         // Business A keeps its own meaning.
         kai.ask("Selvam-ku 5000 thooki kudu")
         assertEquals(PlanKind.PAYMENT_OUT, tools.prepared.single().kind)
@@ -295,7 +295,7 @@ class KaiPrivateMemoryTest {
         assertTrue(q.reply.text, q.reply.text.contains("Should it always mean this"))
         kai.act(q.buttonActions().filterIsInstance<KaiAction.OnlyNow>().single(), com.shopai.app.brain.KaiLang.TANGLISH)
         val d = kai.ask("Colgate 200g 3 pottudu")
-        assertTrue(d.reply.text, d.reply.text.contains("Stock Out"))
+        assertTrue(d.reply.text, d.reply.text.contains("stock-out"))
         // The saved meaning didn't change.
         assertEquals(KaiMeaning.STOCK_IN, access.memory.find("pottudu")!!.meaning)
     }
@@ -370,13 +370,13 @@ class KaiPrivateMemoryTest {
     @Test
     fun globalStockInStillWorksWithoutMemory() = runBlocking {
         val t = kai.ask("Colgate 200g 20 stock in pannu")
-        assertTrue(t.reply.text, t.reply.text.contains("Colgate 200g — 20 PCS Stock In"))
+        assertTrue(t.reply.text, t.reply.text.contains("Colgate 200g — 20 pieces stock-in"))
         // Text → voice → text continuity on the same product.
         val agent = KaiAgent(KaiBusinessBrain(Books()), Books(), object : KaiTools by tools {
             override suspend fun stock(product: String?) = listOf(com.shopai.app.brain.tools.StockFact("Rice", BigDecimal("8"), "KG"))
         }, { now }, access)
         agent.ask("Rice stock evlo?")
         val more = agent.ask("20 add pannu")
-        assertTrue(more.reply.text, more.reply.text.contains("Rice — 20 KG Stock In"))
+        assertTrue(more.reply.text, more.reply.text.contains("Rice — 20 kg stock-in"))
     }
 }

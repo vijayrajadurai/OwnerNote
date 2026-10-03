@@ -91,6 +91,7 @@ data class NewProduct(
     val unit: String,
     val weight: String? = null,
     val imageUri: String? = null,
+    val packSize: String? = null,
 )
 
 enum class ActionStatus { ANSWERED, DRAFT, CONFIRMED, CANCELLED, SCHEDULED, FAILED, OPENED }

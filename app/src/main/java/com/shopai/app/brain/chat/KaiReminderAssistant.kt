@@ -43,7 +43,7 @@ class KaiReminderAssistant(
     private val books: KaiBooks? = null,
     private val now: () -> LocalDateTime = { LocalDateTime.now() },
 ) {
-    private enum class Waiting { NOTHING, TIME, DAY_OF_MONTH, NUMBER, UPDATE_TIME }
+    private enum class Waiting { NOTHING, TASK, TIME, DAY_OF_MONTH, NUMBER, UPDATE_TIME }
 
     private data class Pending(
         val key: String,
@@ -74,6 +74,15 @@ class KaiReminderAssistant(
         waiting = Waiting.NOTHING
         waitingKey = null
         return when (mode) {
+            // "2 minutes la remind pannu" → "Enna remind pannanum?" → "Ruthran-ku call panna": the same reminder, now with its task.
+            Waiting.TASK -> {
+                val p = key?.let { pending[it] } ?: return null
+                val l = if (lang == KaiLang.ENGLISH) com.shopai.app.brain.KaiLanguage.forChat(p.draft.sourceText) else lang
+                val said = KaiTime.parse(text, now())
+                val d = com.shopai.app.brain.tools.KaiReminderUnderstanding.draft(text, said ?: p.time, emptyList())
+                if (!d.taskSaid) return null
+                proceed(p.copy(draft = d.copy(sourceText = "${p.draft.sourceText} · $text"), time = p.time ?: said), l)
+            }
             Waiting.TIME -> {
                 val p = key?.let { pending[it] } ?: return null
                 // A short answer ("10 minutes la") keeps the language the owner asked in.
@@ -140,6 +149,11 @@ class KaiReminderAssistant(
             say(lang, KaiMood.NEUTRAL, ta = "சரி ஓனர், reminder வைக்கல.", tl = "Seri Owner, reminder vekkala.", en = "Okay Owner, no reminder set.")
         }
         is KaiAction.CancelReminder -> byId(action.id)?.let { cancel(it, lang) }
+        is KaiAction.EditReminder -> byId(action.id)?.let { r ->
+            waiting = Waiting.UPDATE_TIME
+            waitingKey = r.id
+            say(lang, KaiMood.CLARIFY, ta = "“${r.title}” — எப்போவுக்கு மாத்தணும் ஓனர்?", tl = "“${r.title}” — eppo-ku maathanum Owner?", en = "“${r.title}” — to when, Owner?")
+        }
         is KaiAction.CompleteReminder -> byId(action.id)?.let { complete(it, lang) }
         is KaiAction.SnoozeReminder -> byId(action.id)?.let { snooze(it, action.minutes, lang) }
         is KaiAction.PickReminder -> byId(action.id)?.let { r ->
@@ -181,6 +195,15 @@ class KaiReminderAssistant(
     private suspend fun proceed(p0: Pending, lang: KaiLang): KaiTurn {
         var p = p0
         pending[p.key] = p
+        // 0. Only "remind pannu" (+ maybe a time): what should Kai remind about? (the time is kept, never asked again)
+        if (!p.draft.taskSaid) {
+            waiting = Waiting.TASK
+            waitingKey = p.key
+            return KaiTurn(ChatReply(pick(lang,
+                ta = "சரி ஓனர். என்ன நினைவூட்டணும்?",
+                tl = "Sure Owner. Enna remind pannanum?",
+                en = "Sure Owner. What should I remind you about?"), KaiMood.CLARIFY, ChatIntent.REMINDER_QUERY), KaiCard(emptyList(), listOf(cancelButton(p.key, lang))))
+        }
         val time = p.time
         // 1. No time said: ask (never invented).
         if (time == null || Missing.TIME in time.missing) {
@@ -283,7 +306,20 @@ class KaiReminderAssistant(
         } + if (time.amPmAssumed) pick(lang, ta = " (${clock(time.at.toLocalTime())} என்று எடுத்துக்கிட்டேன்)", tl = " (${clock(time.at.toLocalTime())} nu eduthukitten)", en = " (I took it as ${clock(time.at.toLocalTime())})") else ""
 
         val notes = mutableListOf<String>()
-        val buttons = mutableListOf(KaiButton(pick(lang, ta = "ரத்து செய்", tl = "Cancel reminder", en = "Cancel reminder"), KaiAction.CancelReminder(r.id)))
+        val buttons = mutableListOf(
+            KaiButton(pick(lang, ta = "ரத்து", tl = "Cancel", en = "Cancel"), KaiAction.CancelReminder(r.id)),
+            KaiButton(pick(lang, ta = "மாற்று", tl = "Edit", en = "Edit"), KaiAction.EditReminder(r.id)),
+        )
+        // The reminder card: what, when, status.
+        val whenLine = time.relative?.let { d ->
+            pick(lang, ta = "${KaiReminderWords.duration(d, lang)} கழிச்சு", tl = "${KaiReminderWords.duration(d, lang)} kalichi", en = "${KaiReminderWords.duration(d, lang)} from now")
+        } ?: whenText
+        val lines = listOf(
+            pick(lang, ta = "நினைவூட்டல்", tl = "Reminder", en = "Reminder"),
+            r.title,
+            pick(lang, ta = "எப்போ: ", tl = "When: ", en = "When: ") + whenLine,
+            pick(lang, ta = "நிலை: ", tl = "Status: ", en = "Status: ") + if (saved.duplicate) pick(lang, ta = "ஏற்கனவே இருக்கு", tl = "Already set", en = "Already set") else pick(lang, ta = "வைக்கப்பட்டது", tl = "Scheduled", en = "Scheduled"),
+        )
         when (saved.result) {
             ScheduleResult.NOTIFICATIONS_OFF -> {
                 notes += pick(lang, ta = "Notifications off-ஆ இருக்கு — on பண்ணா தான் நினைவூட்டல் வரும்.", tl = "Notifications off-ah irukku — on pannina dhaan reminder varum.", en = "Notifications are off — turn them on so the reminder can show.")
@@ -304,7 +340,7 @@ class KaiReminderAssistant(
                 tl = "${r.person} contact OwnerNote-la illa. Number sollunga, add panren.",
                 en = "${r.person} isn't in your OwnerNote contacts. Tell me the number and I'll add it.")
         }
-        return KaiTurn(ChatReply(text, KaiMood.REMINDER, ChatIntent.REMINDER_QUERY), KaiCard(emptyList(), buttons, warning = notes.joinToString("\n").ifBlank { null }))
+        return KaiTurn(ChatReply(text, KaiMood.REMINDER, ChatIntent.REMINDER_QUERY), KaiCard(lines, buttons, warning = notes.joinToString("\n").ifBlank { null }))
     }
 
     // ------------------------------------------------------------ list / cancel / complete / snooze / update

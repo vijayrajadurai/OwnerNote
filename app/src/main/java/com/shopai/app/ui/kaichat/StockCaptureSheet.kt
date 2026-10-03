@@ -42,6 +42,8 @@ import com.shopai.app.brain.chat.ProductForm
 import com.shopai.app.brain.chat.StockPrefill
 import com.shopai.app.ui.theme.Danger
 import com.shopai.app.ui.theme.ShopAiThemeColors
+import com.shopai.app.util.CameraPermissionFlow
+import com.shopai.app.util.CameraStep
 import com.shopai.app.util.DeviceTextRecognizer
 import com.shopai.app.util.ProductLabelReader
 import kotlinx.coroutines.launch
@@ -87,6 +89,7 @@ fun StockCaptureSheet(
     var variant by rememberSaveable { mutableStateOf("") }
     var brand by rememberSaveable { mutableStateOf("") }
     var weight by rememberSaveable { mutableStateOf("") }
+    var pack by rememberSaveable { mutableStateOf("") }
     var qty by rememberSaveable { mutableStateOf(prefill.qty?.stripTrailingZeros()?.toPlainString() ?: "") }
     var unit by rememberSaveable { mutableStateOf(prefill.unit ?: "PCS") }
     var imageUri by rememberSaveable { mutableStateOf<String?>(null) }
@@ -113,7 +116,7 @@ fun StockCaptureSheet(
                 if (variant.isBlank()) label.variant?.let { variant = it }
                 if (weight.isBlank()) label.weight?.let { weight = it }
                 if (category.isBlank()) label.category?.let { category = it }
-                if (qty.isBlank()) label.packCount?.let { qty = it.toString() }
+                if (pack.isBlank()) label.packCount?.let { pack = "Pack of $it" }
             }
             reading = false
         }
@@ -121,13 +124,26 @@ fun StockCaptureSheet(
 
     val camera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { taken -> if (taken) read(photoUri) }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        permissionDenied = !granted
-        if (granted) camera.launch(photoUri)
+        when (CameraPermissionFlow.onResult(granted, permissionDenied)) {
+            CameraStep.OPEN_CAMERA -> {
+                permissionDenied = false
+                runCatching { camera.launch(photoUri) }
+            }
+            CameraStep.OPEN_SETTINGS -> runCatching {
+                context.startActivity(
+                    android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + context.packageName))
+                        .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
+                )
+            }
+            else -> permissionDenied = true
+        }
     }
     fun takePhoto() {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-            runCatching { camera.launch(photoUri) }
-        } else permission.launch(Manifest.permission.CAMERA)
+        val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+        when (CameraPermissionFlow.onTap(granted)) {
+            CameraStep.OPEN_CAMERA -> runCatching { camera.launch(photoUri) }
+            else -> permission.launch(Manifest.permission.CAMERA)
+        }
     }
     // Straight to the camera (once — not again when the screen is recreated).
     var opened by rememberSaveable { mutableStateOf(false) }
@@ -147,7 +163,12 @@ fun StockCaptureSheet(
                 OutlinedButton(onClick = { takePhoto() }, enabled = !reading, modifier = Modifier.fillMaxWidth()) {
                     Text(if (imageUri == null) stringResource(R.string.kai_stock_take_photo) else stringResource(R.string.kai_stock_retake_photo))
                 }
-                if (permissionDenied) Text(stringResource(R.string.kai_stock_camera_permission), color = Danger)
+                if (permissionDenied) {
+                    Text(stringResource(R.string.kai_stock_camera_permission), color = Danger)
+                    OutlinedButton(onClick = { permission.launch(Manifest.permission.CAMERA) }, modifier = Modifier.fillMaxWidth()) {
+                        Text(stringResource(R.string.allow_camera))
+                    }
+                }
                 if (reading) Text(stringResource(R.string.ocr_status_processing), color = ShopAiThemeColors.onSurfaceVariant)
                 note?.let { Text(it, color = ShopAiThemeColors.onSurfaceVariant) }
                 OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text(stringResource(R.string.kai_stock_name)) }, singleLine = true, isError = name.isBlank())
@@ -166,6 +187,7 @@ fun StockCaptureSheet(
                         FilterChip(selected = unit == u, onClick = { unit = u }, label = { Text(u) })
                     }
                 }
+                OutlinedTextField(value = pack, onValueChange = { pack = it }, label = { Text(stringResource(R.string.kai_stock_pack)) }, singleLine = true)
                 OutlinedTextField(value = brand, onValueChange = { brand = it }, label = { Text(stringResource(R.string.kai_stock_brand)) }, singleLine = true)
                 Text(stringResource(R.string.kai_stock_check_note), color = ShopAiThemeColors.onSurfaceVariant, fontWeight = FontWeight.Medium)
             }
@@ -185,6 +207,7 @@ fun StockCaptureSheet(
                             qty = parsedQty,
                             imageUri = imageUri,
                             said = prefill.said,
+                            packSize = pack.trim().ifBlank { null },
                         ),
                     )
                 },

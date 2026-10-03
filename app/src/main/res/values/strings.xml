@@ -378,7 +378,7 @@
     <string name="bill_paid_on_bill_note">Paid on bill</string>
     <string name="bill_words_differ">The amount in words on the bill says %1$s. Please check the total.</string>
     <string name="bill_use_words_total">Use %1$s as the total</string>
-    <string name="bill_save">Save bill</string>
+    <string name="bill_save">Confirm bill</string>
     <string name="bill_warn_no_name">Couldn’t read the company name. Please type it.</string>
     <string name="bill_warn_no_total">Couldn’t find the total. Please type it.</string>
     <string name="bill_warn_total_guessed">No “Total” line found on the bill. Type the total from the bill.</string>
@@ -1398,4 +1398,8 @@
     <string name="kai_stock_check_note">Read from the photo on this phone — check every field. Nothing is saved until you confirm.</string>
     <string name="kai_stock_confirm_in">Confirm Stock In</string>
     <string name="kai_stock_create">Create Product</string>
+    <string name="kai_stock_pack">Pack size</string>
+    <string name="bill_invoice_number">Invoice / bill number</string>
+    <string name="bill_tax_read">Tax on the bill: %1$s</string>
+    <string name="bill_cancel">Cancel</string>
 </resources>

@@ -49,16 +49,34 @@ object ProductLabelReader {
         "India Gate" to "Groceries", "Daawat" to "Groceries",
     ).sortedByDescending { it.first.length }
 
+    /** The product type printed on the pack ("Toothpaste", "Detergent") — more useful than a broad group; first match wins. */
     private val categoryWords: List<Pair<Regex, String>> = listOf(
-        // Home care first: "detergent powder" is not a talc.
-        Regex("""(?i)detergent|washing|dish\s*wash|cleaner|floor|toilet|mosquito""") to "Home Care",
-        Regex("""(?i)tooth\s*paste|toothpaste|tooth\s*brush|shampoo|soap|hair\s*oil|face\s*wash|body\s*wash|cream|lotion|talc|deo""") to "Personal Care",
-        Regex("""(?i)biscuit|cookies|cracker|chips|namkeen|wafers|snack""") to "Biscuits & Snacks",
+        Regex("""(?i)detergent|washing\s*powder|washing\s*liquid""") to "Detergent",
+        Regex("""(?i)dish\s*wash""") to "Dishwash",
+        Regex("""(?i)toilet|floor\s*clean|cleaner""") to "Cleaner",
+        Regex("""(?i)mosquito""") to "Mosquito Repellent",
+        Regex("""(?i)tooth\s*paste|toothpaste|tooth\s*gel""") to "Toothpaste",
+        Regex("""(?i)tooth\s*brush""") to "Toothbrush",
+        Regex("""(?i)shampoo""") to "Shampoo",
+        Regex("""(?i)hair\s*oil|coconut\s*oil""") to "Hair Oil",
+        Regex("""(?i)face\s*wash|body\s*wash""") to "Face / Body Wash",
+        Regex("""(?i)soap|bathing\s*bar""") to "Soap",
+        Regex("""(?i)cream|lotion""") to "Cream",
+        Regex("""(?i)talc""") to "Talc",
+        Regex("""(?i)biscuit|cookies|cracker""") to "Biscuits",
+        Regex("""(?i)chips|namkeen|wafers|snack""") to "Snacks",
         Regex("""(?i)chocolate|choco""") to "Chocolates",
-        Regex("""(?i)noodles|pasta|ketchup|sauce|jam|soup""") to "Packaged Food",
+        Regex("""(?i)noodles|pasta""") to "Noodles",
+        Regex("""(?i)ketchup|sauce|jam""") to "Sauces & Spreads",
         Regex("""(?i)\bmilk\b|curd|ghee|butter|paneer|cheese""") to "Dairy",
-        Regex("""(?i)\btea\b|coffee|juice|drink|water|soda""") to "Beverages",
-        Regex("""(?i)\brice\b|atta|flour|\bdal\b|sugar|salt|\boil\b|masala|spice|rava|sooji|maida""") to "Groceries",
+        Regex("""(?i)\btea\b|coffee""") to "Tea & Coffee",
+        Regex("""(?i)juice|drink|soda|\bwater\b""") to "Beverages",
+        Regex("""(?i)\brice\b""") to "Rice",
+        Regex("""(?i)atta|flour|maida|rava|sooji""") to "Flour",
+        Regex("""(?i)\bdal\b|\bparuppu\b""") to "Dal",
+        Regex("""(?i)\boil\b""") to "Oil",
+        Regex("""(?i)sugar|salt""") to "Sugar & Salt",
+        Regex("""(?i)masala|spice|powder""") to "Masala",
     )
 
     private val weightRe = Regex("""(?i)(?<![\d.])(\d{1,4}(?:[.,]\d{1,3})?)\s*(kg|kgs|g|gm|gms|grams?|ml|l|ltr|litres?|liters?)(?![\p{L}])""")
@@ -104,7 +122,9 @@ object ProductLabelReader {
             .firstOrNull { it.count(Char::isLetter) >= 3 }
             ?.let(::tidy)
 
+        // "Colgate Strong Teeth": brand + variant when both were read.
         val name = when {
+            brand != null && variant != null -> "$brand $variant"
             brand != null -> brand
             variant != null -> variant
             else -> null
@@ -112,7 +132,7 @@ object ProductLabelReader {
         return ProductLabel(
             name = name,
             brand = brand,
-            variant = if (brand == null && variant == name) null else variant,
+            variant = if (brand == null) null else variant,
             weight = weight,
             category = category,
             packCount = pack,
