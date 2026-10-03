@@ -6,7 +6,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -14,13 +13,11 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.shopai.app.data.AppContainer
-import com.shopai.app.ui.components.VoiceEntryFab
 import com.shopai.app.ui.navigation.Routes
 import com.shopai.app.ui.navigation.isMainTabRoute
 import com.shopai.app.ui.navigation.navigateMainTab
 import com.shopai.app.ui.navigation.navigateToHomeAsRoot
 import com.shopai.app.ui.navigation.navigateUpOrHome
-import com.shopai.app.ui.navigation.shouldShowVoiceEntryFab
 import com.shopai.app.ui.screens.AddCreditScreen
 import com.shopai.app.ui.screens.AddDebitScreen
 import com.shopai.app.ui.screens.AiInsightsScreen
@@ -38,6 +35,7 @@ import com.shopai.app.ui.screens.HomeScreen
 import com.shopai.app.ui.screens.InventoryScreen
 import com.shopai.app.ui.screens.ProductDetailScreen
 import com.shopai.app.ui.screens.LoginScreen
+import com.shopai.app.ui.more.MoreInfoScreen
 import com.shopai.app.ui.screens.MoreScreen
 import com.shopai.app.ui.screens.NewGroupBuyingRequestScreen
 import com.shopai.app.ui.screens.OffersScreen
@@ -45,6 +43,7 @@ import com.shopai.app.ui.screens.OtpScreen
 import com.shopai.app.ui.screens.ProfileEditScreen
 import com.shopai.app.ui.screens.RemindersScreen
 import com.shopai.app.ui.screens.ReminderDetailScreen
+import com.shopai.app.ui.screens.UserGuideScreen
 import com.shopai.app.ui.screens.SplashScreen
 import com.shopai.app.ui.screens.SuppliersScreen
 import com.shopai.app.ui.screens.VoiceEntryScreen
@@ -68,6 +67,13 @@ fun ShopAiApp(container: AppContainer) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
+    // A tapped Kai reminder notification opens Kai Chat on it (once past login).
+    val openReminder by com.shopai.app.notifications.KaiReminderInbox.pending.collectAsState()
+    androidx.compose.runtime.LaunchedEffect(openReminder, currentRoute) {
+        val signedIn = currentRoute != null && currentRoute !in setOf(Routes.Splash, Routes.Login, Routes.Otp, Routes.BusinessSetup)
+        if (openReminder != null && signedIn && currentRoute != Routes.KaiChat) navController.navigate(Routes.KaiChat)
+    }
+
     Box(Modifier.fillMaxSize()) {
         NavHost(
             navController = navController,
@@ -75,17 +81,31 @@ fun ShopAiApp(container: AppContainer) {
             modifier = Modifier.fillMaxSize(),
         ) {
         composable(Routes.Splash) {
+            // The session check can finish after the owner already tapped "Get Started":
+            // only the first one navigates (a second navigate from a popped Splash crashes).
+            val onSplash = { navController.currentDestination?.route == Routes.Splash }
             SplashScreen(
                 container = container,
                 onNavigateLogin = {
-                    navController.navigate(Routes.Login) {
-                        popUpTo(Routes.Splash) { inclusive = true }
+                    if (onSplash()) {
+                        navController.navigate(Routes.Login) {
+                            popUpTo(Routes.Splash) { inclusive = true }
+                        }
                     }
                 },
-                onNavigateHome = { navController.navigateToHomeAsRoot() },
+                onNavigateHome = { if (onSplash()) navController.navigateToHomeAsRoot() },
+                onNavigateUserGuide = {
+                    if (onSplash()) {
+                        navController.navigate(Routes.UserGuide) {
+                            popUpTo(Routes.Splash) { inclusive = true }
+                        }
+                    }
+                },
                 onNavigateBusinessSetup = {
-                    navController.navigate(Routes.BusinessSetup) {
-                        popUpTo(Routes.Splash) { inclusive = true }
+                    if (onSplash()) {
+                        navController.navigate(Routes.BusinessSetup) {
+                            popUpTo(Routes.Splash) { inclusive = true }
+                        }
                     }
                 },
             )
@@ -103,11 +123,27 @@ fun ShopAiApp(container: AppContainer) {
                 container = container,
                 onNavigateBack = { navController.navigateUpOrHome() },
                 onNavigateHome = { navController.navigateToHomeAsRoot() },
+                onNavigateUserGuide = {
+                    navController.navigate(Routes.UserGuide) {
+                        popUpTo(Routes.Login) { inclusive = true }
+                    }
+                },
                 onNavigateBusinessSetup = {
                     navController.navigate(Routes.BusinessSetup) {
                         popUpTo(Routes.Login) { inclusive = true }
                     }
                 },
+            )
+        }
+        composable(Routes.UserGuide) {
+            UserGuideScreen(
+                container = container,
+                onNavigateOnboarding = {
+                    navController.navigate(Routes.BusinessSetup) {
+                        popUpTo(Routes.UserGuide) { inclusive = true }
+                    }
+                },
+                onNavigateHome = { navController.navigateToHomeAsRoot() },
             )
         }
         composable(Routes.BusinessSetup) {
@@ -198,6 +234,18 @@ fun ShopAiApp(container: AppContainer) {
             )
         }
         composable(
+            route = Routes.MoreInfo,
+            arguments = listOf(navArgument("page") { type = NavType.StringType }),
+        ) { entry ->
+            val page = entry.arguments?.getString("page").orEmpty()
+            MoreInfoScreen(
+                page = page,
+                onBack = { navController.navigateUpOrHome() },
+                onOpenReminders = { navController.navigate(Routes.Reminders) },
+                onOpenSettings = { navController.navigate(Routes.Settings) },
+            )
+        }
+        composable(
             route = Routes.AddCredit,
             arguments = listOf(
                 navArgument("customerId") { type = NavType.StringType; defaultValue = "" },
@@ -245,6 +293,10 @@ fun ShopAiApp(container: AppContainer) {
                 onOpenHandwrittenNotes = { navController.navigate(Routes.HandwrittenNotes) },
                 onScanNoteForBill = { billId -> navController.navigate(Routes.handwrittenScan(billId)) },
                 onOpenNotePerson = { name -> navController.navigate(Routes.handwrittenPerson(name)) },
+                // The bill photo turned out handwritten: the handwriting reader takes it.
+                onHandwrittenDetected = { navController.navigate(Routes.handwrittenScan()) },
+                // A spoken reminder that needs a choice continues in Kai Chat.
+                onOpenKaiChat = { navController.navigate(Routes.KaiChat) },
                 onOpenMorningWork = { voice, start ->
                     navController.navigate(Routes.morningWork(voice = voice, start = start)) {
                         popUpTo(Routes.VoiceEntry) { inclusive = true }
@@ -271,6 +323,14 @@ fun ShopAiApp(container: AppContainer) {
                 container = container,
                 linkedBillId = entry.arguments?.getLong("billId")?.takeIf { it > 0 },
                 onBack = { navController.navigateUpOrHome() },
+                // The note photo is a printed bill: the Shop bill reader (on the Speak screen) takes it.
+                onPrintedBillDetected = {
+                    if (!navController.popBackStack(Routes.VoiceEntry, inclusive = false)) {
+                        navController.navigate(Routes.VoiceEntry) {
+                            popUpTo(Routes.HandwrittenScan) { inclusive = true }
+                        }
+                    }
+                },
                 onSaved = { count, failed ->
                     // The ledger changed: Kai re-reads it, and confirms the save.
                     container.kaiBrain.forget()
@@ -556,6 +616,8 @@ fun ShopAiApp(container: AppContainer) {
             com.shopai.app.ui.kaichat.KaiChatScreen(
                 container = container,
                 onBack = { navController.navigateUpOrHome() },
+                // "Indha bill add pannu": the existing Shop bill scanner (OCR → draft → review → confirm).
+                onOpenScanner = { navController.navigate(Routes.VoiceEntry) },
                 onOpenMorningWork = { start -> navController.navigate(Routes.morningWork(voice = false, start = start)) },
             )
         }
@@ -596,14 +658,6 @@ fun ShopAiApp(container: AppContainer) {
                 onComplete = { navController.navigateToHomeAsRoot() },
             )
         }
-        }
-
-        if (shouldShowVoiceEntryFab(currentRoute)) {
-            VoiceEntryFab(
-                onClick = { navController.navigate(Routes.VoiceEntry) },
-                modifier = Modifier.align(Alignment.BottomCenter),
-                bottomPadding = if (isMainTabRoute(currentRoute)) 78.dp else 24.dp,
-            )
         }
 
         // Kai speaks up after manual entries, bills and notes (app-wide, never permanent).

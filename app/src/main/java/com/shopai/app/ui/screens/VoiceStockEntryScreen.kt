@@ -41,8 +41,8 @@ import com.shopai.app.ui.components.DetailScaffold
 import com.shopai.app.ui.components.PrimaryButton
 import com.shopai.app.ui.components.ShopCard
 import com.shopai.app.ui.components.ShopTextField
-import com.shopai.app.ui.components.VoiceListeningOrb
-import com.shopai.app.ui.components.VoiceOrbState
+import com.shopai.app.ui.kai.KaiStage
+import com.shopai.app.ui.kai.KaiState
 import com.shopai.app.ui.theme.Danger
 import com.shopai.app.ui.theme.ShopAiThemeColors
 import com.shopai.app.ui.theme.Success
@@ -239,12 +239,18 @@ fun VoiceStockEntryScreen(
                 modifier = Modifier.padding(bottom = 8.dp),
             )
 
-            VoiceListeningOrb(
-                state = orbState,
-                audioLevel = audioLevel,
-                statusText = statusText,
-                partialText = if (orbState == VoiceOrbState.Listening) partialText else null,
-                onOrbClick = { onOrbClick() },
+            // KAI is the speaking interface here too: tap him to talk.
+            KaiStage(
+                state = when (orbState) {
+                    VoiceOrbState.Idle -> KaiState.IDLE
+                    VoiceOrbState.Listening -> KaiState.LISTENING
+                    VoiceOrbState.Processing -> KaiState.PROCESSING
+                },
+                line = statusText,
+                mouthLevel = 0f,
+                heard = if (orbState == VoiceOrbState.Listening) partialText else null,
+                enabled = orbState != VoiceOrbState.Processing,
+                onTap = { onOrbClick() },
             )
 
             ShopTextField(
@@ -318,3 +324,6 @@ private fun ResolutionMessageCard(
 }
 
 private const val REASON_VOICE_ENTRY = "VOICE_ENTRY"
+
+/** Mic state of this screen (the shared orb was replaced by KAI). */
+private enum class VoiceOrbState { Idle, Listening, Processing }

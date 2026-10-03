@@ -328,8 +328,6 @@ private fun BillEditor(
             Text(stringResource(R.string.bill_rest_on_credit), style = MaterialTheme.typography.bodySmall, color = ShopAiThemeColors.onSurfaceVariant)
         }
 
-        ShopTextField(stringResource(R.string.inv_notes), notes, { notes = it }, singleLine = false)
-
         // Live totals — the engine's quote, not a calculation of this screen.
         ShopCard {
             quote?.totals?.let { t ->

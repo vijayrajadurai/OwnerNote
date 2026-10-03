@@ -93,7 +93,9 @@ data class BusinessSnapshot(
         parties.filter { it.name.trim().lowercase(Locale.ROOT) == n }.takeIf { it.isNotEmpty() }?.let { return it }
         parties.filter { p -> p.name.lowercase(Locale.ROOT).split(' ').any { it == n } || p.name.lowercase(Locale.ROOT).startsWith("$n ") }
             .takeIf { it.isNotEmpty() }?.let { return it }
-        return parties.filter { editDistance(it.name.lowercase(Locale.ROOT), n) <= 1 && n.length >= 4 }
+        parties.filter { editDistance(it.name.lowercase(Locale.ROOT), n) <= 1 && n.length >= 4 }.takeIf { it.isNotEmpty() }?.let { return it }
+        // "Kumar" typed for a customer saved as "குமார்" (and the other way).
+        return parties.filter { com.shopai.app.util.NameSound.same(it.name, name) }
     }
 
     /** Customers who owe the owner money, soonest due (and biggest) first. */

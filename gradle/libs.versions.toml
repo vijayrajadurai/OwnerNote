@@ -28,7 +28,7 @@ room = "2.7.2"
 robolectric = "4.14.1"
 playServicesCodeScanner = "16.1.0"
 androidxTestCore = "1.6.1"
-ksp = "2.2.20-2.0.4"
+ksp = "2.3.2"
 
 [libraries]
 rive-android = { group = "app.rive", name = "rive-android", version.ref = "rive" }

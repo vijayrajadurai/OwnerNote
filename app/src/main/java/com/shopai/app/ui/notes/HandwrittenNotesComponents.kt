@@ -91,17 +91,36 @@ data class TxnForm(
     val direction: TxnDirection = TxnDirection.UNKNOWN,
     val description: String = "",
     val notes: String = "",
+    /** Handwritten bill only: shows the Paid and Due date fields. */
+    val isBill: Boolean = false,
+    /** Already paid on the bill; blank = nothing paid. */
+    val paid: String = "",
+    val dueDate: LocalDate? = null,
 ) {
     /** Accepts "1,500", "₹1500", "1.5K". */
-    val parsedAmount: BigDecimal?
+    val parsedAmount: BigDecimal? get() = parseMoney(amount)?.takeIf { it.signum() > 0 }
+
+    /** Paid on the bill: zero when blank, null when unreadable or more than the bill. */
+    val parsedPaid: BigDecimal?
         get() {
-            val cleaned = amount.replace(",", "").replace("₹", "").trim()
-            val k = cleaned.endsWith("k", ignoreCase = true)
-            val number = (if (k) cleaned.dropLast(1) else cleaned).trim().toBigDecimalOrNull() ?: return null
-            val value = if (k) number * BigDecimal(1000) else number
-            return value.takeIf { it.signum() > 0 && it < BigDecimal("1000000000") }?.setScale(2, RoundingMode.HALF_UP)
+            if (paid.isBlank()) return BigDecimal.ZERO.setScale(2)
+            val value = parseMoney(paid) ?: return null
+            val total = parsedAmount
+            return value.takeIf { total == null || it <= total }
         }
-    val isComplete: Boolean get() = personName.isNotBlank() && parsedAmount != null && direction != TxnDirection.UNKNOWN
+
+    /** Still to be paid on a handwritten bill. */
+    val balance: BigDecimal? get() = parsedAmount?.let { total -> parsedPaid?.let { total - it } }
+
+    val isComplete: Boolean get() = personName.isNotBlank() && parsedAmount != null && direction != TxnDirection.UNKNOWN && (!isBill || parsedPaid != null)
+
+    private fun parseMoney(text: String): BigDecimal? {
+        val cleaned = text.replace(",", "").replace("₹", "").trim()
+        val k = cleaned.endsWith("k", ignoreCase = true)
+        val number = (if (k) cleaned.dropLast(1) else cleaned).trim().toBigDecimalOrNull() ?: return null
+        val value = if (k) number * BigDecimal(1000) else number
+        return value.takeIf { it.signum() >= 0 && it < BigDecimal("1000000000") }?.setScale(2, RoundingMode.HALF_UP)
+    }
 }
 
 /** Everything a transaction card shows. */
@@ -371,6 +390,28 @@ fun TransactionEditDialog(
                 }
                 if (tried && form.direction == TxnDirection.UNKNOWN) {
                     Text(stringResource(R.string.hw_choose_type), color = Danger, style = MaterialTheme.typography.bodySmall)
+                }
+                // Handwritten bill: what was already paid and when the rest is due.
+                if (form.isBill) {
+                    ShopTextField(
+                        stringResource(R.string.bill_paid),
+                        form.paid,
+                        { form = form.copy(paid = it.filter { c -> c.isDigit() || c == '.' || c == ',' || c == 'k' || c == 'K' }) },
+                        placeholder = "0.00",
+                        error = if (form.parsedPaid == null) stringResource(R.string.bill_paid_too_much) else null,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    )
+                    form.balance?.let {
+                        Text(stringResource(R.string.hw_bill_balance, formatRupees(it)), style = MaterialTheme.typography.bodySmall, color = ShopAiThemeColors.onSurfaceVariant)
+                    }
+                    FutureDatePickerField(
+                        label = stringResource(R.string.bill_due_date_optional),
+                        selectedDate = form.dueDate,
+                        onDateSelected = { form = form.copy(dueDate = it) },
+                        placeholder = stringResource(R.string.hw_date_not_specified),
+                        allowEmpty = true,
+                        anyDate = true,
+                    )
                 }
                 ShopTextField(stringResource(R.string.hw_description), form.description, { form = form.copy(description = it) }, singleLine = false)
                 ShopTextField(stringResource(R.string.hw_notes), form.notes, { form = form.copy(notes = it) }, singleLine = false)

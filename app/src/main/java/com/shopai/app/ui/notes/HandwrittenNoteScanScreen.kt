@@ -45,10 +45,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -81,6 +83,8 @@ import com.shopai.app.data.local.room.NoteTransactionEntity
 import com.shopai.app.data.repository.LedgerLine
 import com.shopai.app.data.repository.NoteLedger
 import com.shopai.app.data.repository.NotePageToSave
+import com.shopai.app.data.repository.BillTerms
+import com.shopai.app.util.HANDWRITTEN_BILL_LABEL
 import com.shopai.app.data.repository.personKey
 import com.shopai.app.ui.components.DetailScaffold
 import com.shopai.app.ui.components.PrimaryButton
@@ -91,12 +95,15 @@ import com.shopai.app.ui.theme.LedgerDebit
 import com.shopai.app.ui.theme.ShopAiThemeColors
 import com.shopai.app.ui.theme.Warning as WarningColor
 import com.shopai.app.util.CropFractions
+import com.shopai.app.util.DocumentKind
+import com.shopai.app.util.ScanHandoff
 import com.shopai.app.util.HandwritingTextRecognizer
 import com.shopai.app.util.ExtractedTransaction
 import com.shopai.app.util.HandwritingImageProcessor
 import com.shopai.app.util.HandwrittenTransactionParser
 import com.shopai.app.util.OcrBox
 import com.shopai.app.util.OcrLine
+import com.shopai.app.util.PageKind
 import com.shopai.app.util.ReviewIssue
 import com.shopai.app.util.TxnDirection
 import com.shopai.app.util.formatLocalDateForDisplay
@@ -191,6 +198,22 @@ class DraftRow(
         if (!confirmed) addAll(issues.filter { it == ReviewIssue.NAME_UNCLEAR || it == ReviewIssue.AMOUNT_UNCLEAR || it == ReviewIssue.DATE_UNCLEAR })
     }
 
+    /** What the books need beyond the total: the part already paid and the due date. */
+    fun billTerms(): BillTerms? = if (!form.isBill) null else BillTerms(
+        paid = form.parsedPaid?.takeIf { it.signum() > 0 },
+        dueDate = form.dueDate,
+    )
+
+    private fun billTermsText(): List<String> {
+        if (!form.isBill) return emptyList()
+        val paid = form.parsedPaid?.takeIf { it.signum() > 0 }
+        return listOfNotNull(
+            paid?.let { "Paid ${formatRupees(it)}" },
+            paid?.let { form.balance }?.let { "Balance ${formatRupees(it)}" },
+            form.dueDate?.let { "Due ${formatLocalDateForDisplay(it)}" },
+        )
+    }
+
     fun toEntity(linkedBillId: Long?): NoteTransactionEntity {
         val e = extracted
         return NoteTransactionEntity(
@@ -203,7 +226,9 @@ class DraftRow(
                 TxnDirection.DEBIT -> NoteTransactionEntity.TYPE_DEBIT
                 TxnDirection.UNKNOWN -> NoteTransactionEntity.TYPE_UNKNOWN
             },
-            description = form.description.trim().ifBlank { null },
+            // A handwritten bill keeps its paid / balance / due date in the description too, for the owner to see.
+            description = (listOf(form.description.trim()) + billTermsText())
+                .filter { it.isNotBlank() }.joinToString(" · ").ifBlank { null },
             notes = form.notes.trim().ifBlank { null },
             originalOcrText = e?.originalLine ?: sourceLine,
             originalPersonName = e?.personName,
@@ -258,6 +283,7 @@ fun HandwrittenNoteScanScreen(
     linkedBillId: Long?,
     onBack: () -> Unit,
     onSaved: (savedCount: Int, syncFailed: Int) -> Unit,
+    onPrintedBillDetected: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -391,34 +417,35 @@ fun HandwrittenNoteScanScreen(
     fun pickOne() = singlePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
     fun pickMany() = multiPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
 
-    // ---- extraction ----
+    // A handwritten photo taken under "Shop bill" arrives here and is read at once.
+    var arrivedByHandoff by remember { mutableStateOf(false) }
+    var autoExtract by remember { mutableStateOf(false) }
+    // Pages the owner marked Bill / Notes (by page key), and the page being asked about now.
+    val chosenKinds = remember { mutableStateMapOf<Long, PageKind>() }
+    var askKindFor by remember { mutableStateOf<Long?>(null) }
+    var failedPageCount by remember { mutableIntStateOf(0) }
+    LaunchedEffect(Unit) {
+        val uri = ScanHandoff.takeHandwritten() ?: return@LaunchedEffect
+        arrivedByHandoff = true
+        autoExtract = true
+        android.widget.Toast.makeText(context, R.string.scan_handoff_handwritten, android.widget.Toast.LENGTH_LONG).show()
+        addImages(listOf(uri))
+    }
 
-    fun extract() {
-        if (pages.isEmpty()) return
+    /**
+     * Type detection → extraction → validation. A page that is neither clearly
+     * a bill nor clearly notes is not guessed: the owner is asked first.
+     */
+    fun buildRows() {
         scope.launch {
-            stage = Stage.PROCESSING
-            stepIndex = 1
-            val pageCount = pages.size
-            var failedPages = 0
-            for ((i, page) in pages.withIndex()) {
-                stepIndex = 1
-                val pageNumber: Int = i + 1
-                stepDetail = context.getString(R.string.hw_step_page, pageNumber, pageCount)
-                val result = withContext(Dispatchers.Default) {
-                    runCatching { HandwritingImageProcessor.process(context, Uri.fromFile(File(page.originalPath)), page.rotation, page.crop) }.getOrNull()
-                }
-                if (result == null) {
-                    page.lines = emptyList()
-                    failedPages++
-                    continue
-                }
-                repository.deleteFiles(listOf(page.processedPath))
-                page.processedPath = repository.storeProcessed(result.page)
-                stepIndex = 2
-                page.lines = runCatching { recognizer.readPage(result.page, result.writingRegion) }.getOrDefault(emptyList())
-            }
+            val failedPages = failedPageCount
             for (s in 3..8) { stepIndex = s; stepDetail = "" }
-            val extraction = HandwrittenTransactionParser.parse(pages.map { it.lines })
+            val kinds = pages.withIndex().mapNotNull { (i, p) -> chosenKinds[p.key]?.let { i to it } }.toMap()
+            val extraction = HandwrittenTransactionParser.parse(pages.map { it.lines }, kinds = kinds)
+            extraction.unknownPages.firstOrNull()?.let { i ->
+                askKindFor = pages[i].key
+                return@launch
+            }
             val today = LocalDate.now()
             noteDate = HandwrittenTransactionParser.noteDate(pages.map { it.lines }, today)
             rows.clear()
@@ -437,6 +464,9 @@ fun HandwrittenNoteScanScreen(
                         date = t.date ?: today,
                         direction = t.direction,
                         description = t.description.orEmpty(),
+                        isBill = t.description?.startsWith(HANDWRITTEN_BILL_LABEL) == true,
+                        paid = t.billPaid?.takeIf { it.signum() > 0 }?.toPlainString().orEmpty(),
+                        dueDate = t.billDueDate,
                     ),
                     issues = t.issues,
                     // Rows from a page saved before start unticked (avoid duplicates).
@@ -472,6 +502,64 @@ fun HandwrittenNoteScanScreen(
                 quickFix.isNotEmpty() -> Stage.QUICK_FIX
                 else -> Stage.REVIEW
             }
+        }
+    }
+
+    // ---- extraction ----
+
+    fun extract() {
+        if (pages.isEmpty()) return
+        scope.launch {
+            stage = Stage.PROCESSING
+            stepIndex = 1
+            val pageCount = pages.size
+            var failedPages = 0
+            for ((i, page) in pages.withIndex()) {
+                stepIndex = 1
+                val pageNumber: Int = i + 1
+                stepDetail = context.getString(R.string.hw_step_page, pageNumber, pageCount)
+                val result = withContext(Dispatchers.Default) {
+                    runCatching { HandwritingImageProcessor.process(context, Uri.fromFile(File(page.originalPath)), page.rotation, page.crop) }.getOrNull()
+                }
+                if (result == null) {
+                    page.lines = emptyList()
+                    failedPages++
+                    continue
+                }
+                repository.deleteFiles(listOf(page.processedPath))
+                page.processedPath = repository.storeProcessed(result.page)
+                stepIndex = 2
+                page.lines = runCatching { recognizer.readPage(result.page, result.writingRegion) }.getOrDefault(emptyList())
+            }
+            // One photo that is clearly a printed GST bill: the Shop bill reader
+            // reads it as one bill entry (unless it was just sent here from there).
+            if (!arrivedByHandoff && pages.size == 1 && DocumentKind.isClearlyPrinted(pages[0].lines.joinToString("\n") { it.text })) {
+                val copy = DocumentKind.handoffCopy(context, Uri.fromFile(File(pages[0].originalPath)))
+                if (copy != null) {
+                    stage = Stage.PICK
+                    ScanHandoff.sendToShopBill(copy)
+                    onPrintedBillDetected()
+                    return@launch
+                }
+            }
+            failedPageCount = failedPages
+            // A fresh read: earlier "Bill / Notes" choices are asked again for the new text.
+            chosenKinds.clear()
+            buildRows()
+        }
+    }
+
+    fun chooseKind(pageKey: Long, kind: PageKind) {
+        chosenKinds[pageKey] = kind
+        askKindFor = null
+        buildRows()
+    }
+
+    // The handed-over photo is read as soon as it has been added.
+    LaunchedEffect(autoExtract, busy, pages.size) {
+        if (autoExtract && !busy && pages.isNotEmpty()) {
+            autoExtract = false
+            extract()
         }
     }
 
@@ -519,9 +607,11 @@ fun HandwrittenNoteScanScreen(
                             imageHash = page.hash,
                             extractedText = page.lines.joinToString("\n") { it.text },
                             transactions = chosen.filter { it.pageKey == page.key }.map { it.toEntity(linkedBillId) },
+                            terms = chosen.filter { it.pageKey == page.key }.map { it.billTerms() },
                         )
                     },
                     manual = chosen.filter { it.pageKey == null }.map { it.toEntity(linkedBillId) },
+                    manualTerms = chosen.filter { it.pageKey == null }.map { it.billTerms() },
                     syncToLedger = syncToLedger,
                 )
             }
@@ -632,6 +722,34 @@ fun HandwrittenNoteScanScreen(
         )
     }
     previewPage?.let { page -> PreviewDialog(page) { previewPage = null } }
+    // Not sure what the page is: never guessed — the owner says Bill or Notes.
+    askKindFor?.let { key ->
+        val page = pages.firstOrNull { it.key == key }
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text(stringResource(R.string.hw_kind_title)) },
+            text = {
+                Column {
+                    if (pages.size > 1) Text(stringResource(R.string.hw_page_n, pages.indexOf(page) + 1), fontWeight = FontWeight.SemiBold)
+                    page?.thumbnail?.let {
+                        Image(
+                            it.asImageBitmap(),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxWidth().height(200.dp).padding(vertical = 8.dp),
+                            contentScale = ContentScale.Fit,
+                        )
+                    }
+                    Text(stringResource(R.string.hw_kind_body))
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { chooseKind(key, PageKind.BILL) }) { Text(stringResource(R.string.hw_kind_bill), fontWeight = FontWeight.SemiBold) }
+            },
+            dismissButton = {
+                TextButton(onClick = { chooseKind(key, PageKind.NOTES) }) { Text(stringResource(R.string.hw_kind_notes), fontWeight = FontWeight.SemiBold) }
+            },
+        )
+    }
 
     if (showCameraGuide) {
         CameraGuideDialog(
@@ -929,6 +1047,8 @@ private fun ReviewStage(
                 color = if (needsReview > 0) WarningColor else ShopAiThemeColors.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 8.dp),
             )
+            // What kind of page this is (bill / money given / received / mixed), read before review.
+            if (rows.isNotEmpty()) PageTypeBanner(rows)
             if (pages.any { it.savedBefore != null }) {
                 Text(stringResource(R.string.hw_duplicate_banner), color = WarningColor, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(bottom = 8.dp))
             }
@@ -1228,4 +1348,71 @@ private fun CropDialog(page: DraftPage, onDone: (CropFractions) -> Unit, onDismi
             }
         },
     )
+}
+
+/**
+ * The page's type from its rows as they stand now: a handwritten bill (one
+ * entry), money given (all Credit), money received (all Debit) or mixed — with
+ * totals, and one tap to set the rows that have no Credit/Debit yet.
+ */
+@Composable
+private fun PageTypeBanner(rows: List<DraftRow>) {
+    val isBill = rows.all { it.extracted?.description?.startsWith(com.shopai.app.util.HANDWRITTEN_BILL_LABEL) == true }
+    val credit = rows.filter { it.form.direction == TxnDirection.CREDIT }
+    val debit = rows.filter { it.form.direction == TxnDirection.DEBIT }
+    val unknown = rows.filter { it.form.direction == TxnDirection.UNKNOWN }
+    fun sum(list: List<DraftRow>) = list.mapNotNull { it.form.parsedAmount }.fold(java.math.BigDecimal.ZERO, java.math.BigDecimal::add)
+    val type = when {
+        isBill -> com.shopai.app.util.NotePageType.HANDWRITTEN_BILL
+        credit.isNotEmpty() && debit.isNotEmpty() -> com.shopai.app.util.NotePageType.MIXED
+        credit.isNotEmpty() -> com.shopai.app.util.NotePageType.MONEY_GIVEN
+        debit.isNotEmpty() -> com.shopai.app.util.NotePageType.MONEY_RECEIVED
+        else -> com.shopai.app.util.NotePageType.UNKNOWN
+    }
+    ShopCard(modifier = Modifier.padding(bottom = 8.dp)) {
+        Text(
+            stringResource(
+                when (type) {
+                    com.shopai.app.util.NotePageType.HANDWRITTEN_BILL -> R.string.hw_type_bill
+                    com.shopai.app.util.NotePageType.MONEY_GIVEN -> R.string.hw_type_given
+                    com.shopai.app.util.NotePageType.MONEY_RECEIVED -> R.string.hw_type_received
+                    com.shopai.app.util.NotePageType.MIXED -> R.string.hw_type_mixed
+                    com.shopai.app.util.NotePageType.UNKNOWN -> R.string.hw_page_type_unknown
+                },
+            ),
+            fontWeight = FontWeight.Bold,
+            color = ShopAiThemeColors.primary,
+        )
+        // A bill: both names as read — the customer (Credit) and the shop / company (Debit).
+        rows.firstOrNull { it.extracted?.billCompany != null || it.extracted?.billCustomer != null }?.extracted?.let { e ->
+            e.billCompany?.let { Text(stringResource(R.string.hw_bill_company, it), style = MaterialTheme.typography.bodyMedium) }
+            e.billCustomer?.let { Text(stringResource(R.string.hw_bill_customer, it), style = MaterialTheme.typography.bodyMedium) }
+        }
+        // A bill's paid part, balance and due date (as now in the form — edits show here), with its status.
+        rows.filter { it.form.isBill }.forEach { row ->
+            val f = row.form
+            val total = f.parsedAmount ?: return@forEach
+            val paid = f.parsedPaid ?: return@forEach
+            if (paid.signum() > 0) {
+                Text(stringResource(R.string.hw_bill_paid_due, formatRupees(paid), formatRupees(total - paid)), style = MaterialTheme.typography.bodyMedium)
+            }
+            f.dueDate?.let { Text(stringResource(R.string.hw_bill_due_on, formatLocalDateForDisplay(it)), style = MaterialTheme.typography.bodyMedium) }
+            com.shopai.app.ui.components.PaymentStatusChip(
+                com.shopai.app.util.PaymentStatus.of(total, paid, f.dueDate, LocalDate.now()),
+            )
+        }
+        if (credit.isNotEmpty()) Text(stringResource(R.string.hw_type_given_total, credit.size, com.shopai.app.util.BillNotesFormatter.rupees(sum(credit))), style = MaterialTheme.typography.bodyMedium)
+        if (debit.isNotEmpty()) Text(stringResource(R.string.hw_type_received_total, debit.size, com.shopai.app.util.BillNotesFormatter.rupees(sum(debit))), style = MaterialTheme.typography.bodyMedium)
+        if (unknown.isNotEmpty()) {
+            Text(stringResource(R.string.hw_type_unknown_rows, unknown.size), style = MaterialTheme.typography.bodyMedium, color = WarningColor)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                com.shopai.app.ui.components.OutlinedButton(onClick = { unknown.forEach { it.updateDraft(it.form.copy(direction = TxnDirection.CREDIT, personName = it.extracted?.billCustomer ?: it.form.personName)) } }) {
+                    Text(stringResource(if (isBill) R.string.hw_set_bill_credit else R.string.hw_set_given))
+                }
+                com.shopai.app.ui.components.OutlinedButton(onClick = { unknown.forEach { it.updateDraft(it.form.copy(direction = TxnDirection.DEBIT, personName = it.extracted?.billCompany ?: it.form.personName)) } }) {
+                    Text(stringResource(if (isBill) R.string.hw_set_bill_debit else R.string.hw_set_received))
+                }
+            }
+        }
+    }
 }

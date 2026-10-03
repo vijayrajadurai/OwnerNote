@@ -121,11 +121,16 @@ private fun TransactionCard(
                 fontWeight = FontWeight.Bold,
                 color = amountColor,
             )
+            // Paid / Overdue / Partially paid / Upcoming, from what is left and the due date.
+            val payStatus = com.shopai.app.util.PaymentStatus.of(
+                java.math.BigDecimal.valueOf(amount), java.math.BigDecimal.valueOf(amount - pending).max(java.math.BigDecimal.ZERO),
+                com.shopai.app.util.parseIsoToLocalDate(dueDate),
+            ).let { if (status == "PAID") it.copy(state = com.shopai.app.util.PaymentState.PAID) else it }
             Text(
-                text = transactionStatusLabel(status),
+                text = com.shopai.app.ui.components.paymentStateLabel(payStatus.state),
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
-                color = if (status == "PAID") Success else LedgerPending,
+                color = com.shopai.app.ui.components.paymentStateColor(payStatus.state),
             )
         }
         if (!description.isNullOrBlank()) {

@@ -233,6 +233,23 @@ class BooksAccountingTest {
     }
 
     @Test
+    fun homeDueSummarySplitsOverdueSoonAndLater(): Unit = runBlocking {
+        val a = f.customer("A")
+        val abc = f.supplier("ABC")
+        val item = f.product("Rice", sell = rs(100), buy = rs(50), stock = q(1000))
+        f.sale(a, f.item(item, q(1)), date = f.today.minusDays(10), dueDate = f.today.minusDays(2)).ok() // overdue 100
+        f.sale(a, f.item(item, q(2)), dueDate = f.today.plusDays(3)).ok() // soon 200
+        f.sale(a, f.item(item, q(4))).ok() // no due date → later 400
+        f.purchase(abc, "P1", f.item(item, q(6))).ok() // payable, no due → later 300
+        val c = f.ledger.receivableDue(f.today)
+        assertEquals(rs(100), c.overduePaise)
+        assertEquals(rs(200), c.dueSoonPaise)
+        assertEquals(rs(400), c.laterPaise)
+        assertEquals(f.ledger.receivables().duePaise, c.totalPaise)
+        assertEquals(rs(300), f.ledger.payableDue(f.today).laterPaise)
+    }
+
+    @Test
     fun voiceEntryNeedsAReviewedDraft(): Unit = runBlocking {
         // "Ramesh ku 5000 kuduthen" → Ramesh, payment out, ₹5,000, cash — only after confirmation.
         val ramesh = f.supplier("Ramesh")

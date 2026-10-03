@@ -1,14 +1,19 @@
 package com.shopai.app.ui.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -16,25 +21,19 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.CompositingStrategy
-import androidx.compose.ui.graphics.FilterQuality
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.painter.BitmapPainter
-import androidx.compose.ui.res.imageResource
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.shopai.app.R
@@ -43,29 +42,58 @@ import com.shopai.app.ui.theme.BrandGradientEnd
 import com.shopai.app.ui.theme.BrandGradientStart
 import com.shopai.app.ui.theme.OnPrimary
 import com.shopai.app.ui.theme.OutfitFamily
+import com.shopai.app.ui.theme.TextPrimary
+import com.shopai.app.ui.theme.TextSecondary
 
-// Shared look for the Login and OTP screens.
-
-// Same mint as the welcome artwork, so the cropped logo/KAI blend in.
 val AuthBackgroundBrush = Brush.verticalGradient(listOf(Color(0xFFFFFFFF), Color(0xFFEEFDF7)))
 
-// Regions of R.drawable.img_splash_welcome (1080x1600 px).
-private val LogoSrcOffset = IntOffset(200, 100)
-val LogoSrcSize = IntSize(680, 460)
-// KAI, full body (R.drawable.kai_full).
-val KaiSrcSize = IntSize(620, 998)
-
-class WelcomeArtwork(val logo: BitmapPainter, val kai: BitmapPainter)
-
 @Composable
-fun rememberWelcomeArtwork(): WelcomeArtwork {
-    val artwork = ImageBitmap.imageResource(R.drawable.img_splash_welcome)
-    val kai = ImageBitmap.imageResource(R.drawable.kai_full)
-    return remember(artwork, kai) {
-        WelcomeArtwork(
-            logo = BitmapPainter(artwork, LogoSrcOffset, LogoSrcSize, FilterQuality.High),
-            kai = BitmapPainter(kai, filterQuality = FilterQuality.High),
+fun AuthBrandHeader(
+    modifier: Modifier = Modifier,
+    tagline: String? = null,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(88.dp)
+                .shadow(elevation = 8.dp, shape = CircleShape, clip = false, ambientColor = BrandGlow, spotColor = BrandGlow)
+                .clip(CircleShape)
+                .background(Color.White)
+                .border(1.dp, Color(0xFFE3EDE8), CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Image(
+                painter = painterResource(R.drawable.ic_launcher_foreground),
+                contentDescription = stringResource(R.string.cd_app_icon),
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(10.dp),
+            )
+        }
+        Spacer(Modifier.height(14.dp))
+        Text(
+            text = stringResource(R.string.brand_name),
+            fontFamily = OutfitFamily,
+            fontSize = 28.sp,
+            fontWeight = FontWeight.ExtraBold,
+            color = TextPrimary,
+            textAlign = TextAlign.Center,
         )
+        if (tagline != null) {
+            Text(
+                text = tagline,
+                fontFamily = OutfitFamily,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium,
+                color = TextSecondary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 6.dp),
+            )
+        }
     }
 }
 
@@ -125,29 +153,3 @@ fun GradientActionButton(
         }
     }
 }
-
-// Fades the edges of a cropped artwork region to transparent so it blends
-// into the screen background instead of showing a hard rectangle.
-fun Modifier.fadeEdges(horizontal: Float, vertical: Float): Modifier = this
-    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-    .drawWithContent {
-        drawContent()
-        drawRect(
-            brush = Brush.horizontalGradient(
-                0f to Color.Transparent,
-                horizontal to Color.Black,
-                1f - horizontal to Color.Black,
-                1f to Color.Transparent,
-            ),
-            blendMode = BlendMode.DstIn,
-        )
-        drawRect(
-            brush = Brush.verticalGradient(
-                0f to Color.Transparent,
-                vertical to Color.Black,
-                1f - vertical to Color.Black,
-                1f to Color.Transparent,
-            ),
-            blendMode = BlendMode.DstIn,
-        )
-    }

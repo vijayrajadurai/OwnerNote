@@ -66,6 +66,8 @@ import com.shopai.app.ui.components.ApiErrorAlertDialog
 import com.shopai.app.ui.components.BottomNavTab
 import com.shopai.app.ui.components.DashboardGreetingHeader
 import com.shopai.app.ui.components.HomeBackHandler
+import com.shopai.app.ui.components.HomeQuickLinks
+import com.shopai.app.ui.components.shopLocationLabel
 // import com.shopai.app.ui.components.HomePriorityList
 // import com.shopai.app.ui.components.HomeCreditDebitActions
 // import com.shopai.app.ui.components.TransactionEntryChooserDialog
@@ -290,15 +292,19 @@ fun HomeScreen(
         ) {
             HomeGradientHeader {
                 DashboardGreetingHeader(
+                    shopName = business?.businessName.orEmpty(),
+                    location = shopLocationLabel(business?.areaLabel, business?.city.orEmpty()),
                     ownerName = business?.ownerName.orEmpty(),
                     unreadCount = unreadReminders,
                     onNotificationsClick = { onNavigate(Routes.Reminders) },
                     onProfileClick = { onNavigate(Routes.Profile) },
+                    onSettingsClick = { onNavigate(Routes.Settings) },
                     onGradient = false,
                     photoPath = profilePhotoPath,
                     modifier = Modifier.padding(horizontal = 20.dp),
                 )
 
+                /*
                 if (carouselItems.isNotEmpty()) {
                     ReminderCarousel(
                         items = carouselItems,
@@ -306,6 +312,7 @@ fun HomeScreen(
                         onHeader = true,
                     )
                 }
+                */
             }
 
             Column(
@@ -341,6 +348,29 @@ fun HomeScreen(
                 DailyCashHomeCard(
                     summary = cashNoteSummary,
                     onClick = { onNavigate(Routes.DailyCashNote) },
+                )
+                HomeQuickLinks(
+                    onGroupBuyingClick = { onNavigate(Routes.GroupBuying) },
+                    onReportsClick = { onNavigate(Routes.AiInsights) },
+                    onTodayOfferClick = { onNavigate(Routes.LocalOffers) },
+                    onLoansClick = {
+                        val opp = funding
+                        if (opp != null) {
+                            onNavigate(Routes.fundingQualification(opp.id))
+                        } else {
+                            scope.launch {
+                                val first = runCatching {
+                                    container.fundingRepository.getOpportunities().firstOrNull()
+                                }.getOrNull()
+                                if (first != null) {
+                                    funding = first
+                                    onNavigate(Routes.fundingQualification(first.id))
+                                } else {
+                                    onNavigate(Routes.AiInsights)
+                                }
+                            }
+                        }
+                    },
                 )
 
             if (loading) {
@@ -379,6 +409,15 @@ fun HomeScreen(
                     }
                 }
 
+                // Every Credit / Debit (bills, notes, voice, manual) by due status, from the books.
+                com.shopai.app.ui.books.CreditDebitSummaryCard(
+                    container = container,
+                    refreshKey = cashFlow,
+                    onOpenCustomers = { onNavigate(Routes.Customers) },
+                    onOpenSuppliers = { onNavigate(Routes.Suppliers) },
+                )
+
+                /*
                 health?.let { h ->
                     HomeSectionHeader(title = stringResource(R.string.home_business_health))
                     ShopCard {
@@ -394,6 +433,7 @@ fun HomeScreen(
                         )
                     }
                 }
+                */
 
                 /*
                 if (priorities.isNotEmpty()) {
@@ -740,18 +780,21 @@ private fun OwnerNoteDashboardPreview() {
         ) {
             HomeGradientHeader {
                 DashboardGreetingHeader(
-                    ownerName = "Priya",
+                    shopName = "Anbu Super Mart",
+                    location = "Tambaram, Chennai",
                     unreadCount = 2,
                     onNotificationsClick = {},
                     onGradient = false,
                     modifier = Modifier.padding(horizontal = 20.dp),
                 )
+                /*
                 ReminderCarousel(
                     items = samplePaymentReminders(),
                     onOpenDetails = {},
                     onMarkPaid = {},
                     onHeader = true,
                 )
+                */
             }
         }
     }
@@ -774,18 +817,21 @@ private fun OwnerNoteDashboardDarkPreview() {
         ) {
             HomeGradientHeader {
                 DashboardGreetingHeader(
-                    ownerName = "Priya",
+                    shopName = "Anbu Super Mart",
+                    location = "Tambaram, Chennai",
                     unreadCount = 2,
                     onNotificationsClick = {},
                     onGradient = false,
                     modifier = Modifier.padding(horizontal = 20.dp),
                 )
+                /*
                 ReminderCarousel(
                     items = samplePaymentReminders(),
                     onOpenDetails = {},
                     onMarkPaid = {},
                     onHeader = true,
                 )
+                */
             }
         }
     }

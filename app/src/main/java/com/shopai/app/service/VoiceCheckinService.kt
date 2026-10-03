@@ -108,7 +108,7 @@ class VoiceCheckinService : Service() {
     private fun buildNotification(): Notification {
         ensureChannel()
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.drawable.ic_stat_notify)
             .setContentTitle(getString(R.string.voice_checkin_notification_title))
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)

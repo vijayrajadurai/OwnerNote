@@ -6,6 +6,7 @@ object Routes {
     const val Splash = "splash"
     const val Login = "login"
     const val Otp = "otp"
+    const val UserGuide = "user_guide"
     const val BusinessSetup = "business_setup"
     const val Home = "home"
     const val Discover = "discover"
@@ -29,6 +30,7 @@ object Routes {
     const val DailyCashNote = "daily_cash_note"
     const val Settings = "settings"
     const val Profile = "profile"
+    const val MoreInfo = "more_info/{page}"
     const val Subscription = "subscription"
     const val FundingQualification = "funding_qualification/{opportunityId}"
     const val GroupBuying = "group_buying"
@@ -80,6 +82,8 @@ object Routes {
     fun handwrittenScan(billId: Long? = null): String = "handwritten_scan?billId=${billId ?: -1}"
 
     fun handwrittenPerson(name: String): String = "handwritten_person/${Uri.encode(name)}"
+
+    fun moreInfo(page: String): String = "more_info/${Uri.encode(page)}"
 
     fun fundingQualification(opportunityId: String): String =
         "funding_qualification/${Uri.encode(opportunityId)}"

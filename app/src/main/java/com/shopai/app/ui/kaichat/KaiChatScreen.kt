@@ -33,6 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -67,9 +68,50 @@ import kotlin.math.sin
  * the owner's records, in text (no voice, no AI service). Messages stay.
  */
 @Composable
-fun KaiChatScreen(container: AppContainer, onBack: () -> Unit, onOpenMorningWork: (start: Boolean) -> Unit = {}) {
+fun KaiChatScreen(
+    container: AppContainer,
+    onBack: () -> Unit,
+    onOpenScanner: () -> Unit = {},
+    onOpenMorningWork: (start: Boolean) -> Unit = {},
+) {
     val session = container.kaiChat
     val scope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    // Edit of a draft: (message id, plan).
+    var editing by remember { mutableStateOf<Pair<Long, com.shopai.app.brain.tools.ActionPlan>?>(null) }
+
+    /** Phone actions the owner asked for — Kai only opens them; the owner presses call. */
+    fun perform(messageId: Long, action: com.shopai.app.brain.chat.KaiAction) {
+        when (action) {
+            is com.shopai.app.brain.chat.KaiAction.Dial -> runCatching {
+                context.startActivity(android.content.Intent(android.content.Intent.ACTION_DIAL, android.net.Uri.parse("tel:" + (action.phone ?: ""))))
+            }
+            com.shopai.app.brain.chat.KaiAction.OpenScanner -> onOpenScanner()
+            com.shopai.app.brain.chat.KaiAction.OpenAlarmSettings -> runCatching {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                    context.startActivity(android.content.Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, android.net.Uri.parse("package:" + context.packageName)))
+                }
+            }
+            com.shopai.app.brain.chat.KaiAction.OpenNotificationSettings -> runCatching {
+                context.startActivity(
+                    android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                        .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName),
+                )
+            }
+            is com.shopai.app.brain.chat.KaiAction.EditPlan -> session.plan(action.key)?.let { editing = messageId to it }
+            else -> Unit
+        }
+    }
+
+    fun tap(messageId: Long, action: com.shopai.app.brain.chat.KaiAction) {
+        scope.launch { session.tap(messageId, action)?.let { perform(messageId, it) } }
+    }
+
+    // Opened from a reminder notification: Kai shows that reminder.
+    val openReminder by com.shopai.app.notifications.KaiReminderInbox.pending.collectAsState()
+    LaunchedEffect(openReminder) {
+        com.shopai.app.notifications.KaiReminderInbox.take()?.let { session.showRang(it) }
+    }
     var input by rememberSaveable { mutableStateOf("") }
     val listState = rememberLazyListState()
 
@@ -104,6 +146,13 @@ fun KaiChatScreen(container: AppContainer, onBack: () -> Unit, onOpenMorningWork
 
     LaunchedEffect(session.messages.size) {
         if (session.messages.isNotEmpty()) listState.animateScrollToItem(session.messages.size)
+    }
+
+    editing?.let { (messageId, plan) ->
+        EditPlanDialog(plan, onDismiss = { editing = null }) { name, amount, mode, outgoing ->
+            editing = null
+            scope.launch { session.revise(messageId, plan.key, name, amount, mode, outgoing) }
+        }
     }
 
     DetailScaffold(title = stringResource(R.string.kai_chat_title), onBack = onBack) { contentModifier ->
@@ -153,17 +202,15 @@ fun KaiChatScreen(container: AppContainer, onBack: () -> Unit, onOpenMorningWork
                     }
                 }
                 items(session.messages, key = { it.id }) { m ->
-                    if (m.fromOwner) {
-                        OwnerBubble(m.text)
-                    } else {
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            KaiBubble(m.text)
-                            m.action?.let { action ->
-                                AssistChip(
-                                    onClick = { onOpenMorningWork(action == KaiChatAction.START_MORNING_WORK) },
-                                    label = { Text(stringResource(R.string.morning_start), fontWeight = FontWeight.Bold, color = Primary) },
-                                )
-                            }
+                    if (m.fromOwner) OwnerBubble(m.text) else {
+                        KaiBubble(m.text)
+                        m.card?.let { card -> KaiCardView(card, closed = m.cardClosed || session.thinking) { tap(m.id, it) } }
+                        // Morning Work hand-over: "Start My Morning".
+                        m.action?.let { action ->
+                            AssistChip(
+                                onClick = { onOpenMorningWork(action == KaiChatAction.START_MORNING_WORK) },
+                                label = { Text(stringResource(R.string.morning_start), fontWeight = FontWeight.Bold, color = Primary) },
+                            )
                         }
                     }
                 }
@@ -194,6 +241,78 @@ fun KaiChatScreen(container: AppContainer, onBack: () -> Unit, onOpenMorningWork
             }
         }
     }
+}
+
+/** The details of a draft / action under Kai's message, with its buttons. */
+@Composable
+private fun KaiCardView(card: com.shopai.app.brain.chat.KaiCard, closed: Boolean, onTap: (com.shopai.app.brain.chat.KaiAction) -> Unit) {
+    Box(Modifier.fillMaxWidth().padding(top = 4.dp), contentAlignment = Alignment.CenterStart) {
+        Column(
+            modifier = Modifier
+                .widthIn(max = 320.dp)
+                .background(Primary.copy(alpha = 0.06f), RoundedCornerShape(14.dp))
+                .border(1.dp, Primary.copy(alpha = 0.25f), RoundedCornerShape(14.dp))
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            card.lines.forEachIndexed { i, line ->
+                Text(line, style = if (i == 0) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
+                    fontWeight = if (i == 0) FontWeight.SemiBold else FontWeight.Normal, color = ShopAiThemeColors.onSurface)
+            }
+            card.warning?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = com.shopai.app.ui.theme.Danger) }
+            card.buttons.forEach { b ->
+                val enabled = b.enabled && !closed
+                if (b.primary) {
+                    androidx.compose.material3.Button(onClick = { onTap(b.action) }, enabled = enabled, modifier = Modifier.fillMaxWidth()) { Text(b.label) }
+                } else {
+                    androidx.compose.material3.OutlinedButton(onClick = { onTap(b.action) }, enabled = enabled, modifier = Modifier.fillMaxWidth()) { Text(b.label) }
+                }
+            }
+        }
+    }
+}
+
+/** Edit a draft before confirming: who, how much, money given or received, and how. */
+@Composable
+private fun EditPlanDialog(
+    plan: com.shopai.app.brain.tools.ActionPlan,
+    onDismiss: () -> Unit,
+    onSave: (name: String, amount: java.math.BigDecimal, mode: com.shopai.app.books.model.PaymentMode, outgoing: Boolean) -> Unit,
+) {
+    var name by remember { mutableStateOf(plan.partyName) }
+    var amount by remember { mutableStateOf(plan.amount.stripTrailingZeros().toPlainString()) }
+    var mode by remember { mutableStateOf(plan.mode) }
+    val outgoingAtStart = plan.kind == com.shopai.app.brain.tools.PlanKind.PAYMENT_OUT || plan.kind == com.shopai.app.brain.tools.PlanKind.CREDIT_GIVEN
+    var outgoing by remember { mutableStateOf(outgoingAtStart) }
+    val parsed = amount.replace(",", "").toBigDecimalOrNull()?.takeIf { it.signum() > 0 }
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.kai_edit_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text(stringResource(R.string.kai_edit_name)) }, singleLine = true)
+                OutlinedTextField(
+                    value = amount, onValueChange = { amount = it.filter { c -> c.isDigit() || c == '.' || c == ',' } },
+                    label = { Text(stringResource(R.string.kai_edit_amount)) }, singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
+                    isError = parsed == null,
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    androidx.compose.material3.FilterChip(selected = outgoing, onClick = { outgoing = true }, label = { Text(stringResource(R.string.kai_edit_given)) })
+                    androidx.compose.material3.FilterChip(selected = !outgoing, onClick = { outgoing = false }, label = { Text(stringResource(R.string.kai_edit_received)) })
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf(com.shopai.app.books.model.PaymentMode.CASH to "Cash", com.shopai.app.books.model.PaymentMode.UPI to "UPI", com.shopai.app.books.model.PaymentMode.BANK_TRANSFER to "Bank").forEach { (m, label) ->
+                        androidx.compose.material3.FilterChip(selected = mode == m, onClick = { mode = m }, label = { Text(label) })
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { parsed?.let { onSave(name, it, mode, outgoing) } }, enabled = parsed != null && name.isNotBlank()) { Text(stringResource(R.string.save)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
 }
 
 @Composable

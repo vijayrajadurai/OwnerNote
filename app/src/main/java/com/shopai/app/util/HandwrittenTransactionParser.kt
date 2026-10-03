@@ -58,6 +58,14 @@ data class ExtractedTransaction(
     val dateConfidence: Int?,
     val directionConfidence: Int?,
     val issues: Set<ReviewIssue>,
+    /** Handwritten bill only: the shop / company in the header (the party when I owe them). */
+    val billCompany: String? = null,
+    /** Handwritten bill only: the customer ("Name / M/s / To"), the party when they owe me. */
+    val billCustomer: String? = null,
+    /** Handwritten bill only: already paid ("Paid / Advance 500", or Total − "Balance"); the rest stays pending. */
+    val billPaid: BigDecimal? = null,
+    /** Handwritten bill only: the written due date ("Due date / Pay by 15/10"). */
+    val billDueDate: LocalDate? = null,
 ) {
     val needsReview: Boolean get() = issues.any { it.blocksSave }
 }
@@ -79,11 +87,53 @@ data class LinePrefill(
     val date: LocalDate?,
 )
 
+/** What a scanned handwritten page is, decided from its content before review. */
+enum class NotePageType {
+    /** Items + total: one entry (party + total). */
+    HANDWRITTEN_BILL,
+    /** Every entry is money I gave → each person owes me (Credit). */
+    MONEY_GIVEN,
+    /** Every entry is money I received → I owe each person (Debit). */
+    MONEY_RECEIVED,
+    /** Both directions on the page; each row keeps its own. */
+    MIXED,
+    /** No Credit/Debit could be read — the owner chooses on review. */
+    UNKNOWN,
+}
+
+/** What a handwritten page is: one bill, a list of people + amounts, or not sure (the owner chooses). */
+enum class PageKind { BILL, NOTES, UNKNOWN }
+
 data class NoteExtraction(
     val transactions: List<ExtractedTransaction>,
     /** Lines with text that isn't a transaction. Shown, never silently dropped. */
     val unparsedLines: List<Pair<Int, OcrLine>>,
-)
+    /** Per page, in order: what the page was read (or chosen) as. */
+    val pageKinds: List<PageKind> = emptyList(),
+) {
+    /** Pages the owner must mark as Bill or Notes before anything is extracted from them. */
+    val unknownPages: List<Int> get() = pageKinds.withIndex().filter { it.value == PageKind.UNKNOWN }.map { it.index }
+
+    /** The page type, from what was read (never guessed for unknown rows). */
+    val pageType: NotePageType get() = pageTypeOf(transactions)
+
+    companion object {
+        fun pageTypeOf(rows: List<ExtractedTransaction>): NotePageType {
+            if (rows.isEmpty()) return NotePageType.UNKNOWN
+            if (rows.all { it.description?.startsWith(HANDWRITTEN_BILL_LABEL) == true }) return NotePageType.HANDWRITTEN_BILL
+            val known = rows.map { it.direction }.filter { it != TxnDirection.UNKNOWN }.toSet()
+            return when {
+                known.isEmpty() -> NotePageType.UNKNOWN
+                known.size > 1 -> NotePageType.MIXED
+                known.single() == TxnDirection.CREDIT -> NotePageType.MONEY_GIVEN
+                else -> NotePageType.MONEY_RECEIVED
+            }
+        }
+    }
+}
+
+/** Description prefix of the single entry made from a handwritten bill page. */
+const val HANDWRITTEN_BILL_LABEL = "Handwritten bill"
 
 /**
  * Turns the lines of one or more handwritten pages into transactions:
@@ -95,10 +145,31 @@ object HandwrittenTransactionParser {
     /** Below this OCR confidence a field is marked "Needs Review". */
     const val CONFIDENCE_THRESHOLD = 70
 
-    fun parse(pages: List<List<OcrLine>>, today: LocalDate = LocalDate.now()): NoteExtraction {
+    /**
+     * [kinds]: the owner's choice for pages read as [PageKind.UNKNOWN]. A page
+     * still UNKNOWN gives no rows — the owner is asked "Bill or Notes?" first.
+     */
+    fun parse(
+        pages: List<List<OcrLine>>,
+        today: LocalDate = LocalDate.now(),
+        kinds: Map<Int, PageKind> = emptyMap(),
+    ): NoteExtraction {
         val transactions = mutableListOf<ExtractedTransaction>()
         val unparsed = mutableListOf<Pair<Int, OcrLine>>()
+        val pageKinds = mutableListOf<PageKind>()
         pages.forEachIndexed { pageIndex, lines ->
+            val (detected, bill) = billOf(pageIndex, lines, today)
+            val kind = kinds[pageIndex] ?: detected
+            pageKinds += kind
+            when (kind) {
+                // A handwritten bill is ONE entry, not one per item line.
+                PageKind.BILL -> {
+                    bill?.let { transactions += it }
+                    return@forEachIndexed
+                }
+                PageKind.UNKNOWN -> return@forEachIndexed
+                PageKind.NOTES -> Unit
+            }
             // A date or "To give:" heading applies to the lines under it.
             var carryDate: DateMatch? = null
             var carryDateConfidence: Int? = null
@@ -132,7 +203,7 @@ object HandwrittenTransactionParser {
                 if (!producedAny && !headerOnly && text.any { it.isLetterOrDigit() }) unparsed += pageIndex to line
             }
         }
-        return NoteExtraction(transactions, unparsed)
+        return NoteExtraction(transactions, unparsed, pageKinds)
     }
 
     /**
@@ -439,6 +510,164 @@ object HandwrittenTransactionParser {
         )
     }
 
+    // ------------------------------------------------------------ bill page
+
+    // Quantity units written on bill item lines ("2 kg", "1L", "5 pcs", "3 கிலோ").
+    private val unitWord = Regex(
+        """(?i)(?<=\d|\s|^)(kg|kgs|kilo|g|gm|gms|gram|grams|ltr|ltrs|lit|litre|litres|l|ml|pcs|pc|nos|box|bag|bags|pkt|pkts|packet|doz|dozen|mtr|mtrs|bottle|btl|bundle|கிலோ|லிட்டர்|பாக்கெட்)(?![\p{L}])""",
+    )
+    private val qtyTimesRate = Regex("""\d\s*[x×*@]\s*\d""")
+    private val billWord = Regex("""(?i)\b(bill|invoice|estimate|cash\s*memo|receipt|particulars|qty|rate)\b|பில்|ரசீது""")
+    private val totalWord = Regex("""(?i)\b(grand\s*total|net\s*total|net\s*amount|total|nett?)\b|மொத்தம்""")
+    private val partyLabel = Regex("""(?i)^\s*(?:name|to|m\s*/\s*s\.?|m[|l1]s\.?|ms\.?|customer|party|buyer|sold\s*to|bill\s*to|mr\.?|mrs\.?|பெயர்|திரு(?:மதி)?)(?![\p{L}])\s*[:.\-]?\s*(.*)$""")
+    private val billNumber = Regex("""(?i)\b(?:bill|inv|invoice)\s*(?:no|number|#)\.?\s*[:\-]?\s*([A-Za-z0-9\-/]+)""")
+    // Bill footer lines: what was paid, what is left, and when it is due.
+    private val paidWord = Regex("""(?i)\b(paid|advance|adv|received|recd|rcvd|amount\s*paid|cash\s*paid)\b|வரவு|செலுத்த|கட்டிய|அட்வான்ஸ்|முன்பணம்""")
+    private val balanceWord = Regex("""(?i)\b(balance|bal|pending|baki|baaki|due\s*amount|amount\s*due|remaining)\b|பாக்கி|மீதி|நிலுவை""")
+    private val dueWord = Regex("""(?i)\b(due\s*date|due\s*on|due\s*by|due|pay\s*by|payable\s*by|last\s*date)\b|கடைசி\s*தேதி|செலுத்த\s*வேண்டிய\s*தேதி""")
+    private val fullyPaidStamp = Regex("""(?i)^\s*(fully\s*paid|paid|settled|cleared)\s*[.!]?\s*$""")
+
+    /**
+     * What kind of page this is, from what is written on it:
+     * - BILL: item rows (qty / unit / rate) with a Total / Paid / Balance line or a bill heading;
+     * - UNKNOWN: some bill signs but not enough to be sure — the owner chooses;
+     * - NOTES: "who owes whom" lines.
+     */
+    fun classify(lines: List<OcrLine>, today: LocalDate = LocalDate.now()): PageKind = billOf(0, lines, today).first
+
+    /**
+     * A bill page is ONE entry: party, date and the written total (never the items
+     * added up — no written total means the owner enters it). Returns the page kind
+     * and that entry (built for any page with lines, so the owner may choose "Bill").
+     */
+    private fun billOf(pageIndex: Int, lines: List<OcrLine>, today: LocalDate): Pair<PageKind, ExtractedTransaction?> {
+        data class Row(val index: Int, val line: OcrLine, val text: String, val amounts: List<BigDecimal>)
+        val rows = lines.mapIndexed { i, l ->
+            val text = prepare(l.text).first
+            // Phone numbers, GSTINs and the bill number are not amounts.
+            val masked = maskDates(text).let { m -> mask(m, (phoneLike.findAll(m) + gstinLike.findAll(m) + billNumber.findAll(m)).map { it.range }.toList()) }
+            Row(i, l, text, amountPattern.findAll(masked).mapNotNull { toAmount(it) }.toList())
+        }
+        fun findDate(text: String) = DocumentDates.findMatch(text, today, allowYearless = true, yearless = YearlessPolicy.CURRENT_YEAR)
+        // Footer: "Paid / Advance 500", "Balance 300", "Due date 15/10" — not items, not the total.
+        fun isFooter(r: Row) = paidWord.containsMatchIn(r.text) || balanceWord.containsMatchIn(r.text) ||
+            (dueWord.containsMatchIn(r.text) && findDate(r.text) != null)
+        val paidRow = rows.lastOrNull { paidWord.containsMatchIn(it.text) && !balanceWord.containsMatchIn(it.text) && it.amounts.isNotEmpty() }
+        val balanceRow = rows.lastOrNull { balanceWord.containsMatchIn(it.text) && it.amounts.isNotEmpty() }
+        val dueRow = rows.lastOrNull { dueWord.containsMatchIn(it.text) && findDate(it.text) != null }
+        val totalRow = rows.lastOrNull { totalWord.containsMatchIn(it.text) && it.amounts.isNotEmpty() && !isFooter(it) }
+        val itemRows = rows.filter { r ->
+            r !== totalRow && !isFooter(r) && r.amounts.isNotEmpty() && r.text.any { it.isLetter() } &&
+                (unitWord.containsMatchIn(r.text) || qtyTimesRate.containsMatchIn(r.text) ||
+                    // "Rice 2 120" is an item; "Kumar 500 Ravi 300" is two people, not an item.
+                    (r.amounts.size >= 2 && splitPeople(r.text).size == 1))
+        }
+        val hasBillWord = rows.any { billWord.containsMatchIn(it.text) }
+        val hasFooter = totalRow != null || paidRow != null || balanceRow != null
+        val kind = when {
+            itemRows.size >= 2 && (hasFooter || hasBillWord) -> PageKind.BILL
+            itemRows.size >= 2 || (itemRows.size == 1 && (totalRow != null || hasBillWord)) -> PageKind.UNKNOWN
+            else -> PageKind.NOTES
+        }
+        if (rows.isEmpty()) return kind to null
+
+        // Total: only what is written — the Total line, else Paid + Balance (both written; checked by the owner).
+        val writtenPaid = paidRow?.amounts?.lastOrNull()
+        val writtenBalance = balanceRow?.amounts?.lastOrNull()
+        val total = totalRow?.amounts?.maxOrNull()
+            ?: if (writtenPaid != null && writtenBalance != null) writtenPaid + writtenBalance else null
+
+        // Paid: written, else Total − Balance, else a "PAID" stamp means all of it.
+        val fullyPaid = rows.any { fullyPaidStamp.matches(it.text) }
+        val paidRaw = when {
+            writtenPaid != null -> writtenPaid
+            total != null && writtenBalance != null -> total - writtenBalance
+            fullyPaid -> total
+            else -> null
+        }
+        // More paid than the bill, or Paid + Balance ≠ Total: something was misread — the owner checks.
+        val paidMismatch = total != null && paidRaw != null &&
+            (paidRaw.signum() < 0 || paidRaw > total || (writtenPaid != null && writtenBalance != null && (writtenPaid + writtenBalance).compareTo(total) != 0))
+        val paid = paidRaw?.takeIf { total != null && it.signum() >= 0 && it <= total }
+
+        fun cleanName(raw: String): String? = maskDates(raw)
+            .let { m -> mask(m, (phoneLike.findAll(m) + gstinLike.findAll(m) + billNumber.findAll(m)).map { it.range }.toList()) }
+            .replace(Regex("""(?i)\b(?:ph|phone|cell|mob(?:ile)?|gstin|gst)\b\.?\s*:?"""), " ")
+            .replace(Regex("""[^\p{L}\p{M}\s.&']"""), " ").replace(Regex("""\s+"""), " ").trim(' ', '.', '\'')
+            .takeIf { it.count(Char::isLetter) >= 2 }
+        fun isDate(text: String) = DocumentDates.findMatch(text, today, allowYearless = true, yearless = YearlessPolicy.CURRENT_YEAR) != null
+
+        // Customer: "Name / M/s / To / Customer: …" — or, when the label stands alone, the next line.
+        val customer: Pair<Row, String>? = rows.withIndex().firstNotNullOfOrNull { (i, r) ->
+            val m = partyLabel.find(r.text) ?: return@firstNotNullOfOrNull null
+            cleanName(m.groupValues[1])?.let { r to it } ?: rows.getOrNull(i + 1)
+                ?.takeIf { next -> next.amounts.isEmpty() && !isDate(next.text) && !billWord.containsMatchIn(next.text) }
+                ?.let { next -> cleanName(next.text)?.let { next to it } }
+        }
+        // Company / shop: the first plain name line in the header (above the items), not the
+        // customer line, not an address / phone / e-mail / GST line.
+        val firstItem = itemRows.minOfOrNull { it.index } ?: (totalRow ?: paidRow ?: balanceRow)?.index ?: rows.size
+        val company: Pair<Row, String>? = rows.filter { it.index < firstItem }.firstNotNullOfOrNull { r ->
+            r.takeIf {
+                it !== customer?.first && partyLabel.find(it.text) == null && it.amounts.isEmpty() &&
+                    !billWord.containsMatchIn(it.text) && !totalWord.containsMatchIn(it.text) && !isDate(it.text) &&
+                    !addressLine.containsMatchIn(it.text) && !it.text.contains('@') && it.text.count(Char::isLetter) >= 3
+            }?.let { cleanName(it.text) }?.let { r to it }
+        }
+
+        // The row's name until the owner picks Credit (customer) or Debit (company) on review.
+        val (partyRow, party) = customer ?: company ?: (null to null)
+        val labelled = customer
+
+        // The bill date is the first date that is not the due date.
+        val date = rows.filter { it !== dueRow }.firstNotNullOfOrNull { findDate(it.text) }
+        val dueDate = dueRow?.let { findDate(it.text) }?.date
+        val number = rows.firstNotNullOfOrNull { billNumber.find(it.text)?.groupValues?.get(1) }
+        val nameConfidence = partyRow?.line?.confidence
+        val amountConfidence = totalRow?.line?.confidence
+
+        val issues = buildSet {
+            if (party == null) add(ReviewIssue.NAME_MISSING)
+            // Not labelled: the top line may be the seller's own name — the owner confirms who it is.
+            else if (labelled == null || (nameConfidence != null && nameConfidence < CONFIDENCE_THRESHOLD)) add(ReviewIssue.NAME_UNCLEAR)
+            if (total == null) add(ReviewIssue.AMOUNT_MISSING)
+            else if (totalRow == null || paidMismatch || (amountConfidence != null && amountConfidence < CONFIDENCE_THRESHOLD)) add(ReviewIssue.AMOUNT_UNCLEAR)
+            add(ReviewIssue.TYPE_UNKNOWN)
+            if (date == null) add(ReviewIssue.DATE_MISSING) else if (date.yearAssumed) add(ReviewIssue.YEAR_ASSUMED)
+        }
+        val anchor = totalRow ?: itemRows.lastOrNull() ?: paidRow ?: balanceRow ?: rows.last()
+        return kind to ExtractedTransaction(
+            personName = party,
+            amount = total?.setScale(2, RoundingMode.HALF_UP),
+            amountText = totalRow?.text,
+            date = date?.date,
+            dateText = date?.text,
+            direction = TxnDirection.UNKNOWN,
+            directionReason = "Handwritten bill (${itemRows.size} items) — choose Credit if the customer owes, Debit if you owe the shop",
+            description = listOfNotNull(HANDWRITTEN_BILL_LABEL, number?.let { "No. $it" }, "${itemRows.size} items").joinToString(" · "),
+            originalLine = anchor.line.text,
+            pageIndex = pageIndex,
+            lineIndex = anchor.index,
+            box = anchor.line.box,
+            nameConfidence = nameConfidence,
+            amountConfidence = amountConfidence,
+            dateConfidence = null,
+            directionConfidence = null,
+            issues = issues,
+            billCompany = company?.second,
+            billCustomer = customer?.second,
+            billPaid = paid?.setScale(2, RoundingMode.HALF_UP),
+            billDueDate = dueDate,
+        )
+    }
+
+    // Header lines that are not the shop's name.
+    private val phoneLike = Regex("""(?<![\d])(?:\+?91[\s-]?)?[6-9]\d{4}[\s-]?\d{5}(?![\d])""")
+    private val gstinLike = Regex("""(?i)\b\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]\b""")
+    private val addressLine = Regex(
+        """(?i)\b(road|rd|street|st|nagar|bazaar|bazar|main|cross|near|opp|opposite|lane|salai|theru|colony|layout|post|dist|district|taluk|pin|pincode|door|no\s*\d|ph|phone|cell|mob|mobile|email|e-mail|gst|gstin|tin|website|www)\b|தெரு|சாலை|நகர்""",
+    )
+
     private fun toAmount(match: MatchResult): BigDecimal? {
         val number = match.groupValues[2].replace(",", "").toBigDecimalOrNull() ?: return null
         val value = if (match.groupValues[3].isNotBlank()) number.multiply(BigDecimal(1000)) else number
@@ -453,7 +682,8 @@ object HandwrittenTransactionParser {
         "to", "from", "for", "the", "a", "an", "will", "should", "has", "have", "is", "must", "need",
         "rs", "inr", "rupees", "rupee", "only", "amount", "amt", "name", "date", "dt", "on", "at", "by",
         "and", "with", "total", "lent", "lend", "borrowed", "borrow", "return", "back", "balance", "due",
-        "us", "we", "our", "him", "her", "them", "list", "k",
+        "us", "we", "our", "him", "her", "them", "list", "k", "got", "took", "taken", "money", "advance",
+        "குடுத்தேன்", "குடுத்தது", "கொடுத்தோம்", "கொடுத்த", "வாங்கியது", "வாங்கினோம்", "வாங்கிய", "வந்தது",
         "எனக்கு", "நான்", "நாம்", "ரூபாய்", "ரூ", "தேதி", "வேண்டும்", "வேணும்",
         "வேண்டியது", "வேண்டியவை", "வேண்டிய", "பட்டியல்",
         "கொடுக்கணும்", "குடுக்கணும்", "கொடுக்க", "குடுக்க", "கொடு", "கொடுத்தது", "கொடுத்தேன்",
@@ -522,8 +752,14 @@ object HandwrittenTransactionParser {
 
     private val englishCredit = listOf("receivable", "to receive", "receive", "to get", "get", "collect", "owes me", "owe me", "credit", "cr", "lent", "lend to")
     private val englishDebit = listOf("payable", "to pay", "pay", "to give", "give", "debit", "dr", "i owe", "owe to", "borrowed", "borrow")
-    // Settled events ("received", "paid") don't say who owes whom now.
-    private val settled = listOf("received", "paid", "gave", "given", "returned", "settled")
+    // "Money given" / "money received" notebooks (khata): money I GAVE someone
+    // is owed back to me (Credit); money I RECEIVED from someone I owe back (Debit).
+    private val givenWords = listOf("gave", "given", "lent", "gave to", "given to", "advance given")
+    private val receivedWords = listOf("received", "received from", "got", "took", "taken", "borrowed from")
+    private val tamilGiven = listOf("கொடுத்தேன்", "கொடுத்தது", "குடுத்தேன்", "குடுத்தது", "கொடுத்தோம்", "கொடுத்த")
+    private val tamilReceived = listOf("வாங்கினேன்", "வாங்கியது", "வாங்கினது", "வாங்கினோம்", "வாங்கிய", "வந்தது")
+    // Settled events ("paid", "returned") don't say who owes whom now.
+    private val settled = listOf("paid", "returned", "settled")
     private val tamilGive = listOf("கொடுக்க", "குடுக்க", "தரணும்", "தர வேண்ட", "தர வேணும்", "கொடு")
     private val tamilGet = listOf("வாங்கணும்", "வாங்க வேண்ட", "வாங்க வேணும்", "வரணும்", "வர வேண்ட", "வரவு")
     private val credit = TxnDirection.CREDIT to "receive"
@@ -546,8 +782,12 @@ object HandwrittenTransactionParser {
         val signals = mutableSetOf<TxnDirection>()
         var reason: String? = null
 
+        // Past tense "gave / received" (money given / received notebooks) is decided below.
+        val gaveIt = givenWords.any { has(it) } || tamilGiven.any { hasStem(it) }
+        val gotIt = receivedWords.any { has(it) } || tamilReceived.any { hasStem(it) }
+
         // Tamil: who is giving depends on "எனக்கு" (to me) / "-க்கு" (to them).
-        val tamilGiveVerb = tamilGive.any { hasStem(it) }
+        val tamilGiveVerb = tamilGive.any { hasStem(it) } && !tamilGiven.any { hasStem(it) }
         val tamilGetVerb = tamilGet.any { hasStem(it) }
         val toMe = hasStem("எனக்கு")
         val datives = tokens.filter { stripDative(it).second && !isKeyword(it) }
@@ -586,8 +826,19 @@ object HandwrittenTransactionParser {
             signals += TxnDirection.CREDIT; reason = reason ?: "credit"
         }
 
-        val isSettled = settled.any { has(it) } ||
-            listOf("கொடுத்த", "குடுத்த", "வாங்கின", "தந்த").any { hasStem(it) }
+        // Money given → they owe me (Credit); money received → I owe them (Debit).
+        // An explicit opposite word on the same line ("… gave … debit") stays for review.
+        if (gaveIt != gotIt) {
+            val dir = if (gaveIt) TxnDirection.CREDIT else TxnDirection.DEBIT
+            return if (signals.all { it == dir }) {
+                dir to if (gaveIt) "money given → they owe you" else "money received → you owe them"
+            } else {
+                null
+            }
+        }
+
+        // "தந்த" (gave — but who?) and "paid / returned" don't say who owes whom now.
+        val isSettled = settled.any { has(it) } || hasStem("தந்த")
         return when {
             signals.size != 1 -> null
             isSettled -> null

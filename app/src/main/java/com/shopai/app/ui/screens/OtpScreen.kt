@@ -1,7 +1,6 @@
 package com.shopai.app.ui.screens
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -12,24 +11,20 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -50,10 +45,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -71,12 +64,8 @@ import com.shopai.app.data.network.presentApiError
 import com.shopai.app.data.repository.PhoneOtpSendResult
 import com.shopai.app.ui.components.ApiErrorAlertDialog
 import com.shopai.app.ui.components.AuthBackgroundBrush
+import com.shopai.app.ui.components.AuthBrandHeader
 import com.shopai.app.ui.components.GradientActionButton
-import com.shopai.app.ui.components.KaiSrcSize
-import com.shopai.app.ui.components.fadeEdges
-import com.shopai.app.ui.components.rememberWelcomeArtwork
-import com.shopai.app.ui.theme.Accent
-import com.shopai.app.ui.theme.OnPrimary
 import com.shopai.app.ui.theme.Primary
 import com.shopai.app.ui.theme.PrimaryLight
 import com.shopai.app.ui.theme.TextPrimary
@@ -93,6 +82,7 @@ fun OtpScreen(
     container: AppContainer,
     onNavigateBack: () -> Unit,
     onNavigateHome: () -> Unit,
+    onNavigateUserGuide: () -> Unit,
     onNavigateBusinessSetup: () -> Unit,
 ) {
     var code by remember { mutableStateOf("") }
@@ -110,7 +100,6 @@ fun OtpScreen(
     val errorInvalidOtp = stringResource(R.string.error_invalid_otp)
     val errorSendOtp = stringResource(R.string.error_send_otp)
     val focusRequester = remember { FocusRequester() }
-    val artwork = rememberWelcomeArtwork()
 
     LaunchedEffect(resendEpoch) {
         if (resendEpoch == 0) return@LaunchedEffect
@@ -130,6 +119,10 @@ fun OtpScreen(
     }
 
     suspend fun completeLogin(result: AuthResponse) {
+        if (!container.preferencesRepository.hasCompletedUserGuide()) {
+            onNavigateUserGuide()
+            return
+        }
         if (result.isNewUser) {
             onNavigateBusinessSetup()
         } else {
@@ -217,6 +210,10 @@ fun OtpScreen(
                 )
             }
         }
+
+        AuthBrandHeader()
+
+        Spacer(modifier = Modifier.weight(1f))
 
         Text(
             text = stringResource(R.string.otp_title),
@@ -306,38 +303,7 @@ fun OtpScreen(
             }
         }
 
-        // KAI with the "verified" shield; shrinks when the keyboard opens.
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .padding(top = 8.dp),
-            contentAlignment = Alignment.BottomCenter,
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .aspectRatio(
-                        KaiSrcSize.width.toFloat() / KaiSrcSize.height,
-                        matchHeightConstraintsFirst = true,
-                    ),
-            ) {
-                Image(
-                    painter = artwork.kai,
-                    contentDescription = null,
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .fadeEdges(horizontal = 0.18f, vertical = 0.10f),
-                )
-                VerifiedShield(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .offset(x = 8.dp, y = 4.dp)
-                        .size(64.dp),
-                )
-            }
-        }
+        Spacer(modifier = Modifier.weight(1f))
 
         GradientActionButton(
             label = stringResource(R.string.otp_verify),
@@ -422,35 +388,4 @@ private fun OtpDigitBoxes(
             }
         },
     )
-}
-
-// Green shield with a white tick, drawn in code so no extra image is needed.
-private val ShieldShape = GenericShape { size, _ ->
-    val w = size.width
-    val h = size.height
-    moveTo(w / 2f, 0f)
-    lineTo(w, h * 0.16f)
-    lineTo(w, h * 0.48f)
-    cubicTo(w, h * 0.76f, w * 0.72f, h * 0.92f, w / 2f, h)
-    cubicTo(w * 0.28f, h * 0.92f, 0f, h * 0.76f, 0f, h * 0.48f)
-    lineTo(0f, h * 0.16f)
-    close()
-}
-
-@Composable
-private fun VerifiedShield(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .shadow(elevation = 6.dp, shape = ShieldShape, clip = false)
-            .clip(ShieldShape)
-            .background(Brush.verticalGradient(listOf(Accent, Primary))),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            imageVector = Icons.Filled.Check,
-            contentDescription = null,
-            tint = OnPrimary,
-            modifier = Modifier.size(36.dp),
-        )
-    }
 }

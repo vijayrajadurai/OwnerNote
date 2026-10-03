@@ -13,4 +13,6 @@ class PreferencesRepository(private val store: UserPreferencesStore) {
     suspend fun getTheme(): AppThemeMode = store.getTheme()
     suspend fun setLanguage(language: AppLanguage) = store.setLanguage(language)
     suspend fun setTheme(theme: AppThemeMode) = store.setTheme(theme)
+    suspend fun hasCompletedUserGuide(): Boolean = store.hasCompletedUserGuide()
+    suspend fun setUserGuideCompleted() = store.setUserGuideCompleted()
 }

@@ -3,6 +3,7 @@ package com.shopai.app.data.local
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -38,6 +39,7 @@ class UserPreferencesStore(context: Context) {
     private val appContext = context.applicationContext
     private val languageKey = stringPreferencesKey("app_language")
     private val themeKey = stringPreferencesKey("app_theme")
+    private val userGuideCompletedKey = booleanPreferencesKey("user_guide_completed")
 
     val languageFlow: Flow<AppLanguage> = appContext.userPrefsDataStore.data.map { prefs ->
         AppLanguage.fromTag(prefs[languageKey])
@@ -62,6 +64,15 @@ class UserPreferencesStore(context: Context) {
     suspend fun setTheme(theme: AppThemeMode) {
         appContext.userPrefsDataStore.edit { prefs ->
             prefs[themeKey] = theme.storageValue
+        }
+    }
+
+    suspend fun hasCompletedUserGuide(): Boolean =
+        appContext.userPrefsDataStore.data.first()[userGuideCompletedKey] == true
+
+    suspend fun setUserGuideCompleted() {
+        appContext.userPrefsDataStore.edit { prefs ->
+            prefs[userGuideCompletedKey] = true
         }
     }
 }

@@ -1,0 +1,233 @@
+package com.shopai.app.ui.more
+
+import androidx.annotation.StringRes
+import androidx.compose.ui.graphics.Color
+import com.shopai.app.R
+import com.shopai.app.ui.navigation.Routes
+
+enum class MoreMenuIcon {
+    Profile,
+    Categories,
+    Transactions,
+    Reports,
+    Reminders,
+    Notifications,
+    Settings,
+    Help,
+    About,
+    Privacy,
+    AskBusiness,
+    GroupBuying,
+    Handwritten,
+    Voice,
+    Subscription,
+    Hsn,
+    BooksSettings,
+    Offers,
+}
+
+data class MoreMenuEntry(
+    val id: String,
+    @StringRes val labelRes: Int,
+    @StringRes val captionRes: Int,
+    @StringRes val contentDescriptionRes: Int,
+    val icon: MoreMenuIcon,
+    val tint: Color,
+    val card: Color,
+    val route: String,
+)
+
+object MoreMenuPages {
+    const val Help = "help"
+    const val About = "about"
+    const val Privacy = "privacy"
+    const val Notifications = "notifications"
+}
+
+object MoreMenuCatalog {
+    val primary: List<MoreMenuEntry> = listOf(
+        MoreMenuEntry(
+            id = "profile",
+            labelRes = R.string.profile_title,
+            captionRes = R.string.more_profile_caption,
+            contentDescriptionRes = R.string.cd_more_profile,
+            icon = MoreMenuIcon.Profile,
+            tint = Color(0xFF1E8A5A),
+            card = Color(0xFFE8F7EE),
+            route = Routes.Profile,
+        ),
+        MoreMenuEntry(
+            id = "categories",
+            labelRes = R.string.more_categories,
+            captionRes = R.string.more_categories_caption,
+            contentDescriptionRes = R.string.cd_more_categories,
+            icon = MoreMenuIcon.Categories,
+            tint = Color(0xFF3D7BD9),
+            card = Color(0xFFE8F1FC),
+            route = Routes.Inventory,
+        ),
+        MoreMenuEntry(
+            id = "transactions",
+            labelRes = R.string.more_transactions,
+            captionRes = R.string.more_transactions_caption,
+            contentDescriptionRes = R.string.cd_more_transactions,
+            icon = MoreMenuIcon.Transactions,
+            tint = Color(0xFFE08A2C),
+            card = Color(0xFFFFF3E6),
+            route = Routes.Billing,
+        ),
+        MoreMenuEntry(
+            id = "reports",
+            labelRes = R.string.more_reports,
+            captionRes = R.string.more_reports_caption,
+            contentDescriptionRes = R.string.cd_more_reports,
+            icon = MoreMenuIcon.Reports,
+            tint = Color(0xFF7B5CDB),
+            card = Color(0xFFF3ECFE),
+            route = Routes.AiInsights,
+        ),
+        MoreMenuEntry(
+            id = "reminders",
+            labelRes = R.string.more_reminders,
+            captionRes = R.string.more_reminders_caption,
+            contentDescriptionRes = R.string.cd_more_reminders,
+            icon = MoreMenuIcon.Reminders,
+            tint = Color(0xFFE0A21A),
+            card = Color(0xFFFFF8E6),
+            route = Routes.Reminders,
+        ),
+        MoreMenuEntry(
+            id = "notifications",
+            labelRes = R.string.more_notifications,
+            captionRes = R.string.more_notifications_caption,
+            contentDescriptionRes = R.string.cd_more_notifications,
+            icon = MoreMenuIcon.Notifications,
+            tint = Color(0xFFE05656),
+            card = Color(0xFFFFEEF0),
+            route = Routes.moreInfo(MoreMenuPages.Notifications),
+        ),
+        MoreMenuEntry(
+            id = "settings",
+            labelRes = R.string.more_settings,
+            captionRes = R.string.more_settings_caption,
+            contentDescriptionRes = R.string.cd_more_settings,
+            icon = MoreMenuIcon.Settings,
+            tint = Color(0xFF6B7570),
+            card = Color(0xFFF4F6F5),
+            route = Routes.Settings,
+        ),
+        MoreMenuEntry(
+            id = "help",
+            labelRes = R.string.more_help_support,
+            captionRes = R.string.more_help_caption,
+            contentDescriptionRes = R.string.cd_more_help,
+            icon = MoreMenuIcon.Help,
+            tint = Color(0xFF1E8A6A),
+            card = Color(0xFFE6F7F1),
+            route = Routes.moreInfo(MoreMenuPages.Help),
+        ),
+    )
+
+    val tools: List<MoreMenuEntry> = listOf(
+        MoreMenuEntry(
+            id = "ask_business",
+            labelRes = R.string.more_ask_business,
+            captionRes = R.string.more_ask_business_caption,
+            contentDescriptionRes = R.string.cd_more_ask_business,
+            icon = MoreMenuIcon.AskBusiness,
+            tint = Color(0xFF2E9F6E),
+            card = Color(0xFFE8F7EE),
+            route = Routes.AskBusiness,
+        ),
+        MoreMenuEntry(
+            id = "group_buying",
+            labelRes = R.string.more_group_buying,
+            captionRes = R.string.more_group_buying_caption,
+            contentDescriptionRes = R.string.cd_more_group_buying,
+            icon = MoreMenuIcon.GroupBuying,
+            tint = Color(0xFF3D6BCC),
+            card = Color(0xFFE8F1FC),
+            route = Routes.GroupBuying,
+        ),
+        MoreMenuEntry(
+            id = "handwritten",
+            labelRes = R.string.more_handwritten,
+            captionRes = R.string.more_handwritten_caption,
+            contentDescriptionRes = R.string.cd_more_handwritten,
+            icon = MoreMenuIcon.Handwritten,
+            tint = Color(0xFFC4841E),
+            card = Color(0xFFFFF8E6),
+            route = Routes.HandwrittenNotes,
+        ),
+        MoreMenuEntry(
+            id = "voice",
+            labelRes = R.string.more_voice,
+            captionRes = R.string.more_voice_caption,
+            contentDescriptionRes = R.string.cd_more_voice,
+            icon = MoreMenuIcon.Voice,
+            tint = Color(0xFFD6503C),
+            card = Color(0xFFFFF3E6),
+            route = Routes.VoiceEntry,
+        ),
+        MoreMenuEntry(
+            id = "subscription",
+            labelRes = R.string.more_subscription,
+            captionRes = R.string.more_subscription_caption,
+            contentDescriptionRes = R.string.cd_more_subscription,
+            icon = MoreMenuIcon.Subscription,
+            tint = Color(0xFF6B4C9A),
+            card = Color(0xFFF3ECFE),
+            route = Routes.Subscription,
+        ),
+        MoreMenuEntry(
+            id = "hsn",
+            labelRes = R.string.books_hsn_master,
+            captionRes = R.string.books_hsn_master_menu_caption,
+            contentDescriptionRes = R.string.cd_more_hsn,
+            icon = MoreMenuIcon.Hsn,
+            tint = Color(0xFF2E7D8A),
+            card = Color(0xFFE8F1FC),
+            route = Routes.HsnMaster,
+        ),
+        MoreMenuEntry(
+            id = "books_settings",
+            labelRes = R.string.books_settings,
+            captionRes = R.string.books_settings_caption,
+            contentDescriptionRes = R.string.cd_more_books_settings,
+            icon = MoreMenuIcon.BooksSettings,
+            tint = Color(0xFF1E6B4E),
+            card = Color(0xFFE8F7EE),
+            route = Routes.BooksSettings,
+        ),
+        MoreMenuEntry(
+            id = "offers",
+            labelRes = R.string.more_local_offers,
+            captionRes = R.string.more_local_offers_caption,
+            contentDescriptionRes = R.string.cd_more_offers,
+            icon = MoreMenuIcon.Offers,
+            tint = Color(0xFFD9793C),
+            card = Color(0xFFFFF3E6),
+            route = Routes.LocalOffers,
+        ),
+        MoreMenuEntry(
+            id = "about",
+            labelRes = R.string.more_about_us,
+            captionRes = R.string.more_about_caption,
+            contentDescriptionRes = R.string.cd_more_about,
+            icon = MoreMenuIcon.About,
+            tint = Color(0xFF154F39),
+            card = Color(0xFFE8F7EE),
+            route = Routes.moreInfo(MoreMenuPages.About),
+        ),
+        MoreMenuEntry(
+            id = "privacy",
+            labelRes = R.string.privacy_policy,
+            captionRes = R.string.more_privacy_caption,
+            contentDescriptionRes = R.string.cd_more_privacy,
+            icon = MoreMenuIcon.Privacy,
+            tint = Color(0xFF3A5A8C),
+            card = Color(0xFFE8F1FC),
+            route = Routes.moreInfo(MoreMenuPages.Privacy),
+        ),
+    )
+}

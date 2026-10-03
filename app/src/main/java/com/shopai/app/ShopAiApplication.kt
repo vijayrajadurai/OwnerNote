@@ -21,6 +21,7 @@ class ShopAiApplication : Application() {
         container.naturalTtsSpeaker.warmUp()
         PushNotifications.ensureChannel(this)
         container.reminderAlarms.ensureScheduled()
+        container.kaiReminders.rearmAll()
         runBlocking {
             val language = container.preferencesRepository.getLanguage()
             val theme = container.preferencesRepository.getTheme()
