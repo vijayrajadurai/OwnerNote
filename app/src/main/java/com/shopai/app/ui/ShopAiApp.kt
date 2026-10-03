@@ -285,7 +285,8 @@ fun ShopAiApp(container: AppContainer) {
                 onDone = { navController.navigateUpOrHome() },
             )
         }
-        composable(Routes.VoiceEntry) {
+        // Pesunga; VoiceEntryScan = the same screen with the bill camera opened straight away.
+        for ((route, scan) in listOf(Routes.VoiceEntry to false, Routes.VoiceEntryScan to true)) composable(route) {
             VoiceEntryScreen(
                 container = container,
                 onBack = { navController.navigateUpOrHome() },
@@ -295,13 +296,14 @@ fun ShopAiApp(container: AppContainer) {
                 onOpenNotePerson = { name -> navController.navigate(Routes.handwrittenPerson(name)) },
                 // The bill photo turned out handwritten: the handwriting reader takes it.
                 onHandwrittenDetected = { navController.navigate(Routes.handwrittenScan()) },
-                // A spoken reminder that needs a choice continues in Kai Chat.
+                // A spoken reminder / stock photo that needs a choice continues in Kai Chat.
                 onOpenKaiChat = { navController.navigate(Routes.KaiChat) },
                 onOpenMorningWork = { voice, start ->
                     navController.navigate(Routes.morningWork(voice = voice, start = start)) {
-                        popUpTo(Routes.VoiceEntry) { inclusive = true }
+                        popUpTo(route) { inclusive = true }
                     }
                 },
+                openBillCamera = scan,
             )
         }
         composable(Routes.HandwrittenNotes) { entry ->
@@ -616,14 +618,10 @@ fun ShopAiApp(container: AppContainer) {
             com.shopai.app.ui.kaichat.KaiChatScreen(
                 container = container,
                 onBack = { navController.navigateUpOrHome() },
-                // "Indha bill add pannu": the existing Shop bill scanner (OCR → draft → review → confirm).
-                onOpenScanner = { navController.navigate(Routes.VoiceEntry) },
+                // "Bill scan pannu": the existing Shop bill scanner with its camera opened at once (OCR → draft → review → confirm).
+                onOpenScanner = { navController.navigate(Routes.VoiceEntryScan) },
                 onOpenMorningWork = { start -> navController.navigate(Routes.morningWork(voice = false, start = start)) },
-                onOpenKaiMemory = { navController.navigate(Routes.KaiMemory) },
             )
-        }
-        composable(Routes.KaiMemory) {
-            com.shopai.app.ui.kaimemory.KaiMemoryScreen(container = container, onBack = { navController.navigateUpOrHome() })
         }
         composable(
             route = Routes.MorningWork,

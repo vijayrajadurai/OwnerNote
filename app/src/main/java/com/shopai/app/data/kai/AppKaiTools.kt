@@ -132,6 +132,29 @@ class AppKaiTools(
         }.getOrElse { ActionOutcome.Failed(it.message ?: "not saved") }
     }
 
+    /** Only called after the owner checked the product details (typed / read from a photo). Stock is added after, as a normal stock in. */
+    override suspend fun createProduct(product: com.shopai.app.brain.tools.NewProduct): com.shopai.app.brain.tools.ProductRef? {
+        val inv = inventory ?: return null
+        val name = listOfNotNull(product.name.trim(), product.variant?.trim()?.takeIf { it.isNotEmpty() && !product.name.contains(it, true) })
+            .joinToString(" ")
+        val notes = listOfNotNull(product.weight?.takeIf { it.isNotBlank() }?.let { "Weight: $it" }, "Added by Kai").joinToString(" · ")
+        return runCatching {
+            val p = inv.createProduct(
+                com.shopai.app.data.model.CreateInventoryProductInput(
+                    name = name,
+                    category = product.category.ifBlank { "General" },
+                    brand = product.brand?.takeIf { it.isNotBlank() },
+                    unit = product.unit.ifBlank { "PCS" },
+                    currentStock = 0.0,
+                    minimumStock = 0.0,
+                    imageUri = product.imageUri,
+                    notes = notes,
+                ),
+            )
+            com.shopai.app.brain.tools.ProductRef(p.id, p.name, p.unit, BigDecimal.valueOf(p.currentStock))
+        }.getOrNull()
+    }
+
     override suspend fun topProducts(from: LocalDate, to: LocalDate, limit: Int): List<ProductSalesFact>? {
         val s = session() ?: return null
         return s.dao.topSold(s.ctx.businessId, from.toEpochDay().toInt(), to.toEpochDay().toInt(), limit)
@@ -278,6 +301,6 @@ class AppKaiTools(
         }.getOrDefault(emptyList())
     }
 
-    override fun log(intent: String, tool: String, result: String, status: ActionStatus, reference: String?): String =
-        actionLog.add(intent, tool, result, status, reference)
+    override fun log(intent: String, tool: String, result: String, status: ActionStatus, reference: String?, input: String?): String =
+        actionLog.add(intent, tool, result, status, reference, input)
 }

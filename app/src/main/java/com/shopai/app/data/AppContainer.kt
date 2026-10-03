@@ -132,7 +132,8 @@ class AppContainer(context: Context) {
 
     /** Kai's personal / task reminders (phone alarms) and his action log. */
     val kaiReminders = com.shopai.app.notifications.KaiReminderEngine(appContext)
-    val kaiActionLog by lazy { com.shopai.app.data.kai.KaiActionLog(appContext) }
+    /** Each record carries the signed-in owner (the one whose Kai memory is open). */
+    val kaiActionLog by lazy { com.shopai.app.data.kai.KaiActionLog(appContext) { kaiMemory.ownerId } }
 
     /** Kai's tools: the books engine (reads, drafts, confirmed posts), reminders, the action log. */
     val kaiTools by lazy { com.shopai.app.data.kai.AppKaiTools(appContext, books, transactionRepository, kaiReminders, kaiActionLog, inventoryRepository) }

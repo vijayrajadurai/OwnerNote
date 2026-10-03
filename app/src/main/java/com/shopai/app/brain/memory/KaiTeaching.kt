@@ -63,6 +63,23 @@ object KaiTeaching {
         }
     }
 
+    /**
+     * An action hidden in an answer ("kuduthen maadhiri" = Payment Out, "stock vandhiruku" = Stock In):
+     * such a word is never saved as a plain word — it gets the action question and its own confirmation.
+     */
+    fun actionMeaningOf(words: String): KaiMeaning? {
+        meaningIn(words)?.let { return it }
+        val w = " " + KaiPrivateMemory.normalize(words) + " "
+        fun has(vararg s: String) = s.any { w.contains(" $it ") }
+        return when {
+            has("kuduthen", "koduthen", "kuduthutten", "kuduthuten", "gave", "paid", "pay", "anuppinen", "anupinen", "kudu", "kodu", "kudukkanum") -> KaiMeaning.PAYMENT_OUT
+            has("vanginen", "vaanginen", "received", "vandhuchu", "vanthuchu", "vangu", "vaangu", "thandhan") -> KaiMeaning.PAYMENT_IN
+            has("vandhiruku", "vandhirukku", "add", "serthu", "pudhu stock", "new stock") -> KaiMeaning.STOCK_IN
+            has("pochu", "sold", "vithuten", "sale", "out", "eduthutanga") -> KaiMeaning.STOCK_OUT
+            else -> null
+        }
+    }
+
     /** One of the business's records named in [words] (exact name, any case). */
     fun entityIn(words: String, entities: List<KnownEntity>): KnownEntity? {
         val n = KaiPrivateMemory.normalize(words)
@@ -177,6 +194,42 @@ object KaiTeaching {
         val run = tokens.drop(start).take(unknown.size)
         if (run != unknown) return null
         return unknown.joinToString(" ")
+    }
+
+    private const val Q = """[`'"‘’“”]"""
+
+    /**
+     * "'ramba' nu enna meaning?", "ramba na enna artham?", "what does ramba mean?" → "ramba".
+     * Null when it isn't a question about one word.
+     */
+    fun wordQuestion(text: String): String? {
+        val t = text.trim().trimEnd('?', '.', '!', ' ')
+        val patterns = listOf(
+            Regex("""(?i)^$Q?([\p{L}\p{M}]+(?:\s(?!(?:nu|na|nna|naa|nnu|enna|yenna)(?![\p{L}]))[\p{L}\p{M}]+)?)$Q?\s*-?\s*(?:nu|na|nna|naa|nnu|ன்னா|னு|னா)?\s*(?:na\s*)?(?:enna|yenna|என்ன)\s*(?:meaning|meanin|artham|arththam|arttham|அர்த்தம்)(?:\s*(?:owner|kai|sollu|sollunga))*$"""),
+            Regex("""(?i)^(?:what\s+(?:does|is)\s+)$Q?([\p{L}\p{M}]+)$Q?\s*(?:mean|meaning)$"""),
+            Regex("""(?i)^(?:meaning\s+of|what\s+is\s+the\s+meaning\s+of)\s+$Q?([\p{L}\p{M}]+)$Q?$"""),
+        )
+        for (p in patterns) {
+            val w = p.find(t)?.groupValues?.get(1)?.trim()?.trim('`', '\'', '"') ?: continue
+            if (w.isNotEmpty() && w.lowercase(Locale.ROOT) !in setOf("idhu", "adhu", "this", "that", "it")) return w
+        }
+        return null
+    }
+
+    /**
+     * The owner's answer to "'ramba' nu enna meaning?": "romba nu sonna mari", "romba maadhiri",
+     * "romba dhaan", "it means romba", "romba" → "romba". Null when it isn't a short answer.
+     */
+    fun wordAnswer(text: String): String? {
+        var t = KaiPrivateMemory.normalize(text)
+        if (t.isEmpty() || isNo(t)) return null
+        t = t.replace(Regex("""^(?:it\s+)?means?\s+"""), "")
+            .replace(Regex("""^(?:adhu|athu|idhu|ithu|athuvaa|adhuvaa)\s+"""), "")
+            .replace(Regex("""\s*(?:nu|na|nnu|nna)?\s*(?:sonna|solra|sollra|solla|sonnen|sonnaen)?\s*(?:mari|maari|madhiri|maadhiri|mathiri|maathiri|madiri|dhaan|than|thaan|dhan|artham|meaning|nu\s*artham)\s*(?:owner|kai)?$"""), "")
+            .replace(Regex("""\s*(?:nu|na|nnu)$"""), "")
+            .trim()
+        if (t.isEmpty() || t.split(' ').size > 3 || t.any(Char::isDigit)) return null
+        return t
     }
 
     fun hasAmount(text: String): Boolean = Regex("""(?<![\p{L}])₹?\d[\d,]*(\.\d+)?\s*(k\b)?""", RegexOption.IGNORE_CASE).containsMatchIn(text)

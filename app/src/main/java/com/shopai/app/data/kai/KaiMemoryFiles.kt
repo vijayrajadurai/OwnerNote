@@ -9,6 +9,7 @@ import com.shopai.app.brain.memory.KaiMemoryStore
 import com.shopai.app.brain.memory.KaiPrivateMemory
 import com.shopai.app.brain.memory.KnownEntity
 import com.shopai.app.brain.memory.MemoryType
+import com.shopai.app.brain.memory.onlyOwn
 import com.shopai.app.data.repository.InventoryRepository
 import com.shopai.app.data.repository.PartyRepository
 import kotlinx.coroutines.Dispatchers
@@ -18,36 +19,42 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 /**
- * Kai's private memory on the phone: one file per business
- * (`kai_memory/<business>.json`). A business's file holds only its own
- * records; loading checks every record's business id again. Nothing here is
- * uploaded, shared or used for any other business.
+ * Kai's private memory on the phone: one file per owner in a business
+ * (`kai_memory/<business>__<owner>.json`). A file holds only that owner's
+ * records; loading checks every record's business and owner ids again.
+ * Nothing here is uploaded, shared or used for anyone else.
  */
 class KaiMemoryFileStore(context: Context) : KaiMemoryStore {
     private val dir = File(context.applicationContext.filesDir, "kai_memory").apply { mkdirs() }
     private val gson = Gson()
     private val lock = Mutex()
 
-    private fun file(businessId: String) = File(dir, businessId.replace(Regex("""[^A-Za-z0-9_-]"""), "_") + ".json")
+    private fun safe(s: String) = s.replace(Regex("""[^A-Za-z0-9_-]"""), "_")
+    private fun file(businessId: String, ownerId: String?) = File(dir, safe(businessId) + (ownerId?.let { "__" + safe(it) } ?: "") + ".json")
 
-    override suspend fun load(businessId: String): KaiMemoryBook = withContext(Dispatchers.IO) {
+    private fun read(f: File): KaiMemoryBook? = runCatching { gson.fromJson(f.readText(), KaiMemoryBook::class.java) }.getOrNull()
+
+    override suspend fun load(businessId: String, ownerId: String?): KaiMemoryBook = withContext(Dispatchers.IO) {
         lock.withLock {
-            val book = runCatching { gson.fromJson(file(businessId).readText(), KaiMemoryBook::class.java) }.getOrNull()
+            val own = file(businessId, ownerId)
+            // Before memory was per owner it was one file per business: take only this owner's records from it.
+            val book = (if (own.exists()) read(own) else read(file(businessId, null)))
                 ?.takeIf { it.businessId == businessId }
-                ?: return@withLock KaiMemoryBook(businessId)
+                ?: return@withLock KaiMemoryBook(businessId, ownerId)
             // Gson leaves missing lists null in older files (it doesn't run Kotlin defaults).
             val memories: List<com.shopai.app.brain.memory.KaiMemory>? = book.memories
             val observations: List<com.shopai.app.brain.memory.KaiObservation>? = book.observations
             KaiMemoryBook(
                 businessId = businessId,
-                memories = memories.orEmpty().filter { it.businessId == businessId }.map { m ->
+                ownerId = ownerId,
+                memories = memories.orEmpty().filter { it.businessId == businessId && it.ownerId == ownerId }.map { m ->
                     val v: List<String>? = m.variants
                     if (v == null) m.copy(variants = emptyList()) else m
                 },
-                observations = observations.orEmpty().filter { it.businessId == businessId }.map { o ->
+                observations = if (own.exists()) observations.orEmpty().filter { it.businessId == businessId }.map { o ->
                     val r: List<String>? = o.rejected
                     if (r == null) o.copy(rejected = emptyList()) else o
-                },
+                } else emptyList(),
             )
         }
     }
@@ -55,11 +62,8 @@ class KaiMemoryFileStore(context: Context) : KaiMemoryStore {
     override suspend fun save(book: KaiMemoryBook) {
         withContext(Dispatchers.IO) {
             lock.withLock {
-                val clean = book.copy(
-                    memories = book.memories.filter { it.businessId == book.businessId },
-                    observations = book.observations.filter { it.businessId == book.businessId },
-                )
-                val f = file(book.businessId)
+                val clean = book.onlyOwn()
+                val f = file(book.businessId, book.ownerId)
                 val tmp = File(dir, f.name + ".tmp")
                 tmp.writeText(gson.toJson(clean))
                 if (!tmp.renameTo(f)) {
@@ -72,9 +76,9 @@ class KaiMemoryFileStore(context: Context) : KaiMemoryStore {
 }
 
 /**
- * The signed-in business's Kai memory for the one Kai (voice and text).
- * Opens the memory of the current login's business on every use, so a
- * different login never sees the previous business's words.
+ * The signed-in owner's Kai memory for the one Kai (voice and text). Opens
+ * the memory of the current login (business + owner) on every use, so a
+ * different login never sees the previous owner's words.
  */
 class AppKaiMemoryAccess(
     private val memory: KaiPrivateMemory,

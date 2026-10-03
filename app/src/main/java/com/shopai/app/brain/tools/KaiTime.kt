@@ -98,8 +98,9 @@ object KaiTime {
     private const val B = """(?<![\p{L}\d])"""
     private const val E = """(?![\p{L}])"""
 
-    private val relativeUnit = """(seconds?|secs?|sec|minutes?|mins?|min|nimisham|nimishathula|nimishathil|nimidam|nimidathula|""" +
-        """hours?|hrs?|hr|mani\s*neram(?:\s*la)?|days?|naal|naatkal)"""
+    // "nimisham", "nimishathula", "nimisathil", "nimidam"…; "mani neram", "mani nerathula".
+    private val relativeUnit = """(seconds?|secs?|sec|minutes?|mins?|min|minits?|mints?|nimi(?:sh|s|d)\p{L}*|""" +
+        """hours?|hrs?|hr|mani\s*nera\p{L}*|days?|naal|naatkal)"""
     private val relative = Regex(
         """$B(?:innum\s+|inum\s+|in\s+|after\s+)?(\d+(?:\.\d+)?|$numberAlt|half(?:\s+an)?|ara|arai)\s*$relativeUnit""" +
             """(?:\s*(?:later|kalichu|kalichi|kazhichu|kazhithu|apram|aprom|appuram|after|time|la|le|il))?$E""",
@@ -132,7 +133,7 @@ object KaiTime {
     private val ordinalDay = """(\d{1,2})\s*(?:st|nd|rd|th|thethi|thedhi|tharikku|தேதி)"""
 
     fun parse(raw: String, now: LocalDateTime): KaiWhen? {
-        val t = " " + raw.lowercase(Locale.ROOT).replace(Regex("""[?!,]"""), " ").replace(Regex("""\s+"""), " ").trim() + " "
+        val t = " " + KaiSpokenWords.normalize(raw).lowercase(Locale.ROOT).replace(Regex("""[?!,]"""), " ").replace(Regex("""\s+"""), " ").trim() + " "
         val today = now.toLocalDate()
 
         // 1. Relative: exactly now + the said duration ("1 hour 30 minutes" adds up).
@@ -267,8 +268,8 @@ object KaiTime {
         val partAlt = """morning|kaalaila|kalaila|kaalai|kalai|afternoon|madhiyam|mathiyam|evening|saayangalam|sayangalam|maalai|night|tonight|iravu|raathiri|rathiri"""
         val m1 = Regex("""(?<![\d.])(\d{1,2})[:.](\d{2})\s*(am|pm|a\.m\.?|p\.m\.?)?(?![\d])""").find(t)
         val m2 = Regex("""(?<![\d.])(\d{1,2})\s*(am|pm|a\.m\.?|p\.m\.?)$E""").find(t)
-        val m3 = Regex("""(?<![\d.])(\d{1,2})\s*(?:mani(?:kku|ku|kki|ki)?|manikku|o'?\s*clock|மணிக்கு|மணி)(?!\s*neram)$E""").find(t)
-        val m4 = Regex("""$B($numberAlt)\s+(?:mani(?:kku|ku|kki|ki)?|manikku)(?!\s*neram)$E""").find(t)
+        val m3 = Regex("""(?<![\d.])(\d{1,2})\s*(?:mani(?:kku|ku|kki|ki)?|manikku|o'?\s*clock|மணிக்கு|மணி)(?!\s*nera)$E""").find(t)
+        val m4 = Regex("""$B($numberAlt)\s+(?:mani(?:kku|ku|kki|ki)?|manikku)(?!\s*nera)$E""").find(t)
         val m5 = Regex("""$B(?:$partAlt)\s+(\d{1,2})(?:[:.](\d{2}))?$E(?!\s*(?:minutes?|mins?|hours?|days?|naal|nimi|seconds?|%|rs|rupees))""").find(t)
         val m6 = Regex("""$B(?:at|@)\s*(\d{1,2})(?![\d:.])""").find(t)
         when {

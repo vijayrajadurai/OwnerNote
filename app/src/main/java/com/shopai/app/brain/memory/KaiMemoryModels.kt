@@ -8,9 +8,10 @@ import com.shopai.app.brain.KaiLang
  * Two layers, never mixed:
  *  - GLOBAL KAI CORE (KaiCommands, KaiChatUnderstanding, KaiCalculator, the
  *    books engine…): general Tamil / Tanglish / English and business rules.
- *  - PRIVATE BUSINESS MEMORY (this package): one business's own slang,
- *    nicknames and phrases. Every record carries its business id; a
- *    business only ever loads its own records.
+ *  - PRIVATE OWNER MEMORY (this package): one owner's own slang,
+ *    nicknames and phrases in their business. Every record carries the
+ *    business id and the owner id; an owner only ever loads their own
+ *    records — another owner (or another business) never sees them.
  *
  * Memory only helps Kai understand LANGUAGE. It turns the owner's own words
  * into words the global core already understands; it never posts, never
@@ -18,7 +19,8 @@ import com.shopai.app.brain.KaiLang
  * existing engine.
  */
 
-enum class MemoryType { SLANG, PRODUCT_ALIAS, CUSTOMER_ALIAS, SUPPLIER_ALIAS, ACTION_ALIAS, ABBREVIATION, PREFERENCE }
+/** WORD: the owner's own spelling / word for an everyday word ("ramba" = "romba") — rewritten before Kai reads the message. */
+enum class MemoryType { SLANG, PRODUCT_ALIAS, CUSTOMER_ALIAS, SUPPLIER_ALIAS, ACTION_ALIAS, ABBREVIATION, PREFERENCE, WORD }
 
 /** Whether a memory is used. DELETED records are kept only as a tombstone (never used, never shown). */
 enum class MemoryStatus { ACTIVE, DISABLED, DELETED }
@@ -104,9 +106,10 @@ data class KaiObservation(
     val rejected: List<String> = emptyList(),
 )
 
-/** Everything one business taught Kai. Stored and loaded only under that business id. */
+/** Everything one owner taught Kai in one business. Stored and loaded only under that business and owner. */
 data class KaiMemoryBook(
     val businessId: String,
+    val ownerId: String? = null,
     val memories: List<KaiMemory> = emptyList(),
     val observations: List<KaiObservation> = emptyList(),
 )

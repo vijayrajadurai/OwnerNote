@@ -68,9 +68,7 @@ object KaiCommands {
         if (billWords && has("purchase ah", "purchase-ah", "sale ah", "sales ah", "sale-ah", "enna bill", "which type", "what type", "what kind", "purchase or sale", "classify")) {
             return KaiCommand.ScanBill(classifyOnly = true)
         }
-        if (billWords && has("scan", "add", "enter", "podu", "potu", "poodu", "eduthu", "photo", "upload", "serthu", "sethu", "save", "sēr", "சேர்", "ஸ்கேன்")) {
-            return KaiCommand.ScanBill(classifyOnly = false)
-        }
+        if (KaiIntents.isBillScan(text)) return KaiCommand.ScanBill(classifyOnly = false)
 
         // ---- reminders (any phrasing) ----
         KaiReminderUnderstanding.understand(text, now, knownPeople)?.let { return KaiCommand.Reminder(it) }
@@ -154,15 +152,25 @@ object KaiCommands {
         // Stems of time words ("maniku", "naalaikku", "inniku") — never names.
         "mani", "naalai", "nalai", "inni", "innai", "kadai", "veetu", "veedu", "kaalai", "office", "school", "hospital", "bank", "week", "month",
         "am", "pm", "reminder", "time", "adha", "andha", "idha", "indha", "daily", "weekly", "monthly", "thethi",
+        // What is left of a time word once "-ku" is read as the dative ("naalaik|ku", "manik|ku", "innaik|ku").
+        "naalaik", "nalaik", "naalaikk", "manik", "manikk", "innaik", "innik", "innaikk", "kadaik", "veetuk", "officek", "evening", "stock",
+        "kalichi", "apram", "aprom", "appuram", "nimisham", "minutes", "la", "le",
+        // Verbs after "call" ("call panna", "call pannu") — never names.
+        "panna", "pannu", "pannunga", "pannanum", "panni", "pannidu", "pannalama", "pannava", "podu", "sollu", "message", "whatsapp", "back",
+        "vandhiru", "vanthiru", "vandhuru", "iru", "irukku",
     )
 
     /** A known party in the text, else the word before -ku / kitta ("Ramesh ku", "Kumar kitta"), or after "call / to / from". */
     fun personIn(text: String, known: List<String>): String? {
         KaiUnderstanding.knownPerson(text, known)?.let { return it }
+        // Letters include Tamil vowel signs (\p{M}), so a Tamil-script name stays one word.
         val patterns = listOf(
-            Regex("""([\p{L}][\p{L}.']{1,})\s*-?\s*(?:ku|kku|ukku|kitta|kita|kitte|kittae|kitaa|idam|oda)(?![\p{L}])""", RegexOption.IGNORE_CASE),
-            Regex("""(?<![\p{L}])(?:call|phone|to|from)\s+([\p{L}][\p{L}.']{1,})""", RegexOption.IGNORE_CASE),
-            Regex("""([\p{L}][\p{L}.']{1,})-?(?:க்கு|கிட்ட|கிட்டே)"""),
+            Regex("""(?<![\p{L}\p{M}])([\p{L}][\p{L}\p{M}.']{1,})\s*-?\s*(?:ku|kku|ukku|kitta|kita|kitte|kittae|kitaa|idam|oda)(?![\p{L}])""", RegexOption.IGNORE_CASE),
+            // The name is only looked at (not used up), so "to call Ruthran" still finds Ruthran after "to call".
+            Regex("""(?<![\p{L}])(?:call|phone|to|from)\s+(?=([\p{L}][\p{L}\p{M}.']{1,}))""", RegexOption.IGNORE_CASE),
+            Regex("""([\p{L}][\p{L}\p{M}.']{1,})-?(?:க்கு|கிட்ட|கிட்டே)"""),
+            // "Ravi call remind pannu", "Ruthran phone pannanum": the name just before call / phone.
+            Regex("""(?<![\p{L}\p{M}])([\p{L}][\p{L}\p{M}.']{1,})\s+(?:call|phone)(?![\p{L}])""", RegexOption.IGNORE_CASE),
         )
         for (p in patterns) {
             for (m in p.findAll(text)) {

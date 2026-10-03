@@ -114,6 +114,8 @@ fun DocumentCaptureSection(
     onScanNoteForBill: (billId: Long) -> Unit,
     onOpenNotePerson: (name: String) -> Unit,
     onHandwrittenDetected: () -> Unit = {},
+    /** Raised by "Scan bill" / "bill scan pannu": the camera opens at once (no extra tap). */
+    cameraRequest: Int = 0,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -136,7 +138,6 @@ fun DocumentCaptureSection(
 
     val errorOcrEmpty = stringResource(R.string.error_ocr_empty)
     val errorOcrFailed = stringResource(R.string.error_ocr_failed)
-    val errorCameraPermission = stringResource(R.string.error_camera_permission)
     val errorSave = stringResource(R.string.error_voice_save)
     val errorLocalSave = stringResource(R.string.capture_error_local_save)
     val billDescriptionFormat = stringResource(R.string.bill_entry_description)
@@ -232,17 +233,44 @@ fun DocumentCaptureSection(
     val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { taken ->
         if (taken) runOcr(photoUri)
     }
+    // Camera permission refused: "Owner, bill scan panna camera permission venum." + Allow Camera.
+    var permissionDenied by rememberSaveable { mutableStateOf(false) }
     val cameraPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) cameraLauncher.launch(photoUri) else error = errorCameraPermission
+        if (granted) {
+            permissionDenied = false
+            cameraLauncher.launch(photoUri)
+        } else if (permissionDenied) {
+            // Refused for good: Android no longer asks — the app's settings page is the only way.
+            runCatching {
+                context.startActivity(
+                    android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + context.packageName))
+                        .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
+                )
+            }
+        } else {
+            permissionDenied = true
+        }
     }
 
     fun openCamera() {
         error = null
         info = null
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-            cameraLauncher.launch(photoUri)
+            permissionDenied = false
+            runCatching { cameraLauncher.launch(photoUri) }.onFailure { error = errorOcrFailed }
         } else {
             cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+        }
+    }
+
+    // "Scan bill" / "bill scan pannu": straight to the camera, once per request (not again when the screen is recreated).
+    var handledCameraRequest by rememberSaveable { mutableStateOf(0) }
+    LaunchedEffect(cameraRequest) {
+        if (cameraRequest > handledCameraRequest) {
+            handledCameraRequest = cameraRequest
+            mode = CaptureMode.SHOP_BILL
+            bill.reset()
+            openCamera()
         }
     }
 
@@ -429,6 +457,13 @@ fun DocumentCaptureSection(
         }
     }
 
+    if (permissionDenied) {
+        Text(stringResource(R.string.bill_camera_permission), color = Danger, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 8.dp))
+        OutlinedButton(onClick = { cameraPermissionLauncher.launch(Manifest.permission.CAMERA) }, modifier = Modifier.padding(top = 4.dp)) {
+            Icon(Icons.Default.PhotoCamera, contentDescription = null)
+            Text(stringResource(R.string.allow_camera), modifier = Modifier.padding(start = 6.dp))
+        }
+    }
     if (processing) {
         Text(stringResource(R.string.ocr_status_processing), color = ShopAiThemeColors.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp))
     }

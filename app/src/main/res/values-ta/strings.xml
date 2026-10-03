@@ -1323,24 +1323,24 @@
     <string name="kai_reminder_monthly">மாதம்</string>
     <string name="kai_reminder_continue_in_chat">Kai Chat-ல தொடருங்க</string>
     <!-- Kai — private shop language (this business only) -->
-    <string name="kai_memory_title">என் Kai மொழி</string>
-    <string name="kai_memory_intro">உங்ககிட்ட இருந்து Kai கத்துக்கிட்ட வார்த்தைகள் — இந்த கடைக்கு மட்டும். வேற எந்த கடையும் இதை பார்க்கவோ பயன்படுத்தவோ முடியாது. இது Kai உங்களை புரிஞ்சுக்க மட்டும் உதவும்; ஒவ்வொரு பேமெண்ட், ஸ்டாக் மாற்றத்துக்கும் நீங்க Confirm பண்ணணும்.</string>
-    <string name="kai_memory_no_business">முதல்ல கடை setup பண்ணுங்க — அப்புறம் Kai உங்க வார்த்தைகளை நினைவில் வெச்சுக்கும்.</string>
-    <string name="kai_memory_empty">இன்னும் எதுவும் இல்ல. Chat-ல சொல்லிக் கொடுங்க: \"thooki kudu na payment out\" அல்லது \"red paste na Colgate 200g\".</string>
-    <string name="kai_memory_add">வார்த்தை சொல்லிக் கொடு</string>
-    <string name="kai_memory_phrases">என் வார்த்தைகள்</string>
-    <string name="kai_memory_products">பொருள் செல்லப் பெயர்கள்</string>
-    <string name="kai_memory_customers">வாடிக்கையாளர் செல்லப் பெயர்கள்</string>
-    <string name="kai_memory_suppliers">சப்ளையர் செல்லப் பெயர்கள்</string>
-    <string name="kai_memory_edit">மாற்று</string>
-    <string name="kai_memory_delete">நீக்கு</string>
-    <string name="kai_memory_delete_title">இந்த வார்த்தையை நீக்கவா?</string>
-    <string name="kai_memory_cancel">வேண்டாம்</string>
-    <string name="kai_memory_save">சேமி</string>
-    <string name="kai_memory_phrase">உங்க வார்த்தை</string>
-    <string name="kai_memory_means">அர்த்தம்</string>
-    <string name="kai_memory_used">%1$d தடவை பயன்பட்டது</string>
-    <string name="kai_memory_not_understood">ஒரு அர்த்தத்தை தேர்ந்தெடுங்க, அல்லது பொருள் / வாடிக்கையாளர் / சப்ளையர் பெயரை சரியா type பண்ணுங்க.</string>
     <string name="kai_chat_listening">கேக்கறேன்…</string>
     <string name="kai_chat_speak">Kai-கிட்ட பேசு</string>
+    <!-- Bill scanner: camera permission -->
+    <string name="bill_camera_permission">ஓனர், பில் ஸ்கேன் பண்ண கேமரா அனுமதி வேணும்.</string>
+    <string name="allow_camera">கேமரா அனுமதி</string>
+    <!-- Kai: new product from a photo (STOCK_IN_CAMERA) -->
+    <string name="kai_stock_new_title">புது product — சரி பார்த்து உறுதி செய்யுங்க</string>
+    <string name="kai_stock_take_photo">📷 Product போட்டோ எடு</string>
+    <string name="kai_stock_retake_photo">📷 மறுபடியும் போட்டோ</string>
+    <string name="kai_stock_camera_permission">ஓனர், product போட்டோ எடுக்க கேமரா அனுமதி வேணும்.</string>
+    <string name="kai_stock_photo_unreadable">Label சரியா படிக்க முடியல — விவரம் type பண்ணுங்க.</string>
+    <string name="kai_stock_name">Product பெயர்</string>
+    <string name="kai_stock_category">வகை</string>
+    <string name="kai_stock_variant">வகை விவரம் (variant)</string>
+    <string name="kai_stock_qty">எண்ணிக்கை</string>
+    <string name="kai_stock_weight">எடை / அளவு</string>
+    <string name="kai_stock_brand">Brand</string>
+    <string name="kai_stock_check_note">இந்த phone-லயே போட்டோவில் படிச்சது — எல்லாத்தையும் சரி பாருங்க. உறுதி செய்யும் வரை எதுவும் சேமிக்காது.</string>
+    <string name="kai_stock_confirm_in">Stock In உறுதி செய்</string>
+    <string name="kai_stock_create">Product உருவாக்கு</string>
 </resources>

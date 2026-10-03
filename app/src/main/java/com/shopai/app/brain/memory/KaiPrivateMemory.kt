@@ -35,18 +35,20 @@ class KaiPrivateMemory(
 ) {
     private val lock = Mutex()
     private var book: KaiMemoryBook? = null
-    private var ownerId: String? = null
+    /** The owner whose memory is open (null: none, or a business without a signed-in user). */
+    var ownerId: String? = null
+        private set
 
     /** "Today pottudu means stock out": this conversation only, never stored. */
     private val conversation = LinkedHashMap<String, KaiMeaning>()
 
     val businessId: String? get() = book?.businessId
 
-    /** Loads [businessId]'s memory (and only it). Switching business forgets the previous one. */
+    /** Loads this owner's memory in [businessId] (and only it). Another owner or business forgets the previous one. */
     suspend fun open(businessId: String, ownerId: String?) = lock.withLock {
         require(businessId.isNotBlank()) { "Kai memory needs a business" }
-        if (book?.businessId != businessId) {
-            book = store.load(businessId).let { b -> b.copy(memories = b.memories.filter { it.businessId == businessId }, observations = b.observations.filter { it.businessId == businessId }) }
+        if (book?.businessId != businessId || book?.ownerId != ownerId) {
+            book = store.load(businessId, ownerId).copy(businessId = businessId, ownerId = ownerId).onlyOwn()
             conversation.clear()
         }
         this.ownerId = ownerId
@@ -86,6 +88,10 @@ class KaiPrivateMemory(
     /** A nickname for one of the business's own products / customers / suppliers (stored by id). */
     suspend fun teachEntity(phrase: String, entity: KnownEntity, source: MemorySource): KaiMemory =
         save(phrase, entity.type, entityKind(entity.type), entity.name, entity.id, source)
+
+    /** "ramba" = "romba": the owner's own word for an everyday word (never an action — those are [teachMeaning]). */
+    suspend fun teachWord(phrase: String, means: String, source: MemorySource): KaiMemory =
+        save(phrase, MemoryType.WORD, MemoryType.WORD.name, means.trim(), null, source)
 
     /** An approved extra spelling for an existing meaning ("thooki kudunga" for "thooki kudu"). */
     suspend fun addVariant(memoryId: String, variant: String): KaiMemory? = lock.withLock {
@@ -223,7 +229,7 @@ class KaiPrivateMemory(
                     found += phrase to e
                     e.name
                 }
-                MemoryType.ABBREVIATION -> m.meaningValue
+                MemoryType.ABBREVIATION, MemoryType.WORD -> m.meaningValue
                 else -> m.meaning?.canonical ?: continue
             }
             val r = replace(out, phrase, replacement) ?: continue

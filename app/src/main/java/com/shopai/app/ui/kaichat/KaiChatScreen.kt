@@ -64,9 +64,10 @@ import kotlin.math.abs
 import kotlin.math.sin
 
 /**
- * Kai Chat — the owner's business conversation with KAI. The owner types or
- * uses the keyboard's own microphone; KAI's own Business Brain answers from
- * the owner's records, in text (no voice, no AI service). Messages stay.
+ * Kai Chat — the owner's business conversation with KAI. Typed or spoken
+ * (the mic), the same Kai answers from the owner's records (no AI service);
+ * a spoken question is answered aloud too. Kai learns the owner's own words
+ * right here in the chat — there is no separate language screen.
  */
 @Composable
 fun KaiChatScreen(
@@ -74,13 +75,16 @@ fun KaiChatScreen(
     onBack: () -> Unit,
     onOpenScanner: () -> Unit = {},
     onOpenMorningWork: (start: Boolean) -> Unit = {},
-    onOpenKaiMemory: () -> Unit = {},
 ) {
     val session = container.kaiChat
     val scope = rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
     // Edit of a draft: (message id, plan).
     var editing by remember { mutableStateOf<Pair<Long, com.shopai.app.brain.tools.ActionPlan>?>(null) }
+    // Edit of a stock draft: (message id, draft key).
+    var editingStock by remember { mutableStateOf<Pair<Long, String>?>(null) }
+    // A new product's form (message id, what Kai knows, open the camera at once).
+    var capture by remember { mutableStateOf<Triple<Long, com.shopai.app.brain.chat.StockPrefill, Boolean>?>(null) }
 
     /** Phone actions the owner asked for — Kai only opens them; the owner presses call. */
     fun perform(messageId: Long, action: com.shopai.app.brain.chat.KaiAction) {
@@ -101,8 +105,19 @@ fun KaiChatScreen(
                 )
             }
             is com.shopai.app.brain.chat.KaiAction.EditPlan -> session.plan(action.key)?.let { editing = messageId to it }
+            is com.shopai.app.brain.chat.KaiAction.EditStock -> {
+                if (session.stockDraft(action.key) != null) editingStock = messageId to action.key
+            }
+            // STOCK_IN_CAMERA: straight to the camera; the photo fills the form the owner checks.
+            is com.shopai.app.brain.chat.KaiAction.OpenStockCamera -> capture = Triple(messageId, action.prefill, true)
+            is com.shopai.app.brain.chat.KaiAction.CreateProduct -> capture = Triple(messageId, action.prefill, false)
             else -> Unit
         }
+    }
+
+    // Kai's answer asked for the bill scanner / product camera: it opens now (no extra tap).
+    LaunchedEffect(session.pendingDirect) {
+        session.takeDirect()?.let { (messageId, action) -> perform(messageId, action) }
     }
 
     fun tap(messageId: Long, action: com.shopai.app.brain.chat.KaiAction) {
@@ -205,6 +220,21 @@ fun KaiChatScreen(
         }
     }
 
+    editingStock?.let { (messageId, key) ->
+        session.stockDraft(key)?.let { (name, qty, unit) ->
+            StockEditDialog(name, qty, unit, onDismiss = { editingStock = null }) { q, u ->
+                editingStock = null
+                scope.launch { session.reviseStock(messageId, key, q, u) }
+            }
+        } ?: run { editingStock = null }
+    }
+    capture?.let { (messageId, prefill, openCamera) ->
+        StockCaptureSheet(prefill, openCamera, onDismiss = { capture = null }) { form ->
+            capture = null
+            scope.launch { session.addProduct(messageId, form) }
+        }
+    }
+
     DetailScaffold(title = stringResource(R.string.kai_chat_title), onBack = onBack) { contentModifier ->
         Column(modifier = contentModifier.fillMaxSize().imePadding()) {
             // KAI, live, with who he is.
@@ -230,8 +260,6 @@ fun KaiChatScreen(
                     )
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    // The shop's own words Kai learned (this business only).
-                    TextButton(onClick = onOpenKaiMemory) { Text(stringResource(R.string.kai_memory_title)) }
                     if (session.messages.isNotEmpty()) {
                         TextButton(onClick = { session.clear() }) { Text(stringResource(R.string.kai_chat_clear)) }
                     }

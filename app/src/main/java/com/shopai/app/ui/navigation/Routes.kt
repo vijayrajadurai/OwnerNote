@@ -20,10 +20,10 @@ object Routes {
     const val AddDebit =
         "add_debit?supplierId={supplierId}&supplierName={supplierName}&supplierPhone={supplierPhone}"
     const val VoiceEntry = "voice_entry"
+    /** Pesunga with the bill camera opened straight away ("Scan bill" / "bill scan pannu"). */
+    const val VoiceEntryScan = "voice_entry_scan"
     /** Kai Chat: business conversation with KAI (text; no AI service). */
     const val KaiChat = "kai_chat"
-    /** MY KAI LANGUAGE: the shop's own words Kai learned (this business only). */
-    const val KaiMemory = "kai_memory"
     /** Kai — Do My Morning Work. [mode] = voice / text (how the owner asked); [start] = go straight to the first task. */
     const val MorningWork = "morning_work?mode={mode}&start={start}"
     const val Reminders = "reminders"

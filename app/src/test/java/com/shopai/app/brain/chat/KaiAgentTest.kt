@@ -101,7 +101,7 @@ class KaiAgentTest {
             scheduled[i] = change(scheduled[i])
             return true
         }
-        override fun log(intent: String, tool: String, result: String, status: ActionStatus, reference: String?): String { logged += intent to status; return reference ?: "K-1" }
+        override fun log(intent: String, tool: String, result: String, status: ActionStatus, reference: String?, input: String?): String { logged += intent to status; return reference ?: "K-1" }
     }
 
     private fun agent(tools: KaiTools) = KaiAgent(KaiBusinessBrain(FakeBooks(), today = { now.toLocalDate() }, random = Random(1)), FakeBooks(), tools, now = { now })
@@ -178,7 +178,7 @@ class KaiAgentTest {
         assertEquals("+919000000001", r.phone)
         val nowMillis = now.atZone(java.time.ZoneId.of("Asia/Kolkata")).toInstant().toEpochMilli()
         assertEquals(nowMillis + 600_000, r.triggerAt)
-        assertEquals("Done Owner 👍 Kumar-ku call panna 10 minutes-ku reminder vachiten.", turn.reply.text)
+        assertEquals("Done Owner ✅ 10 minutes kalichi Kumar-ku call panna remind pannuren.", turn.reply.text)
         // A reminder, never "call panniten".
         assertTrue(!turn.reply.text.contains("panniten", true))
         assertEquals("Owner, Kumar-ku call panna sonneenga.", r.notificationMessage)
@@ -198,7 +198,7 @@ class KaiAgentTest {
         val ten = ask.card!!.buttons.map { it.action }.filterIsInstance<KaiAction.RemindAt>().first { it.at.hour == 10 }
         val done = a.act(ten, KaiLang.TANGLISH)!!
         assertEquals(LocalDateTime.of(2026, 10, 4, 10, 0), java.time.Instant.ofEpochMilli(tools.scheduled.single().triggerAt).atZone(java.time.ZoneId.of("Asia/Kolkata")).toLocalDateTime())
-        assertTrue(done.reply.text, done.reply.text.startsWith("Done Owner."))
+        assertTrue(done.reply.text, done.reply.text.startsWith("Done Owner ✅"))
         // … or a typed time.
         a.ask("Every Monday stock check panna reminder podu.")
         a.ask("9 am")

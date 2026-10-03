@@ -16,6 +16,7 @@ import com.shopai.app.brain.tools.KaiTime
 import com.shopai.app.brain.tools.KaiTools
 import com.shopai.app.brain.tools.KaiWhen
 import com.shopai.app.brain.tools.MoneyKind
+import com.shopai.app.brain.memory.KaiPrivateMemory
 import com.shopai.app.brain.tools.PartyMatch
 import com.shopai.app.brain.tools.PlanKind
 import com.shopai.app.brain.tools.Repeat
@@ -59,16 +60,44 @@ sealed interface KaiAction {
     data class NotThis(val key: String) : KaiAction
     data class OnlyNow(val key: String) : KaiAction
     data class LearnAlias(val phrase: String, val entityId: String) : KaiAction
+    /** "'ramba' na 'romba'" — the owner said yes: remember the word (this owner only). */
+    data class LearnWord(val key: String) : KaiAction
     // ---- stock in / out (draft → confirm → inventory engine) ----
     data class ConfirmStock(val key: String) : KaiAction
     data class CancelStock(val key: String) : KaiAction
+    /** Change the draft's quantity / unit before confirming (the screen's edit form). */
+    data class EditStock(val key: String) : KaiAction
+    /** A product that isn't in the inventory yet: the camera opens, the photo fills an editable form (STOCK_IN_CAMERA). */
+    data class OpenStockCamera(val prefill: StockPrefill) : KaiAction
+    /** The same form, typed (no photo). */
+    data class CreateProduct(val prefill: StockPrefill) : KaiAction
 }
+
+/** What Kai already knows for a new product's form (everything stays editable). */
+data class StockPrefill(val name: String, val qty: BigDecimal? = null, val unit: String? = null, val said: String = "")
+
+/** The owner's checked form for a new product (from a photo or typed). */
+data class ProductForm(
+    val name: String,
+    val category: String,
+    val variant: String?,
+    val brand: String?,
+    val unit: String,
+    val weight: String?,
+    val qty: BigDecimal?,
+    val imageUri: String? = null,
+    val said: String = "",
+)
 
 /** A card under a Kai message: the details of a draft / action, and its buttons. */
 data class KaiCard(val lines: List<String>, val buttons: List<KaiButton>, val warning: String? = null)
 
-/** One Kai turn: the reply, and a card when there is something to confirm or do. */
-data class KaiTurn(val reply: ChatReply, val card: KaiCard? = null, val plan: ActionPlan? = null)
+/**
+ * One Kai turn: the reply, and a card when there is something to confirm or do.
+ * [direct]: a phone action the screen performs at once (open the bill scanner /
+ * the product camera) — never a money action, those always wait for Confirm.
+ */
+data class KaiTurn(val reply: ChatReply, val card: KaiCard? = null, val plan: ActionPlan? = null, val direct: KaiAction? = null)
 
 /**
  * KAI — the owner's AI business operating assistant.
@@ -90,12 +119,15 @@ class KaiAgent(
     /** The signed-in business's private language (null: none — global Kai only). */
     memory: KaiMemoryAccess? = null,
 ) {
-    private data class StockPlan(val key: String, val product: com.shopai.app.brain.tools.ProductRef, val qty: BigDecimal, val incoming: Boolean, val said: String)
+    private data class StockPlan(val key: String, val product: com.shopai.app.brain.tools.ProductRef, val qty: BigDecimal, val incoming: Boolean, val said: String, val unit: String)
+    /** "Colgate stock vandhiruku" with no number: Kai asked how many. */
+    private data class StockQuestion(val product: com.shopai.app.brain.tools.ProductRef, val incoming: Boolean, val said: String)
 
     private val learner = memory?.let { KaiMemoryAssistant(it) }
     private val stockPlans = LinkedHashMap<String, StockPlan>()
     /** The product just talked about ("Colgate stock low ah?" … "20 add pannu"). */
     private var lastProduct: com.shopai.app.brain.tools.ProductRef? = null
+    private var stockQuestion: StockQuestion? = null
     private data class PaymentRequest(val key: String, val name: String?, val amount: BigDecimal?, val outgoing: Boolean, val mode: PaymentMode, val said: String)
 
     private val plans = LinkedHashMap<String, ActionPlan>()
@@ -116,7 +148,7 @@ class KaiAgent(
     suspend fun ask(raw: String): KaiTurn {
         val said = raw.trim()
         val lang = KaiLanguage.forChat(said)
-        // The shop's own language first: answers to Kai's question, teaching, forgetting.
+        // The owner's own language first: answers to Kai's question, teaching, forgetting, "'X' nu enna meaning?".
         learner?.before(said, lang)?.let { step ->
             return when (step) {
                 is MemoryStep.Reply -> step.turn
@@ -124,16 +156,20 @@ class KaiAgent(
             }
         }
         // The owner's confirmed words → words the global Kai core understands.
-        val text = learner?.apply(said) ?: said
+        val applied = learner?.apply(said) ?: said
+        // Spoken Tamil script ("2 நிமிஷத்துல … ரிமைண்டர் பண்ணு") → the same words as typed Tanglish: one brain for voice and text.
+        val text = com.shopai.app.brain.tools.KaiSpokenWords.normalize(applied)
         val at = now()
         val people = runCatching { books.snapshot()?.people.orEmpty() }.getOrDefault(emptyList())
         val products = runCatching { tools.products() }.getOrNull()
 
-        // Stock in / out ("Colgate 20 stock in pannu") — a draft, confirmed by the owner.
-        if (products != null) stockChange(text, said, lang, products, people)?.let { return it }
-
-        // Completing what Kai just asked for (a reminder's time / number, a payment's amount / name).
+        // Completing what Kai just asked for (a reminder's time, a stock quantity, a payment's amount / name).
         reminders.continueWith(text, lang)?.let { return it }
+        stockQuestion?.let { q ->
+            stockQuestion = null
+            com.shopai.app.brain.tools.KaiStock.quantityIn(text)?.takeIf { KaiCommands.route(text, at, people).let { c -> c == KaiCommand.Question || c is KaiCommand.Calculate } }
+                ?.let { (qty, unit) -> return stockDraft(q.product, qty, unit ?: q.product.unit, q.incoming, "${q.said} · $text", lang) }
+        }
         incompletePayment?.let { p ->
             incompletePayment = null
             val cmd = KaiCommands.route(text, at, people)
@@ -144,19 +180,44 @@ class KaiAgent(
             }
         }
 
-        return when (val cmd = KaiCommands.route(text, at, people)) {
+        // Priority: reminder → stock in → stock out → bill scanner → call → money → questions → calculator → conversation → learn.
+        com.shopai.app.brain.tools.KaiReminderUnderstanding.understand(text, at, people)?.let { return reminders.handle(it, lang) }
+        if (products != null) stockChange(text, said, lang, products, people)?.let { return it }
+        if (com.shopai.app.brain.tools.KaiIntents.isBillScan(text)) {
+            val cmd = KaiCommands.route(text, at, people)
+            return scan((cmd as? KaiCommand.ScanBill)?.classifyOnly == true, lang, said)
+        }
+        val cmd = KaiCommands.route(applied, at, people).let { c -> if (c == KaiCommand.Question && text != applied) KaiCommands.route(text, at, people) else c }
+        return when (cmd) {
             is KaiCommand.Calculate -> calculate(cmd.answer, lang, text)
             is KaiCommand.Payment -> payment(PaymentRequest(newKey(), cmd.name, cmd.amount, cmd.outgoing, cmd.mode, text), lang)
             is KaiCommand.Reminder -> reminders.handle(cmd.request, lang)
-            is KaiCommand.Call -> call(cmd.name, lang)
-            is KaiCommand.ScanBill -> scan(cmd.classifyOnly, lang)
+            is KaiCommand.Call -> call(cmd.name, lang, said)
+            is KaiCommand.ScanBill -> scan(cmd.classifyOnly, lang, said)
             is KaiCommand.Stock -> stock(cmd.product, lang)
             KaiCommand.LowStock -> lowStock(lang)
             is KaiCommand.MoneyBalance -> money(cmd.kind, lang)
             KaiCommand.TopProducts -> topProducts(text, lang, at.toLocalDate(), people)
-            KaiCommand.Question -> learner?.unknown(text, said, lang, people, products.orEmpty().map { it.name })
-                ?: question(text, lang, at.toLocalDate(), people)
+            KaiCommand.Question -> conversation(text, said, lang, at)
+                ?: learner?.unknown(text, said, lang, people, products.orEmpty().map { it.name })
+                ?: questionOrLearn(applied, text, said, lang, at.toLocalDate(), people, products.orEmpty())
         }
+    }
+
+    /** "saaptiya?", "enna panra?", "innaiku romba busy", "good morning" — a friend's answer, no business intent forced. */
+    private fun conversation(text: String, said: String, lang: KaiLang, at: LocalDateTime): KaiTurn? {
+        val answer = KaiSmallTalk.reply(text, lang, at.hour) ?: return null
+        tools.log(com.shopai.app.brain.tools.KaiIntents.SMALL_TALK, "conversation", "answered", ActionStatus.ANSWERED, null, said)
+        return KaiTurn(ChatReply(answer, KaiMood.HAPPY, ChatIntent.GENERAL_BUSINESS_QUERY))
+    }
+
+    /** A business question; when Kai can't read it at all and one word is new, Kai asks what that word means (and learns it). */
+    private suspend fun questionOrLearn(applied: String, text: String, said: String, lang: KaiLang, today: LocalDate, people: List<String>,
+                                        products: List<com.shopai.app.brain.tools.ProductRef>): KaiTurn {
+        val answer = question(applied, lang, today, people)
+        if (answer.reply.intent != ChatIntent.UNKNOWN || learner == null) return answer
+        val names = (people + products.map { it.name }).flatMap { KaiPrivateMemory.normalize(it).split(' ') }.toSet()
+        return learner.unknownWord(text, said, lang) { w -> w in names || KaiLexicon.knows(w) } ?: answer
     }
 
     private fun withPrefix(prefix: String, turn: KaiTurn) = turn.copy(reply = turn.reply.copy(text = prefix + "\n\n" + turn.reply.text))
@@ -167,33 +228,112 @@ class KaiAgent(
         val req = com.shopai.app.brain.tools.KaiStock.understand(text, products)
             ?: lastProduct?.let { p -> com.shopai.app.brain.tools.KaiStock.understand("${p.name} $text", products)?.takeIf { it.product?.id == p.id } }
             ?: return null
-        // "Kumar account-la stock in 500": a person, not a product — not a stock change.
-        if (req.product == null && KaiCommands.personIn(text, people) != null) return null
-        val product = req.product ?: return learner?.unknownProduct(req.spokenName, said, lang,
-            products.map { com.shopai.app.brain.memory.KnownEntity(it.id, it.name, com.shopai.app.brain.memory.MemoryType.PRODUCT_ALIAS) })
-            ?: say(lang, KaiMood.CLARIFY, "stock: product not found",
-                ta = "${req.spokenName} inventory-ல இல்ல ஓனர்.", tl = "Owner, ${req.spokenName} inventory-la illa.", en = "${req.spokenName} isn't in your inventory, Owner.")
+        // "Kumar account-la stock in 500": a person in the books, not a product — never guessed: Kai asks.
+        if (req.product == null && namesPerson(text, req.spokenName, people)) {
+            return say(lang, KaiMood.CLARIFY, "stock or payment: asked",
+                ta = "ஓனர், இது ${req.spokenName} — payment-ஆ, product stock-ஆ? கொஞ்சம் தெளிவா சொல்லுங்க. எதுவும் சேமிக்கல.",
+                tl = "Owner, idhu ${req.spokenName} — payment-ah, illa product stock-ah? Konjam theliva sollunga. Edhuvum save pannala.",
+                en = "Owner, is this ${req.spokenName} a payment or product stock? Please say it a little more clearly — nothing was saved.")
+        }
+        val product = req.product ?: return unknownProduct(req, said, lang, products)
         lastProduct = product
-        val key = newKey()
-        stockPlans[key] = StockPlan(key, product, req.qty, req.incoming, said)
-        val unit = req.unit ?: product.unit
-        val after = if (req.incoming) product.stock + req.qty else product.stock - req.qty
-        val short = !req.incoming && after.signum() < 0
-        val what = if (req.incoming) pick(lang, ta = "ஸ்டாக் உள்ளே (Stock In)", tl = "Stock In", en = "Stock In") else pick(lang, ta = "ஸ்டாக் வெளியே (Stock Out)", tl = "Stock Out", en = "Stock Out")
-        tools.log("${if (req.incoming) "stock in" else "stock out"} ${product.name}", "draft", "${req.qty} $unit draft=$key", ActionStatus.DRAFT)
+        val qty = req.qty
+        if (qty == null) {
+            // "Colgate stock vandhiruku add pannu": how many? (the camera can count / fill it too).
+            stockQuestion = StockQuestion(product, req.incoming, said)
+            tools.log(if (req.incoming) com.shopai.app.brain.tools.KaiIntents.STOCK_IN else com.shopai.app.brain.tools.KaiIntents.STOCK_OUT, "kai", "${product.name}: quantity asked", ActionStatus.ANSWERED, null, said)
+            val unit = com.shopai.app.brain.tools.KaiStock.unitWord(product.unit)
+            return KaiTurn(
+                ChatReply(if (req.incoming) pick(lang,
+                    ta = "சரி ஓனர் — ${product.name} எத்தனை வந்திருக்கு? (உதா: 12 $unit)",
+                    tl = "Seri Owner — ${product.name} evlo vandhiruku? (eg: 12 $unit)",
+                    en = "Sure Owner — how many ${product.name} came in? (e.g. 12 $unit)")
+                else pick(lang,
+                    ta = "சரி ஓனர் — ${product.name} எத்தனை போச்சு?",
+                    tl = "Seri Owner — ${product.name} evlo pochu?",
+                    en = "Sure Owner — how many ${product.name} went out?"), KaiMood.CLARIFY, ChatIntent.GENERAL_BUSINESS_QUERY),
+                KaiCard(listOf(pick(lang, ta = "இப்போ ஸ்டாக்: ", tl = "Ippo stock: ", en = "Stock now: ") + qty(product.stock, product.unit)), listOfNotNull(
+                    if (req.incoming) KaiButton(pick(lang, ta = "📷 கேமரா", tl = "📷 Camera", en = "📷 Camera"),
+                        KaiAction.OpenStockCamera(StockPrefill(product.name, null, product.unit, said))) else null,
+                    KaiButton(cancelLabel(lang), KaiAction.CancelStock("ask")),
+                )),
+            )
+        }
+        return stockDraft(product, qty, req.unit ?: product.unit, req.incoming, said, lang)
+    }
+
+    private fun namesPerson(text: String, spoken: String, people: List<String>): Boolean {
+        if (com.shopai.app.brain.KaiUnderstanding.knownPerson(text, people) != null) return true
+        val words = KaiPrivateMemory.normalize(spoken).split(' ').toSet()
+        return people.any { p -> KaiPrivateMemory.normalize(p).split(' ').firstOrNull()?.takeIf { it.length >= 3 }?.let { it in words } == true }
+    }
+
+    /** A name that isn't in the inventory: a nickname of a product (Kai asks which), or a new product (camera / form). */
+    private suspend fun unknownProduct(req: com.shopai.app.brain.tools.StockRequest, said: String, lang: KaiLang, products: List<com.shopai.app.brain.tools.ProductRef>): KaiTurn {
+        val prefill = StockPrefill(req.spokenName, req.qty, req.unit, said)
+        // "colgate paste" when "Colgate 200g" exists: which product is it? (a new one is offered too)
+        val words = KaiPrivateMemory.normalize(req.spokenName).split(' ').filter { it.length >= 3 }
+        val similar = products.filter { p -> KaiPrivateMemory.normalize(p.name).split(' ').any { pw -> words.any { w -> pw == w || (pw.length >= 4 && w.length >= 4 && pw.take(4) == w.take(4)) } } }
+        if (similar.isNotEmpty() && learner != null) {
+            learner.unknownProduct(req.spokenName, said, lang, similar.map { com.shopai.app.brain.memory.KnownEntity(it.id, it.name, com.shopai.app.brain.memory.MemoryType.PRODUCT_ALIAS) })?.let { t ->
+                val newOne = KaiButton(pick(lang, ta = "புது product 📷", tl = "Pudhu product 📷", en = "New product 📷"), KaiAction.OpenStockCamera(prefill))
+                return if (req.incoming) t.copy(card = t.card?.copy(buttons = t.card.buttons + newOne)) else t
+            }
+        }
+        if (!req.incoming) {
+            tools.log(com.shopai.app.brain.tools.KaiIntents.STOCK_OUT, "inventory", "${req.spokenName}: product not found", ActionStatus.ANSWERED, null, said)
+            return KaiTurn(
+                ChatReply(pick(lang,
+                    ta = "ஓனர், ${req.spokenName} inventory-ல இல்ல. Product create பண்ணணுமா?",
+                    tl = "Owner, ${req.spokenName} inventory-la illa. Product create pannanuma?",
+                    en = "Owner, ${req.spokenName} isn't in your inventory. Create the product?"), KaiMood.CLARIFY, ChatIntent.GENERAL_BUSINESS_QUERY),
+                KaiCard(emptyList(), listOf(
+                    KaiButton(pick(lang, ta = "Product create பண்ணு", tl = "Create Product", en = "Create Product"), KaiAction.CreateProduct(prefill.copy(qty = null)), primary = true),
+                    KaiButton(cancelLabel(lang), KaiAction.CancelStock("new")),
+                )),
+            )
+        }
+        // STOCK_IN_CAMERA: a new product — the camera opens straight away; the photo fills a form the owner checks.
+        tools.log(com.shopai.app.brain.tools.KaiIntents.STOCK_IN_CAMERA, "camera", "${req.spokenName}: new product, camera opened", ActionStatus.OPENED, null, said)
+        val shown = req.qty?.let { " (${qty(it, req.unit ?: "PCS")})" } ?: ""
         return KaiTurn(
             ChatReply(pick(lang,
-                ta = "${product.name} — ${qty(req.qty, unit)} $what. உறுதி செய்யலாமா?",
-                tl = "${product.name} — ${qty(req.qty, unit)} $what. Confirm pannalama?",
-                en = "${product.name} — ${qty(req.qty, unit)} $what. Confirm?"), KaiMood.EXPLAINING, ChatIntent.GENERAL_BUSINESS_QUERY),
+                ta = "ஓனர், ${req.spokenName}$shown புது product. போட்டோ எடுங்க — விவரம் நான் fill பண்றேன் 📷",
+                tl = "Owner, ${req.spokenName}$shown pudhu product. Photo edunga — details naan fill panren 📷",
+                en = "Owner, ${req.spokenName}$shown is a new product. Take a photo — I'll fill in the details 📷"), KaiMood.EXPLAINING, ChatIntent.GENERAL_BUSINESS_QUERY),
+            KaiCard(emptyList(), listOf(
+                KaiButton(pick(lang, ta = "📷 கேமரா", tl = "📷 Camera open pannu", en = "📷 Open camera"), KaiAction.OpenStockCamera(prefill), primary = true),
+                KaiButton(pick(lang, ta = "Type பண்ணு", tl = "Type pannu", en = "Type details"), KaiAction.CreateProduct(prefill)),
+                KaiButton(cancelLabel(lang), KaiAction.CancelStock("new")),
+            )),
+            direct = KaiAction.OpenStockCamera(prefill),
+        )
+    }
+
+    /** The stock draft: product, quantity, before → after; Confirm / Edit / Cancel. Nothing is saved yet. */
+    private fun stockDraft(product: com.shopai.app.brain.tools.ProductRef, qty: BigDecimal, unit: String, incoming: Boolean, said: String, lang: KaiLang, key: String = newKey()): KaiTurn {
+        lastProduct = product
+        stockPlans[key] = StockPlan(key, product, qty, incoming, said, unit)
+        val after = if (incoming) product.stock + qty else product.stock - qty
+        val short = !incoming && after.signum() < 0
+        val what = if (incoming) pick(lang, ta = "ஸ்டாக் உள்ளே (Stock In)", tl = "Stock In", en = "Stock In") else pick(lang, ta = "ஸ்டாக் வெளியே (Stock Out)", tl = "Stock Out", en = "Stock Out")
+        tools.log(if (incoming) com.shopai.app.brain.tools.KaiIntents.STOCK_IN else com.shopai.app.brain.tools.KaiIntents.STOCK_OUT, "draft", "${product.name} ${qty(qty, unit)} draft=$key", ActionStatus.DRAFT, null, said)
+        val remaining = if (!incoming && !short) pick(lang,
+            ta = " மீதம் ${qty(after, product.unit)} இருக்கும்.", tl = " Meedham ${qty(after, product.unit)} irukkum.", en = " ${qty(after, product.unit)} will be left.") else ""
+        return KaiTurn(
+            ChatReply(pick(lang,
+                ta = "${product.name} — ${qty(qty, unit)} $what.$remaining உறுதி செய்யலாமா?",
+                tl = "${product.name} — ${qty(qty, unit)} $what.$remaining Confirm pannalama?",
+                en = "${product.name} — ${qty(qty, unit)} $what.$remaining Confirm?"), KaiMood.EXPLAINING, ChatIntent.GENERAL_BUSINESS_QUERY),
             KaiCard(
                 listOf(
-                    "${product.name} — ${qty(req.qty, unit)}",
+                    "${product.name} — ${qty(qty, unit)}",
                     what,
                     pick(lang, ta = "ஸ்டாக்: ", tl = "Stock: ", en = "Stock: ") + "${qty(product.stock, product.unit)} → ${qty(after, product.unit)}",
                 ),
                 listOf(
                     KaiButton(pick(lang, ta = "உறுதி செய்", tl = "Confirm", en = "Confirm"), KaiAction.ConfirmStock(key), primary = true, enabled = !short),
+                    KaiButton(pick(lang, ta = "மாற்று", tl = "Edit", en = "Edit"), KaiAction.EditStock(key)),
                     KaiButton(cancelLabel(lang), KaiAction.CancelStock(key)),
                 ),
                 warning = if (short) pick(lang, ta = "அவ்வளவு ஸ்டாக் இல்ல ஓனர்.", tl = "Owner, avlo stock illa.", en = "There isn't that much stock, Owner.") else null,
@@ -201,25 +341,81 @@ class KaiAgent(
         )
     }
 
+    /** The stock draft being edited (for the screen's form). */
+    fun stockDraftOf(key: String): Triple<String, BigDecimal, String>? = stockPlans[key]?.let { Triple(it.product.name, it.qty, it.unit) }
+
+    /** Edit: a new quantity / unit for the draft — shown again for Confirm. */
+    fun reviseStock(key: String, qty: BigDecimal, unit: String, lang: KaiLang): KaiTurn? {
+        val plan = stockPlans.remove(key) ?: return null
+        if (qty.signum() <= 0) return null
+        return stockDraft(plan.product, qty, unit.ifBlank { plan.unit }, plan.incoming, plan.said, lang)
+    }
+
+    /**
+     * The owner confirmed a new product's form (photo-filled or typed): the
+     * product is created in the inventory, then its stock comes in through
+     * the same inventory engine. An existing product with that name is used
+     * instead of making a copy.
+     */
+    suspend fun addProduct(form: ProductForm, lang: KaiLang): KaiTurn {
+        val name = form.name.trim()
+        if (name.isEmpty()) return say(lang, KaiMood.CLARIFY, null, ta = "Product பெயர் சொல்லுங்க ஓனர்.", tl = "Product name sollunga Owner.", en = "Tell me the product name, Owner.")
+        val existing = runCatching { tools.products() }.getOrNull()?.firstOrNull { KaiPrivateMemory.normalize(it.name) == KaiPrivateMemory.normalize(name) }
+        val product = existing ?: tools.createProduct(com.shopai.app.brain.tools.NewProduct(name, form.category, form.variant, form.brand, form.unit, form.weight, form.imageUri))
+            ?: run {
+                tools.log(com.shopai.app.brain.tools.KaiIntents.CREATE_PRODUCT, "inventory engine", "$name not created", ActionStatus.FAILED, null, form.said)
+                return say(lang, KaiMood.ERROR, null, ta = "Product சேமிக்க முடியல ஓனர்.", tl = "Owner, product save aagala.", en = "I couldn't save the product, Owner.")
+            }
+        if (existing == null) tools.log(com.shopai.app.brain.tools.KaiIntents.CREATE_PRODUCT, "inventory engine", "${product.name} created", ActionStatus.CONFIRMED, null, form.said)
+        lastProduct = product
+        val q = form.qty?.takeIf { it.signum() > 0 }
+            ?: return say(lang, KaiMood.SUCCESS, null,
+                ta = "சரி ஓனர் ✅ ${product.name} product சேர்த்துட்டேன்.", tl = "Done Owner ✅ ${product.name} product create panniten.", en = "Done Owner ✅ ${product.name} is added to your products.")
+        return when (val outcome = tools.changeStock(product, q, true, form.said.ifBlank { "photo stock in" })) {
+            is ActionOutcome.Done -> {
+                tools.log(com.shopai.app.brain.tools.KaiIntents.STOCK_IN, "inventory engine", "${product.name} +${qty(q, form.unit)} saved", ActionStatus.CONFIRMED, null, form.said)
+                stockDone(product.name, q, form.unit, true, outcome.balanceAfter?.let { qty(it, product.unit) }, lang)
+            }
+            is ActionOutcome.Failed -> {
+                tools.log(com.shopai.app.brain.tools.KaiIntents.STOCK_IN, "inventory engine", outcome.reason, ActionStatus.FAILED, null, form.said)
+                say(lang, KaiMood.ERROR, null, ta = "சேமிக்க முடியல ஓனர்: ${outcome.reason}", tl = "Owner, save aagala: ${outcome.reason}", en = "It wasn't saved, Owner: ${outcome.reason}")
+            }
+        }
+    }
+
+    /** "Done Owner ✅ Colgate stock-la 12 pieces add panniten." */
+    private fun stockDone(name: String, q: BigDecimal, unit: String, incoming: Boolean, after: String?, lang: KaiLang): KaiTurn {
+        val n = q.stripTrailingZeros().let { if (it.scale() < 0) it.setScale(0) else it }.toPlainString()
+        val u = com.shopai.app.brain.tools.KaiStock.unitWord(unit)
+        return if (incoming) say(lang, KaiMood.SUCCESS, null,
+            ta = "சரி ஓனர் ✅ $name ஸ்டாக்-ல $n $u சேர்த்துட்டேன்." + (after?.let { " இப்போ ஸ்டாக் $it." } ?: ""),
+            tl = "Done Owner ✅ $name stock-la $n $u add panniten." + (after?.let { " Ippo stock $it." } ?: ""),
+            en = "Done Owner ✅ Added $n $u to $name stock." + (after?.let { " Stock now $it." } ?: ""))
+        else say(lang, KaiMood.SUCCESS, null,
+            ta = "சரி ஓனர் ✅ $name ஸ்டாக்-ல இருந்து $n $u குறைச்சுட்டேன்." + (after?.let { " மீதம் $it." } ?: ""),
+            tl = "Done Owner ✅ $name stock-la irundhu $n $u kuraichiten." + (after?.let { " Meedham $it." } ?: ""),
+            en = "Done Owner ✅ Took $n $u out of $name stock." + (after?.let { " $it left." } ?: ""))
+    }
+
     private suspend fun confirmStock(key: String, lang: KaiLang): KaiTurn? {
         val plan = stockPlans.remove(key) ?: return null
+        val intent = if (plan.incoming) com.shopai.app.brain.tools.KaiIntents.STOCK_IN else com.shopai.app.brain.tools.KaiIntents.STOCK_OUT
         return when (val outcome = tools.changeStock(plan.product, plan.qty, plan.incoming, plan.said)) {
             is ActionOutcome.Done -> {
-                tools.log("${if (plan.incoming) "stock in" else "stock out"} ${plan.product.name}", "inventory engine", "saved", ActionStatus.CONFIRMED)
-                val after = outcome.balanceAfter?.let { qty(it, plan.product.unit) }
-                say(lang, KaiMood.SUCCESS, null,
-                    ta = "சேமிச்சுட்டேன் ஓனர். ${plan.product.name} — ${qty(plan.qty, plan.product.unit)}." + (after?.let { " இப்போ ஸ்டாக் $it." } ?: ""),
-                    tl = "Save aagiduchu Owner. ${plan.product.name} — ${qty(plan.qty, plan.product.unit)}." + (after?.let { " Ippo stock $it." } ?: ""),
-                    en = "Saved, Owner. ${plan.product.name} — ${qty(plan.qty, plan.product.unit)}." + (after?.let { " Stock now $it." } ?: ""))
+                tools.log(intent, "inventory engine", "${plan.product.name} ${qty(plan.qty, plan.unit)} saved", ActionStatus.CONFIRMED, null, plan.said)
+                stockDone(plan.product.name, plan.qty, plan.unit, plan.incoming, outcome.balanceAfter?.let { qty(it, plan.product.unit) }, lang)
             }
-            is ActionOutcome.Failed -> say(lang, KaiMood.ERROR, null,
-                ta = "சேமிக்க முடியல ஓனர்: ${outcome.reason}", tl = "Owner, save aagala: ${outcome.reason}", en = "It wasn't saved, Owner: ${outcome.reason}")
+            is ActionOutcome.Failed -> {
+                tools.log(intent, "inventory engine", outcome.reason, ActionStatus.FAILED, null, plan.said)
+                say(lang, KaiMood.ERROR, null,
+                    ta = "சேமிக்க முடியல ஓனர்: ${outcome.reason}", tl = "Owner, save aagala: ${outcome.reason}", en = "It wasn't saved, Owner: ${outcome.reason}")
+            }
         }
     }
 
     /** A button was tapped. */
     suspend fun act(action: KaiAction, lang: KaiLang): KaiTurn? = when (action) {
-        is KaiAction.LearnMeaning, is KaiAction.LearnEntity, is KaiAction.NotThis, is KaiAction.OnlyNow, is KaiAction.LearnAlias ->
+        is KaiAction.LearnMeaning, is KaiAction.LearnEntity, is KaiAction.NotThis, is KaiAction.OnlyNow, is KaiAction.LearnAlias, is KaiAction.LearnWord ->
             when (val step = learner?.act(action, lang)) {
                 is MemoryStep.Reply -> step.turn
                 is MemoryStep.Rerun -> withPrefix(step.prefix, ask(step.text))
@@ -227,7 +423,8 @@ class KaiAgent(
             }
         is KaiAction.ConfirmStock -> confirmStock(action.key, lang)
         is KaiAction.CancelStock -> {
-            stockPlans.remove(action.key)
+            stockPlans.remove(action.key)?.let { tools.log(if (it.incoming) com.shopai.app.brain.tools.KaiIntents.STOCK_IN else com.shopai.app.brain.tools.KaiIntents.STOCK_OUT, "draft", "cancelled", ActionStatus.CANCELLED, null, it.said) }
+            stockQuestion = null
             say(lang, KaiMood.NEUTRAL, null, ta = "சரி, ரத்து பண்ணிட்டேன். எதுவும் சேமிக்கல.", tl = "Seri Owner, cancel pannitten. Edhuvum save aagala.", en = "Cancelled, Owner. Nothing was saved.")
         }
         is KaiAction.ConfirmPlan -> confirm(action.key, lang)
@@ -263,6 +460,7 @@ class KaiAgent(
         reminders.reset()
         brain.reset()
         stockPlans.clear()
+        stockQuestion = null
         lastProduct = null
         learner?.reset()
     }
@@ -428,11 +626,11 @@ class KaiAgent(
 
     // ------------------------------------------------------------ phone / documents
 
-    private suspend fun call(name: String, lang: KaiLang): KaiTurn {
+    private suspend fun call(name: String, lang: KaiLang, said: String = ""): KaiTurn {
         val match = runCatching { tools.parties(name) }.getOrNull()?.firstOrNull { it.name.equals(name, true) } ?: runCatching { tools.parties(name) }.getOrNull()?.firstOrNull()
         val phone = match?.phone
         val shown = match?.name ?: name
-        tools.log("call $shown", "dialer", if (phone != null) "number found" else "no number", ActionStatus.OPENED)
+        tools.log(com.shopai.app.brain.tools.KaiIntents.CALL_CONTACT, "dialer", "$shown: " + if (phone != null) "number found" else "no number", ActionStatus.OPENED, null, said)
         val text = if (phone != null) pick(lang, ta = "$shown-க்கு call பண்ணலாமா ஓனர்?", tl = "Owner, $shown-ku call pannalama?", en = "Call $shown, Owner?")
         else pick(lang, ta = "$shown நம்பர் பதிவுல இல்ல ஓனர். Dialer திறக்கட்டுமா?", tl = "Owner, $shown number records-la illa. Dialer open pannava?", en = "$shown's number isn't in your records, Owner. Open the dialer?")
         return KaiTurn(
@@ -441,19 +639,21 @@ class KaiAgent(
         )
     }
 
-    private fun scan(classifyOnly: Boolean, lang: KaiLang): KaiTurn {
-        tools.log(if (classifyOnly) "classify bill" else "scan bill", "bill scanner", "opened", ActionStatus.OPENED)
+    /** "Bill scan pannu" — the camera opens straight away (OPEN_BILL_SCANNER); the bill becomes a draft the owner checks. */
+    private fun scan(classifyOnly: Boolean, lang: KaiLang, said: String = ""): KaiTurn {
+        tools.log(com.shopai.app.brain.tools.KaiIntents.OPEN_BILL_SCANNER, "bill scanner", if (classifyOnly) "camera opened (purchase / sale check)" else "camera opened", ActionStatus.OPENED, null, said)
         val text = if (classifyOnly) pick(lang,
-            ta = "பில் போட்டோ எடுங்க ஓனர். GSTIN, கடை பெயர், யாருக்கு பில் என்று பார்த்து இது purchase (Debit) ஆ sale (Credit) ஆ என்று சொல்லுவேன் — நீங்க உறுதி செய்த பிறகுதான் சேமிப்பு.",
-            tl = "Bill photo edunga Owner. GSTIN, kadai peyar, yaarukku bill nu paathu idhu purchase (Debit)-ah sale (Credit)-ah nu solluven — neenga confirm pannina apram dhaan save.",
-            en = "Take a photo of the bill, Owner. I'll check the GSTIN, shop name and who it's addressed to, and tell you whether it's a purchase (Debit) or a sale (Credit) — nothing is saved until you confirm.")
+            ta = "சரி ஓனர், பில் ஸ்கேன் பண்ணலாம் 📷 இது purchase-ஆ sale-ஆ என்று பார்த்து சொல்லுவேன் — நீங்க உறுதி செய்த பிறகுதான் சேமிப்பு.",
+            tl = "Sure Owner, bill scan pannalam 📷 Idhu purchase-ah sale-ah nu paathu solluven — neenga confirm pannina apram dhaan save.",
+            en = "Sure Owner, let's scan the bill 📷 I'll tell you if it's a purchase or a sale — nothing is saved until you confirm.")
         else pick(lang,
-            ta = "பில் போட்டோ எடுங்க ஓனர். கடை, தொகை, தேதி படிச்சு draft-ஆ காட்டுவேன் — சரி பார்த்து உறுதி செய்யுங்க.",
-            tl = "Bill photo edunga Owner. Kadai, amount, date padichu draft-ah kaatuven — check panni confirm pannunga.",
-            en = "Take a photo of the bill, Owner. I'll read the shop, amount and date and show it as a draft — check it and confirm.")
+            ta = "சரி ஓனர், பில் ஸ்கேன் பண்ணலாம் 📷",
+            tl = "Sure Owner, bill scan pannalam 📷",
+            en = "Sure Owner, let's scan the bill 📷")
         return KaiTurn(
             ChatReply(text, KaiMood.EXPLAINING, ChatIntent.GENERAL_BUSINESS_QUERY),
             KaiCard(emptyList(), listOf(KaiButton(pick(lang, ta = "பில் ஸ்கேன்", tl = "Scan bill", en = "Scan bill"), KaiAction.OpenScanner, primary = true))),
+            direct = KaiAction.OpenScanner,
         )
     }
 

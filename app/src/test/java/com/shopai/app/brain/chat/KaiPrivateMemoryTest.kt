@@ -182,15 +182,17 @@ class KaiPrivateMemoryTest {
     // 7
     @Test
     fun productNicknameStoresProductId() = runBlocking {
-        val q = kai.ask("red paste 10 add pannu")
-        assertTrue(q.reply.text, q.reply.text.contains("`red paste`-na endha product"))
+        // A name close to a product Kai has: Kai asks which product (a new product is offered too).
+        val q = kai.ask("colgate paste 10 add pannu")
+        assertTrue(q.reply.text, q.reply.text.contains("`Colgate Paste`-na Colgate 200g-aa"))
+        assertTrue(q.buttonActions().any { it is KaiAction.OpenStockCamera })
         assertTrue(tools.stockChanges.isEmpty())
         val t = kai.ask("Colgate 200g")
-        assertTrue(t.reply.text, t.reply.text.contains("`red paste` = Colgate 200g"))
-        assertEquals("p1", access.memory.find("red paste")!!.referenceEntityId)
+        assertTrue(t.reply.text, t.reply.text.contains("`Colgate Paste` = Colgate 200g"))
+        assertEquals("p1", access.memory.find("colgate paste")!!.referenceEntityId)
         assertTrue(t.reply.text.contains("Colgate 200g — 10 PCS Stock In"))
         // Next time it resolves straight away — still a draft.
-        val out = kai.ask("red paste 5 stock out")
+        val out = kai.ask("colgate paste 5 stock out")
         assertTrue(out.reply.text, out.reply.text.contains("Colgate 200g — 5 PCS Stock Out"))
         assertTrue(tools.stockChanges.isEmpty())
         kai.act(out.buttonActions().filterIsInstance<KaiAction.ConfirmStock>().single(), com.shopai.app.brain.KaiLang.TANGLISH)
@@ -264,10 +266,10 @@ class KaiPrivateMemoryTest {
         kai.ask("Selvam-ku 5000 thooki kudu")
         assertEquals(PlanKind.PAYMENT_OUT, tools.prepared.single().kind)
         runBlocking {
-            assertTrue(store.load("biz-A").memories.all { it.businessId == "biz-A" })
-            assertTrue(store.load("biz-B").memories.all { it.businessId == "biz-B" })
-            assertEquals(KaiMeaning.PAYMENT_OUT, store.load("biz-A").memories.single().meaning)
-            assertEquals(KaiMeaning.STOCK_OUT, store.load("biz-B").memories.single().meaning)
+            assertTrue(store.load("biz-A", "owner-biz-A").memories.all { it.businessId == "biz-A" })
+            assertTrue(store.load("biz-B", "owner-biz-B").memories.all { it.businessId == "biz-B" })
+            assertEquals(KaiMeaning.PAYMENT_OUT, store.load("biz-A", "owner-biz-A").memories.single().meaning)
+            assertEquals(KaiMeaning.STOCK_OUT, store.load("biz-B", "owner-biz-B").memories.single().meaning)
         }
         // The same engine switched to B (a different login) sees only B.
         access.business = "biz-B"

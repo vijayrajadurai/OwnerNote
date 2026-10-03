@@ -81,7 +81,11 @@ fun VoiceEntryScreen(
     onOpenKaiChat: () -> Unit = {},
     /** "Kai, morning work ready pannu" → Kai's Morning Work ([voice] = the owner spoke it). */
     onOpenMorningWork: (voice: Boolean, start: Boolean) -> Unit = { _, _ -> },
+    /** "Scan bill" / "bill scan pannu": open the bill camera straight away. */
+    openBillCamera: Boolean = false,
 ) {
+    // Each raise opens the bill camera once (the first one when opened as "Scan bill").
+    var billCameraRequest by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(if (openBillCamera) 1 else 0) }
     /** A spoken reminder needed a choice (time / which person): it continues in Kai Chat. */
     var reminderNeedsChoice by remember { mutableStateOf(false) }
     var inputText by remember { mutableStateOf("") }
@@ -182,36 +186,32 @@ fun VoiceEntryScreen(
             error = null
             queryAnswer = null
             reminderNeedsChoice = false
-            // The shop's own words (teaching Kai, or a phrase / nickname Kai learned for this business)
-            // go to the same Kai conversation as Kai Chat — one brain, one private memory for voice and text.
-            if (usesShopLanguage(text)) {
+            // One Kai for voice and text: the owner's own words (teaching / learned phrases) and every Kai action —
+            // reminders, stock in / out, the bill scanner, small talk — go to the same Kai conversation as Kai Chat.
+            val products = runCatching { container.kaiTools.products() }.getOrNull().orEmpty()
+            val intent = com.shopai.app.brain.tools.KaiIntents.classify(text, java.time.LocalDateTime.now(), emptyList(), products)
+            if (usesShopLanguage(text) || com.shopai.app.brain.tools.KaiIntents.handledByKai(intent)) {
                 container.kaiChat.send(text, voice = spoken)
                 val answer = container.kaiChat.messages.lastOrNull { !it.fromOwner }
                 parsed = null
                 queryAnswer = answer?.text
                 // A draft / question with buttons is confirmed in Kai Chat (nothing is saved from here).
-                reminderNeedsChoice = answer?.card?.buttons?.isNotEmpty() == true
+                reminderNeedsChoice = answer?.card?.buttons?.any { it.action !is com.shopai.app.brain.chat.KaiAction.CancelReminder } == true
+                // "Bill scan pannu": this screen's own bill camera opens now. A new product's camera is in Kai Chat.
+                when (container.kaiChat.pendingDirect?.second) {
+                    com.shopai.app.brain.chat.KaiAction.OpenScanner -> {
+                        container.kaiChat.takeDirect()
+                        reminderNeedsChoice = false
+                        billCameraRequest++
+                    }
+                    is com.shopai.app.brain.chat.KaiAction.OpenStockCamera -> onOpenKaiChat()
+                    else -> Unit
+                }
                 answer?.let { a ->
                     val mood = a.mood ?: com.shopai.app.brain.KaiMood.EXPLAINING
                     kai(KaiEvent.Understood(mood.reaction()))
                     val speech = a.text.replace("`", "").replace(Regex("""[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}]"""), "")
                     kaiSay(com.shopai.app.brain.KaiReply(a.text, speech, if (a.text.any { it in '\u0B80'..'\u0BFF' }) "ta-IN" else "en-IN", mood))
-                }
-                parsing = false
-                orbState = MicState.Idle
-                return@launch
-            }
-            // Reminders ("Kumar-ku 10 minutes kalichu call panna remind pannu") go to Kai's one reminder engine.
-            if (com.shopai.app.brain.tools.KaiReminderUnderstanding.understand(text, java.time.LocalDateTime.now(), emptyList()) != null) {
-                container.kaiChat.send(text)
-                val answer = container.kaiChat.messages.lastOrNull { !it.fromOwner }
-                parsed = null
-                queryAnswer = answer?.text
-                reminderNeedsChoice = answer?.card?.buttons?.any { it.action !is com.shopai.app.brain.chat.KaiAction.CancelReminder } == true
-                answer?.let { a ->
-                    val mood = a.mood ?: com.shopai.app.brain.KaiMood.REMINDER
-                    kai(KaiEvent.Understood(mood.reaction()))
-                    kaiSay(com.shopai.app.brain.KaiReply(a.text, a.text, if (a.text.any { it in '஀'..'௿' }) "ta-IN" else "en-IN", mood))
                 }
                 parsing = false
                 orbState = MicState.Idle
@@ -359,6 +359,7 @@ fun VoiceEntryScreen(
             onScanNoteForBill = onScanNoteForBill,
             onOpenNotePerson = onOpenNotePerson,
             onHandwrittenDetected = onHandwrittenDetected,
+            cameraRequest = billCameraRequest,
         )
 
         ShopTextField(

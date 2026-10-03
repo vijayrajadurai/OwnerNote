@@ -255,15 +255,21 @@ class KaiReminderEngine(private val context: Context) {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setContentIntent(open)
-        // Android shows up to three buttons: the reminder's action, Snooze 10 min, Done.
+        // Android shows up to three buttons: the reminder's action (Call / WhatsApp), Dismiss / Done, Snooze 10 min.
         when {
             r.action == ReminderAction.CALL && r.person != null -> builder.addAction(0, if (tamil) "${r.person}-க்கு call" else "Call ${r.person}",
                 activity(r, 3, Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + (r.phone ?: "")))))
             r.action == ReminderAction.MESSAGE && r.person != null && r.phone != null -> builder.addAction(0, if (tamil) "WhatsApp" else "WhatsApp ${r.person}",
                 activity(r, 3, Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/" + r.phone.filter(Char::isDigit)))))
         }
-        builder.addAction(0, if (tamil) "10 நிமிடம் கழிச்சு" else "Snooze 10 min", action(r.id, ACTION_SNOOZE, 4))
-        builder.addAction(0, if (tamil) "முடிஞ்சது" else "Done", action(r.id, ACTION_DONE, 5))
+        if (r.action == ReminderAction.CALL && r.person != null) {
+            // "Owner, Ruthran-ku call panna sonneenga." [Call Ruthran] [Dismiss] — Kai never calls by itself.
+            builder.addAction(0, if (tamil) "சரி" else "Dismiss", action(r.id, ACTION_DONE, 5))
+            builder.addAction(0, if (tamil) "10 நிமிடம் கழிச்சு" else "Snooze 10 min", action(r.id, ACTION_SNOOZE, 4))
+        } else {
+            builder.addAction(0, if (tamil) "10 நிமிடம் கழிச்சு" else "Snooze 10 min", action(r.id, ACTION_SNOOZE, 4))
+            builder.addAction(0, if (tamil) "முடிஞ்சது" else "Done", action(r.id, ACTION_DONE, 5))
+        }
         runCatching { NotificationManagerCompat.from(context).notify(notificationId(r.id), builder.build()) }
     }
 

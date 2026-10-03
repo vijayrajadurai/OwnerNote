@@ -5,6 +5,7 @@ import com.shopai.app.brain.KaiLang
 import com.shopai.app.brain.KaiMood
 import com.shopai.app.brain.tools.ActionStatus
 import com.shopai.app.brain.tools.ContactMatch
+import com.shopai.app.brain.tools.KaiIntents
 import com.shopai.app.brain.tools.KaiReminder
 import com.shopai.app.brain.tools.KaiReminderSchedule
 import com.shopai.app.brain.tools.KaiReminderWords
@@ -75,9 +76,16 @@ class KaiReminderAssistant(
         return when (mode) {
             Waiting.TIME -> {
                 val p = key?.let { pending[it] } ?: return null
+                // A short answer ("10 minutes la") keeps the language the owner asked in.
+                val l = if (lang == KaiLang.ENGLISH) com.shopai.app.brain.KaiLanguage.forChat(p.draft.sourceText) else lang
+                // "10 minutes la" / "naalaikku 10 manikku" — a full time answers the question by itself.
+                val said = KaiTime.parse(text, now())
+                if (said != null && (said.relative != null || (p.time == null && said.complete))) {
+                    return proceed(p.copy(time = said), l)
+                }
                 val time = clockFrom(text, p.time?.dayPart?.let(::partWord)) ?: return null
                 val base = p.time ?: KaiWhen(now(), missing = setOf(Missing.TIME))
-                proceed(p.copy(time = withTime(base, time)), lang)
+                proceed(p.copy(time = withTime(base, time)), l)
             }
             Waiting.DAY_OF_MONTH -> {
                 val p = key?.let { pending[it] } ?: return null
@@ -193,9 +201,9 @@ class KaiReminderAssistant(
                 tl = "${partName(part.name, lang)}-la exact time sollunga Owner.",
                 en = "What exact time in the ${partName(part.name, lang)}, Owner?")
             else pick(lang,
-                ta = "எத்தனை மணிக்கு நினைவூட்டணும் ஓனர்?",
-                tl = "Ethana manikku remind pannanum Owner? Time sollunga.",
-                en = "What time should I remind you, Owner?")
+                ta = "எப்போ நினைவூட்டணும் ஓனர்? (உதா: 10 நிமிஷத்துல, நாளைக்கு காலை 10 மணிக்கு)",
+                tl = "Eppo remind pannanum Owner? (eg: 10 minutes la, naalaikku kaalaila 10 manikku)",
+                en = "When should I remind you, Owner? (e.g. in 10 minutes, tomorrow 10 AM)")
             return KaiTurn(ChatReply(text, KaiMood.CLARIFY, ChatIntent.REMINDER_QUERY), KaiCard(emptyList(), buttons + cancelButton(p.key, lang)))
         }
         // 2. "Every month" without the date.
@@ -255,7 +263,7 @@ class KaiReminderAssistant(
         }
         val r = saved.reminder
         lastTouched = r.id
-        tools.log("reminder: ${r.title}", "reminder engine", "${r.recurrence.repeat} ${Instant.ofEpochMilli(r.triggerAt)}", if (saved.duplicate) ActionStatus.ANSWERED else ActionStatus.SCHEDULED, r.id)
+        tools.log(KaiIntents.CREATE_REMINDER, "reminder engine", "${r.title}: ${r.recurrence.repeat} ${Instant.ofEpochMilli(r.triggerAt)}", if (saved.duplicate) ActionStatus.ANSWERED else ActionStatus.SCHEDULED, r.id, p.draft.sourceText)
         val what = KaiReminderWords.phrase(r.action, r.person, r.task, lang)
         val whenText = whenText(r, time, lang)
         val text = when {
@@ -263,14 +271,15 @@ class KaiReminderAssistant(
                 ta = "ஓனர், இந்த reminder ஏற்கனவே இருக்கு — $whenText.",
                 tl = "Owner, indha reminder already irukku — $whenText.",
                 en = "Owner, that reminder is already set — $whenText.")
+            // "Done Owner ✅ 2 minutes kalichi Ruthran-ku call panna remind pannuren." — a reminder, never "I called".
             time.relative != null -> pick(lang,
-                ta = "சரி ஓனர் 👍 $what ${KaiReminderWords.duration(time.relative, lang)}-ல நினைவூட்டுறேன்.",
-                tl = "Done Owner 👍 $what ${KaiReminderWords.duration(time.relative, lang)}-ku reminder vachiten.",
-                en = "Done Owner 👍 I'll remind you $what in ${KaiReminderWords.duration(time.relative, lang)} (${clock(localOf(r.triggerAt).toLocalTime())}).")
+                ta = "சரி ஓனர் ✅ ${KaiReminderWords.duration(time.relative, lang)} கழிச்சு $what நினைவூட்டுறேன்.",
+                tl = "Done Owner ✅ ${KaiReminderWords.duration(time.relative, lang)} kalichi $what remind pannuren.",
+                en = "Done Owner ✅ I'll remind you $what in ${KaiReminderWords.duration(time.relative, lang)} (${clock(localOf(r.triggerAt).toLocalTime())}).")
             else -> pick(lang,
-                ta = "சரி ஓனர். $whenText $what நினைவூட்டுறேன்.",
-                tl = "Done Owner. $whenText-ku $what reminder vachiten.",
-                en = "Done Owner. I'll remind you $what $whenText.")
+                ta = "சரி ஓனர் ✅ $whenText $what நினைவூட்டுறேன்.",
+                tl = "Done Owner ✅ $whenText-ku $what remind pannuren.",
+                en = "Done Owner ✅ I'll remind you $what $whenText.")
         } + if (time.amPmAssumed) pick(lang, ta = " (${clock(time.at.toLocalTime())} என்று எடுத்துக்கிட்டேன்)", tl = " (${clock(time.at.toLocalTime())} nu eduthukitten)", en = " (I took it as ${clock(time.at.toLocalTime())})") else ""
 
         val notes = mutableListOf<String>()

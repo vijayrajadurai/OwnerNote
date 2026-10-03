@@ -60,6 +60,12 @@ class KaiMemoryAssistant(private val access: KaiMemoryAccess) {
 
         /** "Today pottudu means stock out" → keep it always? */
         data class Permanent(override val key: String, override val phrase: String, override val original: String, val meaning: KaiMeaning) : Question
+
+        /** "'ramba' nu enna meaning?" — Kai waits for the owner to say what the word means. */
+        data class Word(override val key: String, override val phrase: String, override val original: String) : Question
+
+        /** "'ramba' na 'romba' — save pannava?" — saved only after the owner says yes. */
+        data class WordConfirm(override val key: String, override val phrase: String, override val original: String, val means: String) : Question
     }
 
     private var asking: Question? = null
@@ -81,6 +87,8 @@ class KaiMemoryAssistant(private val access: KaiMemoryAccess) {
         val lang = languageOf(text, chatLang)
         val mem = access.current()
         asking?.let { q -> answer(q, text, lang, mem)?.let { return it } }
+        // "'ramba' nu enna meaning?" — what the owner taught, or Kai asks to learn it (inline, no separate screen).
+        KaiTeaching.wordQuestion(text)?.let { word -> if (mem != null) return explainWord(word, lang, mem) }
         val entities = if (mem != null) access.entities() else emptyList()
         val cmd = KaiTeaching.parse(text, entities) ?: return null
         if (mem == null) return reply(lang, KaiMood.CLARIFY,
@@ -150,6 +158,19 @@ class KaiMemoryAssistant(private val access: KaiMemoryAccess) {
         val q = Question.Meaning(newKey(), phrase, original, guess, open)
         asking = q
         mem.suggested(phrase, guess.name)
+        // A product and a quantity with a word Kai doesn't know ("Colgate 5 box podu"): one plain yes / no question.
+        if (guess == KaiMeaning.STOCK_IN || guess == KaiMeaning.STOCK_OUT) {
+            val add = guess == KaiMeaning.STOCK_IN
+            return turn(lang, KaiMood.CLARIFY,
+                ta = if (add) "ஓனர், `$phrase`-னா stock சேர்க்கறதா?" else "ஓனர், `$phrase`-னா stock குறைக்கறதா?",
+                tl = if (add) "Owner, `$phrase` na stock add pannradha?" else "Owner, `$phrase` na stock out pannradha?",
+                en = if (add) "Owner, does `$phrase` mean add stock?" else "Owner, does `$phrase` mean stock out?",
+                card = KaiCard(emptyList(), listOf(
+                    KaiButton(pick(lang, if (add) "ஆமா, stock சேர்" else "ஆமா, stock out", if (add) "Yes, add stock" else "Yes, stock out", if (add) "Yes, add stock" else "Yes, stock out"),
+                        KaiAction.LearnMeaning(q.key, guess), primary = true),
+                    KaiButton(pick(lang, "இல்ல", "No", "No"), KaiAction.NotThis(q.key)),
+                )))
+        }
         val buttons = open.mapIndexed { i, m ->
             KaiButton(if (i == 0) pick(lang, "ஆமா, ${m.label(lang)}", "Aama, ${m.label(lang)}", "Yes, ${m.label(lang)}") else m.label(lang),
                 KaiAction.LearnMeaning(q.key, m), primary = i == 0)
@@ -159,6 +180,46 @@ class KaiMemoryAssistant(private val access: KaiMemoryAccess) {
             tl = "Owner, `$phrase`-na ${guess.label(lang)}-nu mean pannureengala?",
             en = "Owner, by `$phrase` do you mean ${guess.label(lang)}?",
             card = KaiCard(emptyList(), buttons))
+    }
+
+    /** The owner asked what a word means: the meaning they taught, or Kai asks them (and learns after a yes). */
+    private suspend fun explainWord(word: String, lang: KaiLang, mem: KaiPrivateMemory): MemoryStep {
+        val known = mem.find(word)?.takeIf { it.usable }
+        if (known != null) {
+            val value = known.meaning?.label(lang) ?: known.meaningValue
+            return reply(lang, KaiMood.EXPLAINING,
+                ta = "ஓனர், நீங்க சொன்னபடி `${known.triggerPhrase}`-னா `$value` 👍",
+                tl = "Owner, neenga sonna maadhiri `${known.triggerPhrase}`-na `$value` 👍",
+                en = "Owner, as you taught me: `${known.triggerPhrase}` means `$value` 👍")
+        }
+        val q = Question.Word(newKey(), word, "")
+        asking = q
+        mem.observe(word, null)
+        return reply(lang, KaiMood.CLARIFY,
+            ta = "எனக்கு தெரியல ஓனர் 🙂 `$word`-னா என்ன? சொல்லுங்க, உங்களுக்காக நினைவில் வெச்சுக்கறேன்.",
+            tl = "Enakku theriyala Owner 🙂 `$word`-na enna? Sollunga, ungalukkaga nyabagam vechukiren.",
+            en = "I don't know that one, Owner 🙂 What does `$word` mean? Tell me and I'll remember it for you.")
+    }
+
+    /**
+     * A message Kai couldn't understand that has exactly one word Kai doesn't
+     * know ("innaiku sales ramba kammi"): Kai asks what the word means — it
+     * never guesses. [known] = words Kai already reads. Null: nothing to ask.
+     */
+    suspend fun unknownWord(text: String, original: String, lang: KaiLang, known: (String) -> Boolean): KaiTurn? {
+        val mem = access.current() ?: return null
+        val words = KaiPrivateMemory.normalize(text).split(' ').filter { it.isNotEmpty() }
+        if (words.isEmpty() || words.size > 7 || words.any { w -> w.any(Char::isDigit) }) return null
+        val unknown = words.filter { it.length >= 3 && it.all(Char::isLetter) && !known(it) && mem.find(it) == null }.distinct()
+        val word = unknown.singleOrNull() ?: return null
+        val obs = mem.observe(word, null)
+        if (obs?.rejected?.contains("WORD") == true) return null
+        val q = Question.Word(newKey(), word, original)
+        asking = q
+        return turn(lang, KaiMood.CLARIFY,
+            ta = "ஓனர், `$word`-னு என்ன அர்த்தம்? சொல்லுங்க, கத்துக்கறேன் 🙂",
+            tl = "Owner, `$word` nu enna meaning? Sollunga, kathukkuren 🙂",
+            en = "Owner, what does `$word` mean? Tell me and I'll learn it 🙂")
     }
 
     /** "red paste 10 add pannu" and no product is called "red paste": which one is it? */
@@ -220,6 +281,12 @@ class KaiMemoryAssistant(private val access: KaiMemoryAccess) {
                 lastPhrase = q.phrase
                 MemoryStep.Rerun(learned(q.phrase, e.name, lang), q.original)
             }
+            is KaiAction.LearnWord -> {
+                val q = asking?.takeIf { it.key == action.key } as? Question.WordConfirm ?: return null
+                if (mem == null) return null
+                asking = null
+                saveWord(q, mem, lang)
+            }
             is KaiAction.NotThis -> {
                 val q = asking?.takeIf { it.key == action.key } ?: return null
                 asking = null
@@ -257,7 +324,7 @@ class KaiMemoryAssistant(private val access: KaiMemoryAccess) {
             return null
         }
         // Only a short answer answers Kai's question; a new sentence is a new message.
-        if (KaiPrivateMemory.normalize(text).split(' ').size > 4) {
+        if (KaiPrivateMemory.normalize(text).split(' ').size > (if (q is Question.Word) 6 else 4)) {
             asking = null
             return null
         }
@@ -306,6 +373,49 @@ class KaiMemoryAssistant(private val access: KaiMemoryAccess) {
                     return declined(q, mem, lang)
                 }
             }
+            is Question.Word -> {
+                if (no) {
+                    asking = null
+                    return declined(q, mem, lang)
+                }
+                val means = KaiTeaching.wordAnswer(text)
+                if (means != null && means != KaiPrivateMemory.normalize(q.phrase)) {
+                    // A money / stock meaning is never a plain word: it needs the action question (and its own confirmation).
+                    KaiTeaching.actionMeaningOf(means)?.let { meaning ->
+                        val mq = Question.Meaning(newKey(), q.phrase, q.original.ifEmpty { q.phrase }, meaning, listOf(meaning))
+                        asking = mq
+                        mem.suggested(q.phrase, meaning.name)
+                        return MemoryStep.Reply(turn(lang, KaiMood.CLARIFY,
+                            ta = "ஓனர், `${q.phrase}`-னா ${meaning.label(lang)}-னு சொல்றீங்களா?",
+                            tl = "Owner, `${q.phrase}`-na ${meaning.label(lang)}-nu mean pannureengala?",
+                            en = "Owner, by `${q.phrase}` do you mean ${meaning.label(lang)}?",
+                            card = KaiCard(emptyList(), listOf(
+                                KaiButton(pick(lang, "ஆமா, ${meaning.label(lang)}", "Aama, ${meaning.label(lang)}", "Yes, ${meaning.label(lang)}"), KaiAction.LearnMeaning(mq.key, meaning), primary = true),
+                                KaiButton(pick(lang, "இல்ல", "Illa", "No"), KaiAction.NotThis(mq.key)),
+                            ))))
+                    }
+                    val wq = Question.WordConfirm(newKey(), q.phrase, q.original, means)
+                    asking = wq
+                    return MemoryStep.Reply(turn(lang, KaiMood.CLARIFY,
+                        ta = "சரி ஓனர் — `${q.phrase}`-னா `$means`. இதை உங்களுக்காக நினைவில் வைக்கட்டுமா?",
+                        tl = "Seri Owner — `${q.phrase}`-na `$means`. Idha ungalukkaga save pannava?",
+                        en = "Got it, Owner — `${q.phrase}` means `$means`. Shall I remember this for you?",
+                        card = KaiCard(emptyList(), listOf(
+                            KaiButton(pick(lang, "ஆமா, சேமி", "Aama, save pannu", "Yes, save"), KaiAction.LearnWord(wq.key), primary = true),
+                            KaiButton(pick(lang, "வேண்டாம்", "Vendam", "No"), KaiAction.NotThis(wq.key)),
+                        ))))
+                }
+            }
+            is Question.WordConfirm -> {
+                if (yes) {
+                    asking = null
+                    return saveWord(q, mem, lang)
+                }
+                if (no) {
+                    asking = null
+                    return declined(q, mem, lang)
+                }
+            }
             is Question.Permanent -> {
                 if (yes || KaiTeaching.parse(text, emptyList()) == TeachCommand.RememberThat) {
                     asking = null
@@ -328,11 +438,23 @@ class KaiMemoryAssistant(private val access: KaiMemoryAccess) {
             is Question.Product -> mem?.rejected(q.phrase, "PRODUCT")
             is Question.Variant -> mem?.rejected(q.phrase, q.memory.meaningType)
             is Question.Permanent -> Unit
+            is Question.Word, is Question.WordConfirm -> mem?.rejected(q.phrase, "WORD")
         }
         return reply(lang, KaiMood.NEUTRAL,
             ta = "சரி ஓனர், எதுவும் நினைவில் வைக்கல, எதுவும் சேமிக்கல. `${q.phrase}`-னா என்னன்னு சொன்னா கத்துக்கறேன்.",
             tl = "Seri Owner, edhuvum remember pannala, edhuvum save pannala. `${q.phrase}`-na enna-nu sonna kathukkuren.",
             en = "Okay Owner, I didn't remember or save anything. Tell me what `${q.phrase}` means and I'll learn it.")
+    }
+
+    /** The owner said yes: the word is saved for this owner only, and Kai reads the original message again with it. */
+    private suspend fun saveWord(q: Question.WordConfirm, mem: KaiPrivateMemory, lang: KaiLang): MemoryStep {
+        mem.teachWord(q.phrase, q.means, MemorySource.OWNER_CONFIRMED)
+        lastPhrase = KaiPrivateMemory.normalize(q.phrase)
+        val done = pick(lang,
+            ta = "சரி ஓனர் 👍 `${q.phrase}`-னா `${q.means}`-னு உங்களுக்கு மட்டும் நினைவில் வெச்சுக்கறேன்.",
+            tl = "Seri Owner 👍 `${q.phrase}`-na `${q.means}`-nu ungalukku mattum nyabagam vechukiren.",
+            en = "Done Owner 👍 I'll remember `${q.phrase}` means `${q.means}` — just for you.")
+        return if (q.original.isNotBlank()) MemoryStep.Rerun(done, q.original) else MemoryStep.Reply(KaiTurn(ChatReply(done, KaiMood.SUCCESS, ChatIntent.GENERAL_BUSINESS_QUERY)))
     }
 
     private fun onlyNow(q: Question.Permanent, lang: KaiLang): MemoryStep = reply(lang, KaiMood.NEUTRAL,

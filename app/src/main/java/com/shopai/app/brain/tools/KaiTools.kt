@@ -82,9 +82,23 @@ enum class ContactSource { CUSTOMER, SUPPLIER, PHONE }
 /** A person found for a reminder: an OwnerNote customer / supplier, or a phone contact. */
 data class ContactMatch(val id: String, val name: String, val phone: String?, val source: ContactSource)
 
+/** A product the owner is adding (every field was shown to the owner and could be edited). */
+data class NewProduct(
+    val name: String,
+    val category: String,
+    val variant: String? = null,
+    val brand: String? = null,
+    val unit: String,
+    val weight: String? = null,
+    val imageUri: String? = null,
+)
+
 enum class ActionStatus { ANSWERED, DRAFT, CONFIRMED, CANCELLED, SCHEDULED, FAILED, OPENED }
 
-/** Every Kai action is recorded: intent, tool, result, status, time and a reference id. */
+/**
+ * Every Kai action is recorded: intent, tool, the owner's words (text only —
+ * never audio), result, status, time, a reference id and whose action it was.
+ */
 data class KaiActionRecord(
     val reference: String,
     val intent: String,
@@ -92,6 +106,8 @@ data class KaiActionRecord(
     val result: String,
     val status: ActionStatus,
     val timestamp: Long,
+    val input: String? = null,
+    val ownerId: String? = null,
 )
 
 /**
@@ -138,6 +154,10 @@ interface KaiTools {
     suspend fun products(): List<ProductRef>? = null
     suspend fun changeStock(product: ProductRef, qty: BigDecimal, incoming: Boolean, said: String): ActionOutcome = ActionOutcome.Failed("unavailable")
 
+    /** A new product (from the owner's words / a photo the owner checked), created with no stock; null = can't. */
+    suspend fun createProduct(product: NewProduct): ProductRef? = null
+
     // ---- audit ----
-    fun log(intent: String, tool: String, result: String, status: ActionStatus, reference: String? = null): String = reference ?: "-"
+    /** [input]: the owner's words (text). Returns the reference id. */
+    fun log(intent: String, tool: String, result: String, status: ActionStatus, reference: String? = null, input: String? = null): String = reference ?: "-"
 }

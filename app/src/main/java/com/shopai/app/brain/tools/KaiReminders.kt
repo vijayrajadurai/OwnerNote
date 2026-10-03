@@ -108,7 +108,8 @@ object KaiReminderUnderstanding {
     private val listWords = Regex("""$B(list|show|enna|ennenna|what|pending|today'?s|innaiku|innikku|inniku|sollu|iruku|irukku|irukka|my|en|ella|all)$E|என்ன""", RegexOption.IGNORE_CASE)
 
     fun understand(raw: String, now: LocalDateTime, people: List<String>): ReminderRequest? {
-        val text = raw.trim().replace(Regex("""\s+"""), " ")
+        // Spoken Tamil script ("2 நிமிஷத்துல … ரிமைண்டர் பண்ணு") reads the same as typed Tanglish.
+        val text = KaiSpokenWords.normalize(raw.trim()).replace(Regex("""\s+"""), " ")
         if (text.isEmpty()) return null
         val lower = text.lowercase(Locale.ROOT)
         val time = KaiTime.parse(text, now)
@@ -231,7 +232,7 @@ object KaiReminderWords {
         val m = d.toMinutes() % 60
         val s = d.seconds % 60
         val parts = buildList {
-            if (h > 0) add(if (lang == KaiLang.TAMIL) "$h மணி நேரம்" else "$h hour" + if (h > 1 && lang == KaiLang.ENGLISH) "s" else "")
+            if (h > 0) add(if (lang == KaiLang.TAMIL) "$h மணி நேரம்" else "$h hour" + if (h > 1) "s" else "")
             if (m > 0) add(if (lang == KaiLang.TAMIL) "$m நிமிடம்" else "$m minutes")
             if (s > 0 && h == 0L) add(if (lang == KaiLang.TAMIL) "$s வினாடி" else "$s seconds")
         }
