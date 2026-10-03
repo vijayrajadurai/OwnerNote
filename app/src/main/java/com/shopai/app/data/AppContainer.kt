@@ -145,7 +145,7 @@ class AppContainer(context: Context) {
      * One per signed-in business, never shared; used by voice and text alike.
      */
     val kaiMemory by lazy { com.shopai.app.brain.memory.KaiPrivateMemory(com.shopai.app.data.kai.KaiMemoryFileStore(appContext)) }
-    val kaiMemoryAccess by lazy {
+    val kaiMemoryAccess: com.shopai.app.data.kai.AppKaiMemoryAccess by lazy {
         com.shopai.app.data.kai.AppKaiMemoryAccess(kaiMemory, books, { morningSources.businessId() }, partyRepository, inventoryRepository)
     }
 
@@ -153,7 +153,7 @@ class AppContainer(context: Context) {
     val morningWork by lazy { com.shopai.app.brain.morning.MorningWorkEngine(com.shopai.app.data.morning.MorningTaskFileStore(appContext)) }
 
     /** Morning Work's read-only view of the books, parties, stock and reminders. */
-    val morningSources by lazy {
+    val morningSources: com.shopai.app.data.morning.MorningWorkSources by lazy {
         com.shopai.app.data.morning.MorningWorkSources(
             appContext, books, partyRepository, reminderRepository, reminderAlarms, inventoryRepository, businessRepository,
             // The signed-in owner's own Morning Routine (their private Kai memory — never another owner's).
