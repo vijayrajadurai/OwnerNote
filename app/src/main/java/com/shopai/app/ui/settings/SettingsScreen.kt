@@ -74,6 +74,27 @@ fun SettingsScreen(
     }
     val exactAlarmsAllowed = container.voiceCheckinRepository.canScheduleExactAlarms()
 
+    // Morning Work Notification: the signed-in owner's own setting (OFF until they turn it on).
+    var morningOwner by remember { mutableStateOf<com.shopai.app.brain.morning.MorningOwner?>(null) }
+    var morningSetting by remember { mutableStateOf(com.shopai.app.brain.morning.MorningNotificationSetting()) }
+    var morningResult by remember { mutableStateOf<com.shopai.app.brain.tools.ScheduleResult?>(null) }
+    LaunchedEffect(Unit) {
+        morningOwner = container.signedInMorningOwner()
+        morningOwner?.let { owner ->
+            morningSetting = container.morningScheduler.setting(owner)
+            if (morningSetting.enabled) morningResult = container.morningScheduler.restore(owner)
+        }
+    }
+    fun applyMorning(setting: com.shopai.app.brain.morning.MorningNotificationSetting) {
+        val owner = morningOwner ?: return
+        morningSetting = setting
+        morningResult = container.morningScheduler.update(owner, setting)
+    }
+    // Android 13+: ask for the notification permission when the owner turns it on; the result is shown either way.
+    val notificationPermission = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+    ) { applyMorning(morningSetting.copy(enabled = true)) }
+
     DetailScaffold(title = stringResource(R.string.settings), onBack = onBack) { contentModifier ->
         Column(
             modifier = contentModifier
@@ -185,6 +206,77 @@ fun SettingsScreen(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
                         )
+                    }
+                }
+            }
+
+            Text(stringResource(R.string.morning_notification_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.morning_notification_subtitle), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            ShopCard {
+                val timeText = java.time.LocalTime.of(morningSetting.hour, morningSetting.minute)
+                    .format(java.time.format.DateTimeFormatter.ofPattern("h:mm a", java.util.Locale.ENGLISH))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(stringResource(R.string.morning_notification_toggle), modifier = Modifier.weight(1f))
+                    Switch(
+                        checked = morningSetting.enabled,
+                        enabled = morningOwner != null,
+                        onCheckedChange = { checked ->
+                            val needsPermission = checked && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU &&
+                                androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) !=
+                                android.content.pm.PackageManager.PERMISSION_GRANTED
+                            if (needsPermission) {
+                                notificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                            } else {
+                                applyMorning(morningSetting.copy(enabled = checked))
+                            }
+                        },
+                    )
+                }
+                if (morningOwner == null) {
+                    Text(stringResource(R.string.morning_notification_signed_out), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                if (morningSetting.enabled) {
+                    HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(stringResource(R.string.morning_notification_time, timeText), modifier = Modifier.weight(1f))
+                        TextButton(onClick = {
+                            android.app.TimePickerDialog(
+                                context,
+                                { _, hour, minute -> applyMorning(morningSetting.copy(hour = hour, minute = minute)) },
+                                morningSetting.hour,
+                                morningSetting.minute,
+                                android.text.format.DateFormat.is24HourFormat(context),
+                            ).show()
+                        }) { Text(stringResource(R.string.morning_notification_change_time)) }
+                    }
+                    // How it was scheduled — never a silent failure.
+                    when (morningResult) {
+                        com.shopai.app.brain.tools.ScheduleResult.EXACT ->
+                            Text(stringResource(R.string.morning_notification_exact, timeText), style = MaterialTheme.typography.bodySmall)
+                        com.shopai.app.brain.tools.ScheduleResult.APPROXIMATE ->
+                            Text(stringResource(R.string.morning_notification_approximate, timeText), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                        com.shopai.app.brain.tools.ScheduleResult.NOTIFICATIONS_OFF -> {
+                            Text(stringResource(R.string.morning_notification_off), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                            TextButton(onClick = {
+                                runCatching {
+                                    context.startActivity(
+                                        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                                    )
+                                }
+                            }) { Text(stringResource(R.string.morning_notification_open_settings)) }
+                        }
+                        com.shopai.app.brain.tools.ScheduleResult.FAILED ->
+                            Text(stringResource(R.string.morning_notification_failed), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                        null -> Unit
                     }
                 }
             }

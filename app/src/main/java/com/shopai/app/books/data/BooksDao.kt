@@ -379,6 +379,37 @@ interface BooksDao {
     suspend fun outbox(businessId: String, state: String, limit: Int): List<OutboxEntity>
     @Query("SELECT COUNT(*) FROM sync_outbox WHERE businessId = :businessId AND state = :state")
     suspend fun outboxCount(businessId: String, state: String): Int
+    // ---- Kai Morning Work: bounded reads (WHERE / ORDER BY / LIMIT in the database — see MorningSql) ----
+    @Query(MorningSql.DUE_PARTIES)
+    suspend fun morningDueParties(businessId: String, types: List<String>, partyKind: String, untilDay: Int, withPartPaid: Int, limit: Int): List<MorningPartyDue>
+
+    @Query(MorningSql.PARTY_SUMMARY)
+    suspend fun morningPartySummary(businessId: String, types: List<String>, partyKind: String, today: Int, untilDay: Int): MorningPartySummary
+
+    @Query(MorningSql.OPEN_BILLS_OF)
+    suspend fun morningOpenBillsOf(businessId: String, partyIds: List<String>, types: List<String>): List<OpenDoc>
+
+    @Query(MorningSql.PARTIES_BY_ID)
+    suspend fun morningPartiesById(businessId: String, ids: List<String>): List<PartyEntity>
+
+    @Query(MorningSql.LOW_STOCK)
+    suspend fun morningLowStock(businessId: String, limit: Int): List<MorningLowStock>
+
+    @Query(MorningSql.LOW_STOCK_COUNT)
+    suspend fun morningLowStockCount(businessId: String): Int
+
+    @Query(MorningSql.EXPIRING)
+    suspend fun morningExpiring(businessId: String, untilDay: Int, limit: Int): List<MorningExpiringBatch>
+
+    @Query(MorningSql.EXPIRING_COUNT)
+    suspend fun morningExpiringCount(businessId: String, untilDay: Int): Int
+
+    @Query(MorningSql.OPEN_DRAFTS)
+    suspend fun morningOpenDrafts(businessId: String, limit: Int): List<DraftEntity>
+
+    @Query(MorningSql.OPEN_DRAFTS_COUNT)
+    suspend fun morningOpenDraftsCount(businessId: String): Int
+
     @Upsert suspend fun upsertDraft(d: DraftEntity)
     @Query("SELECT * FROM drafts WHERE id = :id") suspend fun draft(id: String): DraftEntity?
     @Query("SELECT * FROM drafts WHERE businessId = :businessId AND status = 'OPEN' ORDER BY createdAt DESC")

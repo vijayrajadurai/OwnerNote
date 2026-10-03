@@ -204,6 +204,12 @@ data class MorningSnapshot(
     val offline: Boolean = false,
     /** When these figures were read from the source (epoch millis). */
     val syncedAtMillis: Long = 0L,
+    /** The signed-in owner (from the authenticated session) this snapshot was read for. */
+    val ownerId: String? = null,
+    /** That owner's saved Morning Routine (section order); null = the default order. */
+    val routine: List<MorningSection>? = null,
+    /** Business-wide totals from aggregate queries, when the lists were read bounded. */
+    val totals: MorningTotals? = null,
 )
 
 // ---------------------------------------------------------------- outputs

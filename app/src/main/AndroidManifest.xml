@@ -135,6 +135,11 @@
             </intent-filter>
         </receiver>
 
+        <!-- The daily Morning Work notification (one alarm; restored by the boot / time / update receivers). -->
+        <receiver
+            android:name=".receiver.MorningWorkReceiver"
+            android:exported="false" />
+
         <receiver
             android:name=".receiver.BootCompletedReceiver"
             android:exported="false">

@@ -93,6 +93,25 @@ class KaiPrivateMemory(
     suspend fun teachWord(phrase: String, means: String, source: MemorySource): KaiMemory =
         save(phrase, MemoryType.WORD, MemoryType.WORD.name, means.trim(), null, source)
 
+    /**
+     * One of the owner's own settings kept with their memory ([MemoryType.PREFERENCE],
+     * e.g. the Morning Routine). Never used to rewrite words; saved only when the owner confirmed it.
+     */
+    suspend fun savePreference(key: String, kind: String, value: String): KaiMemory =
+        save(key, MemoryType.PREFERENCE, kind, value, null, MemorySource.OWNER_CONFIRMED)
+
+    /** The owner's setting of [kind] (null: none saved). */
+    fun preference(kind: String): KaiMemory? = usable().firstOrNull { it.memoryType == MemoryType.PREFERENCE && it.meaningType == kind }
+
+    /** Removes the owner's setting of [kind] (back to the default). */
+    suspend fun forgetPreference(kind: String): KaiMemory? = lock.withLock {
+        val b = book ?: return@withLock null
+        val target = b.memories.firstOrNull { it.status != MemoryStatus.DELETED && it.memoryType == MemoryType.PREFERENCE && it.meaningType == kind } ?: return@withLock null
+        val removed = target.copy(status = MemoryStatus.DELETED, learningState = LearningState.DISABLED, updatedAt = clock())
+        persist(b.copy(memories = b.memories.map { if (it.id == target.id) removed else it }))
+        removed
+    }
+
     /** An approved extra spelling for an existing meaning ("thooki kudunga" for "thooki kudu"). */
     suspend fun addVariant(memoryId: String, variant: String): KaiMemory? = lock.withLock {
         val b = book ?: return@withLock null

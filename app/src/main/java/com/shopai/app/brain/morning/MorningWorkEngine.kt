@@ -129,6 +129,8 @@ class MorningWorkEngine(
     var role: MorningRole = MorningRole.OWNER
 
     private var snapshot: MorningSnapshot? = null
+    /** The owner the current session belongs to. */
+    private var ownerId: String? = null
     private var candidates: List<MorningTask> = emptyList()
     private var _state = MorningState()
 
@@ -164,8 +166,9 @@ class MorningWorkEngine(
         val day = today.toEpochDay()
         val nowMillis = now.toInstant().toEpochMilli()
         val biz = snap.businessId
-        // Another business on the same phone: start clean, never mix.
-        if (_state.plan?.businessId != null && _state.plan?.businessId != biz) resetSession()
+        // Another business — or another owner of it — on the same phone: start clean, never mix.
+        if (_state.plan?.businessId != null && (_state.plan?.businessId != biz || ownerId != snap.ownerId)) resetSession()
+        ownerId = snap.ownerId
         mode?.let { _state = _state.copy(mode = it) }
         lang?.let { _state = _state.copy(lang = it) }
 
@@ -188,12 +191,14 @@ class MorningWorkEngine(
         val known = merged.map { it.taskId }.toSet()
         val room = (maxTasks - merged.count { it.open }).coerceAtLeast(0)
         val added = all.filter { it.taskId !in known }.take(room)
-        val tasks = MorningAnalyzer.sort(merged + added)
+        // Trimmed by priority (the most important work is never dropped), shown in the owner's routine order.
+        val tasks = MorningRoutines.sort(merged + added, snap.routine)
         store.save(biz, day, tasks)
 
         snapshot = snap
         candidates = all
-        val plan = MorningPlan(biz, day, tasks, snap.offline, snap.syncedAtMillis, all.size)
+        val found = snap.totals?.let { t -> maxOf(all.size, t.candidates + all.count { it.taskType == MorningTaskType.REMINDER }) } ?: all.size
+        val plan = MorningPlan(biz, day, tasks, snap.offline, snap.syncedAtMillis, found)
         // Keep the owner where they were; if that task got resolved meanwhile, move on.
         val cursor = _state.currentTaskId?.takeIf { id -> tasks.any { it.taskId == id } }
         _state = _state.copy(plan = plan, currentTaskId = cursor, summary = summaryOf(plan, all), finished = _state.started && plan.openTasks.isEmpty())
@@ -222,7 +227,7 @@ class MorningWorkEngine(
         val now = clock()
         val plan = lock.withLock { _state.plan }?.takeIf { it.businessId == snap.businessId }
             ?: MorningPlan(snap.businessId, now.toLocalDate().toEpochDay(), emptyList(), snap.offline, snap.syncedAtMillis, 0)
-        return MorningBriefs.build(plan, now, lang, trigger)
+        return MorningBriefs.build(plan, now, lang, trigger, snap.routine)
     }
 
     // ------------------------------------------------------------- input
@@ -687,8 +692,9 @@ class MorningWorkEngine(
             return p.pending > 0.005 && due != null && due <= today
         }
         return MorningSummary(
-            collections = parties.filter { it.kind == MorningPartyKind.CUSTOMER && dueBy(it) }.sumOf { it.pending },
-            payments = parties.filter { it.kind == MorningPartyKind.SUPPLIER && dueBy(it) }.sumOf { it.pending },
+            // Bounded reads carry the business-wide totals (aggregate queries over the same open bills).
+            collections = snapshot?.totals?.collectionsDue ?: parties.filter { it.kind == MorningPartyKind.CUSTOMER && dueBy(it) }.sumOf { it.pending },
+            payments = snapshot?.totals?.paymentsDue ?: parties.filter { it.kind == MorningPartyKind.SUPPLIER && dueBy(it) }.sumOf { it.pending },
             lowStockProducts = all.count { it.taskType == MorningTaskType.LOW_STOCK },
             reminders = all.count { it.taskType == MorningTaskType.REMINDER },
             followUps = all.count { it.taskType == MorningTaskType.PAYMENT_FOLLOWUP },

@@ -1402,4 +1402,16 @@
     <string name="bill_invoice_number">Invoice / bill number</string>
     <string name="bill_tax_read">Tax on the bill: %1$s</string>
     <string name="bill_cancel">Cancel</string>
+    <string name="morning_notification_channel">Morning Work</string>
+    <string name="morning_notification_title">Morning Work Notification</string>
+    <string name="morning_notification_subtitle">Every morning at your time, Kai tells you your Morning Work is ready. Tap it to open Morning Work.</string>
+    <string name="morning_notification_toggle">Morning Work Notification</string>
+    <string name="morning_notification_time">Time: %1$s</string>
+    <string name="morning_notification_change_time">Change time</string>
+    <string name="morning_notification_exact">Scheduled for %1$s.</string>
+    <string name="morning_notification_approximate">Scheduled for %1$s. Android may deliver it a few minutes late (exact alarms are not allowed for this app).</string>
+    <string name="morning_notification_off">Notifications are turned off for this app — the morning notification can\'t be shown. Turn them on in Settings.</string>
+    <string name="morning_notification_failed">Couldn\'t schedule the morning notification. Please try again.</string>
+    <string name="morning_notification_open_settings">Open notification settings</string>
+    <string name="morning_notification_signed_out">Sign in to use the morning notification.</string>
 </resources>

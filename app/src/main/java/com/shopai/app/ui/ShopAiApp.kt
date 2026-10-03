@@ -73,6 +73,14 @@ fun ShopAiApp(container: AppContainer) {
         val signedIn = currentRoute != null && currentRoute !in setOf(Routes.Splash, Routes.Login, Routes.Otp, Routes.BusinessSetup)
         if (openReminder != null && signedIn && currentRoute != Routes.KaiChat) navController.navigate(Routes.KaiChat)
     }
+    // The morning notification was tapped: Morning Work (once past login), built from the records now.
+    val openMorning by com.shopai.app.notifications.MorningWorkInbox.pending.collectAsState()
+    androidx.compose.runtime.LaunchedEffect(openMorning, currentRoute) {
+        val signedIn = currentRoute != null && currentRoute !in setOf(Routes.Splash, Routes.Login, Routes.Otp, Routes.BusinessSetup)
+        if (openMorning && signedIn && com.shopai.app.notifications.MorningWorkInbox.take()) {
+            navController.navigate(Routes.morningWork(voice = false, start = false)) { launchSingleTop = true }
+        }
+    }
 
     Box(Modifier.fillMaxSize()) {
         NavHost(

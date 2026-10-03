@@ -3,13 +3,6 @@ package com.shopai.app.data.morning
 import android.content.Context
 import com.google.gson.Gson
 import com.shopai.app.books.integration.BooksModule
-import com.shopai.app.books.model.Money
-import com.shopai.app.books.model.PartyKind
-import com.shopai.app.books.model.Qty
-import com.shopai.app.books.model.TxnType
-import com.shopai.app.brain.morning.MorningBatch
-import com.shopai.app.brain.morning.MorningDoc
-import com.shopai.app.brain.morning.MorningDraft
 import com.shopai.app.brain.morning.MorningParty
 import com.shopai.app.brain.morning.MorningPartyKind
 import com.shopai.app.brain.morning.MorningProduct
@@ -41,13 +34,13 @@ import java.time.ZoneId
 /**
  * Reads Morning Work's inputs from the app's existing sources of truth —
  * read only, nothing is written to the books, the backend or the reminders:
- *  - customers / suppliers and their balances: [PartyRepository] (the books
- *    after the import, the backend ledger before it), plus the books' own
- *    open-bill query for partial payments;
- *  - stock: the books' stock movements (one grouped query) with each
- *    product's minimum / reorder level; the inventory repository before the import;
- *  - reminders: [ReminderRepository] (its saved copy when offline);
- *  - drafts and expiring batches: the books.
+ *  - after the books import: bounded database queries only
+ *    ([BooksMorningQueries]) — customers / suppliers due (the same open bills
+ *    the ledger screens use), low stock (stock movements vs. each product's
+ *    level), expiring batches with stock, open drafts — each with WHERE /
+ *    ORDER BY / LIMIT, plus aggregate totals; never every customer or product;
+ *  - before the import: [PartyRepository] / the inventory repository (backend);
+ *  - reminders: [ReminderRepository] (its saved copy when offline).
  * The last good snapshot is kept on the phone, so Morning Work still opens
  * offline and says it is showing last synced information.
  */
@@ -59,7 +52,10 @@ class MorningWorkSources(
     private val alarms: ReminderAlarms,
     private val inventory: InventoryRepository,
     private val business: BusinessRepository,
+    /** The signed-in owner's saved Morning Routine (their private Kai memory); null = default order. */
+    private val routine: suspend () -> List<com.shopai.app.brain.morning.MorningSection>? = { null },
 ) {
+    private val loader = com.shopai.app.brain.morning.MorningSnapshotLoader()
     private val dir = File(context.applicationContext.filesDir, "morning_work").apply { mkdirs() }
     private val prefs = context.applicationContext.getSharedPreferences("morning_work", Context.MODE_PRIVATE)
     private val gson = Gson()
@@ -73,6 +69,22 @@ class MorningWorkSources(
         return id ?: prefs.getString(KEY_BUSINESS, null)
     }
 
+    /**
+     * The authenticated login: the books session's business + user, else the
+     * backend login (the token's own business and its owner), else — offline —
+     * the last login seen on this phone. Never an id from the UI.
+     */
+    suspend fun owner(): com.shopai.app.brain.morning.MorningOwner? {
+        books.session()?.let { return com.shopai.app.brain.morning.MorningOwner(it.ctx.businessId, it.ctx.userId) }
+        val b = runCatching { business.getMyBusiness() }.getOrNull()
+        if (b != null) {
+            prefs.edit().putString(KEY_BUSINESS, b.id).putString(KEY_OWNER, b.ownerUserId).apply()
+            return com.shopai.app.brain.morning.MorningOwner(b.id, b.ownerUserId)
+        }
+        val id = prefs.getString(KEY_BUSINESS, null) ?: return null
+        return com.shopai.app.brain.morning.MorningOwner(id, prefs.getString(KEY_OWNER, null))
+    }
+
     /** The signed-in user's role from the books (the backend login is always the owner). */
     suspend fun role(): MorningRole {
         val s = books.session() ?: return MorningRole.OWNER
@@ -80,10 +92,34 @@ class MorningWorkSources(
         return MorningRole(user.role, user.permissions.split(',').map { it.trim() }.filter { it.isNotEmpty() }.toSet())
     }
 
+    /**
+     * Today's inputs for the signed-in owner, read now from the source of truth.
+     * Books: bounded database queries ([BooksMorningQueries] — a fixed number of
+     * WHERE / ORDER BY / LIMIT reads, never every customer or product). Before
+     * the import: the backend repositories (the server does the work).
+     */
     suspend fun snapshot(): MorningSnapshot? = withContext(Dispatchers.IO) {
-        val biz = businessId() ?: return@withContext null
+        val owner = owner() ?: return@withContext null
+        val biz = owner.businessId
         val s = books.session()
         val today = LocalDate.now(zone)
+        val myRoutine = runCatching { routine() }.getOrNull()
+        if (s != null) {
+            val r = runCatching { reminders.listReminders() }
+            val snap = runCatching {
+                loader.load(
+                    owner, BooksMorningQueries(s.dao, biz), today.toEpochDay(),
+                    reminderFacts(r.getOrNull() ?: alarms.cached()), myRoutine,
+                    offline = r.isFailure, syncedAtMillis = System.currentTimeMillis(),
+                )
+            }.getOrElse {
+                // The books couldn't be read: the last synced copy, said to be last synced.
+                return@withContext loadCached(biz)?.copy(offline = true, ownerId = owner.ownerId, routine = myRoutine)
+            }
+            if (!snap.offline) saveCached(snap)
+            return@withContext snap
+        }
+        // Before the import (backend ledger): the repositories — the server reads its own database.
         coroutineScope {
             val customers = async { runCatching { parties.getCustomers() } }
             val suppliers = async { runCatching { parties.getSuppliers() } }
@@ -95,17 +131,8 @@ class MorningWorkSources(
             // Party balances couldn't be read (offline before the import): the last synced copy.
             if (c.isFailure && sp.isFailure) {
                 return@coroutineScope cached?.let { last ->
-                    last.copy(offline = true, reminders = r.getOrNull()?.let { reminderFacts(it) } ?: last.reminders)
+                    last.copy(offline = true, reminders = r.getOrNull()?.let { reminderFacts(it) } ?: last.reminders, ownerId = owner.ownerId, routine = myRoutine)
                 }
-            }
-            val docsByParty = if (s != null) {
-                runCatching {
-                    val sale = s.dao.openDocsAll(biz, listOf(TxnType.SALE.name, TxnType.OPENING_BALANCE.name), PartyKind.CUSTOMER.name)
-                    val purchase = s.dao.openDocsAll(biz, listOf(TxnType.PURCHASE.name, TxnType.OPENING_BALANCE.name), PartyKind.SUPPLIER.name)
-                    (sale + purchase).groupBy { it.partyId }
-                }.getOrDefault(emptyMap())
-            } else {
-                emptyMap()
             }
             fun party(p: PartySummary, kind: MorningPartyKind) = MorningParty(
                 id = p.id,
@@ -114,67 +141,12 @@ class MorningWorkSources(
                 phone = p.phone,
                 pending = p.pendingTotal,
                 nextDueDay = parseIsoToLocalDate(p.nextDueDate)?.toEpochDay(),
-                docs = docsByParty[p.id].orEmpty().map { d ->
-                    MorningDoc(
-                        id = d.id,
-                        number = d.number,
-                        total = Money.toRupees(d.totalPaise).toDouble(),
-                        paid = Money.toRupees(d.allocatedPaise).toDouble(),
-                        dueDay = d.dueDate?.toLong(),
-                        dateDay = d.date.toLong(),
-                    )
-                },
             )
             val partyList = c.getOrDefault(emptyList()).map { party(it, MorningPartyKind.CUSTOMER) } +
                 sp.getOrDefault(emptyList()).map { party(it, MorningPartyKind.SUPPLIER) }
-
-            val products = if (s != null) {
-                runCatching {
-                    val stock = s.dao.allStock(biz).associateBy { it.productId }
-                    s.dao.products(biz, archived = false, limit = PRODUCT_LIMIT, offset = 0)
-                        .filter { it.active && !it.isService }
-                        .map { p ->
-                            MorningProduct(
-                                id = p.id,
-                                name = p.name,
-                                unit = p.primaryUnit,
-                                stock = Qty.toDecimal(stock[p.id]?.qtyMilli ?: 0L).toDouble(),
-                                minimum = p.minStockMilli?.let { Qty.toDecimal(it).toDouble() },
-                                reorderLevel = p.reorderLevelMilli?.let { Qty.toDecimal(it).toDouble() },
-                            )
-                        }
-                }.getOrDefault(emptyList())
-            } else {
-                runCatching { inventory.listProducts() }.getOrNull()?.map {
-                    MorningProduct(it.id, it.name, it.unit, it.currentStock, it.minimumStock, null)
-                } ?: cached?.products.orEmpty()
-            }
-
-            val batches = if (s != null) {
-                runCatching {
-                    val names = products.associate { it.id to (it.name to it.unit) }
-                    s.dao.batchesExpiringBy(biz, today.plusDays(EXPIRY_DAYS).toEpochDay().toInt(), BATCH_LIMIT).mapNotNull { b ->
-                        val (name, unit) = names[b.productId] ?: return@mapNotNull null
-                        MorningBatch(
-                            id = b.id,
-                            productId = b.productId,
-                            productName = name,
-                            batchNo = b.batchNo,
-                            expiryDay = b.expiryDay!!.toLong(),
-                            stock = Qty.toDecimal(s.dao.batchStock(biz, b.productId, b.id).qtyMilli).toDouble(),
-                            unit = unit,
-                        )
-                    }
-                }.getOrDefault(emptyList())
-            } else {
-                emptyList()
-            }
-
-            val drafts = if (s != null) {
-                runCatching { s.dao.openDrafts(biz).take(DRAFT_LIMIT).map { MorningDraft(it.id, it.kind, it.createdAt) } }.getOrDefault(emptyList())
-            } else {
-                emptyList()
-            }
+            val products = runCatching { inventory.listProducts() }.getOrNull()?.map {
+                MorningProduct(it.id, it.name, it.unit, it.currentStock, it.minimumStock, null)
+            } ?: cached?.products.orEmpty()
 
             // Reminders offline: the reminder engine's own saved copy.
             val reminderItems = r.getOrNull() ?: alarms.cached()
@@ -182,11 +154,11 @@ class MorningWorkSources(
                 businessId = biz,
                 parties = partyList,
                 products = products,
-                batches = batches,
                 reminders = reminderFacts(reminderItems),
-                drafts = drafts,
                 offline = r.isFailure || c.isFailure || sp.isFailure,
                 syncedAtMillis = System.currentTimeMillis(),
+                ownerId = owner.ownerId,
+                routine = myRoutine,
             )
             if (!snap.offline) saveCached(snap)
             snap
@@ -218,10 +190,7 @@ class MorningWorkSources(
 
     private companion object {
         const val KEY_BUSINESS = "business_id"
-        const val PRODUCT_LIMIT = 5_000
-        const val BATCH_LIMIT = 200
-        const val DRAFT_LIMIT = 20
-        const val EXPIRY_DAYS = 7L
+        const val KEY_OWNER = "owner_user_id"
     }
 }
 

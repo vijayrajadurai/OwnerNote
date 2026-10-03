@@ -10,6 +10,8 @@ import java.time.LocalDateTime
  */
 enum class KaiIntentKind {
     LEARN_SLANG,
+    /** The owner's own Morning Work order ("Stock first, collection next") — saved only after [Save]. */
+    MORNING_ROUTINE,
     MORNING_WORK,
     CREATE_REMINDER,
     LIST_REMINDERS,
@@ -54,6 +56,7 @@ object KaiIntents {
     const val LEARN_SLANG = "LEARN_SLANG"
     const val SMALL_TALK = "SMALL_TALK"
     const val MORNING_WORK = "MORNING_WORK"
+    const val MORNING_ROUTINE = "MORNING_ROUTINE"
 
     /** "bill scan pannu", "bill ah scan pannu", "indha bill add pannu", "purchase bill scan pannu", "bill photo edu", "bill camera open pannu". */
     private val billWords = Regex("""(?i)(?<![\p{L}])(bill|bills|invoice|receipt)(?![\p{L}])|பில்|ரசீது""")
@@ -76,6 +79,10 @@ object KaiIntents {
             com.shopai.app.brain.memory.KaiTeaching.parse(text, emptyList()) != null ||
             com.shopai.app.brain.memory.KaiTeaching.wordTeach(text, emptyList()) != null
         ) return KaiIntentKind.LEARN_SLANG
+        // The owner's morning order ("Reminders-a last-la podu" is about the brief, not a new reminder).
+        if (com.shopai.app.brain.morning.MorningRoutineParser.parse(raw, null, people = people) != null ||
+            com.shopai.app.brain.morning.MorningRoutineParser.parse(text, null, people = people) != null
+        ) return KaiIntentKind.MORNING_ROUTINE
         // Morning Work — unless the owner explicitly asked for a reminder ("tomorrow morning remind me to call Kumar").
         val morning = com.shopai.app.brain.morning.MorningCommands.morningRequest(raw) ?: com.shopai.app.brain.morning.MorningCommands.morningRequest(text)
         if (morning != null && !KaiReminderUnderstanding.mentionsReminder(text)) return KaiIntentKind.MORNING_WORK
@@ -120,6 +127,6 @@ object KaiIntents {
     fun handledByKai(kind: KaiIntentKind) = kind in setOf(
         KaiIntentKind.CREATE_REMINDER, KaiIntentKind.LIST_REMINDERS, KaiIntentKind.CANCEL_REMINDER, KaiIntentKind.UPDATE_REMINDER,
         KaiIntentKind.STOCK_IN, KaiIntentKind.STOCK_OUT, KaiIntentKind.SCAN_STOCK, KaiIntentKind.SCAN_BILL, KaiIntentKind.CHAT, KaiIntentKind.LEARN_SLANG,
-        KaiIntentKind.MORNING_WORK,
+        KaiIntentKind.MORNING_WORK, KaiIntentKind.MORNING_ROUTINE,
     )
 }

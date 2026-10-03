@@ -9,6 +9,7 @@ import androidx.compose.runtime.getValue
 import com.shopai.app.data.local.AppThemeMode
 import com.shopai.app.ui.ShopAiApp
 import com.shopai.app.ui.theme.ShopAiTheme
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -16,6 +17,8 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         openReminderFrom(intent)
         val container = (application as ShopAiApplication).container
+        // App start (also right after an update): the signed-in owner's morning notification is armed again.
+        container.appScope.launch { container.restoreMorningNotification() }
         setContent {
             val themeMode by container.preferencesRepository.themeFlow
                 .collectAsState(initial = AppThemeMode.SYSTEM)
@@ -30,8 +33,12 @@ class MainActivity : AppCompatActivity() {
         openReminderFrom(intent)
     }
 
-    /** A Kai reminder notification was tapped: open Kai Chat on it. */
+    /** A Kai reminder notification was tapped: open Kai Chat on it. The morning notification: open Morning Work. */
     private fun openReminderFrom(intent: android.content.Intent?) {
+        if (intent?.getBooleanExtra(com.shopai.app.notifications.MorningWorkAlarms.EXTRA_OPEN_MORNING_WORK, false) == true) {
+            intent.removeExtra(com.shopai.app.notifications.MorningWorkAlarms.EXTRA_OPEN_MORNING_WORK)
+            com.shopai.app.notifications.MorningWorkInbox.open()
+        }
         val id = intent?.getStringExtra(com.shopai.app.notifications.KaiReminderEngine.EXTRA_OPEN_REMINDER) ?: return
         intent.removeExtra(com.shopai.app.notifications.KaiReminderEngine.EXTRA_OPEN_REMINDER)
         com.shopai.app.notifications.KaiReminderInbox.open(id)

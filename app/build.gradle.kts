@@ -115,6 +115,8 @@ dependencies {
     // Books engine tests run real Room/SQLite on the JVM.
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
+    // Morning Work's SQL measured on a real SQLite with a large business (JVM, no device).
+    testImplementation(libs.sqlite.jdbc)
 
     // On-device checks of the real OCR engines against sample photos.
     androidTestImplementation(libs.junit)

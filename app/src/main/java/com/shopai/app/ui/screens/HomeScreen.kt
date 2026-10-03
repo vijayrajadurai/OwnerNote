@@ -179,6 +179,8 @@ fun HomeScreen(
     }
 
     LaunchedEffect(Unit) { reload() }
+    // Signed in (after login / account switch): this owner's own morning notification, nobody else's.
+    LaunchedEffect(Unit) { container.restoreMorningNotification() }
 
     LaunchedEffect(loading) {
         if (loading) return@LaunchedEffect

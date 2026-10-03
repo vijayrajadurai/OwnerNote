@@ -86,10 +86,18 @@ object MorningBriefs {
     const val PER_SECTION = 3
     private const val QUEUE = 10
 
-    fun build(plan: MorningPlan, now: ZonedDateTime, lang: KaiLang, trigger: MorningTrigger = MorningTrigger.MANUAL): MorningBrief {
-        val open = MorningAnalyzer.sort(plan.openTasks)
+    fun build(
+        plan: MorningPlan,
+        now: ZonedDateTime,
+        lang: KaiLang,
+        trigger: MorningTrigger = MorningTrigger.MANUAL,
+        /** The owner's saved Morning Routine (null: the default priority order). */
+        routine: List<MorningSection>? = null,
+    ): MorningBrief {
+        val open = MorningRoutines.sort(plan.openTasks, routine)
         val today = now.toLocalDate()
-        val sections = MorningSection.entries.mapNotNull { section ->
+        val order = if (routine.isNullOrEmpty()) MorningSection.entries.toList() else MorningRoutines.complete(routine)
+        val sections = order.mapNotNull { section ->
             val items = open.filter { MorningSection.of(it.taskType) == section }.take(PER_SECTION).map { MorningBriefItem(it, line(it, today, now, lang)) }
             items.takeIf { it.isNotEmpty() }?.let { section to it }
         }
@@ -103,12 +111,18 @@ object MorningBriefs {
         return MorningBrief(plan.businessId, lang, trigger, greeting, sections, first, first?.let { firstText(it, lang) }, open.size, plan.offline, open.take(QUEUE))
     }
 
-    /** A scheduled morning notification: (title, text) from the same brief. */
-    fun notification(brief: MorningBrief): Pair<String, String> {
-        val title = briefPick(brief.lang, ta = "Kai — காலை வேலை", tl = "Kai — Morning Work", en = "Kai — Morning Work")
-        val body = if (brief.empty) brief.greeting else buildString {
-            append(briefPick(brief.lang, ta = "இன்னைக்கு ${brief.openCount} முக்கிய வேலை.", tl = "Innaiku ${brief.openCount} important work.", en = "${brief.openCount} important tasks today."))
-            brief.firstText?.let { append(' ').append(briefPick(brief.lang, ta = "முதல்: ", tl = "First: ", en = "First: ")).append(it).append('.') }
+    /**
+     * The scheduled morning notification: (title, text). [brief] null = the
+     * records couldn't be read now — a plain "ready" note, never "all clear".
+     * An empty business is told so in words (never a ₹0 figure).
+     */
+    fun notification(brief: MorningBrief?): Pair<String, String> {
+        val lang = brief?.lang ?: KaiLang.TANGLISH
+        val title = briefPick(lang, ta = "குட் மார்னிங் ஓனர் ☀️", tl = "Good morning Owner ☀️", en = "Good morning Owner ☀️")
+        val body = if (brief != null && brief.empty && !brief.offline) {
+            briefPick(lang, ta = "இப்போ அவசரம் எதுவும் இல்ல. எல்லாம் clear.", tl = "Nothing urgent right now. You're all clear.", en = "Nothing urgent right now. You're all clear.")
+        } else {
+            briefPick(lang, ta = "உங்க Morning Work ready.", tl = "Your Morning Work is ready.", en = "Your Morning Work is ready.")
         }
         return title to body
     }

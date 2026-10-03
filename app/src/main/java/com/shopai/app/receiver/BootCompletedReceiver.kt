@@ -18,5 +18,6 @@ class BootCompletedReceiver : BroadcastReceiver() {
             val repository = app.container.voiceCheckinRepository
             repository.applySchedule(repository.getPrefs())
         }
+        app.container.appScope.launch { app.container.restoreMorningNotification() }
     }
 }

@@ -84,6 +84,9 @@ sealed interface KaiAction {
     data class MorningNext(val index: Int) : KaiAction
     /** "Add Stock" on a low-stock task: Kai asks how many came in (a draft, confirmed by the owner). */
     data class AddStockFor(val productId: String) : KaiAction
+    /** The owner's Morning Routine Kai proposed: [Save] is the only way it changes. */
+    data class SaveRoutine(val key: String) : KaiAction
+    data class RoutineNotNow(val key: String) : KaiAction
 }
 
 /**
@@ -150,6 +153,10 @@ class KaiAgent(
     private data class StockQuestion(val product: com.shopai.app.brain.tools.ProductRef, val incoming: Boolean, val said: String)
 
     private val learner = memory?.let { KaiMemoryAssistant(it) }
+    /** The owner's Morning Routine (kept in their private memory). */
+    private val routine = memory?.let { KaiMorningRoutineAssistant(it) }
+    /** Kai's previous answer was the morning brief. */
+    private var briefJustShown = false
     private val stockPlans = LinkedHashMap<String, StockPlan>()
     /** The product just talked about ("Colgate stock low ah?" … "20 add pannu"). */
     private var lastProduct: com.shopai.app.brain.tools.ProductRef? = null
@@ -168,7 +175,7 @@ class KaiAgent(
     fun plan(key: String): ActionPlan? = plans[key]
 
     /** Kai is waiting for the owner's answer about their own words (voice answers go to the same conversation). */
-    val waitingForLearningAnswer: Boolean get() = learner?.isAsking == true
+    val waitingForLearningAnswer: Boolean get() = learner?.isAsking == true || routine?.waiting == true
 
     /** A reminder rang and the owner opened it: its message with Call / Snooze / Done. */
     fun rang(id: String, lang: KaiLang): KaiTurn? = reminders.rang(id, lang)
@@ -176,6 +183,8 @@ class KaiAgent(
     suspend fun ask(raw: String): KaiTurn {
         val said = raw.trim()
         val lang = KaiLanguage.forChat(said)
+        val afterBrief = briefJustShown
+        briefJustShown = false
         // The owner's own language first: answers to Kai's question, teaching, forgetting, "'X' nu enna meaning?".
         learner?.before(said, lang)?.let { step ->
             return when (step) {
@@ -207,6 +216,9 @@ class KaiAgent(
                 if (amount != p.amount || name != p.name) return payment(p.copy(amount = amount, name = name), lang)
             }
         }
+
+        // The owner's Morning Routine ("Stock first, collection next") — proposed, saved only on [Save].
+        routine?.handle(said, text, lang, afterBrief, people)?.let { return it }
 
         // MORNING_WORK is a core intent: chat, voice and a scheduled morning brief all use the one MorningWorkEngine.
         // An explicit reminder ("tomorrow morning remind me …", "morning 10 manikku … remind pannu") stays a reminder.
@@ -501,6 +513,7 @@ class KaiAgent(
                 en = "I couldn't verify that from your business records.")
         }
         lastBrief = brief
+        briefJustShown = true
         tools.log(com.shopai.app.brain.tools.KaiIntents.MORNING_WORK, "morning work engine", "${brief.openCount} open tasks", ActionStatus.ANSWERED, null, said)
         // "Morning work ready panni Kumar-ku call pannu": the brief plus the call the owner asked for — a button, Kai never dials by itself.
         val callName = if (Regex("""(?i)(?<![\p{L}])(call|phone)(?![\p{L}])""").containsMatchIn(text)) KaiCommands.personIn(text, people) else null
@@ -574,6 +587,7 @@ class KaiAgent(
                 null -> null
             }
         is KaiAction.ConfirmStock -> confirmStock(action.key, lang)
+        is KaiAction.SaveRoutine, is KaiAction.RoutineNotNow -> routine?.act(action, lang)
         is KaiAction.MorningNext -> {
             val b = lastBrief
             val card = b?.let { morningFollowUp(it, action.index, lang) }
@@ -629,8 +643,10 @@ class KaiAgent(
         stockPlans.clear()
         stockQuestion = null
         lastBrief = null
+        briefJustShown = false
         lastProduct = null
         learner?.reset()
+        routine?.reset()
     }
 
     // ------------------------------------------------------------ calculator

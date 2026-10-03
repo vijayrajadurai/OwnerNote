@@ -94,6 +94,8 @@ class AppContainer(context: Context) {
     val preferencesRepository = PreferencesRepository(userPreferencesStore)
     val pushTokenRepository = PushTokenRepository(api, tokenStore)
     val authRepository = AuthRepository(api, tokenStore, apiErrorHandler, FirebasePhoneAuthClient(), pushTokenRepository, appScope, onSignedOut = {
+        // The signed-out owner's morning notification never rings for the next login.
+        morningScheduler.restore(null)
         books.signOut()
         morningWork.reset()
         morningSources.clear()
@@ -154,6 +156,8 @@ class AppContainer(context: Context) {
     val morningSources by lazy {
         com.shopai.app.data.morning.MorningWorkSources(
             appContext, books, partyRepository, reminderRepository, reminderAlarms, inventoryRepository, businessRepository,
+            // The signed-in owner's own Morning Routine (their private Kai memory — never another owner's).
+            routine = { kaiMemoryAccess.current()?.let { com.shopai.app.brain.morning.MorningRoutines.load(it)?.orderedSections } },
         )
     }
 
@@ -182,6 +186,22 @@ class AppContainer(context: Context) {
             }
         }
     }
+
+    /** The phone's one morning alarm + notification. */
+    val morningAlarms by lazy { com.shopai.app.notifications.MorningWorkAlarms(appContext) }
+
+    /** The daily Morning Work notification (OFF by default; the owner's own time; per owner + business). */
+    val morningScheduler by lazy {
+        com.shopai.app.brain.morning.MorningScheduler(com.shopai.app.notifications.PrefsMorningScheduleStore(appContext), morningAlarms)
+    }
+
+    /** The authenticated login (token + session) — null when signed out. Never an id from a screen. */
+    suspend fun signedInMorningOwner(): com.shopai.app.brain.morning.MorningOwner? =
+        if (tokenStore.getToken() == null) null else runCatching { morningSources.owner() }.getOrNull()
+
+    /** Login / app start / boot / update / clock or time-zone change: the signed-in owner's alarm only. */
+    suspend fun restoreMorningNotification(): com.shopai.app.brain.tools.ScheduleResult? =
+        runCatching { morningScheduler.restore(signedInMorningOwner()) }.getOrNull()
 
     private fun ensureTrailingSlash(url: String): String =
         if (url.endsWith("/")) url else "$url/"

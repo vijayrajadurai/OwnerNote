@@ -195,8 +195,8 @@ class KaiMorningWorkIntentTest {
         assertEquals(manual.text, scheduled.text)
         assertEquals(MorningTrigger.SCHEDULED, scheduled.trigger)
         val (title, body) = MorningBriefs.notification(scheduled)
-        assertEquals("Kai — Morning Work", title)
-        assertEquals("Innaiku 3 important work. First: Kumar collection follow-up.", body)
+        assertEquals("Good morning Owner ☀️", title)
+        assertEquals("Your Morning Work is ready.", body)
         // The Morning Work screen's list is the same list.
         assertEquals(engine.state.plan!!.openTasks.map { it.taskId }.toSet(), scheduled.queue.map { it.taskId }.toSet())
     }

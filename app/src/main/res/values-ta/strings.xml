@@ -1347,4 +1347,16 @@
     <string name="bill_invoice_number">இன்வாய்ஸ் / பில் எண்</string>
     <string name="bill_tax_read">பில்லில் வரி: %1$s</string>
     <string name="bill_cancel">ரத்து</string>
+    <string name="morning_notification_channel">காலை வேலை</string>
+    <string name="morning_notification_title">காலை வேலை அறிவிப்பு</string>
+    <string name="morning_notification_subtitle">தினமும் நீங்க சொன்ன நேரத்துல, உங்க Morning Work ready-னு Kai சொல்லும். அதைத் தொட்டா Morning Work திறக்கும்.</string>
+    <string name="morning_notification_toggle">காலை வேலை அறிவிப்பு</string>
+    <string name="morning_notification_time">நேரம்: %1$s</string>
+    <string name="morning_notification_change_time">நேரம் மாற்று</string>
+    <string name="morning_notification_exact">%1$s-க்கு set ஆச்சு.</string>
+    <string name="morning_notification_approximate">%1$s-க்கு set ஆச்சு. Exact alarm அனுமதி இல்லாததால் சில நிமிடம் தாமதமாகலாம்.</string>
+    <string name="morning_notification_off">இந்த app-க்கு notification off-ல இருக்கு — காலை அறிவிப்பு வராது. Settings-ல on பண்ணுங்க.</string>
+    <string name="morning_notification_failed">காலை அறிவிப்பை set பண்ண முடியல. மறுபடியும் முயற்சி பண்ணுங்க.</string>
+    <string name="morning_notification_open_settings">Notification settings திற</string>
+    <string name="morning_notification_signed_out">காலை அறிவிப்புக்கு login பண்ணுங்க.</string>
 </resources>
