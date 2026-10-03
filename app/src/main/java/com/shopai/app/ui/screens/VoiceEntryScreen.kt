@@ -149,6 +149,15 @@ fun VoiceEntryScreen(
      * entry comes back as a proposal (filled into the form to confirm), a
      * question as an answer from the ledger, a gap as one short question.
      */
+    /** Words for Kai's private shop language: a teaching, an answer Kai waits for, or a learned phrase / nickname. */
+    suspend fun usesShopLanguage(text: String): Boolean = runCatching {
+        if (container.kaiChat.waitingForLearningAnswer) return@runCatching true
+        val access = container.kaiMemoryAccess
+        val memory = access.current() ?: return@runCatching false
+        val entities = access.entities()
+        com.shopai.app.brain.memory.KaiTeaching.parse(text, entities) != null || memory.apply(text, entities).changed
+    }.getOrDefault(false)
+
     fun parseInput() {
         val text = inputText.trim()
         val spoken = fromMic
@@ -173,6 +182,25 @@ fun VoiceEntryScreen(
             error = null
             queryAnswer = null
             reminderNeedsChoice = false
+            // The shop's own words (teaching Kai, or a phrase / nickname Kai learned for this business)
+            // go to the same Kai conversation as Kai Chat — one brain, one private memory for voice and text.
+            if (usesShopLanguage(text)) {
+                container.kaiChat.send(text, voice = spoken)
+                val answer = container.kaiChat.messages.lastOrNull { !it.fromOwner }
+                parsed = null
+                queryAnswer = answer?.text
+                // A draft / question with buttons is confirmed in Kai Chat (nothing is saved from here).
+                reminderNeedsChoice = answer?.card?.buttons?.isNotEmpty() == true
+                answer?.let { a ->
+                    val mood = a.mood ?: com.shopai.app.brain.KaiMood.EXPLAINING
+                    kai(KaiEvent.Understood(mood.reaction()))
+                    val speech = a.text.replace("`", "").replace(Regex("""[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}]"""), "")
+                    kaiSay(com.shopai.app.brain.KaiReply(a.text, speech, if (a.text.any { it in '\u0B80'..'\u0BFF' }) "ta-IN" else "en-IN", mood))
+                }
+                parsing = false
+                orbState = MicState.Idle
+                return@launch
+            }
             // Reminders ("Kumar-ku 10 minutes kalichu call panna remind pannu") go to Kai's one reminder engine.
             if (com.shopai.app.brain.tools.KaiReminderUnderstanding.understand(text, java.time.LocalDateTime.now(), emptyList()) != null) {
                 container.kaiChat.send(text)

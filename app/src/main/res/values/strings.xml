@@ -1377,4 +1377,25 @@
     <string name="kai_reminder_weekly">weekly</string>
     <string name="kai_reminder_monthly">monthly</string>
     <string name="kai_reminder_continue_in_chat">Continue in Kai Chat</string>
+    <!-- Kai — private shop language (this business only) -->
+    <string name="kai_memory_title">My Kai language</string>
+    <string name="kai_memory_intro">Words Kai learned from you — for this shop only. No other shop ever sees or uses them. They only help Kai understand you; every payment and stock change still needs your Confirm.</string>
+    <string name="kai_memory_no_business">Set up your shop first — then Kai can remember your words.</string>
+    <string name="kai_memory_empty">Nothing yet. Teach Kai in chat, e.g. \"thooki kudu na payment out\" or \"red paste na Colgate 200g\".</string>
+    <string name="kai_memory_add">Teach a word</string>
+    <string name="kai_memory_phrases">Custom phrases</string>
+    <string name="kai_memory_products">Product nicknames</string>
+    <string name="kai_memory_customers">Customer nicknames</string>
+    <string name="kai_memory_suppliers">Supplier nicknames</string>
+    <string name="kai_memory_edit">Edit</string>
+    <string name="kai_memory_delete">Delete</string>
+    <string name="kai_memory_delete_title">Delete this word?</string>
+    <string name="kai_memory_cancel">Cancel</string>
+    <string name="kai_memory_save">Save</string>
+    <string name="kai_memory_phrase">Your word / phrase</string>
+    <string name="kai_memory_means">Means</string>
+    <string name="kai_memory_used">Used %1$d times</string>
+    <string name="kai_memory_not_understood">Pick a meaning, or type the exact name of your product / customer / supplier.</string>
+    <string name="kai_chat_listening">Listening…</string>
+    <string name="kai_chat_speak">Speak to Kai</string>
 </resources>

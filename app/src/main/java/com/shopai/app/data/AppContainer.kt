@@ -97,6 +97,8 @@ class AppContainer(context: Context) {
         books.signOut()
         morningWork.reset()
         morningSources.clear()
+        kaiMemoryAccess.close()
+        kaiChat.clear()
     })
     val businessRepository = BusinessRepository(api)
     val insightsRepository = InsightsRepository(api, books)
@@ -133,7 +135,16 @@ class AppContainer(context: Context) {
     val kaiActionLog by lazy { com.shopai.app.data.kai.KaiActionLog(appContext) }
 
     /** Kai's tools: the books engine (reads, drafts, confirmed posts), reminders, the action log. */
-    val kaiTools by lazy { com.shopai.app.data.kai.AppKaiTools(appContext, books, transactionRepository, kaiReminders, kaiActionLog) }
+    val kaiTools by lazy { com.shopai.app.data.kai.AppKaiTools(appContext, books, transactionRepository, kaiReminders, kaiActionLog, inventoryRepository) }
+
+    /**
+     * Kai's PRIVATE memory of this business's own words (slang, nicknames).
+     * One per signed-in business, never shared; used by voice and text alike.
+     */
+    val kaiMemory by lazy { com.shopai.app.brain.memory.KaiPrivateMemory(com.shopai.app.data.kai.KaiMemoryFileStore(appContext)) }
+    val kaiMemoryAccess by lazy {
+        com.shopai.app.data.kai.AppKaiMemoryAccess(kaiMemory, books, { morningSources.businessId() }, partyRepository, inventoryRepository)
+    }
 
     /** Kai — Do My Morning Work: one engine for voice and text, over the existing data (read only). */
     val morningWork by lazy { com.shopai.app.brain.morning.MorningWorkEngine(com.shopai.app.data.morning.MorningTaskFileStore(appContext)) }
@@ -148,7 +159,7 @@ class AppContainer(context: Context) {
     /** Kai Chat conversation for this app session — KAI's agent over his Business Brain and tools (no paid AI). */
     val kaiChat by lazy {
         com.shopai.app.ui.kaichat.KaiChatSession(
-            com.shopai.app.brain.chat.KaiAgent(com.shopai.app.brain.chat.KaiBusinessBrain(kaiBooks), kaiBooks, kaiTools),
+            com.shopai.app.brain.chat.KaiAgent(com.shopai.app.brain.chat.KaiBusinessBrain(kaiBooks), kaiBooks, kaiTools, memory = kaiMemoryAccess),
             morningWork = { text ->
                 // Typed in Kai Chat → Morning Work answers in text (the same engine as voice).
                 morningSources.snapshot()?.let { snap ->

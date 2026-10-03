@@ -24,6 +24,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -73,6 +74,7 @@ fun KaiChatScreen(
     onBack: () -> Unit,
     onOpenScanner: () -> Unit = {},
     onOpenMorningWork: (start: Boolean) -> Unit = {},
+    onOpenKaiMemory: () -> Unit = {},
 ) {
     val session = container.kaiChat
     val scope = rememberCoroutineScope()
@@ -137,11 +139,59 @@ fun KaiChatScreen(
         (abs(sin(t * PI * 4.6)) * (0.55 + 0.45 * sin(t * PI * 0.9 + 1.3))).toFloat().coerceIn(0f, 1f)
     } else 0f
 
-    fun send(text: String) {
+    /** Typed or spoken — the same Kai. A spoken question gets a spoken answer (and the text stays in the chat). */
+    fun send(text: String, voice: Boolean = false) {
         val q = text.trim()
         if (q.isEmpty() || session.thinking) return
         input = ""
-        scope.launch { session.send(q) }
+        scope.launch {
+            session.send(q, voice)
+            if (voice) {
+                session.messages.lastOrNull { !it.fromOwner }?.let { a ->
+                    val lang = if (a.text.any { it in '\u0B80'..'\u0BFF' }) "ta-IN" else "en-IN"
+                    val spoken = a.text.replace("`", "").replace(Regex("""[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}]"""), "")
+                    container.kaiBrain.say(com.shopai.app.brain.KaiReply(a.text, spoken, lang, a.mood ?: com.shopai.app.brain.KaiMood.NEUTRAL))
+                }
+            }
+        }
+    }
+
+    // Voice input: the phone's speech-to-text → the same send() as typing.
+    val speech = remember { com.shopai.app.util.DeviceSpeechRecognizer(context) }
+    var listening by remember { mutableStateOf(false) }
+    var heard by remember { mutableStateOf<String?>(null) }
+    androidx.compose.runtime.DisposableEffect(Unit) { onDispose { speech.stopListening() } }
+    fun listen() {
+        if (!speech.isAvailable()) return
+        container.naturalTtsSpeaker.stop()
+        listening = true
+        heard = null
+        speech.startListening(
+            languageTag = "ta-IN",
+            onPartialResult = { heard = it },
+            onResult = { spoken ->
+                listening = false
+                heard = null
+                send(spoken, voice = true)
+            },
+            onError = {
+                listening = false
+                heard = null
+            },
+        )
+    }
+    val micPermission = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+    ) { granted -> if (granted) listen() }
+    fun onMic() {
+        if (listening) {
+            speech.stopListening()
+            listening = false
+            return
+        }
+        if (androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.RECORD_AUDIO) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) listen() else micPermission.launch(android.Manifest.permission.RECORD_AUDIO)
     }
 
     LaunchedEffect(session.messages.size) {
@@ -179,8 +229,12 @@ fun KaiChatScreen(
                         modifier = Modifier.padding(top = 4.dp),
                     )
                 }
-                if (session.messages.isNotEmpty()) {
-                    TextButton(onClick = { session.clear() }) { Text(stringResource(R.string.kai_chat_clear)) }
+                Column(horizontalAlignment = Alignment.End) {
+                    // The shop's own words Kai learned (this business only).
+                    TextButton(onClick = onOpenKaiMemory) { Text(stringResource(R.string.kai_memory_title)) }
+                    if (session.messages.isNotEmpty()) {
+                        TextButton(onClick = { session.clear() }) { Text(stringResource(R.string.kai_chat_clear)) }
+                    }
                 }
             }
 
@@ -202,7 +256,7 @@ fun KaiChatScreen(
                     }
                 }
                 items(session.messages, key = { it.id }) { m ->
-                    if (m.fromOwner) OwnerBubble(m.text) else {
+                    if (m.fromOwner) OwnerBubble(if (m.voice) "🎙 ${m.text}" else m.text) else {
                         KaiBubble(m.text)
                         m.card?.let { card -> KaiCardView(card, closed = m.cardClosed || session.thinking) { tap(m.id, it) } }
                         // Morning Work hand-over: "Start My Morning".
@@ -217,10 +271,29 @@ fun KaiChatScreen(
                 if (session.thinking) item { KaiBubble("…") }
             }
 
+            if (listening) {
+                Text(
+                    heard ?: stringResource(R.string.kai_chat_listening),
+                    color = Primary,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(start = 20.dp, top = 4.dp),
+                )
+            }
             Row(
                 modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                IconButton(
+                    onClick = { onMic() },
+                    modifier = Modifier.padding(end = 6.dp).size(48.dp)
+                        .background(if (listening) com.shopai.app.ui.theme.Danger else Primary.copy(alpha = 0.12f), CircleShape),
+                ) {
+                    Icon(
+                        androidx.compose.material.icons.Icons.Filled.Mic,
+                        contentDescription = stringResource(R.string.kai_chat_speak),
+                        tint = if (listening) Color.White else Primary,
+                    )
+                }
                 OutlinedTextField(
                     value = input,
                     onValueChange = { input = it },

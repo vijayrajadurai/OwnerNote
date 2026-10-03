@@ -51,6 +51,8 @@ class AppKaiTools(
     private val transactions: TransactionRepository,
     private val reminders: KaiReminderEngine,
     private val actionLog: KaiActionLog,
+    /** Stock in / out through the existing inventory engine (the books after the import). */
+    private val inventory: com.shopai.app.data.repository.InventoryRepository? = null,
 ) : KaiTools {
 
     private suspend fun session(): BooksSession? = runCatching { books.session() }.getOrNull()
@@ -103,6 +105,31 @@ class AppKaiTools(
                 else -> null
             }
         }.sortedBy { it.qty }
+    }
+
+    override suspend fun products(): List<com.shopai.app.brain.tools.ProductRef>? {
+        val inv = inventory ?: return null
+        return runCatching { inv.listProducts() }.getOrNull()?.map {
+            com.shopai.app.brain.tools.ProductRef(it.id, it.name, it.unit, BigDecimal.valueOf(it.currentStock))
+        }
+    }
+
+    /** Only called after the owner confirmed the stock draft. */
+    override suspend fun changeStock(product: com.shopai.app.brain.tools.ProductRef, qty: BigDecimal, incoming: Boolean, said: String): ActionOutcome {
+        val inv = inventory ?: return ActionOutcome.Failed("inventory unavailable")
+        val reason = "Kai: ${said.take(80)}"
+        return runCatching {
+            if (incoming) {
+                val p = inv.stockIn(product.id, qty.toDouble(), reason)
+                ActionOutcome.Done(p.name, BigDecimal.valueOf(p.currentStock))
+            } else {
+                when (val r = inv.stockOut(product.id, qty.toDouble(), reason)) {
+                    is com.shopai.app.data.repository.StockChangeResult.Ok -> ActionOutcome.Done(r.product.name, BigDecimal.valueOf(r.product.currentStock))
+                    is com.shopai.app.data.repository.StockChangeResult.InsufficientStock ->
+                        ActionOutcome.Failed("only ${BigDecimal.valueOf(r.available).stripTrailingZeros().toPlainString()} ${product.unit} in stock")
+                }
+            }
+        }.getOrElse { ActionOutcome.Failed(it.message ?: "not saved") }
     }
 
     override suspend fun topProducts(from: LocalDate, to: LocalDate, limit: Int): List<ProductSalesFact>? {

@@ -30,6 +30,8 @@ data class KaiChatMessage(
     val lang: KaiLang = KaiLang.TANGLISH,
     /** A button under Kai's reply (Morning Work hand-over). */
     val action: KaiChatAction? = null,
+    /** The owner spoke this (speech-to-text): shown with 🎙, and Kai's answer is spoken too. */
+    val voice: Boolean = false,
 )
 
 enum class KaiChatAction { OPEN_MORNING_WORK, START_MORNING_WORK }
@@ -54,10 +56,15 @@ class KaiChatSession(
         private set
     private var nextId = 1L
 
-    suspend fun send(text: String) {
+    /**
+     * The owner's words — typed, or spoken ([voice]: speech-to-text). Both go
+     * to the same Kai (same understanding, same private shop language, same
+     * conversation); only how the answer is delivered differs.
+     */
+    suspend fun send(text: String, voice: Boolean = false) {
         val question = text.trim()
         if (question.isEmpty() || thinking) return
-        messages += KaiChatMessage(nextId++, fromOwner = true, text = question)
+        messages += KaiChatMessage(nextId++, fromOwner = true, text = question, voice = voice)
         val lang = KaiLanguage.forChat(question)
         // "Kai, morning work ready pannu": Kai answers with today's work and offers Start My Morning.
         val morning = com.shopai.app.brain.morning.MorningCommands.morningRequest(question)
@@ -98,6 +105,9 @@ class KaiChatSession(
     }
 
     fun plan(key: String): ActionPlan? = agent.plan(key)
+
+    /** Kai asked about the owner's own words and waits for the answer (Pesunga sends that answer here). */
+    val waitingForLearningAnswer: Boolean get() = agent.waitingForLearningAnswer
 
     /** A reminder notification was tapped: Kai shows it with Call / Snooze / Done. */
     suspend fun showRang(id: String) {

@@ -133,6 +133,11 @@ interface KaiTools {
     /** People with this name: OwnerNote customers / suppliers, then phone contacts. Null = can't search. */
     suspend fun contacts(name: String, role: PartyRole?): List<ContactMatch>? = null
 
+    // ---- stock in / out (the inventory engine; only after the owner confirms) ----
+    /** The business's products with their stock (null = can't read). */
+    suspend fun products(): List<ProductRef>? = null
+    suspend fun changeStock(product: ProductRef, qty: BigDecimal, incoming: Boolean, said: String): ActionOutcome = ActionOutcome.Failed("unavailable")
+
     // ---- audit ----
     fun log(intent: String, tool: String, result: String, status: ActionStatus, reference: String? = null): String = reference ?: "-"
 }

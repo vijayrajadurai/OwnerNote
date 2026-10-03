@@ -619,7 +619,11 @@ fun ShopAiApp(container: AppContainer) {
                 // "Indha bill add pannu": the existing Shop bill scanner (OCR → draft → review → confirm).
                 onOpenScanner = { navController.navigate(Routes.VoiceEntry) },
                 onOpenMorningWork = { start -> navController.navigate(Routes.morningWork(voice = false, start = start)) },
+                onOpenKaiMemory = { navController.navigate(Routes.KaiMemory) },
             )
+        }
+        composable(Routes.KaiMemory) {
+            com.shopai.app.ui.kaimemory.KaiMemoryScreen(container = container, onBack = { navController.navigateUpOrHome() })
         }
         composable(
             route = Routes.MorningWork,
