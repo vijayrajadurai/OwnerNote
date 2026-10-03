@@ -84,6 +84,10 @@ sealed interface KaiAction {
     data class MorningNext(val index: Int) : KaiAction
     /** "Add Stock" on a low-stock task: Kai asks how many came in (a draft, confirmed by the owner). */
     data class AddStockFor(val productId: String) : KaiAction
+    /** "Owner, `petti` na box-ah?" — the unit the owner picked ("" = something else: Kai asks). */
+    data class PickUnit(val key: String, val unit: String) : KaiAction
+    /** After "Kai naan enna teach panniruken?": EDIT / FORGET / KEEP. */
+    data class ManageMemory(val op: String) : KaiAction
     /** The owner's Morning Routine Kai proposed: [Save] is the only way it changes. */
     data class SaveRoutine(val key: String) : KaiAction
     data class RoutineNotNow(val key: String) : KaiAction
@@ -152,7 +156,13 @@ class KaiAgent(
     /** "Colgate stock vandhiruku" with no number: Kai asked how many. */
     private data class StockQuestion(val product: com.shopai.app.brain.tools.ProductRef, val incoming: Boolean, val said: String)
 
-    private val learner = memory?.let { KaiMemoryAssistant(it) }
+    private val learner = memory?.let { KaiMemoryAssistant(it) }?.also { l ->
+        // Learning events go to the action log: the meaning only — never the conversation.
+        l.onLearned = { m -> tools.log(com.shopai.app.brain.tools.KaiIntents.LEARN_PERSONAL_TERM, "kai memory",
+            "${m.triggerPhrase} = ${m.meaning?.en ?: m.meaningValue}", ActionStatus.CONFIRMED, m.id, null) }
+    }
+    /** The draft Kai just prepared (what the owner said, PAYMENT / STOCK) — "Illai, …" right after it corrects Kai. */
+    private var lastDraft: Pair<String, String>? = null
     /** The owner's Morning Routine (kept in their private memory). */
     private val routine = memory?.let { KaiMorningRoutineAssistant(it) }
     /** Kai's previous answer was the morning brief. */
@@ -185,6 +195,18 @@ class KaiAgent(
         val lang = KaiLanguage.forChat(said)
         val afterBrief = briefJustShown
         briefJustShown = false
+        val draftBefore = lastDraft
+        lastDraft = null
+        // "Illai Kai, avan bill mattum kuduthaan" right after a draft: Kai misread — the draft is dropped and Kai asks what to remember.
+        if (draftBefore != null && learner != null) {
+            val people = runCatching { books.snapshot()?.people.orEmpty() }.getOrDefault(emptyList())
+            learner.correctionAfter(said, draftBefore.first, draftBefore.second, people, lang)?.let { turn ->
+                plans.values.filter { it.said == draftBefore.first }.forEach { p -> plans.remove(p.key); runCatching { tools.discard(p) } }
+                stockPlans.values.filter { it.said == draftBefore.first }.map { it.key }.forEach { stockPlans.remove(it) }
+                tools.log(com.shopai.app.brain.tools.KaiIntents.LEARN_PERSONAL_TERM, "draft", "owner said it was wrong: draft dropped", ActionStatus.CANCELLED, null, null)
+                return turn
+            }
+        }
         // The owner's own language first: answers to Kai's question, teaching, forgetting, "'X' nu enna meaning?".
         learner?.before(said, lang)?.let { step ->
             return when (step) {
@@ -194,6 +216,16 @@ class KaiAgent(
         }
         // The owner's confirmed words → words the global Kai core understands.
         val applied = learner?.apply(said) ?: said
+        // Words the owner told Kai are NOT a payment / stock change: nothing is drafted, and Kai says why.
+        learner?.correctionUsed?.let { c ->
+            val what = c.meaningType.removePrefix("NOT_").lowercase()
+            val What = what.replaceFirstChar { it.uppercase() }
+            tools.log(com.shopai.app.brain.tools.KaiIntents.LEARN_PERSONAL_TERM, "kai memory", "${c.triggerPhrase}: not $what (owner's correction)", ActionStatus.ANSWERED, c.id, null)
+            return say(lang, KaiMood.NEUTRAL, null,
+                ta = "ஓனர், `${c.triggerPhrase}` $what இல்ல-னு நீங்க சொல்லியிருக்கீங்க 👍 அதனால எதுவும் பதிவு பண்ணல. $What-னா தெளிவா சொல்லுங்க.",
+                tl = "Owner, `${c.triggerPhrase}` $what illa-nu neenga sollirukeenga 👍 Adhanala edhuvum record pannala. $What-na theliva sollunga.",
+                en = "Owner, you told me `${c.triggerPhrase}` isn't a $what 👍 So nothing was recorded. If it is a $what, please say it plainly.")
+        }
         // Spoken Tamil script ("2 நிமிஷத்துல … ரிமைண்டர் பண்ணு") → the same words as typed Tanglish: one brain for voice and text.
         val text = com.shopai.app.brain.tools.KaiSpokenWords.normalize(applied)
         val at = now()
@@ -228,6 +260,8 @@ class KaiAgent(
         // Priority: reminder → stock in → stock out → bill scanner → call → money → questions → calculator → conversation → learn.
         com.shopai.app.brain.tools.KaiReminderUnderstanding.understand(text, at, people)?.let { return reminders.handle(it, lang) }
         if (products != null) {
+            // "Colgate 2 petti vandhiruku" with a unit word Kai doesn't know: ask (box? packet?) — never guess the quantity's unit.
+            learner?.unknownUnit(text, said, lang, products)?.let { return it }
             // SCAN_STOCK: "Colgate photo edu", "stock photo edu", "new stock add pannu" → the product camera at once.
             com.shopai.app.brain.tools.KaiStock.scanRequest(text, products)?.let { name -> return stockCamera(name, said, lang, products) }
             stockChange(text, said, lang, products, people)?.let { return it }
@@ -366,6 +400,7 @@ class KaiAgent(
     private fun stockDraft(product: com.shopai.app.brain.tools.ProductRef, qty: BigDecimal, unit: String, incoming: Boolean, said: String, lang: KaiLang, key: String = newKey()): KaiTurn {
         lastProduct = product
         stockPlans[key] = StockPlan(key, product, qty, incoming, said, unit)
+        lastDraft = said to "STOCK"
         val after = if (incoming) product.stock + qty else product.stock - qty
         val short = !incoming && after.signum() < 0
         fun shown(q: BigDecimal, u: String) = com.shopai.app.brain.tools.KaiStock.shown(q, u)
@@ -580,7 +615,8 @@ class KaiAgent(
 
     /** A button was tapped. */
     suspend fun act(action: KaiAction, lang: KaiLang): KaiTurn? = when (action) {
-        is KaiAction.LearnMeaning, is KaiAction.LearnEntity, is KaiAction.NotThis, is KaiAction.OnlyNow, is KaiAction.LearnAlias, is KaiAction.LearnWord ->
+        is KaiAction.LearnMeaning, is KaiAction.LearnEntity, is KaiAction.NotThis, is KaiAction.OnlyNow, is KaiAction.LearnAlias, is KaiAction.LearnWord,
+        is KaiAction.PickUnit, is KaiAction.ManageMemory ->
             when (val step = learner?.act(action, lang)) {
                 is MemoryStep.Reply -> step.turn
                 is MemoryStep.Rerun -> withPrefix(step.prefix, ask(step.text))
@@ -741,6 +777,7 @@ class KaiAgent(
         // A short reference for the owner (the draft's internal id stays in the log result).
         val ref = tools.log("${kind.name.lowercase()} ${plan.partyName}", "draft", "${KaiFormat.rupees(plan.amount.toDouble())} ${plan.mode} draft=${plan.key}", ActionStatus.DRAFT, null)
         plans[plan.key] = plan.copy(reference = ref)
+        lastDraft = r.said to "PAYMENT"
         val a = KaiFormat.rupees(plan.amount.toDouble())
         val what = when (kind) {
             PlanKind.PAYMENT_OUT -> pick(lang, ta = "பணம் கொடுத்தது (payment out)", tl = "Payment out", en = "Payment out")

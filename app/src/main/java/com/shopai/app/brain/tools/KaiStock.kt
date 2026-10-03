@@ -34,7 +34,7 @@ object KaiStock {
         "new stock", "pudhu stock", "puthu stock", "pudhusa", "puthusa", "pudhusaa", "fresh stock", "stock vandhachu", "stock vanthachu",
         "inventory ku podu", "inventory-ku podu", "inventoryku podu", "stock la podu", "stock-la podu", "stockla podu", "inventory la podu",
         "purchase panninen", "purchase pannen", "received", "in pannu", "inward", "restock", "restocked",
-        "vandhuduchu", "vanthuduchu", "vandhachu", "vanthachu", "vandhurukku",
+        "vandhuduchu", "vanthuduchu", "vandhachu", "vanthachu", "vandhurukku", "vandhudhu", "vanthudhu", "vanthuthu", "vandhadhu", "vanthathu",
         "ஸ்டாக் உள்ளே", "சேர்", "வந்திருக்கு", "புது ஸ்டாக்",
     )
     /** Stock going out: "Colgate 2 out pannu", "2 Colgate pochu", "rendu sale aachu", "2 pieces sold", "eduthutanga". */
@@ -57,7 +57,15 @@ object KaiStock {
         "kg" to "KG", "kgs" to "KG", "kilo" to "KG", "bag" to "BAG", "bags" to "BAG", "mootai" to "BAG", "moottai" to "BAG",
         "box" to "BOX", "boxes" to "BOX", "packet" to "PACK", "packets" to "PACK", "pack" to "PACK", "packs" to "PACK",
         "litre" to "LITRE", "litres" to "LITRE", "liter" to "LITRE", "ltr" to "LITRE", "dozen" to "DOZEN", "bottle" to "BOTTLE", "bottles" to "BOTTLE",
+        "carton" to "CARTON", "cartons" to "CARTON", "case" to "CASE", "cases" to "CASE", "bundle" to "BUNDLE", "bundles" to "BUNDLE",
+        "strip" to "STRIP", "strips" to "STRIP",
     )
+
+    /** The unit words Kai knows ("box", "packet", …) — a shop's own word for one is taught as a unit. */
+    fun unitOf(word: String): String? = units[word.trim().lowercase(Locale.ROOT)]
+
+    /** "2 mani pochu", "10 minutes la": a time, never a stock quantity. */
+    private val timeAfterNumber = Regex("""(?i)(?:\d+|oru|rendu|moonu|naalu|anju|pathu)\s*(?:mani|manikku|maniku|nimisham|nimishathula|minutes?|mins?|hours?|neram|o'?clock)(?![\p{L}])""")
     private val numberWords = mapOf(
         "oru" to 1, "onnu" to 1, "one" to 1, "rendu" to 2, "irandu" to 2, "two" to 2, "moonu" to 3, "three" to 3, "naalu" to 4, "four" to 4,
         "anju" to 5, "aindhu" to 5, "five" to 5, "aaru" to 6, "six" to 6, "ezhu" to 7, "seven" to 7, "ettu" to 8, "eight" to 8,
@@ -124,7 +132,7 @@ object KaiStock {
 
     fun understand(text: String, products: List<ProductRef>): StockRequest? {
         val lower = lowerOf(text)
-        if (notStock.containsMatchIn(lower)) return null
+        if (notStock.containsMatchIn(lower) || timeAfterNumber.containsMatchIn(lower)) return null
         val product = productIn(lower, products)
         val isIn = direction(lower, product) ?: return null
         val rest = product?.let { lower.replace(it.name.lowercase(Locale.ROOT), " ") } ?: lower
@@ -140,6 +148,24 @@ object KaiStock {
             if (qty != null && saidUnit == null && qty > BigDecimal(999) && !stockContext.containsMatchIn(lower)) return null
         }
         return StockRequest(incoming = isIn, product = product, spokenName = displayName(spoken), qty = qty, unit = saidUnit ?: product?.unit)
+    }
+
+    /**
+     * "Colgate 2 petti vandhiruku": a known product, a quantity, and right after
+     * it a word Kai doesn't know as a unit or a stock word → that word (Kai asks
+     * what it is — box? packet? — instead of guessing). Null when there is none.
+     */
+    fun unknownUnitWord(text: String, products: List<ProductRef>): String? {
+        val lower = lowerOf(text)
+        if (notStock.containsMatchIn(lower) || timeAfterNumber.containsMatchIn(lower)) return null
+        val product = productIn(lower, products) ?: return null
+        if (direction(lower, product) == null) return null
+        val rest = lower.replace(product.name.lowercase(Locale.ROOT), " ")
+        val m = Regex("""(?<![\p{L}\p{N}])(\d+(?:\.\d+)?|${numberWords.keys.joinToString("|")})\s+([\p{L}\p{M}]+)""").find(rest) ?: return null
+        val word = m.groupValues[2]
+        if (word in units || word in fillers || word in numberWords || word.length < 2) return null
+        if ((inWords + outWords + gaveWords).any { k -> k.split(' ').contains(word) }) return null
+        return word
     }
 
     /** A number said in words or digits ("12", "rendu", "12 pieces"), with its unit if said. */
@@ -161,6 +187,10 @@ object KaiStock {
         "LITRE" -> "litre"
         "DOZEN" -> "dozen"
         "BOTTLE" -> "bottles"
+        "CARTON" -> "cartons"
+        "CASE" -> "cases"
+        "BUNDLE" -> "bundles"
+        "STRIP" -> "strips"
         else -> unit.lowercase(Locale.ROOT)
     }
 

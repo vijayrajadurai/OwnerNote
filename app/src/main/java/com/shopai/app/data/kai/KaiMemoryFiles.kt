@@ -49,7 +49,8 @@ class KaiMemoryFileStore(context: Context) : KaiMemoryStore {
                 ownerId = ownerId,
                 memories = memories.orEmpty().filter { it.businessId == businessId && it.ownerId == ownerId }.map { m ->
                     val v: List<String>? = m.variants
-                    if (v == null) m.copy(variants = emptyList()) else m
+                    val e: List<String>? = m.examples
+                    if (v == null || e == null) m.copy(variants = v ?: emptyList(), examples = e ?: emptyList()) else m
                 },
                 observations = if (own.exists()) observations.orEmpty().filter { it.businessId == businessId }.map { o ->
                     val r: List<String>? = o.rejected

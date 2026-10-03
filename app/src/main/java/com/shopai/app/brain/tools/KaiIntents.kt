@@ -57,6 +57,7 @@ object KaiIntents {
     const val SMALL_TALK = "SMALL_TALK"
     const val MORNING_WORK = "MORNING_WORK"
     const val MORNING_ROUTINE = "MORNING_ROUTINE"
+    const val LEARN_PERSONAL_TERM = "LEARN_PERSONAL_TERM"
 
     /** "bill scan pannu", "bill ah scan pannu", "indha bill add pannu", "purchase bill scan pannu", "bill photo edu", "bill camera open pannu". */
     private val billWords = Regex("""(?i)(?<![\p{L}])(bill|bills|invoice|receipt)(?![\p{L}])|பில்|ரசீது""")
@@ -77,7 +78,8 @@ object KaiIntents {
         if (text.isEmpty()) return KaiIntentKind.UNKNOWN
         if (com.shopai.app.brain.memory.KaiTeaching.wordQuestion(text) != null ||
             com.shopai.app.brain.memory.KaiTeaching.parse(text, emptyList()) != null ||
-            com.shopai.app.brain.memory.KaiTeaching.wordTeach(text, emptyList()) != null
+            com.shopai.app.brain.memory.KaiTeaching.wordTeach(text, emptyList()) != null ||
+            com.shopai.app.brain.memory.KaiPersonalTeaching.parse(raw, emptyList()) != null
         ) return KaiIntentKind.LEARN_SLANG
         // The owner's morning order ("Reminders-a last-la podu" is about the brief, not a new reminder).
         if (com.shopai.app.brain.morning.MorningRoutineParser.parse(raw, null, people = people) != null ||

@@ -19,8 +19,12 @@ import com.shopai.app.brain.KaiLang
  * existing engine.
  */
 
-/** WORD: the owner's own spelling / word for an everyday word ("ramba" = "romba") — rewritten before Kai reads the message. */
-enum class MemoryType { SLANG, PRODUCT_ALIAS, CUSTOMER_ALIAS, SUPPLIER_ALIAS, ACTION_ALIAS, ABBREVIATION, PREFERENCE, WORD }
+/**
+ * WORD: the owner's own spelling / word for an everyday word ("ramba" = "romba") — rewritten before Kai reads the message.
+ * UNIT_ALIAS: the shop's word for a unit ("potti" = box). REMINDER_TERM: a time phrase ("konjam nerathula" = 10 minutes).
+ * CORRECTION: words the owner said are NOT an action ("bill kuduthaan" = bill handed over, not a payment).
+ */
+enum class MemoryType { SLANG, PRODUCT_ALIAS, CUSTOMER_ALIAS, SUPPLIER_ALIAS, ACTION_ALIAS, ABBREVIATION, PREFERENCE, WORD, UNIT_ALIAS, REMINDER_TERM, CORRECTION }
 
 /** Whether a memory is used. DELETED records are kept only as a tombstone (never used, never shown). */
 enum class MemoryStatus { ACTIVE, DISABLED, DELETED }
@@ -29,8 +33,12 @@ enum class MemorySource { OWNER_CONFIRMED, OWNER_CREATED, SYSTEM }
 
 enum class MemoryConfidence { LOW, MEDIUM, HIGH }
 
-/** How far Kai got with a phrase: it is only used once the owner confirmed it. */
-enum class LearningState { UNKNOWN, OBSERVED, SUGGESTED, OWNER_CONFIRMED, DISABLED }
+/**
+ * How far Kai got with a phrase: it is only used once the owner confirmed it.
+ * UNKNOWN → OBSERVED → SUGGESTED (= learned, pending the owner's confirmation) → OWNER_CONFIRMED;
+ * CORRECTED = confirmed again with a new meaning (the old one is no longer used); DISABLED.
+ */
+enum class LearningState { UNKNOWN, OBSERVED, SUGGESTED, OWNER_CONFIRMED, DISABLED, CORRECTED }
 
 /**
  * What an action phrase means, in words the global core understands
@@ -81,11 +89,36 @@ data class KaiMemory(
     val usageCount: Int = 0,
     /** Other spellings the owner approved for the same meaning ("thooki kudunga"). */
     val variants: List<String> = emptyList(),
+    /** Where Kai used it ("Colgate 2 potti vandhudhu") — a few, for the owner to recognise it. */
+    val examples: List<String> = emptyList(),
+    /** The teaching sentence (only that one — no other conversation is kept). */
+    val sourceText: String? = null,
+    /** The meaning it had before the owner corrected it (history; never used). */
+    val correctedFrom: String? = null,
 ) {
     /** Used automatically only when the owner confirmed / created it and it is switched on. */
     val usable: Boolean
-        get() = status == MemoryStatus.ACTIVE && learningState == LearningState.OWNER_CONFIRMED &&
+        get() = status == MemoryStatus.ACTIVE &&
+            (learningState == LearningState.OWNER_CONFIRMED || learningState == LearningState.CORRECTED) &&
             (source == MemorySource.OWNER_CONFIRMED || source == MemorySource.OWNER_CREATED)
+
+    /** The kind of word, as the owner would think of it. */
+    val category: String
+        get() = when (memoryType) {
+            MemoryType.WORD, MemoryType.SLANG, MemoryType.ABBREVIATION -> if (normalizedPhrase.contains(' ')) "PHRASE" else "WORD"
+            MemoryType.UNIT_ALIAS -> "UNIT_ALIAS"
+            MemoryType.REMINDER_TERM -> "REMINDER_TERM"
+            MemoryType.PRODUCT_ALIAS -> "PRODUCT_ALIAS"
+            MemoryType.CUSTOMER_ALIAS -> "CUSTOMER_ALIAS"
+            MemoryType.SUPPLIER_ALIAS -> "SUPPLIER_ALIAS"
+            MemoryType.CORRECTION -> "BUSINESS_TERM"
+            MemoryType.PREFERENCE -> "PREFERENCE"
+            MemoryType.ACTION_ALIAS -> when (meaning) {
+                KaiMeaning.PAYMENT_IN, KaiMeaning.PAYMENT_OUT -> "PAYMENT_TERM"
+                KaiMeaning.STOCK_IN, KaiMeaning.STOCK_OUT -> "STOCK_TERM"
+                else -> "BUSINESS_TERM"
+            }
+        }
 
     val meaning: KaiMeaning? get() = KaiMeaning.entries.firstOrNull { it.name == meaningType }
     val phrases: List<String> get() = listOf(normalizedPhrase) + variants

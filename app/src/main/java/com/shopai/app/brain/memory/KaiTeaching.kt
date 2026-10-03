@@ -4,8 +4,18 @@ import java.util.Locale
 
 /** What the owner said about Kai's private language (not a business action). */
 sealed interface TeachCommand {
-    /** "From now on `thooki kudu` means payment out" / "pottudu na stock in" / "red paste na Colgate 200g". */
-    data class Teach(val phrase: String, val target: TeachTarget, val correction: Boolean) : TeachCommand
+    /**
+     * "From now on `thooki kudu` means payment out" / "pottudu na stock in" / "red paste na Colgate 200g".
+     * [sure]: the owner explicitly said to remember it ("from now on", "inimel", "remember pannu") — saved
+     * at once; otherwise Kai repeats it and saves after a yes.
+     */
+    data class Teach(val phrase: String, val target: TeachTarget, val correction: Boolean, val sure: Boolean = false) : TeachCommand
+
+    /** "potti meaning change pannu", "Indha meaning correct illa" ([phrase] null = the last one): Kai asks the new meaning. */
+    data class Change(val phrase: String?) : TeachCommand
+
+    /** "potti meaning box illa carton": the new meaning, confirmed before it replaces the old one. */
+    data class Correct(val phrase: String, val meaning: String) : TeachCommand
 
     /** "Today pottudu means stock out" — this conversation only; Kai asks whether to keep it. */
     data class ForNow(val phrase: String, val meaning: KaiMeaning) : TeachCommand
@@ -138,18 +148,39 @@ object KaiTeaching {
         if (n in setOf("idha remember pannu", "idha nyabagam vechuko", "remember this", "remember that", "idha remember panniko", "இதை நினைவில் வை", "idha gnabagam vechuko")) {
             return TeachCommand.RememberThat
         }
-        if (n in setOf("idha marandhudu", "adha marandhudu", "forget this", "forget this meaning", "forget that", "remove this slang", "idha maranthudu", "இதை மறந்துடு")) {
+        if (n in setOf("idha marandhudu", "adha marandhudu", "forget this", "forget this meaning", "forget that", "remove this slang", "idha maranthudu", "இதை மறந்துடு",
+                "dont remember this anymore", "don t remember this anymore", "do not remember this anymore", "idha nyabagam vechukadha", "idha remember pannadha")
+        ) {
             return TeachCommand.Forget(null)
         }
         if (Regex("""(enna enna|edhellam|what have you|what did you) .*(kathukitta|kathukittinga|learn|learned|learnt|remember)""").containsMatchIn(n) ||
-            n in setOf("my kai language", "kai language", "en kai language", "show my slang")
+            Regex("""^(?:kai\s+)?(?:naan|nan|i)\s+(?:enna|enna enna|what|edhellam)\s+(?:ellam\s+)?(?:teach|sollikuduth|kathu\s*kuduth|have i taught|did i teach)""").containsMatchIn(n) ||
+            Regex("""^(?:kai\s+)?what (?:did|have) i (?:teach|taught)""").containsMatchIn(n) ||
+            n in setOf("my kai language", "kai language", "en kai language", "show my slang", "ennoda words", "en words kaatu")
         ) return TeachCommand.ShowMemory
+
+        // "potti meaning box illa carton" / "potti box illa, carton" — a correction (asked before it is saved).
+        Regex("""^(.+?)\s+(?:meaning\s+)?(?:[\p{L}\p{M}]+(?:\s[\p{L}\p{M}]+)?)\s+(?:illa|illai|alla|not)\s+(.+)$""").find(n)?.let { m ->
+            val p = m.groupValues[1].removeSuffix(" meaning").trim()
+            val newMeaning = m.groupValues[2].trim()
+            if (n.contains(" meaning ") && p.isNotEmpty() && newMeaning.isNotEmpty() && newMeaning.split(' ').size <= 4) return TeachCommand.Correct(p, newMeaning)
+        }
+        // "potti meaning change pannu", "change potti meaning", "indha meaning correct illa", "idha change pannu".
+        if (n in setOf("indha meaning correct illa", "intha meaning correct illa", "this meaning is wrong", "idha change pannu", "adha change pannu", "change this", "change this meaning")) {
+            return TeachCommand.Change(null)
+        }
+        Regex("""^(.+?)\s+meaning\s*(?:a|ah|ai)?\s+(?:change|maathu|maaththu|mathu|edit|update)(?:\s+pannu|\s+pannunga)?$""").find(n)?.let { m ->
+            return TeachCommand.Change(m.groupValues[1].trim())
+        }
+        Regex("""^(?:change|edit|update)\s+(?:the\s+)?(?:meaning\s+of\s+(.+)|(.+?)\s+meaning)$""").find(n)?.let { m ->
+            return TeachCommand.Change((m.groupValues[1].ifEmpty { m.groupValues[2] }).trim())
+        }
 
         // Forget a phrase: "forget thooki kudu", "remove thooki kudu slang", "thooki kudu marandhudu".
         Regex("""^(?:forget|remove|delete)\s+(?:the\s+)?(?:slang\s+|meaning\s+(?:of\s+)?)?(.+?)(?:\s+(?:slang|meaning))?$""").find(n)?.let { m ->
             return TeachCommand.Forget(m.groupValues[1].trim().takeIf { it.isNotEmpty() })
         }
-        Regex("""^(.+?)\s*(?:a|ah|ai|va|vai|nu sonnadha|meaning)?\s+(?:marandhudu|maranthudu|marandhidu|marandhu vidu|forget pannu|remove pannu|delete pannu|மறந்துடு)$""").find(n)?.let { m ->
+        Regex("""^(.+?)\s*(?:a|ah|ai|va|vai|nu sonnadha|meaning)?\s+(?:marandhudu|maranthudu|marandhidu|marandhu vidu|forget pannu|remove pannu|delete pannu|forget|மறந்துடு)$""").find(n)?.let { m ->
             val p = m.groupValues[1].trim().removeSuffix(" slang").trim()
             return TeachCommand.Forget(p.takeIf { it.isNotEmpty() && it !in setOf("idha", "adha", "this", "that") })
         }
@@ -162,12 +193,15 @@ object KaiTeaching {
             body = body.substring(it.range.last + 1)
         }
         // "From now on", "inimel", "ini" — a permanent instruction.
-        body = body.replace(Regex("""^(?i)(from now on|inimel|inime|ini mel|ini|இனிமேல்)[\s,]+"""), "")
+        val permanent = Regex("""^(?i)(from now on|inimel|inime|ini mel|ini|இனிமேல்)[\s,]+""")
+        var sure = permanent.containsMatchIn(body)
+        body = body.replace(permanent, "")
         val forNow = forNowWords.any { (" " + KaiPrivateMemory.normalize(body) + " ").contains(" $it ") }
         if (forNow) {
             forNowWords.forEach { w -> body = body.replace(Regex("""(?i)(?<![\p{L}])${Regex.escape(w)}(?![\p{L}])"""), " ") }
         }
         // Drop a trailing "remember pannu / nu vechuko / nu nyabagam vechuko".
+        if (Regex("""(?i)(remember\s+(pannu|panniko|pannikko|vechuko)|nyabagam\s+vechuko|gnabagam\s+vechuko|vechuko|ninaivil vai)\s*\.?$""").containsMatchIn(body)) sure = true
         body = body.replace(Regex("""(?i)[\s,]*(-?\s*nu\s+)?(remember\s+(pannu|panniko|pannikko|vechuko)|nyabagam\s+vechuko|gnabagam\s+vechuko|vechuko|ninaivil vai)\s*\.?$"""), "")
 
         // "X means Y", "X na Y", "X-na Y", "X nna Y", "X endral Y", "X-nu sonna Y", "X-னா Y".
@@ -181,12 +215,12 @@ object KaiTeaching {
         if (raw.contains('?')) return null
 
         meaningIn(rest)?.let { meaning ->
-            return if (forNow) TeachCommand.ForNow(phrase, meaning) else TeachCommand.Teach(phrase, TeachTarget.Meaning(meaning), correction)
+            return if (forNow) TeachCommand.ForNow(phrase, meaning) else TeachCommand.Teach(phrase, TeachTarget.Meaning(meaning), correction, sure)
         }
         entityIn(rest, entities)?.let { e ->
             // A nickname must differ from the real name.
             if (KaiPrivateMemory.normalize(phrase) == KaiPrivateMemory.normalize(e.name)) return null
-            return TeachCommand.Teach(phrase, TeachTarget.Entity(e), correction)
+            return TeachCommand.Teach(phrase, TeachTarget.Entity(e), correction, sure)
         }
         return null
     }
@@ -207,6 +241,8 @@ object KaiTeaching {
         "pending", "baaki", "bakki", "tharanum", "kudukkanum", "kodukkanum", "vanganum", "balance", "due", "irukku", "iruku", "remind", "reminder", "call",
         "phone", "bill", "summary", "total", "sollu", "sollunga", "kaatu", "paaru", "check", "ah", "aa", "va", "nu",
         "pcs", "kg", "bag", "bags", "box", "packet", "litre", "dozen", "k",
+        // stock words with no in / out direction, and the words a correction leaves ("handed over")
+        "damaged", "damage", "wastage", "expired", "broken", "handed", "over", "noted",
     )
 
     /**

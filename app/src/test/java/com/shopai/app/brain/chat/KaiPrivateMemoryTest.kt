@@ -96,6 +96,13 @@ class KaiPrivateMemoryTest {
 
     private fun KaiTurn.buttonActions() = card?.buttons.orEmpty().map { it.action }
 
+    /** Teaching is confirmed by the owner before it is saved ("… save pannava?" → "aama"). */
+    private suspend fun KaiAgent.teach(s: String): KaiTurn {
+        val ask = ask(s)
+        assertTrue(ask.reply.text, ask.reply.text.contains("?"))
+        return ask("aama")
+    }
+
     // 1 + never UNKNOWN → CONFIRMED
     @Test
     fun unknownSlangIsAskedNeverActedOn() = runBlocking {
@@ -142,10 +149,16 @@ class KaiPrivateMemoryTest {
     // 4
     @Test
     fun ownerCorrectsMeaning() = runBlocking {
-        kai.ask("pottudu na stock out")
+        kai.teach("pottudu na stock out")
         val t = kai.ask("Illai, pottudu-na stock IN")
-        assertTrue(t.reply.text, t.reply.text.contains("Indha business-la `pottudu` = Stock In-nu remember pannikiren"))
-        assertEquals(KaiMeaning.STOCK_IN, access.memory.find("pottudu")!!.meaning)
+        // A correction is asked before it replaces the old meaning.
+        assertTrue(t.reply.text, t.reply.text.contains("Ippo `pottudu` = Stock Out") && t.reply.text.contains("`pottudu` = Stock In-nu update pannava?"))
+        assertEquals(KaiMeaning.STOCK_OUT, access.memory.find("pottudu")!!.meaning)
+        kai.ask("aama")
+        val m = access.memory.find("pottudu")!!
+        assertEquals(KaiMeaning.STOCK_IN, m.meaning)
+        assertEquals(com.shopai.app.brain.memory.LearningState.CORRECTED, m.learningState)
+        assertEquals("Stock Out", m.correctedFrom)
         assertEquals(1, access.memory.list().size)
     }
 
@@ -166,16 +179,20 @@ class KaiPrivateMemoryTest {
     // 6
     @Test
     fun forgetRemovesMeaning() = runBlocking {
-        kai.ask("thooki kudu na payment out")
-        val t = kai.ask("thooki kudu marandhudu")
+        kai.teach("thooki kudu na payment out")
+        val ask = kai.ask("thooki kudu marandhudu")
+        assertTrue(ask.reply.text, ask.reply.text.contains("remove pannava?"))
+        assertNotNull(access.memory.find("thooki kudu"))
+        val t = kai.ask("aama")
         assertTrue(t.reply.text, t.reply.text.contains("marandhutten"))
         assertNull(access.memory.find("thooki kudu"))
         val again = kai.ask("Selvam-ku 5000 thooki kudu")
         assertTrue(tools.prepared.isEmpty())
         assertTrue(again.reply.text.contains("mean pannureengala"))
         // "Idha marandhudu" forgets the last one learned.
-        kai.ask("pottudu na stock in")
+        kai.teach("pottudu na stock in")
         kai.ask("Idha marandhudu")
+        kai.ask("aama")
         assertNull(access.memory.find("pottudu"))
     }
 
@@ -202,7 +219,7 @@ class KaiPrivateMemoryTest {
     // 8
     @Test
     fun customerNickname() = runBlocking {
-        kai.ask("Kumar anna na Kumar Traders")
+        kai.teach("Kumar anna na Kumar Traders")
         assertEquals("c1", access.memory.find("kumar anna")!!.referenceEntityId)
         kai.ask("Kumar anna kitta 2000 vanginen")
         val p = tools.prepared.single()
@@ -219,7 +236,7 @@ class KaiPrivateMemoryTest {
     // 9
     @Test
     fun supplierNickname() = runBlocking {
-        kai.ask("ABC kadai na ABC Traders")
+        kai.teach("ABC kadai na ABC Traders")
         kai.ask("ABC kadai-ku 3000 kuduthen")
         assertEquals("s2", tools.prepared.single().partyId)
         assertEquals(PlanKind.PAYMENT_OUT, tools.prepared.single().kind)
@@ -230,10 +247,11 @@ class KaiPrivateMemoryTest {
     fun tamilAndMixedSlang() = runBlocking {
         val t = kai.ask("பொட்டுடு-னா stock in")
         assertTrue(t.reply.text, t.reply.text.contains("பொட்டுடு"))
+        kai.ask("ஆமா")
         val d = kai.ask("Colgate 200g 10 பொட்டுடு")
         assertTrue(d.reply.text, d.reply.text.contains("Colgate 200g"))
         assertTrue(d.buttonActions().any { it is KaiAction.ConfirmStock })
-        kai.ask("thooki kudu na payment out")
+        kai.teach("thooki kudu na payment out")
         kai.ask("Selvam-ku 2k thooki kudu please")
         assertEquals(BigDecimal("2000.00"), tools.prepared.last().amount)
     }
@@ -241,10 +259,10 @@ class KaiPrivateMemoryTest {
     // 14 + 15 — voice (speech-to-text) and text use the same brain and memory.
     @Test
     fun learnedByTextUsedByVoiceAndBack() = runBlocking {
-        kai.ask("thooki kudu na payment out") // typed
+        kai.teach("thooki kudu na payment out") // typed
         kai.ask("Selvam ku 5000 thooki kudu") // spoken → STT text (no hyphen)
         assertEquals(PlanKind.PAYMENT_OUT, tools.prepared.single().kind)
-        kai.ask("pottudu na stock in") // spoken
+        kai.teach("pottudu na stock in") // spoken
         val typed = kai.ask("Colgate 200g 10 pottudu") // typed
         assertTrue(typed.reply.text.contains("stock-in"))
     }
@@ -252,14 +270,14 @@ class KaiPrivateMemoryTest {
     // 16 + 17 + 22 + 27
     @Test
     fun businessesNeverShareMemory() = runBlocking {
-        kai.ask("thooki kudu na payment out")
+        kai.teach("thooki kudu na payment out")
         // Another business on the same phone: its own Kai, its own memory.
         val accessB = Access(store, "biz-B", tools)
         val kaiB = KaiAgent(KaiBusinessBrain(Books()), Books(), tools, { now }, accessB)
         val unknownForB = kaiB.ask("Selvam-ku 5000 thooki kudu")
         assertTrue(unknownForB.reply.text.contains("mean pannureengala"))
         assertTrue(tools.prepared.isEmpty())
-        kaiB.ask("thooki kudu na stock out")
+        kaiB.teach("thooki kudu na stock out")
         val stock = kaiB.ask("Colgate 200g 2 thooki kudu")
         assertTrue(stock.reply.text, stock.reply.text.contains("stock-out"))
         // Business A keeps its own meaning.
@@ -280,7 +298,7 @@ class KaiPrivateMemoryTest {
     // 18
     @Test
     fun ambiguousPhraseIsAsked() = runBlocking {
-        kai.ask("pottudu na stock in")
+        kai.teach("pottudu na stock in")
         val t = kai.ask("Kumar account-la 500 pottudu")
         assertTrue(tools.prepared.isEmpty())
         assertTrue(tools.stockChanges.isEmpty())
@@ -290,7 +308,7 @@ class KaiPrivateMemoryTest {
     // 19
     @Test
     fun currentInstructionOverridesMemory() = runBlocking {
-        kai.ask("pottudu na stock in")
+        kai.teach("pottudu na stock in")
         val q = kai.ask("Today pottudu means stock out")
         assertTrue(q.reply.text, q.reply.text.contains("Should it always mean this"))
         kai.act(q.buttonActions().filterIsInstance<KaiAction.OnlyNow>().single(), com.shopai.app.brain.KaiLang.TANGLISH)
@@ -303,7 +321,7 @@ class KaiPrivateMemoryTest {
     // 20 + 21 + 23
     @Test
     fun memorySurvivesRestartAndLogin() = runBlocking {
-        kai.ask("thooki kudu na payment out")
+        kai.teach("thooki kudu na payment out")
         // App restart: a new memory object reads the same store.
         val restarted = KaiPrivateMemory(store)
         restarted.open("biz-A", "owner-biz-A")
@@ -321,7 +339,7 @@ class KaiPrivateMemoryTest {
     // 24 + 25
     @Test
     fun disabledAndDeletedMemoriesAreNotUsed() = runBlocking {
-        kai.ask("thooki kudu na payment out")
+        kai.teach("thooki kudu na payment out")
         val m = access.memory.find("thooki kudu")!!
         access.memory.setStatus(m.id, MemoryStatus.DISABLED)
         kai.ask("Selvam-ku 5000 thooki kudu")
@@ -336,7 +354,7 @@ class KaiPrivateMemoryTest {
 
     @Test
     fun similarSpellingIsAskedNotAssumed() = runBlocking {
-        kai.ask("thooki kudu na payment out")
+        kai.teach("thooki kudu na payment out")
         val q = kai.ask("Selvam-ku 500 thooki kudunga")
         assertTrue(q.reply.text, q.reply.text.contains("`thooki kudunga`-um"))
         assertTrue(tools.prepared.isEmpty())
@@ -347,8 +365,8 @@ class KaiPrivateMemoryTest {
 
     @Test
     fun owenerCanSeeWhatKaiLearned() = runBlocking {
-        kai.ask("thooki kudu na payment out")
-        kai.ask("red paste na Colgate 200g")
+        kai.teach("thooki kudu na payment out")
+        kai.teach("red paste na Colgate 200g")
         val t = kai.ask("enna enna kathukitta?")
         val lines = t.card!!.lines
         assertTrue(lines.toString(), lines.any { it.contains("thooki kudu") && it.contains("Payment Out") })

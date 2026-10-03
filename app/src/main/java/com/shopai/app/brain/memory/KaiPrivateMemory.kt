@@ -5,6 +5,9 @@ import kotlinx.coroutines.sync.withLock
 import java.util.Locale
 import java.util.UUID
 
+/** Where a taught word applies: this business only (the default), or all the owner's businesses. */
+enum class MemoryScope { BUSINESS, OWNER }
+
 /** The words of a message after the business's own language was applied. */
 data class AppliedMemory(
     /** The message in words the global Kai core understands. */
@@ -35,6 +38,12 @@ class KaiPrivateMemory(
 ) {
     private val lock = Mutex()
     private var book: KaiMemoryBook? = null
+    /**
+     * The same owner's words for ALL their businesses ("ella kadaiyilum 'maal' na stock").
+     * Used only when this business has no meaning of its own for the phrase:
+     * business memory → owner memory → global Kai — never the other way round.
+     */
+    private var ownerBook: KaiMemoryBook? = null
     /** The owner whose memory is open (null: none, or a business without a signed-in user). */
     var ownerId: String? = null
         private set
@@ -49,6 +58,8 @@ class KaiPrivateMemory(
         require(businessId.isNotBlank()) { "Kai memory needs a business" }
         if (book?.businessId != businessId || book?.ownerId != ownerId) {
             book = store.load(businessId, ownerId).copy(businessId = businessId, ownerId = ownerId).onlyOwn()
+            // Owner-wide words need a signed-in owner (no owner → business words only).
+            ownerBook = ownerId?.let { store.load(OWNER_SCOPE, it).copy(businessId = OWNER_SCOPE, ownerId = it).onlyOwn() }
             conversation.clear()
         }
         this.ownerId = ownerId
@@ -57,17 +68,24 @@ class KaiPrivateMemory(
     /** Logout: nothing of this business stays loaded. */
     fun close() {
         book = null
+        ownerBook = null
         ownerId = null
         conversation.clear()
     }
 
     fun clearConversation() = conversation.clear()
 
-    /** Everything the owner can see and manage (deleted ones are gone). */
-    fun list(): List<KaiMemory> = book?.memories.orEmpty().filter { it.status != MemoryStatus.DELETED }
+    /** Everything the owner can see and manage (deleted ones are gone): this business's, then the owner-wide ones it doesn't override. */
+    fun list(): List<KaiMemory> = merged { it.status != MemoryStatus.DELETED }
 
-    /** What Kai uses automatically. */
-    fun usable(): List<KaiMemory> = book?.memories.orEmpty().filter { it.usable }
+    /** What Kai uses automatically (business-specific first; owner-wide only where the business has none). */
+    fun usable(): List<KaiMemory> = merged { it.usable }
+
+    private fun merged(keep: (KaiMemory) -> Boolean): List<KaiMemory> {
+        val own = book?.memories.orEmpty().filter(keep)
+        val taken = own.flatMap { it.phrases }.toSet()
+        return own + ownerBook?.memories.orEmpty().filter { keep(it) && it.phrases.none { p -> p in taken } }
+    }
 
     fun find(phrase: String): KaiMemory? {
         val n = normalize(phrase)
@@ -82,16 +100,39 @@ class KaiPrivateMemory(
      * The owner confirmed / told Kai what a phrase means here. One phrase has
      * one meaning per business: a new meaning replaces the old one.
      */
-    suspend fun teachMeaning(phrase: String, meaning: KaiMeaning, source: MemorySource): KaiMemory =
-        save(phrase, MemoryType.ACTION_ALIAS, meaning.name, meaning.en, null, source)
+    suspend fun teachMeaning(phrase: String, meaning: KaiMeaning, source: MemorySource, scope: MemoryScope = MemoryScope.BUSINESS, sourceText: String? = null): KaiMemory =
+        save(phrase, MemoryType.ACTION_ALIAS, meaning.name, meaning.en, null, source, scope, sourceText)
 
-    /** A nickname for one of the business's own products / customers / suppliers (stored by id). */
-    suspend fun teachEntity(phrase: String, entity: KnownEntity, source: MemorySource): KaiMemory =
-        save(phrase, entity.type, entityKind(entity.type), entity.name, entity.id, source)
+    /** A nickname for one of the business's own products / customers / suppliers (stored by id — always this business). */
+    suspend fun teachEntity(phrase: String, entity: KnownEntity, source: MemorySource, sourceText: String? = null): KaiMemory =
+        save(phrase, entity.type, entityKind(entity.type), entity.name, entity.id, source, MemoryScope.BUSINESS, sourceText)
 
     /** "ramba" = "romba": the owner's own word for an everyday word (never an action — those are [teachMeaning]). */
-    suspend fun teachWord(phrase: String, means: String, source: MemorySource): KaiMemory =
-        save(phrase, MemoryType.WORD, MemoryType.WORD.name, means.trim(), null, source)
+    suspend fun teachWord(phrase: String, means: String, source: MemorySource, scope: MemoryScope = MemoryScope.BUSINESS, sourceText: String? = null): KaiMemory =
+        save(phrase, MemoryType.WORD, MemoryType.WORD.name, means.trim(), null, source, scope, sourceText)
+
+    /** "potti" = box: the shop's word for a unit (the stock flow reads it as that unit). */
+    suspend fun teachUnit(phrase: String, unit: String, source: MemorySource, scope: MemoryScope = MemoryScope.BUSINESS, sourceText: String? = null): KaiMemory =
+        save(phrase, MemoryType.UNIT_ALIAS, MemoryType.UNIT_ALIAS.name, unit.trim(), null, source, scope, sourceText)
+
+    /** "konjam nerathula" = 10 minutes: a time phrase for reminders. */
+    suspend fun teachReminderTerm(phrase: String, time: String, source: MemorySource, scope: MemoryScope = MemoryScope.BUSINESS, sourceText: String? = null): KaiMemory =
+        save(phrase, MemoryType.REMINDER_TERM, MemoryType.REMINDER_TERM.name, time.trim(), null, source, scope, sourceText)
+
+    /**
+     * The owner corrected Kai: [phrase] is NOT an action ("bill kuduthaan" = bill handed over, not a payment).
+     * [replacement] is what Kai reads instead (it has no money / stock words); [kind] = the action it is not.
+     */
+    suspend fun teachCorrection(phrase: String, replacement: String, kind: String, source: MemorySource, sourceText: String? = null): KaiMemory =
+        save(phrase, MemoryType.CORRECTION, "NOT_$kind", replacement.trim(), null, source, MemoryScope.BUSINESS, sourceText)
+
+    /** A message where Kai used this memory (a few kept, so the owner recognises it). */
+    suspend fun addExample(memoryId: String, example: String) = lock.withLock {
+        val b = bookOf(memoryId) ?: return@withLock
+        val e = example.trim().take(120)
+        if (e.isEmpty()) return@withLock
+        persist(b.copy(memories = b.memories.map { m -> if (m.id == memoryId && e !in m.examples) m.copy(examples = (m.examples + e).takeLast(3)) else m }))
+    }
 
     /**
      * One of the owner's own settings kept with their memory ([MemoryType.PREFERENCE],
@@ -114,7 +155,7 @@ class KaiPrivateMemory(
 
     /** An approved extra spelling for an existing meaning ("thooki kudunga" for "thooki kudu"). */
     suspend fun addVariant(memoryId: String, variant: String): KaiMemory? = lock.withLock {
-        val b = book ?: return@withLock null
+        val b = bookOf(memoryId) ?: return@withLock null
         val v = normalize(variant)
         var updated: KaiMemory? = null
         val list = b.memories.map { m ->
@@ -126,9 +167,11 @@ class KaiPrivateMemory(
 
     /** "Idha marandhudu" / "forget thooki kudu": removed for this business. */
     suspend fun forget(phrase: String): KaiMemory? = lock.withLock {
-        val b = book ?: return@withLock null
         val n = normalize(phrase)
-        val target = b.memories.firstOrNull { it.status != MemoryStatus.DELETED && n in it.phrases } ?: return@withLock null
+        // This business's meaning first; the owner-wide one only when the business has none.
+        val b = listOfNotNull(book, ownerBook).firstOrNull { bk -> bk.memories.any { it.status != MemoryStatus.DELETED && n in it.phrases } }
+            ?: return@withLock null
+        val target = b.memories.first { it.status != MemoryStatus.DELETED && n in it.phrases }
         val removed = target.copy(status = MemoryStatus.DELETED, learningState = LearningState.DISABLED, updatedAt = clock())
         persist(b.copy(memories = b.memories.map { if (it.id == target.id) removed else it }))
         conversation.remove(n)
@@ -137,7 +180,7 @@ class KaiPrivateMemory(
 
     /** Memory screen: switch a memory off / on, or delete it. */
     suspend fun setStatus(memoryId: String, status: MemoryStatus): KaiMemory? = lock.withLock {
-        val b = book ?: return@withLock null
+        val b = bookOf(memoryId) ?: return@withLock null
         var updated: KaiMemory? = null
         val list = b.memories.map { m ->
             if (m.id != memoryId) m else m.copy(
@@ -152,7 +195,7 @@ class KaiPrivateMemory(
 
     /** Memory screen: change the phrase or the action meaning (still the owner's own entry). */
     suspend fun edit(memoryId: String, phrase: String?, meaning: KaiMeaning?): KaiMemory? = lock.withLock {
-        val b = book ?: return@withLock null
+        val b = bookOf(memoryId) ?: return@withLock null
         val current = b.memories.firstOrNull { it.id == memoryId } ?: return@withLock null
         val n = phrase?.let(::normalize)?.takeIf { it.isNotEmpty() }
         val edited = current.copy(
@@ -206,10 +249,12 @@ class KaiPrivateMemory(
     suspend fun markUsed(used: List<KaiMemory>) {
         if (used.isEmpty()) return
         lock.withLock {
-            val b = book ?: return@withLock
             val ids = used.map { it.id }.toSet()
             val now = clock()
-            persist(b.copy(memories = b.memories.map { if (it.id in ids) it.copy(usageCount = it.usageCount + 1, lastUsedAt = now) else it }))
+            for (b in listOfNotNull(book, ownerBook)) {
+                if (b.memories.none { it.id in ids }) continue
+                persist(b.copy(memories = b.memories.map { if (it.id in ids) it.copy(usageCount = it.usageCount + 1, lastUsedAt = now) else it }))
+            }
         }
     }
 
@@ -248,8 +293,14 @@ class KaiPrivateMemory(
                     found += phrase to e
                     e.name
                 }
-                MemoryType.ABBREVIATION, MemoryType.WORD -> m.meaningValue
-                else -> m.meaning?.canonical ?: continue
+                MemoryType.ABBREVIATION, MemoryType.WORD, MemoryType.UNIT_ALIAS, MemoryType.REMINDER_TERM, MemoryType.CORRECTION -> m.meaningValue
+                MemoryType.PREFERENCE -> continue
+                else -> {
+                    val meaning = m.meaning ?: continue
+                    // Context: "2 mani pochu" is a time, not stock going out — a money / stock meaning is not used there.
+                    if (meaning.financial && timeBefore(out, phrase)) continue
+                    meaning.canonical
+                }
             }
             val r = replace(out, phrase, replacement) ?: continue
             out = r
@@ -274,13 +325,25 @@ class KaiPrivateMemory(
 
     // ------------------------------------------------------------ internals
 
-    private suspend fun save(phrase: String, type: MemoryType, meaningType: String, meaningValue: String, entityId: String?, source: MemorySource): KaiMemory =
+    private suspend fun save(
+        phrase: String,
+        type: MemoryType,
+        meaningType: String,
+        meaningValue: String,
+        entityId: String?,
+        source: MemorySource,
+        scope: MemoryScope = MemoryScope.BUSINESS,
+        sourceText: String? = null,
+    ): KaiMemory =
         lock.withLock {
-            val b = book ?: error("Kai memory is not open for a business")
+            val b = (if (scope == MemoryScope.OWNER) ownerBook ?: book else book) ?: error("Kai memory is not open for a business")
             val n = normalize(phrase)
             require(n.isNotEmpty()) { "empty phrase" }
             val now = clock()
             val existing = b.memories.firstOrNull { it.status != MemoryStatus.DELETED && n in it.phrases }
+            // A new meaning for a phrase the owner taught before: a correction — the old meaning is kept only as history.
+            val corrected = existing != null &&
+                (existing.meaningType != meaningType || !existing.meaningValue.equals(meaningValue, ignoreCase = true) || existing.referenceEntityId != entityId)
             val memory = KaiMemory(
                 id = existing?.id ?: newId(),
                 businessId = b.businessId,
@@ -294,12 +357,15 @@ class KaiPrivateMemory(
                 confidence = MemoryConfidence.HIGH,
                 status = MemoryStatus.ACTIVE,
                 source = source,
-                learningState = LearningState.OWNER_CONFIRMED,
+                learningState = if (corrected || existing?.learningState == LearningState.CORRECTED && existing.usable) LearningState.CORRECTED else LearningState.OWNER_CONFIRMED,
                 createdAt = existing?.createdAt ?: now,
                 updatedAt = now,
                 lastUsedAt = existing?.lastUsedAt,
                 usageCount = existing?.usageCount ?: 0,
                 variants = if (existing?.meaningType == meaningType) existing.variants else emptyList(),
+                examples = if (corrected) emptyList() else existing?.examples.orEmpty(),
+                sourceText = sourceText?.trim()?.take(200) ?: existing?.sourceText,
+                correctedFrom = if (corrected) existing!!.let { it.meaning?.en ?: it.meaningValue } else existing?.correctedFrom,
             )
             val list = if (existing != null) b.memories.map { if (it.id == existing.id) memory else it } else b.memories + memory
             persist(b.copy(memories = list, observations = b.observations.filter { it.normalizedPhrase != n }))
@@ -316,8 +382,19 @@ class KaiPrivateMemory(
     }
 
     private suspend fun persist(b: KaiMemoryBook) {
-        book = b
+        if (b.businessId == OWNER_SCOPE) ownerBook = b else book = b
         store.save(b)
+    }
+
+    /** The book (this business's or the owner-wide one) holding [memoryId]. */
+    private fun bookOf(memoryId: String): KaiMemoryBook? = listOfNotNull(book, ownerBook).firstOrNull { b -> b.memories.any { it.id == memoryId } }
+
+    /** "2 mani pochu", "10 nimisham kalichu …": [phrase] right after a time. */
+    private fun timeBefore(text: String, phrase: String): Boolean {
+        val tokens = phrase.split(' ').filter { it.isNotEmpty() }.joinToString("""[\s\-]+""") { Regex.escape(it) }
+        return Regex(
+            """(?i)(?:\d+|oru|rendu|moonu|naalu|anju|aaru|ezhu|ettu|pathu)\s*(?:mani|manikku|maniku|nimisham|nimishathula|minutes?|mins?|hours?|neram|o'?clock)\s+$tokens(?![\p{L}\p{M}])""",
+        ).containsMatchIn(text)
     }
 
     private fun entityKind(t: MemoryType) = when (t) {
@@ -328,6 +405,9 @@ class KaiPrivateMemory(
     }
 
     companion object {
+        /** The "business" id under which an owner's words for all their businesses are kept. */
+        const val OWNER_SCOPE = "__owner_all_businesses__"
+
         /** Lower case, no quotes / punctuation, hyphens as spaces, single spaces. */
         fun normalize(s: String): String = s.lowercase(Locale.ROOT)
             .replace(Regex("""[`'"“”‘’!?.,;:()\[\]{}]"""), " ")
