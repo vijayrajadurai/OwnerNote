@@ -42,8 +42,17 @@ sealed interface KaiAction {
     data class Dial(val name: String, val phone: String?) : KaiAction
     data object OpenScanner : KaiAction
     data object OpenAlarmSettings : KaiAction
+    data object OpenNotificationSettings : KaiAction
+    // ---- reminders (the reminder engine) ----
     data class CancelReminder(val id: String) : KaiAction
+    data class CompleteReminder(val id: String) : KaiAction
+    data class SnoozeReminder(val id: String, val minutes: Long) : KaiAction
+    /** A time chosen for a reminder that was asked without one. */
     data class RemindAt(val requestKey: String, val at: LocalDateTime) : KaiAction
+    /** Which of several people with the same name. */
+    data class PickContact(val requestKey: String, val index: Int) : KaiAction
+    /** Which of several matching reminders to cancel / complete / snooze / change. */
+    data class PickReminder(val requestKey: String, val id: String, val op: KaiReminderAssistant.Op, val minutes: Long) : KaiAction
 }
 
 /** A card under a Kai message: the details of a draft / action, and its buttons. */
@@ -71,17 +80,18 @@ class KaiAgent(
     private val now: () -> LocalDateTime = { LocalDateTime.now() },
 ) {
     private data class PaymentRequest(val key: String, val name: String?, val amount: BigDecimal?, val outgoing: Boolean, val mode: PaymentMode, val said: String)
-    private data class ReminderRequest(val key: String, val task: String, val callName: String?, val said: String)
 
     private val plans = LinkedHashMap<String, ActionPlan>()
     private val requests = LinkedHashMap<String, PaymentRequest>()
-    private val reminderRequests = LinkedHashMap<String, ReminderRequest>()
     /** A payment still missing its amount or person; the next message can complete it. */
     private var incompletePayment: PaymentRequest? = null
-    /** A reminder still missing its time. */
-    private var timelessReminder: ReminderRequest? = null
+    /** Reminders: the one reminder conversation (also used by the Speak screen). */
+    private val reminders = KaiReminderAssistant(tools, books, now)
 
     fun plan(key: String): ActionPlan? = plans[key]
+
+    /** A reminder rang and the owner opened it: its message with Call / Snooze / Done. */
+    fun rang(id: String, lang: KaiLang): KaiTurn? = reminders.rang(id, lang)
 
     suspend fun ask(raw: String): KaiTurn {
         val text = raw.trim()
@@ -89,11 +99,8 @@ class KaiAgent(
         val at = now()
         val people = runCatching { books.snapshot()?.people.orEmpty() }.getOrDefault(emptyList())
 
-        // Completing what Kai just asked for (a time for a reminder, an amount / name for a payment).
-        timelessReminder?.let { r ->
-            timelessReminder = null
-            KaiTime.parse(text, at)?.let { return remind(r.copy(), it, lang) }
-        }
+        // Completing what Kai just asked for (a reminder's time / number, a payment's amount / name).
+        reminders.continueWith(text, lang)?.let { return it }
         incompletePayment?.let { p ->
             incompletePayment = null
             val cmd = KaiCommands.route(text, at, people)
@@ -107,18 +114,7 @@ class KaiAgent(
         return when (val cmd = KaiCommands.route(text, at, people)) {
             is KaiCommand.Calculate -> calculate(cmd.answer, lang, text)
             is KaiCommand.Payment -> payment(PaymentRequest(newKey(), cmd.name, cmd.amount, cmd.outgoing, cmd.mode, text), lang)
-            is KaiCommand.Remind -> {
-                val req = ReminderRequest(newKey(), cmd.task, cmd.callName, text)
-                if (cmd.time == null) {
-                    timelessReminder = req
-                    say(lang, KaiMood.CLARIFY, "Remind/ask time",
-                        ta = "எப்போ நினைவூட்டணும் ஓனர்? (உதா: 10 நிமிடம் கழிச்சு, நாளைக்கு காலை 10 மணிக்கு)",
-                        tl = "Eppo remind pannanum Owner? (eg: 10 minutes kalichu, naalaikku kaalaila 10 maniku)",
-                        en = "When should I remind you, Owner? (e.g. in 10 minutes, tomorrow 10 AM)")
-                } else remind(req, cmd.time, lang)
-            }
-            KaiCommand.ListReminders -> listReminders(text, lang)
-            is KaiCommand.CancelReminder -> cancelReminders(cmd.about, lang)
+            is KaiCommand.Reminder -> reminders.handle(cmd.request, lang)
             is KaiCommand.Call -> call(cmd.name, lang)
             is KaiCommand.ScanBill -> scan(cmd.classifyOnly, lang)
             is KaiCommand.Stock -> stock(cmd.product, lang)
@@ -134,21 +130,12 @@ class KaiAgent(
         is KaiAction.ConfirmPlan -> confirm(action.key, lang)
         is KaiAction.CancelPlan -> cancelPlan(action.key, lang)
         is KaiAction.ChoosePlan -> requests.remove(action.requestKey)?.let { r -> prepared(r, action.kind, action.partyName, action.partyId, lang) }
-        is KaiAction.CancelRequest -> {
-            requests.remove(action.requestKey)
+        is KaiAction.CancelRequest -> if (requests.remove(action.requestKey) != null) {
             tools.log("payment", "draft", "cancelled before a draft", ActionStatus.CANCELLED)
             say(lang, KaiMood.NEUTRAL, null, ta = "சரி, எதுவும் சேமிக்கல ஓனர்.", tl = "Seri Owner, edhuvum save pannala.", en = "Okay, nothing was saved, Owner.")
-        }
-        is KaiAction.CancelReminder -> {
-            val r = tools.reminders().firstOrNull { it.id == action.id }
-            if (tools.cancelReminder(action.id)) {
-                tools.log("cancel reminder", "reminders", r?.task ?: action.id, ActionStatus.CANCELLED, action.id)
-                say(lang, KaiMood.NEUTRAL, null, ta = "நினைவூட்டல் ரத்து பண்ணிட்டேன் ஓனர்.", tl = "Reminder cancel pannitten Owner.", en = "Reminder cancelled, Owner.")
-            } else null
-        }
-        is KaiAction.RemindAt -> reminderRequests.remove(action.requestKey)?.let { r -> remind(r, KaiWhen(action.at), lang) }
-        // Phone actions (dialer, scanner, settings) and Edit are handled by the screen.
-        else -> null
+        } else reminders.act(action, lang)
+        // Reminder buttons go to the reminder conversation; phone actions (dialer, scanner, settings) and Edit to the screen.
+        else -> reminders.act(action, lang)
     }
 
     /** Edit: the owner changed the draft's details; it is prepared again (the old draft is discarded). */
@@ -160,9 +147,8 @@ class KaiAgent(
     fun reset() {
         plans.clear()
         requests.clear()
-        reminderRequests.clear()
         incompletePayment = null
-        timelessReminder = null
+        reminders.reset()
         brain.reset()
     }
 
@@ -209,7 +195,7 @@ class KaiAgent(
             tl = "Owner, books innum ready aagala — idha ippo save panna mudiyadhu.",
             en = "I couldn't reach your business records, Owner — I can't save this right now.")
         val key = r.name.trim().lowercase(Locale.ROOT)
-        val exact = matches.filter { it.name.trim().lowercase(Locale.ROOT) == key }
+        val exact = matches.filter { it.name.trim().lowercase(Locale.ROOT) == key || com.shopai.app.util.NameSound.same(it.name, r.name) }
         val candidates = (exact.ifEmpty { matches }).take(6)
         // Who they are decides what the money means.
         fun kindFor(p: PartyMatch) = when {
@@ -255,8 +241,9 @@ class KaiAgent(
     private suspend fun prepared(r: PaymentRequest, kind: PlanKind, name: String, partyId: String?, lang: KaiLang): KaiTurn {
         val plan = tools.prepare(kind, name, partyId, r.amount!!, r.mode, r.said)
             ?: return say(lang, KaiMood.ERROR, "draft failed", ta = "இதை இப்போ தயார் பண்ண முடியல ஓனர்.", tl = "Owner, idha ippo ready panna mudiyala.", en = "I couldn't prepare this right now, Owner.")
-        plans[plan.key] = plan
-        val ref = tools.log("${kind.name.lowercase()} ${plan.partyName}", "draft", "${KaiFormat.rupees(plan.amount.toDouble())} ${plan.mode}", ActionStatus.DRAFT, plan.key)
+        // A short reference for the owner (the draft's internal id stays in the log result).
+        val ref = tools.log("${kind.name.lowercase()} ${plan.partyName}", "draft", "${KaiFormat.rupees(plan.amount.toDouble())} ${plan.mode} draft=${plan.key}", ActionStatus.DRAFT, null)
+        plans[plan.key] = plan.copy(reference = ref)
         val a = KaiFormat.rupees(plan.amount.toDouble())
         val what = when (kind) {
             PlanKind.PAYMENT_OUT -> pick(lang, ta = "பணம் கொடுத்தது (payment out)", tl = "Payment out", en = "Payment out")
@@ -292,7 +279,7 @@ class KaiAgent(
                 ),
                 warning = plan.problems.takeIf { it.isNotEmpty() }?.joinToString("\n"),
             ),
-            plan,
+            plans[plan.key],
         )
     }
 
@@ -300,7 +287,7 @@ class KaiAgent(
         val plan = plans.remove(key) ?: return null
         return when (val outcome = tools.confirm(plan)) {
             is ActionOutcome.Done -> {
-                tools.log("${plan.kind.name.lowercase()} ${plan.partyName}", "transaction engine", "saved ${outcome.reference}", ActionStatus.CONFIRMED, plan.key)
+                tools.log("${plan.kind.name.lowercase()} ${plan.partyName}", "transaction engine", "saved ${outcome.reference}", ActionStatus.CONFIRMED, plan.reference ?: plan.key)
                 val a = KaiFormat.rupees(plan.amount.toDouble())
                 val after = outcome.balanceAfter?.let { KaiFormat.rupees(it.toDouble()) }
                 say(lang, KaiMood.SUCCESS, null,
@@ -309,7 +296,7 @@ class KaiAgent(
                     en = "Saved, Owner. ${plan.partyName} — $a (${outcome.reference})." + (after?.let { " Balance now $it." } ?: ""))
             }
             is ActionOutcome.Failed -> {
-                tools.log("${plan.kind.name.lowercase()} ${plan.partyName}", "transaction engine", outcome.reason, ActionStatus.FAILED, plan.key)
+                tools.log("${plan.kind.name.lowercase()} ${plan.partyName}", "transaction engine", outcome.reason, ActionStatus.FAILED, plan.reference ?: plan.key)
                 say(lang, KaiMood.ERROR, null,
                     ta = "சேமிக்க முடியல ஓனர்: ${outcome.reason}", tl = "Owner, save aagala: ${outcome.reason}", en = "It wasn't saved, Owner: ${outcome.reason}")
             }
@@ -319,99 +306,9 @@ class KaiAgent(
     private suspend fun cancelPlan(key: String, lang: KaiLang): KaiTurn {
         plans.remove(key)?.let {
             tools.discard(it)
-            tools.log("${it.kind.name.lowercase()} ${it.partyName}", "draft", "discarded", ActionStatus.CANCELLED, it.key)
+            tools.log("${it.kind.name.lowercase()} ${it.partyName}", "draft", "discarded", ActionStatus.CANCELLED, it.reference ?: it.key)
         }
         return say(lang, KaiMood.NEUTRAL, null, ta = "சரி, ரத்து பண்ணிட்டேன். எதுவும் சேமிக்கல.", tl = "Seri Owner, cancel pannitten. Edhuvum save aagala.", en = "Cancelled, Owner. Nothing was saved.")
-    }
-
-    // ------------------------------------------------------------ reminders
-
-    private suspend fun remind(r: ReminderRequest, time: KaiWhen, lang: KaiLang): KaiTurn {
-        val today = now().toLocalDate()
-        if (time.alreadyPassed) {
-            reminderRequests[r.key] = r
-            val tomorrow = time.at.plusDays(1)
-            return KaiTurn(
-                ChatReply(pick(lang,
-                    ta = "${clock(time.at)} ஏற்கனவே போயிடுச்சு ஓனர். நாளைக்கு ${clock(time.at)}-க்கு வைக்கட்டுமா?",
-                    tl = "Owner, ${clock(time.at)} already pochu. Naalaikku ${clock(time.at)}-ku vekkava?",
-                    en = "${clock(time.at)} has already passed today, Owner. Set it for tomorrow ${clock(time.at)}?"), KaiMood.CLARIFY, ChatIntent.REMINDER_QUERY),
-                KaiCard(emptyList(), listOf(
-                    KaiButton(pick(lang, ta = "நாளைக்கு", tl = "Naalaikku", en = "Tomorrow"), KaiAction.RemindAt(r.key, tomorrow), primary = true),
-                    KaiButton(cancelLabel(lang), KaiAction.CancelRequest(r.key)),
-                )),
-            )
-        }
-        val phone = r.callName?.let { n -> runCatching { tools.parties(n) }.getOrNull()?.firstOrNull { it.name.equals(n, true) && !it.phone.isNullOrBlank() }?.phone }
-        val reminder = KaiReminder(
-            id = "R" + UUID.randomUUID().toString().take(8),
-            task = r.task, callName = r.callName, phone = phone,
-            at = time.at, repeat = time.repeat, weekday = time.weekday, said = r.said, createdAt = System.currentTimeMillis(),
-        )
-        val result = tools.schedule(reminder)
-        if (result == ScheduleResult.FAILED) {
-            tools.log("reminder", "reminders", r.task, ActionStatus.FAILED)
-            return say(lang, KaiMood.ERROR, null, ta = "நினைவூட்டல் வைக்க முடியல ஓனர்.", tl = "Owner, reminder vekka mudiyala.", en = "I couldn't set the reminder, Owner.")
-        }
-        tools.log("reminder", "reminders", "${r.task} @ ${time.at}", ActionStatus.SCHEDULED, reminder.id)
-        val whenText = whenText(time, lang, today)
-        val what = r.callName?.let { pick(lang, ta = "$it-க்கு call பண்ண", tl = "$it-ku call panna", en = "to call $it") } ?: "“${r.task}”"
-        val notes = buildList {
-            if (time.timeAssumed && time.repeat == Repeat.ONCE && !isRelative(r.said)) add(pick(lang, ta = "(நேரம் சொல்லல, ${clock(time.at)} வெச்சிருக்கேன்)", tl = "(time sollala, ${clock(time.at)} vechiruken)", en = "(no time said, so ${clock(time.at)})"))
-            if (time.amPmAssumed) add(pick(lang, ta = "(${clock(time.at)} என்று எடுத்துக்கிட்டேன்)", tl = "(${clock(time.at)} nu eduthukitten)", en = "(I took it as ${clock(time.at)})"))
-        }.joinToString(" ")
-        val text = pick(lang,
-            ta = "சரி ஓனர், $whenText $what நினைவூட்டுறேன். $notes",
-            tl = "Seri Owner, $whenText $what remind panren. $notes",
-            en = "Okay Owner, I'll remind you $what $whenText. $notes").trim()
-        val buttons = buildList {
-            add(KaiButton(pick(lang, ta = "ரத்து செய்", tl = "Cancel reminder", en = "Cancel reminder"), KaiAction.CancelReminder(reminder.id)))
-            if (result == ScheduleResult.APPROXIMATE) add(KaiButton(pick(lang, ta = "சரியான நேரத்துக்கு அனுமதி", tl = "Exact time allow pannu", en = "Allow exact time"), KaiAction.OpenAlarmSettings))
-        }
-        return KaiTurn(
-            ChatReply(text, KaiMood.REMINDER, ChatIntent.REMINDER_QUERY),
-            KaiCard(
-                emptyList(), buttons,
-                warning = if (result == ScheduleResult.APPROXIMATE) pick(lang,
-                    ta = "Exact alarm அனுமதி இல்லாததால கொஞ்சம் தாமதமாகலாம்.",
-                    tl = "Exact alarm permission illa, so konjam late-ah varalaam.",
-                    en = "Exact alarms aren't allowed for the app, so it may ring a little late.") else null,
-            ),
-        )
-    }
-
-    private suspend fun listReminders(text: String, lang: KaiLang): KaiTurn {
-        val mine = tools.reminders().sortedBy { it.at }
-        if (mine.isEmpty()) return question(text, lang, now().toLocalDate(), emptyList())
-        val today = now().toLocalDate()
-        val lines = mine.take(10).map { r -> "${whenText(KaiWhen(r.at, r.repeat, r.weekday), lang, today)} — ${r.callName?.let { pick(lang, ta = "$it-க்கு call", tl = "$it-ku call", en = "call $it") } ?: r.task}" }
-        tools.log("list reminders", "reminders", "${mine.size}", ActionStatus.ANSWERED)
-        return KaiTurn(
-            ChatReply(pick(lang, ta = "உங்க நினைவூட்டல்கள் ஓனர்:", tl = "Owner, ungal reminders:", en = "Your reminders, Owner:"), KaiMood.REMINDER, ChatIntent.REMINDER_QUERY),
-            KaiCard(lines, mine.take(4).map { r -> KaiButton("✕ " + (r.callName ?: r.task).take(24), KaiAction.CancelReminder(r.id)) }),
-        )
-    }
-
-    private fun cancelReminders(about: String?, lang: KaiLang): KaiTurn {
-        val all = tools.reminders()
-        val key = about?.lowercase(Locale.ROOT)
-        val matching = if (key.isNullOrBlank()) all else all.filter { r ->
-            r.callName?.lowercase(Locale.ROOT)?.contains(key) == true || r.task.lowercase(Locale.ROOT).contains(key) ||
-                key.split(' ').any { w -> w.length > 2 && r.task.lowercase(Locale.ROOT).contains(w) }
-        }
-        return when {
-            matching.isEmpty() -> say(lang, KaiMood.CLARIFY, null, ta = "அப்படி ஒரு நினைவூட்டல் இல்ல ஓனர்.", tl = "Owner, appadi oru reminder illa.", en = "There's no such reminder, Owner.")
-            matching.size == 1 -> {
-                val r = matching.single()
-                tools.cancelReminder(r.id)
-                tools.log("cancel reminder", "reminders", r.task, ActionStatus.CANCELLED, r.id)
-                say(lang, KaiMood.NEUTRAL, null, ta = "“${r.callName ?: r.task}” நினைவூட்டல் ரத்து.", tl = "“${r.callName ?: r.task}” reminder cancel pannitten.", en = "Cancelled the “${r.callName ?: r.task}” reminder.")
-            }
-            else -> KaiTurn(
-                ChatReply(pick(lang, ta = "எதை ரத்து பண்ணணும்?", tl = "Edha cancel pannanum Owner?", en = "Which one should I cancel?"), KaiMood.CLARIFY, ChatIntent.REMINDER_QUERY),
-                KaiCard(emptyList(), matching.take(6).map { r -> KaiButton("✕ " + (r.callName ?: r.task).take(28), KaiAction.CancelReminder(r.id)) }),
-            )
-        }
     }
 
     // ------------------------------------------------------------ phone / documents
@@ -568,24 +465,6 @@ class KaiAgent(
     }
 
     private fun clock(t: LocalDateTime) = t.format(DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH))
-
-    private fun isRelative(said: String) = Regex("""(?i)\d+\s*(min|minutes|hour|hours|hr|nimisham|mani\s*neram)""").containsMatchIn(said)
-
-    private fun whenText(w: KaiWhen, lang: KaiLang, today: LocalDate): String {
-        val time = clock(w.at)
-        return when (w.repeat) {
-            Repeat.DAILY -> pick(lang, ta = "தினமும் $time", tl = "daily $time-ku", en = "every day at $time")
-            Repeat.WEEKLY -> {
-                val day = w.weekday?.getDisplayName(java.time.format.TextStyle.FULL, Locale.ENGLISH) ?: ""
-                pick(lang, ta = "ஒவ்வொரு $day $time", tl = "every $day $time-ku", en = "every $day at $time")
-            }
-            Repeat.ONCE -> {
-                val minutes = java.time.Duration.between(now(), w.at).toMinutes()
-                if (minutes in 0..90) pick(lang, ta = "$minutes நிமிடத்துல ($time)", tl = "$minutes minutes-la ($time)", en = "in $minutes minutes ($time)")
-                else "${KaiFormat.date(w.at.toLocalDate(), lang, today)} $time" + if (lang == KaiLang.TANGLISH) "-ku" else ""
-            }
-        }
-    }
 
     private fun periodName(p: ChatPeriod, lang: KaiLang, today: LocalDate): String = when (p.kind) {
         ChatPeriod.Kind.TODAY -> pick(lang, ta = "இன்னைக்கு", tl = "Innaikku", en = "Today's")

@@ -1208,4 +1208,9 @@
     <string name="kai_edit_received">Money received</string>
     <string name="kai_reminder_channel">Kai reminders</string>
     <string name="kai_reminder_channel_description">Reminders you asked Kai to set (calls, tasks, daily reminders)</string>
+    <string name="kai_reminders_section">Kai reminders</string>
+    <string name="kai_reminder_daily">daily</string>
+    <string name="kai_reminder_weekly">weekly</string>
+    <string name="kai_reminder_monthly">monthly</string>
+    <string name="kai_reminder_continue_in_chat">Continue in Kai Chat</string>
 </resources>

@@ -33,6 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -86,6 +87,12 @@ fun KaiChatScreen(container: AppContainer, onBack: () -> Unit, onOpenScanner: ()
                     context.startActivity(android.content.Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, android.net.Uri.parse("package:" + context.packageName)))
                 }
             }
+            com.shopai.app.brain.chat.KaiAction.OpenNotificationSettings -> runCatching {
+                context.startActivity(
+                    android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                        .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName),
+                )
+            }
             is com.shopai.app.brain.chat.KaiAction.EditPlan -> session.plan(action.key)?.let { editing = messageId to it }
             else -> Unit
         }
@@ -93,6 +100,12 @@ fun KaiChatScreen(container: AppContainer, onBack: () -> Unit, onOpenScanner: ()
 
     fun tap(messageId: Long, action: com.shopai.app.brain.chat.KaiAction) {
         scope.launch { session.tap(messageId, action)?.let { perform(messageId, it) } }
+    }
+
+    // Opened from a reminder notification: Kai shows that reminder.
+    val openReminder by com.shopai.app.notifications.KaiReminderInbox.pending.collectAsState()
+    LaunchedEffect(openReminder) {
+        com.shopai.app.notifications.KaiReminderInbox.take()?.let { session.showRang(it) }
     }
     var input by rememberSaveable { mutableStateOf("") }
     val listState = rememberLazyListState()

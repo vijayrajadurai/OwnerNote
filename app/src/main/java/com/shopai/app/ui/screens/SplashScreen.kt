@@ -12,6 +12,10 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.background
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -33,11 +37,15 @@ fun SplashScreen(
     onNavigateHome: () -> Unit,
     onNavigateBusinessSetup: () -> Unit,
 ) {
+    // While the saved session is being checked, "Get Started" waits (a tap then
+    // would race the automatic navigation and could open Login for a signed-in owner).
+    var checking by remember { mutableStateOf(true) }
     LaunchedEffect(Unit) {
         val token = container.authRepository.hydrate()
         if (token == null) {
             // No session — stay on the welcome screen; the owner taps
             // "Get Started" themselves instead of being redirected.
+            checking = false
             return@LaunchedEffect
         }
         runCatching { container.pushTokenRepository.registerCurrent() }
@@ -72,6 +80,8 @@ fun SplashScreen(
             PrimaryButton(
                 label = stringResource(R.string.splash_get_started),
                 onClick = onNavigateLogin,
+                enabled = !checking,
+                loading = checking,
             )
         }
     }

@@ -24,12 +24,15 @@ import com.shopai.app.brain.tools.MoneyKind
 import com.shopai.app.brain.tools.PartyMatch
 import com.shopai.app.brain.tools.PlanKind
 import com.shopai.app.brain.tools.ProductSalesFact
-import com.shopai.app.brain.tools.ScheduleResult
 import com.shopai.app.brain.tools.StockFact
 import com.shopai.app.data.model.CreateCreditInput
 import com.shopai.app.data.model.CreateDebitInput
 import com.shopai.app.data.repository.TransactionRepository
-import com.shopai.app.notifications.KaiReminderAlarms
+import com.shopai.app.notifications.KaiReminderEngine
+import com.shopai.app.brain.tools.ContactMatch
+import com.shopai.app.brain.tools.ContactSource
+import com.shopai.app.brain.tools.PartyRole
+import com.shopai.app.brain.tools.ReminderSaved
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.LocalDate
@@ -43,9 +46,10 @@ import java.time.LocalDate
  *  - reminders: the phone's alarms; every action: the Kai action log.
  */
 class AppKaiTools(
+    private val context: android.content.Context,
     private val books: BooksModule,
     private val transactions: TransactionRepository,
-    private val reminders: KaiReminderAlarms,
+    private val reminders: KaiReminderEngine,
     private val actionLog: KaiActionLog,
 ) : KaiTools {
 
@@ -112,7 +116,10 @@ class AppKaiTools(
         val biz = s.ctx.businessId
         val key = nameKey(name)
         return listOf(PartyKind.CUSTOMER, PartyKind.SUPPLIER).flatMap { kind ->
-            s.dao.searchParties(biz, kind.name, key, 10, 0).map { p ->
+            // By spelling, else the same name in the other script ("Kumar" → "குமார்").
+            s.dao.searchParties(biz, kind.name, key, 10, 0)
+                .ifEmpty { s.dao.parties(biz, kind.name).filter { com.shopai.app.util.NameSound.same(it.name, name) } }
+                .map { p ->
                 val customer = kind == PartyKind.CUSTOMER
                 PartyMatch(p.id, p.name, customer, p.mobile?.let { "+91$it" },
                     rupees(if (customer) s.ledger.receivable(p.id) else s.ledger.payable(p.id)))
@@ -203,9 +210,46 @@ class AppKaiTools(
 
     // ------------------------------------------------------------ reminders / audit
 
-    override fun schedule(reminder: KaiReminder): ScheduleResult = reminders.schedule(reminder)
-    override fun reminders(): List<KaiReminder> = reminders.upcoming()
+    override fun createReminder(reminder: KaiReminder): ReminderSaved = reminders.create(reminder)
+    override fun updateReminder(reminder: KaiReminder): ReminderSaved = reminders.update(reminder)
     override fun cancelReminder(id: String): Boolean = reminders.cancel(id)
+    override fun completeReminder(id: String): Boolean = reminders.complete(id)
+    override fun snoozeReminder(id: String, minutes: Long): KaiReminder? = reminders.snooze(id, minutes)
+    override fun reminders(): List<KaiReminder> = reminders.open()
+    override fun lastRang(): KaiReminder? = reminders.lastRang()
+
+    /** OwnerNote customers / suppliers (offline, the books), then the phone's contacts if the owner allowed it. */
+    override suspend fun contacts(name: String, role: PartyRole?): List<ContactMatch>? {
+        val key = nameKey(name)
+        fun exactName(n: String) = nameKey(n) == key || com.shopai.app.util.NameSound.same(n, name)
+        val fromBooks = parties(name)?.filter { p -> role == null || p.customer == (role == PartyRole.CUSTOMER) }
+            ?.sortedByDescending { exactName(it.name) }
+            ?.map { ContactMatch(it.id, it.name, it.phone, if (it.customer) ContactSource.CUSTOMER else ContactSource.SUPPLIER) }
+            .orEmpty()
+        val exact = fromBooks.filter { exactName(it.name) }
+        if (exact.isNotEmpty()) return exact
+        if (fromBooks.isNotEmpty()) return fromBooks
+        return phoneContacts(name)
+    }
+
+    private fun phoneContacts(name: String): List<ContactMatch> {
+        val granted = androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_CONTACTS) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (!granted) return emptyList()
+        val uri = android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI
+        val cols = arrayOf(
+            android.provider.ContactsContract.CommonDataKinds.Phone.CONTACT_ID,
+            android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+            android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER,
+        )
+        return runCatching {
+            context.contentResolver.query(uri, cols, "${cols[1]} LIKE ?", arrayOf("$name%"), "${cols[1]} ASC")?.use { c ->
+                buildList {
+                    while (c.moveToNext() && size < 10) add(ContactMatch("phone:" + c.getString(0), c.getString(1), c.getString(2), ContactSource.PHONE))
+                }
+            }.orEmpty().distinctBy { it.id }
+        }.getOrDefault(emptyList())
+    }
 
     override fun log(intent: String, tool: String, result: String, status: ActionStatus, reference: String?): String =
         actionLog.add(intent, tool, result, status, reference)

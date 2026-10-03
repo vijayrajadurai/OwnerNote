@@ -125,11 +125,11 @@ class AppContainer(context: Context) {
     val kaiBooks by lazy { com.shopai.app.brain.chat.RepositoryKaiBooks(kaiBrain, partyRepository, dailyCashRepository) }
 
     /** Kai's personal / task reminders (phone alarms) and his action log. */
-    val kaiReminders = com.shopai.app.notifications.KaiReminderAlarms(appContext)
+    val kaiReminders = com.shopai.app.notifications.KaiReminderEngine(appContext)
     val kaiActionLog by lazy { com.shopai.app.data.kai.KaiActionLog(appContext) }
 
     /** Kai's tools: the books engine (reads, drafts, confirmed posts), reminders, the action log. */
-    val kaiTools by lazy { com.shopai.app.data.kai.AppKaiTools(books, transactionRepository, kaiReminders, kaiActionLog) }
+    val kaiTools by lazy { com.shopai.app.data.kai.AppKaiTools(appContext, books, transactionRepository, kaiReminders, kaiActionLog) }
 
     /** Kai Chat conversation for this app session — KAI's agent over his Business Brain and tools (no paid AI). */
     val kaiChat by lazy {

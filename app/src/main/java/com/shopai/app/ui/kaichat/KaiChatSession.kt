@@ -63,7 +63,7 @@ class KaiChatSession(private val agent: KaiAgent) {
         if (index < 0 || messages[index].cardClosed || thinking) return null
         val lang = messages[index].lang
         return when (action) {
-            is KaiAction.Dial, KaiAction.OpenScanner, KaiAction.OpenAlarmSettings, is KaiAction.EditPlan -> action
+            is KaiAction.Dial, KaiAction.OpenScanner, KaiAction.OpenAlarmSettings, KaiAction.OpenNotificationSettings, is KaiAction.EditPlan -> action
             else -> {
                 close(index)
                 respond(lang) { agent.act(action, lang) ?: KaiTurn(ChatReply("…", KaiMood.NEUTRAL, ChatIntent.UNKNOWN)) }
@@ -73,6 +73,15 @@ class KaiChatSession(private val agent: KaiAgent) {
     }
 
     fun plan(key: String): ActionPlan? = agent.plan(key)
+
+    /** A reminder notification was tapped: Kai shows it with Call / Snooze / Done. */
+    suspend fun showRang(id: String) {
+        val lang = KaiLanguage.forAppLocale()
+        val turn = agent.rang(id, lang) ?: return
+        messages += KaiChatMessage(nextId++, fromOwner = false, text = turn.reply.text, mood = turn.reply.mood, card = turn.card, lang = lang)
+        lastMood = turn.reply.mood
+        lastReplyAt = System.currentTimeMillis()
+    }
 
     /** Edit: the draft is prepared again with the owner's changes (the old card is closed). */
     suspend fun revise(messageId: Long, key: String, name: String, amount: BigDecimal, mode: PaymentMode, outgoing: Boolean) {

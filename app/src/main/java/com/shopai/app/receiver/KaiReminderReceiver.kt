@@ -1,19 +1,27 @@
-package com.shopai.app.receiver
+﻿package com.shopai.app.receiver
 
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.shopai.app.notifications.KaiReminderAlarms
+import com.shopai.app.ShopAiApplication
+import com.shopai.app.notifications.KaiReminderEngine
 
-/** A Kai reminder rang (show it, re-arm if it repeats), or Done / Snooze was tapped on it — all through the one store. */
+/** A Kai reminder rang (or its snooze), or Done / Snooze was tapped on it — all through the one reminder engine. */
 class KaiReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        val id = intent.getStringExtra(KaiReminderAlarms.EXTRA_ID) ?: return
-        val reminders = KaiReminderAlarms(context.applicationContext)
+        val engine = (context.applicationContext as? ShopAiApplication)?.container?.kaiReminders ?: KaiReminderEngine(context.applicationContext)
         when (intent.action) {
-            KaiReminderAlarms.ACTION_FIRE -> reminders.fired(id)
-            KaiReminderAlarms.ACTION_DONE -> reminders.complete(id)
-            KaiReminderAlarms.ACTION_SNOOZE -> reminders.snooze(id)
+            // The phone's clock, time zone or the app itself changed: alarms are armed again.
+            Intent.ACTION_TIMEZONE_CHANGED, Intent.ACTION_TIME_CHANGED, Intent.ACTION_MY_PACKAGE_REPLACED -> engine.rearmAll()
+            else -> {
+                val id = intent.getStringExtra(KaiReminderEngine.EXTRA_ID) ?: return
+                when (intent.action) {
+                    KaiReminderEngine.ACTION_FIRE -> engine.fired(id, snooze = false)
+                    KaiReminderEngine.ACTION_FIRE_SNOOZE -> engine.fired(id, snooze = true)
+                    KaiReminderEngine.ACTION_DONE -> engine.complete(id)
+                    KaiReminderEngine.ACTION_SNOOZE -> engine.snooze(id, KaiReminderEngine.SNOOZE_MINUTES)
+                }
+            }
         }
     }
 }

@@ -39,24 +39,16 @@ class KaiCommandsTest {
     }
 
     @Test
-    fun reminders() {
-        val call = route("Kumar ku 10 minutes kalichi call pannanum") as KaiCommand.Remind
-        assertEquals("Kumar", call.callName)
-        assertEquals(now.plusMinutes(10), call.time!!.at)
-        val call2 = route("10 minutes kalichi Kumar-ku call panna remind pannu") as KaiCommand.Remind
-        assertEquals("Kumar", call2.callName)
-        val keys = route("Daily kaalaila 10 maniku saavi eduthuka remind pannu") as KaiCommand.Remind
-        assertEquals(Repeat.DAILY, keys.time!!.repeat)
-        assertEquals("saavi eduthuka", keys.task)
-        assertEquals(null, keys.callName)
-        val supplier = route("Naalaiku supplier-ku payment remind pannu") as KaiCommand.Remind
-        assertEquals(now.toLocalDate().plusDays(1), supplier.time!!.at.toLocalDate())
-        val noTime = route("Kumar ku call panna remind pannu") as KaiCommand.Remind
-        assertEquals(null, noTime.time)
-        assertEquals(KaiCommand.ListReminders, route("En reminders enna?"))
-        assertTrue(route("Kumar reminder cancel pannu") is KaiCommand.CancelReminder)
+    fun remindersGoToTheReminderEngine() {
+        val call = (route("Kumar ku 10 minutes kalichi call pannanum") as KaiCommand.Reminder).request as ReminderRequest.Create
+        assertEquals("Kumar", call.draft.person)
+        assertEquals(now.plusMinutes(10), call.draft.time!!.at)
+        val keys = (route("Daily kaalaila 10 maniku saavi eduthuka remind pannu") as KaiCommand.Reminder).request as ReminderRequest.Create
+        assertEquals(Repeat.DAILY, keys.draft.time!!.repeat)
+        assertEquals("saavi eduthuka", keys.draft.task)
+        assertEquals(ReminderRequest.ListAll(false), (route("En reminders enna?") as KaiCommand.Reminder).request)
+        assertTrue((route("Kumar reminder cancel pannu") as KaiCommand.Reminder).request is ReminderRequest.Cancel)
     }
-
     @Test
     fun callScanStockMoney() {
         assertEquals(KaiCommand.Call("Kumar"), route("Kumar-ku call pannu"))

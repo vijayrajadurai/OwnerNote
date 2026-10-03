@@ -68,6 +68,13 @@ fun ShopAiApp(container: AppContainer) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
+    // A tapped Kai reminder notification opens Kai Chat on it (once past login).
+    val openReminder by com.shopai.app.notifications.KaiReminderInbox.pending.collectAsState()
+    androidx.compose.runtime.LaunchedEffect(openReminder, currentRoute) {
+        val signedIn = currentRoute != null && currentRoute !in setOf(Routes.Splash, Routes.Login, Routes.Otp, Routes.BusinessSetup)
+        if (openReminder != null && signedIn && currentRoute != Routes.KaiChat) navController.navigate(Routes.KaiChat)
+    }
+
     Box(Modifier.fillMaxSize()) {
         NavHost(
             navController = navController,
@@ -75,17 +82,24 @@ fun ShopAiApp(container: AppContainer) {
             modifier = Modifier.fillMaxSize(),
         ) {
         composable(Routes.Splash) {
+            // The session check can finish after the owner already tapped "Get Started":
+            // only the first one navigates (a second navigate from a popped Splash crashes).
+            val onSplash = { navController.currentDestination?.route == Routes.Splash }
             SplashScreen(
                 container = container,
                 onNavigateLogin = {
-                    navController.navigate(Routes.Login) {
-                        popUpTo(Routes.Splash) { inclusive = true }
+                    if (onSplash()) {
+                        navController.navigate(Routes.Login) {
+                            popUpTo(Routes.Splash) { inclusive = true }
+                        }
                     }
                 },
-                onNavigateHome = { navController.navigateToHomeAsRoot() },
+                onNavigateHome = { if (onSplash()) navController.navigateToHomeAsRoot() },
                 onNavigateBusinessSetup = {
-                    navController.navigate(Routes.BusinessSetup) {
-                        popUpTo(Routes.Splash) { inclusive = true }
+                    if (onSplash()) {
+                        navController.navigate(Routes.BusinessSetup) {
+                            popUpTo(Routes.Splash) { inclusive = true }
+                        }
                     }
                 },
             )
@@ -247,6 +261,8 @@ fun ShopAiApp(container: AppContainer) {
                 onOpenNotePerson = { name -> navController.navigate(Routes.handwrittenPerson(name)) },
                 // The bill photo turned out handwritten: the handwriting reader takes it.
                 onHandwrittenDetected = { navController.navigate(Routes.handwrittenScan()) },
+                // A spoken reminder that needs a choice continues in Kai Chat.
+                onOpenKaiChat = { navController.navigate(Routes.KaiChat) },
             )
         }
         composable(Routes.HandwrittenNotes) { entry ->

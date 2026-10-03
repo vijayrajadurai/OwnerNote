@@ -78,7 +78,10 @@ fun VoiceEntryScreen(
     onScanNoteForBill: (billId: Long) -> Unit = {},
     onOpenNotePerson: (name: String) -> Unit = {},
     onHandwrittenDetected: () -> Unit = {},
+    onOpenKaiChat: () -> Unit = {},
 ) {
+    /** A spoken reminder needed a choice (time / which person): it continues in Kai Chat. */
+    var reminderNeedsChoice by remember { mutableStateOf(false) }
     var inputText by remember { mutableStateOf("") }
     var partialText by remember { mutableStateOf<String?>(null) }
     var parsed by remember { mutableStateOf<ParsedTransaction?>(null) }
@@ -156,6 +159,23 @@ fun VoiceEntryScreen(
             kaiLine = context.getString(R.string.kai_processing)
             error = null
             queryAnswer = null
+            reminderNeedsChoice = false
+            // Reminders ("Kumar-ku 10 minutes kalichu call panna remind pannu") go to Kai's one reminder engine.
+            if (com.shopai.app.brain.tools.KaiReminderUnderstanding.understand(text, java.time.LocalDateTime.now(), emptyList()) != null) {
+                container.kaiChat.send(text)
+                val answer = container.kaiChat.messages.lastOrNull { !it.fromOwner }
+                parsed = null
+                queryAnswer = answer?.text
+                reminderNeedsChoice = answer?.card?.buttons?.any { it.action !is com.shopai.app.brain.chat.KaiAction.CancelReminder } == true
+                answer?.let { a ->
+                    val mood = a.mood ?: com.shopai.app.brain.KaiMood.REMINDER
+                    kai(KaiEvent.Understood(mood.reaction()))
+                    kaiSay(com.shopai.app.brain.KaiReply(a.text, a.text, if (a.text.any { it in '஀'..'௿' }) "ta-IN" else "en-IN", mood))
+                }
+                parsing = false
+                orbState = MicState.Idle
+                return@launch
+            }
             val turn = runCatching { brain.hear(text) }.getOrNull()
             when (turn) {
                 null -> {
@@ -329,6 +349,11 @@ fun VoiceEntryScreen(
                     color = ShopAiThemeColors.onSurface,
                     modifier = Modifier.padding(top = 8.dp),
                 )
+                if (reminderNeedsChoice) {
+                    androidx.compose.material3.TextButton(onClick = onOpenKaiChat) {
+                        Text(stringResource(R.string.kai_reminder_continue_in_chat), fontWeight = FontWeight.SemiBold)
+                    }
+                }
             }
         }
 

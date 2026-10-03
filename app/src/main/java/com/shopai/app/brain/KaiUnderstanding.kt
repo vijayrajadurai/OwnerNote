@@ -244,9 +244,13 @@ object KaiUnderstanding {
     /** A known customer/supplier named in the words ("Kumar-ku", "kumarukku" included). */
     fun knownPerson(text: String, known: List<String>): String? {
         val lower = text.lowercase(Locale.ROOT)
-        return known.filter { it.isNotBlank() }
-            .sortedByDescending { it.length } // "Ravi Kumar" before "Ravi"
-            .firstOrNull { name -> Regex("""(?<![\p{L}])${Regex.escape(name.lowercase(Locale.ROOT))}""").containsMatchIn(lower) }
+        val names = known.filter { it.isNotBlank() }.sortedByDescending { it.length } // "Ravi Kumar" before "Ravi"
+        names.firstOrNull { name -> Regex("""(?<![\p{L}])${Regex.escape(name.lowercase(Locale.ROOT))}""").containsMatchIn(lower) }?.let { return it }
+        // The same name in the other script: "Kumar-ku" for "குமார்", "குமார்க்கு" for "Kumar".
+        val words = Regex("""[\p{L}\p{M}]+""").findAll(text).map { w ->
+            w.value.replace(Regex("""(?i)(kitta|kita|kitte|ukku|kku|ku|oda|idam)$"""), "").replace(Regex("""(க்கு|கிட்ட|கிட்டே|உக்கு)$"""), "")
+        }.filter { it.length >= 2 }.toList()
+        return names.firstOrNull { name -> !name.contains(' ') && words.any { com.shopai.app.util.NameSound.same(it, name) } }
     }
 
     private val notNames = setOf(

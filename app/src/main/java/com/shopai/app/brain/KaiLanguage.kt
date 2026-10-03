@@ -15,6 +15,8 @@ object KaiLanguage {
         "eppo", "epdi", "eppadi", "sollu", "sollunga", "innaikku", "innaiku", "naalaikku", "nalaiku", "ayiram", "aayiram",
         "nooru", "moonu", "rendu", "naalu", "anju", "pathu", "vaaram", "baaki", "bakki", "motham", "mukkiyam", "vasool",
         "vandhuchu", "vanthuchu", "kaasu", "panam", "ennaku", "enakku", "naan", "avan", "aval", "ku", "kku", "ukku",
+        "pannu", "panna", "inniku", "innikku", "maniku", "manikku", "mani", "kalichu", "kalichi", "nyabagam", "kaalaila", "podu",
+        "eduthuka", "eduka", "mathiyam", "raathiri", "iravu", "saayangalam", "venum", "illa", "andha", "adha", "maathu", "mattum",
     )
 
     fun detect(text: String): KaiLang {

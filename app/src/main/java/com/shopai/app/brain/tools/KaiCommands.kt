@@ -23,11 +23,8 @@ sealed interface KaiCommand {
      */
     data class Payment(val name: String?, val amount: BigDecimal?, val outgoing: Boolean, val mode: PaymentMode, val modeSaid: Boolean) : KaiCommand
 
-    /** "Kumar ku 10 minutes kalichu call panna remind pannu", "Daily 10 maniku saavi eduthuka remind pannu". */
-    data class Remind(val task: String, val callName: String?, val time: KaiWhen?) : KaiCommand
-
-    data object ListReminders : KaiCommand
-    data class CancelReminder(val about: String?) : KaiCommand
+    /** Create / list / cancel / complete / snooze / change a reminder (the reminder engine). */
+    data class Reminder(val request: ReminderRequest) : KaiCommand
 
     /** "Kumar-ku call pannu" — open the dialer for Kumar (the owner presses call). */
     data class Call(val name: String) : KaiCommand
@@ -75,19 +72,8 @@ object KaiCommands {
             return KaiCommand.ScanBill(classifyOnly = false)
         }
 
-        // ---- reminders ----
-        if (remindWords || (time != null && (callWords || has("pannanum", "poganum", "vaanganum", "kudukkanum", "eduthukanum", "panna venum")) && !questionWords)) {
-            if (has("cancel", "delete", "remove", "vendam", "venam", "venaam", "stop", "niruthu", "eduthudu", "ரத்து", "வேண்டாம்")) {
-                return KaiCommand.CancelReminder(personIn(text, knownPeople) ?: KaiTime.strip(cleanTask(text)).takeIf { it.isNotBlank() })
-            }
-            val listOnly = time == null && (has("list", "show", "enna reminder", "en reminder", "what reminder", "reminders enna", "ennenna", "irukka", "iruka", "iruku", "irukku") || questionWords) &&
-                !has("remind pannu", "remind me", "nyabagam paduthu", "ninaivu paduthu", "sollu")
-            if (listOnly) return KaiCommand.ListReminders
-            val callName = if (callWords) personIn(text, knownPeople) else null
-            val task = cleanTask(KaiTime.strip(text))
-            return KaiCommand.Remind(task = task.ifBlank { text }, callName = callName, time = time)
-        }
-
+        // ---- reminders (any phrasing) ----
+        KaiReminderUnderstanding.understand(text, now, knownPeople)?.let { return KaiCommand.Reminder(it) }
         // ---- call now ----
         if (callWords && time == null && has("pannu", "pannunga", "call pannu", "call", "podu", "poodu") && !questionWords) {
             personIn(text, knownPeople)?.let { return KaiCommand.Call(it) }
@@ -167,6 +153,7 @@ object KaiCommands {
         "kadaiku", "shop", "saavi", "key", "keys", "ok", "okay", "hi", "hello", "kai", "bro", "anna", "akka", "thambi",
         // Stems of time words ("maniku", "naalaikku", "inniku") — never names.
         "mani", "naalai", "nalai", "inni", "innai", "kadai", "veetu", "veedu", "kaalai", "office", "school", "hospital", "bank", "week", "month",
+        "am", "pm", "reminder", "time", "adha", "andha", "idha", "indha", "daily", "weekly", "monthly", "thethi",
     )
 
     /** A known party in the text, else the word before -ku / kitta ("Ramesh ku", "Kumar kitta"), or after "call / to / from". */

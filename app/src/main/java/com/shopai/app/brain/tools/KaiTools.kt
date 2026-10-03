@@ -58,6 +58,8 @@ data class ActionPlan(
     val draftId: String? = null,
     /** The owner's own words. */
     val said: String,
+    /** Kai's short action reference ("K-261003-1131-A3F2") shown to the owner. */
+    val reference: String? = null,
 )
 
 sealed interface ActionOutcome {
@@ -66,37 +68,19 @@ sealed interface ActionOutcome {
     data class Failed(val reason: String) : ActionOutcome
 }
 
-/** A personal / task reminder Kai keeps on the phone (separate from the books). */
-data class KaiReminder(
-    val id: String,
-    /** The owner's own words for the task ("kadaiku pogumbothu saavi eduthuka"). */
-    val task: String,
-    /** Set for "call X" reminders. */
-    val callName: String? = null,
-    val phone: String? = null,
-    /** The next time it rings. */
-    val at: LocalDateTime,
-    val repeat: Repeat = Repeat.ONCE,
-    val weekday: DayOfWeek? = null,
-    val said: String,
-    val createdAt: Long,
-    /** A one-time reminder that has rung and waits for Done / Snooze (not armed, not listed). */
-    val rang: Boolean = false,
-) {
-    /** After it rang at [at]: the next time for a repeating reminder, else null. */
-    fun nextAfter(now: LocalDateTime): LocalDateTime? {
-        var next = at
-        when (repeat) {
-            Repeat.ONCE -> return null
-            Repeat.DAILY -> while (!next.isAfter(now)) next = next.plusDays(1)
-            Repeat.WEEKLY -> while (!next.isAfter(now)) next = next.plusWeeks(1)
-        }
-        return next
-    }
-}
+/**
+ * EXACT: rings on time. APPROXIMATE: Android may delay it (exact alarms not allowed for the app).
+ * NOTIFICATIONS_OFF: scheduled, but the app's notifications are turned off.
+ */
+enum class ScheduleResult { EXACT, APPROXIMATE, NOTIFICATIONS_OFF, FAILED }
 
-/** EXACT: rings on time. APPROXIMATE: Android may delay it (exact alarms not allowed for the app). */
-enum class ScheduleResult { EXACT, APPROXIMATE, FAILED }
+/** A reminder saved by the engine; [duplicate] = the same reminder already existed (nothing new created). */
+data class ReminderSaved(val reminder: KaiReminder, val duplicate: Boolean, val result: ScheduleResult)
+
+enum class ContactSource { CUSTOMER, SUPPLIER, PHONE }
+
+/** A person found for a reminder: an OwnerNote customer / supplier, or a phone contact. */
+data class ContactMatch(val id: String, val name: String, val phone: String?, val source: ContactSource)
 
 enum class ActionStatus { ANSWERED, DRAFT, CONFIRMED, CANCELLED, SCHEDULED, FAILED, OPENED }
 
@@ -132,10 +116,22 @@ interface KaiTools {
     suspend fun confirm(plan: ActionPlan): ActionOutcome = ActionOutcome.Failed("unavailable")
     suspend fun discard(plan: ActionPlan) {}
 
-    // ---- reminders (phone) ----
-    fun schedule(reminder: KaiReminder): ScheduleResult = ScheduleResult.FAILED
-    fun reminders(): List<KaiReminder> = emptyList()
+    // ---- reminders: OwnerNote's reminder engine (one store, phone alarms) ----
+    /** Creates a reminder — or returns the identical one that already exists. */
+    fun createReminder(reminder: KaiReminder): ReminderSaved = ReminderSaved(reminder, false, ScheduleResult.FAILED)
+    /** Saves changes to an existing reminder (same id) and re-arms it. */
+    fun updateReminder(reminder: KaiReminder): ReminderSaved = ReminderSaved(reminder, false, ScheduleResult.FAILED)
     fun cancelReminder(id: String): Boolean = false
+    fun completeReminder(id: String): Boolean = false
+    fun snoozeReminder(id: String, minutes: Long): KaiReminder? = null
+    /** Open reminders (still to ring, or rang and waiting for Done / Snooze). */
+    fun reminders(): List<KaiReminder> = emptyList()
+    /** The reminder that rang most recently and is still open. */
+    fun lastRang(): KaiReminder? = null
+    /** The phone's time zone. */
+    fun zone(): String = java.time.ZoneId.systemDefault().id
+    /** People with this name: OwnerNote customers / suppliers, then phone contacts. Null = can't search. */
+    suspend fun contacts(name: String, role: PartyRole?): List<ContactMatch>? = null
 
     // ---- audit ----
     fun log(intent: String, tool: String, result: String, status: ActionStatus, reference: String? = null): String = reference ?: "-"

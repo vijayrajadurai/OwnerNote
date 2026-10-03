@@ -1154,4 +1154,9 @@
     <string name="kai_edit_received">வாங்கியது</string>
     <string name="kai_reminder_channel">Kai நினைவூட்டல்கள்</string>
     <string name="kai_reminder_channel_description">Kai-யிடம் சொன்ன நினைவூட்டல்கள் (call, வேலை, தினசரி)</string>
+    <string name="kai_reminders_section">Kai நினைவூட்டல்கள்</string>
+    <string name="kai_reminder_daily">தினமும்</string>
+    <string name="kai_reminder_weekly">வாரம்</string>
+    <string name="kai_reminder_monthly">மாதம்</string>
+    <string name="kai_reminder_continue_in_chat">Kai Chat-ல தொடருங்க</string>
 </resources>

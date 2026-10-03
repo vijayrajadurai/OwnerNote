@@ -16,6 +16,12 @@ import com.shopai.app.brain.tools.PartyMatch
 import com.shopai.app.brain.tools.PlanKind
 import com.shopai.app.brain.tools.ProductSalesFact
 import com.shopai.app.brain.tools.Repeat
+import com.shopai.app.brain.tools.ReminderSaved
+import com.shopai.app.brain.tools.ReminderStatus
+import com.shopai.app.brain.tools.KaiReminderSchedule
+import com.shopai.app.brain.tools.ContactMatch
+import com.shopai.app.brain.tools.ContactSource
+import com.shopai.app.brain.tools.PartyRole
 import com.shopai.app.brain.tools.ScheduleResult
 import com.shopai.app.brain.tools.StockFact
 import com.shopai.app.data.model.PartySummary
@@ -67,9 +73,34 @@ class KaiAgentTest {
         override suspend fun confirm(plan: ActionPlan): ActionOutcome { confirmed += plan; return ActionOutcome.Done("PO-7", plan.balanceAfter) }
         override suspend fun discard(plan: ActionPlan) { discarded += plan }
 
-        override fun schedule(reminder: KaiReminder): ScheduleResult { scheduled += reminder; return ScheduleResult.EXACT }
-        override fun reminders() = scheduled.toList()
-        override fun cancelReminder(id: String) = scheduled.removeIf { it.id == id }
+        // An in-memory reminder engine with the same rules as the real one.
+        override fun createReminder(reminder: KaiReminder): ReminderSaved {
+            scheduled.firstOrNull { KaiReminderSchedule.sameAs(it, reminder) }?.let { return ReminderSaved(it, true, ScheduleResult.EXACT) }
+            scheduled += reminder
+            return ReminderSaved(reminder, false, ScheduleResult.EXACT)
+        }
+        override fun updateReminder(reminder: KaiReminder): ReminderSaved {
+            scheduled.replaceAll { if (it.id == reminder.id) reminder else it }
+            return ReminderSaved(reminder, false, ScheduleResult.EXACT)
+        }
+        override fun cancelReminder(id: String) = replace(id) { it.copy(status = ReminderStatus.CANCELLED) }
+        override fun completeReminder(id: String) = replace(id) { if (it.recurrence.repeat == Repeat.ONCE) it.copy(status = ReminderStatus.COMPLETED) else it }
+        override fun snoozeReminder(id: String, minutes: Long): KaiReminder? {
+            replace(id) { it.copy(snoozedUntil = 1_000L + minutes * 60_000) }
+            return scheduled.firstOrNull { it.id == id }
+        }
+        override fun reminders() = scheduled.filter { it.open }
+        var rang: String? = null
+        override fun lastRang() = scheduled.firstOrNull { it.id == rang && it.open }
+        override fun zone() = "Asia/Kolkata"
+        override suspend fun contacts(name: String, role: PartyRole?) = if (!booksReady) null else contactList.filter { it.name.equals(name, true) }
+        var contactList = listOf(ContactMatch("c1", "Kumar", "+919000000001", ContactSource.CUSTOMER))
+        private fun replace(id: String, change: (KaiReminder) -> KaiReminder): Boolean {
+            val i = scheduled.indexOfFirst { it.id == id && it.open }
+            if (i < 0) return false
+            scheduled[i] = change(scheduled[i])
+            return true
+        }
         override fun log(intent: String, tool: String, result: String, status: ActionStatus, reference: String?): String { logged += intent to status; return reference ?: "K-1" }
     }
 
@@ -138,24 +169,129 @@ class KaiAgentTest {
     }
 
     @Test
-    fun remindersAreCreatedDirectly() = runBlocking {
+    fun callReminderIsCreatedAtTheExactTime() = runBlocking {
         val tools = FakeTools()
         val a = agent(tools)
-        a.ask("Kumar ku 10 minutes kalichi call pannanum")
+        val turn = a.ask("Kumar-ku 10 minutes kalichi call panna remind pannu.")
         val r = tools.scheduled.single()
-        assertEquals("Kumar", r.callName)
+        assertEquals("Call Kumar", r.title)
         assertEquals("+919000000001", r.phone)
-        assertEquals(now.plusMinutes(10), r.at)
-        a.ask("Daily kaalaila 10 maniku kadaiku pogumbothu saaviya marakkama eduthutu po remind pannu")
-        assertEquals(Repeat.DAILY, tools.scheduled.last().repeat)
-        // No time said: Kai asks, then the next answer completes it.
-        a.ask("Supplier payment check panna remind pannu")
-        assertEquals(2, tools.scheduled.size)
-        a.ask("naalaikku 11 maniku")
-        assertEquals(3, tools.scheduled.size)
-        assertEquals(LocalDateTime.of(2026, 10, 4, 11, 0), tools.scheduled.last().at)
+        val nowMillis = now.atZone(java.time.ZoneId.of("Asia/Kolkata")).toInstant().toEpochMilli()
+        assertEquals(nowMillis + 600_000, r.triggerAt)
+        assertEquals("Done Owner 👍 Kumar-ku call panna 10 minutes-ku reminder vachiten.", turn.reply.text)
+        // A reminder, never "call panniten".
+        assertTrue(!turn.reply.text.contains("panniten", true))
+        assertEquals("Owner, Kumar-ku call panna sonneenga.", r.notificationMessage)
+        // Said again: not duplicated.
+        assertTrue(a.ask("Kumar-ku 10 minutes kalichi call panna remind pannu.").reply.text.contains("already"))
+        assertEquals(1, tools.scheduled.size)
     }
 
+    @Test
+    fun missingTimeIsAskedThenCompleted() = runBlocking {
+        val tools = FakeTools()
+        val a = agent(tools)
+        val ask = a.ask("Naalaikku morning supplier-ku call panna remind pannu.")
+        assertTrue(ask.reply.text, ask.reply.text.contains("Morning-la exact time"))
+        assertTrue(tools.scheduled.isEmpty())
+        // One tap on "10:00 AM" …
+        val ten = ask.card!!.buttons.map { it.action }.filterIsInstance<KaiAction.RemindAt>().first { it.at.hour == 10 }
+        val done = a.act(ten, KaiLang.TANGLISH)!!
+        assertEquals(LocalDateTime.of(2026, 10, 4, 10, 0), java.time.Instant.ofEpochMilli(tools.scheduled.single().triggerAt).atZone(java.time.ZoneId.of("Asia/Kolkata")).toLocalDateTime())
+        assertTrue(done.reply.text, done.reply.text.startsWith("Done Owner."))
+        // … or a typed time.
+        a.ask("Every Monday stock check panna reminder podu.")
+        a.ask("9 am")
+        val monday = tools.scheduled.last()
+        assertEquals(Repeat.WEEKLY, monday.recurrence.repeat)
+        assertEquals(java.time.LocalTime.of(9, 0), monday.time)
+    }
+
+    @Test
+    fun recurringDailyReminder() = runBlocking {
+        val tools = FakeTools()
+        val turn = agent(tools).ask("Daily kaalaila 10 maniku saavi eduthuka remind pannu.")
+        val r = tools.scheduled.single()
+        assertEquals(Repeat.DAILY, r.recurrence.repeat)
+        assertEquals(java.time.LocalTime.of(10, 0), r.time)
+        assertTrue(turn.reply.text, turn.reply.text.contains("Daily") && turn.reply.text.contains("10:00 AM"))
+    }
+
+    @Test
+    fun sameNamePeopleAreAskedNeverGuessed() = runBlocking {
+        val tools = FakeTools().apply {
+            contactList = listOf(
+                ContactMatch("c1", "Kumar", "+919000000001", ContactSource.CUSTOMER),
+                ContactMatch("s9", "Kumar", "+919000000009", ContactSource.SUPPLIER),
+            )
+        }
+        val a = agent(tools)
+        val ask = a.ask("Kumar-ku 10 minutes kalichi call panna remind pannu")
+        assertTrue(ask.reply.text, ask.reply.text.contains("2 contacts"))
+        assertTrue(tools.scheduled.isEmpty())
+        val pickSupplier = ask.card!!.buttons.map { it.action }.filterIsInstance<KaiAction.PickContact>()[1]
+        a.act(pickSupplier, KaiLang.TANGLISH)
+        assertEquals("+919000000009", tools.scheduled.single().phone)
+    }
+
+    @Test
+    fun unknownPersonStillGetsTheReminderAndANumberCanBeAdded() = runBlocking {
+        val tools = FakeTools()
+        val a = agent(tools)
+        val turn = a.ask("Muthu-ku 30 minutes kalichu call panna remind pannu")
+        assertTrue(turn.card!!.warning!!.contains("Muthu contact OwnerNote-la illa"))
+        a.ask("98765 43210")
+        assertEquals("+919876543210", tools.scheduled.single().phone)
+    }
+
+    @Test
+    fun cancelCompleteSnoozeAndUpdate() = runBlocking {
+        val tools = FakeTools()
+        val a = agent(tools)
+        a.ask("Kumar-ku 10 minutes kalichi call panna remind pannu")
+        a.ask("Daily morning 10 manikku stock check panna remind pannu")
+        // "Kumar call reminder-a 30 minutes-ku change pannu": the same reminder moves, no duplicate.
+        val kumar = tools.scheduled.first()
+        val updated = a.ask("Kumar call reminder-a 30 minutes-ku change pannu")
+        assertTrue(updated.reply.text, updated.reply.text.startsWith("Updated Owner."))
+        assertEquals(2, tools.scheduled.size)
+        val nowMillis = now.atZone(java.time.ZoneId.of("Asia/Kolkata")).toInstant().toEpochMilli()
+        assertEquals(nowMillis + 30 * 60_000, tools.scheduled.first { it.id == kumar.id }.triggerAt)
+        // It rang: "Innum 10 minutes" snoozes it, "Done" completes it.
+        tools.rang = kumar.id
+        a.ask("Innum 10 minutes later remind pannu")
+        assertTrue(tools.scheduled.first { it.id == kumar.id }.snoozedUntil != null)
+        a.ask("Done.")
+        assertEquals(ReminderStatus.COMPLETED, tools.scheduled.first { it.id == kumar.id }.status)
+        // Cancel by words.
+        a.ask("Stock check reminder cancel pannu")
+        assertTrue(tools.reminders().isEmpty())
+    }
+
+    @Test
+    fun ambiguousCancelAsksWhich() = runBlocking {
+        val tools = FakeTools()
+        val a = agent(tools)
+        a.ask("Kumar-ku 10 minutes kalichi call panna remind pannu")
+        a.ask("Tomorrow 5 PM Kumar-ku call reminder")
+        val ask = a.ask("Kumar call reminder cancel pannu")
+        assertTrue(ask.reply.text, ask.reply.text.contains("Kumar-ku 2 reminders irukku"))
+        assertEquals(2, tools.reminders().size)
+        a.act(ask.card!!.buttons.first().action, KaiLang.TANGLISH)
+        assertEquals(1, tools.reminders().size)
+    }
+
+    @Test
+    fun pastTimeIsAskedAndListShowsToday() = runBlocking {
+        val tools = FakeTools()
+        val a = agent(tools)
+        val past = a.ask("Inniku 9 maniku shop open panna remind pannu")
+        assertTrue(past.reply.text, past.reply.text.contains("already pochu"))
+        assertTrue(tools.scheduled.isEmpty())
+        a.ask("Kumar-ku 10 minutes kalichi call panna remind pannu")
+        val list = a.ask("Today enna reminders iruku?")
+        assertTrue(list.card!!.lines.joinToString("\n"), list.card!!.lines.any { it.contains("Call Kumar") })
+    }
     @Test
     fun businessAnswersComeFromTheBooksOrSayUnverified() = runBlocking {
         val a = agent(FakeTools())

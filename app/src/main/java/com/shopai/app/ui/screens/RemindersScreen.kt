@@ -20,6 +20,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -211,6 +212,9 @@ fun RemindersScreen(
 
             Spacer(Modifier.height(16.dp))
 
+            // Kai's reminders (calls, tasks, daily / weekly) — from the same reminder engine Kai uses.
+            KaiRemindersSection(container)
+
             val sections = groupReminders(reminders)
             when {
                 loading && reminders.isEmpty() -> CircularProgressIndicator(
@@ -290,4 +294,48 @@ private fun ReminderRow(
             }
         }
     }
+}
+
+/** Kai's open reminders with Done / Cancel — the reminder engine is the only source. */
+@Composable
+private fun KaiRemindersSection(container: AppContainer) {
+    val engine = container.kaiReminders
+    val changed by engine.changes.collectAsState()
+    val items = remember(changed) { engine.open() }
+    if (items.isEmpty()) return
+    val zone = java.time.ZoneId.systemDefault()
+    val today = LocalDate.now()
+    val lang = com.shopai.app.brain.KaiLanguage.forAppLocale()
+    Text(
+        stringResource(R.string.kai_reminders_section),
+        style = MaterialTheme.typography.bodyLarge,
+        fontWeight = FontWeight.Bold,
+        color = ShopAiThemeColors.primary,
+        modifier = Modifier.padding(vertical = 8.dp),
+    )
+    items.forEach { r ->
+        val at = java.time.Instant.ofEpochMilli(r.snoozedUntil ?: r.triggerAt).atZone(zone).toLocalDateTime()
+        val repeat = when (r.recurrence.repeat) {
+            com.shopai.app.brain.tools.Repeat.ONCE -> ""
+            com.shopai.app.brain.tools.Repeat.DAILY -> " · " + stringResource(R.string.kai_reminder_daily)
+            com.shopai.app.brain.tools.Repeat.WEEKLY -> " · " + stringResource(R.string.kai_reminder_weekly)
+            com.shopai.app.brain.tools.Repeat.MONTHLY -> " · " + stringResource(R.string.kai_reminder_monthly)
+        }
+        ShopCard(modifier = Modifier.padding(bottom = 8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(r.title, style = MaterialTheme.typography.titleMedium, color = ShopAiThemeColors.onSurface)
+                    Text(
+                        com.shopai.app.brain.KaiFormat.date(at.toLocalDate(), lang, today).replaceFirstChar { it.uppercase() } + " " +
+                            at.toLocalTime().format(java.time.format.DateTimeFormatter.ofPattern("h:mm a", java.util.Locale.ENGLISH)) + repeat,
+                        color = ShopAiThemeColors.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+                TextButton(onClick = { engine.complete(r.id) }) { Text(stringResource(R.string.reminder_done), fontWeight = FontWeight.SemiBold) }
+                TextButton(onClick = { engine.cancel(r.id) }) { Text(stringResource(R.string.cancel), color = Danger) }
+            }
+        }
+    }
+    Spacer(Modifier.height(8.dp))
 }
