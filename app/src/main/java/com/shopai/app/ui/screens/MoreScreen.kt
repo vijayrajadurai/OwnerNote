@@ -54,6 +54,8 @@ fun MoreScreen(
         factory = MoreViewModel.Factory(
             container.authRepository,
             container.reminderAlarms,
+            container.kaiReminders,
+            container.kaiActionLog,
             container.capturedDocumentRepository,
             container.handwrittenNotesRepository,
         ),

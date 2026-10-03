@@ -14,6 +14,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        openReminderFrom(intent)
         val container = (application as ShopAiApplication).container
         setContent {
             val themeMode by container.preferencesRepository.themeFlow
@@ -22,5 +23,17 @@ class MainActivity : AppCompatActivity() {
                 ShopAiApp(container = container)
             }
         }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        openReminderFrom(intent)
+    }
+
+    /** A Kai reminder notification was tapped: open Kai Chat on it. */
+    private fun openReminderFrom(intent: android.content.Intent?) {
+        val id = intent?.getStringExtra(com.shopai.app.notifications.KaiReminderEngine.EXTRA_OPEN_REMINDER) ?: return
+        intent.removeExtra(com.shopai.app.notifications.KaiReminderEngine.EXTRA_OPEN_REMINDER)
+        com.shopai.app.notifications.KaiReminderInbox.open(id)
     }
 }

@@ -132,9 +132,10 @@ class HandwrittenTransactionParserTest {
         }
         // Both give and receive.
         assertEquals(UNKNOWN, parse("Ravi 500 give receive").transactions.single().direction)
-        // Already paid / received: not an open amount either way.
+        // "Paid" alone does not say who owes whom.
         assertEquals(UNKNOWN, parse("Ravi 500 paid").transactions.single().direction)
-        assertEquals(UNKNOWN, parse("Ravi 500 கொடுத்தேன்").transactions.single().direction)
+        // Money given (I gave) → they owe me: Credit (khata meaning).
+        assertEquals(CREDIT, parse("Ravi 500 கொடுத்தேன்").transactions.single().direction)
     }
 
     // Headings apply to the lines below them

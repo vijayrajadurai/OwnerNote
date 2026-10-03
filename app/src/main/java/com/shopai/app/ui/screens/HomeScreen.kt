@@ -395,6 +395,14 @@ fun HomeScreen(
                     }
                 }
 
+                // Every Credit / Debit (bills, notes, voice, manual) by due status, from the books.
+                com.shopai.app.ui.books.CreditDebitSummaryCard(
+                    container = container,
+                    refreshKey = cashFlow,
+                    onOpenCustomers = { onNavigate(Routes.Customers) },
+                    onOpenSuppliers = { onNavigate(Routes.Suppliers) },
+                )
+
                 /*
                 health?.let { h ->
                     HomeSectionHeader(title = stringResource(R.string.home_business_health))

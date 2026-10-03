@@ -15,6 +15,8 @@ object KaiLanguage {
         "eppo", "epdi", "eppadi", "sollu", "sollunga", "innaikku", "innaiku", "naalaikku", "nalaiku", "ayiram", "aayiram",
         "nooru", "moonu", "rendu", "naalu", "anju", "pathu", "vaaram", "baaki", "bakki", "motham", "mukkiyam", "vasool",
         "vandhuchu", "vanthuchu", "kaasu", "panam", "ennaku", "enakku", "naan", "avan", "aval", "ku", "kku", "ukku",
+        "pannu", "panna", "inniku", "innikku", "maniku", "manikku", "mani", "kalichu", "kalichi", "nyabagam", "kaalaila", "podu",
+        "eduthuka", "eduka", "mathiyam", "raathiri", "iravu", "saayangalam", "venum", "illa", "andha", "adha", "maathu", "mattum",
     )
 
     fun detect(text: String): KaiLang {
@@ -24,6 +26,17 @@ object KaiLanguage {
         val tanglish = words.any { it in tanglishWords } ||
             Regex("""[a-z]+-?(kitta|ukku|kku)\b""").containsMatchIn(text.lowercase(Locale.ROOT))
         return if (tanglish) KaiLang.TANGLISH else KaiLang.ENGLISH
+    }
+
+    /** Chat: English only when the owner clearly writes English; otherwise Kai's usual Tanglish (or Tamil). */
+    fun forChat(text: String): KaiLang {
+        val detected = detect(text)
+        if (detected != KaiLang.ENGLISH) return detected
+        val words = text.lowercase(Locale.ROOT).split(Regex("[^a-z]+")).toSet()
+        val english = setOf("what", "how", "who", "whom", "when", "which", "is", "are", "does", "do", "did", "the", "much", "owe", "owes",
+            "my", "me", "i", "today", "tomorrow", "show", "tell", "total", "pay", "paid", "will", "has", "have", "from", "this", "next", "last",
+            "remind", "gave", "received", "call", "stock", "low", "sales", "balance", "add", "scan", "every", "after", "minutes", "hour")
+        return if (words.any { it in english }) KaiLang.ENGLISH else KaiLang.TANGLISH
     }
 
     /** For entries without words (manual form, photos): Tamil app → Tamil, otherwise Tanglish. */

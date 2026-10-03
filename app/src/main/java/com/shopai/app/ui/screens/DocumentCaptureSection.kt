@@ -33,6 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -67,7 +68,8 @@ import com.shopai.app.ui.theme.ShopAiThemeColors
 import com.shopai.app.util.BillNotesFormatter
 import com.shopai.app.util.BillTextParser
 import com.shopai.app.util.DeviceTextRecognizer
-import com.shopai.app.util.OcrRecognitionResult
+import com.shopai.app.util.DocumentKind
+import com.shopai.app.util.ScanHandoff
 import com.shopai.app.util.formatLocalDateForDisplay
 import com.shopai.app.util.formatRupees
 import java.io.File
@@ -111,6 +113,7 @@ fun DocumentCaptureSection(
     onOpenHandwrittenNotes: () -> Unit,
     onScanNoteForBill: (billId: Long) -> Unit,
     onOpenNotePerson: (name: String) -> Unit,
+    onHandwrittenDetected: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -144,7 +147,7 @@ fun DocumentCaptureSection(
 
     // ---- Reading a photo ----
 
-    suspend fun fillBillFromText(text: String) {
+    suspend fun fillBillFromText(text: String, ocrConfidence: Int = -1) {
         val local = BillTextParser.parse(text)
         // Debug builds only: the OCR text and what was read from it, for checking real bills.
         if (com.shopai.app.BuildConfig.DEBUG) {
@@ -159,7 +162,11 @@ fun DocumentCaptureSection(
         } else {
             null
         }
-        bill.applyScan(local, server?.partyName, server?.amount)
+        // Who issued the bill decides Credit (I sold) or Debit (I bought), from my own details.
+        val me = container.books.session()?.let { s -> s.dao.business(s.ctx.businessId) }?.let { com.shopai.app.util.MyBusiness(it.name, it.gstin, it.phone) }
+            ?: runCatching { container.businessRepository.getMyBusiness() }.getOrNull()?.let { com.shopai.app.util.MyBusiness(it.businessName, null, it.phone) }
+            ?: com.shopai.app.util.MyBusiness(null, null, null)
+        bill.applyScan(local, server?.partyName, server?.amount, com.shopai.app.util.BillDirection.decide(text, local, me), ocrConfidence)
         // Kai: what he read on the bill, and whether the total needs a check.
         container.kaiBrain.announce(
             com.shopai.app.brain.KaiResponder.billRead(
@@ -171,27 +178,59 @@ fun DocumentCaptureSection(
         )
     }
 
-    fun runOcr(recognize: suspend () -> OcrRecognitionResult) {
+    val printedHandoffMessage = stringResource(R.string.scan_handoff_printed)
+
+    /**
+     * Reads a bill photo. A photo the printed-bill reader cannot make sense of
+     * (handwriting) goes to the handwriting reader instead — unless it was
+     * just sent here from there.
+     */
+    fun runOcr(uri: Uri, fromHandoff: Boolean = false) {
         scope.launch {
             processing = true
             error = null
             info = null
             runCatching {
-                val result = recognize()
-                if (!result.success || result.text.isBlank()) error = errorOcrEmpty else fillBillFromText(result.text)
+                val result = recognizer.recognizeFromUri(uri)
+                val handwritten = !fromHandoff && DocumentKind.looksHandwritten(
+                    result.text,
+                    result.meanConfidence,
+                    foundLabelledTotal = BillTextParser.parse(result.text).totalFromLabel,
+                )
+                val copy = if (handwritten) DocumentKind.handoffCopy(context, uri) else null
+                when {
+                    copy != null -> {
+                        ScanHandoff.sendToHandwritten(copy)
+                        onHandwrittenDetected()
+                    }
+                    !result.success || result.text.isBlank() -> error = errorOcrEmpty
+                    else -> {
+                        fillBillFromText(result.text, result.meanConfidence)
+                        if (fromHandoff) info = printedHandoffMessage
+                    }
+                }
             }.onFailure { error = errorOcrFailed }
             processing = false
         }
     }
 
+    // A printed bill photographed under "Handwritten note" arrives here.
+    val handedOver by ScanHandoff.pendingShopBill.collectAsState()
+    LaunchedEffect(handedOver) {
+        val uri = ScanHandoff.takeShopBill() ?: return@LaunchedEffect
+        mode = CaptureMode.SHOP_BILL
+        bill.reset()
+        runOcr(uri, fromHandoff = true)
+    }
+
     val galleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri != null) runOcr { recognizer.recognizeFromUri(uri) }
+        if (uri != null) runOcr(uri)
     }
     // Full-size photo into a fixed cache file (a preview thumbnail is too
     // small to read). Fixed path, so it survives the screen being recreated.
     val photoUri = remember { capturePhotoUri(context) }
     val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { taken ->
-        if (taken) runOcr { recognizer.recognizeFromUri(photoUri) }
+        if (taken) runOcr(photoUri)
     }
     val cameraPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) cameraLauncher.launch(photoUri) else error = errorCameraPermission
@@ -224,14 +263,15 @@ fun DocumentCaptureSection(
             val shop = bill.shopName.trim()
             val type = bill.type
             val description = billDescriptionFormat.format(shop.ifBlank { party }, formatLocalDateForDisplay(date))
+            val due = bill.dueDate?.let { com.shopai.app.util.localDateToIsoInstant(it) }
             val transactionId = runCatching {
                 when (type) {
                     TransactionSaveType.DEBIT -> container.transactionRepository.createDebit(
-                        CreateDebitInput(supplierName = party, amount = total.toDouble(), description = description),
+                        CreateDebitInput(supplierName = party, amount = total.toDouble(), description = description, dueDate = due),
                         source = com.shopai.app.books.model.TxnSource.OCR,
                     ).id
                     TransactionSaveType.CREDIT -> container.transactionRepository.createCredit(
-                        CreateCreditInput(customerName = party, amount = total.toDouble(), description = description),
+                        CreateCreditInput(customerName = party, amount = total.toDouble(), description = description, dueDate = due),
                         source = com.shopai.app.books.model.TxnSource.OCR,
                     ).id
                 }
@@ -292,7 +332,7 @@ fun DocumentCaptureSection(
                             name = party,
                             amount = pending,
                             direction = if (type == TransactionSaveType.DEBIT) com.shopai.app.brain.Direction.PAYABLE else com.shopai.app.brain.Direction.RECEIVABLE,
-                            dueDate = null,
+                            dueDate = bill.dueDate,
                             lang = lang,
                         )
                     } else {
@@ -324,8 +364,13 @@ fun DocumentCaptureSection(
     )
 
     documents.bills.firstOrNull { it.bill.id == selectedBillId }?.let { group ->
+        // Live status from the books: what has been paid / returned against it since, and the due date.
+        val status by androidx.compose.runtime.produceState<com.shopai.app.util.PaymentStatus?>(null, group.bill.ledgerTransactionId, documents) {
+            value = liveBillStatus(container, group.bill.ledgerTransactionId)
+        }
         BillDetailsCard(
             bill = group.bill,
+            status = status,
             notes = notesByBill[group.bill.id].orEmpty(),
             onAddNote = { onScanNoteForBill(group.bill.id) },
             onOpenNote = { onOpenNotePerson(it.personName) },
@@ -491,6 +536,7 @@ private fun SavedEntriesDropdown(
 @Composable
 private fun BillDetailsCard(
     bill: CapturedDocumentEntity,
+    status: com.shopai.app.util.PaymentStatus?,
     notes: List<NoteTransactionEntity>,
     onAddNote: () -> Unit,
     onOpenNote: (NoteTransactionEntity) -> Unit,
@@ -511,7 +557,8 @@ private fun BillDetailsCard(
             color = ShopAiThemeColors.onSurfaceVariant,
             modifier = Modifier.padding(top = 2.dp),
         )
-        bill.details?.takeIf { it.isNotBlank() }?.let {
+        // Paid / Partially paid / Upcoming / Overdue, as the books stand now.
+        status?.let { com.shopai.app.ui.components.PaymentStatusChip(it) } ?: bill.details?.takeIf { it.isNotBlank() }?.let {
             Text(it, color = ShopAiThemeColors.onSurface, modifier = Modifier.padding(top = 8.dp))
         }
 
@@ -577,4 +624,13 @@ private fun BillDetailsCard(
             TextButton(onClick = onClose) { Text(stringResource(R.string.capture_close)) }
         }
     }
+}
+
+/** A saved bill's status from the books (null before the one-time import or for old backend entries). */
+private suspend fun liveBillStatus(container: AppContainer, txnId: String?): com.shopai.app.util.PaymentStatus? {
+    val s = container.books.session() ?: return null
+    val txn = txnId?.let { s.dao.txn(it) }?.takeIf { it.status == "CONFIRMED" } ?: return null
+    val outstanding = s.ledger.outstanding(txn.id)
+    val total = java.math.BigDecimal.valueOf(txn.totalPaise, 2)
+    return com.shopai.app.util.PaymentStatus.of(total, total - java.math.BigDecimal.valueOf(outstanding, 2), txn.dueDate?.let { LocalDate.ofEpochDay(it.toLong()) })
 }

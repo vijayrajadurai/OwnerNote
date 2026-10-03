@@ -24,6 +24,7 @@ data class OpenDoc(
 data class PartyBalanceRow(val partyId: String, val balancePaise: Long)
 
 data class StockRow(val qtyMilli: Long, val valuePaise: Long)
+data class TopSoldRow(val productId: String, val name: String, val qtyMilli: Long, val valuePaise: Long)
 
 data class ProductStockRow(val productId: String, val qtyMilli: Long, val valuePaise: Long)
 
@@ -339,6 +340,17 @@ interface BooksDao {
            WHERE businessId = :businessId AND active = 1 GROUP BY productId""",
     )
     suspend fun allStock(businessId: String): List<ProductStockRow>
+
+    /** Products sold between two days (sales less sale returns), by taxable value, highest first. */
+    @Query(
+        """SELECT productId, MAX(itemName) AS name,
+                  SUM(CASE WHEN txnType = 'SALE' THEN baseQtyMilli ELSE -baseQtyMilli END) AS qtyMilli,
+                  SUM(CASE WHEN txnType = 'SALE' THEN taxablePaise ELSE -taxablePaise END) AS valuePaise
+           FROM txn_items WHERE businessId = :businessId AND active = 1 AND productId IS NOT NULL
+             AND txnType IN ('SALE', 'SALE_RETURN') AND date BETWEEN :from AND :to
+           GROUP BY productId HAVING valuePaise > 0 ORDER BY valuePaise DESC LIMIT :limit""",
+    )
+    suspend fun topSold(businessId: String, from: Int, to: Int, limit: Int): List<TopSoldRow>
 
     @Query(
         """SELECT COALESCE(SUM(-valuePaise), 0) FROM stock_movements
