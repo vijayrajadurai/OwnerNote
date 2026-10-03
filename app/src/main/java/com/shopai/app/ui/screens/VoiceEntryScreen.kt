@@ -171,13 +171,6 @@ fun VoiceEntryScreen(
             kai(KaiEvent.Cancel)
             return
         }
-        // A clear Morning Work request goes to Kai's Morning Work; everything else stays here as before.
-        com.shopai.app.brain.morning.MorningCommands.morningRequest(text)?.let { request ->
-            orbState = MicState.Idle
-            kai(KaiEvent.Cancel)
-            onOpenMorningWork(spoken, request == com.shopai.app.brain.morning.MorningCommand.Start)
-            return
-        }
         scope.launch {
             parsing = true
             orbState = MicState.Processing
@@ -187,7 +180,7 @@ fun VoiceEntryScreen(
             queryAnswer = null
             reminderNeedsChoice = false
             // One Kai for voice and text: the owner's own words (teaching / learned phrases) and every Kai action —
-            // reminders, stock in / out, the bill scanner, small talk — go to the same Kai conversation as Kai Chat.
+            // Morning Work, reminders, stock in / out, the bill scanner, small talk — go through Kai's one intent router.
             val products = runCatching { container.kaiTools.products() }.getOrNull().orEmpty()
             val intent = com.shopai.app.brain.tools.KaiIntents.classify(text, java.time.LocalDateTime.now(), emptyList(), products)
             if (usesShopLanguage(text) || com.shopai.app.brain.tools.KaiIntents.handledByKai(intent)) {
@@ -205,6 +198,12 @@ fun VoiceEntryScreen(
                         billCameraRequest++
                     }
                     is com.shopai.app.brain.chat.KaiAction.OpenStockCamera -> onOpenKaiChat()
+                    // "Morning work start pannu": Kai's MORNING_WORK answer opens the guided Morning Work (voice when spoken).
+                    is com.shopai.app.brain.chat.KaiAction.OpenMorningWork -> {
+                        val start = (container.kaiChat.takeDirect()?.second as? com.shopai.app.brain.chat.KaiAction.OpenMorningWork)?.start ?: true
+                        reminderNeedsChoice = false
+                        onOpenMorningWork(spoken, start)
+                    }
                     else -> Unit
                 }
                 answer?.let { a ->

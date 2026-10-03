@@ -73,6 +73,26 @@ sealed interface KaiAction {
     data class OpenStockCamera(val prefill: StockPrefill) : KaiAction
     /** The same form, typed (no photo). */
     data class CreateProduct(val prefill: StockPrefill) : KaiAction
+    // ---- Morning Work (read only; every action still asks the owner) ----
+    /** The Morning Work screen ([start] = go straight to the first task). */
+    data class OpenMorningWork(val start: Boolean) : KaiAction
+    /** Open a record screen: CUSTOMER / SUPPLIER / PRODUCT (with its id), INVENTORY or REMINDERS. */
+    data class OpenRecord(val kind: String, val id: String = "") : KaiAction
+    /** "Remind Me" on a morning task: Kai asks when (nothing is set without the owner's time). */
+    data class RemindAbout(val task: String) : KaiAction
+    /** Skip: the next morning task. */
+    data class MorningNext(val index: Int) : KaiAction
+    /** "Add Stock" on a low-stock task: Kai asks how many came in (a draft, confirmed by the owner). */
+    data class AddStockFor(val productId: String) : KaiAction
+}
+
+/**
+ * Kai's Morning Work: the signed-in business's morning brief, from the one
+ * MorningWorkEngine (the app reads the snapshot for the current login).
+ * Null: no business data could be read — Kai says so, never invents.
+ */
+fun interface KaiMorningAccess {
+    suspend fun brief(lang: KaiLang): com.shopai.app.brain.morning.MorningBrief?
 }
 
 /** What Kai already knows for a new product's form (everything stays editable). */
@@ -122,6 +142,8 @@ class KaiAgent(
     private val now: () -> LocalDateTime = { LocalDateTime.now() },
     /** The signed-in business's private language (null: none — global Kai only). */
     memory: KaiMemoryAccess? = null,
+    /** Morning Work (MORNING_WORK intent); null: not available here. */
+    private val morning: KaiMorningAccess? = null,
 ) {
     private data class StockPlan(val key: String, val product: com.shopai.app.brain.tools.ProductRef, val qty: BigDecimal, val incoming: Boolean, val said: String, val unit: String)
     /** "Colgate stock vandhiruku" with no number: Kai asked how many. */
@@ -132,6 +154,8 @@ class KaiAgent(
     /** The product just talked about ("Colgate stock low ah?" … "20 add pannu"). */
     private var lastProduct: com.shopai.app.brain.tools.ProductRef? = null
     private var stockQuestion: StockQuestion? = null
+    /** The last morning brief (Skip → its next task). */
+    private var lastBrief: com.shopai.app.brain.morning.MorningBrief? = null
     private data class PaymentRequest(val key: String, val name: String?, val amount: BigDecimal?, val outgoing: Boolean, val mode: PaymentMode, val said: String)
 
     private val plans = LinkedHashMap<String, ActionPlan>()
@@ -183,6 +207,11 @@ class KaiAgent(
                 if (amount != p.amount || name != p.name) return payment(p.copy(amount = amount, name = name), lang)
             }
         }
+
+        // MORNING_WORK is a core intent: chat, voice and a scheduled morning brief all use the one MorningWorkEngine.
+        // An explicit reminder ("tomorrow morning remind me …", "morning 10 manikku … remind pannu") stays a reminder.
+        val morningAsk = com.shopai.app.brain.morning.MorningCommands.morningRequest(said) ?: com.shopai.app.brain.morning.MorningCommands.morningRequest(text)
+        if (morningAsk != null && !com.shopai.app.brain.tools.KaiReminderUnderstanding.mentionsReminder(text)) return morningWork(morningAsk, text, said, lang, people)
 
         // Priority: reminder → stock in → stock out → bill scanner → call → money → questions → calculator → conversation → learn.
         com.shopai.app.brain.tools.KaiReminderUnderstanding.understand(text, at, people)?.let { return reminders.handle(it, lang) }
@@ -247,29 +276,30 @@ class KaiAgent(
         }
         val product = req.product ?: return unknownProduct(req, said, lang, products)
         lastProduct = product
-        val qty = req.qty
-        if (qty == null) {
-            // "Colgate stock vandhiruku add pannu": how many? (the camera can count / fill it too).
-            stockQuestion = StockQuestion(product, req.incoming, said)
-            tools.log(if (req.incoming) com.shopai.app.brain.tools.KaiIntents.STOCK_IN else com.shopai.app.brain.tools.KaiIntents.STOCK_OUT, "kai", "${product.name}: quantity asked", ActionStatus.ANSWERED, null, said)
-            val unit = com.shopai.app.brain.tools.KaiStock.unitWord(product.unit)
-            return KaiTurn(
-                ChatReply(if (req.incoming) pick(lang,
-                    ta = "சரி ஓனர் 👍 ${product.name} stock சேர்க்கலாம்.\nஎத்தனை $unit வந்திருக்கு?",
-                    tl = "Seri Owner 👍 ${product.name} stock add pannalam.\nEvlo $unit vandhirukku?",
-                    en = "Sure Owner 👍 Let's add ${product.name} stock.\nHow many $unit came in?")
-                else pick(lang,
-                    ta = "சரி ஓனர் — ${product.name} எத்தனை போச்சு?",
-                    tl = "Seri Owner — ${product.name} evlo pochu?",
-                    en = "Sure Owner — how many ${product.name} went out?"), KaiMood.CLARIFY, ChatIntent.GENERAL_BUSINESS_QUERY),
-                KaiCard(listOf(pick(lang, ta = "இப்போ ஸ்டாக்: ", tl = "Ippo stock: ", en = "Stock now: ") + com.shopai.app.brain.tools.KaiStock.shown(product.stock, product.unit)), listOfNotNull(
-                    if (req.incoming) KaiButton(pick(lang, ta = "📷 கேமரா", tl = "📷 Camera", en = "📷 Camera"),
-                        KaiAction.OpenStockCamera(StockPrefill(product.name, null, product.unit, said))) else null,
-                    KaiButton(cancelLabel(lang), KaiAction.CancelStock("ask")),
-                )),
-            )
-        }
+        val qty = req.qty ?: return askQuantity(product, req.incoming, said, lang)
         return stockDraft(product, qty, req.unit ?: product.unit, req.incoming, said, lang)
+    }
+
+    /** "Colgate stock vandhiruku add pannu": how many? (the camera can count / fill it too). */
+    private fun askQuantity(product: com.shopai.app.brain.tools.ProductRef, incoming: Boolean, said: String, lang: KaiLang): KaiTurn {
+        stockQuestion = StockQuestion(product, incoming, said)
+        tools.log(if (incoming) com.shopai.app.brain.tools.KaiIntents.STOCK_IN else com.shopai.app.brain.tools.KaiIntents.STOCK_OUT, "kai", "${product.name}: quantity asked", ActionStatus.ANSWERED, null, said)
+        val unit = com.shopai.app.brain.tools.KaiStock.unitWord(product.unit)
+        return KaiTurn(
+            ChatReply(if (incoming) pick(lang,
+                ta = "சரி ஓனர் 👍 ${product.name} stock சேர்க்கலாம்.\nஎத்தனை $unit வந்திருக்கு?",
+                tl = "Seri Owner 👍 ${product.name} stock add pannalam.\nEvlo $unit vandhirukku?",
+                en = "Sure Owner 👍 Let's add ${product.name} stock.\nHow many $unit came in?")
+            else pick(lang,
+                ta = "சரி ஓனர் — ${product.name} எத்தனை போச்சு?",
+                tl = "Seri Owner — ${product.name} evlo pochu?",
+                en = "Sure Owner — how many ${product.name} went out?"), KaiMood.CLARIFY, ChatIntent.GENERAL_BUSINESS_QUERY),
+            KaiCard(listOf(pick(lang, ta = "இப்போ ஸ்டாக்: ", tl = "Ippo stock: ", en = "Stock now: ") + com.shopai.app.brain.tools.KaiStock.shown(product.stock, product.unit)), listOfNotNull(
+                if (incoming) KaiButton(pick(lang, ta = "📷 கேமரா", tl = "📷 Camera", en = "📷 Camera"),
+                    KaiAction.OpenStockCamera(StockPrefill(product.name, null, product.unit, said))) else null,
+                KaiButton(cancelLabel(lang), KaiAction.CancelStock("ask")),
+            )),
+        )
     }
 
     private fun namesPerson(text: String, spoken: String, people: List<String>): Boolean {
@@ -454,6 +484,87 @@ class KaiAgent(
         }
     }
 
+    // ------------------------------------------------------------ Morning Work (MORNING_WORK)
+
+    /**
+     * The morning brief from the one MorningWorkEngine, over the current
+     * business's records. Read only: it never records a payment, sale,
+     * purchase or stock change — every follow-up still asks the owner.
+     */
+    private suspend fun morningWork(ask: com.shopai.app.brain.morning.MorningCommand, text: String, said: String, lang: KaiLang, people: List<String>): KaiTurn {
+        val brief = morning?.let { m -> runCatching { m.brief(lang) }.getOrNull() }
+        if (brief == null) {
+            tools.log(com.shopai.app.brain.tools.KaiIntents.MORNING_WORK, "morning work engine", "records unavailable", ActionStatus.FAILED, null, said)
+            return say(lang, KaiMood.CONCERNED, null,
+                ta = "இதை உங்க கணக்கு பதிவுல சரிபார்க்க முடியல ஓனர்.",
+                tl = "Owner, idha unga business records-la verify panna mudiyala.",
+                en = "I couldn't verify that from your business records.")
+        }
+        lastBrief = brief
+        tools.log(com.shopai.app.brain.tools.KaiIntents.MORNING_WORK, "morning work engine", "${brief.openCount} open tasks", ActionStatus.ANSWERED, null, said)
+        // "Morning work ready panni Kumar-ku call pannu": the brief plus the call the owner asked for — a button, Kai never dials by itself.
+        val callName = if (Regex("""(?i)(?<![\p{L}])(call|phone)(?![\p{L}])""").containsMatchIn(text)) KaiCommands.personIn(text, people) else null
+        val callButton = callName?.let { name ->
+            val p = runCatching { tools.parties(name) }.getOrNull()?.firstOrNull { it.name.equals(name, true) } ?: runCatching { tools.parties(name) }.getOrNull()?.firstOrNull()
+            KaiButton(pick(lang, ta = "${p?.name ?: name}-க்கு call", tl = "Call ${p?.name ?: name}", en = "Call ${p?.name ?: name}"), KaiAction.Dial(p?.name ?: name, p?.phone), primary = true)
+        }
+        val follow = morningFollowUp(brief, 0, lang)
+        val start = KaiButton(pick(lang, ta = "காலை வேலை ஆரம்பி", tl = "Start Morning Work", en = "Start Morning Work"), KaiAction.OpenMorningWork(start = true))
+        return KaiTurn(
+            ChatReply(brief.text, if (brief.empty) KaiMood.HAPPY else KaiMood.EXPLAINING, ChatIntent.GENERAL_BUSINESS_QUERY),
+            KaiCard(follow?.lines.orEmpty(), listOfNotNull(callButton) + follow?.buttons.orEmpty() + if (brief.empty) emptyList() else listOf(start)),
+            // "Morning work start pannu": straight into the guided Morning Work.
+            direct = if (ask == com.shopai.app.brain.morning.MorningCommand.Start && !brief.empty) KaiAction.OpenMorningWork(start = true) else null,
+        )
+    }
+
+    /** "Owner, first Kumar collection follow-up pannalama?" [View Kumar] [Remind Me] [Call Kumar] [Skip] — nothing happens without a tap. */
+    private fun morningFollowUp(brief: com.shopai.app.brain.morning.MorningBrief, index: Int, lang: KaiLang): KaiCard? {
+        val t = brief.queue.getOrNull(index) ?: return null
+        val what = com.shopai.app.brain.morning.MorningBriefs.firstText(t, lang)
+        val question = if (index == 0) pick(lang, ta = "ஓனர், முதல்ல $what பண்ணலாமா?", tl = "Owner, first $what pannalama?", en = "Owner, shall we start with: $what?")
+        else pick(lang, ta = "அடுத்து: $what பண்ணலாமா?", tl = "Adutha: $what pannalama?", en = "Next: $what?")
+        val skip = KaiButton(pick(lang, ta = "அடுத்து", tl = "Skip", en = "Skip"), KaiAction.MorningNext(index + 1))
+        val remind = KaiButton(pick(lang, ta = "நினைவூட்டு", tl = "Remind Me", en = "Remind Me"), KaiAction.RemindAbout(remindText(t)))
+        val name = t.title
+        val buttons = when (t.taskType) {
+            com.shopai.app.brain.morning.MorningTaskType.COLLECT_PAYMENT, com.shopai.app.brain.morning.MorningTaskType.PAYMENT_FOLLOWUP,
+            com.shopai.app.brain.morning.MorningTaskType.SUPPLIER_PAYMENT -> {
+                val kind = if (t.taskType == com.shopai.app.brain.morning.MorningTaskType.SUPPLIER_PAYMENT) "SUPPLIER" else "CUSTOMER"
+                listOf(
+                    KaiButton(pick(lang, ta = "$name பார்", tl = "View $name", en = "View $name"), KaiAction.OpenRecord(kind, t.sourceId), primary = true),
+                    remind,
+                    KaiButton(pick(lang, ta = "$name-க்கு call", tl = "Call $name", en = "Call $name"), KaiAction.Dial(name, t.phone)),
+                    skip,
+                )
+            }
+            com.shopai.app.brain.morning.MorningTaskType.LOW_STOCK -> listOf(
+                KaiButton(pick(lang, ta = "ஸ்டாக் பார்", tl = "View Stock", en = "View Stock"), KaiAction.OpenRecord("PRODUCT", t.sourceId), primary = true),
+                KaiButton(pick(lang, ta = "ஸ்டாக் சேர்", tl = "Add Stock", en = "Add Stock"), KaiAction.AddStockFor(t.sourceId)),
+                remind,
+                skip,
+            )
+            com.shopai.app.brain.morning.MorningTaskType.EXPIRY -> listOf(
+                KaiButton(pick(lang, ta = "ஸ்டாக் பார்", tl = "View Stock", en = "View Stock"), KaiAction.OpenRecord("INVENTORY"), primary = true), remind, skip,
+            )
+            com.shopai.app.brain.morning.MorningTaskType.REMINDER -> listOf(
+                KaiButton(pick(lang, ta = "திற", tl = "Open", en = "Open"), KaiAction.OpenRecord("REMINDERS"), primary = true), skip,
+            )
+            com.shopai.app.brain.morning.MorningTaskType.PENDING_DRAFT -> listOf(
+                KaiButton(pick(lang, ta = "திற", tl = "Open", en = "Open"), KaiAction.OpenMorningWork(start = false), primary = true), skip,
+            )
+        }
+        return KaiCard(listOf(question), buttons)
+    }
+
+    private fun remindText(t: com.shopai.app.brain.morning.MorningTask): String = when (t.taskType) {
+        com.shopai.app.brain.morning.MorningTaskType.COLLECT_PAYMENT, com.shopai.app.brain.morning.MorningTaskType.PAYMENT_FOLLOWUP -> "${t.title}-ku collection follow-up"
+        com.shopai.app.brain.morning.MorningTaskType.SUPPLIER_PAYMENT -> "${t.title}-ku payment"
+        com.shopai.app.brain.morning.MorningTaskType.LOW_STOCK -> "${t.title} stock order"
+        com.shopai.app.brain.morning.MorningTaskType.EXPIRY -> "${t.title} expiry check"
+        else -> t.title
+    }
+
     /** A button was tapped. */
     suspend fun act(action: KaiAction, lang: KaiLang): KaiTurn? = when (action) {
         is KaiAction.LearnMeaning, is KaiAction.LearnEntity, is KaiAction.NotThis, is KaiAction.OnlyNow, is KaiAction.LearnAlias, is KaiAction.LearnWord ->
@@ -463,6 +574,21 @@ class KaiAgent(
                 null -> null
             }
         is KaiAction.ConfirmStock -> confirmStock(action.key, lang)
+        is KaiAction.MorningNext -> {
+            val b = lastBrief
+            val card = b?.let { morningFollowUp(it, action.index, lang) }
+            if (card == null) say(lang, KaiMood.HAPPY, null,
+                ta = "இன்னைக்கு list முடிஞ்சது ஓனர் 👍", tl = "Innaiku list mudinjiduchu Owner 👍", en = "That's today's list, Owner 👍")
+            else KaiTurn(ChatReply(card.lines.first(), KaiMood.EXPLAINING, ChatIntent.GENERAL_BUSINESS_QUERY), KaiCard(emptyList(), card.buttons))
+        }
+        // Only after the owner tapped "Remind Me": the reminder flow asks when (nothing is set by itself).
+        is KaiAction.RemindAbout -> {
+            val people = runCatching { books.snapshot()?.people.orEmpty() }.getOrDefault(emptyList())
+            reminders.handle(com.shopai.app.brain.tools.ReminderRequest.Create(com.shopai.app.brain.tools.KaiReminderUnderstanding.draft(action.task, null, people)), lang)
+        }
+        is KaiAction.AddStockFor -> runCatching { tools.products() }.getOrNull()?.firstOrNull { it.id == action.productId }
+            ?.let { askQuantity(it, incoming = true, said = "morning work: add stock", lang = lang) }
+            ?: unverified(lang, "add stock")
         is KaiAction.CancelStock -> {
             stockPlans.remove(action.key)?.let { tools.log(if (it.incoming) com.shopai.app.brain.tools.KaiIntents.STOCK_IN else com.shopai.app.brain.tools.KaiIntents.STOCK_OUT, "draft", "cancelled", ActionStatus.CANCELLED, null, it.said) }
             stockQuestion = null
@@ -502,6 +628,7 @@ class KaiAgent(
         brain.reset()
         stockPlans.clear()
         stockQuestion = null
+        lastBrief = null
         lastProduct = null
         learner?.reset()
     }

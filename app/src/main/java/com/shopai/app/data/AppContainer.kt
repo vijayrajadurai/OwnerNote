@@ -160,20 +160,27 @@ class AppContainer(context: Context) {
     /** Kai Chat conversation for this app session — KAI's agent over his Business Brain and tools (no paid AI). */
     val kaiChat by lazy {
         com.shopai.app.ui.kaichat.KaiChatSession(
-            com.shopai.app.brain.chat.KaiAgent(com.shopai.app.brain.chat.KaiBusinessBrain(kaiBooks), kaiBooks, kaiTools, memory = kaiMemoryAccess),
-            morningWork = { text ->
-                // Typed in Kai Chat → Morning Work answers in text (the same engine as voice).
-                morningSources.snapshot()?.let { snap ->
-                    morningWork.role = morningSources.role()
-                    val first = !morningWork.state.started
-                    morningWork.prepare(
-                        snap,
-                        mode = if (first) com.shopai.app.brain.morning.ResponseMode.TEXT else null,
-                        lang = com.shopai.app.brain.morning.MorningCommands.language(text),
-                    ).line.display
-                }
-            },
+            com.shopai.app.brain.chat.KaiAgent(
+                com.shopai.app.brain.chat.KaiBusinessBrain(kaiBooks), kaiBooks, kaiTools,
+                memory = kaiMemoryAccess,
+                morning = kaiMorning,
+            ),
         )
+    }
+
+    /**
+     * Kai's MORNING_WORK intent: the brief from the one Morning Work engine over
+     * the signed-in business's snapshot (books session / backend login — never an
+     * id from the caller). A future scheduled morning notification calls
+     * [morningWork].generate(snapshot, lang, MorningTrigger.SCHEDULED) the same way.
+     */
+    val kaiMorning by lazy {
+        com.shopai.app.brain.chat.KaiMorningAccess { lang ->
+            morningSources.snapshot()?.let { snap ->
+                morningWork.role = morningSources.role()
+                morningWork.generate(snap, lang)
+            }
+        }
     }
 
     private fun ensureTrailingSlash(url: String): String =

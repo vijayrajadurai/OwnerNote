@@ -109,6 +109,9 @@ object KaiReminderUnderstanding {
     )
     private val listWords = Regex("""$B(list|show|enna|ennenna|what|pending|today'?s|innaiku|innikku|inniku|sollu|iruku|irukku|irukka|my|en|ella|all)$E|என்ன""", RegexOption.IGNORE_CASE)
 
+    /** The owner explicitly asked for a reminder ("remind pannu", "reminder", "nyabagam paduthu", Tamil script too). */
+    fun mentionsReminder(raw: String): Boolean = remindWords.containsMatchIn(KaiSpokenWords.normalize(raw))
+
     fun understand(raw: String, now: LocalDateTime, people: List<String>): ReminderRequest? {
         // Spoken Tamil script ("2 நிமிஷத்துல … ரிமைண்டர் பண்ணு") reads the same as typed Tanglish.
         val text = KaiSpokenWords.normalize(raw.trim()).replace(Regex("""\s+"""), " ")

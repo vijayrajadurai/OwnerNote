@@ -621,6 +621,15 @@ fun ShopAiApp(container: AppContainer) {
                 // "Bill scan pannu": the existing Shop bill scanner with its camera opened at once (OCR → draft → review → confirm).
                 onOpenScanner = { navController.navigate(Routes.VoiceEntryScan) },
                 onOpenMorningWork = { start -> navController.navigate(Routes.morningWork(voice = false, start = start)) },
+                onOpenRecord = { kind, id ->
+                    when (kind) {
+                        "CUSTOMER" -> if (id.isNotBlank()) navController.navigate(Routes.customerDetail(id))
+                        "SUPPLIER" -> if (id.isNotBlank()) navController.navigate(Routes.supplierDetail(id))
+                        "PRODUCT" -> navController.navigate(if (id.isNotBlank()) Routes.productDetail(id) else Routes.Inventory)
+                        "INVENTORY" -> navController.navigate(Routes.Inventory)
+                        "REMINDERS" -> navController.navigate(Routes.Reminders)
+                    }
+                },
             )
         }
         composable(

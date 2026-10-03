@@ -67,3 +67,36 @@ it changes only on "Type-la sollu" / "Text-la reply" / "Voice-la sollu" /
 
 `app/src/test/java/com/shopai/app/brain/morning/MorningWorkEngineTest.kt`
 (pure JVM, no Android).
+
+## Morning Work in Kai's core brain (MORNING_WORK intent)
+
+Morning Work is no longer a Kai Chat shortcut. Every entry point goes through
+Kai's one intent router and the one `MorningWorkEngine`:
+
+```
+Typed text ─┐
+Voice (STT) ┴→ KaiSpokenWords.normalize → KaiAgent.ask / KaiIntents.classify
+              → MORNING_WORK (unless the owner explicitly asked for a reminder)
+              → KaiMorningAccess (AppContainer.kaiMorning)
+              → MorningWorkSources.snapshot()   ← signed-in business only (books session / login)
+              → MorningWorkEngine.generate(snapshot, lang, MANUAL)
+                   = prepare() (same task list as the Morning Work screen) + MorningBriefs.build()
+              → Kai reply (text; spoken too when the owner spoke) + follow-up card
+
+Scheduler (future) → MorningWorkSources.snapshot() → MorningWorkEngine.generate(…, SCHEDULED)
+                   → MorningBriefs.notification(brief) → notification
+```
+
+- Detection: `MorningCommands.morningRequest` (the only detector), used by the
+  router; "remind / reminder / nyabagam" always wins → CREATE_REMINDER.
+- Brief: sections Collections → Payments → Stock → Expiry → Reminders → Drafts,
+  at most 3 lines each, ordered by `MorningAnalyzer.sort` (fixed priority rules);
+  empty sections are not shown; "First priority" = the top task.
+- Follow-up card: "Owner, first Kumar collection follow-up pannalama?"
+  [View Kumar] [Remind Me] [Call Kumar] [Skip] [Start Morning Work]. View opens
+  the record, Call opens the dialer, Remind Me asks the time, Add Stock asks the
+  quantity — nothing is written without the owner.
+- Read only: no payment, sale, purchase, stock change or reminder is created by
+  Morning Work itself. Balances come from the ledger, stock from stock
+  movements, reminders from the reminder engine (via the snapshot).
+- Tests: `app/src/test/java/com/shopai/app/brain/chat/KaiMorningWorkIntentTest.kt`.

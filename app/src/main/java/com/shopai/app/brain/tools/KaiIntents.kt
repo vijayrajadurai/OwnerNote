@@ -53,6 +53,7 @@ object KaiIntents {
     const val CALL_CONTACT = "CALL_CONTACT"
     const val LEARN_SLANG = "LEARN_SLANG"
     const val SMALL_TALK = "SMALL_TALK"
+    const val MORNING_WORK = "MORNING_WORK"
 
     /** "bill scan pannu", "bill ah scan pannu", "indha bill add pannu", "purchase bill scan pannu", "bill photo edu", "bill camera open pannu". */
     private val billWords = Regex("""(?i)(?<![\p{L}])(bill|bills|invoice|receipt)(?![\p{L}])|பில்|ரசீது""")
@@ -75,7 +76,9 @@ object KaiIntents {
             com.shopai.app.brain.memory.KaiTeaching.parse(text, emptyList()) != null ||
             com.shopai.app.brain.memory.KaiTeaching.wordTeach(text, emptyList()) != null
         ) return KaiIntentKind.LEARN_SLANG
-        if (com.shopai.app.brain.morning.MorningCommands.morningRequest(text) != null) return KaiIntentKind.MORNING_WORK
+        // Morning Work — unless the owner explicitly asked for a reminder ("tomorrow morning remind me to call Kumar").
+        val morning = com.shopai.app.brain.morning.MorningCommands.morningRequest(raw) ?: com.shopai.app.brain.morning.MorningCommands.morningRequest(text)
+        if (morning != null && !KaiReminderUnderstanding.mentionsReminder(text)) return KaiIntentKind.MORNING_WORK
         KaiReminderUnderstanding.understand(text, now, people)?.let { return reminderKind(it) }
         if (KaiStock.scanRequest(text, products) != null) return KaiIntentKind.SCAN_STOCK
         KaiStock.understand(text, products)?.let { req ->
@@ -117,5 +120,6 @@ object KaiIntents {
     fun handledByKai(kind: KaiIntentKind) = kind in setOf(
         KaiIntentKind.CREATE_REMINDER, KaiIntentKind.LIST_REMINDERS, KaiIntentKind.CANCEL_REMINDER, KaiIntentKind.UPDATE_REMINDER,
         KaiIntentKind.STOCK_IN, KaiIntentKind.STOCK_OUT, KaiIntentKind.SCAN_STOCK, KaiIntentKind.SCAN_BILL, KaiIntentKind.CHAT, KaiIntentKind.LEARN_SLANG,
+        KaiIntentKind.MORNING_WORK,
     )
 }

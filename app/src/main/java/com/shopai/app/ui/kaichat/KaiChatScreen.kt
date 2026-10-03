@@ -75,6 +75,8 @@ fun KaiChatScreen(
     onBack: () -> Unit,
     onOpenScanner: () -> Unit = {},
     onOpenMorningWork: (start: Boolean) -> Unit = {},
+    /** A record from Kai's Morning Work card: CUSTOMER / SUPPLIER / PRODUCT (with id), INVENTORY, REMINDERS. */
+    onOpenRecord: (kind: String, id: String) -> Unit = { _, _ -> },
 ) {
     val session = container.kaiChat
     val scope = rememberCoroutineScope()
@@ -111,6 +113,9 @@ fun KaiChatScreen(
             // STOCK_IN_CAMERA: straight to the camera; the photo fills the form the owner checks.
             is com.shopai.app.brain.chat.KaiAction.OpenStockCamera -> capture = Triple(messageId, action.prefill, true)
             is com.shopai.app.brain.chat.KaiAction.CreateProduct -> capture = Triple(messageId, action.prefill, false)
+            // Morning Work (from Kai's MORNING_WORK answer): the guided screen, or the record behind a task.
+            is com.shopai.app.brain.chat.KaiAction.OpenMorningWork -> onOpenMorningWork(action.start)
+            is com.shopai.app.brain.chat.KaiAction.OpenRecord -> onOpenRecord(action.kind, action.id)
             else -> Unit
         }
     }
@@ -286,13 +291,6 @@ fun KaiChatScreen(
                     if (m.fromOwner) OwnerBubble(if (m.voice) "🎙 ${m.text}" else m.text) else {
                         KaiBubble(m.text)
                         m.card?.let { card -> KaiCardView(card, closed = m.cardClosed || session.thinking) { tap(m.id, it) } }
-                        // Morning Work hand-over: "Start My Morning".
-                        m.action?.let { action ->
-                            AssistChip(
-                                onClick = { onOpenMorningWork(action == KaiChatAction.START_MORNING_WORK) },
-                                label = { Text(stringResource(R.string.morning_start), fontWeight = FontWeight.Bold, color = Primary) },
-                            )
-                        }
                     }
                 }
                 if (session.thinking) item { KaiBubble("…") }

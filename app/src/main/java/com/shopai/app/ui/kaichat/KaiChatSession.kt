@@ -28,13 +28,9 @@ data class KaiChatMessage(
     /** The card's buttons were used (confirmed / cancelled / chosen): shown, no longer tappable. */
     val cardClosed: Boolean = false,
     val lang: KaiLang = KaiLang.TANGLISH,
-    /** A button under Kai's reply (Morning Work hand-over). */
-    val action: KaiChatAction? = null,
     /** The owner spoke this (speech-to-text): shown with 🎙, and Kai's answer is spoken too. */
     val voice: Boolean = false,
 )
-
-enum class KaiChatAction { OPEN_MORNING_WORK, START_MORNING_WORK }
 
 /**
  * The Kai Chat conversation, kept for the app session (leaving the screen
@@ -43,8 +39,6 @@ enum class KaiChatAction { OPEN_MORNING_WORK, START_MORNING_WORK }
  */
 class KaiChatSession(
     private val agent: KaiAgent,
-    /** Kai's Morning Work greeting for a clear morning-work request (null = not available). */
-    private val morningWork: suspend (String) -> String? = { null },
 ) {
     val messages = mutableStateListOf<KaiChatMessage>()
     var thinking by mutableStateOf(false)
@@ -74,23 +68,7 @@ class KaiChatSession(
         if (question.isEmpty() || thinking) return
         messages += KaiChatMessage(nextId++, fromOwner = true, text = question, voice = voice)
         val lang = KaiLanguage.forChat(question)
-        // "Kai, morning work ready pannu": Kai answers with today's work and offers Start My Morning.
-        val morning = com.shopai.app.brain.morning.MorningCommands.morningRequest(question)
-        if (morning != null) {
-            thinking = true
-            val started = System.currentTimeMillis()
-            val greeting = runCatching { morningWork(question) }.getOrNull()
-            if (greeting != null) {
-                kotlinx.coroutines.delay((650 - (System.currentTimeMillis() - started)).coerceAtLeast(0))
-                val action = if (morning == com.shopai.app.brain.morning.MorningCommand.Start) KaiChatAction.START_MORNING_WORK else KaiChatAction.OPEN_MORNING_WORK
-                messages += KaiChatMessage(nextId++, fromOwner = false, text = greeting, mood = KaiMood.EXPLAINING, lang = lang, action = action)
-                lastMood = KaiMood.EXPLAINING
-                lastReplyAt = System.currentTimeMillis()
-                thinking = false
-                return
-            }
-            thinking = false
-        }
+        // Everything — Morning Work included — goes through Kai's one intent router (KaiAgent).
         respond(lang) { agent.ask(question) }
     }
 
@@ -104,7 +82,7 @@ class KaiChatSession(
         val lang = messages[index].lang
         return when (action) {
             is KaiAction.Dial, KaiAction.OpenScanner, KaiAction.OpenAlarmSettings, KaiAction.OpenNotificationSettings, is KaiAction.EditPlan,
-            is KaiAction.EditStock, is KaiAction.OpenStockCamera, is KaiAction.CreateProduct -> action
+            is KaiAction.EditStock, is KaiAction.OpenStockCamera, is KaiAction.CreateProduct, is KaiAction.OpenMorningWork, is KaiAction.OpenRecord -> action
             else -> {
                 close(index)
                 respond(lang) { agent.act(action, lang) ?: KaiTurn(ChatReply("…", KaiMood.NEUTRAL, ChatIntent.UNKNOWN)) }

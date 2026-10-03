@@ -211,6 +211,20 @@ class MorningWorkEngine(
         MorningReply(lines.fold(MorningLine.EMPTY) { a, b -> a + b }, _state.mode, effects)
     }
 
+    /**
+     * The morning brief — the ONE way Kai (chat and voice, through Kai's intent
+     * router) and a future scheduled morning notification get Morning Work. It
+     * is the same read-only refresh as the Morning Work screen ([prepare]), so
+     * every entry point shows the same tasks from the same records.
+     */
+    suspend fun generate(snap: MorningSnapshot, lang: KaiLang, trigger: MorningTrigger = MorningTrigger.MANUAL): MorningBrief {
+        prepare(snap, lang = lang, greet = false)
+        val now = clock()
+        val plan = lock.withLock { _state.plan }?.takeIf { it.businessId == snap.businessId }
+            ?: MorningPlan(snap.businessId, now.toLocalDate().toEpochDay(), emptyList(), snap.offline, snap.syncedAtMillis, 0)
+        return MorningBriefs.build(plan, now, lang, trigger)
+    }
+
     // ------------------------------------------------------------- input
 
     /** Typed or spoken words (speech-to-text gives text) — the same path for both. */

@@ -117,19 +117,25 @@ object MorningCommands {
      */
     fun morningRequest(text: String): MorningCommand? {
         val l = " " + normalize(text) + " "
+        // An explicit reminder ("tomorrow morning remind me to …", "morning 10 manikku … remind pannu") is never Morning Work.
+        if (listOf("remind", "reminder", "nyabagam", "நினைவூட்டு", "ஞாபகப்படுத்து", "ரிமைண்டர்").any { l.contains(it) }) return null
         val morning = listOf(
             "morning work", "morning task", "morning-work", "my morning", "காலை வேலை", "kaalai work", "kaalai velai", "kalai work", "kaalai vela",
-            "morning brief", "morning report", "morning summary", "kaalai brief",
+            "morning brief", "morning report", "morning summary", "kaalai brief", "business brief", "daily brief", "today brief", "today's brief",
+            "todays brief", "காலை சுருக்கம்", "today's work", "todays work",
             // "shop open panna munadi enna seiyanum?" — the work before opening.
-            "open panna munadi", "open panna munnadi", "open pannum munnadi", "open pannum munadi", "before opening",
+            "open panna munadi", "open panna munnadi", "open pannum munnadi", "open pannum munadi", "before opening", "திறப்பதற்கு முன்", "திறக்கும் முன்",
         ).any { l.contains(it) }
-        val today = listOf(" innaiku ", " innaikku ", " inniku ", " today ", " today's ", " todays ", " இன்னைக்கு ", " இன்று ").any { l.contains(it) }
-        val work = listOf(
-            " work ", " task", " important", " vendiyathu", " vendiyadhu", " velai ", " vela ", " வேலை ",
-        ).any { l.contains(it) } ||
-            // "today enna panna vendum?" — a question about today's work (never a reminder sentence).
-            (l.contains(" enna ") && !l.contains("remind") && listOf(" panna vendum", " seiyya vendum", " seiyanum", " pannanum ").any { l.contains(it) })
-        if (!morning && !(today && work)) return null
+        val today = listOf(" innaiku ", " innaikku ", " inniku ", " today ", " today's ", " todays ", " இன்னைக்கு ", " இன்று ", " indru ").any { l.contains(it) }
+        val dayStart = listOf(" morning ", " kaalai ", " kaalaila ", " kalaila ", " kaalaiyil ", " காலை ", " காலையில ", " காலையில் ").any { l.contains(it) }
+        val work = listOf(" work ", " task", " important", " vendiyathu", " vendiyadhu", " velai ", " vela ", " வேலை ", " முக்கியம்").any { l.contains(it) }
+        val asks = listOf(" enna ", " what ", " என்ன ").any { l.contains(it) }
+        val todo = listOf(
+            " panna vendum", " seiyya vendum", " seiyanum", " pannanum ", " should i do", " do i need to do", " need to do", " to do ",
+            " check pannanum", " work iruku", " work irukku", " velai iruku", " velai irukku", " important", " முக்கியம்", " செய்ய வேண்டும்", " செய்யணும்",
+        ).any { l.contains(it) }
+        val asked = morning || (today && work) || ((today || dayStart) && asks && todo)
+        if (!asked) return null
         val start = listOf(" start ", "aarambi", "ஆரம்பி", "தொடங்கு", "let's start", "lets start").any { l.contains(it) }
         return if (start) MorningCommand.Start else MorningCommand.Open
     }
