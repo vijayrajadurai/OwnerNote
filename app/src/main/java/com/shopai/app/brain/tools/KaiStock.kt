@@ -4,7 +4,15 @@ import java.math.BigDecimal
 import java.util.Locale
 
 /** A product of the business (for stock in / out). */
-data class ProductRef(val id: String, val name: String, val unit: String, val stock: BigDecimal)
+data class ProductRef(
+    val id: String,
+    val name: String,
+    /** The unit stock is kept in (the product's primary / base unit). */
+    val unit: String,
+    val stock: BigDecimal,
+    /** This product's own conversions: unit → base units in 1 (e.g. BOX → 12 for 1 box = 12 pieces). */
+    val conversions: Map<String, BigDecimal> = emptyMap(),
+)
 
 /**
  * "Colgate 20 stock in pannu" → what to change. [product] null = the name was
@@ -17,6 +25,8 @@ data class StockRequest(
     val spokenName: String,
     val qty: BigDecimal?,
     val unit: String?,
+    /** Every quantity said, in order ("1 box 3 pieces" → [1 BOX, 3 PCS]); the stock flow converts them. */
+    val parts: List<QtyPart> = emptyList(),
 )
 
 /**
@@ -59,6 +69,7 @@ object KaiStock {
         "litre" to "LITRE", "litres" to "LITRE", "liter" to "LITRE", "ltr" to "LITRE", "dozen" to "DOZEN", "bottle" to "BOTTLE", "bottles" to "BOTTLE",
         "carton" to "CARTON", "cartons" to "CARTON", "case" to "CASE", "cases" to "CASE", "bundle" to "BUNDLE", "bundles" to "BUNDLE",
         "strip" to "STRIP", "strips" to "STRIP",
+        "gram" to "GRAM", "grams" to "GRAM", "gm" to "GRAM", "gms" to "GRAM", "g" to "GRAM", "ml" to "ML", "dozens" to "DOZEN",
     )
 
     /** The unit words Kai knows ("box", "packet", …) — a shop's own word for one is taught as a unit. */
@@ -147,7 +158,7 @@ object KaiStock {
             // A big number with no unit is money, not pieces.
             if (qty != null && saidUnit == null && qty > BigDecimal(999) && !stockContext.containsMatchIn(lower)) return null
         }
-        return StockRequest(incoming = isIn, product = product, spokenName = displayName(spoken), qty = qty, unit = saidUnit ?: product?.unit)
+        return StockRequest(incoming = isIn, product = product, spokenName = displayName(spoken), qty = qty, unit = saidUnit ?: product?.unit, parts = partsIn(rest))
     }
 
     /**
@@ -168,6 +179,29 @@ object KaiStock {
         return word
     }
 
+    /**
+     * Every quantity in [text] with its unit: "1 box 3 pieces" → [1 BOX, 3 PCS], "2kg" → [2 KG],
+     * "rendu box" → [2 BOX], "12" → [12 (product unit)]. Empty when there is no number.
+     */
+    fun partsIn(text: String): List<QtyPart> {
+        val lower = " " + text.lowercase(Locale.ROOT).replace(Regex("""[!,;+]"""), " ").replace(Regex("""(\d)([a-z]+)"""), "$1 $2").replace(Regex("""\s+"""), " ").trim() + " "
+        val words = lower.split(' ').filter { it.isNotEmpty() }
+        val out = mutableListOf<QtyPart>()
+        var i = 0
+        while (i < words.size) {
+            val w = words[i]
+            val n = w.toBigDecimalOrNull()?.takeIf { w.first().isDigit() } ?: numberWords[w]?.toBigDecimal()
+            if (n != null && n.signum() > 0) {
+                val unit = words.getOrNull(i + 1)?.let { units[it] }
+                out += QtyPart(n, unit)
+                i += if (unit != null) 2 else 1
+            } else {
+                i++
+            }
+        }
+        return out
+    }
+
     /** A number said in words or digits ("12", "rendu", "12 pieces"), with its unit if said. */
     fun quantityIn(text: String): Pair<BigDecimal, String?>? {
         val lower = " " + text.lowercase(Locale.ROOT).replace(Regex("""[!,;]"""), " ").replace(Regex("""\s+"""), " ").trim() + " "
@@ -175,6 +209,25 @@ object KaiStock {
         val digits = Regex("""(?<![\p{L}\d.])(\d+(?:\.\d+)?)(?![\d])""").find(lower)?.groupValues?.get(1)?.toBigDecimalOrNull()
         val qty = (digits ?: words.firstNotNullOfOrNull { numberWords[it] }?.toBigDecimal())?.takeIf { it.signum() > 0 } ?: return null
         return qty to words.firstNotNullOfOrNull { units[it] }
+    }
+
+    /** "box" / "boxes", "piece" / "pieces" — the unit for [qty] (one or many). */
+    fun unitWord(unit: String?, qty: BigDecimal): String {
+        val one = qty.compareTo(BigDecimal.ONE) == 0
+        return when (KaiUnits.canon(unit)) {
+            null, "PCS" -> if (one) "piece" else "pieces"
+            "BOX" -> if (one) "box" else "boxes"
+            "PACK" -> if (one) "packet" else "packets"
+            "BAG" -> if (one) "bag" else "bags"
+            "BOTTLE" -> if (one) "bottle" else "bottles"
+            "CARTON" -> if (one) "carton" else "cartons"
+            "CASE" -> if (one) "case" else "cases"
+            "BUNDLE" -> if (one) "bundle" else "bundles"
+            "STRIP" -> if (one) "strip" else "strips"
+            "GRAM" -> if (one) "gram" else "grams"
+            "ML" -> "ml"
+            else -> unitWord(unit)
+        }
     }
 
     /** "pieces" / "kg" … as Kai says it to the owner. */
@@ -191,13 +244,15 @@ object KaiStock {
         "CASE" -> "cases"
         "BUNDLE" -> "bundles"
         "STRIP" -> "strips"
+        "GRAM" -> "grams"
+        "ML" -> "ml"
         else -> unit.lowercase(Locale.ROOT)
     }
 
     /** "12 pieces", "2 kg" — how Kai shows a quantity. */
     fun shown(q: BigDecimal, unit: String?): String {
         val n = q.stripTrailingZeros().let { if (it.scale() < 0) it.setScale(0) else it }.toPlainString()
-        return "$n ${unitWord(unit)}"
+        return "$n ${unitWord(unit, q)}"
     }
 
     private fun displayName(s: String) = s.split(' ').joinToString(" ") { w -> w.replaceFirstChar { it.titlecase(Locale.ROOT) } }

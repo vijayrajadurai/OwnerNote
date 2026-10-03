@@ -63,7 +63,7 @@ class KaiPersonalLearningTest {
             PartyMatch("c1", "Kumar", customer = true, phone = "+919000000001", balance = BigDecimal("8500.00")),
             PartyMatch("s1", "Sri Lakshmi Traders", customer = false, phone = null, balance = BigDecimal("20000.00")),
         )
-        val productList = listOf(ProductRef("p1", "Colgate", "PCS", BigDecimal("8")), ProductRef("p2", "Rice", "KG", BigDecimal("50")))
+        val productList = listOf(ProductRef("p1", "Colgate", "PCS", BigDecimal("8"), mapOf("BOX" to BigDecimal(12), "CARTON" to BigDecimal(48))), ProductRef("p2", "Rice", "KG", BigDecimal("50")))
 
         override suspend fun parties(name: String) = partyList.filter { it.name.contains(name, true) || name.contains(it.name, true) }
         override suspend fun prepare(kind: PlanKind, partyName: String, partyId: String?, amount: BigDecimal, mode: PaymentMode, said: String) =
@@ -119,7 +119,7 @@ class KaiPersonalLearningTest {
         assertNull("not saved before the owner says yes", find("petti"))
         val done = kai.ask("Aama")
         assertTrue(done.reply.text, done.reply.text.startsWith("Done Owner 👍 Inime `petti` nu sonna box-nu purinjukkuven."))
-        assertTrue(done.reply.text, done.reply.text.contains("Colgate — 2 box stock-in"))
+        assertTrue(done.reply.text, done.reply.text.contains("Colgate — 2 boxes = 24 pieces stock-in"))
         assertTrue(done.actions().any { it is KaiAction.ConfirmStock })
         noCommittedWrites()
 
@@ -135,11 +135,12 @@ class KaiPersonalLearningTest {
         assertEquals("owner-A", m.ownerId)
         assertEquals("biz-A", m.businessId)
         val draft = kai.ask("Colgate 2 potti vandhudhu")
-        assertTrue(draft.reply.text, draft.reply.text.contains("Colgate — 2 box stock-in"))
+        assertTrue(draft.reply.text, draft.reply.text.contains("Colgate — 2 boxes = 24 pieces stock-in"))
         noCommittedWrites()
         // Only the existing Confirm writes the stock.
         kai.act(draft.actions().filterIsInstance<KaiAction.ConfirmStock>().single(), KaiLang.TANGLISH)
-        assertEquals(Triple("p1", BigDecimal("2"), true), tools.stockChanges.single())
+        // 2 potti = 2 boxes = 24 pieces (Colgate: 1 box = 12) — never 2 pieces.
+        assertEquals(Triple("p1", BigDecimal("24"), true), tools.stockChanges.single())
     }
 
     // TEST 2 + 8 + 16: another owner never gets Owner A's meanings.
@@ -175,7 +176,7 @@ class KaiPersonalLearningTest {
         kai.ask("ஆமா")
         assertEquals("box", find("பொட்டி")!!.meaningValue)
         val d = kai.ask("Colgate 2 பொட்டி வந்திருக்கு.")
-        assertTrue(d.reply.text, d.reply.text.contains("2 box"))
+        assertTrue(d.reply.text, d.reply.text.contains("2 boxes = 24 pieces"))
         assertTrue(d.actions().any { it is KaiAction.ConfirmStock })
         noCommittedWrites()
     }
@@ -220,7 +221,7 @@ class KaiPersonalLearningTest {
         assertEquals(MemoryType.UNIT_ALIAS, m.memoryType)
         assertEquals("carton", m.meaningValue)
         val d = kai.ask("Colgate 3 boxes stock in")
-        assertTrue(d.reply.text, d.reply.text.contains("3 cartons"))
+        assertTrue(d.reply.text, d.reply.text.contains("3 cartons = 144 pieces"))
     }
 
     // TEST 6: phrase learning → a payment DRAFT (never posted).
@@ -269,9 +270,9 @@ class KaiPersonalLearningTest {
         assertNull(find("potti"))
         kaiB.ask("'potti' na carton")
         kaiB.ask("aama")
-        assertTrue(kaiB.ask("Colgate 2 potti vandhudhu").reply.text.contains("2 cartons"))
+        assertTrue(kaiB.ask("Colgate 2 potti vandhudhu").reply.text.contains("2 cartons = 96 pieces"))
         access.business = "biz-A"
-        assertTrue(agent().ask("Colgate 2 potti vandhudhu").reply.text.contains("2 box"))
+        assertTrue(agent().ask("Colgate 2 potti vandhudhu").reply.text.contains("2 boxes = 24 pieces"))
 
         // Owner-wide: "ella kadaiyilum 'maal' na stock" — every business of this owner, unless one says otherwise.
         val wide = kai.ask("ella kadaiyilum 'maal' na stock")
@@ -297,11 +298,13 @@ class KaiPersonalLearningTest {
         kai.ask("'potti' na box") // typed
         kai.ask("Save")
         val voice = kai.ask("colgate rendu potti vandhudhu") // speech-to-text: lower case, number word
-        assertTrue(voice.reply.text, voice.reply.text.contains("Colgate — 2 box stock-in"))
+        assertTrue(voice.reply.text, voice.reply.text.contains("Colgate — 2 boxes = 24 pieces stock-in"))
         kai.ask("cover na packet") // spoken
         kai.ask("ஆமா") // spoken answer in Tamil script
         val typed = kai.ask("Colgate 4 cover vandhiruku") // typed
-        assertTrue(typed.reply.text, typed.reply.text.contains("4 packets"))
+        // "cover" = packet; Colgate's packet size isn't known yet → Kai asks, never counts packets as pieces.
+        assertEquals("Owner, 1 packet-la evlo pieces irukku?", typed.reply.text)
+        assertTrue(kai.ask("6").reply.text.contains("4 packets = 24 pieces"))
         // The voice screen's router sends teaching to the same Kai.
         assertEquals(KaiIntentKind.LEARN_SLANG, KaiIntents.classify("potti na box", now, emptyList(), tools.productList))
         assertTrue(KaiIntents.handledByKai(KaiIntentKind.LEARN_SLANG))

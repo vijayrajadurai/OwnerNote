@@ -74,6 +74,9 @@ sealed interface ActionOutcome {
  */
 enum class ScheduleResult { EXACT, APPROXIMATE, NOTIFICATIONS_OFF, FAILED }
 
+/** Saving a product's unit conversion: done, the product already has a different second unit, or not possible here. */
+enum class ConversionSave { SAVED, OTHER_UNIT_SET, UNAVAILABLE }
+
 /** A reminder saved by the engine; [duplicate] = the same reminder already existed (nothing new created). */
 data class ReminderSaved(val reminder: KaiReminder, val duplicate: Boolean, val result: ScheduleResult)
 
@@ -132,6 +135,13 @@ interface KaiTools {
     suspend fun prepare(kind: PlanKind, partyName: String, partyId: String?, amount: BigDecimal, mode: PaymentMode, said: String): ActionPlan? = null
     suspend fun confirm(plan: ActionPlan): ActionOutcome = ActionOutcome.Failed("unavailable")
     suspend fun discard(plan: ActionPlan) {}
+
+    /**
+     * The owner pressed Save on "1 box = 12 pieces" for one product: kept as that
+     * product's conversion in the signed-in business (the books' secondary unit).
+     * Never global — another product or business keeps its own.
+     */
+    suspend fun saveUnitConversion(productId: String, unit: String, perUnit: BigDecimal): ConversionSave = ConversionSave.UNAVAILABLE
 
     // ---- reminders: OwnerNote's reminder engine (one store, phone alarms) ----
     /** Creates a reminder — or returns the identical one that already exists. */

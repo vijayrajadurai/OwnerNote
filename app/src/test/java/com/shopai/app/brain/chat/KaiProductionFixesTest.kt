@@ -62,7 +62,7 @@ class KaiProductionFixesTest {
 
     private class Tools : KaiTools {
         val products = mutableListOf(
-            ProductRef("p1", "Colgate", "PCS", BigDecimal("8")),
+            ProductRef("p1", "Colgate", "PCS", BigDecimal("8"), mapOf("BOX" to BigDecimal(12))),
             ProductRef("p2", "Rice", "KG", BigDecimal("50")),
         )
         val stockChanges = mutableListOf<Triple<String, BigDecimal, Boolean>>()
@@ -157,7 +157,7 @@ class KaiProductionFixesTest {
         val key = d.actions().filterIsInstance<KaiAction.EditStock>().single().key
         assertEquals(Triple("Colgate", BigDecimal("10"), "PCS"), kai.stockDraftOf(key))
         val edited = kai.reviseStock(key, BigDecimal("6"), "BOX", KaiLang.TANGLISH)!!
-        assertTrue(edited.reply.text, edited.reply.text.startsWith("Colgate — 6 box stock-in"))
+        assertTrue(edited.reply.text, edited.reply.text.startsWith("Colgate — 6 boxes = 72 pieces stock-in"))
         assertTrue(tools.stockChanges.isEmpty())
     }
 
@@ -344,7 +344,7 @@ class KaiProductionFixesTest {
         assertEquals(listOf("Yes, add stock", "No"), t.card!!.buttons.map { it.label })
         assertTrue(tools.stockChanges.isEmpty())
         val learned = kai.act(t.actions().filterIsInstance<KaiAction.LearnMeaning>().single(), KaiLang.TANGLISH)!!
-        assertTrue(learned.reply.text, learned.reply.text.contains("Colgate — 5 box stock-in"))
+        assertTrue(learned.reply.text, learned.reply.text.contains("Colgate — 5 boxes = 60 pieces stock-in"))
         assertTrue(tools.stockChanges.isEmpty())
     }
 

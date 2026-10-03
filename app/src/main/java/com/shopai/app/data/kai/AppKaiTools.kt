@@ -10,6 +10,7 @@ import com.shopai.app.books.engine.PostResult
 import com.shopai.app.books.engine.nameKey
 import com.shopai.app.books.integration.BooksModule
 import com.shopai.app.books.integration.BooksSession
+import com.shopai.app.books.integration.toInput
 import com.shopai.app.books.model.MoneyAccountKind
 import com.shopai.app.books.model.PartyKind
 import com.shopai.app.books.model.PaymentMode
@@ -109,9 +110,39 @@ class AppKaiTools(
 
     override suspend fun products(): List<com.shopai.app.brain.tools.ProductRef>? {
         val inv = inventory ?: return null
-        return runCatching { inv.listProducts() }.getOrNull()?.map {
-            com.shopai.app.brain.tools.ProductRef(it.id, it.name, it.unit, BigDecimal.valueOf(it.currentStock))
+        val list = runCatching { inv.listProducts() }.getOrNull() ?: return null
+        // The books keep each product's second unit and its conversion (1 BOX = 12 PCS) — Kai converts with exactly that.
+        val units = session()?.let { s ->
+            runCatching { s.dao.products(s.ctx.businessId, archived = false, limit = 10_000, offset = 0).associateBy { it.id } }.getOrNull()
+        }.orEmpty()
+        return list.map {
+            val e = units[it.id]
+            val secondary = e?.secondaryUnit
+            val milli = e?.conversionMilli
+            val conversions = if (secondary != null && milli != null && milli > 0) mapOf(secondary to BigDecimal.valueOf(milli).divide(BigDecimal(1000))) else emptyMap()
+            com.shopai.app.brain.tools.ProductRef(it.id, it.name, it.unit, BigDecimal.valueOf(it.currentStock), conversions)
         }
+    }
+
+    /**
+     * The owner tapped Save on "1 box = 12 pieces": stored as the product's own second
+     * unit in the signed-in business's books (the existing product units — no other store).
+     * A product keeps one second unit; a different one already set is never overwritten.
+     */
+    override suspend fun saveUnitConversion(productId: String, unit: String, perUnit: BigDecimal): com.shopai.app.brain.tools.ConversionSave {
+        val none = com.shopai.app.brain.tools.ConversionSave.UNAVAILABLE
+        val s = session() ?: return none
+        return runCatching {
+            val p = s.dao.product(productId)?.takeIf { it.businessId == s.ctx.businessId } ?: return none
+            val code = s.masters.ensureUnit(unit) ?: return none
+            if (code.equals(p.primaryUnit, ignoreCase = true) || perUnit.signum() <= 0) return none
+            if (p.secondaryUnit != null && !p.secondaryUnit.equals(code, ignoreCase = true)) return com.shopai.app.brain.tools.ConversionSave.OTHER_UNIT_SET
+            val milli = perUnit.multiply(BigDecimal(1000)).setScale(0, RoundingMode.HALF_UP).longValueExact()
+            when (s.masters.updateProduct(p.id, p.toInput().copy(secondaryUnit = code, conversionMilli = milli))) {
+                is com.shopai.app.books.engine.MasterResult.Ok -> com.shopai.app.brain.tools.ConversionSave.SAVED
+                else -> none
+            }
+        }.getOrDefault(none)
     }
 
     /** Only called after the owner confirmed the stock draft. */
