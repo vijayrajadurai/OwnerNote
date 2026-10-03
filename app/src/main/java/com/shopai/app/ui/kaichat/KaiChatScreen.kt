@@ -67,7 +67,7 @@ import kotlin.math.sin
  * the owner's records, in text (no voice, no AI service). Messages stay.
  */
 @Composable
-fun KaiChatScreen(container: AppContainer, onBack: () -> Unit) {
+fun KaiChatScreen(container: AppContainer, onBack: () -> Unit, onOpenMorningWork: (start: Boolean) -> Unit = {}) {
     val session = container.kaiChat
     val scope = rememberCoroutineScope()
     var input by rememberSaveable { mutableStateOf("") }
@@ -153,7 +153,19 @@ fun KaiChatScreen(container: AppContainer, onBack: () -> Unit) {
                     }
                 }
                 items(session.messages, key = { it.id }) { m ->
-                    if (m.fromOwner) OwnerBubble(m.text) else KaiBubble(m.text)
+                    if (m.fromOwner) {
+                        OwnerBubble(m.text)
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            KaiBubble(m.text)
+                            m.action?.let { action ->
+                                AssistChip(
+                                    onClick = { onOpenMorningWork(action == KaiChatAction.START_MORNING_WORK) },
+                                    label = { Text(stringResource(R.string.morning_start), fontWeight = FontWeight.Bold, color = Primary) },
+                                )
+                            }
+                        }
+                    }
                 }
                 if (session.thinking) item { KaiBubble("…") }
             }

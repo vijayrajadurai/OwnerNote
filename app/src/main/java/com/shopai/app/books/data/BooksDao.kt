@@ -159,6 +159,10 @@ interface BooksDao {
     @Query("SELECT * FROM batches WHERE productId = :productId AND batchNo = :batchNo LIMIT 1")
     suspend fun batchByNo(productId: String, batchNo: String): BatchEntity?
 
+    /** Batches with an expiry date on or before [untilDay] (read only — Kai's Morning Work). */
+    @Query("SELECT * FROM batches WHERE businessId = :businessId AND expiryDay IS NOT NULL AND expiryDay <= :untilDay ORDER BY expiryDay LIMIT :limit")
+    suspend fun batchesExpiringBy(businessId: String, untilDay: Int, limit: Int): List<BatchEntity>
+
     // ---- HSN / SAC master ----
     @Upsert suspend fun upsertHsn(rows: List<HsnSacEntity>)
     @Query("SELECT * FROM hsn_sac WHERE code = :code AND kind = :kind") suspend fun hsn(code: String, kind: String): HsnSacEntity?

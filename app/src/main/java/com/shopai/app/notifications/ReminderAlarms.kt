@@ -134,6 +134,50 @@ class ReminderAlarms(private val context: Context) {
         editor.putStringSet(notifiedKey, alreadyNotified + due.map { it.id }).apply()
     }
 
+    /**
+     * A reminder with an exact time (Morning Work's "remind me after 30
+     * minutes"): rings at that time, through the same notification as the
+     * daily check. The daily check still covers it if the phone restarts.
+     */
+    fun ringAt(item: ReminderItem, atMillis: Long) {
+        val alarmManager = context.getSystemService(AlarmManager::class.java) ?: return
+        val intent = PendingIntent.getBroadcast(
+            context,
+            notificationIdFor(item.id),
+            Intent(context, ReminderAlarmReceiver::class.java).apply {
+                action = ACTION_TIMED
+                putExtra(EXTRA_REMINDER_ID, item.id)
+                putExtra(EXTRA_TITLE, item.title)
+                putExtra(EXTRA_DUE, item.dueDate)
+                item.amount?.let { putExtra(EXTRA_AMOUNT, it) }
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        runCatching {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()) {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, atMillis, intent)
+            } else {
+                alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, atMillis, intent)
+            }
+        }
+    }
+
+    /** The exact-time alarm went off: ring unless the reminder was already marked done. */
+    fun notifyTimed(intent: Intent) {
+        val id = intent.getStringExtra(EXTRA_REMINDER_ID) ?: return
+        if (cached().any { it.id == id && it.isDone }) return
+        val item = ReminderItem(
+            id = id,
+            kind = "CUSTOM",
+            title = intent.getStringExtra(EXTRA_TITLE).orEmpty(),
+            amount = if (intent.hasExtra(EXTRA_AMOUNT)) intent.getDoubleExtra(EXTRA_AMOUNT, 0.0) else null,
+            dueDate = intent.getStringExtra(EXTRA_DUE).orEmpty(),
+            isDone = false,
+        )
+        ensureChannel()
+        show(item)
+    }
+
     fun dismiss(reminderId: String) {
         NotificationManagerCompat.from(context).cancel(notificationIdFor(reminderId))
     }
@@ -229,6 +273,10 @@ class ReminderAlarms(private val context: Context) {
         private const val NOTIFICATION_ID_BASE = 0x3000000
         const val ACTION_DAILY_CHECK = "com.shopai.app.ACTION_REMINDER_DAILY_CHECK"
         const val ACTION_MARK_DONE = "com.shopai.app.ACTION_REMINDER_MARK_DONE"
+        const val ACTION_TIMED = "com.shopai.app.ACTION_REMINDER_TIMED"
+        private const val EXTRA_TITLE = "reminder_title"
+        private const val EXTRA_DUE = "reminder_due"
+        private const val EXTRA_AMOUNT = "reminder_amount"
         const val EXTRA_REMINDER_ID = "reminder_id"
         private val VIBRATION_PATTERN = longArrayOf(0, 800, 400, 800, 400, 800)
     }

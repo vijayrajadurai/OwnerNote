@@ -15,6 +15,11 @@ import kotlinx.coroutines.withTimeoutOrNull
 class ReminderAlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val app = context.applicationContext as? ShopAiApplication ?: return
+        // An exact-time reminder (set from Morning Work): ring it now.
+        if (intent.action == com.shopai.app.notifications.ReminderAlarms.ACTION_TIMED) {
+            app.container.reminderAlarms.notifyTimed(intent)
+            return
+        }
         val pending = goAsync()
         app.container.appScope.launch {
             val alarms = app.container.reminderAlarms

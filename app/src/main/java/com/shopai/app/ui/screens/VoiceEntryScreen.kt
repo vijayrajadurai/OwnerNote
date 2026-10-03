@@ -77,8 +77,12 @@ fun VoiceEntryScreen(
     onOpenHandwrittenNotes: () -> Unit = {},
     onScanNoteForBill: (billId: Long) -> Unit = {},
     onOpenNotePerson: (name: String) -> Unit = {},
+    /** "Kai, morning work ready pannu" → Kai's Morning Work ([voice] = the owner spoke it). */
+    onOpenMorningWork: (voice: Boolean, start: Boolean) -> Unit = { _, _ -> },
 ) {
     var inputText by remember { mutableStateOf("") }
+    // The words just came from the mic (Morning Work then answers by voice).
+    var fromMic by remember { mutableStateOf(false) }
     var partialText by remember { mutableStateOf<String?>(null) }
     var parsed by remember { mutableStateOf<ParsedTransaction?>(null) }
     var queryAnswer by remember { mutableStateOf<String?>(null) }
@@ -143,9 +147,18 @@ fun VoiceEntryScreen(
      */
     fun parseInput() {
         val text = inputText.trim()
+        val spoken = fromMic
+        fromMic = false
         if (text.isBlank()) {
             orbState = MicState.Idle
             kai(KaiEvent.Cancel)
+            return
+        }
+        // A clear Morning Work request goes to Kai's Morning Work; everything else stays here as before.
+        com.shopai.app.brain.morning.MorningCommands.morningRequest(text)?.let { request ->
+            orbState = MicState.Idle
+            kai(KaiEvent.Cancel)
+            onOpenMorningWork(spoken, request == com.shopai.app.brain.morning.MorningCommand.Start)
             return
         }
         scope.launch {
@@ -207,6 +220,7 @@ fun VoiceEntryScreen(
             onResult = { spoken ->
                 inputText = spoken
                 partialText = spoken
+                fromMic = true
                 parseInput()
             },
             onError = { code ->

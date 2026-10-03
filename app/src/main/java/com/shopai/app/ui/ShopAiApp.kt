@@ -245,6 +245,11 @@ fun ShopAiApp(container: AppContainer) {
                 onOpenHandwrittenNotes = { navController.navigate(Routes.HandwrittenNotes) },
                 onScanNoteForBill = { billId -> navController.navigate(Routes.handwrittenScan(billId)) },
                 onOpenNotePerson = { name -> navController.navigate(Routes.handwrittenPerson(name)) },
+                onOpenMorningWork = { voice, start ->
+                    navController.navigate(Routes.morningWork(voice = voice, start = start)) {
+                        popUpTo(Routes.VoiceEntry) { inclusive = true }
+                    }
+                },
             )
         }
         composable(Routes.HandwrittenNotes) { entry ->
@@ -548,7 +553,26 @@ fun ShopAiApp(container: AppContainer) {
             OffersScreen(container = container, onBack = { navController.navigateUpOrHome() })
         }
         composable(Routes.KaiChat) {
-            com.shopai.app.ui.kaichat.KaiChatScreen(container = container, onBack = { navController.navigateUpOrHome() })
+            com.shopai.app.ui.kaichat.KaiChatScreen(
+                container = container,
+                onBack = { navController.navigateUpOrHome() },
+                onOpenMorningWork = { start -> navController.navigate(Routes.morningWork(voice = false, start = start)) },
+            )
+        }
+        composable(
+            route = Routes.MorningWork,
+            arguments = listOf(
+                navArgument("mode") { type = NavType.StringType; defaultValue = "text" },
+                navArgument("start") { type = NavType.BoolType; defaultValue = false },
+            ),
+        ) { entry ->
+            com.shopai.app.ui.morning.MorningWorkScreen(
+                container = container,
+                startInVoice = entry.arguments?.getString("mode") == "voice",
+                autoStart = entry.arguments?.getBoolean("start") == true,
+                onBack = { navController.navigateUpOrHome() },
+                onNavigate = { route -> navController.navigate(route) },
+            )
         }
         composable(Routes.Settings) {
             SettingsScreen(

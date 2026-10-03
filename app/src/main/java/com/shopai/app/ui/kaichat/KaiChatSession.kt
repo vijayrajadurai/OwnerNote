@@ -15,14 +15,22 @@ data class KaiChatMessage(
     val fromOwner: Boolean,
     val text: String,
     val mood: KaiMood? = null,
+    /** A button under Kai's reply (Morning Work hand-over). */
+    val action: KaiChatAction? = null,
 )
+
+enum class KaiChatAction { OPEN_MORNING_WORK, START_MORNING_WORK }
 
 /**
  * The Kai Chat conversation, kept for the app session (leaving the screen
  * and coming back keeps the messages and Kai's context). Text only: Kai
  * replies are never spoken.
  */
-class KaiChatSession(private val brain: KaiBusinessBrain) {
+class KaiChatSession(
+    private val brain: KaiBusinessBrain,
+    /** Kai's Morning Work greeting for a clear morning-work request (null = not available). */
+    private val morningWork: suspend (String) -> String? = { null },
+) {
     val messages = mutableStateListOf<KaiChatMessage>()
     var thinking by mutableStateOf(false)
         private set
@@ -39,6 +47,20 @@ class KaiChatSession(private val brain: KaiBusinessBrain) {
         messages += KaiChatMessage(nextId++, fromOwner = true, text = question)
         thinking = true
         val started = System.currentTimeMillis()
+        // "Kai, morning work ready pannu": Kai answers with today's work and offers Start My Morning.
+        val morning = com.shopai.app.brain.morning.MorningCommands.morningRequest(question)
+        if (morning != null) {
+            val greeting = runCatching { morningWork(question) }.getOrNull()
+            if (greeting != null) {
+                kotlinx.coroutines.delay((650 - (System.currentTimeMillis() - started)).coerceAtLeast(0))
+                val action = if (morning == com.shopai.app.brain.morning.MorningCommand.Start) KaiChatAction.START_MORNING_WORK else KaiChatAction.OPEN_MORNING_WORK
+                messages += KaiChatMessage(nextId++, fromOwner = false, text = greeting, mood = KaiMood.EXPLAINING, action = action)
+                lastMood = KaiMood.EXPLAINING
+                lastReplyAt = System.currentTimeMillis()
+                thinking = false
+                return
+            }
+        }
         val reply: ChatReply = runCatching { brain.ask(question) }.getOrElse {
             ChatReply("Owner, konjam clear-ah sollunga.", KaiMood.CLARIFY, com.shopai.app.brain.chat.ChatIntent.UNKNOWN)
         }

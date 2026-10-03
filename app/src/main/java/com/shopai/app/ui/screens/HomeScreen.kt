@@ -134,6 +134,8 @@ fun HomeScreen(
     // var entryChooser by remember { mutableStateOf<TransactionEntryType?>(null) }
     var cashNoteSummary by remember { mutableStateOf<TodayCashSummary?>(null) }
     var profilePhotoPath by remember { mutableStateOf<String?>(null) }
+    // Kai's Morning Work: how many important tasks today (read only; null until known).
+    var morningCount by remember { mutableStateOf<Int?>(null) }
     // One-time move of the ledger into OwnerNote Books (null = not running / nothing to show).
     var importing by remember { mutableStateOf(false) }
     var imported by remember { mutableStateOf<com.shopai.app.books.integration.ImportOutcome.Imported?>(null) }
@@ -175,6 +177,16 @@ fun HomeScreen(
     }
 
     LaunchedEffect(Unit) { reload() }
+
+    LaunchedEffect(loading) {
+        if (loading) return@LaunchedEffect
+        morningCount = runCatching {
+            container.morningSources.snapshot()?.let { snap ->
+                container.morningWork.prepare(snap, greet = false)
+                container.morningWork.state.plan?.openTasks?.size
+            }
+        }.getOrNull()
+    }
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -322,6 +334,8 @@ fun HomeScreen(
                     speakingAs = kaiBrief?.mood?.state(),
                     onTap = { onNavigate(Routes.VoiceEntry) },
                 )
+                // Kai — Do My Morning Work: today's important work, ready to review.
+                com.shopai.app.ui.morning.MorningWorkCard(count = morningCount, onClick = { onNavigate(Routes.morningWork()) })
                 // Kai Chat: ask KAI about the business (text, keyboard mic).
                 com.shopai.app.ui.kaichat.AskKaiCard(onClick = { onNavigate(Routes.KaiChat) })
                 DailyCashHomeCard(

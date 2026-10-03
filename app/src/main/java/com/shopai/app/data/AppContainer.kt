@@ -93,7 +93,11 @@ class AppContainer(context: Context) {
 
     val preferencesRepository = PreferencesRepository(userPreferencesStore)
     val pushTokenRepository = PushTokenRepository(api, tokenStore)
-    val authRepository = AuthRepository(api, tokenStore, apiErrorHandler, FirebasePhoneAuthClient(), pushTokenRepository, appScope, onSignedOut = { books.signOut() })
+    val authRepository = AuthRepository(api, tokenStore, apiErrorHandler, FirebasePhoneAuthClient(), pushTokenRepository, appScope, onSignedOut = {
+        books.signOut()
+        morningWork.reset()
+        morningSources.clear()
+    })
     val businessRepository = BusinessRepository(api)
     val insightsRepository = InsightsRepository(api, books)
     val discoverRepository = DiscoverRepository(api)
@@ -125,7 +129,30 @@ class AppContainer(context: Context) {
     val kaiBooks by lazy { com.shopai.app.brain.chat.RepositoryKaiBooks(kaiBrain, partyRepository, dailyCashRepository) }
 
     /** Kai Chat conversation for this app session — KAI's own Business Brain, text only. */
-    val kaiChat by lazy { com.shopai.app.ui.kaichat.KaiChatSession(com.shopai.app.brain.chat.KaiBusinessBrain(kaiBooks)) }
+    val kaiChat by lazy {
+        com.shopai.app.ui.kaichat.KaiChatSession(com.shopai.app.brain.chat.KaiBusinessBrain(kaiBooks)) { text ->
+            // Typed in Kai Chat → Morning Work answers in text (the same engine as voice).
+            morningSources.snapshot()?.let { snap ->
+                morningWork.role = morningSources.role()
+                val first = !morningWork.state.started
+                morningWork.prepare(
+                    snap,
+                    mode = if (first) com.shopai.app.brain.morning.ResponseMode.TEXT else null,
+                    lang = com.shopai.app.brain.morning.MorningCommands.language(text),
+                ).line.display
+            }
+        }
+    }
+
+    /** Kai — Do My Morning Work: one engine for voice and text, over the existing data (read only). */
+    val morningWork by lazy { com.shopai.app.brain.morning.MorningWorkEngine(com.shopai.app.data.morning.MorningTaskFileStore(appContext)) }
+
+    /** Morning Work's read-only view of the books, parties, stock and reminders. */
+    val morningSources by lazy {
+        com.shopai.app.data.morning.MorningWorkSources(
+            appContext, books, partyRepository, reminderRepository, reminderAlarms, inventoryRepository, businessRepository,
+        )
+    }
 
     private fun ensureTrailingSlash(url: String): String =
         if (url.endsWith("/")) url else "$url/"

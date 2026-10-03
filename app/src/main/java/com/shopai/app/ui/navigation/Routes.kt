@@ -21,6 +21,8 @@ object Routes {
     const val VoiceEntry = "voice_entry"
     /** Kai Chat: business conversation with KAI (text; no AI service). */
     const val KaiChat = "kai_chat"
+    /** Kai — Do My Morning Work. [mode] = voice / text (how the owner asked); [start] = go straight to the first task. */
+    const val MorningWork = "morning_work?mode={mode}&start={start}"
     const val Reminders = "reminders"
     const val ReminderDetail = "reminder_detail/{reminderId}"
     const val AiInsights = "ai_insights"
@@ -65,6 +67,9 @@ object Routes {
     /** [direction] = IN (from a customer) or OUT (to a supplier). */
     fun payment(direction: String, partyId: String? = null, docId: String? = null): String =
         "payment/$direction?partyId=${partyId?.let(Uri::encode).orEmpty()}&docId=${docId?.let(Uri::encode).orEmpty()}"
+
+    fun morningWork(voice: Boolean = false, start: Boolean = false): String =
+        "morning_work?mode=${if (voice) "voice" else "text"}&start=$start"
 
     fun productForm(productId: String? = null): String = "product_form?productId=${productId?.let(Uri::encode).orEmpty()}"
 
