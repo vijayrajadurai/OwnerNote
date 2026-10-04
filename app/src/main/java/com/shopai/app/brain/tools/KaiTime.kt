@@ -66,6 +66,8 @@ data class KaiWhen(
     val amPmAssumed: Boolean = false,
     /** The day / time said has already passed ("inniku 9 maniku" at 11 AM, "10/09/2026"). */
     val alreadyPassed: Boolean = false,
+    /** True when parsing found a calendar day, rather than only a clock time or duration. */
+    val daySpecified: Boolean = false,
 ) {
     val repeat: Repeat get() = recurrence.repeat
     val needsTime: Boolean get() = Missing.TIME in missing
@@ -175,7 +177,7 @@ object KaiTime {
             if (fromWeekday && time != null && date == today && !date.atTime(time).isAfter(now)) date = date.plusWeeks(1)
             val at = date.atTime(time ?: part?.choices?.first() ?: LocalTime.of(9, 0))
             val passed = date.isBefore(today) || (date == today && time != null && !at.isAfter(now))
-            return KaiWhen(at, dayPart = part, missing = if (time == null) setOf(Missing.TIME) else emptySet(), amPmAssumed = amPmAssumed, alreadyPassed = passed)
+            return KaiWhen(at, dayPart = part, missing = if (time == null) setOf(Missing.TIME) else emptySet(), amPmAssumed = amPmAssumed, alreadyPassed = passed, daySpecified = true)
         }
 
         // 4. Only a time: today if it is still ahead, else tomorrow.
@@ -213,7 +215,7 @@ object KaiTime {
         )
         for (p in patterns) s = Regex(p.pattern, RegexOption.IGNORE_CASE).replace(s, " ")
         DocumentDates.findMatch(s, LocalDate.now(), allowYearless = true, yearless = YearlessPolicy.CURRENT_YEAR)
-            ?.takeIf { looksLikeWrittenDate(it.text) }?.let { s = s.replace(it.text, " ") }
+            ?.let { s = s.replace(it.text, " ") }
         weekdays.flatMap { it.second }.forEach { w -> s = Regex("""(?i)$B${Regex.escape(w)}$E""").replace(s, " ") }
         // A number left right after a day part ("evening 6") was its hour.
         s = Regex("""(?i)^\s*\d{1,2}(\s|$)""").replace(s, " ")
@@ -310,7 +312,8 @@ object KaiTime {
         // "next month 10th" / "adutha maasam 10 thethi".
         if (has("next month", "adutha maasam", "aduththa maasam", "adutha month", "next maasam", "அடுத்த மாதம்", "அடுத்த மாசம்")) {
             val first = today.withDayOfMonth(1).plusMonths(1)
-            val day = Regex(ordinalDay).find(t)?.groupValues?.get(1)?.toIntOrNull() ?: Regex("""(?:month|maasam)\s+(\d{1,2})$E""").find(t)?.groupValues?.get(1)?.toIntOrNull()
+            val day = Regex(ordinalDay).find(t)?.groupValues?.get(1)?.toIntOrNull()
+                ?: Regex("""(\d{1,2})$""").find(t.trim())?.groupValues?.get(1)?.toIntOrNull()
             return (day?.let { runCatching { first.withDayOfMonth(minOf(it, first.lengthOfMonth())) }.getOrNull() } ?: first) to DaySource.DATE
         }
         when {
@@ -336,7 +339,6 @@ object KaiTime {
         // A written date with a month name: "10 October", "October 10" ("11 am" is a time, not the year).
         val withoutClock = t.replace(Regex("""(?<![\d.])\d{1,2}([:.]\d{2})?\s*(am|pm|a\.m\.?|p\.m\.?|mani\w*|manikku|o'?\s*clock|மணி\S*)$E"""), " ")
         DocumentDates.findMatch(withoutClock, today, allowYearless = true, yearless = YearlessPolicy.CURRENT_YEAR)
-            ?.takeIf { looksLikeWrittenDate(it.text) }
             ?.let { m -> return (if (m.yearAssumed && m.date.isBefore(today)) m.date.plusYears(1) else m.date) to DaySource.DATE }
         // "10th" / "10 thethi": this month's, or next month's if it has passed.
         Regex(ordinalDay).find(t)?.groupValues?.get(1)?.toIntOrNull()?.takeIf { it in 1..31 }?.let { d ->
@@ -347,7 +349,4 @@ object KaiTime {
         return null
     }
 
-    /** A month name, or day/month(/year) with / or - — not a clock time like "6.30". */
-    private fun looksLikeWrittenDate(text: String): Boolean =
-        Regex("""(?i)(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)""").containsMatchIn(text) || Regex("""\d{1,2}\s*[/\-]\s*\d{1,2}""").containsMatchIn(text)
 }
