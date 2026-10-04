@@ -8,18 +8,16 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
@@ -36,16 +34,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.shopai.app.R
 import com.shopai.app.brain.KaiBrain
 import com.shopai.app.data.AppContainer
-import com.shopai.app.ui.theme.Primary
-import com.shopai.app.ui.theme.ShopAiThemeColors
 import kotlinx.coroutines.delay
 
 /**
@@ -120,58 +114,57 @@ fun KaiAnnouncementOverlay(container: AppContainer, modifier: Modifier = Modifie
             KaiResponsePhase.RESPONSE_VISIBLE -> current.reply.mood.state()
             else -> KaiState.IDLE
         }
-        Row(
+        KaiContentCard(
             modifier = Modifier
                 .statusBarsPadding()
                 .padding(horizontal = 12.dp, vertical = 8.dp)
                 .fillMaxWidth()
-                .shadow(8.dp, RoundedCornerShape(22.dp))
-                .background(Color.White, RoundedCornerShape(22.dp))
-                .border(1.dp, Primary.copy(alpha = if (pinned) 0.55f else 0.18f), RoundedCornerShape(22.dp))
-                // Tap: keep it on screen longer.
-                .clickable { pinned = true }
-                .padding(start = 10.dp, top = 10.dp, bottom = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                .clickable { pinned = true },
+            contentPadding = PaddingValues(start = 10.dp, top = 8.dp, end = 4.dp, bottom = 8.dp),
         ) {
-            KaiCharacter(
-                state = kaiState,
-                mouthLevel = if (phase == KaiResponsePhase.SPEAKING) mouth else 0f,
-                speakingAs = current.reply.mood.state(),
-                size = 96.dp,
-            )
-            // A newer reply cross-fades in place of the old one.
-            AnimatedContent(
-                targetState = current,
-                transitionSpec = { fadeIn(tween(260)) togetherWith fadeOut(tween(200)) },
-                contentKey = { it.id },
-                label = "kaiReply",
-                modifier = Modifier.weight(1f),
-            ) { a ->
-                Column {
-                    Text(
-                        a.reply.display,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        color = ShopAiThemeColors.onSurface,
-                    )
-                    if (pinned) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                KaiCharacter(
+                    state = kaiState,
+                    mouthLevel = if (phase == KaiResponsePhase.SPEAKING) mouth else 0f,
+                    speakingAs = current.reply.mood.state(),
+                    size = 96.dp,
+                )
+                AnimatedContent(
+                    targetState = current,
+                    transitionSpec = { fadeIn(tween(260)) togetherWith fadeOut(tween(200)) },
+                    contentKey = { it.id },
+                    label = "kaiReply",
+                    modifier = Modifier.weight(1f),
+                ) { a ->
+                    Column {
                         Text(
-                            stringResource(R.string.kai_pinned_hint),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = ShopAiThemeColors.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 4.dp),
+                            a.reply.display,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            color = com.shopai.app.ui.theme.TextPrimary,
                         )
+                        if (pinned) {
+                            Text(
+                                stringResource(R.string.kai_pinned_hint),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = com.shopai.app.ui.theme.TextSecondary,
+                                modifier = Modifier.padding(top = 4.dp),
+                            )
+                        }
                     }
                 }
-            }
-            Box(contentAlignment = Alignment.TopEnd) {
-                IconButton(onClick = {
-                    container.naturalTtsSpeaker.stop()
-                    brain.dismissAnnouncement(current.id)
-                    closedId = current.id
-                }) {
-                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.capture_close), modifier = Modifier.size(18.dp))
+                Box(contentAlignment = Alignment.TopEnd) {
+                    IconButton(onClick = {
+                        container.naturalTtsSpeaker.stop()
+                        brain.dismissAnnouncement(current.id)
+                        closedId = current.id
+                    }) {
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.capture_close), modifier = Modifier.size(18.dp))
+                    }
                 }
             }
         }

@@ -130,27 +130,37 @@ class AppContainer(context: Context) {
     val handwrittenNotesRepository = HandwrittenNotesRepository(appContext, localDatabase.handwrittenNotesDao(), transactionRepository)
 
     /** Kai Chat's books: the existing ledger, party details and Daily Cash Note (no AI service). */
-    val kaiBooks by lazy { com.shopai.app.brain.chat.RepositoryKaiBooks(kaiBrain, partyRepository, dailyCashRepository) }
+    val kaiBooks: com.shopai.app.brain.chat.RepositoryKaiBooks by lazy {
+        com.shopai.app.brain.chat.RepositoryKaiBooks(kaiBrain, partyRepository, dailyCashRepository)
+    }
 
     /** Kai's personal / task reminders (phone alarms) and his action log. */
     val kaiReminders = com.shopai.app.notifications.KaiReminderEngine(appContext)
     /** Each record carries the signed-in owner (the one whose Kai memory is open). */
-    val kaiActionLog by lazy { com.shopai.app.data.kai.KaiActionLog(appContext) { kaiMemory.ownerId } }
+    val kaiActionLog: com.shopai.app.data.kai.KaiActionLog by lazy {
+        com.shopai.app.data.kai.KaiActionLog(appContext) { kaiMemory.ownerId }
+    }
 
     /** Kai's tools: the books engine (reads, drafts, confirmed posts), reminders, the action log. */
-    val kaiTools by lazy { com.shopai.app.data.kai.AppKaiTools(appContext, books, transactionRepository, kaiReminders, kaiActionLog, inventoryRepository) }
+    val kaiTools: com.shopai.app.data.kai.AppKaiTools by lazy {
+        com.shopai.app.data.kai.AppKaiTools(appContext, books, transactionRepository, kaiReminders, kaiActionLog, inventoryRepository)
+    }
 
     /**
      * Kai's PRIVATE memory of this business's own words (slang, nicknames).
      * One per signed-in business, never shared; used by voice and text alike.
      */
-    val kaiMemory by lazy { com.shopai.app.brain.memory.KaiPrivateMemory(com.shopai.app.data.kai.KaiMemoryFileStore(appContext)) }
+    val kaiMemory: com.shopai.app.brain.memory.KaiPrivateMemory by lazy {
+        com.shopai.app.brain.memory.KaiPrivateMemory(com.shopai.app.data.kai.KaiMemoryFileStore(appContext))
+    }
     val kaiMemoryAccess: com.shopai.app.data.kai.AppKaiMemoryAccess by lazy {
         com.shopai.app.data.kai.AppKaiMemoryAccess(kaiMemory, books, { morningSources.businessId() }, partyRepository, inventoryRepository)
     }
 
     /** Kai — Do My Morning Work: one engine for voice and text, over the existing data (read only). */
-    val morningWork by lazy { com.shopai.app.brain.morning.MorningWorkEngine(com.shopai.app.data.morning.MorningTaskFileStore(appContext)) }
+    val morningWork: com.shopai.app.brain.morning.MorningWorkEngine by lazy {
+        com.shopai.app.brain.morning.MorningWorkEngine(com.shopai.app.data.morning.MorningTaskFileStore(appContext))
+    }
 
     /** Morning Work's read-only view of the books, parties, stock and reminders. */
     val morningSources: com.shopai.app.data.morning.MorningWorkSources by lazy {
@@ -162,7 +172,7 @@ class AppContainer(context: Context) {
     }
 
     /** Kai Chat conversation for this app session — KAI's agent over his Business Brain and tools (no paid AI). */
-    val kaiChat by lazy {
+    val kaiChat: com.shopai.app.ui.kaichat.KaiChatSession by lazy {
         com.shopai.app.ui.kaichat.KaiChatSession(
             com.shopai.app.brain.chat.KaiAgent(
                 com.shopai.app.brain.chat.KaiBusinessBrain(kaiBooks), kaiBooks, kaiTools,
@@ -178,7 +188,7 @@ class AppContainer(context: Context) {
      * id from the caller). A future scheduled morning notification calls
      * [morningWork].generate(snapshot, lang, MorningTrigger.SCHEDULED) the same way.
      */
-    val kaiMorning by lazy {
+    val kaiMorning: com.shopai.app.brain.chat.KaiMorningAccess by lazy {
         com.shopai.app.brain.chat.KaiMorningAccess { lang ->
             morningSources.snapshot()?.let { snap ->
                 morningWork.role = morningSources.role()
@@ -188,10 +198,12 @@ class AppContainer(context: Context) {
     }
 
     /** The phone's one morning alarm + notification. */
-    val morningAlarms by lazy { com.shopai.app.notifications.MorningWorkAlarms(appContext) }
+    val morningAlarms: com.shopai.app.notifications.MorningWorkAlarms by lazy {
+        com.shopai.app.notifications.MorningWorkAlarms(appContext)
+    }
 
     /** The daily Morning Work notification (OFF by default; the owner's own time; per owner + business). */
-    val morningScheduler by lazy {
+    val morningScheduler: com.shopai.app.brain.morning.MorningScheduler by lazy {
         com.shopai.app.brain.morning.MorningScheduler(com.shopai.app.notifications.PrefsMorningScheduleStore(appContext), morningAlarms)
     }
 

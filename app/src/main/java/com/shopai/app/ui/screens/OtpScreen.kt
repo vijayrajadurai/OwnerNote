@@ -66,6 +66,7 @@ import com.shopai.app.ui.components.ApiErrorAlertDialog
 import com.shopai.app.ui.components.AuthBackgroundBrush
 import com.shopai.app.ui.components.AuthBrandHeader
 import com.shopai.app.ui.components.GradientActionButton
+import com.shopai.app.ui.components.PoweredByNewonX
 import com.shopai.app.ui.theme.Primary
 import com.shopai.app.ui.theme.PrimaryLight
 import com.shopai.app.ui.theme.TextPrimary
@@ -198,11 +199,15 @@ fun OtpScreen(
             .padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(100.dp),
         ) {
-            IconButton(onClick = onNavigateBack) {
+            IconButton(
+                onClick = onNavigateBack,
+                modifier = Modifier.align(Alignment.CenterStart),
+            ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = stringResource(R.string.action_back),
@@ -213,121 +218,121 @@ fun OtpScreen(
 
         AuthBrandHeader()
 
-        Spacer(modifier = Modifier.weight(1f))
-
-        Text(
-            text = stringResource(R.string.otp_title),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.ExtraBold,
-            color = TextPrimary,
-            textAlign = TextAlign.Center,
-        )
-        Text(
-            text = stringResource(if (sending) R.string.otp_sending_to else R.string.otp_sent_code_to),
-            style = MaterialTheme.typography.bodyLarge,
-            color = TextSecondary,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 8.dp),
-        )
-        if (phone.isNotBlank()) {
-            Text(
-                text = "+91 " + formatIndianMobile(phone),
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Bold,
-                color = Primary,
-                textAlign = TextAlign.Center,
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-        OtpDigitBoxes(
-            value = code,
-            onValueChange = { next ->
-                code = next
-                error = null
-                if (next.length == OtpLength) verifyCode(next)
-            },
-            onDone = { verifyCode(code) },
-            focusRequester = focusRequester,
-            isError = error != null,
-        )
-
-        if (error != null) {
-            Text(
-                text = error!!,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 12.dp),
-            )
-        }
-
-        Box(
+        Column(
             modifier = Modifier
-                .padding(top = 16.dp)
-                .height(24.dp),
-            contentAlignment = Alignment.Center,
+                .weight(1f)
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
         ) {
-            when {
-                sending -> CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp),
+            Text(
+                text = stringResource(R.string.otp_title),
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.ExtraBold,
+                color = TextPrimary,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = stringResource(if (sending) R.string.otp_sending_to else R.string.otp_sent_code_to),
+                style = MaterialTheme.typography.bodyLarge,
+                color = TextSecondary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 6.dp),
+            )
+            if (phone.isNotBlank()) {
+                Text(
+                    text = "+91 " + formatIndianMobile(phone),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
                     color = Primary,
-                    strokeWidth = 2.dp,
+                    textAlign = TextAlign.Center,
                 )
-                secondsLeft > 0 -> {
-                    val time = "%02d:%02d".format(secondsLeft / 60, secondsLeft % 60)
-                    val full = stringResource(R.string.otp_resend_in, time)
-                    val start = full.indexOf(time)
-                    Text(
-                        text = buildAnnotatedString {
-                            append(full)
-                            if (start >= 0) {
-                                addStyle(
-                                    SpanStyle(color = Primary, fontWeight = FontWeight.Bold),
-                                    start,
-                                    start + time.length,
-                                )
-                            }
-                        },
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            OtpDigitBoxes(
+                value = code,
+                onValueChange = { next ->
+                    code = next
+                    error = null
+                    if (next.length == OtpLength) verifyCode(next)
+                },
+                onDone = { verifyCode(code) },
+                focusRequester = focusRequester,
+                isError = error != null,
+            )
+
+            if (error != null) {
+                Text(
+                    text = error!!,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = 12.dp),
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .padding(top = 12.dp)
+                    .height(24.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                when {
+                    sending -> CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = Primary,
+                        strokeWidth = 2.dp,
+                    )
+                    secondsLeft > 0 -> {
+                        val time = "%02d:%02d".format(secondsLeft / 60, secondsLeft % 60)
+                        val full = stringResource(R.string.otp_resend_in, time)
+                        val start = full.indexOf(time)
+                        Text(
+                            text = buildAnnotatedString {
+                                append(full)
+                                if (start >= 0) {
+                                    addStyle(
+                                        SpanStyle(color = Primary, fontWeight = FontWeight.Bold),
+                                        start,
+                                        start + time.length,
+                                    )
+                                }
+                            },
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = TextSecondary,
+                        )
+                    }
+                    else -> Text(
+                        text = stringResource(R.string.otp_resend),
                         style = MaterialTheme.typography.bodyLarge,
-                        color = TextSecondary,
+                        color = Primary,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.clickable { sendOtp() },
                     )
                 }
-                else -> Text(
-                    text = stringResource(R.string.otp_resend),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Primary,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.clickable { sendOtp() },
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            GradientActionButton(
+                label = stringResource(R.string.otp_verify),
+                loading = loading,
+                enabled = code.length == OtpLength && !sending,
+                onClick = { verifyCode(code) },
+            )
+            if (showSlowHint) {
+                Text(
+                    text = stringResource(R.string.login_slow_hint),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = 12.dp),
                 )
             }
         }
 
-        Spacer(modifier = Modifier.weight(1f))
-
-        GradientActionButton(
-            label = stringResource(R.string.otp_verify),
-            loading = loading,
-            enabled = code.length == OtpLength && !sending,
-            onClick = { verifyCode(code) },
-        )
-        if (showSlowHint) {
-            Text(
-                text = stringResource(R.string.login_slow_hint),
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 12.dp),
-            )
-        }
-
-        Text(
-            text = stringResource(R.string.powered_by_newonx),
-            style = MaterialTheme.typography.bodySmall,
-            color = TextSecondary,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
-        )
+        PoweredByNewonX()
     }
 }
 

@@ -315,7 +315,7 @@ fun BottomNavBar(
                     modifier = Modifier
                         .clip(pillShape)
                         .background(
-                            if (isActive) MaterialTheme.colorScheme.primary else Color.Transparent,
+                            if (isActive) com.shopai.app.ui.theme.HeaderGreenStart else Color.Transparent,
                         )
                         .clickable { onTabSelected(tab) }
                         .padding(

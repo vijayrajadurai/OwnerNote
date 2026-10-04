@@ -16,6 +16,7 @@
 
     <!-- Splash -->
     <string name="splash_tagline">Speak up. I\'ll watch your business.</string>
+    <string name="splash_loading">Getting ready…</string>
     <string name="splash_get_started">Get Started →</string>
 
     <!-- User guide (after OTP) -->
@@ -146,8 +147,20 @@
     <string name="priority_overdue">Overdue · %1$s</string>
     <string name="priority_follow_up">Follow up</string>
     <string name="home_quick_actions">Quick actions</string>
-    <string name="home_quick_links">Quick links</string>
+    <string name="home_quick_links">Quick Links</string>
     <string name="home_quick_loans">Loans</string>
+    <string name="home_see_all">See All</string>
+    <string name="home_quick_inventory">Inventory</string>
+    <string name="cash_note_add_entry">Add Entry +</string>
+    <string name="morning_home_view_tasks">View Tasks →</string>
+    <string name="home_credit_debit_overview">Credit &amp; Debit Overview</string>
+    <string name="home_overview_this_month">This Month</string>
+    <string name="home_ratio_credit">Credit %1$d%%</string>
+    <string name="home_ratio_debit">Debit %1$d%%</string>
+    <string name="home_kai_q1">What should I collect today?</string>
+    <string name="home_kai_q2">Who is overdue?</string>
+    <string name="home_kai_q3">How much cash did I receive today?</string>
+    <string name="home_kai_q4">Show today\'s tasks</string>
     <string name="home_voice_record">Voice entry</string>
     <string name="home_add_credit">Credit</string>
     <string name="home_add_debit">Debit</string>
@@ -217,7 +230,7 @@
     <string name="more_about_us">About Us</string>
     <string name="more_help_body">Need a hand with Owner Note? Use Reminders for follow-ups, Sales &amp; purchases for bills, and Settings to change language or appearance. Voice entry on the home screen lets you add credit and debit by speaking.</string>
     <string name="more_about_body">Owner Note is an AI business assistant for Indian shop owners — voice-first transactions, cash flow, billing, and insights. Built to keep day-to-day books simple on your phone.</string>
-    <string name="more_privacy_body">We use your shop data only to run Owner Note on this device and our API — ledger, reminders, and sign-in. Open the full privacy policy for details. Exact map pins are never shown in group buying.</string>
+    <string name="more_privacy_body">We use your shop data only to run Owner Note on this device and our API — ledger, reminders, and sign-in. Exact map pins are never shown in group buying. Read the full Owner Note privacy policy for details.</string>
     <string name="more_notifications_body">Reminders and important business alerts appear here as notifications. Daily voice check-in can speak a short summary at set times — turn it on in Settings.</string>
     <string name="cd_more_profile">Profile</string>
     <string name="cd_more_categories">Categories</string>
@@ -245,7 +258,7 @@
     <string name="more_ask_business_caption">Ask a question, get an instant real answer</string>
     <string name="more_inventory">Inventory / Stock</string>
     <string name="more_inventory_caption">Track stock and get AI usage insights</string>
-    <string name="more_local_offers">Today offer</string>
+    <string name="more_local_offers">Today Offer</string>
     <string name="more_local_offers_caption">Post a local offer or see what is nearby</string>
     <string name="more_profile_caption">Business &amp; account details</string>
     <string name="more_categories_caption">Manage business categories</string>
@@ -475,7 +488,69 @@
     <string name="version">Version</string>
     <string name="version_format">%1$s (%2$d)</string>
     <string name="privacy_policy">Privacy Policy</string>
+    <string name="privacy_policy_read_full">Read full privacy policy</string>
+    <string name="privacy_policy_full"><![CDATA[Last updated: 3 October 2026
+
+Owner Note (“we”, “the app”) is an Android app from NewonX (package com.ownernote.app). This policy explains what information we use when you run the app.
+
+1. Information we collect
+• Phone number, used to send an OTP and create your account (Firebase Authentication).
+• Shop profile: owner name, shop name, category, city, pincode, year started, approximate monthly income, and optional shop location.
+• Business records you enter or scan: customers, suppliers, credit and debit, daily cash, inventory, bills, handwritten notes, voice entries, and reminders.
+• Device identifiers needed for push notifications (FCM token).
+• App language, theme, and similar settings stored on this phone.
+
+2. How we use it
+We use this information only to run Owner Note: sign-in, books, reminders, Kai assistant, group buying with nearby shops in your category, offers, and support. We do not sell your shop data.
+
+3. Where it is stored
+Some data stays on this device (for example captured bills, notes, and local books). Account and business data may also be stored on our API so you can use Owner Note. Location is used to match nearby group-buying requests; exact map pins are not shown to other shops.
+
+4. Sharing
+We share data with service providers who operate the app on our behalf, including Firebase (authentication, messaging, crash reports) and our hosting API. We share information if the law requires it.
+
+5. Notifications
+If you allow notifications, we may send reminders, payment alerts, and optional daily voice check-in. You can turn these off in Settings.
+
+6. Your choices
+You can log out, change language, and refuse location or microphone permission. Some features will not work without those permissions. To delete your account or data, contact us through Help in the app.
+
+7. Children
+Owner Note is for shop owners and is not directed at children.
+
+8. Changes
+We may update this policy in the app. The date at the top will change when we do.
+
+9. Contact
+NewonX — Owner Note. Use Help & Support in the app.]]></string>
     <string name="terms_and_conditions">Terms and Conditions</string>
+    <string name="terms_full"><![CDATA[Last updated: 3 October 2026
+
+These terms apply when you use the Owner Note Android app from NewonX.
+
+1. The app
+Owner Note helps shop owners keep books, scan bills, track stock, set reminders, and talk to Kai. It is provided as-is for business use in India.
+
+2. Your account
+You must use a mobile number you control. You are responsible for entries you save and for keeping the phone secure.
+
+3. Acceptable use
+Do not misuse the app, attempt to access other shops’ accounts, or use Owner Note for anything illegal.
+
+4. Data
+Your use of shop data is described in the Privacy Policy. You confirm that records you enter belong to your business.
+
+5. Subscriptions
+Optional paid plans, if offered, are billed through Google Play. Restore purchases in the app.
+
+6. No professional advice
+Kai, reports, and funding information are helpers only. They are not legal, tax, or lending advice.
+
+7. Availability
+Features may change, and the service may be unavailable at times. We are not liable for lost sales or lost notes beyond what the law requires.
+
+8. Contact
+NewonX — Owner Note. Use Help & Support in the app.]]></string>
     <string name="about_description">AI business assistant for Indian shop owners — voice-first transactions, cash flow, and insights.</string>
     <string name="cd_app_icon">Application icon</string>
 
@@ -532,7 +607,7 @@
     <string name="cash_note_title">Daily Cash Note</string>
     <string name="cash_note_home_empty">No cash in/out recorded for today yet</string>
     <string name="cash_note_home_cta">Record today\'s cash →</string>
-    <string name="cash_note_home_subtitle">Track real cash &amp; UPI</string>
+    <string name="cash_note_home_subtitle">Track real cash &amp; UPI easily</string>
     <string name="cash_note_in">In</string>
     <string name="cash_note_out">Out</string>
     <string name="cash_note_net">Net</string>
@@ -1322,8 +1397,8 @@
     <string name="bill_auto_debit_other">Auto: bill from another shop → Debit (money to pay). Change if this is your own bill.</string>
     <string name="bill_due_date_optional">Due date (optional)</string>
     <string name="home_credit_debit_title">Credit &amp; Debit</string>
-    <string name="home_credit_side">To collect (Credit)</string>
-    <string name="home_debit_side">To pay (Debit)</string>
+    <string name="home_credit_side">Credit (To collect)</string>
+    <string name="home_debit_side">Debit (To pay)</string>
     <string name="home_due_overdue">Overdue (%1$d)</string>
     <string name="home_due_soon">Due in 7 days (%1$d)</string>
     <string name="home_due_later">Later / no date (%1$d)</string>

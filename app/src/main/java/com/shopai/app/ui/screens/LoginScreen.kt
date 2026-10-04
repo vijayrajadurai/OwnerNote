@@ -2,6 +2,7 @@ package com.shopai.app.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -56,6 +57,7 @@ import com.shopai.app.data.AppContainer
 import com.shopai.app.ui.components.AuthBackgroundBrush
 import com.shopai.app.ui.components.AuthBrandHeader
 import com.shopai.app.ui.components.GradientActionButton
+import com.shopai.app.ui.components.PoweredByNewonX
 import com.shopai.app.ui.theme.Border
 import com.shopai.app.ui.theme.Primary
 import com.shopai.app.ui.theme.TextPrimary
@@ -93,56 +95,54 @@ fun LoginScreen(
             .padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(100.dp))
         AuthBrandHeader()
 
-        Spacer(modifier = Modifier.weight(1f))
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Text(
+                text = stringResource(R.string.login_title_line1),
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.ExtraBold,
+                color = TextPrimary,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = stringResource(R.string.login_title_line2),
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.ExtraBold,
+                color = Primary,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = stringResource(R.string.login_otp_info),
+                style = MaterialTheme.typography.bodyLarge,
+                color = TextSecondary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
+            )
 
-        Text(
-            text = stringResource(R.string.login_title_line1),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.ExtraBold,
-            color = TextPrimary,
-            textAlign = TextAlign.Center,
-        )
-        Text(
-            text = stringResource(R.string.login_title_line2),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.ExtraBold,
-            color = Primary,
-            textAlign = TextAlign.Center,
-        )
-        Text(
-            text = stringResource(R.string.login_otp_info),
-            style = MaterialTheme.typography.bodyLarge,
-            color = TextSecondary,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 8.dp, bottom = 20.dp),
-        )
+            PhoneNumberField(
+                phone = phone,
+                onPhoneChange = { phone = it.filter { ch -> ch.isDigit() }.take(10) },
+                onDone = { goToOtp() },
+            )
 
-        PhoneNumberField(
-            phone = phone,
-            onPhoneChange = { phone = it.filter { ch -> ch.isDigit() }.take(10) },
-            onDone = { goToOtp() },
-        )
+            Spacer(modifier = Modifier.height(16.dp))
+            GradientActionButton(
+                label = stringResource(R.string.login_send_otp),
+                loading = navigating,
+                enabled = phone.length >= 10,
+                onClick = { goToOtp() },
+            )
+        }
 
-        Spacer(modifier = Modifier.height(16.dp))
-        GradientActionButton(
-            label = stringResource(R.string.login_send_otp),
-            loading = navigating,
-            enabled = phone.length >= 10,
-            onClick = { goToOtp() },
-        )
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        Text(
-            text = stringResource(R.string.powered_by_newonx),
-            style = MaterialTheme.typography.bodySmall,
-            color = TextSecondary,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.padding(top = 8.dp, bottom = 8.dp),
-        )
+        PoweredByNewonX()
     }
 }
 

@@ -30,7 +30,6 @@ import com.shopai.app.data.network.presentApiError
 import com.shopai.app.ui.components.ApiErrorAlertDialog
 import com.shopai.app.ui.components.DetailScaffold
 import com.shopai.app.ui.components.PrimaryButton
-import com.shopai.app.ui.components.VoiceFabBottomSpacer
 import com.shopai.app.ui.theme.Danger
 import com.shopai.app.ui.theme.LedgerCredit
 import com.shopai.app.ui.theme.ShopAiThemeColors
@@ -195,7 +194,6 @@ fun CustomerDetailScreen(
                         }
                     }
                     LedgerHistorySection(lines = ledger)
-                    VoiceFabBottomSpacer()
                 }
             }
         }

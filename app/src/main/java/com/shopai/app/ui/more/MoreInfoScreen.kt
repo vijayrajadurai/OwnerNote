@@ -1,7 +1,5 @@
 package com.shopai.app.ui.more
 
-import android.content.Intent
-import android.net.Uri
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -13,11 +11,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.shopai.app.R
-import com.shopai.app.billing.BillingConfig
 import com.shopai.app.ui.components.DetailScaffold
 import com.shopai.app.ui.components.OutlinedButton
 import com.shopai.app.ui.components.PrimaryButton
@@ -31,7 +27,6 @@ fun MoreInfoScreen(
     onOpenSettings: () -> Unit,
 ) {
     val spec = moreInfoSpec(page)
-    val context = LocalContext.current
 
     DetailScaffold(title = stringResource(spec.titleRes), onBack = onBack) { contentModifier ->
         Column(
@@ -48,16 +43,6 @@ fun MoreInfoScreen(
                 )
             }
             when (page) {
-                MoreMenuPages.Privacy -> {
-                    PrimaryButton(
-                        label = stringResource(R.string.privacy_policy),
-                        onClick = {
-                            context.startActivity(
-                                Intent(Intent.ACTION_VIEW, Uri.parse(BillingConfig.PRIVACY_POLICY_URL)),
-                            )
-                        },
-                    )
-                }
                 MoreMenuPages.Notifications -> {
                     PrimaryButton(
                         label = stringResource(R.string.more_reminders),
@@ -84,7 +69,7 @@ private data class MoreInfoSpec(
 private fun moreInfoSpec(page: String): MoreInfoSpec = when (page) {
     MoreMenuPages.Help -> MoreInfoSpec(R.string.more_help_support, R.string.more_help_body)
     MoreMenuPages.About -> MoreInfoSpec(R.string.more_about_us, R.string.more_about_body)
-    MoreMenuPages.Privacy -> MoreInfoSpec(R.string.privacy_policy, R.string.more_privacy_body)
+    MoreMenuPages.Privacy -> MoreInfoSpec(R.string.privacy_policy, R.string.privacy_policy_full)
     MoreMenuPages.Notifications -> MoreInfoSpec(R.string.more_notifications, R.string.more_notifications_body)
     else -> MoreInfoSpec(R.string.more_title, R.string.more_help_body)
 }

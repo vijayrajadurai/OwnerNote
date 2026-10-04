@@ -51,14 +51,17 @@ val AuthBackgroundBrush = Brush.verticalGradient(listOf(Color(0xFFFFFFFF), Color
 fun AuthBrandHeader(
     modifier: Modifier = Modifier,
     tagline: String? = null,
+    compact: Boolean = false,
 ) {
+    val logoSize = 100.dp
+    val titleSize = if (compact) 24.sp else 28.sp
     Column(
         modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
             modifier = Modifier
-                .size(88.dp)
+                .size(logoSize)
                 .shadow(elevation = 8.dp, shape = CircleShape, clip = false, ambientColor = BrandGlow, spotColor = BrandGlow)
                 .clip(CircleShape)
                 .background(Color.White)
@@ -71,14 +74,14 @@ fun AuthBrandHeader(
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(10.dp),
+                    .padding(8.dp),
             )
         }
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(if (compact) 10.dp else 14.dp))
         Text(
             text = stringResource(R.string.brand_name),
             fontFamily = OutfitFamily,
-            fontSize = 28.sp,
+            fontSize = titleSize,
             fontWeight = FontWeight.ExtraBold,
             color = TextPrimary,
             textAlign = TextAlign.Center,
@@ -87,14 +90,29 @@ fun AuthBrandHeader(
             Text(
                 text = tagline,
                 fontFamily = OutfitFamily,
-                fontSize = 15.sp,
+                fontSize = if (compact) 13.sp else 15.sp,
                 fontWeight = FontWeight.Medium,
                 color = TextSecondary,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 6.dp),
+                modifier = Modifier.padding(top = 4.dp),
             )
         }
     }
+}
+
+@Composable
+fun PoweredByNewonX(modifier: Modifier = Modifier) {
+    Text(
+        text = stringResource(R.string.powered_by_newonx),
+        fontFamily = OutfitFamily,
+        fontSize = 12.sp,
+        fontWeight = FontWeight.Medium,
+        color = TextSecondary,
+        textAlign = TextAlign.Center,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp, bottom = 8.dp),
+    )
 }
 
 @Composable
