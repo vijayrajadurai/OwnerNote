@@ -108,6 +108,18 @@ object KaiUrgentPresentation {
         else -> UrgentPresentation.NOTIFICATION_ONLY
     }
 
+    /**
+     * Kai Urgent Action Mode is on screen: the same ring as a banner on top of it is a duplicate,
+     * so it is removed. Only the fallback (no full-screen allowed) keeps its notification.
+     */
+    fun dismissNotificationWhenShown(how: UrgentPresentation): Boolean = how != UrgentPresentation.NOTIFICATION_ONLY
+
+    /** The app is open and unlocked: Kai's screen opens itself, so the notification is posted without a heads-up banner. */
+    fun silentNotification(how: UrgentPresentation): Boolean = how == UrgentPresentation.DIRECT_ACTIVITY
+
+    /** Only a locked / background ring uses the full-screen intent (on an unlocked phone Android would show it as a banner). */
+    fun useFullScreenIntent(how: UrgentPresentation): Boolean = how == UrgentPresentation.FULL_SCREEN_INTENT
+
     /** The Pixel 8 report line. */
     fun reportLabel(canUseFullScreenIntent: Boolean): String =
         if (canUseFullScreenIntent) "FULL_SCREEN_PERMITTED" else "FULL_SCREEN_NOT_PERMITTED"

@@ -189,4 +189,30 @@ class KaiReminderEngineTest {
         assertEquals(com.shopai.app.brain.KaiLang.TAMIL, back.lang)
         assertEquals(5, back.maxAttempts)
     }
+
+    // No duplicate banner over Kai: once his screen is on, the same ring's notification goes —
+    // except the fallback (full-screen not allowed), where the notification IS the reminder.
+    @Test
+    fun bannerRemovedOnlyWhenKaiScreenIsShown() {
+        engine.create(reminder("b1", -1_000))
+        engine.fired("b1", snooze = false)
+        val how = engine.presentationOf("b1")!!
+        assertEquals(1, notifications().size)
+        val removed = engine.urgentScreenShown("b1")
+        assertEquals(how != com.shopai.app.brain.tools.UrgentPresentation.NOTIFICATION_ONLY, removed)
+        assertEquals(if (removed) 0 else 1, notifications().size)
+        // State, retry and alarm are untouched.
+        assertEquals(ReminderStatus.RANG, engine.find("b1")!!.status)
+        assertNotNull(engine.find("b1")!!.snoozedUntil)
+        // Left without an answer: a quiet notification keeps it; never a second one.
+        engine.urgentScreenLeft("b1")
+        assertEquals(1, notifications().size)
+        engine.urgentScreenLeft("b1")
+        assertEquals(1, notifications().size)
+        // Done: nothing left behind.
+        engine.complete("b1")
+        assertEquals(0, notifications().size)
+        engine.urgentScreenLeft("b1")
+        assertEquals(0, notifications().size)
+    }
 }

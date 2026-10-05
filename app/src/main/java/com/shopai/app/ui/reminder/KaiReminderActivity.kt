@@ -8,18 +8,18 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
+import android.view.HapticFeedbackConstants
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,7 +29,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -45,15 +44,17 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
@@ -70,8 +71,7 @@ import com.shopai.app.brain.tools.KaiUrgentWords
 import com.shopai.app.brain.tools.ReminderAction
 import com.shopai.app.brain.tools.ReminderStatus
 import com.shopai.app.notifications.KaiReminderEngine
-import com.shopai.app.ui.kai.KaiCharacter
-import com.shopai.app.ui.kai.KaiState
+import kotlinx.coroutines.launch
 
 /**
  * KAI URGENT ACTION MODE — the dedicated screen a reminder opens when it rings
@@ -82,11 +82,15 @@ import com.shopai.app.ui.kai.KaiState
  * One reminder engine behind it: Done / Snooze / Call go through
  * [KaiReminderEngine]; the screen closes itself when the reminder is no
  * longer ringing (Done or Snooze from the notification, Cancel from chat).
+ * While Kai is on screen the same ring's banner is removed (no duplicate);
+ * leaving without an answer puts a quiet notification back.
  */
 class KaiReminderActivity : ComponentActivity() {
 
     private val container get() = (application as ShopAiApplication).container
     private var reminderId by mutableStateOf<String?>(null)
+    /** Done / Snooze was pressed — leaving the screen is the answer, not "left unanswered". */
+    private var answered = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -106,7 +110,19 @@ class KaiReminderActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        intent.getStringExtra(KaiReminderEngine.EXTRA_ID)?.let { reminderId = it }
+        intent.getStringExtra(KaiReminderEngine.EXTRA_ID)?.let { reminderId = it; answered = false }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Kai is on screen: the banner for the same ring would cover him — removed (the fallback keeps its notification).
+        reminderId?.let { runCatching { container.kaiReminders.urgentScreenShown(it) } }
+    }
+
+    override fun onStop() {
+        // Back / home / the dialer without Done or Snooze: the reminder is still waiting — a quiet notification keeps it.
+        if (!answered && !isChangingConfigurations) reminderId?.let { runCatching { container.kaiReminders.urgentScreenLeft(it) } }
+        super.onStop()
     }
 
     override fun onDestroy() {
@@ -133,30 +149,47 @@ class KaiReminderActivity : ComponentActivity() {
         val tick by engine.changes.collectAsState()
         val reminder = remember(id, tick) { engine.find(id) }
         var note by remember(id) { mutableStateOf<String?>(null) }
+        val exit = remember(id) { Animatable(0f) }
+        var acknowledging by remember(id) { mutableStateOf(false) }
+        val scope = rememberCoroutineScope()
 
         // Done / Snooze / Cancel from anywhere (notification, chat): this screen closes.
         val ringing = reminder != null && (reminder.status == ReminderStatus.RANG || reminder.status == ReminderStatus.EXHAUSTED ||
             (reminder.status == ReminderStatus.ACTIVE && reminder.lastTriggeredAt != null && reminder.attemptCount > 0))
-        LaunchedEffect(ringing) { if (!ringing) finish() }
-        if (reminder == null || !ringing) return
+        LaunchedEffect(ringing) { if (!ringing && !answered) finish() }
+        if (reminder == null || (!ringing && !answered)) return
 
         val lang = reminder.lang
         val words = KaiUrgentWords.text(reminder, lang)
         val speaker = container.naturalTtsSpeaker
         val speaking by speaker.speaking.collectAsState()
         val mouth by speaker.mouthLevel.collectAsState()
+        val ringKey = KaiReminderFlow.speechKey(reminder)
 
-        // Kai speaks this attempt once (not again on rotation, a second tap or a process restart).
-        LaunchedEffect(KaiReminderFlow.speechKey(reminder)) {
+        // Kai speaks this attempt once (not again on rotation, a second tap, resume or a process restart).
+        LaunchedEffect(ringKey) {
             if (engine.claimSpeech(reminder)) {
                 val code = if (lang == KaiLang.ENGLISH) "en-IN" else "ta-IN"
                 speaker.speakNatural(words.speech, languageCode = code, fallbackText = words.speech, fallbackLanguage = code)
-                Log.i(TAG, "spoke ${KaiReminderFlow.speechKey(reminder)}")
+                Log.i(TAG, "spoke $ringKey")
+            }
+        }
+
+        /** The answer is saved first; then Kai settles out (never delays the action). */
+        fun leave(snooze: Boolean, saved: Boolean, message: String) {
+            answered = true
+            speaker.stop()
+            if (saved) toast(message)
+            acknowledging = snooze
+            scope.launch {
+                exit.animateTo(1f, tween(KaiUrgentMotion.EXIT_MS.toInt()))
+                finish()
             }
         }
 
         UrgentContent(
             reminder = reminder,
+            ringKey = ringKey,
             headline = words.headline,
             question = words.question,
             header = words.header,
@@ -168,19 +201,16 @@ class KaiReminderActivity : ComponentActivity() {
             note = note,
             speaking = speaking,
             mouthLevel = mouth,
+            exit = exit.value,
+            acknowledging = acknowledging,
             onCall = {
                 speaker.stop()
                 callNow(reminder) { note = it }
             },
-            onDone = {
-                speaker.stop()
-                if (engine.complete(reminder.id)) toast(KaiUrgentWords.done(lang))
-                finish()
-            },
+            onDone = { leave(snooze = false, saved = engine.complete(reminder.id), message = KaiUrgentWords.done(lang)) },
             onSnooze = {
-                speaker.stop()
-                if (engine.snooze(reminder.id, KaiReminderEngine.SNOOZE_MINUTES) != null) toast(KaiUrgentWords.snoozed(KaiReminderEngine.SNOOZE_MINUTES, lang))
-                finish()
+                val saved = engine.snooze(reminder.id, KaiReminderEngine.SNOOZE_MINUTES) != null
+                leave(snooze = true, saved = saved, message = KaiUrgentWords.snoozed(KaiReminderEngine.SNOOZE_MINUTES, lang))
             },
         )
     }
@@ -216,19 +246,30 @@ class KaiReminderActivity : ComponentActivity() {
 
 // ------------------------------------------------------------------ UI
 
-private val UrgentBackground = Color(0xFF07080B)
-private val UrgentSurface = Color(0xFF14161C)
+private val UrgentBackground = Color(0xFF050608)
+private val UrgentSurface = Color(0xFF12141A)
 private val UrgentText = Color(0xFFF2F2F5)
 private val UrgentSecondary = Color(0xFF9A9AA6)
-private val UrgentGreen = Color(0xFF2FBE7C)
-private val UrgentGlow = Color(0xFFF0A93E)
 
 private fun reducedMotion(context: Context): Boolean =
     Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
 
+/** A word block that fades and slides up at its moment in the intro (no typewriter). */
+private fun Modifier.entrance(intro: Float, at: Long, exit: Float, risePx: Float): Modifier = graphicsLayer {
+    alpha = KaiUrgentMotion.textAlpha(intro, at) * (1f - exit)
+    translationY = risePx
+}
+
+@Composable
+private fun PressScale(pressed: Boolean): Float {
+    val s by animateFloatAsState(if (pressed) 0.96f else 1f, spring(dampingRatio = 0.7f, stiffness = 900f), label = "press")
+    return s
+}
+
 @Composable
 private fun UrgentContent(
     reminder: KaiReminder,
+    ringKey: String,
     headline: String,
     question: String,
     header: String,
@@ -240,120 +281,131 @@ private fun UrgentContent(
     note: String?,
     speaking: Boolean,
     mouthLevel: Float,
+    exit: Float,
+    acknowledging: Boolean,
     onCall: () -> Unit,
     onDone: () -> Unit,
     onSnooze: () -> Unit,
 ) {
     val context = LocalContext.current
+    val view = LocalView.current
+    val density = LocalDensity.current
     val still = remember { reducedMotion(context) }
-    // A little more urgent with each attempt — slower and softer at first, never flashing.
-    val attempt = reminder.attemptCount.coerceIn(1, reminder.maxAttempts)
-    val period = (2_600 - (attempt - 1) * 250).coerceAtLeast(1_600)
-    val depth = 0.04f + (attempt - 1) * 0.012f
-    val motion = rememberInfiniteTransition(label = "urgent")
-    val breathe by motion.animateFloat(1f, 1f + depth, infiniteRepeatable(tween(period / 2), RepeatMode.Reverse), label = "breathe")
-    val ring by motion.animateFloat(0f, 1f, infiniteRepeatable(tween(period, easing = LinearEasing)), label = "ring")
+    val intro by rememberIntroClock(ringKey, still)
+    val wake = if (still) 1f else KaiUrgentMotion.wake(intro)
+    fun rise(at: Long) = with(density) { KaiUrgentMotion.textRiseDp(intro, at).dp.toPx() }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(Color(0xFF0D0F14), UrgentBackground))),
+            .background(UrgentBackground)
+            // Atmosphere: an almost invisible green depth behind Kai, nothing more.
+            .background(Brush.radialGradient(listOf(UrgentAccent.copy(alpha = 0.07f * wake * (1f - exit)), Color.Transparent), radius = 1_400f)),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .systemBarsPadding()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 16.dp),
+                .padding(horizontal = 24.dp, vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Spacer(Modifier.height(8.dp))
-            // Kai, awake: his reminder face, breathing, a soft pulse ring behind him, lips moving with his voice.
-            Box(contentAlignment = Alignment.Center, modifier = Modifier.size(260.dp)) {
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    val r = size.minDimension / 2f
-                    drawCircle(
-                        brush = Brush.radialGradient(listOf(UrgentGlow.copy(alpha = 0.28f), Color.Transparent), center = center, radius = r),
-                        radius = r,
-                    )
-                    if (!still) {
-                        drawCircle(
-                            color = UrgentGlow.copy(alpha = (1f - ring) * 0.35f),
-                            radius = r * (0.55f + 0.45f * ring),
-                            center = Offset(center.x, center.y),
-                            style = Stroke(width = 3.dp.toPx()),
-                        )
-                    }
-                }
-                KaiCharacter(
-                    state = if (speaking) KaiState.SPEAKING else KaiState.REMINDER,
-                    speakingAs = KaiState.REMINDER,
-                    mouthLevel = mouthLevel,
-                    size = 200.dp,
-                    modifier = Modifier.scale(if (still) 1f else breathe),
-                )
-            }
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(4.dp))
+            KaiUrgentStage(
+                intro = intro,
+                attempt = reminder.attemptCount.coerceIn(1, reminder.maxAttempts),
+                speaking = speaking,
+                mouthLevel = mouthLevel,
+                exit = exit,
+                acknowledging = acknowledging,
+                still = still,
+                size = 290.dp,
+            )
+            Spacer(Modifier.height(6.dp))
             Text(
                 header,
-                color = UrgentGlow,
+                color = UrgentAccent,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
-                letterSpacing = 2.sp,
-                modifier = Modifier.semantics { heading() },
+                letterSpacing = 3.sp,
+                modifier = Modifier.entrance(intro, KaiUrgentMotion.HEADER_AT, exit, rise(KaiUrgentMotion.HEADER_AT)).semantics { heading() },
             )
             Spacer(Modifier.height(10.dp))
             Text(
                 headline,
                 color = UrgentText,
-                fontSize = 26.sp,
-                lineHeight = 34.sp,
+                fontSize = 27.sp,
+                lineHeight = 35.sp,
                 fontWeight = FontWeight.SemiBold,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive },
+                modifier = Modifier.entrance(intro, KaiUrgentMotion.HEADLINE_AT, exit, rise(KaiUrgentMotion.HEADLINE_AT))
+                    .semantics { liveRegion = LiveRegionMode.Assertive },
             )
-            Spacer(Modifier.height(8.dp))
-            Text(question, color = UrgentText.copy(alpha = 0.86f), fontSize = 18.sp, lineHeight = 26.sp, textAlign = TextAlign.Center)
+            Spacer(Modifier.height(10.dp))
+            Text(
+                question, color = UrgentText.copy(alpha = 0.86f), fontSize = 18.sp, lineHeight = 26.sp, textAlign = TextAlign.Center,
+                modifier = Modifier.entrance(intro, KaiUrgentMotion.QUESTION_AT, exit, rise(KaiUrgentMotion.QUESTION_AT)),
+            )
             Spacer(Modifier.height(6.dp))
-            Text(setAgo, color = UrgentSecondary, fontSize = 13.sp)
+            Text(setAgo, color = UrgentSecondary, fontSize = 13.sp, modifier = Modifier.entrance(intro, KaiUrgentMotion.DETAILS_AT, exit, 0f))
             note?.let {
                 Spacer(Modifier.height(10.dp))
-                Text(it, color = UrgentGreen, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+                Text(it, color = UrgentAccent, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
             }
-            Spacer(Modifier.height(28.dp))
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+            Spacer(Modifier.height(26.dp))
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxWidth().entrance(intro, KaiUrgentMotion.BUTTONS_AT, exit, rise(KaiUrgentMotion.BUTTONS_AT)),
+            ) {
                 if (callLabel != null) {
+                    val source = remember { MutableInteractionSource() }
+                    val pressed by source.collectIsPressedAsState()
                     Button(
-                        onClick = onCall,
-                        colors = ButtonDefaults.buttonColors(containerColor = UrgentGreen, contentColor = Color.White),
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
-                    ) { Text(callLabel, fontSize = 17.sp, fontWeight = FontWeight.Bold) }
+                        onClick = {
+                            view.performHapticFeedback(if (Build.VERSION.SDK_INT >= 30) HapticFeedbackConstants.CONFIRM else HapticFeedbackConstants.VIRTUAL_KEY)
+                            onCall()
+                        },
+                        interactionSource = source,
+                        colors = ButtonDefaults.buttonColors(containerColor = UrgentAccent, contentColor = Color.White),
+                        shape = RoundedCornerShape(18.dp),
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 58.dp).scale(PressScale(pressed)),
+                    ) { Text(callLabel, fontSize = 17.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp) }
                 }
-                val doneFirst = callLabel == null
-                if (doneFirst) {
+                val doneSource = remember { MutableInteractionSource() }
+                val donePressed by doneSource.collectIsPressedAsState()
+                val doneClick = {
+                    view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+                    onDone()
+                }
+                if (callLabel == null) {
                     Button(
-                        onClick = onDone,
-                        colors = ButtonDefaults.buttonColors(containerColor = UrgentGreen, contentColor = Color.White),
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+                        onClick = doneClick,
+                        interactionSource = doneSource,
+                        colors = ButtonDefaults.buttonColors(containerColor = UrgentAccent, contentColor = Color.White),
+                        shape = RoundedCornerShape(18.dp),
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 58.dp).scale(PressScale(donePressed)),
                     ) { Text(doneLabel, fontSize = 17.sp, fontWeight = FontWeight.Bold) }
                 } else {
                     OutlinedButton(
-                        onClick = onDone,
+                        onClick = doneClick,
+                        interactionSource = doneSource,
                         colors = ButtonDefaults.outlinedButtonColors(containerColor = UrgentSurface, contentColor = UrgentText),
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
+                        shape = RoundedCornerShape(18.dp),
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp).scale(PressScale(donePressed)),
                     ) { Text(doneLabel, fontSize = 16.sp, fontWeight = FontWeight.SemiBold) }
                 }
                 if (snoozeLabel != null) {
-                    TextButton(onClick = onSnooze, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
-                        Text(snoozeLabel, color = UrgentSecondary, fontSize = 15.sp, fontWeight = FontWeight.Medium)
-                    }
+                    val snoozeSource = remember { MutableInteractionSource() }
+                    val snoozePressed by snoozeSource.collectIsPressedAsState()
+                    TextButton(
+                        onClick = onSnooze,
+                        interactionSource = snoozeSource,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).scale(PressScale(snoozePressed)),
+                    ) { Text(snoozeLabel, color = UrgentSecondary, fontSize = 15.sp, fontWeight = FontWeight.Medium) }
                 }
             }
-            Spacer(Modifier.height(20.dp))
-            Text(attemptLine, color = UrgentSecondary, fontSize = 13.sp)
+            Spacer(Modifier.height(18.dp))
+            Text(attemptLine, color = UrgentSecondary, fontSize = 13.sp, modifier = Modifier.entrance(intro, KaiUrgentMotion.BUTTONS_AT, exit, 0f))
             Spacer(Modifier.height(8.dp))
         }
     }

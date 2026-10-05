@@ -286,6 +286,9 @@ class KaiReminderEngine(
      * One ring: the urgent notification (full-screen when Android allows it, else the strongest
      * notification) and, when the owner is using the app right now, Kai Urgent Action Mode directly.
      * The decision and Android's full-screen answer are logged every time.
+     *  - FULL_SCREEN_INTENT: Android opens Kai over the lock screen; the banner is removed once Kai is on screen.
+     *  - DIRECT_ACTIVITY (app open, unlocked): Kai opens directly; the notification is posted silently (no banner over Kai).
+     *  - NOTIFICATION_ONLY (full-screen not allowed): the full alert notification stays — it IS the reminder.
      */
     private fun present(r: KaiReminder) {
         ensureChannel()
@@ -297,8 +300,18 @@ class KaiReminderEngine(
         val how = KaiUrgentPresentation.decide(canFullScreen, interactive, locked, appInForeground())
         Log.i(TAG, "ring ${r.id} attempt ${r.attemptCount}/${r.maxAttempts} canUseFullScreenIntent=$canFullScreen " +
             "(${KaiUrgentPresentation.reportLabel(canFullScreen)}) sdk=${Build.VERSION.SDK_INT} interactive=$interactive locked=$locked → $how")
-        prefs.edit().putString(KEY_LAST_PRESENTATION, "${r.id}|${r.attemptCount}|$how|${KaiUrgentPresentation.reportLabel(canFullScreen)}|${now()}").apply()
+        prefs.edit()
+            .putString(KEY_LAST_PRESENTATION, "${r.id}|${r.attemptCount}|$how|${KaiUrgentPresentation.reportLabel(canFullScreen)}|${now()}")
+            .putString(KEY_PRESENTATION_OF + r.id, how.name)
+            .apply()
+        post(r, fullScreen = canFullScreen && KaiUrgentPresentation.useFullScreenIntent(how), silent = KaiUrgentPresentation.silentNotification(how))
+        if (how == UrgentPresentation.DIRECT_ACTIVITY) {
+            runCatching { context.startActivity(urgentIntent(context, r.id)) }.onFailure { Log.w(TAG, "urgent screen not opened: ${it.message}") }
+        }
+    }
 
+    /** The one reminder notification (same id for every ring of a reminder — never a second one). */
+    private fun post(r: KaiReminder, fullScreen: Boolean, silent: Boolean) {
         val words = KaiUrgentWords.text(r, r.lang)
         val open = PendingIntent.getActivity(
             context, notificationId(r.id) + 2, urgentIntent(context, r.id),
@@ -312,11 +325,10 @@ class KaiReminderEngine(
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setAutoCancel(false)
-            .setOnlyAlertOnce(false)
             .setContentIntent(open)
-        if (how != UrgentPresentation.NOTIFICATION_ONLY && canFullScreen) builder.setFullScreenIntent(open, true)
+        if (silent) builder.setSilent(true) else builder.setDefaults(NotificationCompat.DEFAULT_ALL).setOnlyAlertOnce(false)
+        if (fullScreen) builder.setFullScreenIntent(open, true)
         // CALL NOW (the existing dialer — Kai never calls by itself) · DONE · SNOOZE 5 MIN (while attempts remain).
         if (r.action == ReminderAction.CALL && r.person != null) {
             builder.addAction(0, words.callLabel, activity(r, 3, Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + (r.phone ?: "")))))
@@ -327,9 +339,33 @@ class KaiReminderEngine(
         if (KaiReminderFlow.canSnooze(r)) builder.addAction(0, words.snoozeLabel, action(r.id, ACTION_SNOOZE, 4))
         runCatching { NotificationManagerCompat.from(context).notify(notificationId(r.id), builder.build()) }
             .onFailure { Log.w(TAG, "notification not shown: ${it.message}") }
-        if (how == UrgentPresentation.DIRECT_ACTIVITY) {
-            runCatching { context.startActivity(urgentIntent(context, r.id)) }.onFailure { Log.w(TAG, "urgent screen not opened: ${it.message}") }
-        }
+    }
+
+    /** How this reminder's last ring was presented (null: it hasn't rung). */
+    fun presentationOf(id: String): UrgentPresentation? =
+        prefs.getString(KEY_PRESENTATION_OF + id, null)?.let { runCatching { UrgentPresentation.valueOf(it) }.getOrNull() }
+
+    /**
+     * Kai Urgent Action Mode is visible: the same ring's banner on top of it is a duplicate — removed.
+     * The fallback (full-screen not allowed) keeps its notification. Alarms, retry and state are untouched.
+     */
+    fun urgentScreenShown(id: String): Boolean {
+        val how = presentationOf(id) ?: return false
+        if (!KaiUrgentPresentation.dismissNotificationWhenShown(how)) return false
+        NotificationManagerCompat.from(context).cancel(notificationId(id))
+        Log.i(TAG, "urgent screen visible for $id → its notification removed (was $how)")
+        return true
+    }
+
+    /**
+     * The owner left Kai's screen without Done / Snooze (back, home, the dialer): the reminder is still
+     * waiting, so it goes back to the shade quietly (no sound, no full-screen) until Done or the next retry.
+     */
+    fun urgentScreenLeft(id: String) {
+        val r = find(id)?.takeIf { it.status == ReminderStatus.RANG || (it.status == ReminderStatus.ACTIVE && it.snoozedUntil != null && it.attemptCount > 0) } ?: return
+        ensureChannel()
+        post(r, fullScreen = false, silent = true)
+        Log.i(TAG, "urgent screen left for $id → quiet notification kept")
     }
 
     private fun activity(r: KaiReminder, offset: Int, intent: Intent): PendingIntent = PendingIntent.getActivity(
@@ -420,6 +456,7 @@ class KaiReminderEngine(
         private const val TAG = "KaiReminder"
         private const val KEY_LAST_PRESENTATION = "last_presentation"
         private const val KEY_SPOKEN = "spoken_attempt"
+        private const val KEY_PRESENTATION_OF = "presentation_of_"
         /** Kai Urgent Action Mode: high importance, lock-screen visible, sound + vibration. */
         private const val URGENT_CHANNEL_ID = "kai_reminders_urgent_v1"
         private const val NOTIFICATION_BASE = 0x4000000

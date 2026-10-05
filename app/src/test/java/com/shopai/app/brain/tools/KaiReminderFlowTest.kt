@@ -171,6 +171,17 @@ class KaiReminderFlowTest {
         // Foreground but the screen is locked: never a direct start over the keyguard.
         assertEquals(UrgentPresentation.FULL_SCREEN_INTENT, KaiUrgentPresentation.decide(true, interactive = true, locked = true, appInForeground = true))
         assertEquals("FULL_SCREEN_PERMITTED", KaiUrgentPresentation.reportLabel(true))
+        // No duplicate banner over Kai: removed once his screen shows — except the fallback, where the notification IS the reminder.
+        assertTrue(KaiUrgentPresentation.dismissNotificationWhenShown(UrgentPresentation.FULL_SCREEN_INTENT))
+        assertTrue(KaiUrgentPresentation.dismissNotificationWhenShown(UrgentPresentation.DIRECT_ACTIVITY))
+        assertFalse(KaiUrgentPresentation.dismissNotificationWhenShown(UrgentPresentation.NOTIFICATION_ONLY))
+        // App open + unlocked: Kai opens directly, the notification is silent (no heads-up banner) and has no full-screen intent.
+        assertTrue(KaiUrgentPresentation.silentNotification(UrgentPresentation.DIRECT_ACTIVITY))
+        assertFalse(KaiUrgentPresentation.silentNotification(UrgentPresentation.FULL_SCREEN_INTENT))
+        assertFalse(KaiUrgentPresentation.silentNotification(UrgentPresentation.NOTIFICATION_ONLY))
+        assertFalse(KaiUrgentPresentation.useFullScreenIntent(UrgentPresentation.DIRECT_ACTIVITY))
+        assertTrue(KaiUrgentPresentation.useFullScreenIntent(UrgentPresentation.FULL_SCREEN_INTENT))
+        assertFalse(KaiUrgentPresentation.useFullScreenIntent(UrgentPresentation.NOTIFICATION_ONLY))
         assertEquals("FULL_SCREEN_NOT_PERMITTED", KaiUrgentPresentation.reportLabel(false))
     }
 
