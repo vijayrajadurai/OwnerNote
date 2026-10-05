@@ -21,42 +21,47 @@ class KaiUrgentVoiceScriptTest {
         t0, newOccurrence = true,
     )
 
+    // Tanglish owner: the words follow the spec's progression, spoken in Tamil script so the natural
+    // (Sarvam) voice reads them like a person — never Latin letters read by a Tamil voice.
     @Test
-    fun callReminderProgression() {
+    fun callReminderProgressionInTheNaturalVoice() {
         val r = reminder()
         assertEquals(
             listOf(
-                "Owner, Praba-ku call panna vendiya neram aachu. Ippo call pannalama?",
-                "Praba-ku call pannunga Owner.",
-                "Seekiram pannunga Owner.",
-                "Owner, Praba-ku call pannalama?",
-                "Praba-ku call panna marakkadheenga Owner.",
-                "Owner, idha ippo mudichidalaama?",
+                "ஓனர், Praba-க்கு கால் பண்ண வேண்டிய நேரம் ஆச்சு. இப்போ கால் பண்ணலாமா?",
+                "Praba-க்கு கால் பண்ணுங்க ஓனர்.",
+                "சீக்கிரம் பண்ணுங்க ஓனர்.",
+                "ஓனர், Praba-க்கு கால் பண்ணலாமா?",
+                "Praba-க்கு கால் பண்ண மறக்காதீங்க ஓனர்.",
+                "ஓனர், இதை இப்போ முடிச்சிடலாமா?",
             ),
             KaiUrgentVoiceScript.lines(r).map { it.text },
         )
-        // The opening is exactly the screen's own words.
-        assertEquals(KaiUrgentWords.text(r).speech, KaiUrgentVoiceScript.lines(r).first().text)
+        assertEquals("ta-IN", KaiUrgentVoiceScript.languageCode(KaiLang.TANGLISH))
         // The lines that ask bring the hand out; "Seekiram" is attention, not a gesture.
         assertEquals(listOf(true, true, false, true, false, true), KaiUrgentVoiceScript.lines(r).map { it.gesture })
+        // The same words the owner reads (Tanglish on screen), in the spec's order.
+        assertEquals(
+            listOf("Praba-ku call pannunga Owner.", "Seekiram pannunga Owner.", "Owner, Praba-ku call pannalama?"),
+            KaiUrgentVoiceScript.written(r, KaiLang.TANGLISH).drop(1).take(3).map { it.text },
+        )
     }
 
+    // No Latin word is left for the Tamil voice to stumble on — only names.
     @Test
-    fun everyLanguageAndKindHasItsOwnWords() {
-        val ta = KaiUrgentVoiceScript.lines(reminder(lang = KaiLang.TAMIL)).map { it.text }
-        assertTrue(ta[1], ta[1].contains("Praba-க்கு") && ta[1].contains("ஓனர்"))
-        val en = KaiUrgentVoiceScript.lines(reminder(lang = KaiLang.ENGLISH)).map { it.text }
-        assertEquals("Please call Praba, Owner.", en[1])
-        assertEquals("en-IN", KaiUrgentVoiceScript.languageCode(KaiLang.ENGLISH))
-        assertEquals("ta-IN", KaiUrgentVoiceScript.languageCode(KaiLang.TANGLISH))
-        val msg = KaiUrgentVoiceScript.lines(reminder(action = ReminderAction.MESSAGE)).map { it.text }
-        assertEquals("Praba-ku message pannunga Owner.", msg[1])
-        val pay = KaiUrgentVoiceScript.lines(reminder(action = ReminderAction.PAYMENT)).map { it.text }
-        assertFalse("no call words for a payment", pay.drop(1).any { it.contains("call", ignoreCase = true) })
-        for (lines in listOf(ta, en, msg, pay)) {
-            assertEquals(6, lines.size)
-            assertEquals("no line twice", lines.size, lines.toSet().size)
+    fun tamilVoiceGetsNoEnglishWordsExceptNames() {
+        for (action in ReminderAction.values()) for (lang in listOf(KaiLang.TAMIL, KaiLang.TANGLISH)) {
+            val r = reminder(action = action, lang = lang)
+            val said = KaiUrgentVoiceScript.lines(r).map { it.text } + KaiUrgentVoiceScript.callAck(r) +
+                KaiUrgentVoiceScript.doneAck(lang) + KaiUrgentVoiceScript.snoozeAck(5, lang)
+            for (line in said) {
+                val latin = Regex("[A-Za-z]+").findAll(line).map { it.value }.filter { it != "Praba" }.toList()
+                assertTrue("$action/$lang: '$line' has $latin", latin.isEmpty())
+            }
         }
+        // English owners hear English.
+        assertEquals("Please call Praba, Owner.", KaiUrgentVoiceScript.lines(reminder(lang = KaiLang.ENGLISH))[1].text)
+        assertEquals("Okay Owner.", KaiUrgentVoiceScript.doneAck(KaiLang.ENGLISH))
     }
 
     // Persistent but natural: the opening once, then the follow-ups in turn — never the same line twice in a row.
@@ -83,15 +88,18 @@ class KaiUrgentVoiceScriptTest {
     @Test
     fun shortAnswersNeverClaimACall() {
         val r = reminder()
-        assertEquals("Seri Owner, Praba-ku call screen open pannuren.", KaiUrgentVoiceScript.callAck(r))
-        assertEquals("Seri Owner.", KaiUrgentVoiceScript.doneAck(KaiLang.TANGLISH))
-        assertEquals("Seri Owner, 5 minutes-ku remind pannuren.", KaiUrgentVoiceScript.snoozeAck(5, KaiLang.TANGLISH))
-        assertEquals("Seri Owner, call screen open pannuren.", KaiUrgentVoiceScript.callAck(reminder(person = null)))
+        // Spoken in Tamil script for a Tanglish owner (the spec's "Seri Owner, Praba-ku call screen open pannuren.").
+        assertEquals("சரி ஓனர், Praba-க்கு கால் ஸ்க்ரீன் திறக்குறேன்.", KaiUrgentVoiceScript.callAck(r))
+        assertEquals("சரி ஓனர்.", KaiUrgentVoiceScript.doneAck(KaiLang.TANGLISH))
+        assertEquals("சரி ஓனர், 5 நிமிஷம் கழிச்சு நினைவூட்டுறேன்.", KaiUrgentVoiceScript.snoozeAck(5, KaiLang.TANGLISH))
+        assertEquals("சரி ஓனர், கால் ஸ்க்ரீன் திறக்குறேன்.", KaiUrgentVoiceScript.callAck(reminder(person = null)))
+        assertEquals("Seri Owner, Praba-ku call screen open pannuren.", KaiUrgentVoiceScript.callAckWritten(r, KaiLang.TANGLISH))
         for (lang in KaiLang.values()) {
             val ack = KaiUrgentVoiceScript.callAck(r, lang)
             for (claim in listOf("pannitten", "called", "பண்ணிட்டேன்", "answered")) assertFalse(ack, ack.contains(claim, ignoreCase = true))
         }
         assertNotEquals(KaiUrgentVoiceScript.doneAck(KaiLang.TAMIL), KaiUrgentVoiceScript.doneAck(KaiLang.ENGLISH))
+        for (claim in listOf("பண்ணிட்டேன்", "திறந்துட்டேன்")) assertFalse(KaiUrgentVoiceScript.callAck(r).contains(claim))
     }
 
     @Test

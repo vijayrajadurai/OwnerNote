@@ -1,5 +1,33 @@
 # Voice test
 
+## Round 2 (after the owner's Pixel 8 test): natural Sarvam voice
+
+The owner tested on the Pixel 8 and reported that the voice sounded robotic.
+
+**Cause:** the reminder lines were sent to the Sarvam Tamil voice (`ta-IN`) as Tanglish in Latin
+letters. Every other Kai reply sends Tamil **script**; `KaiResponder` notes that the Tamil voice can't
+read Tanglish. So the voice either misread the Latin letters or fell back to the robotic Android voice.
+
+**Fix:**
+- For Tamil and Tanglish owners, the voice now speaks the Tamil-script lines (`KaiUrgentVoiceScript.spoken`).
+  English loanwords are written as a Tamil speaker says them: call→கால், reminder→ரிமைண்டர், and so on.
+- The owner's own task words are converted the same way ("Praba-ku call panna" → "Praba-க்கு கால் பண்ண").
+- The screen text stays Tanglish.
+- `NaturalTtsSpeaker` now records which voice played and why the natural voice was skipped. Logcat:
+  `voice engine=sarvam` or `voice engine=device (natural voice not used: …)`.
+- Device test t7 reports `voiceEngine` and fails if the Sarvam proxy is configured but the robotic voice played.
+
+Example — what Kai says (Tanglish owner):
+
+| # | Spoken (Tamil script, Sarvam) | Meaning on screen |
+|---|---|---|
+| 0 | ஓனர், Praba-க்கு கால் பண்ண வேண்டிய நேரம் ஆச்சு. இப்போ கால் பண்ணலாமா? | Owner, Praba-ku call panna vendiya neram aachu… |
+| 1 | Praba-க்கு கால் பண்ணுங்க ஓனர். | Praba-ku call pannunga Owner. |
+| 2 | சீக்கிரம் பண்ணுங்க ஓனர். | Seekiram pannunga Owner. |
+| ack | சரி ஓனர், Praba-க்கு கால் ஸ்க்ரீன் திறக்குறேன். | Seri Owner, Praba-ku call screen open pannuren. |
+
+The table below describes the first round. The written lines are unchanged; Kai now speaks them in Tamil script.
+
 Tanglish cycle for "Praba-ku call" (`KaiUrgentVoiceScript`). Each pause starts after the previous
 line ends.
 

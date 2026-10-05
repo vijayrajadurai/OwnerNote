@@ -54,6 +54,13 @@ class NaturalTtsSpeaker(context: Context) {
     private val _speaking = MutableStateFlow(false)
     val speaking: StateFlow<Boolean> = _speaking.asStateFlow()
     private var lipSyncJob: Job? = null
+    /** Which voice played the last line: "sarvam" (the natural voice), "device" (Android TTS fallback) or "none". */
+    @Volatile var lastEngine: String = "none"
+        private set
+    /** Why the natural voice was not used last time (null when it was). */
+    @Volatile var lastProxyProblem: String? = null
+        private set
+    @Volatile private var lastFetchError: String? = null
     /** Bumped by [stop]: a request made before it never plays afterwards (its audio may still be on its way). */
     @Volatile private var generation = 0
 
@@ -186,11 +193,15 @@ class NaturalTtsSpeaker(context: Context) {
             val played = playWavFile(proxyAudio, useAlarmStream)
             proxyAudio.delete()
             if (played) {
+                lastEngine = "sarvam"
+                lastProxyProblem = null
                 onDone?.invoke()
                 return
             }
+            lastProxyProblem = "playback failed"
             logDebug("Proxy audio playback failed; falling back to device TTS.")
         } else {
+            lastProxyProblem = if (ttsApi == null) "TTS_PROXY_URL not set in this build" else (lastFetchError ?: "no audio")
             logDebug("Proxy TTS unavailable; falling back to device TTS.")
         }
 
@@ -203,6 +214,7 @@ class NaturalTtsSpeaker(context: Context) {
             fallbackLanguage,
             useAlarmStream,
         )
+        lastEngine = if (spokeOnDevice) "device" else "none"
         if (!spokeOnDevice) {
             logDebug("Device TTS also failed.")
         }
@@ -222,8 +234,9 @@ class NaturalTtsSpeaker(context: Context) {
                     writeBytes(audioBytes)
                 }
             }.onFailure { err ->
+                lastFetchError = err.message?.take(120) ?: err.javaClass.simpleName
                 logDebug("Proxy TTS request failed: ${err.message}")
-            }.getOrNull()
+            }.onSuccess { lastFetchError = if (it == null) "empty audio" else null }.getOrNull()
         }
     }
 

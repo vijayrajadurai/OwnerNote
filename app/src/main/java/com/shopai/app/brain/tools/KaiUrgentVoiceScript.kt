@@ -23,6 +23,11 @@ data class VoiceLine(
  *
  * Pauses are counted from the end of the previous line. Call / Done / Snooze end it at once
  * with one short answer. Plain rules, no AI.
+ *
+ * The voice is the app's natural Sarvam voice, which reads Tamil **script** (like every other Kai
+ * reply — see KaiResponder): for Tamil and Tanglish owners the words are spoken in Tamil script
+ * ([spoken]), so the screen stays Tanglish while the voice sounds like a person, not a machine
+ * reading Latin letters. English stays English.
  */
 object KaiUrgentVoiceScript {
 
@@ -34,8 +39,39 @@ object KaiUrgentVoiceScript {
 
     fun languageCode(lang: KaiLang) = if (lang == KaiLang.ENGLISH) "en-IN" else "ta-IN"
 
-    /** The lines in order: [0] is the screen's own words, then the follow-ups. */
+    /** The language the voice speaks: Tanglish is spoken as Tamil. */
+    private fun voiceLang(lang: KaiLang) = if (lang == KaiLang.ENGLISH) KaiLang.ENGLISH else KaiLang.TAMIL
+
+    /**
+     * English and Tanglish words inside Tamil lines (also the owner's own task words, e.g. "Praba-ku call panna"),
+     * as a Tamil speaker says them. Names and anything unknown stay as they are.
+     */
+    private val spokenWords = listOf(
+        "call screen" to "கால் ஸ்க்ரீன்", "call" to "கால்", "message" to "மெசேஜ்", "reminder" to "ரிமைண்டர்",
+        "pending" to "பெண்டிங்", "payment" to "பேமெண்ட்", "collect" to "கலெக்ட்", "done" to "டன்",
+        "stock" to "ஸ்டாக்", "order" to "ஆர்டர்", "whatsapp" to "வாட்ஸ்அப்",
+        "pannanum" to "பண்ணணும்", "panna" to "பண்ண", "pannu" to "பண்ணு", "pannunga" to "பண்ணுங்க",
+        "vaanganum" to "வாங்கணும்", "vaanga" to "வாங்க", "vanganum" to "வாங்கணும்", "kudukkanum" to "குடுக்கணும்",
+        "kudu" to "குடு", "anuppanum" to "அனுப்பணும்", "kitta" to "கிட்ட", "kaasu" to "காசு", "panam" to "பணம்",
+    ).map { (en, ta) -> Regex("(?<![A-Za-z])" + Regex.escape(en) + "(?![A-Za-z])", RegexOption.IGNORE_CASE) to ta }
+
+    /** [text] ready for the Tamil voice: the English words in it written in Tamil script. */
+    fun spoken(text: String, lang: KaiLang): String {
+        if (lang == KaiLang.ENGLISH) return text
+        // "Praba-ku" → "Praba-க்கு" (the name stays, the case ending is Tamil).
+        var out = text.replace(Regex("(?<=[A-Za-z])-ku(?![A-Za-z])"), "-க்கு")
+        for ((word, ta) in spokenWords) out = out.replace(word, ta)
+        return out
+    }
+
+    /** The lines in order, as the voice says them: [0] is the screen's own words, then the follow-ups. */
     fun lines(r: KaiReminder, lang: KaiLang = r.lang): List<VoiceLine> {
+        val v = voiceLang(lang)
+        return written(r, v).map { it.copy(text = spoken(it.text, v)) }
+    }
+
+    /** The lines as written in [lang], before [spoken]. */
+    internal fun written(r: KaiReminder, lang: KaiLang): List<VoiceLine> {
         val opening = VoiceLine(KaiUrgentWords.text(r, lang).speech, gesture = true)
         val p = r.person?.takeIf { it.isNotBlank() }
         val soon = VoiceLine(pick(lang, ta = "சீக்கிரம் பண்ணுங்க ஓனர்.", tl = "Seekiram pannunga Owner.", en = "Let's do it soon, Owner."), gesture = false)
@@ -83,16 +119,18 @@ object KaiUrgentVoiceScript {
     // ------------------------------------------------------------------ the owner acted: one short answer
 
     /** Call Now — before the dialer opens. Never "called": only that the call screen is opening. */
-    fun callAck(r: KaiReminder, lang: KaiLang = r.lang): String {
+    fun callAck(r: KaiReminder, lang: KaiLang = r.lang): String = voiceLang(lang).let { v -> spoken(callAckWritten(r, v), v) }
+
+    internal fun callAckWritten(r: KaiReminder, lang: KaiLang): String {
         val p = r.person?.takeIf { it.isNotBlank() }
         return if (p != null) pick(lang, ta = "சரி ஓனர், $p-க்கு call screen திறக்குறேன்.", tl = "Seri Owner, $p-ku call screen open pannuren.", en = "Okay Owner, opening the call screen for $p.")
         else pick(lang, ta = "சரி ஓனர், call screen திறக்குறேன்.", tl = "Seri Owner, call screen open pannuren.", en = "Okay Owner, opening the call screen.")
     }
 
-    fun doneAck(lang: KaiLang) = pick(lang, ta = "சரி ஓனர்.", tl = "Seri Owner.", en = "Okay Owner.")
+    fun doneAck(lang: KaiLang) = pick(voiceLang(lang), ta = "சரி ஓனர்.", tl = "Seri Owner.", en = "Okay Owner.")
 
     fun snoozeAck(minutes: Long, lang: KaiLang) =
-        pick(lang, ta = "சரி ஓனர், $minutes நிமிஷம் கழிச்சு நினைவூட்டுறேன்.", tl = "Seri Owner, $minutes minutes-ku remind pannuren.", en = "Okay Owner, I'll remind you in $minutes minutes.")
+        pick(voiceLang(lang), ta = "சரி ஓனர், $minutes நிமிஷம் கழிச்சு நினைவூட்டுறேன்.", tl = "Seri Owner, $minutes minutes-ku remind pannuren.", en = "Okay Owner, I'll remind you in $minutes minutes.")
 
     // ------------------------------------------------------------------ the screen's compact controls
 

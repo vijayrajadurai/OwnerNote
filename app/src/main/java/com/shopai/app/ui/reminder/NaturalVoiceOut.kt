@@ -1,5 +1,6 @@
 package com.shopai.app.ui.reminder
 
+import android.util.Log
 import com.shopai.app.data.tts.NaturalTtsSpeaker
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
@@ -9,6 +10,8 @@ class NaturalVoiceOut(private val speaker: NaturalTtsSpeaker) : KaiVoiceOut {
 
     override suspend fun say(text: String, languageCode: String) = suspendCancellableCoroutine { cont ->
         speaker.speakNatural(text, languageCode = languageCode, fallbackText = text, fallbackLanguage = languageCode, onDone = {
+            // Which voice spoke — "sarvam" is the natural one; "device" means the robotic fallback (and why).
+            Log.i("KaiReminder", "voice engine=${speaker.lastEngine}" + (speaker.lastProxyProblem?.let { " (natural voice not used: $it)" } ?: ""))
             if (cont.isActive) cont.resume(Unit)
         })
     }

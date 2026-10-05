@@ -514,7 +514,10 @@ class KaiReminderPixelTest {
         val starts = linkedSetOf<Long>()
         val continued = waitFor(40_000) { voice.cue.value?.let { starts += it.startedAt }; starts.size >= 2 }
         val gap = starts.toList().let { if (it.size >= 2) it[1] - it[0] else -1 }
-        report("t7 voiceLines=${starts.size} secondLineAfterMs=$gap speakingRing=${voice.speakingRing}")
+        val voiceEngine = container.naturalTtsSpeaker.lastEngine
+        val proxyConfigured = com.shopai.app.BuildConfig.TTS_PROXY_URL.isNotBlank()
+        report("t7 voiceLines=${starts.size} secondLineAfterMs=$gap speakingRing=${voice.speakingRing} voiceEngine=$voiceEngine proxyConfigured=$proxyConfigured problem=${container.naturalTtsSpeaker.lastProxyProblem}")
+        assertTrue("BUG: the natural (Sarvam) voice is configured but Kai used the robotic device voice: ${container.naturalTtsSpeaker.lastProxyProblem}", !proxyConfigured || voiceEngine == "sarvam")
         assertTrue("BUG: Kai said the reminder once and went silent", continued)
         assertTrue("BUG: Kai repeats too fast (${gap} ms)", gap >= 5_000)
         screenshot("t7-3-speaking")

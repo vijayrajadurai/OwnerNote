@@ -18,6 +18,26 @@ renders: **active character.** The body moves (head, eyes, brows, shoulders, che
 the hand), there is no ring and no particle field, and the only effect is a faint floor light.
 **This still has to be confirmed on the Pixel 8.**
 
+## Round 2 — after the owner's Pixel 8 test
+
+The owner confirmed these work:
+- full screen with the screen on and off;
+- the cinematic action;
+- Kai saying different lines each time.
+
+They asked for two changes:
+
+1. **Voice robotic → natural Sarvam voice.** Kai now speaks Tamil script to the Sarvam Tamil voice.
+   See VOICE_TEST.md for the cause and the fix.
+2. **The glowing background is back.** The first version's stage is restored behind the large Kai:
+   - a green energy field (breathing with him);
+   - a slow orbit arc;
+   - 26 drifting light particles;
+   - one pulse as he notices the owner;
+   - the floor light.
+
+   It is centred on his upper body and sized to the screen width. See `preview/03-glowing-stage.png`.
+
 ## What changed
 
 1. **Kai fills the screen.** In portrait he takes everything above the words, head to sandals, never

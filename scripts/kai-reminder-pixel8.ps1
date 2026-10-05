@@ -67,7 +67,7 @@ foreach ($x in $xmls) {
 }
 Write-Host "-----------------------------------------------------------------"
 # Cinematic Kai (t7): his size on screen, the controls, body motion, the voice loop, silence after Done.
-$log | Select-String "t7 (kaiHeightShare|kaiBox|tallestDp|kaiBodyMotion|voiceLines|silentAfterDone)" | ForEach-Object { Write-Host ("  " + ($_.ToString() -replace '.*KaiReminderLive: ', '')) }
+$log | Select-String "t7 (kaiHeightShare|kaiBox|tallestDp|kaiBodyMotion|voiceLines|voiceEngine|silentAfterDone)" | ForEach-Object { Write-Host ("  " + ($_.ToString() -replace '.*KaiReminderLive: ', '')) }
 $result = $log | Select-String "RESULT=" | Select-Object -Last 1
 if ($blockers.Count -gt 0) {
     Write-Host "FINAL: BLOCKER" -ForegroundColor Red; $blockers | ForEach-Object { Write-Host "  $_" }
