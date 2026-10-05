@@ -107,6 +107,10 @@ fun KaiChatScreen(
                         .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName),
                 )
             }
+            // Android 14+: "Allow full-screen alerts" so Kai Urgent Action Mode can appear over the lock screen.
+            com.shopai.app.brain.chat.KaiAction.OpenFullScreenSettings -> runCatching {
+                context.startActivity(com.shopai.app.notifications.KaiReminderEngine.fullScreenSettingsIntent(context))
+            }
             is com.shopai.app.brain.chat.KaiAction.EditPlan -> session.plan(action.key)?.let { editing = messageId to it }
             is com.shopai.app.brain.chat.KaiAction.EditStock -> {
                 if (session.stockDraft(action.key) != null) editingStock = messageId to action.key

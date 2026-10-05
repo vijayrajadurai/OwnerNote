@@ -143,7 +143,10 @@ class AppContainer(context: Context) {
 
     /** Kai's tools: the books engine (reads, drafts, confirmed posts), reminders, the action log. */
     val kaiTools: com.shopai.app.data.kai.AppKaiTools by lazy {
-        com.shopai.app.data.kai.AppKaiTools(appContext, books, transactionRepository, kaiReminders, kaiActionLog, inventoryRepository)
+        com.shopai.app.data.kai.AppKaiTools(appContext, books, transactionRepository, kaiReminders, kaiActionLog, inventoryRepository) {
+            // The login whose Kai memory is open (business + owner) — reminders are scoped to it.
+            kaiMemory.businessId to kaiMemory.ownerId
+        }
     }
 
     /**

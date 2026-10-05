@@ -50,6 +50,12 @@ sealed interface KaiAction {
     /** Change a reminder just set: Kai asks the new time. */
     data class EditReminder(val id: String) : KaiAction
     data class CompleteReminder(val id: String) : KaiAction
+    /** A new reminder is set only after this (Confirm on "… reminder set pannalama?"). */
+    data class ConfirmReminder(val requestKey: String) : KaiAction
+    /** Change a reminder's time before it is set. */
+    data class EditReminderRequest(val requestKey: String) : KaiAction
+    /** Android's "full-screen alerts" setting for Kai Urgent Action Mode (Android 14+). */
+    data object OpenFullScreenSettings : KaiAction
     data class SnoozeReminder(val id: String, val minutes: Long) : KaiAction
     /** A time chosen for a reminder that was asked without one. */
     data class RemindAt(val requestKey: String, val at: LocalDateTime) : KaiAction

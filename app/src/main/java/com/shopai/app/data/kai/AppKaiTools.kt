@@ -54,6 +54,8 @@ class AppKaiTools(
     private val actionLog: KaiActionLog,
     /** Stock in / out through the existing inventory engine (the books after the import). */
     private val inventory: com.shopai.app.data.repository.InventoryRepository? = null,
+    /** The signed-in business + owner (from the session — never from a screen); reminders are theirs only. */
+    private val scope: () -> Pair<String?, String?> = { null to null },
 ) : KaiTools {
 
     private suspend fun session(): BooksSession? = runCatching { books.session() }.getOrNull()
@@ -295,13 +297,17 @@ class AppKaiTools(
 
     // ------------------------------------------------------------ reminders / audit
 
-    override fun createReminder(reminder: KaiReminder): ReminderSaved = reminders.create(reminder)
+    override fun createReminder(reminder: KaiReminder): ReminderSaved {
+        val (business, owner) = scope()
+        return reminders.create(reminder.copy(businessId = reminder.businessId ?: business, ownerId = reminder.ownerId ?: owner))
+    }
     override fun updateReminder(reminder: KaiReminder): ReminderSaved = reminders.update(reminder)
     override fun cancelReminder(id: String): Boolean = reminders.cancel(id)
     override fun completeReminder(id: String): Boolean = reminders.complete(id)
     override fun snoozeReminder(id: String, minutes: Long): KaiReminder? = reminders.snooze(id, minutes)
-    override fun reminders(): List<KaiReminder> = reminders.open()
-    override fun lastRang(): KaiReminder? = reminders.lastRang()
+    override fun reminders(): List<KaiReminder> = scope().let { (b, o) -> com.shopai.app.brain.tools.KaiReminderScope.visible(reminders.open(), b, o) }
+    override fun lastRang(): KaiReminder? = reminders.lastRang()?.takeIf { r -> scope().let { (b, o) -> com.shopai.app.brain.tools.KaiReminderScope.visible(listOf(r), b, o).isNotEmpty() } }
+    override fun fullScreenAllowed(): Boolean? = reminders.fullScreenAllowed()
 
     /** OwnerNote customers / suppliers (offline, the books), then the phone's contacts if the owner allowed it. */
     override suspend fun contacts(name: String, role: PartyRole?): List<ContactMatch>? {

@@ -8,12 +8,17 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import com.shopai.app.MainActivity
 import com.shopai.app.R
+import com.shopai.app.brain.KaiLang
 import com.shopai.app.brain.tools.KaiReminder
+import com.shopai.app.brain.tools.KaiReminderFlow
 import com.shopai.app.brain.tools.KaiReminderSchedule
+import com.shopai.app.brain.tools.KaiUrgentPresentation
+import com.shopai.app.brain.tools.KaiUrgentWords
+import com.shopai.app.brain.tools.UrgentPresentation
 import com.shopai.app.brain.tools.Recurrence
 import com.shopai.app.brain.tools.ReminderAction
 import com.shopai.app.brain.tools.ReminderSaved
@@ -28,7 +33,6 @@ import org.json.JSONObject
 import java.time.DayOfWeek
 import java.time.LocalTime
 import java.time.ZoneId
-import java.util.Locale
 
 /**
  * OwnerNote's reminder engine for Kai — the one place reminders are created,
@@ -37,14 +41,18 @@ import java.util.Locale
  * never an AI. Repeating reminders are re-armed after they ring; everything is
  * re-armed on boot, app start, update and time-zone change.
  */
-class KaiReminderEngine(private val context: Context) {
+class KaiReminderEngine(
+    private val context: Context,
+    /** The phone's clock; tests on a device pass their own so a 5-minute retry needs no real 5 minutes. */
+    private val clock: () -> Long = System::currentTimeMillis,
+) {
     private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     private val _changes = MutableStateFlow(0L)
 
     /** Ticks when reminders change (screens refresh on it). */
     val changes: StateFlow<Long> = _changes
 
-    private fun now() = System.currentTimeMillis()
+    private fun now() = clock()
     private fun zone(): ZoneId = ZoneId.systemDefault()
 
     // ------------------------------------------------------------ store
@@ -66,7 +74,7 @@ class KaiReminderEngine(private val context: Context) {
         val a = JSONArray()
         kept.forEach { a.put(write(it)) }
         prefs.edit().putString(KEY, a.toString()).apply()
-        _changes.value = now()
+        _changes.value = maxOf(now(), _changes.value + 1)
     }
 
     private fun put(r: KaiReminder) = save(all().filter { it.id != r.id } + r)
@@ -87,42 +95,43 @@ class KaiReminderEngine(private val context: Context) {
 
     /** Saves changes to an existing reminder (same id) and arms it again. */
     fun update(r: KaiReminder): ReminderSaved {
-        val updated = r.copy(status = ReminderStatus.ACTIVE, updatedAt = now(), snoozedUntil = null, lastFiredAt = null)
+        val updated = r.copy(status = ReminderStatus.ACTIVE, updatedAt = now(), snoozedUntil = null, lastFiredAt = null, attemptCount = 0, lastTriggeredAt = null)
         cancelAlarms(r.id)
         put(updated)
         return ReminderSaved(updated, duplicate = false, result = arm(updated))
     }
 
     fun cancel(id: String): Boolean {
-        val r = find(id)?.takeIf { it.open } ?: return false
+        val r = find(id)?.let { KaiReminderFlow.cancel(it, now()) } ?: return false
         cancelAlarms(id)
-        put(r.copy(status = ReminderStatus.CANCELLED, cancelledAt = now(), updatedAt = now(), snoozedUntil = null))
+        put(r)
         return true
     }
 
     /** Done: a one-time reminder is finished; a repeating one waits for its next time. */
     fun complete(id: String): Boolean {
-        val r = find(id)?.takeIf { it.open } ?: return false
+        val r = find(id) ?: return false
+        val done = KaiReminderFlow.complete(r, now()) ?: return false
         NotificationManagerCompat.from(context).cancel(notificationId(id))
+        // The retry / snooze alarm goes with it; a one-time reminder loses its own alarm too.
         context.getSystemService(AlarmManager::class.java)?.cancel(pending(id, snooze = true))
-        if (r.recurrence.repeat == Repeat.ONCE) {
-            cancelAlarms(id)
-            put(r.copy(status = ReminderStatus.COMPLETED, completedAt = now(), updatedAt = now(), snoozedUntil = null))
-        } else {
-            put(r.copy(status = ReminderStatus.ACTIVE, snoozedUntil = null, updatedAt = now()))
-        }
+        if (done.status == ReminderStatus.COMPLETED) cancelAlarms(id)
+        put(done)
         if (prefs.getString(KEY_LAST_RANG, null) == id) prefs.edit().remove(KEY_LAST_RANG).apply()
+        Log.i(TAG, "reminder $id done (${done.status})")
         return true
     }
 
     /** Rings again in exactly [minutes]; a repeating reminder keeps its own schedule. */
     fun snooze(id: String, minutes: Long): KaiReminder? {
-        val r = find(id)?.takeIf { it.open } ?: return null
+        val r = find(id) ?: return null
+        // Finished, or the last of its attempts: nothing to snooze (never a 6th ring).
+        val updated = KaiReminderFlow.snooze(r, now(), minutes) ?: return null
         NotificationManagerCompat.from(context).cancel(notificationId(id))
-        val at = now() + minutes * 60_000
-        val updated = r.copy(snoozedUntil = at, updatedAt = now())
         put(updated)
-        armAt(id, at, snooze = true)
+        // The same snooze alarm slot as the retry: the next ring replaces it, never a second alarm.
+        armAt(id, updated.snoozedUntil!!, snooze = true)
+        Log.i(TAG, "reminder $id snoozed ${minutes}m (attempt ${updated.attemptCount}/${updated.maxAttempts})")
         return updated
     }
 
@@ -130,30 +139,35 @@ class KaiReminderEngine(private val context: Context) {
     fun lastRang(): KaiReminder? = prefs.getString(KEY_LAST_RANG, null)?.let(::find)?.takeIf { it.open }
 
     /** The alarm went off. Guards make sure an occurrence never rings twice. */
+    /**
+     * The alarm went off (its own time, a 5-minute retry or a snooze). Guards make sure an
+     * occurrence never rings twice and a finished / cancelled / exhausted reminder never rings.
+     * Every ring is one attempt of Kai Urgent Action Mode; the next retry is armed in the same
+     * alarm slot (never a duplicate) until Done, Cancel or the last attempt.
+     */
+    @Synchronized
     fun fired(id: String, snooze: Boolean) {
-        val r = find(id)?.takeIf { it.open } ?: return
+        val r = find(id) ?: return
+        if (!KaiReminderFlow.canRing(r)) return
         val t = now()
+        val rung: KaiReminder
         if (snooze) {
             val until = r.snoozedUntil ?: return
             if (t < until - 60_000) { armAt(id, until, snooze = true); return }
-            show(r)
-            put(r.copy(snoozedUntil = null))
+            rung = KaiReminderFlow.trigger(r, t, newOccurrence = false)
         } else {
             if (r.status != ReminderStatus.ACTIVE) return
             // Too early (clock change): wait for the real time.
             if (t < r.triggerAt - 60_000) { arm(r); return }
             if (r.lastFiredAt != null && r.lastFiredAt >= r.triggerAt) return
-            show(r)
-            val next = KaiReminderSchedule.next(r, maxOf(t, r.triggerAt), zone())
-            if (next != null) {
-                val moved = r.copy(triggerAt = next, lastFiredAt = r.triggerAt)
-                put(moved)
-                arm(moved)
-            } else {
-                put(r.copy(status = ReminderStatus.RANG, lastFiredAt = r.triggerAt))
-            }
+            val first = KaiReminderFlow.trigger(r, t, newOccurrence = true)
+            // A repeating reminder moves to its next time as well.
+            rung = KaiReminderSchedule.next(r, maxOf(t, r.triggerAt), zone())?.let { next -> first.copy(triggerAt = next).also { arm(it) } } ?: first
         }
+        put(rung)
+        rung.snoozedUntil?.let { armAt(id, it, snooze = true) }
         prefs.edit().putString(KEY_LAST_RANG, id).apply()
+        present(rung)
     }
 
     /**
@@ -165,6 +179,9 @@ class KaiReminderEngine(private val context: Context) {
     fun rearmAll() {
         val t = now()
         val z = zone()
+        // A retry / snooze that was due while the phone was off rings now (armAt never drops a missed time).
+        all().filter { (it.status == ReminderStatus.RANG || it.status == ReminderStatus.SNOOZED) && it.snoozedUntil != null }
+            .forEach { armAt(it.id, it.snoozedUntil!!, snooze = true) }
         all().filter { it.status == ReminderStatus.ACTIVE }.forEach { r ->
             var current = r
             if (r.recurrence.repeat != Repeat.ONCE && r.time != null) {
@@ -176,7 +193,7 @@ class KaiReminderEngine(private val context: Context) {
                 }
             }
             arm(current)
-            current.snoozedUntil?.takeIf { it > t }?.let { armAt(current.id, it, snooze = true) }
+            current.snoozedUntil?.let { armAt(current.id, it, snooze = true) }
         }
     }
 
@@ -184,7 +201,7 @@ class KaiReminderEngine(private val context: Context) {
     fun clear() {
         all().forEach { cancelAlarms(it.id) }
         prefs.edit().clear().apply()
-        _changes.value = now()
+        _changes.value = maxOf(now(), _changes.value + 1)
     }
 
     // ------------------------------------------------------------ alarms
@@ -234,43 +251,85 @@ class KaiReminderEngine(private val context: Context) {
 
     // ------------------------------------------------------------ notification
 
-    private fun show(r: KaiReminder) {
+    // ------------------------------------------------------------ Kai Urgent Action Mode
+
+    /**
+     * Can Kai Urgent Action Mode appear over the lock screen? Android 14+ asks the owner
+     * ("Allow full-screen alerts"); before 14 the manifest permission is enough. Never assumed.
+     */
+    fun fullScreenAllowed(): Boolean {
+        val manager = context.getSystemService(NotificationManager::class.java) ?: return false
+        return if (Build.VERSION.SDK_INT >= 34) runCatching { manager.canUseFullScreenIntent() }.getOrDefault(false) else true
+    }
+
+    /** How the last ring reached the owner (diagnostics and the Pixel 8 test). */
+    fun lastPresentation(): String? = prefs.getString(KEY_LAST_PRESENTATION, null)
+
+    /** Kai speaks an attempt once — however often its screen is opened or recreated (survives a process restart). */
+    @Synchronized
+    fun claimSpeech(r: KaiReminder): Boolean {
+        val key = KaiReminderFlow.speechKey(r)
+        if (prefs.getString(KEY_SPOKEN, null) == key) return false
+        prefs.edit().putString(KEY_SPOKEN, key).commit()
+        return true
+    }
+
+    fun wasSpoken(r: KaiReminder): Boolean = prefs.getString(KEY_SPOKEN, null) == KaiReminderFlow.speechKey(r)
+
+    private fun appInForeground(): Boolean = runCatching {
+        val info = android.app.ActivityManager.RunningAppProcessInfo()
+        android.app.ActivityManager.getMyMemoryState(info)
+        info.importance <= android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+    }.getOrDefault(false)
+
+    /**
+     * One ring: the urgent notification (full-screen when Android allows it, else the strongest
+     * notification) and, when the owner is using the app right now, Kai Urgent Action Mode directly.
+     * The decision and Android's full-screen answer are logged every time.
+     */
+    private fun present(r: KaiReminder) {
         ensureChannel()
-        val tamil = Locale.getDefault().language == "ta"
-        // Tapping opens Kai Chat on this reminder (Snooze 5 / 10 / 30 / 60, Done, Call).
+        val canFullScreen = fullScreenAllowed()
+        val power = context.getSystemService(android.os.PowerManager::class.java)
+        val keyguard = context.getSystemService(android.app.KeyguardManager::class.java)
+        val interactive = power?.isInteractive ?: true
+        val locked = keyguard?.isKeyguardLocked ?: false
+        val how = KaiUrgentPresentation.decide(canFullScreen, interactive, locked, appInForeground())
+        Log.i(TAG, "ring ${r.id} attempt ${r.attemptCount}/${r.maxAttempts} canUseFullScreenIntent=$canFullScreen " +
+            "(${KaiUrgentPresentation.reportLabel(canFullScreen)}) sdk=${Build.VERSION.SDK_INT} interactive=$interactive locked=$locked → $how")
+        prefs.edit().putString(KEY_LAST_PRESENTATION, "${r.id}|${r.attemptCount}|$how|${KaiUrgentPresentation.reportLabel(canFullScreen)}|${now()}").apply()
+
+        val words = KaiUrgentWords.text(r, r.lang)
         val open = PendingIntent.getActivity(
-            context, notificationId(r.id) + 2,
-            Intent(context, MainActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                putExtra(EXTRA_OPEN_REMINDER, r.id)
-            },
+            context, notificationId(r.id) + 2, urgentIntent(context, r.id),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
-        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(context, URGENT_CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("Kai")
-            .setContentText(r.notificationMessage)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(r.notificationMessage))
+            .setContentTitle("Kai · ${words.header} · ${words.attemptLine}")
+            .setContentText(words.speech)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(words.speech))
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setAutoCancel(false)
+            .setOnlyAlertOnce(false)
             .setContentIntent(open)
-        // Android shows up to three buttons: the reminder's action (Call / WhatsApp), Dismiss / Done, Snooze 10 min.
-        when {
-            r.action == ReminderAction.CALL && r.person != null -> builder.addAction(0, if (tamil) "${r.person}-க்கு call" else "Call ${r.person}",
-                activity(r, 3, Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + (r.phone ?: "")))))
-            r.action == ReminderAction.MESSAGE && r.person != null && r.phone != null -> builder.addAction(0, if (tamil) "WhatsApp" else "WhatsApp ${r.person}",
-                activity(r, 3, Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/" + r.phone.filter(Char::isDigit)))))
-        }
+        if (how != UrgentPresentation.NOTIFICATION_ONLY && canFullScreen) builder.setFullScreenIntent(open, true)
+        // CALL NOW (the existing dialer — Kai never calls by itself) · DONE · SNOOZE 5 MIN (while attempts remain).
         if (r.action == ReminderAction.CALL && r.person != null) {
-            // "Owner, Ruthran-ku call panna sonneenga." [Call Ruthran] [Dismiss] — Kai never calls by itself.
-            builder.addAction(0, if (tamil) "சரி" else "Dismiss", action(r.id, ACTION_DONE, 5))
-            builder.addAction(0, if (tamil) "10 நிமிடம் கழிச்சு" else "Snooze 10 min", action(r.id, ACTION_SNOOZE, 4))
-        } else {
-            builder.addAction(0, if (tamil) "10 நிமிடம் கழிச்சு" else "Snooze 10 min", action(r.id, ACTION_SNOOZE, 4))
-            builder.addAction(0, if (tamil) "முடிஞ்சது" else "Done", action(r.id, ACTION_DONE, 5))
+            builder.addAction(0, words.callLabel, activity(r, 3, Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + (r.phone ?: "")))))
+        } else if (r.action == ReminderAction.MESSAGE && r.person != null && r.phone != null) {
+            builder.addAction(0, "WhatsApp", activity(r, 3, Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/" + r.phone.filter(Char::isDigit)))))
         }
+        builder.addAction(0, words.doneLabel, action(r.id, ACTION_DONE, 5))
+        if (KaiReminderFlow.canSnooze(r)) builder.addAction(0, words.snoozeLabel, action(r.id, ACTION_SNOOZE, 4))
         runCatching { NotificationManagerCompat.from(context).notify(notificationId(r.id), builder.build()) }
+            .onFailure { Log.w(TAG, "notification not shown: ${it.message}") }
+        if (how == UrgentPresentation.DIRECT_ACTIVITY) {
+            runCatching { context.startActivity(urgentIntent(context, r.id)) }.onFailure { Log.w(TAG, "urgent screen not opened: ${it.message}") }
+        }
     }
 
     private fun activity(r: KaiReminder, offset: Int, intent: Intent): PendingIntent = PendingIntent.getActivity(
@@ -287,11 +346,17 @@ class KaiReminderEngine(private val context: Context) {
     private fun ensureChannel() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
-        if (manager.getNotificationChannel(CHANNEL_ID) != null) return
+        if (manager.getNotificationChannel(URGENT_CHANNEL_ID) != null) return
         manager.createNotificationChannel(
-            NotificationChannel(CHANNEL_ID, context.getString(R.string.kai_reminder_channel), NotificationManager.IMPORTANCE_HIGH).apply {
+            NotificationChannel(URGENT_CHANNEL_ID, context.getString(R.string.kai_reminder_channel), NotificationManager.IMPORTANCE_HIGH).apply {
                 description = context.getString(R.string.kai_reminder_channel_description)
                 enableVibration(true)
+                lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
+                setSound(
+                    android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION),
+                    android.media.AudioAttributes.Builder().setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION_EVENT)
+                        .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION).build(),
+                )
             },
         )
     }
@@ -310,7 +375,10 @@ class KaiReminderEngine(private val context: Context) {
         .put("createdAt", r.createdAt).put("updatedAt", r.updatedAt)
         .put("completedAt", r.completedAt ?: 0).put("cancelledAt", r.cancelledAt ?: 0)
         .put("snoozedUntil", r.snoozedUntil ?: 0).put("lastFiredAt", r.lastFiredAt ?: 0)
-        .put("businessId", r.businessId ?: "")
+        .put("businessId", r.businessId ?: "").put("ownerId", r.ownerId ?: "")
+        .put("amount", r.amount?.toPlainString() ?: "")
+        .put("attemptCount", r.attemptCount).put("maxAttempts", r.maxAttempts).put("snoozeCount", r.snoozeCount)
+        .put("lastTriggeredAt", r.lastTriggeredAt ?: 0).put("lang", r.lang.name)
 
     private fun read(o: JSONObject): KaiReminder {
         fun str(k: String) = o.optString(k).takeIf { it.isNotBlank() }
@@ -319,7 +387,7 @@ class KaiReminderEngine(private val context: Context) {
             id = o.getString("id"),
             title = o.getString("title"),
             task = o.getString("task"),
-            action = ReminderAction.valueOf(o.optString("action", ReminderAction.TASK.name)),
+            action = runCatching { ReminderAction.valueOf(o.optString("action", ReminderAction.TASK.name)) }.getOrDefault(ReminderAction.TASK),
             person = str("person"), contactId = str("contactId"), phone = str("phone"),
             triggerAt = o.getLong("triggerAt"),
             time = str("time")?.let(LocalTime::parse),
@@ -329,13 +397,19 @@ class KaiReminderEngine(private val context: Context) {
                 str("days")?.split(',')?.map(DayOfWeek::valueOf)?.toSet().orEmpty(),
                 o.optInt("dayOfMonth").takeIf { it > 0 },
             ),
-            status = ReminderStatus.valueOf(o.optString("status", ReminderStatus.ACTIVE.name)),
+            status = runCatching { ReminderStatus.valueOf(o.optString("status", ReminderStatus.ACTIVE.name)) }.getOrDefault(ReminderStatus.ACTIVE),
             notificationMessage = o.optString("message"),
             sourceText = o.optString("source"),
             createdAt = o.optLong("createdAt"), updatedAt = o.optLong("updatedAt"),
             completedAt = long("completedAt"), cancelledAt = long("cancelledAt"),
             snoozedUntil = long("snoozedUntil"), lastFiredAt = long("lastFiredAt"),
-            businessId = str("businessId"),
+            businessId = str("businessId"), ownerId = str("ownerId"),
+            amount = str("amount")?.toBigDecimalOrNull(),
+            attemptCount = o.optInt("attemptCount", 0),
+            maxAttempts = o.optInt("maxAttempts", KaiReminderFlow.MAX_ATTEMPTS).takeIf { it > 0 } ?: KaiReminderFlow.MAX_ATTEMPTS,
+            snoozeCount = o.optInt("snoozeCount", 0),
+            lastTriggeredAt = long("lastTriggeredAt"),
+            lang = runCatching { KaiLang.valueOf(o.optString("lang", KaiLang.TANGLISH.name)) }.getOrDefault(KaiLang.TANGLISH),
         )
     }
 
@@ -343,7 +417,11 @@ class KaiReminderEngine(private val context: Context) {
         private const val PREFS = "kai_reminder_engine"
         private const val KEY = "reminders"
         private const val KEY_LAST_RANG = "last_rang"
-        private const val CHANNEL_ID = "kai_reminders_v1"
+        private const val TAG = "KaiReminder"
+        private const val KEY_LAST_PRESENTATION = "last_presentation"
+        private const val KEY_SPOKEN = "spoken_attempt"
+        /** Kai Urgent Action Mode: high importance, lock-screen visible, sound + vibration. */
+        private const val URGENT_CHANNEL_ID = "kai_reminders_urgent_v1"
         private const val NOTIFICATION_BASE = 0x4000000
         const val ACTION_FIRE = "com.shopai.app.ACTION_KAI_REMINDER"
         const val ACTION_FIRE_SNOOZE = "com.shopai.app.ACTION_KAI_REMINDER_SNOOZED"
@@ -352,6 +430,18 @@ class KaiReminderEngine(private val context: Context) {
         const val EXTRA_ID = "kai_reminder_id"
         /** MainActivity: open Kai Chat on this reminder. */
         const val EXTRA_OPEN_REMINDER = "open_kai_reminder"
-        const val SNOOZE_MINUTES = 10L
+        const val SNOOZE_MINUTES = KaiReminderFlow.SNOOZE_MINUTES
+
+        /** Kai Urgent Action Mode for one reminder (the dedicated screen — never Home or Chat). */
+        fun urgentIntent(context: Context, id: String): Intent =
+            Intent(context, com.shopai.app.ui.reminder.KaiReminderActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                putExtra(EXTRA_ID, id)
+            }
+
+        /** Android 14+: the "Allow full-screen alerts" setting for this app (app info before 14). */
+        fun fullScreenSettingsIntent(context: Context): Intent =
+            if (Build.VERSION.SDK_INT >= 34) Intent(android.provider.Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, Uri.parse("package:" + context.packageName))
+            else Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + context.packageName))
     }
 }

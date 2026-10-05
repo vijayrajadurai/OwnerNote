@@ -477,7 +477,7 @@ class KaiPersonalLearningTest {
         assertTrue(t.reply.text, t.reply.text.contains("`konjam nerathula` = 10 minutes"))
         kai.ask("aama")
         assertEquals("REMINDER_TERM", find("konjam nerathula")!!.category)
-        kai.ask("Kumar-ku call pannanum konjam nerathula remind pannu")
+        kai.askConfirmed("Kumar-ku call pannanum konjam nerathula remind pannu")
         val r = tools.reminders.single()
         val at = java.time.Instant.ofEpochMilli(r.triggerAt).atZone(ZoneId.of("Asia/Kolkata")).toLocalDateTime()
         assertEquals(now.plusMinutes(10), at)

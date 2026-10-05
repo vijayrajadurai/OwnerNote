@@ -13,6 +13,8 @@
     <!-- Kai's reminders ring at the exact time asked ("10 minutes later"): a reminder feature of the app. -->
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Kai Urgent Action Mode over the lock screen when a reminder rings (Android 14+ lets the owner turn it off). -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <!-- Analytics/Play libraries merge these; Owner Note does not use ads or advertising ID. -->
@@ -80,6 +82,18 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Kai Urgent Action Mode: the dedicated reminder screen (full-screen intent / over the lock screen). -->
+        <activity
+            android:name=".ui.reminder.KaiReminderActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
+            android:showWhenLocked="true"
+            android:taskAffinity="com.shopai.app.kaireminder"
+            android:theme="@style/Theme.ShopAI"
+            android:turnScreenOn="true"
+            tools:targetApi="27" />
 
         <activity
             android:name=".ui.legal.PrivacyPolicyActivity"
