@@ -59,6 +59,71 @@ class KaiMeshTest {
         assertEquals(rig.height, sandal.second, 0.01f)
     }
 
+    // --- the body acts (Kai Urgent Action Mode): head turn, brows, shoulders, weight, the gesturing arm.
+
+    private fun moved(rig: KaiArtRig, pose: KaiPose, x: Float, y: Float): Float {
+        val (px, py) = KaiMesh.point(rig, pose, x, y)
+        return kotlin.math.hypot(px - x, py - y)
+    }
+
+    @Test
+    fun headTurnMovesTheFaceMoreThanTheHeadsEdge() {
+        val turn = KaiPose(headTurn = 1f)
+        val nose = moved(rig, turn, rig.headX, rig.headY + rig.headRadius * 0.2f)
+        val edge = moved(rig, turn, rig.headX - rig.headRadius * 0.95f, rig.headY)
+        assertTrue("a turn, not a slide: nose $nose, edge $edge", nose > 8f && edge < nose / 4f)
+        assertEquals(0f, moved(rig, turn, rig.width / 2, rig.height - 10f), 0.001f)
+    }
+
+    @Test
+    fun browsLiftWithoutTheMouth() {
+        val up = KaiMesh.point(rig, KaiPose(brows = 1f), rig.eyeLeftX, rig.eyeLeftY - rig.eyeRy * 2.25f)
+        assertTrue(up.second < rig.eyeLeftY - rig.eyeRy * 2.25f - 5f)
+        assertEquals(0f, moved(rig, KaiPose(brows = 1f), rig.mouthX, rig.mouthY), 0.001f)
+    }
+
+    @Test
+    fun shouldersLiftTheUpperBodyNotTheFeet() {
+        val pose = KaiPose(shoulders = 1f)
+        assertTrue(KaiMesh.point(rig, pose, rig.headX, rig.headY).second < rig.headY - 5f)
+        assertEquals(0f, moved(rig, pose, rig.width / 2, rig.height - 10f), 0.001f)
+    }
+
+    @Test
+    fun weightShiftMovesTheHipsOverPlantedFeet() {
+        val pose = KaiPose(weightShift = 1f)
+        assertTrue("hips move", moved(rig, pose, rig.neckX, rig.torsoBottom) > 8f)
+        assertEquals("sandals stay", 0f, moved(rig, pose, 200f, rig.height * 0.95f), 0.001f)
+    }
+
+    @Test
+    fun armSwingAndPalmMoveOnlyTheGesturingArm() {
+        val point = KaiArt.POINT
+        val arm = point.arm!!
+        val swing = KaiPose(armSwing = 20f)
+        assertTrue("the hand moves", moved(point, swing, arm.handX, arm.handY) > 20f)
+        assertEquals("the face stays", 0f, moved(point, swing, point.mouthX, point.mouthY), 0.001f)
+        assertEquals("his other arm (watch) stays", 0f, moved(point, swing, 500f, 570f), 0.001f)
+        val wave = KaiPose(handWave = 6f)
+        assertTrue("the palm moves", moved(point, wave, arm.handX + 30f, arm.handY - 30f) > 2f)
+        assertEquals("the elbow stays", 0f, moved(point, wave, arm.elbowX, arm.elbowY), 0.001f)
+        // Art without a gesturing arm ignores it.
+        assertEquals(0f, moved(KaiArt.JOYFUL, swing, 60f, 200f), 0.001f)
+    }
+
+    @Test
+    fun handOverHappensOnlyAroundTheArm() {
+        assertEquals("his arm", 1f, KaiArt.gestureMask(120f, 450f), 0f)
+        assertEquals("his face", 0f, KaiArt.gestureMask(320f, 200f), 0f)
+        assertEquals("his other arm", 0f, KaiArt.gestureMask(500f, 560f), 0f)
+        assertEquals("his feet", 0f, KaiArt.gestureMask(200f, 940f), 0f)
+        assertEquals(0f, KaiArt.gestureBlend(0f), 0f)
+        assertEquals(1f, KaiArt.gestureBlend(1f), 0f)
+        assertEquals("brief handover: nothing shows early", 0f, KaiArt.gestureBlend(0.3f), 0f)
+        var last = 0f
+        for (i in 0..100) { val b = KaiArt.gestureBlend(i / 100f); assertTrue(b >= last); last = b }
+    }
+
     /**
      * Visual check (not an assertion): renders poses of the real art to
      * build/kai-preview when the raw art exists in %TEMP%\kai_raw.

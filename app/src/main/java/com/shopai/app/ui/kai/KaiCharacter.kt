@@ -384,7 +384,7 @@ private val lashPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS
 }
 
 /** One eyelid (only drawn during the ~180 ms of a blink). */
-private fun drawLid(canvas: android.graphics.Canvas, lid: KaiMesh.Lid, skin: Int) {
+internal fun drawLid(canvas: android.graphics.Canvas, lid: KaiMesh.Lid, skin: Int) {
     val cx = lid.centerX
     val cy = lid.centerY
     val rx = lid.rx

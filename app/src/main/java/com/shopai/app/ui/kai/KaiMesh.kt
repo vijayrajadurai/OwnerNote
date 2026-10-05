@@ -31,6 +31,20 @@ data class KaiArtRig(
     val leftEyeClosed: Boolean = false,
     /** A hand touches the face (thinking pose): the head moves less so the hand stays on it. */
     val handOnFace: Boolean = false,
+    /** The arm that gestures (only art drawn with one free arm has it). */
+    val arm: KaiArmRig? = null,
+)
+
+/**
+ * Kai's gesturing arm in one piece of art (source pixels): the forearm and
+ * hand turn around the elbow, the hand alone around the wrist.
+ */
+data class KaiArmRig(
+    val elbowX: Float, val elbowY: Float,
+    val wristX: Float, val wristY: Float,
+    val handX: Float, val handY: Float,
+    /** Half-thickness of the forearm-and-hand band that moves (it fades out over half as much again). */
+    val reach: Float,
 )
 
 /** One moment of Kai's live motion. All values are small, natural amounts. */
@@ -51,6 +65,18 @@ data class KaiPose(
     val sway: Float = 0f,
     /** Lean toward the owner (listening): 0…1. */
     val lean: Float = 0f,
+    /** Head turn, −1 (his right, the viewer's left) … 1: the face moves across the head. */
+    val headTurn: Float = 0f,
+    /** Eyebrows raised: 0…1 ("Owner…!"). */
+    val brows: Float = 0f,
+    /** Shoulders (and the head with them) lifted: 0…1. */
+    val shoulders: Float = 0f,
+    /** Weight on one leg: −1 … 1, the hips move sideways over planted feet. */
+    val weightShift: Float = 0f,
+    /** Forearm and hand turned around the elbow, degrees (+ = down). Art with an [KaiArtRig.arm] only. */
+    val armSwing: Float = 0f,
+    /** The open hand turned around the wrist, degrees (a small palm movement while he talks). */
+    val handWave: Float = 0f,
 )
 
 /**
@@ -98,6 +124,14 @@ object KaiMesh {
             }
         }
 
+        // Eyebrows: lifted toward the hairline.
+        if (pose.brows != 0f) for (left in listOf(true, false)) {
+            val bx = if (left) rig.eyeLeftX else rig.eyeRightX
+            val by = (if (left) rig.eyeLeftY else rig.eyeRightY) - rig.eyeRy * 2.25f
+            val u = sq((x0 - bx) / (rig.eyeRx * 2f)) + sq((y0 - by) / (rig.eyeRy * 1.1f))
+            if (u < 1f) y -= pose.brows * rig.eyeRy * 0.45f * sq(1f - u)
+        }
+
         // Mouth: the jaw drops with the voice (the lower lip moves, the upper barely).
         val ax = max(rig.mouthHalfWidth * 1.45f, rig.eyeRx * 1.4f)
         val ay = max(rig.mouthHalfWidth * 1.15f, rig.eyeRy * 1.6f)
@@ -118,6 +152,11 @@ object KaiMesh {
             else -> 0f
         }
         if (y0 > rig.neckY) hw *= max(0f, 1f - (y0 - rig.neckY) / (rig.headRadius * 0.25f))
+        // Head turn: the face slides across the head more than its outline does (a turn, not a slide).
+        if (pose.headTurn != 0f && d < rig.headRadius) {
+            val f = 1f - sq(d / rig.headRadius)
+            x += pose.headTurn * rig.headRadius * 0.10f * f * (if (rig.handOnFace) 0.35f else 1f)
+        }
         if (hw > 0f) {
             val strength = if (rig.handOnFace) 0.35f else 1f
             val a = (pose.headTilt * strength * hw) * PI.toFloat() / 180f
@@ -125,6 +164,28 @@ object KaiMesh {
             val ry = y - rig.neckY
             x = rig.neckX + rx * cos(a) - ry * sin(a)
             y = rig.neckY + rx * sin(a) + ry * cos(a) + pose.headNod * rig.headRadius * strength * hw
+        }
+
+        // The gesturing arm: the hand around the wrist, then forearm and hand around the elbow.
+        rig.arm?.let { arm ->
+            if (pose.handWave != 0f) {
+                val dh = hypot(x0 - arm.handX, y0 - arm.handY)
+                val w = band(dh, arm.reach * 0.95f)
+                if (w > 0f) {
+                    val (rx, ry) = rotate(x, y, arm.wristX, arm.wristY, pose.handWave * w)
+                    x = rx; y = ry
+                }
+            }
+            if (pose.armSwing != 0f) {
+                val w = band(segmentDistance(x0, y0, arm.elbowX, arm.elbowY, arm.handX, arm.handY), arm.reach) *
+                    // Nothing on the far side of the elbow moves (the upper arm and the body stay).
+                    smooth(((x0 - arm.elbowX) * (arm.handX - arm.elbowX) + (y0 - arm.elbowY) * (arm.handY - arm.elbowY)) /
+                        (hypot(arm.handX - arm.elbowX, arm.handY - arm.elbowY) * arm.reach * 0.6f))
+                if (w > 0f) {
+                    val (rx, ry) = rotate(x, y, arm.elbowX, arm.elbowY, pose.armSwing * w)
+                    x = rx; y = ry
+                }
+            }
         }
 
         // Chest: breathes out and up a little.
@@ -143,6 +204,25 @@ object KaiMesh {
             val s = 1f + 0.03f * pose.lean * w
             x = rig.neckX + (x - rig.neckX) * s
             y = rig.torsoBottom + (y - rig.torsoBottom) * s
+        }
+
+        // Shoulders up (attention): the head rides along, the lift fades out down the chest.
+        if (pose.shoulders != 0f) {
+            val span = (rig.torsoBottom - rig.neckY) * 0.6f
+            val k = if (y0 <= rig.neckY) 1f else smooth(1f - (y0 - rig.neckY) / span)
+            y -= pose.shoulders * rig.height * 0.008f * k
+        }
+
+        // Weight on one leg: the hips (and everything above) move over the feet, the chest tilts back a touch.
+        if (pose.weightShift != 0f) {
+            val hip = rig.torsoBottom
+            val feet = rig.height * 0.94f
+            val k = if (y0 <= hip) 1f else smooth((feet - y0) / (feet - hip))
+            if (y0 < hip) {
+                val (rx, ry) = rotate(x, y, rig.neckX, hip, -0.9f * pose.weightShift * (hip - y0) / hip)
+                x = rx; y = ry
+            }
+            x += pose.weightShift * rig.width * 0.018f * k
         }
 
         // Body sway around the feet.
@@ -183,22 +263,77 @@ object KaiMesh {
         rig.eyeRightX to rig.eyeRightY - rig.eyeRy * 1.35f,
     )
 
+    /** 1 inside [r], fading to 0 at 1.5·[r]. */
+    private fun band(d: Float, r: Float): Float = when {
+        d <= r -> 1f
+        d >= r * 1.5f -> 0f
+        else -> smooth(1f - (d - r) / (r * 0.5f))
+    }
+
+    private fun segmentDistance(px: Float, py: Float, ax: Float, ay: Float, bx: Float, by: Float): Float {
+        val vx = bx - ax
+        val vy = by - ay
+        val t = (((px - ax) * vx + (py - ay) * vy) / (vx * vx + vy * vy)).coerceIn(0f, 1f)
+        return hypot(px - (ax + vx * t), py - (ay + vy * t))
+    }
+
+    private fun rotate(x: Float, y: Float, cx: Float, cy: Float, degrees: Float): Pair<Float, Float> {
+        val a = degrees * PI.toFloat() / 180f
+        val rx = x - cx
+        val ry = y - cy
+        return (cx + rx * cos(a) - ry * sin(a)) to (cy + rx * sin(a) + ry * cos(a))
+    }
+
+    /** Smoothstep of [v] clamped to 0…1. */
+    private fun smooth(v: Float): Float {
+        val t = v.coerceIn(0f, 1f)
+        return t * t * (3f - 2f * t)
+    }
+
     private fun sq(v: Float) = v * v
     private fun pow15(v: Float) = v * kotlin.math.sqrt(v)
 }
 
 /** Kai's artwork and where his face is in each (measured on the art). */
 object KaiArt {
-    // Standing, hands in pockets, open smile (620×998).
+    // Standing, hands in pockets, open smile (620×998). The arm: his right hand in the pocket.
     val FULL = KaiArtRig(
         620f, 998f, 276f, 178f, 365f, 182f, 25f, 22f, 320f, 234f, 46f, true,
         320f, 185f, 150f, 320f, 330f, 330f, 640f,
+        arm = KaiArmRig(68f, 465f, 150f, 585f, 180f, 605f, 42f),
     )
-    // Open hand toward the owner — explaining / greeting (620×998).
+    // Open hand toward the owner — explaining / greeting (620×998). Same framing as FULL: only the arm differs.
     val POINT = KaiArtRig(
         620f, 998f, 278f, 180f, 366f, 182f, 24f, 21f, 320f, 236f, 46f, true,
         312f, 190f, 145f, 315f, 330f, 330f, 640f,
+        arm = KaiArmRig(88f, 420f, 148f, 425f, 185f, 368f, 62f),
     )
+
+    /**
+     * Where FULL and POINT differ (his right arm, with its sleeve and the shirt behind it): 1 inside,
+     * feathered to 0 over plain shirt cloth. Kai's hand coming out is FULL → POINT crossfaded only here,
+     * so his head, face and everything else stay one picture. Source pixels of the 620×998 art.
+     */
+    fun gestureMask(x: Float, y: Float): Float {
+        val fx = 1f - ((x - 315f) / 30f).coerceIn(0f, 1f)
+        val fy = when {
+            y < 300f -> ((y - 270f) / 30f).coerceIn(0f, 1f)
+            // Down past his pocket (where FULL's hand goes in), fading out on the plain dhoti.
+            else -> 1f - ((y - 700f) / 40f).coerceIn(0f, 1f)
+        }
+        return fx * fy
+    }
+
+    /** While the hand comes out: FULL's arm starts lifting (degrees) before it hands over… */
+    fun fullArmSwing(gesture: Float) = -30f * gesture
+    /** …and POINT's arm rises into place from lower down. */
+    fun pointArmSwing(gesture: Float) = 30f * (1f - gesture)
+    /** How much of POINT's arm shows: the handover is brief (mid-move), so the two arms never linger as a double image. */
+    fun gestureBlend(gesture: Float): Float {
+        val t = ((gesture - 0.32f) / 0.36f).coerceIn(0f, 1f)
+        return t * t * (3f - 2f * t)
+    }
+
     val JOYFUL = KaiArtRig(265f, 422f, 128f, 85f, 164f, 86f, 10f, 10f, 148f, 108f, 20f, true, 145f, 80f, 62f, 145f, 135f, 135f, 265f)
     val SURPRISED = KaiArtRig(265f, 422f, 127f, 93f, 164f, 93f, 10f, 10f, 146f, 127f, 9f, true, 143f, 88f, 62f, 143f, 140f, 140f, 265f)
     val THOUGHTFUL = KaiArtRig(264f, 422f, 121f, 88f, 160f, 86f, 10f, 10f, 148f, 116f, 9f, false, 140f, 82f, 60f, 140f, 135f, 135f, 265f, handOnFace = true)

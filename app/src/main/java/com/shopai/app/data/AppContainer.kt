@@ -136,6 +136,15 @@ class AppContainer(context: Context) {
 
     /** Kai's personal / task reminders (phone alarms) and his action log. */
     val kaiReminders = com.shopai.app.notifications.KaiReminderEngine(appContext)
+    /** Kai's reminder voice while a reminder rings: one loop for the whole app (Kai Urgent Action Mode). */
+    val kaiUrgentVoice: com.shopai.app.ui.reminder.KaiUrgentVoice by lazy {
+        com.shopai.app.ui.reminder.KaiUrgentVoice(
+            scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Main.immediate),
+            out = com.shopai.app.ui.reminder.NaturalVoiceOut(naturalTtsSpeaker),
+            now = android.os.SystemClock::elapsedRealtime,
+            log = { android.util.Log.i("KaiReminder", it) },
+        )
+    }
     /** Each record carries the signed-in owner (the one whose Kai memory is open). */
     val kaiActionLog: com.shopai.app.data.kai.KaiActionLog by lazy {
         com.shopai.app.data.kai.KaiActionLog(appContext) { kaiMemory.ownerId }

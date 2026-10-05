@@ -63,6 +63,9 @@ import java.time.LocalDate
  * t3: CALL NOW (dialer only, never "called") and DONE tapped on the real screen; Done stops every ring.
  * t4: retry every 5 minutes, snooze, attempt counter, max 5 → EXHAUSTED (test clock, real store).
  * t5: a cancelled reminder never rings.
+ * t6: unlocked, app open: Kai opens directly, no banner over him, the opening line once (also after recreate).
+ * t7: the cinematic screen: Kai large (head to sandals, most of the screen), compact controls in one row,
+ *     Kai's body moving, the voice continuing with a second line, and everything silent right after DONE.
  *
  * Every line is logged under KaiReminderLive; screenshots go to
  * /sdcard/Android/data/<app>/files/kai-reminder/ (scripts/kai-reminder-pixel8.ps1 pulls them).
@@ -468,6 +471,65 @@ class KaiReminderPixelTest {
         assertTrue(waitFor(5_000) { engine.find(r.id)?.status == ReminderStatus.COMPLETED })
         assertTrue("BUG: a notification was left after Done", waitFor(3_000) { urgentNotification("Ravi") == null })
         report("t6 NO_DUPLICATE_VERIFIED")
+    }
+
+    // ------------------------------------------------------------ t7: large acting Kai, voice loop, stop on Done
+
+    @Test
+    fun t7_largeActingKaiVoiceContinuesAndStopsOnDone() {
+        val r = praba("LIVE-ACT-${System.currentTimeMillis()}", System.currentTimeMillis() - 1_000, person = "Mani")
+        engine.create(r)
+        openUrgentHome()
+        engine.fired(r.id, snooze = false)
+        assertTrue("BUG: Kai Urgent Action Mode did not open", waitFor(10_000) { urgentScreen() != null })
+        Thread.sleep(2_500)
+        val metrics = ctx.resources.displayMetrics
+        // Kai's size: his own node (content description) against the screen.
+        val kaiLabel = ctx.getString(com.shopai.app.R.string.kai_content_description)
+        val kaiNode = nodes(kaiLabel).firstOrNull()
+        val kaiBox = android.graphics.Rect().also { kaiNode?.getBoundsInScreen(it) }
+        val share = kaiBox.height().toDouble() / metrics.heightPixels
+        report("t7 kaiBox=$kaiBox screen=${metrics.widthPixels}x${metrics.heightPixels} kaiHeightShare=${"%.2f".format(share)}")
+        assertTrue("BUG: Kai is small (${"%.2f".format(share)} of the screen height)", share >= 0.55)
+        // Compact controls: one row, about 48 dp tall.
+        val boxes = listOf("Call now", "Done", "Snooze 5 min").map { label ->
+            var n: AccessibilityNodeInfo? = nodes(label).firstOrNull()
+            while (n != null && !n.isClickable) n = n.parent
+            android.graphics.Rect().also { n?.getBoundsInScreen(it) }
+        }
+        val tallestDp = boxes.maxOf { it.height() } / metrics.density
+        val oneRow = boxes.all { kotlin.math.abs(it.centerY() - boxes[0].centerY()) < 8 * metrics.density }
+        report("t7 controls=$boxes tallestDp=${"%.0f".format(tallestDp)} oneRow=$oneRow")
+        assertTrue("BUG: the controls are not compact (${tallestDp}dp)", tallestDp in 44f..64f)
+        assertTrue("BUG: Call now / Done / Snooze are not one row", oneRow)
+        // Kai himself moves (idle body motion), not only the background.
+        val a = screenshot("t7-1")
+        Thread.sleep(900)
+        val b = screenshot("t7-2")
+        val moving = if (a != null && b != null) motion(a, b) else -1.0
+        report("t7 kaiBodyMotion=${"%.4f".format(moving)}")
+        assertTrue("BUG: Kai is not moving", moving > 0.0)
+        // The voice continues: a second line after the opening (natural pause, not every 2 s).
+        val voice = container.kaiUrgentVoice
+        val starts = linkedSetOf<Long>()
+        val continued = waitFor(40_000) { voice.cue.value?.let { starts += it.startedAt }; starts.size >= 2 }
+        val gap = starts.toList().let { if (it.size >= 2) it[1] - it[0] else -1 }
+        report("t7 voiceLines=${starts.size} secondLineAfterMs=$gap speakingRing=${voice.speakingRing}")
+        assertTrue("BUG: Kai said the reminder once and went silent", continued)
+        assertTrue("BUG: Kai repeats too fast (${gap} ms)", gap >= 5_000)
+        screenshot("t7-3-speaking")
+        // DONE: the loop stops at once; only the short answer, then silence.
+        assertTrue(tap("Done"))
+        assertTrue(waitFor(5_000) { engine.find(r.id)?.status == ReminderStatus.COMPLETED })
+        assertNull("BUG: the voice loop is still running after Done", voice.speakingRing)
+        val afterDone = voice.cue.value?.startedAt
+        Thread.sleep(20_000)
+        val later = voice.cue.value?.startedAt
+        val quiet = !container.naturalTtsSpeaker.speaking.value
+        report("t7 afterDoneCue=$afterDone 20sLaterCue=$later silentAfterDone=$quiet")
+        assertEquals("BUG: Kai kept talking after Done", afterDone, later)
+        assertTrue("BUG: speech still playing 20 s after Done", quiet)
+        report("t7 CINEMATIC_VOICE_VERIFIED")
     }
 
     /** Brings the app to the front (unlocked), so a ring finds the owner using it. */

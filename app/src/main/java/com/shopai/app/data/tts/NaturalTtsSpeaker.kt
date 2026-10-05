@@ -54,6 +54,8 @@ class NaturalTtsSpeaker(context: Context) {
     private val _speaking = MutableStateFlow(false)
     val speaking: StateFlow<Boolean> = _speaking.asStateFlow()
     private var lipSyncJob: Job? = null
+    /** Bumped by [stop]: a request made before it never plays afterwards (its audio may still be on its way). */
+    @Volatile private var generation = 0
 
     /** Drives [mouthLevel] until [stopLipSync]: from the audio's loudness, or a natural talking rhythm. */
     private fun startLipSync(envelope: SpeechEnvelope?, position: () -> Int?) {
@@ -124,14 +126,22 @@ class NaturalTtsSpeaker(context: Context) {
         onStart: (() -> Unit)? = null,
         onDone: (() -> Unit)? = null,
     ) {
+        val asked = generation
         scope.launch {
             withContext(NonCancellable) {
-                speakNaturalInternal(text, languageCode, fallbackText, fallbackLanguage, useAlarmStream, onStart, onDone)
+                speakNaturalInternal(text, languageCode, fallbackText, fallbackLanguage, useAlarmStream, onStart, onDone, asked)
             }
         }
     }
 
+    /** Stops what is playing and drops every request still being prepared (nothing queued plays later). */
     fun stop() {
+        generation++
+        halt()
+    }
+
+    /** Stops the current playback only (a new playback starting uses this; queued requests stay). */
+    private fun halt() {
         stopLipSync()
         mediaPlayer?.runCatching {
             if (isPlaying) stop()
@@ -156,6 +166,7 @@ class NaturalTtsSpeaker(context: Context) {
         useAlarmStream: Boolean,
         onStart: (() -> Unit)?,
         onDone: (() -> Unit)?,
+        asked: Int,
     ) {
         val trimmed = text.trim()
         if (trimmed.isEmpty()) {
@@ -165,6 +176,12 @@ class NaturalTtsSpeaker(context: Context) {
         onStart?.invoke()
 
         val proxyAudio = fetchProxyAudio(trimmed, languageCode)
+        if (asked != generation) {
+            // Stopped while the audio was being fetched: it never plays.
+            proxyAudio?.delete()
+            onDone?.invoke()
+            return
+        }
         if (proxyAudio != null) {
             val played = playWavFile(proxyAudio, useAlarmStream)
             proxyAudio.delete()
@@ -177,6 +194,10 @@ class NaturalTtsSpeaker(context: Context) {
             logDebug("Proxy TTS unavailable; falling back to device TTS.")
         }
 
+        if (asked != generation) {
+            onDone?.invoke()
+            return
+        }
         val spokeOnDevice = speakWithDeviceTts(
             fallbackText.trim().ifEmpty { trimmed },
             fallbackLanguage,
@@ -214,7 +235,7 @@ class NaturalTtsSpeaker(context: Context) {
             }
         }
 
-        stop()
+        halt()
         val envelope = runCatching { SpeechEnvelope.fromWav(file.readBytes()) }.getOrNull()
         try {
             val player = MediaPlayer()
