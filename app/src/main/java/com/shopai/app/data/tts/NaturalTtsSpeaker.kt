@@ -15,6 +15,9 @@ import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.resume
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -61,6 +64,52 @@ class NaturalTtsSpeaker(context: Context) {
     @Volatile var lastProxyProblem: String? = null
         private set
     @Volatile private var lastFetchError: String? = null
+
+    // Natural-voice lines fetched ahead of time (reminders), kept on disk so they play instantly — also
+    // after the app was closed and an alarm starts it again. Only [prefetch]ed lines are kept.
+    private val voiceCache by lazy { File(appContext.cacheDir, "tts_cache").apply { mkdirs() } }
+    private val inflight = java.util.concurrent.ConcurrentHashMap<String, Deferred<File?>>()
+
+    private fun cacheKey(text: String, languageCode: String): String =
+        java.security.MessageDigest.getInstance("SHA-1").digest("$languageCode|$text".toByteArray())
+            .joinToString("") { "%02x".format(it) }
+
+    private fun cachedFile(text: String, languageCode: String): File? =
+        File(voiceCache, cacheKey(text, languageCode) + ".wav").takeIf { it.length() > 44 }
+
+    /**
+     * Fetches the natural voice for [texts] now and keeps it, so speaking them later starts at once
+     * (no network wait). A line already kept or being fetched is not asked for twice.
+     */
+    fun prefetch(texts: List<String>, languageCode: String) {
+        if (ttsApi == null) return
+        val lines = texts.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+        scope.launch(Dispatchers.IO) {
+            for (t in lines) runCatching { keptAudio(t, languageCode) }
+        }
+    }
+
+    /** The kept audio for [text], fetching (once) if needed. */
+    private suspend fun keptAudio(text: String, languageCode: String): File? {
+        cachedFile(text, languageCode)?.let { it.setLastModified(System.currentTimeMillis()); return it }
+        val key = cacheKey(text, languageCode)
+        val created = scope.async(Dispatchers.IO, start = CoroutineStart.LAZY) {
+            fetchProxyAudio(text, languageCode)?.let { tmp ->
+                val kept = File(voiceCache, "$key.wav")
+                if (!tmp.renameTo(kept)) { tmp.copyTo(kept, overwrite = true); tmp.delete() }
+                trimVoiceCache()
+                kept
+            }
+        }
+        // Someone is already fetching this line: wait for theirs.
+        val fetch = inflight.putIfAbsent(key, created)?.also { created.cancel() } ?: created.also { it.start() }
+        return try { fetch.await() } finally { inflight.remove(key, fetch) }
+    }
+
+    private fun trimVoiceCache() {
+        val files = voiceCache.listFiles()?.sortedByDescending { it.lastModified() } ?: return
+        files.drop(MAX_KEPT_LINES).forEach { it.delete() }
+    }
     /** Bumped by [stop]: a request made before it never plays afterwards (its audio may still be on its way). */
     @Volatile private var generation = 0
 
@@ -182,16 +231,19 @@ class NaturalTtsSpeaker(context: Context) {
         }
         onStart?.invoke()
 
-        val proxyAudio = fetchProxyAudio(trimmed, languageCode)
+        // A line fetched ahead of time plays at once; one still being fetched is awaited, not asked twice.
+        val key = cacheKey(trimmed, languageCode)
+        val kept = cachedFile(trimmed, languageCode) ?: inflight[key]?.let { runCatching { it.await() }.getOrNull() }
+        val proxyAudio = kept ?: fetchProxyAudio(trimmed, languageCode)
         if (asked != generation) {
             // Stopped while the audio was being fetched: it never plays.
-            proxyAudio?.delete()
+            if (kept == null) proxyAudio?.delete()
             onDone?.invoke()
             return
         }
         if (proxyAudio != null) {
             val played = playWavFile(proxyAudio, useAlarmStream)
-            proxyAudio.delete()
+            if (kept == null) proxyAudio.delete()
             if (played) {
                 lastEngine = "sarvam"
                 lastProxyProblem = null
@@ -376,6 +428,8 @@ class NaturalTtsSpeaker(context: Context) {
     }
 
     companion object {
+        /** Kept natural-voice lines (oldest go first). */
+        private const val MAX_KEPT_LINES = 120
         private const val TAG = "NaturalTtsSpeaker"
     }
 }

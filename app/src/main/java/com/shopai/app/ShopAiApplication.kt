@@ -22,6 +22,8 @@ class ShopAiApplication : Application() {
         PushNotifications.ensureChannel(this)
         container.reminderAlarms.ensureScheduled()
         container.kaiReminders.rearmAll()
+        // Kai's urgent-screen picture, ready before any reminder rings (an alarm also starts the app here).
+        com.shopai.app.ui.reminder.KaiStageArt.preload(this)
         runBlocking {
             val language = container.preferencesRepository.getLanguage()
             val theme = container.preferencesRepository.getTheme()

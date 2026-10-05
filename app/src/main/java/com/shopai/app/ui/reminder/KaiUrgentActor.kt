@@ -27,6 +27,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -53,11 +55,14 @@ import kotlin.random.Random
 internal val UrgentAccent = Color(0xFF2FBE7C)
 
 /**
- * Kai's two full-body pictures for the dark stage, built once per process (off the main thread):
- * FULL (hands in pockets) cleaned of its studio edge, POINT's arm alone (the open hand toward the
- * owner) and the mask that hands FULL's arm over to it.
+ * Kai's two full-body pictures for the dark stage: FULL (hands in pockets) cleaned of its studio edge,
+ * POINT's arm alone (the open hand toward the owner) and the mask that hands FULL's arm over to it.
+ *
+ * Built once, off the main thread, and kept on disk (files/kai_stage_v[ART_VERSION]) — so a ring finds
+ * Kai ready: [preload] runs when the app process starts (an alarm starts it too), and every later
+ * start only decodes three small PNGs.
  */
-internal class KaiStageArt private constructor(
+class KaiStageArt private constructor(
     val full: Bitmap,
     val pointArm: Bitmap,
     val armMask: Bitmap,
@@ -67,10 +72,47 @@ internal class KaiStageArt private constructor(
     companion object {
         @Volatile private var cached: KaiStageArt? = null
 
+        /** Bump when [KaiMatte] or the arm handover changes: the disk copy is rebuilt. */
+        private const val ART_VERSION = 2
+
         fun ready(): KaiStageArt? = cached
 
+        /** Starts getting Kai ready in the background (app start); never blocks. */
+        fun preload(context: Context) {
+            if (cached != null) return
+            val app = context.applicationContext
+            Thread({ runCatching { load(app) } }, "kai-stage-art").apply { priority = Thread.NORM_PRIORITY - 1 }.start()
+        }
+
         fun load(context: Context): KaiStageArt = cached ?: synchronized(this) {
-            cached ?: build(context.applicationContext).also { cached = it }
+            cached ?: (fromDisk(context.applicationContext) ?: build(context.applicationContext).also { save(context.applicationContext, it) })
+                .also { cached = it }
+        }
+
+        private fun dir(context: Context) = java.io.File(context.filesDir, "kai_stage_v$ART_VERSION")
+
+        private fun fromDisk(context: Context): KaiStageArt? = runCatching {
+            val d = dir(context)
+            val options = BitmapFactory.Options().apply { inScaled = false; inPreferredConfig = Bitmap.Config.ARGB_8888 }
+            fun read(name: String) = java.io.File(d, name).takeIf { it.exists() }?.let { BitmapFactory.decodeFile(it.path, options) }
+            val full = read("full.png") ?: return null
+            val arm = read("arm.png") ?: return null
+            val mask = read("mask.png") ?: return null
+            val skins = KaiMesh.skinSamplePoints(KaiArt.FULL).map { (sx, sy) -> full.getPixel(sx.toInt().coerceIn(0, full.width - 1), sy.toInt().coerceIn(0, full.height - 1)) }
+            KaiStageArt(full, arm, mask, skins)
+        }.getOrNull()
+
+        private fun save(context: Context, art: KaiStageArt) {
+            runCatching {
+                val d = dir(context).apply { mkdirs() }
+                // Older versions go.
+                context.filesDir.listFiles { f -> f.name.startsWith("kai_stage_v") && f.name != d.name }?.forEach { it.deleteRecursively() }
+                for ((name, bmp) in listOf("full.png" to art.full, "arm.png" to art.pointArm, "mask.png" to art.armMask)) {
+                    val tmp = java.io.File(d, "$name.tmp")
+                    tmp.outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
+                    tmp.renameTo(java.io.File(d, name))
+                }
+            }
         }
 
         private fun build(context: Context): KaiStageArt {
@@ -105,6 +147,14 @@ internal class KaiStageArt private constructor(
             )
         }
     }
+}
+
+/** What the device test reads: where Kai is on screen and whether he is visible yet. */
+@androidx.annotation.VisibleForTesting
+object KaiUrgentDebug {
+    @Volatile var kaiBounds: android.graphics.Rect? = null
+    /** [SystemClock.elapsedRealtime] when Kai was first drawn visible on the urgent screen (0 = not yet). */
+    @Volatile var kaiVisibleAt: Long = 0L
 }
 
 /** When this ring's screen first showed (per process): the intro plays once per ring, never again on return. */
@@ -157,12 +207,21 @@ internal fun KaiUrgentActor(
         if (value == null) value = withContext(Dispatchers.Default) { KaiStageArt.load(context) }
     }
     val acting = remember(ringKey) { KaiActing(seed = ringKey.hashCode().toLong(), attempt = attempt) }
-    var now by remember(openedAt) { mutableLongStateOf(SystemClock.elapsedRealtime() - openedAt) }
+    var clock by remember(openedAt) { mutableLongStateOf(SystemClock.elapsedRealtime()) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(still, openedAt) {
         if (still) return@LaunchedEffect
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            while (true) withFrameMillis { now = SystemClock.elapsedRealtime() - openedAt }
+            while (true) withFrameMillis { clock = SystemClock.elapsedRealtime() }
+        }
+    }
+    // Kai's performance starts when his picture is ready (never an arrival that already happened
+    // on an empty stage); the stage itself lights up from the moment the screen opens.
+    var actingFrom by remember(openedAt) { mutableLongStateOf(if (KaiStageArt.ready() != null) openedAt else Long.MIN_VALUE) }
+    LaunchedEffect(art, openedAt) {
+        if (art != null && actingFrom == Long.MIN_VALUE) {
+            val t = SystemClock.elapsedRealtime()
+            actingFrom = if (t - openedAt < 400) openedAt else t
         }
     }
     val mouth by rememberUpdatedState(mouthLevel)
@@ -185,19 +244,28 @@ internal fun KaiUrgentActor(
         }
     }
 
-    Box(modifier.semantics { contentDescription = label }) {
+    Box(
+        modifier
+            .semantics { contentDescription = label }
+            .onGloballyPositioned { c ->
+                val b = c.boundsInWindow()
+                KaiUrgentDebug.kaiBounds = android.graphics.Rect(b.left.toInt(), b.top.toInt(), b.right.toInt(), b.bottom.toInt())
+            },
+    ) {
         Canvas(Modifier.fillMaxSize()) {
-            val take = acting.take(now, mouth, cue, still)
+            val stageMs = clock - openedAt
+            val now = if (actingFrom == Long.MIN_VALUE) 0L else clock - actingFrom
+            val take = acting.take(now, mouth, cue?.let { it.copy(startedAt = it.startedAt + openedAt - actingFrom.coerceAtLeast(openedAt), endedAt = it.endedAt?.plus(openedAt - actingFrom.coerceAtLeast(openedAt))) }, still)
             val s = min(size.width / KaiArt.FULL.width, size.height / KaiArt.FULL.height)
             val left = (size.width - KaiArt.FULL.width * s) / 2f
             val top = size.height - KaiArt.FULL.height * s
             val cx = size.width / 2f
             val floorY = top + FEET_Y * s
-            val light = take.glow * (1f - exit)
+            val light = KaiUrgentMotion.easeOut(KaiUrgentMotion.segment(stageMs.toFloat(), 0, 1_200)) * (1f - exit)
 
             // The glowing stage behind him (the Urgent Action Mode look): a soft green energy field,
             // a thin orbit slowly circling him, light particles drifting, one pulse as he notices the owner.
-            val seconds = now / 1000f
+            val seconds = stageMs / 1000f
             val r = min(size.width * 0.49f, 470f * s)
             val c = Offset(cx, top + 400f * s)
             val breathing = 0.85f + 0.15f * (0.5f + 0.5f * take.pose.breath)
@@ -223,7 +291,7 @@ internal fun KaiUrgentActor(
                     drawCircle(Color.White.copy(alpha = twinkle * 0.55f), radius = p.size.dp.toPx(), center = Offset(c.x + pr * cos(a), c.y + pr * sin(a) * 1.3f))
                 }
                 // One pulse wave as he turns to the owner.
-                val pulse = KaiUrgentMotion.segment(now.toFloat(), 1_100, 1_900)
+                val pulse = if (actingFrom == Long.MIN_VALUE) 0f else KaiUrgentMotion.segment(now.toFloat(), 1_100, 1_900)
                 if (pulse in 0.001f..0.999f) {
                     drawCircle(
                         color = UrgentAccent.copy(alpha = 0.40f * (1f - pulse) * (1f - exit)),
@@ -244,6 +312,8 @@ internal fun KaiUrgentActor(
             )
 
             val a = art ?: return@Canvas
+            if (actingFrom == Long.MIN_VALUE) return@Canvas
+            if (take.alpha > 0.5f && KaiUrgentDebug.kaiVisibleAt == 0L) KaiUrgentDebug.kaiVisibleAt = SystemClock.elapsedRealtime()
             // Snooze: a small nod as he goes; Done: he settles down out of the light.
             val nod = if (acknowledging) 0.05f * sin(PI.toFloat() * exit) else 0f
             val g = take.gesture

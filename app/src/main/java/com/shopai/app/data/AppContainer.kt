@@ -135,7 +135,15 @@ class AppContainer(context: Context) {
     }
 
     /** Kai's personal / task reminders (phone alarms) and his action log. */
-    val kaiReminders = com.shopai.app.notifications.KaiReminderEngine(appContext)
+    val kaiReminders = com.shopai.app.notifications.KaiReminderEngine(appContext).also { engine ->
+        // Kai's reminder lines in the natural voice, fetched when the reminder is saved / rings (instant later).
+        engine.prepareVoice = { r ->
+            naturalTtsSpeaker.prefetch(
+                com.shopai.app.brain.tools.KaiUrgentVoiceScript.prefetchTexts(r),
+                com.shopai.app.brain.tools.KaiUrgentVoiceScript.languageCode(r.lang),
+            )
+        }
+    }
     /** Kai's reminder voice while a reminder rings: one loop for the whole app (Kai Urgent Action Mode). */
     val kaiUrgentVoice: com.shopai.app.ui.reminder.KaiUrgentVoice by lazy {
         com.shopai.app.ui.reminder.KaiUrgentVoice(

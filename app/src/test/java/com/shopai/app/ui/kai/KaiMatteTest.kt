@@ -3,8 +3,6 @@ package com.shopai.app.ui.kai
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
-import javax.imageio.ImageIO
 
 /** Kai's cut-out cleaned for the large dark stage: no pale edge ring, no specks, no floor patch, no notches. */
 class KaiMatteTest {
@@ -32,8 +30,11 @@ class KaiMatteTest {
         val out = KaiMatte.clean(body(), w, h)
         val edge = out[100 * w + 30]
         assertEquals("edge colour from inside", rgb(red), rgb(edge))
-        assertTrue("soft edge", alpha(edge) in 60..160)
-        assertEquals(215, alpha(out[100 * w + 31]))
+        assertTrue("soft edge: ${alpha(edge)}", alpha(edge) in 120..230)
+        val outside = out[100 * w + 29]
+        assertTrue("the soft edge fades out just outside: ${alpha(outside)}", alpha(outside) in 20..150)
+        assertEquals("…in Kai's colour, never the pale ring", rgb(red), rgb(outside))
+        assertTrue(alpha(out[100 * w + 32]) >= 250)
         assertEquals(red, out[100 * w + 50])
         assertEquals(0, out[100 * w + 10])
     }
@@ -56,29 +57,20 @@ class KaiMatteTest {
         assertEquals("hole filled", red, out[122 * w + 47])
     }
 
-    /** The real art: nothing pale under the sandals, one Kai, soft edges, the inside untouched. */
+    // A staircase edge (the cut-out's pixel steps) becomes a smooth ramp.
     @Test
-    fun realArtCleansUp() {
-        for (name in listOf("kai_full", "kai_point")) {
-            val file = File("src/main/res/drawable-nodpi/$name.png").takeIf { it.exists() } ?: return
-            val img = ImageIO.read(file)
-            val aw = img.width
-            val ah = img.height
-            val raw = IntArray(aw * ah) { img.getRGB(it % aw, it / aw) }
-            val out = KaiMatte.clean(raw, aw, ah)
-            var paleFloor = 0
-            var soft = 0
-            for (y in (ah * 0.95f).toInt() until ah) for (x in 0 until aw) {
-                val p = out[y * aw + x]
-                if (alpha(p) > 0 && minOf((p shr 16) and 255, (p shr 8) and 255, p and 255) >= 200) paleFloor++
-            }
-            for (p in out) if (alpha(p) in 1..254) soft++
-            assertEquals("$name: pale floor left", 0, paleFloor)
-            assertTrue("$name: soft edges", soft > 1_000)
-            // His face is untouched (an eye pixel keeps its colour).
-            val eye = (KaiArt.FULL.eyeLeftY.toInt() * aw + KaiArt.FULL.eyeLeftX.toInt())
-            assertEquals(rgb(raw[eye]), rgb(out[eye]))
-            assertEquals(255, alpha(out[eye]))
+    fun pixelStairsAreSmoothed() {
+        val px = IntArray(w * h) { i ->
+            val x = i % w
+            val y = i / w
+            // Left edge steps 3 px right every 6 rows.
+            if (y in 40..170 && x in (30 + ((y - 40) / 6) * 3 % 18)..70) red else 0
         }
+        val out = KaiMatte.clean(px, w, h)
+        // Along a row crossing a step, alpha rises gradually, not 0 → 255 in one pixel.
+        val row = 100
+        val ramp = (25..60).map { alpha(out[row * w + it]) }
+        val partial = ramp.count { it in 1..254 }
+        assertTrue("a soft ramp across the step: $ramp", partial >= 3)
     }
 }

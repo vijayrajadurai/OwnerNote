@@ -102,6 +102,17 @@ object KaiUrgentVoiceScript {
         return listOf(opening) + followUps
     }
 
+    /**
+     * Everything Kai may say for this ring and the next, to fetch ahead of time: this attempt's lines,
+     * the next attempt's opening, and the three short answers.
+     */
+    fun prefetchTexts(r: KaiReminder, lang: KaiLang = r.lang): List<String> {
+        val attempt = r.attemptCount.coerceAtLeast(1)
+        val next = r.copy(attemptCount = minOf(attempt + 1, r.maxAttempts))
+        return (lines(r.copy(attemptCount = attempt), lang).map { it.text } + lines(next, lang).first().text +
+            callAck(r, lang) + doneAck(lang) + snoozeAck(KaiReminderFlow.SNOOZE_MINUTES, lang)).distinct()
+    }
+
     /** Which line the [n]th utterance is: the opening once, then the follow-ups in a cycle. */
     fun lineAt(n: Int, size: Int): Int = if (n < size) n else 1 + (n - 1) % (size - 1)
 

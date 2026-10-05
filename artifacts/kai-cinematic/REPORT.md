@@ -18,6 +18,25 @@ renders: **active character.** The body moves (head, eyes, brows, shoulders, che
 the hand), there is no ring and no particle field, and the only effect is a faint floor light.
 **This still has to be confirmed on the Pixel 8.**
 
+## Round 3 — fixes for the Pixel 8 report (74b0659)
+
+The Pixel 8 run on 74b0659 confirmed these work: the unlocked ring, the locked ring, the
+`voice engine=sarvam` lines, the varied voice loop, Done stopping the voice at once, and the glowing stage.
+
+| Reported problem | Cause | Fix |
+|---|---|---|
+| `testDebugUnitTest` failed to compile (0 tests ran) | `KaiMatteTest` used `javax.imageio`, which is not on Android's compile classpath. (My earlier "539 pass" came from a scratch JVM harness, not Gradle's Android unit tests.) | The real-art test was removed. A synthetic "pixel stairs are smoothed" test replaces it. No other test uses javax/awt. |
+| Stage empty for ~4 s; Kai appears at +5.7–6.8 s | The cleaned Kai art was first built when the screen opened (slow on the emulator). Kai's arrival had already "played" on an empty stage. | (1) `KaiStageArt.preload` runs at app start; an alarm also starts the app. (2) The cleaned art is saved to `files/kai_stage_v2/` once, so later starts only decode three PNGs. (3) Kai's performance starts when his picture is ready, never mid-intro. (4) `KaiMatte` fill loop made faster. |
+| Each Sarvam line took 3.6–8.3 s; first line ~11 s after the ring; "சரி ஓனர்." 3 s after Done | Every line was fetched from the proxy at the moment it was spoken. | `NaturalTtsSpeaker.prefetch` + a disk cache (`cache/tts_cache`, max 120 lines). The reminder's lines, the next attempt's opening and the three short answers are fetched when the reminder is **saved** (`KaiReminderEngine.prepareVoice`) and again when it rings. Kai then speaks at once, and the answer plays instantly. A line still being fetched is awaited, not requested twice. |
+| t1/t3/t6/t7 failures (screenshot timing, `kaiBox=Rect(0,0-0,0)`, thread) | Screenshots were taken before Kai was drawn. The Kai node had no accessibility bounds. Voice state was read off the main thread. | Tests wait for `KaiUrgentDebug.kaiVisibleAt` before screenshots (and report `kaiVisibleAfterMs`). Kai's box comes from `KaiUrgentDebug.kaiBounds` (the laid-out stage). Voice/speaker state is read on the main thread. |
+| Jagged staircase on the dhoti's left edge | The cut-out's pixel steps were kept; only 2 px were feathered. | The outline is smoothed (blurred mask → smooth alpha). Body notches are closed up to ~20 px. See `preview/04-dhoti-edge-before-after.png`. |
+
+Not reproduced here (no emulator): the exact t3 "accessibility tap" failure. If t3 still fails, its exact
+message is needed.
+
+Cost note: prefetching uses about 9 short Sarvam requests per reminder. They are cached, so a repeated
+line (the same person or the same answers) is never fetched again.
+
 ## Round 2 — after the owner's Pixel 8 test
 
 The owner confirmed these work:

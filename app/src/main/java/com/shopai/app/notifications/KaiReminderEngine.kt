@@ -52,6 +52,14 @@ class KaiReminderEngine(
     /** Ticks when reminders change (screens refresh on it). */
     val changes: StateFlow<Long> = _changes
 
+    /**
+     * Gets Kai's reminder voice ready ahead of time (set by the app: fetches the natural-voice lines
+     * when a reminder is saved and when it rings, so Kai speaks at once instead of after a network wait).
+     */
+    @Volatile var prepareVoice: ((KaiReminder) -> Unit)? = null
+
+    private fun prepare(r: KaiReminder) = runCatching { prepareVoice?.invoke(r) }.onFailure { Log.w(TAG, "voice not prepared: ${it.message}") }
+
     private fun now() = clock()
     private fun zone(): ZoneId = ZoneId.systemDefault()
 
@@ -90,6 +98,7 @@ class KaiReminderEngine(
     fun create(r: KaiReminder): ReminderSaved {
         all().firstOrNull { KaiReminderSchedule.sameAs(it, r) }?.let { return ReminderSaved(it, duplicate = true, result = status()) }
         put(r)
+        prepare(r)
         return ReminderSaved(r, duplicate = false, result = arm(r))
     }
 
@@ -98,6 +107,7 @@ class KaiReminderEngine(
         val updated = r.copy(status = ReminderStatus.ACTIVE, updatedAt = now(), snoozedUntil = null, lastFiredAt = null, attemptCount = 0, lastTriggeredAt = null)
         cancelAlarms(r.id)
         put(updated)
+        prepare(updated)
         return ReminderSaved(updated, duplicate = false, result = arm(updated))
     }
 
@@ -291,6 +301,7 @@ class KaiReminderEngine(
      *  - NOTIFICATION_ONLY (full-screen not allowed): the full alert notification stays — it IS the reminder.
      */
     private fun present(r: KaiReminder) {
+        prepare(r)
         ensureChannel()
         val canFullScreen = fullScreenAllowed()
         val power = context.getSystemService(android.os.PowerManager::class.java)

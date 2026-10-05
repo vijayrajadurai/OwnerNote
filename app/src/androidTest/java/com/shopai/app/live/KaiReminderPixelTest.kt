@@ -31,6 +31,7 @@ import com.shopai.app.brain.tools.ReminderAction
 import com.shopai.app.brain.tools.ReminderStatus
 import com.shopai.app.notifications.KaiReminderEngine
 import com.shopai.app.ui.reminder.KaiReminderActivity
+import com.shopai.app.ui.reminder.KaiUrgentDebug
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -106,6 +107,21 @@ class KaiReminderPixelTest {
             Thread.sleep(250)
         }
         return runCatching(check).getOrDefault(false)
+    }
+
+    /** Waits until Kai himself is drawn on the urgent screen (not just the stage); returns how long it took (ms) or -1. */
+    private fun waitForKai(ms: Long = 10_000): Long {
+        val start = android.os.SystemClock.elapsedRealtime()
+        val shown = waitFor(ms) { KaiUrgentDebug.kaiVisibleAt != 0L }
+        return if (shown) KaiUrgentDebug.kaiVisibleAt - start else -1
+    }
+
+    /** Reads voice / speaker state where it lives (the main thread). */
+    private fun <T> onMain(block: () -> T): T {
+        var out: T? = null
+        inst.runOnMainSync { out = block() }
+        @Suppress("UNCHECKED_CAST")
+        return out as T
     }
 
     private fun urgentScreen(): Activity? {
@@ -191,6 +207,9 @@ class KaiReminderPixelTest {
         val shownLocked = keyguard.isKeyguardLocked
         report("$tag urgentScreenResumed=true keyguardLockedWhileShown=$shownLocked screenOn=${power.isInteractive}")
         assertTrue("BUG: Kai Urgent Action Mode is showing but the phone is no longer locked — not verified over the lock screen", shownLocked)
+        val kaiAfter = waitForKai()
+        report("$tag kaiVisibleAfterMs=$kaiAfter")
+        assertTrue("BUG: Kai did not appear on the urgent screen within 10 s", kaiAfter >= 0)
         Thread.sleep(1_200)
         val a = screenshot("$tag-1")
         Thread.sleep(700)
@@ -215,6 +234,7 @@ class KaiReminderPixelTest {
 
     @Before
     fun setUp() {
+        KaiUrgentDebug.kaiVisibleAt = 0L
         if (Build.VERSION.SDK_INT >= 33) inst.uiAutomation.grantRuntimePermission(ctx.packageName, Manifest.permission.POST_NOTIFICATIONS)
         unlock()
         // Leftovers of an earlier run (only this test's own reminders).
@@ -482,12 +502,13 @@ class KaiReminderPixelTest {
         openUrgentHome()
         engine.fired(r.id, snooze = false)
         assertTrue("BUG: Kai Urgent Action Mode did not open", waitFor(10_000) { urgentScreen() != null })
+        val kaiAfter = waitForKai()
+        report("t7 kaiVisibleAfterMs=$kaiAfter")
+        assertTrue("BUG: Kai did not appear within 10 s", kaiAfter >= 0)
         Thread.sleep(2_500)
         val metrics = ctx.resources.displayMetrics
-        // Kai's size: his own node (content description) against the screen.
-        val kaiLabel = ctx.getString(com.shopai.app.R.string.kai_content_description)
-        val kaiNode = nodes(kaiLabel).firstOrNull()
-        val kaiBox = android.graphics.Rect().also { kaiNode?.getBoundsInScreen(it) }
+        // Kai's size: the stage Kai is drawn in, as the screen laid it out.
+        val kaiBox = KaiUrgentDebug.kaiBounds ?: android.graphics.Rect()
         val share = kaiBox.height().toDouble() / metrics.heightPixels
         report("t7 kaiBox=$kaiBox screen=${metrics.widthPixels}x${metrics.heightPixels} kaiHeightShare=${"%.2f".format(share)}")
         assertTrue("BUG: Kai is small (${"%.2f".format(share)} of the screen height)", share >= 0.55)
@@ -512,11 +533,11 @@ class KaiReminderPixelTest {
         // The voice continues: a second line after the opening (natural pause, not every 2 s).
         val voice = container.kaiUrgentVoice
         val starts = linkedSetOf<Long>()
-        val continued = waitFor(40_000) { voice.cue.value?.let { starts += it.startedAt }; starts.size >= 2 }
+        val continued = waitFor(40_000) { onMain { voice.cue.value }?.let { starts += it.startedAt }; starts.size >= 2 }
         val gap = starts.toList().let { if (it.size >= 2) it[1] - it[0] else -1 }
-        val voiceEngine = container.naturalTtsSpeaker.lastEngine
+        val voiceEngine = onMain { container.naturalTtsSpeaker.lastEngine }
         val proxyConfigured = com.shopai.app.BuildConfig.TTS_PROXY_URL.isNotBlank()
-        report("t7 voiceLines=${starts.size} secondLineAfterMs=$gap speakingRing=${voice.speakingRing} voiceEngine=$voiceEngine proxyConfigured=$proxyConfigured problem=${container.naturalTtsSpeaker.lastProxyProblem}")
+        report("t7 voiceLines=${starts.size} secondLineAfterMs=$gap speakingRing=${onMain { voice.speakingRing }} voiceEngine=$voiceEngine proxyConfigured=$proxyConfigured problem=${container.naturalTtsSpeaker.lastProxyProblem}")
         assertTrue("BUG: the natural (Sarvam) voice is configured but Kai used the robotic device voice: ${container.naturalTtsSpeaker.lastProxyProblem}", !proxyConfigured || voiceEngine == "sarvam")
         assertTrue("BUG: Kai said the reminder once and went silent", continued)
         assertTrue("BUG: Kai repeats too fast (${gap} ms)", gap >= 5_000)
@@ -524,11 +545,13 @@ class KaiReminderPixelTest {
         // DONE: the loop stops at once; only the short answer, then silence.
         assertTrue(tap("Done"))
         assertTrue(waitFor(5_000) { engine.find(r.id)?.status == ReminderStatus.COMPLETED })
-        assertNull("BUG: the voice loop is still running after Done", voice.speakingRing)
-        val afterDone = voice.cue.value?.startedAt
-        Thread.sleep(20_000)
-        val later = voice.cue.value?.startedAt
-        val quiet = !container.naturalTtsSpeaker.speaking.value
+        assertNull("BUG: the voice loop is still running after Done", onMain { voice.speakingRing })
+        // The short answer ("சரி ஓனர்.") may still be starting: take the reference after it.
+        Thread.sleep(4_000)
+        val afterDone = onMain { voice.cue.value?.startedAt }
+        Thread.sleep(16_000)
+        val later = onMain { voice.cue.value?.startedAt }
+        val quiet = !onMain { container.naturalTtsSpeaker.speaking.value }
         report("t7 afterDoneCue=$afterDone 20sLaterCue=$later silentAfterDone=$quiet")
         assertEquals("BUG: Kai kept talking after Done", afterDone, later)
         assertTrue("BUG: speech still playing 20 s after Done", quiet)
