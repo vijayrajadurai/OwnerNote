@@ -40,13 +40,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.shopai.app.R
-import com.shopai.app.billing.BillingConfig
 import com.shopai.app.data.AppContainer
 import com.shopai.app.data.local.AppLanguage
 import com.shopai.app.data.local.AppThemeMode
 import com.shopai.app.data.local.room.VoiceCheckinPrefsEntity
 import com.shopai.app.ui.components.DetailScaffold
 import com.shopai.app.ui.components.ShopCard
+import com.shopai.app.ui.legal.PrivacyPolicyActivity
 import com.shopai.app.util.VoiceCheckinSlot
 import kotlinx.coroutines.launch
 
@@ -308,10 +308,10 @@ fun SettingsScreen(
                 Spacer(Modifier.height(12.dp))
                 HorizontalDivider()
                 LinkRow(stringResource(R.string.privacy_policy)) {
-                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(BillingConfig.PRIVACY_POLICY_URL)))
+                    PrivacyPolicyActivity.openPrivacy(context)
                 }
                 LinkRow(stringResource(R.string.terms_and_conditions)) {
-                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(BillingConfig.TERMS_URL)))
+                    PrivacyPolicyActivity.openTerms(context)
                 }
             }
 

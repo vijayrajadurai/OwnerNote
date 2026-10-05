@@ -104,7 +104,7 @@ class KaiAgentTest {
         override fun log(intent: String, tool: String, result: String, status: ActionStatus, reference: String?, input: String?): String { logged += intent to status; return reference ?: "K-1" }
     }
 
-    private fun agent(tools: KaiTools) = KaiAgent(KaiBusinessBrain(FakeBooks(), today = { now.toLocalDate() }, random = Random(1)), FakeBooks(), tools, now = { now })
+    private fun agent(tools: KaiTools, at: LocalDateTime = now) = KaiAgent(KaiBusinessBrain(FakeBooks(), today = { at.toLocalDate() }, random = Random(1)), FakeBooks(), tools, now = { at })
 
     @Test
     fun calculatorAnswersAtOnce() = runBlocking {
@@ -172,7 +172,7 @@ class KaiAgentTest {
     fun callReminderIsCreatedAtTheExactTime() = runBlocking {
         val tools = FakeTools()
         val a = agent(tools)
-        val turn = a.ask("Kumar-ku 10 minutes kalichi call panna remind pannu.")
+        val turn = a.askConfirmed("Kumar-ku 10 minutes kalichi call panna remind pannu.")
         val r = tools.scheduled.single()
         assertEquals("Call Kumar", r.title)
         assertEquals("+919000000001", r.phone)
@@ -183,7 +183,7 @@ class KaiAgentTest {
         assertTrue(!turn.reply.text.contains("panniten", true))
         assertEquals("Owner, Kumar-ku call panna sonneenga.", r.notificationMessage)
         // Said again: not duplicated.
-        assertTrue(a.ask("Kumar-ku 10 minutes kalichi call panna remind pannu.").reply.text.contains("already"))
+        assertTrue(a.askConfirmed("Kumar-ku 10 minutes kalichi call panna remind pannu.").reply.text.contains("already"))
         assertEquals(1, tools.scheduled.size)
     }
 
@@ -191,17 +191,17 @@ class KaiAgentTest {
     fun missingTimeIsAskedThenCompleted() = runBlocking {
         val tools = FakeTools()
         val a = agent(tools)
-        val ask = a.ask("Naalaikku morning supplier-ku call panna remind pannu.")
+        val ask = a.askConfirmed("Naalaikku morning supplier-ku call panna remind pannu.")
         assertTrue(ask.reply.text, ask.reply.text.contains("Morning-la exact time"))
         assertTrue(tools.scheduled.isEmpty())
         // One tap on "10:00 AM" …
         val ten = ask.card!!.buttons.map { it.action }.filterIsInstance<KaiAction.RemindAt>().first { it.at.hour == 10 }
-        val done = a.act(ten, KaiLang.TANGLISH)!!
+        val done = a.actConfirmed(ten)!!
         assertEquals(LocalDateTime.of(2026, 10, 4, 10, 0), java.time.Instant.ofEpochMilli(tools.scheduled.single().triggerAt).atZone(java.time.ZoneId.of("Asia/Kolkata")).toLocalDateTime())
         assertTrue(done.reply.text, done.reply.text.startsWith("Done Owner ✅"))
         // … or a typed time.
-        a.ask("Every Monday stock check panna reminder podu.")
-        a.ask("9 am")
+        a.askConfirmed("Every Monday stock check panna reminder podu.")
+        a.askConfirmed("9 am")
         val monday = tools.scheduled.last()
         assertEquals(Repeat.WEEKLY, monday.recurrence.repeat)
         assertEquals(java.time.LocalTime.of(9, 0), monday.time)
@@ -210,7 +210,7 @@ class KaiAgentTest {
     @Test
     fun recurringDailyReminder() = runBlocking {
         val tools = FakeTools()
-        val turn = agent(tools).ask("Daily kaalaila 10 maniku saavi eduthuka remind pannu.")
+        val turn = agent(tools).askConfirmed("Daily kaalaila 10 maniku saavi eduthuka remind pannu.")
         val r = tools.scheduled.single()
         assertEquals(Repeat.DAILY, r.recurrence.repeat)
         assertEquals(java.time.LocalTime.of(10, 0), r.time)
@@ -226,11 +226,11 @@ class KaiAgentTest {
             )
         }
         val a = agent(tools)
-        val ask = a.ask("Kumar-ku 10 minutes kalichi call panna remind pannu")
+        val ask = a.askConfirmed("Kumar-ku 10 minutes kalichi call panna remind pannu")
         assertTrue(ask.reply.text, ask.reply.text.contains("2 contacts"))
         assertTrue(tools.scheduled.isEmpty())
         val pickSupplier = ask.card!!.buttons.map { it.action }.filterIsInstance<KaiAction.PickContact>()[1]
-        a.act(pickSupplier, KaiLang.TANGLISH)
+        a.actConfirmed(pickSupplier)
         assertEquals("+919000000009", tools.scheduled.single().phone)
     }
 
@@ -238,7 +238,7 @@ class KaiAgentTest {
     fun unknownPersonStillGetsTheReminderAndANumberCanBeAdded() = runBlocking {
         val tools = FakeTools()
         val a = agent(tools)
-        val turn = a.ask("Muthu-ku 30 minutes kalichu call panna remind pannu")
+        val turn = a.askConfirmed("Muthu-ku 30 minutes kalichu call panna remind pannu")
         assertTrue(turn.card!!.warning!!.contains("Muthu contact OwnerNote-la illa"))
         a.ask("98765 43210")
         assertEquals("+919876543210", tools.scheduled.single().phone)
@@ -248,8 +248,8 @@ class KaiAgentTest {
     fun cancelCompleteSnoozeAndUpdate() = runBlocking {
         val tools = FakeTools()
         val a = agent(tools)
-        a.ask("Kumar-ku 10 minutes kalichi call panna remind pannu")
-        a.ask("Daily morning 10 manikku stock check panna remind pannu")
+        a.askConfirmed("Kumar-ku 10 minutes kalichi call panna remind pannu")
+        a.askConfirmed("Daily morning 10 manikku stock check panna remind pannu")
         // "Kumar call reminder-a 30 minutes-ku change pannu": the same reminder moves, no duplicate.
         val kumar = tools.scheduled.first()
         val updated = a.ask("Kumar call reminder-a 30 minutes-ku change pannu")
@@ -272,8 +272,8 @@ class KaiAgentTest {
     fun ambiguousCancelAsksWhich() = runBlocking {
         val tools = FakeTools()
         val a = agent(tools)
-        a.ask("Kumar-ku 10 minutes kalichi call panna remind pannu")
-        a.ask("Tomorrow 5 PM Kumar-ku call reminder")
+        a.askConfirmed("Kumar-ku 10 minutes kalichi call panna remind pannu")
+        a.askConfirmed("Tomorrow 5 PM Kumar-ku call reminder")
         val ask = a.ask("Kumar call reminder cancel pannu")
         assertTrue(ask.reply.text, ask.reply.text.contains("Kumar-ku 2 reminders irukku"))
         assertEquals(2, tools.reminders().size)
@@ -285,10 +285,10 @@ class KaiAgentTest {
     fun pastTimeIsAskedAndListShowsToday() = runBlocking {
         val tools = FakeTools()
         val a = agent(tools)
-        val past = a.ask("Inniku 9 maniku shop open panna remind pannu")
+        val past = a.askConfirmed("Inniku 9 maniku shop open panna remind pannu")
         assertTrue(past.reply.text, past.reply.text.contains("already pochu"))
         assertTrue(tools.scheduled.isEmpty())
-        a.ask("Kumar-ku 10 minutes kalichi call panna remind pannu")
+        a.askConfirmed("Kumar-ku 10 minutes kalichi call panna remind pannu")
         val list = a.ask("Today enna reminders iruku?")
         assertTrue(list.card!!.lines.joinToString("\n"), list.card!!.lines.any { it.contains("Call Kumar") })
     }
@@ -313,5 +313,195 @@ class KaiAgentTest {
         val dial = turn.card!!.buttons.single().action as KaiAction.Dial
         assertEquals("+919000000001", dial.phone)
         assertTrue(!turn.reply.text.contains("called", ignoreCase = true))
+    }
+
+    @Test
+    fun statedReceivableCarriesAmountAndPersonIntoWhenFollowUp() = runBlocking {
+        val a = agent(FakeTools())
+        val first = a.ask("Kumar enakku 20000 tharanum")
+        assertTrue(first.reply.text, first.reply.text.contains("Kumar") && first.reply.text.contains("20,000"))
+        assertNull(first.plan)
+        assertEquals(BigDecimal("20000.00"), a.conversationState.lastAmount)
+        val followUp = a.ask("Eppa?")
+        assertTrue(followUp.reply.text, followUp.reply.text.contains("Kumar") && followUp.reply.text.contains("20,000"))
+        assertTrue(followUp.reply.text, !followUp.reply.text.contains("Yaar pathi"))
+    }
+
+    @Test
+    fun pendingDueDateAcceptsNaturalCalendarAnswersUsingKaiTime() = runBlocking {
+        val cases = listOf(
+            "next month 10" to LocalDate.of(2026, 11, 10),
+            "next month 15" to LocalDate.of(2026, 11, 15),
+            "October 10" to LocalDate.of(2026, 10, 10),
+            "10th" to LocalDate.of(2026, 10, 10),
+            "10 October" to LocalDate.of(2026, 10, 10),
+            "October 10th" to LocalDate.of(2026, 10, 10),
+            "naalaikku" to LocalDate.of(2026, 10, 4),
+            "tomorrow" to LocalDate.of(2026, 10, 4),
+            "next week" to LocalDate.of(2026, 10, 10),
+            "Friday" to LocalDate.of(2026, 10, 9),
+            "10th date" to LocalDate.of(2026, 10, 10),
+            "10 தேதி" to LocalDate.of(2026, 10, 10),
+            "அடுத்த மாதம் 10" to LocalDate.of(2026, 11, 10),
+            "அக்டோபர் 10" to LocalDate.of(2026, 10, 10),
+        )
+
+        cases.forEach { (answer, expectedDate) ->
+            val a = agent(FakeTools())
+            val prompt = a.ask("Praba ku 5000 tharanum")
+            assertTrue("Expected a due-date prompt for $answer: ${prompt.reply.text}", prompt.reply.text.contains("Due date", ignoreCase = true))
+            assertEquals(KaiPendingQuestion.DUE_DATE, a.conversationState.pendingQuestion)
+            assertEquals("Praba", a.conversationState.pendingEntity)
+            assertEquals(BigDecimal("5000.00"), a.conversationState.pendingAmount)
+            assertEquals(KaiConversationPaymentDirection.PAYMENT_OUT, a.conversationState.pendingPaymentDirection)
+            assertEquals("OUT", a.conversationState.lastPaymentDirection)
+
+            val resolved = a.ask(answer)
+            assertEquals("Wrong date for answer '$answer': ${resolved.reply.text}", expectedDate, a.conversationState.lastDate)
+            assertEquals("Praba", a.conversationState.lastPerson)
+            assertEquals(BigDecimal("5000.00"), a.conversationState.lastAmount)
+            assertEquals("OUT", a.conversationState.lastPaymentDirection)
+            assertNull(a.conversationState.pendingQuestion)
+            assertNull(a.conversationState.pendingEntity)
+            assertNull(a.conversationState.pendingAmount)
+            assertNull(a.conversationState.pendingPaymentDirection)
+            assertNull(resolved.plan)
+            assertTrue(resolved.reply.text, resolved.reply.text.contains("Praba"))
+            assertTrue(resolved.reply.text, resolved.reply.text.contains("5,000"))
+        }
+    }
+
+    @Test
+    fun pendingDateUsesCalendarRolloverAndDoesNotInventFromTimeOrUnknownText() = runBlocking {
+        val monthEnd = agent(FakeTools(), LocalDateTime.of(2026, 10, 31, 16, 20))
+        monthEnd.ask("Praba ku 5000 tharanum")
+        monthEnd.ask("next month 10")
+        assertEquals(LocalDate.of(2026, 11, 10), monthEnd.conversationState.lastDate)
+
+        val passedMonth = agent(FakeTools(), LocalDateTime.of(2026, 11, 25, 16, 20))
+        passedMonth.ask("Praba ku 5000 tharanum")
+        passedMonth.ask("October 10")
+        assertEquals(LocalDate.of(2027, 10, 10), passedMonth.conversationState.lastDate)
+
+        listOf("at 10", "maybe sometime").forEach { answer ->
+            val a = agent(FakeTools())
+            a.ask("Praba ku 5000 tharanum")
+            a.ask(answer)
+            assertNull("Must not infer a calendar date from '$answer'", a.conversationState.lastDate)
+            assertEquals(KaiPendingQuestion.DUE_DATE, a.conversationState.pendingQuestion)
+        }
+    }
+
+    @Test
+    fun pendingDueDateIsSessionLocalAndResetClearsIt() = runBlocking {
+        val first = agent(FakeTools())
+        first.ask("Praba ku 5000 tharanum")
+        val separateSession = agent(FakeTools())
+        separateSession.ask("October 10")
+        assertNull(separateSession.conversationState.lastDate)
+        assertNull(separateSession.conversationState.pendingQuestion)
+
+        first.reset()
+        assertNull(first.conversationState.pendingQuestion)
+        assertNull(first.conversationState.pendingEntity)
+        assertNull(first.conversationState.pendingAmount)
+        assertNull(first.conversationState.pendingPaymentDirection)
+        first.ask("October 10")
+        assertNull(first.conversationState.lastDate)
+    }
+
+    @Test
+    fun pendingAmountAndCollectionFollowUpStayTogether() = runBlocking {
+        val a = agent(FakeTools())
+        a.ask("Kumar-ku 12000 pending irukku")
+        val followUp = a.ask("Adha eppo collect pannalaam?")
+        assertTrue(followUp.reply.text, followUp.reply.text.contains("Kumar") && followUp.reply.text.contains("12,000"))
+        assertEquals("Kumar", a.conversationState.lastPerson)
+        assertEquals(BigDecimal("12000.00"), a.conversationState.lastAmount)
+    }
+
+    @Test
+    fun calculatorTemporarilySwitchesTopicAndRestoresReceivableContext() = runBlocking {
+        val a = agent(FakeTools())
+        a.ask("Kumar enakku 20000 tharanum")
+        assertEquals("1,625", a.ask("1250 plus 375 evlo?").reply.text)
+        val restored = a.ask("Kumar adha eppa tharuvaan?")
+        assertTrue(restored.reply.text, restored.reply.text.contains("Kumar") && restored.reply.text.contains("20,000"))
+        assertEquals("RECEIVABLE_CONTEXT", a.conversationState.previousTopicBeforeCalculator)
+    }
+
+    @Test
+    fun gaveMeCreatesIncomingPaymentDraftWithoutPosting() = runBlocking {
+        val tools = FakeTools()
+        val a = agent(tools)
+        val turn = a.ask("Kumar gave me 5000 cash today")
+        assertEquals(PlanKind.PAYMENT_IN, turn.plan!!.kind)
+        assertEquals(BigDecimal("5000.00"), turn.plan!!.amount)
+        assertTrue(turn.card!!.buttons.any { it.action is KaiAction.ConfirmPlan })
+        assertTrue(tools.confirmed.isEmpty())
+        assertEquals("IN", a.conversationState.lastPaymentDirection)
+    }
+
+    @Test
+    fun messyAccountQuestionCreatesCashDraftForTheActualReceipt() = runBlocking {
+        val tools = FakeTools()
+        val a = agent(tools)
+        val turn = a.ask("Kumar inniku 5k cash kuduthan, idha account la podalama")
+        assertEquals(PlanKind.PAYMENT_IN, turn.plan!!.kind)
+        assertEquals(BigDecimal("5000.00"), turn.plan!!.amount)
+        assertEquals(com.shopai.app.books.model.PaymentMode.CASH, turn.plan!!.mode)
+        assertTrue(tools.confirmed.isEmpty())
+    }
+
+    @Test
+    fun numericCorrectionReplacesDraftAmountAndStillRequiresConfirmation() = runBlocking {
+        val tools = FakeTools()
+        val a = agent(tools)
+        val first = a.ask("Kumar 5000 cash kuduthaan")
+        assertEquals(BigDecimal("5000.00"), first.plan!!.amount)
+        val revised = a.ask("Illai Kai, 500 dhaan")
+        assertEquals(BigDecimal("500.00"), revised.plan!!.amount)
+        assertTrue(revised.card!!.buttons.any { it.action is KaiAction.ConfirmPlan })
+        assertEquals(1, tools.discarded.size)
+        assertTrue(tools.confirmed.isEmpty())
+    }
+
+    @Test
+    fun naturalVendaCancelsOpenDraftAndSavesNothing() = runBlocking {
+        val tools = FakeTools()
+        val a = agent(tools)
+        val draft = a.ask("Kumar gave me 1000 cash today")
+        assertNotNull(draft.plan)
+        val cancelled = a.ask("Venda")
+        assertTrue(cancelled.reply.text, cancelled.reply.text.contains("cancel pannitten", ignoreCase = true))
+        assertTrue(cancelled.reply.text, cancelled.reply.text.contains("save aagala", ignoreCase = true))
+        assertTrue(tools.confirmed.isEmpty())
+        assertEquals(1, tools.discarded.size)
+        assertNull(a.conversationState.pendingDraft)
+    }
+
+    @Test
+    fun missingColgateIsStillRememberedForItsPronounFollowUp() = runBlocking {
+        val a = agent(FakeTools())
+        val first = a.ask("Colgate stock evlo irukku?")
+        assertTrue(first.reply.text, first.reply.text.contains("Colgate"))
+        val next = a.ask("Adhu low-aa irukka?")
+        assertTrue(next.reply.text, next.reply.text.contains("Colgate") && next.reply.text.contains("record"))
+        assertEquals("Colgate", a.conversationState.lastProduct)
+    }
+
+    @Test
+    fun missingAmountAsksForAmountThenDirectionWithoutDrafting() = runBlocking {
+        val tools = FakeTools()
+        val a = agent(tools)
+        val missing = a.ask("Kumar-ku amount add pannu")
+        assertTrue(missing.reply.text, missing.reply.text.contains("amount", ignoreCase = true) || missing.reply.text.contains("Evlo"))
+        assertNull(missing.plan)
+        assertTrue(tools.confirmed.isEmpty())
+        val amountOnly = a.ask("5000")
+        assertNull(amountOnly.plan)
+        assertTrue(amountOnly.reply.text, amountOnly.reply.text.contains("received", ignoreCase = true) || amountOnly.reply.text.contains("vandhucha"))
+        assertTrue(tools.confirmed.isEmpty())
+        assertTrue(tools.discarded.isEmpty())
     }
 }

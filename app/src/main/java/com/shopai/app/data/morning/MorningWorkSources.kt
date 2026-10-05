@@ -205,7 +205,11 @@ class MorningTaskFileStore(context: Context) : MorningTaskStore {
     private val dir = File(context.applicationContext.filesDir, "morning_work").apply { mkdirs() }
     private val gson = Gson()
     private val lock = Mutex()
-    private val type = object : TypeToken<LinkedHashMap<String, List<MorningTask>>>() {}.type
+    private val type: java.lang.reflect.Type = TypeToken.getParameterized(
+        LinkedHashMap::class.java,
+        String::class.java,
+        TypeToken.getParameterized(List::class.java, MorningTask::class.java).type,
+    ).type
 
     private fun file(biz: String) = File(dir, "tasks_${safe(biz)}.json")
 

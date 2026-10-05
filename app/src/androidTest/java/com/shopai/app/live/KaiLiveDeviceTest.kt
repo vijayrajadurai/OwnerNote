@@ -461,7 +461,11 @@ class KaiLiveDeviceTest {
     @Test
     fun t16_spoken_relative_reminder_sets_a_real_alarm() = runBlocking {
         val before = System.currentTimeMillis()
-        val t = kai().ask("2 minutes la Ruthran-ku call pannanum reminder pannu")
+        val k = kai()
+        val ask = k.ask("2 minutes la Ruthran-ku call pannanum reminder pannu")
+        says(ask, "set pannalama?", "reminder set panna munnadi Kai confirm kekkanum")
+        assertTrue("BUG: Confirm munnadi reminder save aaga koodaadhu", reminders.open().none { (it.person ?: "").contains("Ruthran", true) })
+        val t = k.act(ask.button("Confirm"), KaiLang.TANGLISH) ?: throw AssertionError("BUG: Confirm-ku reply illa")
         says(t, "Ruthran", "reminder reply-la Ruthran varanum")
         val r = reminders.open().firstOrNull { it.task.contains("Ruthran", true) || it.title.contains("Ruthran", true) || (it.person ?: "").contains("Ruthran", true) }
             ?: throw AssertionError("BUG: reminder save aagala · open=${reminders.open().map { it.title }}")

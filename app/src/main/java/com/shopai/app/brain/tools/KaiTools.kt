@@ -157,6 +157,8 @@ interface KaiTools {
     fun lastRang(): KaiReminder? = null
     /** The phone's time zone. */
     fun zone(): String = java.time.ZoneId.systemDefault().id
+    /** Can Kai Urgent Action Mode appear full-screen over the lock screen (Android 14+ asks the owner)? null: unknown here. */
+    fun fullScreenAllowed(): Boolean? = null
     /** People with this name: OwnerNote customers / suppliers, then phone contacts. Null = can't search. */
     suspend fun contacts(name: String, role: PartyRole?): List<ContactMatch>? = null
 

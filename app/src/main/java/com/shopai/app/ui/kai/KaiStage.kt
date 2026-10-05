@@ -15,6 +15,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -42,20 +43,25 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.shopai.app.ui.theme.Primary
-import com.shopai.app.ui.theme.ShopAiThemeColors
 import kotlinx.coroutines.delay
 
 private const val HeadlineDwellMs = 3_800L
 
 /** What KAI says: two lines at a time; longer copy ticks like a headline. */
 @Composable
-fun KaiSpeechBubble(text: String?, modifier: Modifier = Modifier, textAlign: TextAlign = TextAlign.Center) {
+fun KaiSpeechBubble(
+    text: String?,
+    modifier: Modifier = Modifier,
+    textAlign: TextAlign = TextAlign.Center,
+    /** Home brief sits on the page, the same way the Kai details message does. */
+    background: Boolean = true,
+) {
     val line = text?.trim().orEmpty()
     if (line.isBlank()) return
 
     val textStyle = MaterialTheme.typography.titleMedium.copy(
         fontWeight = FontWeight.SemiBold,
-        color = ShopAiThemeColors.onSurface,
+        color = com.shopai.app.ui.theme.TextPrimary,
         textAlign = textAlign,
     )
     val measurer = rememberTextMeasurer()
@@ -63,11 +69,15 @@ fun KaiSpeechBubble(text: String?, modifier: Modifier = Modifier, textAlign: Tex
     var page by remember(line) { mutableIntStateOf(0) }
 
     BoxWithConstraints(
-        modifier = modifier
-            .widthIn(max = 320.dp)
-            .background(Color.White, RoundedCornerShape(18.dp))
-            .border(1.dp, Primary.copy(alpha = 0.18f), RoundedCornerShape(18.dp))
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+        modifier = if (background) {
+            modifier
+                .widthIn(max = 320.dp)
+                .background(Color.White, RoundedCornerShape(18.dp))
+                .border(1.dp, Primary.copy(alpha = 0.18f), RoundedCornerShape(18.dp))
+                .padding(horizontal = 16.dp, vertical = 10.dp)
+        } else {
+            modifier.fillMaxWidth()
+        },
     ) {
         val widthPx = with(density) {
             val cap = if (maxWidth.value.isFinite() && maxWidth > 0.dp) maxWidth else 280.dp
@@ -141,34 +151,36 @@ fun KaiStage(
     /** While speaking: the expression that fits what KAI says. */
     speakingAs: KaiState? = null,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        KaiCharacter(
-            state = state,
-            mouthLevel = mouthLevel,
-            speakingAs = speakingAs,
-            size = 300.dp,
-            modifier = Modifier.clickable(
-                enabled = enabled,
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onTap,
-            ),
-        )
-        KaiSpeechBubble(line)
-        if (!heard.isNullOrBlank()) {
-            Text(
-                text = heard,
-                style = MaterialTheme.typography.bodyLarge,
-                color = ShopAiThemeColors.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 16.dp),
+    KaiContentCard(modifier = modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            KaiCharacter(
+                state = state,
+                mouthLevel = mouthLevel,
+                speakingAs = speakingAs,
+                size = 220.dp,
+                modifier = Modifier.clickable(
+                    enabled = enabled,
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onTap,
+                ),
             )
+            KaiSpeechBubble(line)
+            if (!heard.isNullOrBlank()) {
+                Text(
+                    text = heard,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = com.shopai.app.ui.theme.TextSecondary,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                )
+            }
         }
     }
 }
@@ -189,14 +201,24 @@ fun KaiBriefCard(
     speakingAs: KaiState? = null,
 ) {
     val size: Dp by animateDpAsState(if (compact) 96.dp else 150.dp, tween(600), label = "kaiSize")
-    Row(
+    KaiContentCard(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onTap),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
     ) {
-        KaiCharacter(state = state, mouthLevel = mouthLevel, size = size, speakingAs = speakingAs)
-        KaiSpeechBubble(line, modifier = Modifier.weight(1f), textAlign = TextAlign.Start)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            KaiCharacter(state = state, mouthLevel = mouthLevel, size = size, speakingAs = speakingAs)
+            KaiSpeechBubble(
+                line,
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Start,
+                background = false,
+            )
+        }
     }
 }

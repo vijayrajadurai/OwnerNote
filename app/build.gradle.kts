@@ -9,14 +9,14 @@ plugins {
 
 android {
     namespace = "com.shopai.app"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.shopai.app"
+        applicationId = "com.ownernote.app"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        targetSdk = 36
+        versionCode = 12
+        versionName = "0.1.8"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // Production API (Render). Debug defaults to the local Owner Note backend.
@@ -27,12 +27,22 @@ android {
         buildConfigField("String", "TTS_PROXY_KEY", "\"newonx2026secret\"")
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = rootProject.file("OwnerNote Keystore/ownernote.jks")
+            storePassword = "Ownernote"
+            keyAlias = "ownernote"
+            keyPassword = "Ownernote"
+        }
+    }
+
     buildTypes {
         debug {
             val localUrl = (project.findProperty("API_BASE_URL") as String?) ?: "https://shop-ai-api.onrender.com"
             buildConfigField("String", "API_BASE_URL", "\"$localUrl\"")
         }
         release {
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -97,10 +107,20 @@ dependencies {
     implementation(libs.rive.android)
 
     implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.analytics)
     implementation(libs.firebase.auth)
     implementation(libs.firebase.messaging)
-    implementation(libs.firebase.crashlytics)
+    implementation(libs.firebase.crashlytics) {
+        exclude(group = "com.google.firebase", module = "firebase-analytics")
+        exclude(group = "com.google.firebase", module = "firebase-analytics-ktx")
+        exclude(group = "com.google.android.gms", module = "play-services-measurement")
+        exclude(group = "com.google.android.gms", module = "play-services-measurement-api")
+        exclude(group = "com.google.android.gms", module = "play-services-measurement-impl")
+        exclude(group = "com.google.android.gms", module = "play-services-measurement-sdk")
+        exclude(group = "com.google.android.gms", module = "play-services-measurement-sdk-api")
+        exclude(group = "com.google.android.gms", module = "play-services-ads-identifier")
+        exclude(group = "com.android.installreferrer", module = "installreferrer")
+    }
+    implementation("com.google.firebase:firebase-measurement-connector")
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.play.services.auth.api.phone)
     implementation(libs.play.integrity)
@@ -125,3 +145,20 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.kotlinx.coroutines.test)
 }
+
+// Owner Note does not use ads or Google Analytics. Strip every transitive ads/analytics SDK
+// so Play does not merge AD_ID / AdServices permissions.
+configurations.configureEach {
+    exclude(group = "com.google.firebase", module = "firebase-analytics")
+    exclude(group = "com.google.firebase", module = "firebase-analytics-ktx")
+    exclude(group = "com.google.android.gms", module = "play-services-ads")
+    exclude(group = "com.google.android.gms", module = "play-services-ads-identifier")
+    exclude(group = "com.google.android.gms", module = "play-services-ads-lite")
+    exclude(group = "com.google.android.gms", module = "play-services-measurement")
+    exclude(group = "com.google.android.gms", module = "play-services-measurement-api")
+    exclude(group = "com.google.android.gms", module = "play-services-measurement-impl")
+    exclude(group = "com.google.android.gms", module = "play-services-measurement-sdk")
+    exclude(group = "com.google.android.gms", module = "play-services-measurement-sdk-api")
+    exclude(group = "com.android.installreferrer", module = "installreferrer")
+}
+

@@ -1,7 +1,5 @@
 package com.shopai.app.ui.subscription
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -31,6 +29,7 @@ import com.shopai.app.billing.BillingConfig
 import com.shopai.app.ui.components.DetailScaffold
 import com.shopai.app.ui.components.PrimaryButton
 import com.shopai.app.ui.components.ShopCard
+import com.shopai.app.ui.legal.PrivacyPolicyActivity
 
 @Composable
 fun SubscriptionScreen(onBack: () -> Unit) {
@@ -101,9 +100,7 @@ fun SubscriptionScreen(onBack: () -> Unit) {
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable {
-                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(BillingConfig.PRIVACY_POLICY_URL)))
-                    }
+                    .clickable { PrivacyPolicyActivity.openPrivacy(context) }
                     .padding(vertical = 4.dp),
             )
             Text(
@@ -111,9 +108,7 @@ fun SubscriptionScreen(onBack: () -> Unit) {
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable {
-                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(BillingConfig.TERMS_URL)))
-                    }
+                    .clickable { PrivacyPolicyActivity.openTerms(context) }
                     .padding(vertical = 4.dp),
             )
         }

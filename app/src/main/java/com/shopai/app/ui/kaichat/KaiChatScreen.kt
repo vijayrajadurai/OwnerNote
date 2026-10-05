@@ -6,11 +6,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -22,7 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.AssistChip
@@ -48,11 +47,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.shopai.app.R
 import com.shopai.app.data.AppContainer
 import com.shopai.app.ui.components.DetailScaffold
 import com.shopai.app.ui.kai.KaiCharacter
+import com.shopai.app.ui.kai.KaiContentCard
 import com.shopai.app.ui.kai.KaiState
 import com.shopai.app.ui.kai.state
 import com.shopai.app.ui.theme.Primary
@@ -105,6 +106,10 @@ fun KaiChatScreen(
                     android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
                         .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName),
                 )
+            }
+            // Android 14+: "Allow full-screen alerts" so Kai Urgent Action Mode can appear over the lock screen.
+            com.shopai.app.brain.chat.KaiAction.OpenFullScreenSettings -> runCatching {
+                context.startActivity(com.shopai.app.notifications.KaiReminderEngine.fullScreenSettingsIntent(context))
             }
             is com.shopai.app.brain.chat.KaiAction.EditPlan -> session.plan(action.key)?.let { editing = messageId to it }
             is com.shopai.app.brain.chat.KaiAction.EditStock -> {
@@ -241,31 +246,37 @@ fun KaiChatScreen(
 
     DetailScaffold(title = stringResource(R.string.kai_chat_title), onBack = onBack) { contentModifier ->
         Column(modifier = contentModifier.fillMaxSize().imePadding()) {
-            // KAI, live, with who he is.
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            KaiContentCard(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
             ) {
-                KaiCharacter(
-                    state = kaiState,
-                    mouthLevel = mouth,
-                    speakingAs = session.lastMood?.state(),
-                    size = 120.dp,
-                )
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Kai", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = ShopAiThemeColors.onSurface)
-                    Text(stringResource(R.string.kai_chat_subtitle), color = ShopAiThemeColors.onSurfaceVariant)
-                    Text(
-                        stringResource(R.string.kai_chat_mic_tip),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = ShopAiThemeColors.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp),
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    KaiCharacter(
+                        state = kaiState,
+                        mouthLevel = mouth,
+                        speakingAs = session.lastMood?.state(),
+                        size = 120.dp,
                     )
-                }
-                Column(horizontalAlignment = Alignment.End) {
-                    if (session.messages.isNotEmpty()) {
-                        TextButton(onClick = { session.clear() }) { Text(stringResource(R.string.kai_chat_clear)) }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Kai", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = com.shopai.app.ui.theme.TextPrimary)
+                        Text(stringResource(R.string.kai_chat_subtitle), color = com.shopai.app.ui.theme.TextSecondary)
+                        Text(
+                            stringResource(R.string.kai_chat_mic_tip),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = com.shopai.app.ui.theme.TextSecondary,
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        if (session.messages.isNotEmpty()) {
+                            TextButton(onClick = { session.clear() }) { Text(stringResource(R.string.kai_chat_clear)) }
+                        }
                     }
                 }
             }
@@ -305,7 +316,7 @@ fun KaiChatScreen(
                 )
             }
             Row(
-                modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 12.dp, vertical = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(
@@ -439,34 +450,7 @@ private fun KaiBubble(text: String) {
                 .padding(horizontal = 14.dp, vertical = 10.dp),
         ) {
             Text("Kai", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Primary)
-            Text(text, style = MaterialTheme.typography.bodyLarge, color = ShopAiThemeColors.onSurface)
+            Text(text, style = MaterialTheme.typography.bodyLarge, color = com.shopai.app.ui.theme.TextPrimary)
         }
-    }
-}
-
-/** Home entry point: "Ask Kai — Owner, enna theriyanum?" → Kai Chat. */
-@Composable
-fun AskKaiCard(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(Color.White, RoundedCornerShape(20.dp))
-            .border(1.dp, Primary.copy(alpha = 0.22f), RoundedCornerShape(20.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Box(
-            modifier = Modifier.size(40.dp).background(Primary.copy(alpha = 0.12f), CircleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null, tint = Primary)
-        }
-        Column(modifier = Modifier.weight(1f)) {
-            Text(stringResource(R.string.kai_chat_entry_title), fontWeight = FontWeight.Bold, color = ShopAiThemeColors.onSurface)
-            Text(stringResource(R.string.kai_chat_entry_body), style = MaterialTheme.typography.bodyMedium, color = ShopAiThemeColors.onSurfaceVariant)
-        }
-        Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null, tint = Primary)
     }
 }

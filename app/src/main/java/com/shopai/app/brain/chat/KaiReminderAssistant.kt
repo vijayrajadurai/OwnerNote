@@ -43,7 +43,7 @@ class KaiReminderAssistant(
     private val books: KaiBooks? = null,
     private val now: () -> LocalDateTime = { LocalDateTime.now() },
 ) {
-    private enum class Waiting { NOTHING, TASK, TIME, DAY_OF_MONTH, NUMBER, UPDATE_TIME }
+    private enum class Waiting { NOTHING, TASK, TIME, DAY_OF_MONTH, NUMBER, UPDATE_TIME, CONFIRM }
 
     private data class Pending(
         val key: String,
@@ -53,6 +53,8 @@ class KaiReminderAssistant(
         val contact: ContactMatch? = null,
         /** Changing an existing reminder (its id) instead of creating one. */
         val updateId: String? = null,
+        /** The language the owner asked in (the confirmation and the reminder keep it). */
+        val lang: KaiLang? = null,
     )
 
     private val pending = LinkedHashMap<String, Pending>()
@@ -118,9 +120,24 @@ class KaiReminderAssistant(
                 val time = KaiTime.parse(text, now()) ?: clockFrom(text, null)?.let { t -> KaiWhen(nextAt(t)) } ?: return null
                 update(r, time, lang)
             }
+            // "Seri Owner. Praba-ku 2 minutes-la call reminder set pannalama?" → "aama" / "venam" / "maathu".
+            Waiting.CONFIRM -> {
+                val p = key?.let { pending[it] } ?: return null
+                val t = text.trim().lowercase(Locale.ROOT).trim('.', '!', ' ')
+                when {
+                    confirmYes.matches(t) -> confirmCreate(p, lang)
+                    confirmNo.matches(t) -> act(KaiAction.CancelRequest(p.key), p.lang ?: lang)
+                    confirmEdit.containsMatchIn(t) && KaiTime.parse(text, now()) == null -> editRequest(p, p.lang ?: lang)
+                    else -> null
+                }
+            }
             Waiting.NOTHING -> null
         }
     }
+
+    private val confirmYes = Regex("""(aama|ama|aamaa|amam|ok|okay|okk|sari|seri|sariya|confirm|yes|yeah|ya|set\s*pannu|set\s*pannunga|podu|vai|vechudu|சரி|ஆமா|ஆமாம்|ok\s*pannu)""")
+    private val confirmNo = Regex("""(venam|vendam|venaam|vendaam|cancel|no|illa|vendaa|வேண்டாம்|இல்ல)""")
+    private val confirmEdit = Regex("""\b(edit|maathu|mathu|change|maatru)\b|மாற்று""")
 
     suspend fun handle(request: ReminderRequest, lang: KaiLang): KaiTurn = when (request) {
         is ReminderRequest.Create -> proceed(Pending(newKey(), request.draft, request.draft.time), lang)
@@ -139,6 +156,9 @@ class KaiReminderAssistant(
 
     /** A reminder button. Null when the action isn't a reminder one. */
     suspend fun act(action: KaiAction, lang: KaiLang): KaiTurn? = when (action) {
+        is KaiAction.ConfirmReminder -> pending[action.requestKey]?.let { confirmCreate(it, lang) }
+            ?: say(lang, KaiMood.NEUTRAL, ta = "இந்த reminder ஏற்கனவே முடிவு பண்ணியாச்சு ஓனர்.", tl = "Owner, indha reminder already mudivu pannachu.", en = "That reminder was already handled, Owner.")
+        is KaiAction.EditReminderRequest -> pending[action.requestKey]?.let { editRequest(it, it.lang ?: lang) }
         is KaiAction.RemindAt -> pending[action.requestKey]?.let { p ->
             val base = p.time ?: KaiWhen(action.at, missing = setOf(Missing.TIME))
             proceed(p.copy(time = withTime(base.copy(at = action.at), action.at.toLocalTime(), keepDate = true)), lang)
@@ -268,8 +288,83 @@ class KaiReminderAssistant(
                 }
             }
         }
+        // Nothing is scheduled until the owner confirms.
+        return confirmAsk(p.copy(lang = p.lang ?: lang), time, p.lang ?: lang)
+    }
+
+    /** "Seri Owner. Praba-ku 2 minutes-la call reminder set pannalama?" [Confirm] [Edit] [Cancel] — nothing is set yet. */
+    private fun confirmAsk(p: Pending, time: KaiWhen, lang: KaiLang): KaiTurn {
+        pending[p.key] = p.copy(time = time)
+        waiting = Waiting.CONFIRM
+        waitingKey = p.key
+        val c = p.contact
+        // A preview only (the real one is built at Confirm, so "2 minutes" counts from then).
+        val preview = KaiReminderSchedule.build(
+            id = "preview", draft = p.draft, `when` = time, zone = zone(), nowMillis = nowMillis(), lang = lang,
+            person = c?.name ?: p.draft.person, phone = c?.phone, contactId = c?.id,
+        )
+        val person = preview.person
+        val whenWords = time.relative?.let { d -> KaiReminderWords.duration(d, lang) }
+        val whenText = whenText(preview, time, lang)
+        val what = when {
+            preview.action == ReminderAction.CALL && person != null -> pick(lang,
+                ta = "$person-க்கு ${whenWords?.let { "$it-ல" } ?: whenText} call",
+                tl = "$person-ku ${whenWords?.let { "$it-la" } ?: "$whenText-ku"} call",
+                en = "to call $person ${whenWords?.let { "in $it" } ?: whenText}")
+            preview.action == ReminderAction.MESSAGE && person != null -> pick(lang,
+                ta = "$person-க்கு ${whenWords?.let { "$it-ல" } ?: whenText} message",
+                tl = "$person-ku ${whenWords?.let { "$it-la" } ?: "$whenText-ku"} message",
+                en = "to message $person ${whenWords?.let { "in $it" } ?: whenText}")
+            else -> {
+                // "Kumar-ku reminder pannu": the task is only the name — no quoted task.
+                val onlyName = person != null && preview.task.replace(person, "", ignoreCase = true).trim().trim('-').removePrefix("ku").removePrefix("kku").isBlank()
+                val who = if (onlyName) pick(lang, ta = "$person-க்கு ", tl = "$person-ku ", en = "for $person ") else ""
+                val task = if (onlyName) "" else " “${preview.task}”"
+                pick(lang,
+                    ta = "$who${whenWords?.let { "$it-ல" } ?: whenText}$task",
+                    tl = "$who${whenWords?.let { "$it-la" } ?: "$whenText-ku"}$task",
+                    en = (if (onlyName) who else "for${task} ") + (whenWords?.let { "in $it" } ?: whenText))
+            }
+        }
+        val text = pick(lang,
+            ta = "சரி ஓனர். $what reminder வைக்கட்டுமா?",
+            tl = "Seri Owner. $what reminder set pannalama?",
+            en = "Okay Owner. Set a reminder $what?")
+        val lines = listOfNotNull(
+            pick(lang, ta = "நினைவூட்டல்", tl = "Reminder", en = "Reminder"),
+            preview.title,
+            pick(lang, ta = "எப்போ: ", tl = "When: ", en = "When: ") + (whenWords?.let { d -> pick(lang, ta = "$d கழிச்சு", tl = "$d kalichi", en = "$d from now") } ?: whenText),
+            preview.amount?.let { pick(lang, ta = "தொகை: ", tl = "Amount: ", en = "Amount: ") + com.shopai.app.brain.tools.KaiUrgentWords.rupees(it) },
+            pick(lang, ta = "நிலை: Confirm பண்ணா தான் வைப்பேன்", tl = "Status: Confirm pannina dhaan set aagum", en = "Status: not set until you confirm"),
+        )
+        val buttons = listOf(
+            KaiButton(pick(lang, ta = "Confirm", tl = "Confirm", en = "Confirm"), KaiAction.ConfirmReminder(p.key), primary = true),
+            KaiButton(pick(lang, ta = "மாற்று", tl = "Edit", en = "Edit"), KaiAction.EditReminderRequest(p.key)),
+            cancelButton(p.key, lang),
+        )
+        return KaiTurn(ChatReply(text, KaiMood.CLARIFY, ChatIntent.REMINDER_QUERY), KaiCard(lines, buttons))
+    }
+
+    /** Confirm: only now is the reminder saved and its alarm armed (2 minutes counts from now). */
+    private fun confirmCreate(p: Pending, lang: KaiLang): KaiTurn {
+        val time = p.time ?: return say(lang, KaiMood.CLARIFY, ta = "எப்போ நினைவூட்டணும் ஓனர்?", tl = "Eppo remind pannanum Owner?", en = "When should I remind you, Owner?")
         pending.remove(p.key)
-        return create(p, time, lang)
+        if (waitingKey == p.key) { waiting = Waiting.NOTHING; waitingKey = null }
+        return create(p, time, p.lang ?: lang)
+    }
+
+    /** Edit before it is set: the time is asked again (the task and person stay). */
+    private fun editRequest(p: Pending, lang: KaiLang): KaiTurn {
+        pending[p.key] = p.copy(time = null)
+        waiting = Waiting.TIME
+        waitingKey = p.key
+        return KaiTurn(
+            ChatReply(pick(lang,
+                ta = "சரி ஓனர். எப்போ நினைவூட்டணும்? (உதா: 10 நிமிஷத்துல, நாளைக்கு காலை 10 மணிக்கு)",
+                tl = "Seri Owner. Eppo remind pannanum? (eg: 10 minutes la, naalaikku kaalaila 10 manikku)",
+                en = "Sure Owner. When should I remind you? (e.g. in 10 minutes, tomorrow 10 AM)"), KaiMood.CLARIFY, ChatIntent.REMINDER_QUERY),
+            KaiCard(emptyList(), listOf(cancelButton(p.key, lang))),
+        )
     }
 
     private fun create(p: Pending, time: KaiWhen, lang: KaiLang): KaiTurn {
@@ -330,6 +425,14 @@ class KaiReminderAssistant(
                 buttons += KaiButton(pick(lang, ta = "சரியான நேரத்துக்கு அனுமதி", tl = "Exact time allow pannu", en = "Allow exact time"), KaiAction.OpenAlarmSettings)
             }
             else -> Unit
+        }
+        // Android 14+ can stop Kai from appearing over the lock screen: say so (the notification still comes).
+        if (!saved.duplicate && tools.fullScreenAllowed() == false) {
+            notes += pick(lang,
+                ta = "Lock screen-ல Kai full-screen-ஆ வர “Full-screen alerts” அனுமதி இல்ல — notification-ஆ வரும்.",
+                tl = "Lock screen-la Kai full-screen-ah vara “Full-screen alerts” permission illa — notification-ah varum.",
+                en = "“Full-screen alerts” aren't allowed, so on the lock screen Kai will come as a notification.")
+            buttons += KaiButton(pick(lang, ta = "Full-screen அனுமதி", tl = "Full-screen allow pannu", en = "Allow full screen"), KaiAction.OpenFullScreenSettings)
         }
         // A call / message reminder for someone not in OwnerNote: offer to add the number.
         if (!saved.duplicate && r.person != null && r.phone == null && (r.action == ReminderAction.CALL || r.action == ReminderAction.MESSAGE)) {

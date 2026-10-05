@@ -39,7 +39,7 @@ class KaiReminderUnderstandingTest {
         assertEquals(ReminderAction.MESSAGE, create("Ramesh-ku WhatsApp message panna remind pannu tomorrow 10 am").action)
         assertEquals(ReminderAction.PAYMENT, create("Tomorrow supplier-ku payment panna remind pannu.").action)
         assertEquals(ReminderAction.COLLECTION, create("Naalaikku Kumar kita payment collect panna remind pannu.").action)
-        assertEquals(ReminderAction.TASK, create("Daily morning stock check panna remind pannu.").action)
+        assertEquals(ReminderAction.STOCK, create("Daily morning stock check panna remind pannu.").action)
         assertEquals("medicine eduka", create("Night medicine eduka remind pannu.").task)
         assertEquals("machine check panna", create("1 hour later machine check panna sollu.").task)
         assertEquals("Kadai close panna munadi cash check panna", create("Kadai close panna munadi cash check panna remind pannu.").task)

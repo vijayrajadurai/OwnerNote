@@ -108,6 +108,58 @@ class KaiPersonalLearningTest {
         assertTrue(tools.stockChanges.isEmpty())
     }
 
+    @Test
+    fun pendingPaymentVendaIsCancellationBeforePrivateWordLearning() = runBlocking {
+        val local = agent(Access(store, "biz-cancel", "owner-A", tools))
+        val draft = local.ask("Kumar gave me 1000 cash today")
+        assertEquals(PlanKind.PAYMENT_IN, draft.plan!!.kind)
+        val cancelled = local.ask("Venda")
+        assertTrue(cancelled.reply.text, cancelled.reply.text.contains("cancel pannitten", true))
+        assertTrue(tools.confirmed.isEmpty())
+        assertFalse(local.waitingForLearningAnswer)
+        assertNull(local.conversationState.pendingDraft)
+    }
+
+    @Test
+    fun numericDraftCorrectionWinsBeforePrivateMemoryLearning() = runBlocking {
+        val local = agent(Access(store, "biz-correction", "owner-A", tools))
+        local.ask("Kumar 5000 cash kuduthaan")
+        val corrected = local.ask("Illai Kai, 500 dhaan")
+        assertEquals(BigDecimal("500.00"), corrected.plan!!.amount)
+        assertTrue(tools.confirmed.isEmpty())
+        assertFalse(local.waitingForLearningAnswer)
+        assertEquals(1, tools.discarded.size)
+    }
+
+    @Test
+    fun changingBusinessScopeClearsPendingDueDate() = runBlocking {
+        val isolatedAccess = Access(store, "biz-scope-a", "owner-A", tools)
+        val local = agent(isolatedAccess)
+        local.ask("Praba ku 5000 tharanum")
+        assertEquals(KaiPendingQuestion.DUE_DATE, local.conversationState.pendingQuestion)
+        assertEquals("Praba", local.conversationState.pendingEntity)
+        isolatedAccess.business = "biz-scope-b"
+        val nextBusinessTurn = local.ask("October 10")
+        assertNull(local.conversationState.pendingQuestion)
+        assertNull(local.conversationState.pendingEntity)
+        assertNull(local.conversationState.pendingAmount)
+        assertNull(local.conversationState.pendingPaymentDirection)
+        assertNull(local.conversationState.lastDate)
+    }
+
+    @Test
+    fun changingBusinessScopeClearsConversationContext() = runBlocking {
+        val isolatedAccess = Access(store, "biz-scope-a", "owner-A", tools)
+        val local = agent(isolatedAccess)
+        local.ask("Kumar enakku 20000 tharanum")
+        assertEquals(BigDecimal("20000.00"), local.conversationState.lastAmount)
+        isolatedAccess.business = "biz-scope-b"
+        val nextBusinessTurn = local.ask("Eppa?")
+        assertTrue(nextBusinessTurn.reply.text, !nextBusinessTurn.reply.text.contains("20,000"))
+        assertNull(local.conversationState.lastAmount)
+        assertNull(local.conversationState.lastPerson)
+    }
+
     // TEST 1 + section 4/6: unknown unit is asked, saved only after yes, then a normal stock-in DRAFT.
     @Test
     fun ownerTeachesPottiThenStockInDraft() = runBlocking {
@@ -425,7 +477,7 @@ class KaiPersonalLearningTest {
         assertTrue(t.reply.text, t.reply.text.contains("`konjam nerathula` = 10 minutes"))
         kai.ask("aama")
         assertEquals("REMINDER_TERM", find("konjam nerathula")!!.category)
-        kai.ask("Kumar-ku call pannanum konjam nerathula remind pannu")
+        kai.askConfirmed("Kumar-ku call pannanum konjam nerathula remind pannu")
         val r = tools.reminders.single()
         val at = java.time.Instant.ofEpochMilli(r.triggerAt).atZone(ZoneId.of("Asia/Kolkata")).toLocalDateTime()
         assertEquals(now.plusMinutes(10), at)

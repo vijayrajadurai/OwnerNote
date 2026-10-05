@@ -81,7 +81,7 @@ class KaiChatSession(
         if (index < 0 || messages[index].cardClosed || thinking) return null
         val lang = messages[index].lang
         return when (action) {
-            is KaiAction.Dial, KaiAction.OpenScanner, KaiAction.OpenAlarmSettings, KaiAction.OpenNotificationSettings, is KaiAction.EditPlan,
+            is KaiAction.Dial, KaiAction.OpenScanner, KaiAction.OpenAlarmSettings, KaiAction.OpenNotificationSettings, KaiAction.OpenFullScreenSettings, is KaiAction.EditPlan,
             is KaiAction.EditStock, is KaiAction.OpenStockCamera, is KaiAction.CreateProduct, is KaiAction.OpenMorningWork, is KaiAction.OpenRecord -> action
             else -> {
                 close(index)

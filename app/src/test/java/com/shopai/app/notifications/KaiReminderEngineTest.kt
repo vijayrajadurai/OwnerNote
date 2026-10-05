@@ -65,7 +65,9 @@ class KaiReminderEngineTest {
         engine.create(reminder("r1", -1_000))
         engine.fired("r1", snooze = false)
         assertEquals(1, notifications().size)
-        assertEquals("Owner, Kumar-ku call panna sonneenga.", shadowOf(notifications().single()).contentText)
+        // Kai Urgent Action Mode's words (attempt 1), never "called".
+        assertEquals("Owner, Kumar-ku call panna vendiya neram aachu. Ippo call pannalama?", shadowOf(notifications().single()).contentText)
+        assertEquals(1, engine.find("r1")!!.attemptCount)
         assertEquals(ReminderStatus.RANG, engine.find("r1")!!.status)
         // App restart / boot / a duplicate alarm: no second notification.
         KaiReminderEngine(context).rearmAll()
@@ -110,5 +112,81 @@ class KaiReminderEngineTest {
         assertTrue(engine.cancel("r1"))
         assertEquals(ReminderStatus.CANCELLED, engine.find("r1")!!.status)
         assertTrue(engine.open().isEmpty())
+    }
+
+    // Kai Smart Persistent Reminder: a retry every 5 minutes, at most 5 rings, then EXHAUSTED.
+    @Test
+    fun retriesEveryFiveMinutesThenStops() {
+        var t = System.currentTimeMillis()
+        val e = KaiReminderEngine(context) { t }
+        e.create(reminder("p1", -1_000))
+        e.fired("p1", snooze = false)
+        assertEquals(1, e.find("p1")!!.attemptCount)
+        assertEquals(t + 300_000, e.find("p1")!!.snoozedUntil)
+        for (attempt in 2..5) {
+            t += 300_000
+            e.fired("p1", snooze = true)
+            assertEquals(attempt, e.find("p1")!!.attemptCount)
+        }
+        assertEquals(ReminderStatus.EXHAUSTED, e.find("p1")!!.status)
+        // No 6th ring, no snooze.
+        t += 300_000
+        e.fired("p1", snooze = true)
+        assertEquals(5, e.find("p1")!!.attemptCount)
+        assertNull(e.snooze("p1", 5))
+        assertTrue(e.lastPresentation()!!.startsWith("p1|5|"))
+    }
+
+    // Done / cancel: the retry never comes back.
+    @Test
+    fun doneAndCancelStopRetries() {
+        var t = System.currentTimeMillis()
+        val e = KaiReminderEngine(context) { t }
+        e.create(reminder("p1", -1_000))
+        e.fired("p1", snooze = false)
+        assertTrue(e.complete("p1"))
+        t += 300_000
+        e.fired("p1", snooze = true)
+        assertEquals(ReminderStatus.COMPLETED, e.find("p1")!!.status)
+        assertEquals(1, e.find("p1")!!.attemptCount)
+
+        e.create(reminder("p2", 600_000).copy(task = "Ravi-ku call panna", person = "Ravi"))
+        assertTrue(e.cancel("p2"))
+        t += 600_000
+        e.fired("p2", snooze = false)
+        assertEquals(ReminderStatus.CANCELLED, e.find("p2")!!.status)
+        assertEquals(0, e.find("p2")!!.attemptCount)
+    }
+
+    // Snooze 5 min: SNOOZED, rings again as attempt 2; Kai speaks each attempt once.
+    @Test
+    fun snoozeFiveAndSpeakOnce() {
+        var t = System.currentTimeMillis()
+        val e = KaiReminderEngine(context) { t }
+        e.create(reminder("p1", -1_000))
+        e.fired("p1", snooze = false)
+        val first = e.find("p1")!!
+        assertTrue(e.claimSpeech(first))
+        assertTrue("recreated screen: not spoken again", !e.claimSpeech(e.find("p1")!!))
+        val s = e.snooze("p1", KaiReminderEngine.SNOOZE_MINUTES)!!
+        assertEquals(ReminderStatus.SNOOZED, s.status)
+        t += 300_000
+        e.fired("p1", snooze = true)
+        val second = e.find("p1")!!
+        assertEquals(ReminderStatus.RANG, second.status)
+        assertEquals(2, second.attemptCount)
+        assertTrue(e.claimSpeech(second))
+    }
+
+    // Saved fields survive an app restart (a new engine reads the same store).
+    @Test
+    fun newFieldsSurviveRestart() {
+        val e = KaiReminderEngine(context)
+        e.create(reminder("p1", 600_000).copy(businessId = "biz", ownerId = "owner", amount = java.math.BigDecimal("5000"), lang = com.shopai.app.brain.KaiLang.TAMIL))
+        val back = KaiReminderEngine(context).find("p1")!!
+        assertEquals("owner", back.ownerId)
+        assertEquals(0, java.math.BigDecimal("5000").compareTo(back.amount))
+        assertEquals(com.shopai.app.brain.KaiLang.TAMIL, back.lang)
+        assertEquals(5, back.maxAttempts)
     }
 }

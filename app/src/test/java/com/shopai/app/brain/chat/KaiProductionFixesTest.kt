@@ -213,7 +213,7 @@ class KaiProductionFixesTest {
 
     @Test
     fun relativeReminderNeverAsksForATime() = runBlocking {
-        val t = kai.ask("2 minutes la Ruthran-ku call pannanum reminder pannu")
+        val t = kai.askConfirmed("2 minutes la Ruthran-ku call pannanum reminder pannu")
         assertEquals("Done Owner ✅ 2 minutes kalichi Ruthran-ku call panna remind pannuren.", t.reply.text)
         val r = tools.scheduled.single()
         assertEquals(nowMillis + 120_000, r.triggerAt)
@@ -239,7 +239,7 @@ class KaiProductionFixesTest {
             assertEquals(spoken, ReminderAction.CALL, req.draft.action)
             assertEquals(spoken, "ருத்ரன்", req.draft.person)
         }
-        val t = kai.ask("2 நிமிஷத்துல ருத்ரனுக்கு கால் பண்ணனும் ரிமைண்டர் பண்ணு")
+        val t = kai.askConfirmed("2 நிமிஷத்துல ருத்ரனுக்கு கால் பண்ணனும் ரிமைண்டர் பண்ணு")
         assertEquals("சரி ஓனர் ✅ 2 நிமிடம் கழிச்சு ருத்ரன்-க்கு call பண்ண நினைவூட்டுறேன்.", t.reply.text)
         assertEquals(nowMillis + 120_000, tools.scheduled.single().triggerAt)
     }
@@ -277,7 +277,7 @@ class KaiProductionFixesTest {
         val q = kai.ask("Kumar-ku reminder pannu")
         assertTrue(q.reply.text, q.reply.text.startsWith("Eppo remind pannanum Owner?"))
         assertTrue(tools.scheduled.isEmpty())
-        val done = kai.ask("10 minutes la")
+        val done = kai.askConfirmed("10 minutes la")
         assertTrue(done.reply.text, done.reply.text.startsWith("Done Owner ✅ 10 minutes kalichi"))
         assertEquals(nowMillis + 600_000, tools.scheduled.single().triggerAt)
     }

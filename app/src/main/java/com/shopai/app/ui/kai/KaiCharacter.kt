@@ -143,7 +143,7 @@ fun KaiCharacter(
         if (rigResource != 0) {
             KaiRive(rigResource, state, mouthLevel, lookX, blinkCount, reducedMotion)
         } else {
-            Box {
+            Box(modifier = Modifier.fillMaxSize()) {
                 KaiLive(state, speakingAs, mouthLevel, reducedMotion)
                 KaiSign(if (state == KaiState.SPEAKING) speakingAs ?: state else state, Modifier.align(Alignment.TopEnd))
             }

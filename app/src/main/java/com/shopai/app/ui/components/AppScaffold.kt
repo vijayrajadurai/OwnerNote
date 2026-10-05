@@ -99,6 +99,6 @@ fun DetailScaffold(
             )
         },
     ) { padding ->
-        content(Modifier.padding(padding).imePadding().padding(bottom = 112.dp))
+        content(Modifier.padding(padding).imePadding())
     }
 }

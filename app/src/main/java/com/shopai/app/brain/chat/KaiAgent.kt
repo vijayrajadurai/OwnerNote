@@ -24,6 +24,7 @@ import com.shopai.app.brain.tools.ScheduleResult
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import java.util.UUID
@@ -49,6 +50,12 @@ sealed interface KaiAction {
     /** Change a reminder just set: Kai asks the new time. */
     data class EditReminder(val id: String) : KaiAction
     data class CompleteReminder(val id: String) : KaiAction
+    /** A new reminder is set only after this (Confirm on "… reminder set pannalama?"). */
+    data class ConfirmReminder(val requestKey: String) : KaiAction
+    /** Change a reminder's time before it is set. */
+    data class EditReminderRequest(val requestKey: String) : KaiAction
+    /** Android's "full-screen alerts" setting for Kai Urgent Action Mode (Android 14+). */
+    data object OpenFullScreenSettings : KaiAction
     data class SnoozeReminder(val id: String, val minutes: Long) : KaiAction
     /** A time chosen for a reminder that was asked without one. */
     data class RemindAt(val requestKey: String, val at: LocalDateTime) : KaiAction
@@ -132,6 +139,75 @@ data class KaiCard(val lines: List<String>, val buttons: List<KaiButton>, val wa
  */
 data class KaiTurn(val reply: ChatReply, val card: KaiCard? = null, val plan: ActionPlan? = null, val direct: KaiAction? = null)
 
+/** A specific field Kai is waiting for in the current conversation. */
+internal enum class KaiPendingQuestion { DUE_DATE }
+internal enum class KaiConversationPaymentDirection { PAYMENT_IN, PAYMENT_OUT }
+
+/** Conversation facts only. Business facts still come from KaiBooks/KaiTools and learned phrases from KaiPrivateMemory. */
+internal data class KaiConversationState(
+    var currentIntent: String? = null,
+    var currentAction: String? = null,
+    var lastRelevantEntity: String? = null,
+    var lastPerson: String? = null,
+    var lastCustomer: String? = null,
+    var lastSupplier: String? = null,
+    var lastProduct: String? = null,
+    var lastAmount: BigDecimal? = null,
+    var lastUnit: String? = null,
+    var lastDate: LocalDate? = null,
+    var lastTime: LocalTime? = null,
+    var lastPaymentDirection: String? = null,
+    var lastPaymentMode: PaymentMode? = null,
+    var lastQuestion: String? = null,
+    var pendingQuestion: KaiPendingQuestion? = null,
+    var pendingEntity: String? = null,
+    var pendingAmount: BigDecimal? = null,
+    var pendingPaymentDirection: KaiConversationPaymentDirection? = null,
+    var pendingDraft: ActionPlan? = null,
+    var pendingConfirmation: Boolean = false,
+    var pendingCorrection: Boolean = false,
+    var lastBusinessTopic: String? = null,
+    var previousBusinessContext: String? = null,
+    var previousTopicBeforeCalculator: String? = null,
+    var conversationTurn: Long = 0,
+) {
+    fun clear() {
+        currentIntent = null; currentAction = null; lastRelevantEntity = null
+        lastPerson = null; lastCustomer = null; lastSupplier = null; lastProduct = null
+        lastAmount = null; lastUnit = null; lastDate = null; lastTime = null
+        lastPaymentDirection = null; lastPaymentMode = null; lastQuestion = null
+        pendingQuestion = null; pendingEntity = null; pendingAmount = null; pendingPaymentDirection = null
+        pendingDraft = null; pendingConfirmation = false; pendingCorrection = false
+        lastBusinessTopic = null; previousBusinessContext = null; previousTopicBeforeCalculator = null
+        conversationTurn = 0
+    }
+}
+
+/** Context-aware safety language for an already open action draft. */
+internal object KaiConversationSemantics {
+    private val amountPattern = Regex("""(?i)(?:₹|rs\.?\s*)?([0-9][0-9,]*(?:\.[0-9]+)?\s*k?)""")
+
+    fun correctionAmount(text: String): BigDecimal? {
+        val n = text.trim().lowercase(Locale.ROOT)
+        val correctionCue = listOf("illai", "illa", "actually", "wrong", "no,", "no ", "amount", "only", "dhaan", "thaan", "received", "மட்டும்", "இல்லை")
+            .any(n::contains)
+        val raw = amountPattern.findAll(n).map { it.groupValues[1].replace(",", "").replace(Regex("\\s+"), "") }.toList()
+        if (raw.size != 1 || (raw.single().endsWith("k") && !raw.single().dropLast(1).toBigDecimalOrNull().let { it != null })) return null
+        if (!correctionCue && text.trim().trimEnd('.', '!', '?').toBigDecimalOrNull() == null && raw.single() != text.trim().lowercase(Locale.ROOT)) return null
+        val token = raw.single()
+        val multiplier = if (token.endsWith("k")) BigDecimal("1000") else BigDecimal.ONE
+        val number = token.removeSuffix("k").toBigDecimalOrNull() ?: return null
+        return number.multiply(multiplier).setScale(2, java.math.RoundingMode.HALF_UP)
+    }
+
+    fun cancelsDraft(text: String): Boolean {
+        val n = text.lowercase(Locale.ROOT).trim().replace(Regex("[.!?]+$"), "").replace(Regex("\\s+"), " ")
+        if (correctionAmount(text) != null && listOf("illai", "illa", "actually", "wrong", "no", "இல்லை").any(n::contains)) return false
+        return n in setOf("venda", "venam", "venaam", "vendaam", "vendam", "cancel", "skip", "vidunga", "viddu", "no", "no need", "illa", "illai", "வேண்டாம்") ||
+            listOf("cancel pannu", "cancel pannunga", "don't add", "dont add", "add panna vendam", "add pannadhe", "வேண்டாம்").any(n::contains)
+    }
+}
+
 /**
  * KAI — the owner's AI business operating assistant.
  *
@@ -150,7 +226,7 @@ class KaiAgent(
     private val tools: KaiTools,
     private val now: () -> LocalDateTime = { LocalDateTime.now() },
     /** The signed-in business's private language (null: none — global Kai only). */
-    memory: KaiMemoryAccess? = null,
+    private val memory: KaiMemoryAccess? = null,
     /** Morning Work (MORNING_WORK intent); null: not available here. */
     private val morning: KaiMorningAccess? = null,
 ) {
@@ -184,12 +260,17 @@ class KaiAgent(
     private var stockQuestion: StockQuestion? = null
     /** The last morning brief (Skip → its next task). */
     private var lastBrief: com.shopai.app.brain.morning.MorningBrief? = null
-    private data class PaymentRequest(val key: String, val name: String?, val amount: BigDecimal?, val outgoing: Boolean, val mode: PaymentMode, val said: String)
+    private data class PaymentRequest(
+        val key: String, val name: String?, val amount: BigDecimal?, val outgoing: Boolean,
+        val mode: PaymentMode, val said: String, val directionKnown: Boolean = true,
+    )
 
     private val plans = LinkedHashMap<String, ActionPlan>()
     private val requests = LinkedHashMap<String, PaymentRequest>()
     /** A payment still missing its amount or person; the next message can complete it. */
     private var incompletePayment: PaymentRequest? = null
+    internal val conversationState = KaiConversationState()
+    private var conversationScope: String? = null
     /** Reminders: the one reminder conversation (also used by the Speak screen). */
     private val reminders = KaiReminderAssistant(tools, books, now)
 
@@ -204,8 +285,36 @@ class KaiAgent(
     suspend fun ask(raw: String): KaiTurn {
         val said = raw.trim()
         val lang = KaiLanguage.forChat(said)
+        val scope = runCatching { memory?.current()?.let { "${it.businessId.orEmpty()}:${it.ownerId.orEmpty()}" } }.getOrNull()
+        if (scope != null && conversationScope != null && scope != conversationScope) {
+            plans.values.toList().forEach { runCatching { tools.discard(it) } }
+            reset()
+        }
+        if (scope != null) conversationScope = scope
+        conversationState.conversationTurn++
         val afterBrief = briefJustShown
         briefJustShown = false
+
+        // An open finance draft owns short replies. Resolve corrections before
+        // cancellation, and both before private-memory teaching or normal routing.
+        val openPayment = plans.values.singleOrNull()
+        if (openPayment != null) {
+            conversationState.pendingDraft = openPayment
+            conversationState.pendingConfirmation = true
+            val correctedAmount = KaiConversationSemantics.correctionAmount(said)
+            if (correctedAmount != null && correctedAmount.compareTo(openPayment.amount) != 0) {
+                conversationState.pendingCorrection = true
+                val outgoing = openPayment.kind == PlanKind.PAYMENT_OUT || openPayment.kind == PlanKind.CREDIT_GIVEN
+                return revise(openPayment.key, openPayment.partyName, correctedAmount, openPayment.mode, outgoing, lang)
+                    .also { conversationState.pendingCorrection = false }
+            }
+            if (KaiConversationSemantics.cancelsDraft(said)) {
+                return act(KaiAction.CancelPlan(openPayment.key), lang)!!
+            }
+        }
+
+        pendingDueDateAnswer(said, lang)?.let { return it }
+
         val draftBefore = lastDraft
         lastDraft = null
         // "Illai Kai, avan bill mattum kuduthaan" right after a draft: Kai misread — the draft is dropped and Kai asks what to remember.
@@ -218,7 +327,9 @@ class KaiAgent(
                 return turn
             }
         }
-        // The owner's own language first: answers to Kai's question, teaching, forgetting, "'X' nu enna meaning?".
+        // The owner's own language first: answers to Kai's question, teaching,
+        // forgetting, and meaning corrections must be resolved before normal
+        // business/action routing can consume those messages.
         learner?.before(said, lang)?.let { step ->
             return when (step) {
                 is MemoryStep.Reply -> step.turn
@@ -243,6 +354,17 @@ class KaiAgent(
         val people = runCatching { books.snapshot()?.people.orEmpty() }.getOrDefault(emptyList())
         val products = runCatching { tools.products() }.getOrNull()
 
+        // A named financial action with no amount is a missing-field prompt,
+        // not a balance lookup and never an implicit transaction.
+        if (KaiCommands.personIn(text, people) != null && isAmountAddRequest(text) &&
+            com.shopai.app.brain.KaiUnderstanding.amountsIn(text, at.toLocalDate()).none { it > 0 }) {
+            val person = KaiCommands.personIn(text, people)!!
+            return payment(PaymentRequest(newKey(), person, null, outgoing = false, mode = PaymentMode.CASH, said = text, directionKnown = false), lang)
+        }
+
+        contextualReceivable(text, lang, people)?.let { return it }
+        contextualProductFollowUp(text, lang)?.let { return it }
+
         // Completing what Kai just asked for (a reminder's time, a stock quantity, a payment's amount / name).
         reminders.continueWith(text, lang)?.let { return it }
         stockQuestion?.let { q ->
@@ -261,12 +383,25 @@ class KaiAgent(
         // "1 box = 10 pieces" while a converted draft is open: the conversion is corrected and the draft recalculated.
         conversionEdit(text, lang)?.let { return it }
         incompletePayment?.let { p ->
-            incompletePayment = null
             val cmd = KaiCommands.route(text, at, people)
+            if (!p.directionKnown && cmd is KaiCommand.Payment) {
+                incompletePayment = null
+                val amount = p.amount ?: cmd.amount
+                val name = p.name ?: cmd.name
+                if (amount != null && !name.isNullOrBlank()) return payment(p.copy(amount = amount, name = name, outgoing = cmd.outgoing,
+                    mode = if (cmd.modeSaid) cmd.mode else p.mode, directionKnown = true), lang)
+            }
             if (cmd == KaiCommand.Question || cmd is KaiCommand.Calculate) {
                 val amount = p.amount ?: com.shopai.app.brain.KaiUnderstanding.amountsIn(text, at.toLocalDate()).singleOrNull()?.let { BigDecimal.valueOf(it) }
                 val name = p.name ?: KaiCommands.personIn(text, people) ?: text.takeIf { it.split(' ').size <= 3 && it.none(Char::isDigit) }
-                if (amount != p.amount || name != p.name) return payment(p.copy(amount = amount, name = name), lang)
+                if (amount != p.amount || name != p.name) {
+                    if (!p.directionKnown && amount != null) {
+                        incompletePayment = p.copy(amount = amount, name = name)
+                        return askPaymentDirection(lang, name)
+                    }
+                    incompletePayment = null
+                    return payment(p.copy(amount = amount, name = name), lang)
+                }
             }
         }
 
@@ -278,7 +413,7 @@ class KaiAgent(
         val morningAsk = com.shopai.app.brain.morning.MorningCommands.morningRequest(said) ?: com.shopai.app.brain.morning.MorningCommands.morningRequest(text)
         if (morningAsk != null && !com.shopai.app.brain.tools.KaiReminderUnderstanding.mentionsReminder(text)) return morningWork(morningAsk, text, said, lang, people)
 
-        // Priority: reminder → stock in → stock out → bill scanner → call → money → questions → calculator → conversation → learn.
+        // Priority: pending action/context → reminder → stock → bill scan → call → money → calculator → questions → memory → conversation.
         com.shopai.app.brain.tools.KaiReminderUnderstanding.understand(text, at, people)?.let { return reminders.handle(it, lang) }
         if (products != null) {
             // "Colgate 2 petti vandhiruku" with a unit word Kai doesn't know: ask (box? packet?) — never guess the quantity's unit.
@@ -293,19 +428,184 @@ class KaiAgent(
         }
         val cmd = KaiCommands.route(applied, at, people).let { c -> if (c == KaiCommand.Question && text != applied) KaiCommands.route(text, at, people) else c }
         return when (cmd) {
-            is KaiCommand.Calculate -> calculate(cmd.answer, lang, text)
+            is KaiCommand.Calculate -> {
+                if (conversationState.lastBusinessTopic != null) conversationState.previousTopicBeforeCalculator = conversationState.lastBusinessTopic
+                conversationState.currentIntent = "CALCULATOR"
+                calculate(cmd.answer, lang, text)
+            }
             is KaiCommand.Payment -> payment(PaymentRequest(newKey(), cmd.name, cmd.amount, cmd.outgoing, cmd.mode, text), lang)
             is KaiCommand.Reminder -> reminders.handle(cmd.request, lang)
             is KaiCommand.Call -> call(cmd.name, lang, said)
             is KaiCommand.ScanBill -> scan(cmd.classifyOnly, lang, said)
-            is KaiCommand.Stock -> stock(cmd.product, lang)
+            is KaiCommand.Stock -> {
+                cmd.product?.let { rememberProduct(it) }
+                stock(cmd.product, lang)
+            }
             KaiCommand.LowStock -> lowStock(lang)
             is KaiCommand.MoneyBalance -> money(cmd.kind, lang)
             KaiCommand.TopProducts -> topProducts(text, lang, at.toLocalDate(), people)
-            KaiCommand.Question -> conversation(text, said, lang, at)
-                ?: learner?.unknown(text, said, lang, people, products.orEmpty().map { it.name })
-                ?: questionOrLearn(applied, text, said, lang, at.toLocalDate(), people, products.orEmpty())
+            KaiCommand.Question -> {
+                rememberNamedBusinessContext(text, people)
+                learner?.before(said, lang)?.let { step ->
+                    return when (step) {
+                        is MemoryStep.Reply -> step.turn
+                        is MemoryStep.Rerun -> withPrefix(step.prefix, ask(step.text))
+                    }
+                }
+                conversation(text, said, lang, at)
+                    ?: learner?.unknown(text, said, lang, people, products.orEmpty().map { it.name })
+                    ?: run {
+                        val answer = questionOrLearn(applied, text, said, lang, at.toLocalDate(), people, products.orEmpty())
+                        if (answer.reply.intent != ChatIntent.UNKNOWN) conversationState.currentIntent = "BUSINESS_QUERY"
+                        answer
+                    }
+            }
         }
+    }
+
+    /** Save a receivable mentioned in conversation as session context only; it is not a ledger entry. */
+    private suspend fun contextualReceivable(text: String, lang: KaiLang, people: List<String>): KaiTurn? {
+        val cmd = KaiCommands.route(text, now(), people)
+        val hasReceivableMeaning = Regex("(?i)\\b(tharanum|tharanum|pending|baaki|bakki|owe|owes|collect|varanum)\\b|தரணும்|பாக்கி")
+            .containsMatchIn(text)
+        val person = KaiCommands.personIn(text, people)
+        val amount = com.shopai.app.brain.KaiUnderstanding.amountsIn(text, now().toLocalDate())
+            .filter { it > 0 }.singleOrNull()?.let { BigDecimal.valueOf(it).setScale(2, java.math.RoundingMode.HALF_UP) }
+        if (hasReceivableMeaning && person != null && amount != null && cmd == KaiCommand.Question) {
+            val ownerIsRecipient = Regex("(?i)\\b(enakku|enaku|to me|for me)\\b").containsMatchIn(text)
+            val direction = if (ownerIsRecipient || !Regex("(?i)\\btharanum\\b|தரணும்").containsMatchIn(text)) {
+                KaiConversationPaymentDirection.PAYMENT_IN
+            } else {
+                KaiConversationPaymentDirection.PAYMENT_OUT
+            }
+            conversationState.currentIntent = "RECEIVABLE_CONTEXT"
+            conversationState.currentAction = if (direction == KaiConversationPaymentDirection.PAYMENT_OUT) "PAY" else "COLLECT"
+            conversationState.lastBusinessTopic = "RECEIVABLE_CONTEXT"
+            conversationState.previousBusinessContext = "RECEIVABLE_CONTEXT"
+            conversationState.lastPerson = person
+            conversationState.lastCustomer = person
+            conversationState.lastRelevantEntity = person
+            conversationState.lastAmount = amount
+            conversationState.lastPaymentDirection = if (direction == KaiConversationPaymentDirection.PAYMENT_OUT) "OUT" else "IN"
+            conversationState.lastQuestion = text
+            conversationState.pendingQuestion = KaiPendingQuestion.DUE_DATE
+            conversationState.pendingEntity = person
+            conversationState.pendingAmount = amount
+            conversationState.pendingPaymentDirection = direction
+            val value = KaiFormat.rupees(amount.toDouble())
+            return say(lang, KaiMood.EXPLAINING, null,
+                ta = if (direction == KaiConversationPaymentDirection.PAYMENT_OUT) "$person-க்கு $value கொடுக்கணும்னு சொல்றீங்க Owner. Due date தெரியல; எந்த தேதிக்குள் pay பண்ணணும்?" else "$person கிட்டிருந்து $value வரணும்னு சொல்றீங்க Owner. Due date எனக்குத் தெரியல; எந்த தேதிக்குள் collect பண்ணணும்?",
+                tl = if (direction == KaiConversationPaymentDirection.PAYMENT_OUT) "Owner, $person-ku $value pay pannanum-nu note pannikiren. Due date theriyala; endha date-kulla pay pannanum?" else "Owner, $person kitta $value collect pannanum-nu note pannikiren. Due date theriyala; endha date-kulla collect pannanum?",
+                en = if (direction == KaiConversationPaymentDirection.PAYMENT_OUT) "Got it, Owner. You need to pay $value to $person. I don't have a due date; what date should I use?" else "Got it, Owner. You said $value is due from $person. I don't have a due date for that amount; what date should I use?")
+        }
+
+        if (conversationState.lastBusinessTopic != "RECEIVABLE_CONTEXT" || conversationState.lastPerson == null || conversationState.lastAmount == null) return null
+        val followUp = Regex("(?i)\\b(eppa|eppo|when|collect|varum|tharuvaan|tharuvar|adha|adhu|athu|avan|avar|amount)\\b|எப்ப|அத")
+            .containsMatchIn(text)
+        if (!followUp) return null
+        val personName = KaiCommands.personIn(text, people) ?: conversationState.lastPerson!!
+        val value = KaiFormat.rupees(conversationState.lastAmount!!.toDouble())
+        conversationState.currentIntent = "RECEIVABLE_FOLLOW_UP"
+        conversationState.currentAction = "ASK_DUE_DATE"
+        conversationState.lastQuestion = text
+        conversationState.lastPerson = personName
+        conversationState.lastCustomer = personName
+        conversationState.lastRelevantEntity = personName
+        return say(lang, KaiMood.CLARIFY, null,
+            ta = "இந்த $value-ஐ $personName கிட்ட collect பண்ண due date கேக்குறீங்களா Owner? அந்தத் தேதி record-ல இல்லை.",
+            tl = "Owner, indha $value $personName kitta collect panna due date kekkureengala? Andha date record-la illa.",
+            en = "Are you asking for the due date to collect this $value from $personName, Owner? I don't have that date recorded.")
+    }
+
+    /** Resolve a parsed calendar date while a specific due-date field is pending. */
+    private fun pendingDueDateAnswer(text: String, lang: KaiLang): KaiTurn? {
+        if (conversationState.pendingQuestion != KaiPendingQuestion.DUE_DATE) return null
+        val at = now()
+        val parsed = KaiTime.parse(text, at)?.takeIf { it.daySpecified } ?: return null
+        val entity = conversationState.pendingEntity ?: return null
+        val amount = conversationState.pendingAmount ?: return null
+        val direction = conversationState.pendingPaymentDirection ?: return null
+        val date = parsed.at.toLocalDate()
+        val dateText = KaiFormat.date(date, lang, at.toLocalDate())
+        val amountText = KaiFormat.rupees(amount.toDouble())
+
+        conversationState.pendingQuestion = null
+        conversationState.pendingEntity = null
+        conversationState.pendingAmount = null
+        conversationState.pendingPaymentDirection = null
+        conversationState.lastDate = date
+        conversationState.lastPerson = entity
+        conversationState.lastRelevantEntity = entity
+        conversationState.lastCustomer = entity
+        conversationState.lastAmount = amount
+        conversationState.lastPaymentDirection = if (direction == KaiConversationPaymentDirection.PAYMENT_OUT) "OUT" else "IN"
+        conversationState.currentIntent = "DUE_DATE_ANSWER"
+        conversationState.currentAction = "DUE_DATE_CAPTURED"
+        conversationState.lastQuestion = text
+
+        return say(lang, KaiMood.EXPLAINING, null,
+            ta = if (direction == KaiConversationPaymentDirection.PAYMENT_OUT) "$entity-க்கு $amountText pay பண்ண due date $dateText Owner." else "$entity கிட்ட $amountText collect பண்ண due date $dateText Owner.",
+            tl = if (direction == KaiConversationPaymentDirection.PAYMENT_OUT) "Owner, $entity-ku $amountText pay panna due date $dateText." else "Owner, $entity kitta $amountText collect panna due date $dateText.",
+            en = if (direction == KaiConversationPaymentDirection.PAYMENT_OUT) "Got it, Owner. Pay $amountText to $entity by $dateText." else "Got it, Owner. Collect $amountText from $entity by $dateText.")
+    }
+
+    /** Resolve a stock pronoun against the last product mentioned, while reading quantity only from inventory. */
+    private suspend fun contextualProductFollowUp(text: String, lang: KaiLang): KaiTurn? {
+        val name = conversationState.lastProduct ?: return null
+        val lowQuestion = Regex("(?i)\\b(low|kammi|kuraivaa|kuraivu|low-aa|low-ah)\\b|குறைவ")
+            .containsMatchIn(text)
+        val reference = Regex("(?i)\\b(adhu|adha|athu|athula|this|that|it)\\b|அது|அதுல|இத")
+            .containsMatchIn(text)
+        if (!lowQuestion || !reference) return null
+        val facts = tools.stock(name)
+        conversationState.currentIntent = "STOCK_FOLLOW_UP"
+        conversationState.lastQuestion = text
+        if (facts == null) return unverified(lang, "stock")
+        val fact = facts.singleOrNull()
+        if (fact == null) return say(lang, KaiMood.CLARIFY, null,
+            ta = "$name record-ல stock இல்லை ஓனர். Low stock-ஆ compare பண்ண current stock record வேணும்.",
+            tl = "$name record-la stock illa Owner. Low stock-ah compare panna current stock record venum.",
+            en = "$name has no stock record, Owner. I need a current stock record before I can compare it with the low-stock level.")
+        val reorderAt = fact.reorderAt ?: return say(lang, KaiMood.CLARIFY, null,
+            ta = "$name stock ${qty(fact.qty, fact.unit)} இருக்கு ஓனர்; low-ஆ compare பண்ண reorder level set ஆகல.",
+            tl = "$name stock ${qty(fact.qty, fact.unit)} irukku Owner; low-ah compare panna reorder level set aagala.",
+            en = "$name has ${qty(fact.qty, fact.unit)} in stock, Owner, but no reorder level is set for a low-stock comparison.")
+        val isLow = fact.qty <= reorderAt
+        return say(lang, if (isLow) KaiMood.CONCERNED else KaiMood.HAPPY, null,
+            ta = "$name stock ${qty(fact.qty, fact.unit)} ${if (isLow) "இருக்கு; reorder level-க்கு கீழ" else "இருக்கு; reorder level-க்கு மேல"} ஓனர்.",
+            tl = "$name stock ${qty(fact.qty, fact.unit)} irukku; ${if (isLow) "reorder level-kku keezha" else "reorder level-kku mela"} Owner.",
+            en = "$name has ${qty(fact.qty, fact.unit)} in stock, ${if (isLow) "at or below" else "above"} its reorder level, Owner.")
+    }
+
+    private suspend fun rememberNamedBusinessContext(text: String, people: List<String>) {
+        val person = KaiCommands.personIn(text, people) ?: return
+        conversationState.lastPerson = person
+        conversationState.lastRelevantEntity = person
+        conversationState.lastQuestion = text
+        conversationState.previousBusinessContext = conversationState.lastBusinessTopic
+        conversationState.lastBusinessTopic = "PARTY_QUERY"
+    }
+
+    private fun isAmountAddRequest(text: String): Boolean {
+        val n = text.lowercase(Locale.ROOT)
+        return Regex("(?i)\\b(amount\\s+add|add\\s+(?:the\\s+)?amount|amount\\s+add\\s+pannu|add\\s+pannu|account[- ]?la\\s+podu|account[- ]?la\\s+add|record\\s+(?:this|it))\\b|தொகை.*சேர்|கணக்கில்.*போடு")
+            .containsMatchIn(n)
+    }
+
+    private fun askPaymentDirection(lang: KaiLang, person: String?): KaiTurn {
+        val who = person?.let { "$it-oda" } ?: "indha payment"
+        return say(lang, KaiMood.CLARIFY, "payment: direction missing",
+            ta = "$who payment-la பணம் உங்களுக்கு வந்ததா, நீங்க கொடுத்தீங்களா ஓனர்?",
+            tl = "Owner, $who payment-la money ungalukku vandhucha, illa neenga kudutheengala?",
+            en = "Was this payment from $who received by you, or did you give it to them, Owner?")
+    }
+
+    private suspend fun rememberProduct(name: String) {
+        conversationState.lastProduct = name
+        conversationState.lastRelevantEntity = name
+        conversationState.lastBusinessTopic = "STOCK_QUERY"
+        conversationState.currentIntent = "STOCK_QUERY"
+        lastProduct = runCatching { tools.products() }.getOrNull()?.firstOrNull { it.name.equals(name, true) }
     }
 
     /** "saaptiya?", "enna panra?", "innaiku romba busy", "good morning" — a friend's answer, no business intent forced. */
@@ -874,6 +1174,7 @@ class KaiAgent(
         lastBrief = null
         briefJustShown = false
         lastProduct = null
+        conversationState.clear()
         learner?.reset()
         routine?.reset()
     }
@@ -905,13 +1206,23 @@ class KaiAgent(
     // ------------------------------------------------------------ payments (draft → confirm → engine)
 
     private suspend fun payment(r: PaymentRequest, lang: KaiLang): KaiTurn {
+        conversationState.currentIntent = "PAYMENT"
+        conversationState.currentAction = "DRAFT_PAYMENT"
+        conversationState.lastPerson = r.name
+        conversationState.lastRelevantEntity = r.name
+        conversationState.lastAmount = r.amount
+        conversationState.lastPaymentDirection = if (r.outgoing) "OUT" else "IN"
+        conversationState.lastPaymentMode = r.mode
+        conversationState.lastQuestion = r.said
         if (r.amount == null || r.amount.signum() <= 0) {
             incompletePayment = r
+            conversationState.pendingCorrection = true
             return say(lang, KaiMood.CLARIFY, "payment: amount missing",
                 ta = "எவ்வளவு தொகை ஓனர்?", tl = "Evlo amount Owner?", en = "How much was it, Owner?")
         }
         if (r.name.isNullOrBlank()) {
             incompletePayment = r
+            conversationState.pendingCorrection = true
             return say(lang, KaiMood.CLARIFY, "payment: person missing",
                 ta = "யாருக்கு / யார்கிட்ட ஓனர்?", tl = if (r.outgoing) "Yaarukku kuduthinga Owner?" else "Yaar kitta vaanguninga Owner?",
                 en = if (r.outgoing) "Who did you give it to, Owner?" else "Who did you receive it from, Owner?")
@@ -970,6 +1281,16 @@ class KaiAgent(
         // A short reference for the owner (the draft's internal id stays in the log result).
         val ref = tools.log("${kind.name.lowercase()} ${plan.partyName}", "draft", "${KaiFormat.rupees(plan.amount.toDouble())} ${plan.mode} draft=${plan.key}", ActionStatus.DRAFT, null)
         plans[plan.key] = plan.copy(reference = ref)
+        conversationState.pendingDraft = plans[plan.key]
+        conversationState.pendingConfirmation = true
+        conversationState.pendingCorrection = false
+        conversationState.currentIntent = "PAYMENT_DRAFT"
+        conversationState.currentAction = plan.kind.name
+        conversationState.lastPerson = plan.partyName
+        conversationState.lastRelevantEntity = plan.partyName
+        conversationState.lastAmount = plan.amount
+        conversationState.lastPaymentDirection = if (plan.kind == PlanKind.PAYMENT_IN || plan.kind == PlanKind.DEBIT_TAKEN) "IN" else "OUT"
+        conversationState.lastPaymentMode = plan.mode
         lastDraft = r.said to "PAYMENT"
         val a = KaiFormat.rupees(plan.amount.toDouble())
         val what = when (kind) {
@@ -1012,6 +1333,8 @@ class KaiAgent(
 
     private suspend fun confirm(key: String, lang: KaiLang): KaiTurn? {
         val plan = plans.remove(key) ?: return null
+        conversationState.pendingDraft = null
+        conversationState.pendingConfirmation = false
         return when (val outcome = tools.confirm(plan)) {
             is ActionOutcome.Done -> {
                 tools.log("${plan.kind.name.lowercase()} ${plan.partyName}", "transaction engine", "saved ${outcome.reference}", ActionStatus.CONFIRMED, plan.reference ?: plan.key)
@@ -1032,6 +1355,9 @@ class KaiAgent(
 
     private suspend fun cancelPlan(key: String, lang: KaiLang): KaiTurn {
         plans.remove(key)?.let {
+            conversationState.pendingDraft = null
+            conversationState.pendingConfirmation = false
+            conversationState.pendingCorrection = false
             tools.discard(it)
             tools.log("${it.kind.name.lowercase()} ${it.partyName}", "draft", "discarded", ActionStatus.CANCELLED, it.reference ?: it.key)
         }
@@ -1082,6 +1408,7 @@ class KaiAgent(
     }
 
     private suspend fun stock(product: String?, lang: KaiLang): KaiTurn {
+        product?.let { rememberProduct(it) }
         val facts = tools.stock(product) ?: return unverified(lang, "stock")
         if (facts.isEmpty()) return say(lang, KaiMood.CLARIFY, null,
             ta = "${product ?: "அந்த"} பொருள் inventory-ல இல்ல ஓனர்.", tl = "Owner, ${product ?: "andha"} product inventory-la illa.", en = "${product ?: "That product"} isn't in your inventory, Owner.")

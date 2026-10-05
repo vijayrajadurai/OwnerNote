@@ -121,7 +121,7 @@ class KaiFinalFixesTest {
         )
         for (s in sentences) {
             val t = Tools()
-            val turn = newKai(t, Access(InMemoryKaiMemoryStore(), "o", t)).ask(s)
+            val turn = newKai(t, Access(InMemoryKaiMemoryStore(), "o", t)).askConfirmed(s)
             assertEquals(s, KaiIntentKind.CREATE_REMINDER, KaiIntents.classify(s, now, emptyList(), t.products))
             val r = t.scheduled.singleOrNull()
             assertNotNull("$s → ${turn.reply.text}", r)
@@ -141,7 +141,7 @@ class KaiFinalFixesTest {
         assertEquals("saavi pottu pannu pannunga nyabagam paduthu remind", KaiSpokenWords.normalize("சாவி போட்டு பண்ணு பண்ணுங்க நினைவுபடுத்து நினைவூட்டு"))
         assertEquals("2 hours la", KaiSpokenWords.normalize("2 மணி நேரத்துல"))
         // A Tamil-script answer stays Tamil — normalization is not translation.
-        val t = runBlocking { newKai().ask("2 நிமிஷத்துல ருத்ரனுக்கு கால் பண்ணனும் ரிமைண்டர் பண்ணு") }
+        val t = runBlocking { newKai().askConfirmed("2 நிமிஷத்துல ருத்ரனுக்கு கால் பண்ணனும் ரிமைண்டர் பண்ணு") }
         assertTrue(t.reply.text, t.reply.text.startsWith("சரி ஓனர் ✅"))
     }
 
@@ -151,7 +151,7 @@ class KaiFinalFixesTest {
         val q = kai.ask("2 minutes la remind pannu")
         assertEquals("Sure Owner. Enna remind pannanum?", q.reply.text)
         assertTrue(tools.scheduled.isEmpty())
-        val done = kai.ask("Ruthran-ku call panna")
+        val done = kai.askConfirmed("Ruthran-ku call panna")
         assertEquals("Done Owner ✅ 2 minutes kalichi Ruthran-ku call panna remind pannuren.", done.reply.text)
         assertEquals(nowMillis + 120_000, tools.scheduled.single().triggerAt)
         // Task said, time missing → only the time is asked.
@@ -160,7 +160,7 @@ class KaiFinalFixesTest {
 
     @Test
     fun reminderCardAndEdit() = runBlocking {
-        val t = kai.ask("2 nimishathula Ruthran-ku call panna remind pannu")
+        val t = kai.askConfirmed("2 nimishathula Ruthran-ku call panna remind pannu")
         assertEquals("Done Owner ✅ 2 minutes kalichi Ruthran-ku call panna remind pannuren.", t.reply.text)
         assertEquals(listOf("Reminder", "Call Ruthran", "When: 2 minutes kalichi", "Status: Scheduled"), t.card!!.lines)
         assertEquals(listOf("Cancel", "Edit"), t.card!!.buttons.map { it.label })
@@ -176,7 +176,7 @@ class KaiFinalFixesTest {
     @Test
     fun contextContinues() = runBlocking {
         kai.ask("Kumar-ku reminder pannu")
-        val r = kai.ask("10 minutes la")
+        val r = kai.askConfirmed("10 minutes la")
         assertTrue(r.reply.text, r.reply.text.startsWith("Done Owner ✅ 10 minutes kalichi"))
         assertEquals("Kumar", tools.scheduled.single().person)
         kai.ask("Colgate stock add pannu")

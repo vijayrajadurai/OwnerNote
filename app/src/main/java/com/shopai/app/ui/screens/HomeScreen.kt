@@ -1,5 +1,6 @@
 package com.shopai.app.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -19,9 +20,12 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material3.Card
@@ -34,6 +38,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,12 +47,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -90,17 +98,15 @@ import com.shopai.app.ui.theme.LedgerDebit
 import com.shopai.app.ui.theme.Primary
 import com.shopai.app.ui.theme.ShopAiTheme
 import com.shopai.app.ui.theme.ShopAiThemeColors
-import com.shopai.app.ui.kai.KaiBriefCard
 import com.shopai.app.brain.KaiLanguage
 import com.shopai.app.brain.KaiReply
+import com.shopai.app.ui.kai.KaiBriefCard
 import com.shopai.app.ui.kai.KaiState
 import com.shopai.app.ui.kai.state
-import androidx.compose.runtime.collectAsState
 import com.shopai.app.util.DailyBriefVoice
-// import com.shopai.app.util.normalizeIndianPhone
-// import com.shopai.app.util.rememberContactPicker
 import com.shopai.app.util.formatInr
 import com.shopai.app.util.localDateKey
+import com.shopai.app.util.parseIsoToLocalDate
 import kotlinx.coroutines.launch
 
 private object HomeTtsSession {
@@ -287,11 +293,7 @@ fun HomeScreen(
         padContent = false,
         applyTopInset = false,
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
-        ) {
+        Column(modifier = Modifier.fillMaxSize()) {
             HomeGradientHeader {
                 DashboardGreetingHeader(
                     shopName = business?.businessName.orEmpty(),
@@ -303,7 +305,7 @@ fun HomeScreen(
                     onSettingsClick = { onNavigate(Routes.Settings) },
                     onGradient = false,
                     photoPath = profilePhotoPath,
-                    modifier = Modifier.padding(horizontal = 20.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp),
                 )
 
                 /*
@@ -319,39 +321,48 @@ fun HomeScreen(
 
             Column(
                 modifier = Modifier
-                    .offset(y = (-8).dp)
-                    .clip(RoundedCornerShape(topStart = 36.dp, topEnd = 36.dp))
-                    .then(if (isRedesignLight()) Modifier else Modifier.background(MaterialTheme.colorScheme.background))
-                    .padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 16.dp),
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                KaiBriefCard(
-                    state = when {
-                        kaiBriefDone -> KaiState.IDLE
-                        kaiSpeaking -> KaiState.SPEAKING
-                        else -> KaiState.GREETING
-                    },
-                    line = when {
-                        !kaiBriefDone && !kaiSpeaking -> stringResource(R.string.kai_greeting)
-                        kaiBrief != null -> kaiBrief!!.display
-                        priorities.isEmpty() -> stringResource(R.string.kai_brief_clear)
-                        else -> stringResource(R.string.kai_brief_count, priorities.size)
-                    },
-                    mouthLevel = if (kaiBriefDone) 0f else kaiMouth,
-                    compact = kaiBriefDone,
-                    // While speaking the brief, KAI's face follows its meaning.
-                    speakingAs = kaiBrief?.mood?.state(),
-                    onTap = { onNavigate(Routes.VoiceEntry) },
-                )
-                // Kai — Do My Morning Work: today's important work, ready to review.
-                com.shopai.app.ui.morning.MorningWorkCard(count = morningCount, onClick = { onNavigate(Routes.morningWork()) })
-                // Kai Chat: ask KAI about the business (text, keyboard mic).
-                com.shopai.app.ui.kaichat.AskKaiCard(onClick = { onNavigate(Routes.KaiChat) })
-                DailyCashHomeCard(
-                    summary = cashNoteSummary,
-                    onClick = { onNavigate(Routes.DailyCashNote) },
-                )
+                if (carouselItems.isNotEmpty()) {
+                    HomePaymentReminderCard(
+                        items = carouselItems.take(2),
+                        onClick = { onNavigate(Routes.reminderDetail(carouselItems.first().id)) },
+                    )
+                } else {
+                    KaiBriefCard(
+                        state = when {
+                            kaiBriefDone -> KaiState.IDLE
+                            kaiSpeaking -> KaiState.SPEAKING
+                            else -> KaiState.GREETING
+                        },
+                        line = when {
+                            !kaiBriefDone && !kaiSpeaking -> stringResource(R.string.kai_greeting)
+                            kaiBrief != null -> kaiBrief!!.display
+                            priorities.isEmpty() -> stringResource(R.string.kai_brief_clear)
+                            else -> stringResource(R.string.kai_brief_count, priorities.size)
+                        },
+                        mouthLevel = if (kaiBriefDone) 0f else kaiMouth,
+                        compact = kaiBriefDone,
+                        speakingAs = kaiBrief?.mood?.state(),
+                        onTap = { onNavigate(Routes.VoiceEntry) },
+                    )
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    com.shopai.app.ui.morning.MorningWorkCard(
+                        count = morningCount,
+                        onClick = { onNavigate(Routes.morningWork()) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    HomeAskKaiCard(
+                        onClick = { onNavigate(Routes.KaiChat) },
+                    )
+                }
                 HomeQuickLinks(
+                    onSpeakClick = { onNavigate(Routes.VoiceEntry) },
                     onGroupBuyingClick = { onNavigate(Routes.GroupBuying) },
                     onReportsClick = { onNavigate(Routes.AiInsights) },
                     onTodayOfferClick = { onNavigate(Routes.LocalOffers) },
@@ -373,6 +384,12 @@ fun HomeScreen(
                             }
                         }
                     },
+                    onInventoryClick = { onNavigate(Routes.Inventory) },
+                    onSeeAllClick = { onNavigate(Routes.More) },
+                )
+                DailyCashHomeCard(
+                    summary = cashNoteSummary,
+                    onClick = { onNavigate(Routes.DailyCashNote) },
                 )
 
             if (loading) {
@@ -387,36 +404,13 @@ fun HomeScreen(
                     Text(error!!, color = Danger)
                 }
 
-                cashFlow?.let { cf ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        DashboardStatCard(
-                            label = stringResource(R.string.home_receivable),
-                            value = formatInr(cf.pendingReceivables),
-                            accent = LedgerCredit,
-                            arrowDown = true,
-                            modifier = Modifier.weight(1f),
-                            onClick = { onNavigate(Routes.Customers) },
-                        )
-                        DashboardStatCard(
-                            label = stringResource(R.string.home_payable),
-                            value = formatInr(cf.pendingPayables),
-                            accent = LedgerDebit,
-                            arrowDown = false,
-                            modifier = Modifier.weight(1f),
-                            onClick = { onNavigate(Routes.Suppliers) },
-                        )
-                    }
-                }
-
-                // Every Credit / Debit (bills, notes, voice, manual) by due status, from the books.
                 com.shopai.app.ui.books.CreditDebitSummaryCard(
                     container = container,
                     refreshKey = cashFlow,
                     onOpenCustomers = { onNavigate(Routes.Customers) },
                     onOpenSuppliers = { onNavigate(Routes.Suppliers) },
+                    pendingReceivables = cashFlow?.pendingReceivables,
+                    pendingPayables = cashFlow?.pendingPayables,
                 )
 
                 /*
@@ -524,32 +518,137 @@ fun HomeScreen(
 }
 
 @Composable
+private fun HomeAskKaiCard(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .shadow(8.dp, RoundedCornerShape(20.dp), ambientColor = Color(0x1A1E6B4E), spotColor = Color(0x1A1E6B4E))
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color.White)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(Primary.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.Chat,
+                contentDescription = null,
+                tint = Primary,
+                modifier = Modifier.size(24.dp),
+            )
+        }
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                text = stringResource(R.string.kai_chat_entry_title),
+                fontWeight = FontWeight.Bold,
+                color = com.shopai.app.ui.theme.TextPrimary,
+                maxLines = 1,
+            )
+            Text(
+                text = stringResource(R.string.kai_chat_entry_body),
+                style = MaterialTheme.typography.bodySmall,
+                color = com.shopai.app.ui.theme.TextSecondary,
+                maxLines = 3,
+            )
+        }
+        Icon(
+            imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+            contentDescription = null,
+            tint = Primary,
+            modifier = Modifier.size(22.dp),
+        )
+    }
+}
+
+@Composable
+private fun HomePaymentReminderCard(
+    items: List<com.shopai.app.ui.reminders.PaymentReminder>,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(8.dp, RoundedCornerShape(24.dp), ambientColor = Color(0x1A1E6B4E), spotColor = Color(0x1A1E6B4E))
+            .clip(RoundedCornerShape(24.dp))
+            .background(Color.White)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Image(
+            painter = painterResource(R.drawable.kai_joyful),
+            contentDescription = null,
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.size(64.dp),
+        )
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            items.forEach { item ->
+                val amount = item.amount?.let { formatInr(it) }.orEmpty()
+                val date = formatHomeReminderDate(item.dueDateIso)
+                Text(
+                    text = if (amount.isNotBlank()) "$amount — $date" else "${item.partyName} — $date",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = com.shopai.app.ui.theme.TextPrimary,
+                    maxLines = 1,
+                )
+            }
+        }
+        Icon(
+            imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+            contentDescription = null,
+            tint = com.shopai.app.ui.theme.TextSecondary,
+            modifier = Modifier.size(22.dp),
+        )
+    }
+}
+
+private fun formatHomeReminderDate(iso: String): String {
+    val date = parseIsoToLocalDate(iso) ?: return iso
+    val day = date.dayOfMonth
+    val suffix = when {
+        day in 11..13 -> "th"
+        day % 10 == 1 -> "st"
+        day % 10 == 2 -> "nd"
+        day % 10 == 3 -> "rd"
+        else -> "th"
+    }
+    val month = date.month.name.lowercase().replaceFirstChar { it.titlecase() }
+    return "$month ${day}$suffix"
+}
+
+@Composable
 private fun HomeGradientHeader(
     content: @Composable () -> Unit,
 ) {
     val view = LocalView.current
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .then(if (isRedesignLight()) Modifier else Modifier.background(MaterialTheme.colorScheme.background)),
+            .background(MaterialTheme.colorScheme.background)
+            .then(
+                if (view.isInEditMode) {
+                    Modifier
+                } else {
+                    Modifier.windowInsetsPadding(
+                        WindowInsets.safeDrawing.only(WindowInsetsSides.Top),
+                    )
+                },
+            )
+            .padding(top = 10.dp, bottom = 8.dp),
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .then(
-                    if (view.isInEditMode) {
-                        Modifier
-                    } else {
-                        Modifier.windowInsetsPadding(
-                            WindowInsets.safeDrawing.only(WindowInsetsSides.Top),
-                        )
-                    },
-                )
-                .padding(top = 8.dp, bottom = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
-        ) {
-            content()
-        }
+        content()
     }
 }
 
@@ -603,7 +702,8 @@ private fun DailyCashHomeCard(
     summary: TodayCashSummary?,
     onClick: () -> Unit,
 ) {
-    val hasEntries = summary != null && summary.entryCount > 0
+    val totalIn = summary?.totalIn ?: 0.0
+    val totalOut = summary?.totalOut ?: 0.0
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -618,100 +718,110 @@ private fun DailyCashHomeCard(
                 .background(
                     Brush.linearGradient(
                         colors = listOf(
-                            Color(0xFF0F3D2E),
-                            Color(0xFF1E6B4E),
-                            Color(0xFF2E9F6E),
+                            Color(0xFF075C45),
+                            Color(0xFF16845F),
                         ),
                     ),
-                )
-                .padding(18.dp),
+                ),
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .size(140.dp)
+                    .offset(x = 36.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.08f)),
+            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 18.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top,
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(Color.White.copy(alpha = 0.18f)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = "₹",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                        )
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.cash_note_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.White,
+                        )
+                        Text(
+                            text = stringResource(R.string.cash_note_home_subtitle),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.82f),
+                            modifier = Modifier.padding(top = 2.dp),
+                        )
+                    }
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    CashNoteStatChip(
+                        label = stringResource(R.string.cash_note_in),
+                        value = formatInr(totalIn),
                         modifier = Modifier.weight(1f),
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(RoundedCornerShape(14.dp))
-                                .background(Color.White.copy(alpha = 0.18f)),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = "₹",
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White,
-                            )
-                        }
-                        Column {
-                            Text(
-                                text = stringResource(R.string.cash_note_title),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Medium,
-                                color = Color.White,
-                            )
-                            Text(
-                                text = stringResource(R.string.cash_note_home_subtitle),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color.White.copy(alpha = 0.82f),
-                                modifier = Modifier.padding(top = 2.dp),
-                            )
-                        }
-                    }
-                    Text(
-                        text = "›",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = Color.White.copy(alpha = 0.9f),
+                    )
+                    CashNoteStatChip(
+                        label = stringResource(R.string.cash_note_out),
+                        value = formatInr(totalOut),
+                        modifier = Modifier.weight(1f),
                     )
                 }
-
-                if (hasEntries) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        CashNoteStatChip(
-                            label = stringResource(R.string.cash_note_in),
-                            value = formatInr(summary!!.totalIn),
-                            modifier = Modifier.weight(1f),
-                        )
-                        CashNoteStatChip(
-                            label = stringResource(R.string.cash_note_out),
-                            value = formatInr(summary.totalOut),
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                } else {
-                    Text(
-                        text = stringResource(R.string.cash_note_home_empty),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.88f),
-                    )
-                }
-
-//                Box(
-//                    modifier = Modifier
-//                        .clip(RoundedCornerShape(999.dp))
-//                        .background(Color.White.copy(alpha = 0.16f))
-//                        .padding(horizontal = 14.dp, vertical = 8.dp),
-//                ) {
-//                    Text(
-//                        text = stringResource(R.string.cash_note_home_cta),
-//                        style = MaterialTheme.typography.labelLarge,
-//                        fontWeight = FontWeight.Bold,
-//                        color = Color.White,
-//                    )
-//                }
             }
         }
+    }
+}
+
+@Composable
+private fun CashNoteStatChip(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(14.dp))
+            .background(Color.White.copy(alpha = 0.14f))
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = Color.White.copy(alpha = 0.8f),
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+            modifier = Modifier.padding(top = 2.dp),
+        )
     }
 }
 
@@ -744,33 +854,6 @@ private fun HomeSectionHeader(
     }
 }
 
-@Composable
-private fun CashNoteStatChip(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(14.dp))
-            .background(Color.White.copy(alpha = 0.14f))
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = Color.White.copy(alpha = 0.8f),
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = Color.White,
-            modifier = Modifier.padding(top = 2.dp),
-        )
-    }
-}
-
 @Preview(showBackground = true, widthDp = 390, heightDp = 844, name = "Owner Note dashboard")
 @Composable
 private fun OwnerNoteDashboardPreview() {
@@ -787,7 +870,7 @@ private fun OwnerNoteDashboardPreview() {
                     unreadCount = 2,
                     onNotificationsClick = {},
                     onGradient = false,
-                    modifier = Modifier.padding(horizontal = 20.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp),
                 )
                 /*
                 ReminderCarousel(
@@ -824,7 +907,7 @@ private fun OwnerNoteDashboardDarkPreview() {
                     unreadCount = 2,
                     onNotificationsClick = {},
                     onGradient = false,
-                    modifier = Modifier.padding(horizontal = 20.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp),
                 )
                 /*
                 ReminderCarousel(

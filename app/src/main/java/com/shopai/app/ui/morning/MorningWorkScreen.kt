@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -33,6 +32,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.outlined.WbSunny
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -51,6 +51,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -58,6 +60,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
@@ -818,7 +821,7 @@ private fun Completion(ui: MorningState, onSummary: () -> Unit) {
 
 @Composable
 private fun InputBar(value: String, partial: String?, listening: Boolean, onValue: (String) -> Unit, onSend: () -> Unit, onMic: () -> Unit) {
-    Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 12.dp, vertical = 8.dp)) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
         if (listening) {
             Text(partial ?: stringResource(R.string.morning_listening), color = Primary, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(start = 8.dp, bottom = 4.dp))
         }
@@ -936,26 +939,84 @@ private fun SummaryRow(label: String, value: String, color: Color) {
 /** Home: "Do My Morning Work — 6 important tasks today" → the Morning Work screen. */
 @Composable
 fun MorningWorkCard(count: Int?, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+    val hello = stringResource(
+        when {
+            hour < 12 -> R.string.home_good_morning
+            hour < 17 -> R.string.home_good_afternoon
+            else -> R.string.home_good_evening
+        },
+    )
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(Primary, RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(20.dp))
+            .background(
+                Brush.linearGradient(listOf(Color(0xFF075C45), Color(0xFF16845F))),
+            )
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+            .padding(horizontal = 12.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.Top,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Box(Modifier.size(40.dp).background(Color.White.copy(alpha = 0.18f), CircleShape), contentAlignment = Alignment.Center) {
-            Text("☀", color = Color.White, style = MaterialTheme.typography.titleMedium)
-        }
-        Column(modifier = Modifier.weight(1f)) {
-            Text(stringResource(R.string.morning_home_title), fontWeight = FontWeight.Bold, color = Color.White)
-            Text(
-                if (count != null) stringResource(R.string.morning_home_count, count) else stringResource(R.string.morning_home_body),
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.85f),
+        Box(
+            modifier = Modifier
+                .padding(top = 2.dp)
+                .size(32.dp)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = 0.16f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.WbSunny,
+                contentDescription = null,
+                tint = Color(0xFFFFE082),
+                modifier = Modifier.size(18.dp),
             )
         }
-        Text("›", color = Color.White, style = MaterialTheme.typography.headlineSmall)
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Text(hello, style = MaterialTheme.typography.labelLarge, color = Color.White.copy(alpha = 0.92f))
+                    Text(
+                        stringResource(R.string.morning_home_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        maxLines = 2,
+                    )
+                    Text(
+                        if (count != null) {
+                            stringResource(R.string.morning_home_count, count)
+                        } else {
+                            stringResource(R.string.morning_home_body)
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White.copy(alpha = 0.88f),
+                        maxLines = 2,
+                    )
+                }
+                Text(
+                    stringResource(R.string.morning_home_view_tasks),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(Color.White.copy(alpha = 0.18f))
+                        .padding(horizontal = 10.dp, vertical = 5.dp),
+                )
+            }
+        }
     }
 }

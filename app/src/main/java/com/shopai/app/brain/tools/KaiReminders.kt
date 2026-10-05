@@ -7,12 +7,18 @@ import java.time.LocalTime
 import java.util.Locale
 
 /** What the reminder is for — decides the notification wording and its action button. */
-enum class ReminderAction { CALL, MESSAGE, PAYMENT, COLLECTION, TASK }
+enum class ReminderAction { CALL, MESSAGE, PAYMENT, COLLECTION, STOCK, TASK }
 
 /** Who a named person is in the books, when the owner said it ("customer Kumar", "supplier Ravi"). */
 enum class PartyRole { CUSTOMER, SUPPLIER }
 
-enum class ReminderStatus { ACTIVE, RANG, COMPLETED, CANCELLED }
+/**
+ * ACTIVE = scheduled · RANG = triggered (Kai Urgent Action Mode is up, a retry
+ * is armed) · SNOOZED = the owner asked for later · COMPLETED / CANCELLED ·
+ * EXHAUSTED = rang [KaiReminderFlow.MAX_ATTEMPTS] times without an answer
+ * (kept in history, never rings again).
+ */
+enum class ReminderStatus { ACTIVE, RANG, SNOOZED, COMPLETED, CANCELLED, EXHAUSTED }
 
 /**
  * One reminder in OwnerNote's reminder engine (the single source of truth for
@@ -47,8 +53,22 @@ data class KaiReminder(
     /** The occurrence that last rang (guards against ringing twice after a restart). */
     val lastFiredAt: Long? = null,
     val businessId: String? = null,
+    /** The signed-in owner who set it (from the session, never from a screen). */
+    val ownerId: String? = null,
+    /** Money in the owner's words ("Kumar-ku 5000 payment") — only when it was said. */
+    val amount: java.math.BigDecimal? = null,
+    /** How many times it has rung for the current occurrence (Kai Urgent Action Mode, "Reminder 2 of 5"). */
+    val attemptCount: Int = 0,
+    val maxAttempts: Int = KaiReminderFlow.MAX_ATTEMPTS,
+    val snoozeCount: Int = 0,
+    val lastTriggeredAt: Long? = null,
+    /** The language the owner set it in (Kai speaks the reminder the same way). */
+    val lang: KaiLang = KaiLang.TANGLISH,
 ) {
-    val open: Boolean get() = status == ReminderStatus.ACTIVE || status == ReminderStatus.RANG
+    val open: Boolean get() = status == ReminderStatus.ACTIVE || status == ReminderStatus.RANG || status == ReminderStatus.SNOOZED
+
+    /** When it rings next (a snooze / retry, else its own time); null once it is finished. */
+    val nextTriggerAt: Long? get() = if (!open) null else snoozedUntil ?: triggerAt.takeIf { status == ReminderStatus.ACTIVE }
 }
 
 /** A reminder Kai understood and is about to create. */
@@ -62,6 +82,8 @@ data class ReminderDraft(
     val sourceText: String,
     /** False: only "remind pannu" (+ a time) was said — Kai asks what to remind about. */
     val taskSaid: Boolean = true,
+    /** A payment / collection amount the owner said; null when none was said (never invented). */
+    val amount: java.math.BigDecimal? = null,
 )
 
 /** Which reminder the owner means: the one just talked about / rang ("andha", "that", "Done"), or by words ("Kumar call"). */
@@ -163,6 +185,7 @@ object KaiReminderUnderstanding {
             Regex("""$B(call|phone|ring|kaal)$E|கால்|போன்""", RegexOption.IGNORE_CASE).containsMatchIn(text) -> ReminderAction.CALL
             Regex("""$B(collect|collection|vasool|vasul|vaanganum|vanganum)$E|வசூல்""", RegexOption.IGNORE_CASE).containsMatchIn(text) -> ReminderAction.COLLECTION
             Regex("""$B(pay|payment|kattanum|kattu|kudukkanum|kodukkanum|rent|bill\s*kattanum|emi)$E""", RegexOption.IGNORE_CASE).containsMatchIn(text) -> ReminderAction.PAYMENT
+            Regex("""$B(stock|maal|inventory)$E|ஸ்டாக்""", RegexOption.IGNORE_CASE).containsMatchIn(text) -> ReminderAction.STOCK
             else -> ReminderAction.TASK
         }
         val role = when {
@@ -179,8 +202,15 @@ object KaiReminderUnderstanding {
             ReminderAction.MESSAGE -> person?.let { "Message $it" }
             else -> null
         } ?: task.replaceFirstChar { it.titlecase(Locale.ROOT) }
-        return ReminderDraft(task, title, action, person, role, time, text, taskSaid || person != null || action != ReminderAction.TASK)
+        val amount = if (action == ReminderAction.PAYMENT || action == ReminderAction.COLLECTION) amountIn(KaiTime.strip(text)) else null
+        return ReminderDraft(task, title, action, person, role, time, text, taskSaid || person != null || action != ReminderAction.TASK, amount)
     }
+
+    /** "Kumar-ku ₹5,000 payment" → 5000; only a number the owner said with the money (times are stripped first). */
+    fun amountIn(text: String): java.math.BigDecimal? =
+        Regex("""(?i)(?:₹|rs\.?\s*|rupees?\s*)?(?<![\d.:])(\d{1,3}(?:,\d{2,3})+|\d+)(?:\.\d{1,2})?(?![\d:])(?:\s*(?:rs|rupees?|ரூபாய்))?""")
+            .findAll(text).mapNotNull { it.groupValues[1].replace(",", "").toBigDecimalOrNull() }
+            .firstOrNull { it.signum() > 0 }
 
     private fun target(text: String, people: List<String>): ReminderTarget {
         val person = KaiCommands.personIn(text, people)
@@ -196,7 +226,7 @@ object KaiReminderUnderstanding {
     fun cleanTask(text: String): String = (" $text ")
         .replace(Regex("""(?i)$B(remind\s*(pannu|pannunga|me\s*to|me|panni|pannidu)?|reminder\s*(vai|vechudu|set\s*pannu|set|podu|poodu|pottu)?|reminder|""" +
             """nyabagam\s*(paduthu|padutthu|paduthunga)?|gnabagam\s*(paduthu)?|niyabagam\s*(paduthu)?|ninaivu\s*(paduthu|paduthunga)?|ninaivupaduthu|""" +
-            """please|pls|enakku|ennaku|kai|bro|set|pannu|pannunga|sollu|sollunga|nu|appo|later|me\s*to)$E"""), " ")
+            """please|pls|enakku|ennaku|kai|bro|set|pannu|pannunga|sollu|sollunga|nu|appo|later|me\s*to|la)$E"""), " ")
         .replace(Regex("""நினைவூட்டு|ஞாபகப்படுத்து|சொல்லு"""), " ")
         .replace(Regex("""\s+"""), " ").trim().trim('-', ',', '.').trim()
 }
@@ -276,6 +306,8 @@ object KaiReminderSchedule {
             notificationMessage = KaiReminderWords.notification(draft.action, person, draft.task, lang),
             sourceText = draft.sourceText,
             createdAt = nowMillis,
+            amount = draft.amount,
+            lang = lang,
         )
     }
 

@@ -7,6 +7,44 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:757704330186:android:3e5965197ec41159c0dd33",
+        "android_client_info": {
+          "package_name": "com.newonx.on"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAxAjE3RrNs8YqC4mA4KmhohT24b3Dwhjc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:757704330186:android:627af35537fb1a3fc0dd33",
+        "android_client_info": {
+          "package_name": "com.ownernote.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAxAjE3RrNs8YqC4mA4KmhohT24b3Dwhjc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:757704330186:android:15a1716c13b82ecac0dd33",
         "android_client_info": {
           "package_name": "com.shopai.app"

@@ -115,7 +115,7 @@ object KaiCommands {
         "gave", "given", "paid", "pay panniten", "payment panniten", "pay pannen", "anuppinen", "anupinen", "anuppiten", "anupiten", "sent",
         "கொடுத்தேன்", "கொடுத்துட்டேன்", "அனுப்பினேன்", "கொடுத்தாச்சு")
     private val inWords = listOf("vanginen", "vaanginen", "vangunen", "vaangunen", "vangiten", "vaangiten", "vanginaen", "vangitten", "received", "got",
-        "vandhuchu", "vanthuchu", "vandhudhu", "thandhan", "thandhaan", "thandhaar", "thanthan", "kuduthaan", "kuduthaar", "koduthaan",
+        "vandhuchu", "vanthuchu", "vandhudhu", "thandhan", "thandhaan", "thandhaar", "thanthan", "kuduthan", "kuduthaan", "kuduthaar", "koduthan", "koduthaan", "koduthaar",
         "வாங்கினேன்", "வந்துச்சு", "தந்தான்", "தந்தார்", "கொடுத்தான்")
     private val goodsWords = Regex("""(?i)\b(kg|kgs|kilo|litre|ltr|bag|bags|pcs|pieces|packet|box|dozen|rice|arisi|sugar|oil|maavu|paal)\b""")
 
@@ -132,13 +132,24 @@ object KaiCommands {
         val amount = amounts.singleOrNull()?.let { BigDecimal.valueOf(it).setScale(2, java.math.RoundingMode.HALF_UP) }
         val (mode, said) = when {
             has(arrayOf("upi", "gpay", "g pay", "google pay", "phonepe", "phone pe", "paytm")) -> PaymentMode.UPI to true
-            has(arrayOf("bank", "neft", "imps", "rtgs", "transfer", "account la")) -> PaymentMode.BANK_TRANSFER to true
+            // "account-la podalama" is a request to record the transaction, not a bank transfer.
+            has(arrayOf("bank", "neft", "imps", "rtgs", "transfer")) -> PaymentMode.BANK_TRANSFER to true
             has(arrayOf("cheque", "check")) -> PaymentMode.CHEQUE to true
             has(arrayOf("card")) -> PaymentMode.CARD to true
             has(arrayOf("cash", "rokkam", "kaasa")) -> PaymentMode.CASH to true
+            has(arrayOf("account la", "account-la")) -> PaymentMode.BANK_TRANSFER to true
             else -> PaymentMode.CASH to false
         }
-        return KaiCommand.Payment(personIn(text, known), amount, outgoing = out, mode = mode, modeSaid = said)
+        // Direction follows who received the money. "Kumar gave me 5k" is incoming;
+        // a bare "Kumar gave 5k" stays ambiguous and is not guessed as a payment.
+        val ownerIsRecipient = has(arrayOf("me", "to me", "for me", "enakku", "enaku", "எனக்கு"))
+        val ownerIsPayer = has(arrayOf("i gave", "i paid", "naan kuduth", "naan koduth", "நான் கொடுத்த"))
+        val outgoing = when {
+            ownerIsPayer -> true
+            ownerIsRecipient && has(arrayOf("gave", "given", "paid", "received", "got", "kuduth", "koduth", "தந்த", "கொடுத்த")) -> false
+            else -> out
+        }
+        return KaiCommand.Payment(personIn(text, known), amount, outgoing = outgoing, mode = mode, modeSaid = said)
     }
 
     // ------------------------------------------------------------ people / words

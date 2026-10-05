@@ -6,8 +6,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-/** Keeps scrollable tab content above the floating bottom bar. */
+/** Keeps scrollable tab content above the floating bottom nav. */
 @Composable
 fun VoiceFabBottomSpacer() {
-    Spacer(Modifier.height(96.dp))
+    Spacer(Modifier.height(80.dp))
 }
