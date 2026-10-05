@@ -17,6 +17,7 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // Production API (Render). Debug defaults to the local Owner Note backend.
         // Override with -PAPI_BASE_URL=http://<lan-ip>:4000 when testing on a physical device.
