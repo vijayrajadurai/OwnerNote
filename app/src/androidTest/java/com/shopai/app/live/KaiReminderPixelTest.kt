@@ -113,7 +113,8 @@ class KaiReminderPixelTest {
     private fun waitForKai(ms: Long = 10_000): Long {
         val start = android.os.SystemClock.elapsedRealtime()
         val shown = waitFor(ms) { KaiUrgentDebug.kaiVisibleAt != 0L }
-        return if (shown) KaiUrgentDebug.kaiVisibleAt - start else -1
+        // Already visible before we started looking counts as 0 ms.
+        return if (shown) (KaiUrgentDebug.kaiVisibleAt - start).coerceAtLeast(0) else -1
     }
 
     /** Reads voice / speaker state where it lives (the main thread). */
@@ -135,7 +136,9 @@ class KaiReminderPixelTest {
     private fun lockScreen() {
         shell("input keyevent KEYCODE_SLEEP")
         assertTrue("BLOCKER: the screen did not turn off", waitFor(5_000) { !power.isInteractive })
-        Thread.sleep(1_500)
+        // The keyguard can take a few seconds to lock on an emulator.
+        waitFor(6_000) { keyguard.isKeyguardLocked }
+        Thread.sleep(500)
         report("screenOff=${!power.isInteractive} keyguardLocked=${keyguard.isKeyguardLocked}")
         assertTrue(
             "BLOCKER: the emulator has no lock screen (Settings → Security → Screen lock → Swipe or PIN) — locked behaviour can't be tested",
@@ -152,8 +155,22 @@ class KaiReminderPixelTest {
         shell("dumpsys alarm").lineSequence().any { it.contains(ctx.packageName) && it.contains(action) } ||
             shell("dumpsys alarm").let { it.contains(action) }
 
-    private fun nodes(text: String): List<AccessibilityNodeInfo> =
-        inst.uiAutomation.rootInActiveWindow?.findAccessibilityNodeInfosByText(text).orEmpty()
+    /**
+     * Nodes with [text] (case-insensitive) in every window on screen — over the lock screen the "active"
+     * window is the keyguard, not Kai's, so looking only there finds nothing.
+     */
+    private fun nodes(text: String): List<AccessibilityNodeInfo> {
+        val ua = inst.uiAutomation
+        runCatching {
+            val info = ua.serviceInfo
+            if (info.flags and android.accessibilityservice.AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS == 0) {
+                info.flags = info.flags or android.accessibilityservice.AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS
+                ua.serviceInfo = info
+            }
+        }
+        val roots = (runCatching { ua.windows.mapNotNull { it.root } }.getOrDefault(emptyList()) + listOfNotNull(ua.rootInActiveWindow))
+        return roots.flatMap { it.findAccessibilityNodeInfosByText(text).orEmpty() }
+    }
 
     private fun tap(text: String): Boolean {
         val node = nodes(text).firstOrNull() ?: return false
@@ -220,7 +237,7 @@ class KaiReminderPixelTest {
         assertTrue("BUG: no screenshot of the locked screen could be taken", a != null && b != null)
         assertTrue("BUG: the background is not the black premium Urgent Action Mode", dark == true)
         assertTrue("BUG: Kai is not animating (two frames are identical)", moving > 0.0)
-        val words = listOf("REMINDER", "Praba-ku call panna vendiya neram aachu", "Ippo call pannalama?", "CALL NOW", "DONE", "SNOOZE 5 MIN", "Reminder 1 of 5")
+        val words = listOf("REMINDER", "Praba-ku call panna vendiya neram aachu", "Ippo call pannalama?", "Call now", "Done", "Snooze 5 min", "Reminder 1 of 5")
         val seen = words.associateWith { nodes(it).isNotEmpty() }
         report("$tag onScreen=$seen")
         assertTrue("BUG: Kai Urgent Action Mode is missing: ${seen.filterValues { !it }.keys}", seen.values.all { it })
@@ -296,7 +313,7 @@ class KaiReminderPixelTest {
             assertTrue("BUG: the reminder notification is still showing on top of Kai Urgent Action Mode", noBanner)
 
             // SNOOZE tapped on the real screen → SNOOZED, the next ring armed in 5 minutes, the screen closes.
-            assertTrue("BUG: SNOOZE 5 MIN could not be tapped", tap("SNOOZE 5 MIN"))
+            assertTrue("BUG: SNOOZE 5 MIN could not be tapped", tap("Snooze 5 min"))
             assertTrue("BUG: Snooze did not save", waitFor(5_000) { engine.find(r.id)?.status == ReminderStatus.SNOOZED })
             val s = engine.find(r.id)!!
             val next = (s.snoozedUntil!! - System.currentTimeMillis()) / 1000
@@ -394,7 +411,7 @@ class KaiReminderPixelTest {
         // The receiver's own entry point (what the alarm calls) — this test is about the buttons, not the timing.
         engine.fired(r.id, snooze = false)
         assertTrue("BUG: Kai Urgent Action Mode did not appear", waitFor(10_000) { urgentScreen() != null })
-        assertTrue("BUG: CALL NOW could not be tapped", tap("CALL NOW"))
+        assertTrue("BUG: CALL NOW could not be tapped", tap("Call now"))
         val dialer = waitFor(8_000) { shell("dumpsys activity activities").lineSequence().any { it.contains("mResumedActivity") && it.contains("dialer", true) } }
         val note = waitFor(3_000) { nodes("Call screen open pannitten Owner.").isNotEmpty() }
         report("t3 callNow dialerOpened=$dialer kaiSaid='Call screen open pannitten Owner.'=$note statusAfterCall=${engine.find(r.id)?.status}")
@@ -402,7 +419,7 @@ class KaiReminderPixelTest {
         // Back to Kai and DONE.
         openUrgent(r.id)
         assertTrue("BUG: could not return to Kai Urgent Action Mode", waitFor(8_000) { urgentScreen() != null })
-        assertTrue("BUG: DONE could not be tapped", tap("DONE"))
+        assertTrue("BUG: DONE could not be tapped", tap("Done"))
         assertTrue("BUG: Done did not complete the reminder", waitFor(5_000) { engine.find(r.id)?.status == ReminderStatus.COMPLETED })
         assertTrue("BUG: the screen stayed open after Done", waitFor(5_000) { urgentScreen() == null })
         engine.fired(r.id, snooze = true)
@@ -476,7 +493,9 @@ class KaiReminderPixelTest {
         assertTrue(waitFor(6_000) { engine.wasSpoken(rung) })
         // Rotation / pause-resume: the same ring is never spoken again, the intro doesn't replay.
         val before = engine.claimSpeech(rung)
-        inst.runOnMainSync { urgentScreen()?.recreate() }
+        // urgentScreen() itself syncs with the main thread: take it first, then recreate there.
+        val screen = urgentScreen()
+        inst.runOnMainSync { screen?.recreate() }
         assertTrue(waitFor(8_000) { urgentScreen() != null })
         Thread.sleep(1_500)
         report("t6 speechClaimedAgainAfterRecreate=$before (must be false)")
@@ -487,7 +506,7 @@ class KaiReminderPixelTest {
         val moving = if (s1 != null && s2 != null) motion(s1, s2) else -1.0
         report("t6 kaiIdleMotion=${"%.4f".format(moving)} (idle continues after recreate)")
         assertTrue("BUG: Kai stopped moving after the screen was recreated", moving > 0.0)
-        assertTrue(tap("DONE"))
+        assertTrue(tap("Done"))
         assertTrue(waitFor(5_000) { engine.find(r.id)?.status == ReminderStatus.COMPLETED })
         assertTrue("BUG: a notification was left after Done", waitFor(3_000) { urgentNotification("Ravi") == null })
         report("t6 NO_DUPLICATE_VERIFIED")
@@ -500,8 +519,12 @@ class KaiReminderPixelTest {
         val r = praba("LIVE-ACT-${System.currentTimeMillis()}", System.currentTimeMillis() - 1_000, person = "Mani")
         engine.create(r)
         openUrgentHome()
+        val firedAt = android.os.SystemClock.elapsedRealtime()
         engine.fired(r.id, snooze = false)
         assertTrue("BUG: Kai Urgent Action Mode did not open", waitFor(10_000) { urgentScreen() != null })
+        // Ring → Kai's voice audible (the natural voice was fetched when the reminder was saved).
+        val audible = waitFor(15_000) { onMain { container.naturalTtsSpeaker.speaking.value } }
+        report("t7 voiceStartAfterMs=${if (audible) android.os.SystemClock.elapsedRealtime() - firedAt else -1} (ring → first word; target < 1500 on a phone)")
         val kaiAfter = waitForKai()
         report("t7 kaiVisibleAfterMs=$kaiAfter")
         assertTrue("BUG: Kai did not appear within 10 s", kaiAfter >= 0)

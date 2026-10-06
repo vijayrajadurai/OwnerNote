@@ -18,6 +18,24 @@ renders: **active character.** The body moves (head, eyes, brows, shoulders, che
 the hand), there is no ring and no particle field, and the only effect is a faint floor light.
 **This still has to be confirmed on the Pixel 8.**
 
+## Round 4 — fixes for the R6 Pixel 8 report (43d7340)
+
+R6 confirmed these work:
+- unit tests: 665 pass, 0 fail;
+- Kai visible at once on the 2nd+ ring (2.35 s on the first ring after install);
+- Done → "சரி ஓனர்." in ~0.4 s;
+- a smooth dhoti edge;
+- the locked ring: full-screen, voice, Done.
+
+| Reported | Cause | Fix |
+|---|---|---|
+| Ring → first word 5.5 s unlocked, 7.5 s locked | The voice loop started only after the screen's first composition (+1.8 s). MediaPlayer was created on the main thread, so its callbacks waited behind a 2 s main-thread stall while the first frames rendered (HWUI "Davey"). | The voice starts in `KaiReminderActivity.onCreate`, as the screen opens. Playback runs on its own thread ("kai-voice"): the WAV is read, MediaPlayer is created and prepared, and callbacks arrive there, so a busy screen no longer delays the voice. A playback still being set up when stop is pressed never starts. |
+| Notification removed at +1.4 s, before the keyguard was occluded | It was removed in `onResume` (resumed ≠ visible over the lock screen). | It is removed in `onWindowFocusChanged(true)`, once Kai's window is really shown. |
+| t1/t3: words or buttons "missing" although on screen | The test searched only `rootInActiveWindow`, which is the keyguard over the lock screen, and used old uppercase labels. | It searches every window (`FLAG_RETRIEVE_INTERACTIVE_WINDOWS`) and uses "Call now / Done / Snooze 5 min". |
+| t6: "can not be called from the main application thread" | `urgentScreen()` (itself a `runOnMainSync`) was called inside `runOnMainSync`. | The activity is taken first, then recreated on the main thread. |
+| t7: "Kai did not appear" with kaiVisibleAfterMs=-39 | Kai visible before the test started waiting counted as a failure. | Counts as 0 ms. t7 also reports `voiceStartAfterMs` (ring → audible). |
+| t1 run 1: "no lock screen" | The emulator's keyguard locks a few seconds after sleep. | The test waits up to 6 s for the lock. |
+
 ## Round 3 — fixes for the Pixel 8 report (74b0659)
 
 The Pixel 8 run on 74b0659 confirmed these work: the unlocked ring, the locked ring, the

@@ -48,7 +48,14 @@ class NaturalTtsSpeaker(context: Context) {
     private var textToSpeech: TextToSpeech? = null
     private var ttsReady = false
     private val ttsInitMutex = Mutex()
-    private var mediaPlayer: MediaPlayer? = null
+    @Volatile private var mediaPlayer: MediaPlayer? = null
+
+    // Playback lives on its own thread: a busy screen (the first frames of an animation, a heavy layout)
+    // never holds the voice back — MediaPlayer's callbacks arrive on this thread, not the main one.
+    private val voiceThread by lazy { android.os.HandlerThread("kai-voice").apply { start() } }
+    private val voiceHandler by lazy { android.os.Handler(voiceThread.looper) }
+    /** Bumped by every stop / new playback: a playback still being set up for an older one never starts. */
+    @Volatile private var playGeneration = 0
 
     // KAI's lip-sync: how open his mouth is (0..1) while the voice is audible,
     // and whether a voice is playing right now. Read-only for the UI.
@@ -198,12 +205,11 @@ class NaturalTtsSpeaker(context: Context) {
 
     /** Stops the current playback only (a new playback starting uses this; queued requests stay). */
     private fun halt() {
+        playGeneration++
         stopLipSync()
-        mediaPlayer?.runCatching {
-            if (isPlaying) stop()
-            release()
-        }
+        val player = mediaPlayer
         mediaPlayer = null
+        if (player != null) voiceHandler.post { player.runCatching { if (isPlaying) stop(); release() } }
         textToSpeech?.stop()
     }
 
@@ -301,49 +307,59 @@ class NaturalTtsSpeaker(context: Context) {
         }
 
         halt()
-        val envelope = runCatching { SpeechEnvelope.fromWav(file.readBytes()) }.getOrNull()
-        try {
-            val player = MediaPlayer()
-            mediaPlayer = player
-            player.setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setUsage(if (useAlarmStream) AudioAttributes.USAGE_ALARM else AudioAttributes.USAGE_MEDIA)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                    .build(),
-            )
-            player.setDataSource(file.absolutePath)
-            player.setOnPreparedListener { prepared ->
-                runCatching {
-                    prepared.start()
-                    startLipSync(envelope) { runCatching { mediaPlayer?.currentPosition }.getOrNull() }
-                }
-                    .onFailure {
-                        logDebug("MediaPlayer start failed: ${it.message}")
-                        stopLipSync()
+        val mine = playGeneration
+        voiceHandler.post {
+            if (mine != playGeneration) { finish(false); return@post }
+            val envelope = runCatching { SpeechEnvelope.fromWav(file.readBytes()) }.getOrNull()
+            try {
+                val player = MediaPlayer()
+                mediaPlayer = player
+                player.setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(if (useAlarmStream) AudioAttributes.USAGE_ALARM else AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                        .build(),
+                )
+                player.setDataSource(file.absolutePath)
+                player.setOnPreparedListener { prepared ->
+                    if (mine != playGeneration) {
+                        // Stopped while it was getting ready: it never plays.
                         prepared.release()
-                        mediaPlayer = null
                         finish(false)
+                        return@setOnPreparedListener
                     }
-            }
-            player.setOnCompletionListener {
-                stopLipSync()
-                it.release()
-                mediaPlayer = null
-                finish(true)
-            }
-            player.setOnErrorListener { mp, what, extra ->
-                logDebug("MediaPlayer error what=$what extra=$extra")
-                stopLipSync()
-                mp.release()
+                    runCatching {
+                        prepared.start()
+                        scope.launch { startLipSync(envelope) { runCatching { mediaPlayer?.currentPosition }.getOrNull() } }
+                    }
+                        .onFailure {
+                            logDebug("MediaPlayer start failed: ${it.message}")
+                            scope.launch { stopLipSync() }
+                            prepared.release()
+                            if (mediaPlayer === prepared) mediaPlayer = null
+                            finish(false)
+                        }
+                }
+                player.setOnCompletionListener {
+                    scope.launch { stopLipSync() }
+                    it.release()
+                    if (mediaPlayer === it) mediaPlayer = null
+                    finish(true)
+                }
+                player.setOnErrorListener { mp, what, extra ->
+                    logDebug("MediaPlayer error what=$what extra=$extra")
+                    scope.launch { stopLipSync() }
+                    mp.release()
+                    if (mediaPlayer === mp) mediaPlayer = null
+                    finish(false)
+                    true
+                }
+                player.prepareAsync()
+            } catch (err: Exception) {
+                logDebug("MediaPlayer setup failed: ${err.message}")
                 mediaPlayer = null
                 finish(false)
-                true
             }
-            player.prepareAsync()
-        } catch (err: Exception) {
-            logDebug("MediaPlayer setup failed: ${err.message}")
-            mediaPlayer = null
-            finish(false)
         }
     }
 

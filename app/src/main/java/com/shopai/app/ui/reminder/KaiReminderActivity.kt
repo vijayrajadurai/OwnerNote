@@ -49,7 +49,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
@@ -109,9 +108,8 @@ class KaiReminderActivity : ComponentActivity() {
     private var reminderId by mutableStateOf<String?>(null)
     /** Done / Snooze was pressed — leaving the screen is the answer, not "left unanswered". */
     private var answered = false
-    /** The ring on screen and how to (re)start its voice — set by the screen, used on resume / stop. */
+    /** The ring on screen (its voice pauses when the screen goes away unanswered). */
     private var ringOnScreen: String? = null
-    private var startVoice: (() -> Unit)? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -126,6 +124,30 @@ class KaiReminderActivity : ComponentActivity() {
                 UrgentScreen(id)
             }
         }
+        // Kai starts speaking as the screen opens — not after the first frames are drawn (that can take
+        // seconds on a slow phone, and the voice would wait for it).
+        beginVoice()
+    }
+
+    private fun ringing(r: KaiReminder) = r.status == ReminderStatus.RANG || r.status == ReminderStatus.EXHAUSTED ||
+        (r.status == ReminderStatus.ACTIVE && r.lastTriggeredAt != null && r.attemptCount > 0)
+
+    /**
+     * Kai keeps reminding until the owner acts: one voice loop for this ring (not again on rotation,
+     * recomposition, resume or a second tap; the opening line once per attempt, even across a restart).
+     */
+    private fun beginVoice() {
+        if (answered) return
+        runCatching {
+            val r = reminderId?.let { container.kaiReminders.find(it) }?.takeIf(::ringing) ?: return
+            val ringKey = KaiReminderFlow.speechKey(r)
+            ringOnScreen = ringKey
+            val first = container.kaiReminders.claimSpeech(r)
+            val started = container.kaiUrgentVoice.start(
+                ringKey, KaiUrgentVoiceScript.lines(r, r.lang), KaiUrgentVoiceScript.languageCode(r.lang), openingAlreadySpoken = !first,
+            )
+            if (started && first) Log.i(TAG, "spoke $ringKey")
+        }.onFailure { Log.w(TAG, "voice not started: ${it.message}") }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -136,10 +158,15 @@ class KaiReminderActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Kai is on screen: the banner for the same ring would cover him — removed (the fallback keeps its notification).
-        reminderId?.let { runCatching { container.kaiReminders.urgentScreenShown(it) } }
         // Back on screen without an answer: Kai's voice continues (never from the top, never twice).
-        startVoice?.invoke()
+        beginVoice()
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        // Kai is really on screen now (over the lock screen too): the banner for the same ring would cover
+        // him — removed. Not earlier (resumed is not yet visible), so the ring is never left with neither.
+        if (hasFocus) reminderId?.let { runCatching { container.kaiReminders.urgentScreenShown(it) } }
     }
 
     override fun onStop() {
@@ -176,10 +203,9 @@ class KaiReminderActivity : ComponentActivity() {
         val scope = rememberCoroutineScope()
 
         // Done / Snooze / Cancel from anywhere (notification, chat): this screen closes.
-        val ringing = reminder != null && (reminder.status == ReminderStatus.RANG || reminder.status == ReminderStatus.EXHAUSTED ||
-            (reminder.status == ReminderStatus.ACTIVE && reminder.lastTriggeredAt != null && reminder.attemptCount > 0))
-        LaunchedEffect(ringing) { if (!ringing && !answered) finish() }
-        if (reminder == null || (!ringing && !answered)) return
+        val isRinging = reminder != null && ringing(reminder)
+        LaunchedEffect(isRinging) { if (!isRinging && !answered) finish() }
+        if (reminder == null || (!isRinging && !answered)) return
 
         val lang = reminder.lang
         val words = KaiUrgentWords.text(reminder, lang)
@@ -191,21 +217,8 @@ class KaiReminderActivity : ComponentActivity() {
         val ringKey = KaiReminderFlow.speechKey(reminder)
         val openedAt = remember(ringKey) { KaiUrgentClock.openedAt(ringKey) }
 
-        // Kai keeps reminding until the owner acts: one voice loop for this ring (not again on rotation,
-        // recomposition, resume or a second tap; the opening line once per attempt, even across a restart).
-        val start: () -> Unit = {
-            if (!answered) {
-                val first = engine.claimSpeech(reminder)
-                if (voice.start(ringKey, KaiUrgentVoiceScript.lines(reminder, lang), code, openingAlreadySpoken = !first) && first) {
-                    Log.i(TAG, "spoke $ringKey")
-                }
-            }
-        }
-        SideEffect {
-            ringOnScreen = ringKey
-            startVoice = start
-        }
-        LaunchedEffect(ringKey) { start() }
+        // A new attempt while the screen stays open: its own voice cycle (beginVoice does nothing if already speaking).
+        LaunchedEffect(ringKey) { beginVoice() }
 
         /** The answer is saved first; Kai's voice stops at once (one short reply); then he settles out. */
         fun leave(snooze: Boolean, saved: Boolean, message: String, ack: String) {
