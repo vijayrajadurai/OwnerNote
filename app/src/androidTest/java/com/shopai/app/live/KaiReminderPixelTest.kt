@@ -427,8 +427,9 @@ class KaiReminderPixelTest {
         assertTrue("BUG: Kai Urgent Action Mode did not appear", waitFor(10_000) { urgentScreen() != null })
         assertTrue("BUG: CALL NOW could not be tapped", tap("Call now"))
         val dialer = waitFor(8_000) { shell("dumpsys activity activities").lineSequence().any { it.contains("mResumedActivity") && it.contains("dialer", true) } }
-        val note = waitFor(3_000) { onScreen("Call screen open pannitten Owner.") }
+        val note = waitFor(3_000) { onScreen("Call screen open pannitten Owner.") || onScreen("call screen ready") }
         report("t3 callNow dialerOpened=$dialer kaiSaid='Call screen open pannitten Owner.'=$note statusAfterCall=${engine.find(r.id)?.status}")
+        assertTrue("BUG: Call now did nothing — no dialer and no word from Kai (see 'call now:' in logcat)", dialer || note)
         assertEquals("BUG: Call Now must not complete the reminder", ReminderStatus.RANG, engine.find(r.id)!!.status)
         // Back to Kai and DONE.
         openUrgent(r.id)

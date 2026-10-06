@@ -120,13 +120,23 @@ class NaturalTtsSpeaker(context: Context) {
     /** Bumped by [stop]: a request made before it never plays afterwards (its audio may still be on its way). */
     @Volatile private var generation = 0
 
-    /** Drives [mouthLevel] until [stopLipSync]: from the audio's loudness, or a natural talking rhythm. */
-    private fun startLipSync(envelope: SpeechEnvelope?, position: () -> Int?) {
+    /**
+     * Drives [mouthLevel] until [stopLipSync]: from the audio's loudness, or a natural talking rhythm.
+     * [playback]: the audio-file playback this belongs to — a start that arrives after that playback was
+     * stopped (it is posted from the voice thread) is ignored, and the lip-sync ends by itself once its
+     * player is gone, so "speaking" can never stay on after the voice stopped.
+     */
+    private fun startLipSync(envelope: SpeechEnvelope?, playback: Int? = null, position: () -> Int?) {
+        if (playback != null && (playback != playGeneration || mediaPlayer == null)) return
         lipSyncJob?.cancel()
         _speaking.value = true
         val started = System.currentTimeMillis()
         lipSyncJob = scope.launch {
             while (isActive) {
+                if (playback != null && (playback != playGeneration || mediaPlayer == null)) {
+                    stopLipSync()
+                    break
+                }
                 val at = position() ?: (System.currentTimeMillis() - started).toInt()
                 _mouthLevel.value = envelope?.levelAt(at) ?: talkingRhythm(at)
                 delay(33)
@@ -330,7 +340,7 @@ class NaturalTtsSpeaker(context: Context) {
                     }
                     runCatching {
                         prepared.start()
-                        scope.launch { startLipSync(envelope) { runCatching { mediaPlayer?.currentPosition }.getOrNull() } }
+                        scope.launch { startLipSync(envelope, playback = mine) { runCatching { mediaPlayer?.currentPosition }.getOrNull() } }
                     }
                         .onFailure {
                             logDebug("MediaPlayer start failed: ${it.message}")
@@ -369,6 +379,8 @@ class NaturalTtsSpeaker(context: Context) {
 
         return suspendCancellableCoroutine { cont ->
             val utteranceId = UUID.randomUUID().toString()
+            // A stop() bumps this: a late "started" from the TTS engine then never turns speaking on again.
+            val mine = playGeneration
             val finished = AtomicBoolean(false)
             fun finish(result: Boolean) {
                 if (finished.compareAndSet(false, true)) {
@@ -386,7 +398,7 @@ class NaturalTtsSpeaker(context: Context) {
                 object : UtteranceProgressListener() {
                     // Device TTS audio can't be measured: KAI talks in a natural rhythm.
                     override fun onStart(spokenId: String?) {
-                        if (spokenId == utteranceId) scope.launch { startLipSync(null) { null } }
+                        if (spokenId == utteranceId) scope.launch { if (mine == playGeneration) startLipSync(null) { null } }
                     }
                     override fun onDone(spokenId: String?) {
                         if (spokenId == utteranceId) {

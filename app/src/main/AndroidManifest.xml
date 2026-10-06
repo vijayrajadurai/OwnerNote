@@ -91,7 +91,7 @@
             android:launchMode="singleTask"
             android:showWhenLocked="true"
             android:taskAffinity="com.shopai.app.kaireminder"
-            android:theme="@style/Theme.ShopAI"
+            android:theme="@style/Theme.ShopAI.Urgent"
             android:turnScreenOn="true"
             tools:targetApi="27" />
 

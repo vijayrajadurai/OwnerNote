@@ -283,8 +283,24 @@ class KaiReminderActivity : ComponentActivity() {
         }
         val keyguard = getSystemService(KeyguardManager::class.java)
         if (keyguard != null && keyguard.isKeyguardLocked && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Log.i(TAG, "call now: asking Android to unlock first")
             keyguard.requestDismissKeyguard(this, object : KeyguardManager.KeyguardDismissCallback() {
-                override fun onDismissSucceeded() = open()
+                override fun onDismissSucceeded() {
+                    Log.i(TAG, "call now: unlocked → dialer")
+                    open()
+                }
+                // Not unlocked (cancelled / not possible now): the dialer still opens — it is there the
+                // moment the owner unlocks — and Kai says so, instead of nothing happening.
+                override fun onDismissCancelled() {
+                    Log.i(TAG, "call now: unlock cancelled → dialer waits behind the lock screen")
+                    open()
+                    say(KaiUrgentWords.unlockToCall(r.lang))
+                }
+                override fun onDismissError() {
+                    Log.w(TAG, "call now: unlock not possible → dialer waits behind the lock screen")
+                    open()
+                    say(KaiUrgentWords.unlockToCall(r.lang))
+                }
             })
         } else {
             open()

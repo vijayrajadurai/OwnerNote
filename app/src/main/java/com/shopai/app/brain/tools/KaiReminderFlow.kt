@@ -240,6 +240,9 @@ object KaiUrgentWords {
     fun snoozed(minutes: Long, lang: KaiLang) = pick(lang, ta = "சரி ஓனர். $minutes நிமிடம் கழிச்சு மறுபடியும் சொல்றேன்.", tl = "Seri Owner. $minutes minutes-ku snooze pannitten.", en = "Okay Owner. Snoozed for $minutes minutes.")
     /** The dialer opened — never "called", never "answered". */
     fun callOpened(lang: KaiLang) = pick(lang, ta = "Call screen திறந்துட்டேன் ஓனர்.", tl = "Call screen open pannitten Owner.", en = "I opened the call screen, Owner.")
+    /** Call Now while the phone stays locked: the call screen is ready behind the lock. */
+    fun unlockToCall(lang: KaiLang) = pick(lang,
+        ta = "Phone-ஐ unlock பண்ணுங்க ஓனர் — call screen ready-ஆ இருக்கு.", tl = "Phone-ah unlock pannunga Owner — call screen ready-ah irukku.", en = "Unlock your phone, Owner — the call screen is ready.")
     fun noNumber(person: String?, lang: KaiLang) = pick(lang,
         ta = "${person ?: ""} நம்பர் இல்ல ஓனர் — dialer திறக்குறேன்.", tl = "${person ?: ""} number illa Owner — dialer open panren.", en = "I don't have ${person ?: "the"} number, Owner — opening the dialer.")
 }

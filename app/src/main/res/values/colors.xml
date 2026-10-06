@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#FFFFFF</color>
+    <!-- Kai Urgent Action Mode's black (same as its Compose background), for the window before the first frame. -->
+    <color name="kai_urgent_background">#FF050608</color>
 </resources>

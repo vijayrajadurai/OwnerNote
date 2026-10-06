@@ -6,4 +6,11 @@
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowLightNavigationBar">true</item>
     </style>
+
+    <!-- Kai Urgent Action Mode: a dark window from the very first frame (no white flash over the lock screen at night). -->
+    <style name="Theme.ShopAI.Urgent" parent="Theme.ShopAI">
+        <item name="android:windowBackground">@color/kai_urgent_background</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
 </resources>
