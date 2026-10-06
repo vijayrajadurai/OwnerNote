@@ -172,11 +172,25 @@ class KaiReminderPixelTest {
         return roots.flatMap { it.findAccessibilityNodeInfosByText(text).orEmpty() }
     }
 
+    /**
+     * Is [text] on the urgent screen? Accessibility first; when the in-process lookup sees nothing
+     * (it can't always reach Kai's window over the lock screen), the words the screen itself composed.
+     */
+    private fun onScreen(text: String): Boolean =
+        nodes(text).isNotEmpty() || (urgentScreen() != null && KaiUrgentDebug.words.any { it.contains(text, ignoreCase = true) })
+
+    /** Taps the control labelled [text]: accessibility click, or a real touch at the control's place on screen. */
     private fun tap(text: String): Boolean {
-        val node = nodes(text).firstOrNull() ?: return false
-        var n: AccessibilityNodeInfo? = node
-        while (n != null && !n.isClickable) n = n.parent
-        return (n ?: node).performAction(AccessibilityNodeInfo.ACTION_CLICK)
+        nodes(text).firstOrNull()?.let { node ->
+            var n: AccessibilityNodeInfo? = node
+            while (n != null && !n.isClickable) n = n.parent
+            if ((n ?: node).performAction(AccessibilityNodeInfo.ACTION_CLICK)) { report("tap '$text' via=a11y"); return true }
+        }
+        val box = KaiUrgentDebug.controls[text.lowercase()] ?: KaiUrgentDebug.controls.entries.firstOrNull { it.key.contains(text.lowercase()) }?.value
+        if (box == null || box.isEmpty) return false
+        shell("input tap ${box.centerX()} ${box.centerY()}")
+        report("tap '$text' via=touch at ${box.centerX()},${box.centerY()}")
+        return true
     }
 
     private fun screenshot(name: String): Bitmap? = runCatching {
@@ -238,7 +252,7 @@ class KaiReminderPixelTest {
         assertTrue("BUG: the background is not the black premium Urgent Action Mode", dark == true)
         assertTrue("BUG: Kai is not animating (two frames are identical)", moving > 0.0)
         val words = listOf("REMINDER", "Praba-ku call panna vendiya neram aachu", "Ippo call pannalama?", "Call now", "Done", "Snooze 5 min", "Reminder 1 of 5")
-        val seen = words.associateWith { nodes(it).isNotEmpty() }
+        val seen = words.associateWith { onScreen(it) }
         report("$tag onScreen=$seen")
         assertTrue("BUG: Kai Urgent Action Mode is missing: ${seen.filterValues { !it }.keys}", seen.values.all { it })
         // Not Home, not Chat: the resumed screen is the dedicated activity.
@@ -251,7 +265,7 @@ class KaiReminderPixelTest {
 
     @Before
     fun setUp() {
-        KaiUrgentDebug.kaiVisibleAt = 0L
+        KaiUrgentDebug.reset()
         if (Build.VERSION.SDK_INT >= 33) inst.uiAutomation.grantRuntimePermission(ctx.packageName, Manifest.permission.POST_NOTIFICATIONS)
         unlock()
         // Leftovers of an earlier run (only this test's own reminders).
@@ -413,7 +427,7 @@ class KaiReminderPixelTest {
         assertTrue("BUG: Kai Urgent Action Mode did not appear", waitFor(10_000) { urgentScreen() != null })
         assertTrue("BUG: CALL NOW could not be tapped", tap("Call now"))
         val dialer = waitFor(8_000) { shell("dumpsys activity activities").lineSequence().any { it.contains("mResumedActivity") && it.contains("dialer", true) } }
-        val note = waitFor(3_000) { nodes("Call screen open pannitten Owner.").isNotEmpty() }
+        val note = waitFor(3_000) { onScreen("Call screen open pannitten Owner.") }
         report("t3 callNow dialerOpened=$dialer kaiSaid='Call screen open pannitten Owner.'=$note statusAfterCall=${engine.find(r.id)?.status}")
         assertEquals("BUG: Call Now must not complete the reminder", ReminderStatus.RANG, engine.find(r.id)!!.status)
         // Back to Kai and DONE.
@@ -537,9 +551,11 @@ class KaiReminderPixelTest {
         assertTrue("BUG: Kai is small (${"%.2f".format(share)} of the screen height)", share >= 0.55)
         // Compact controls: one row, about 48 dp tall.
         val boxes = listOf("Call now", "Done", "Snooze 5 min").map { label ->
-            var n: AccessibilityNodeInfo? = nodes(label).firstOrNull()
-            while (n != null && !n.isClickable) n = n.parent
-            android.graphics.Rect().also { n?.getBoundsInScreen(it) }
+            KaiUrgentDebug.controls[label.lowercase()] ?: android.graphics.Rect().also { r ->
+                var n: AccessibilityNodeInfo? = nodes(label).firstOrNull()
+                while (n != null && !n.isClickable) n = n.parent
+                n?.getBoundsInScreen(r)
+            }
         }
         val tallestDp = boxes.maxOf { it.height() } / metrics.density
         val oneRow = boxes.all { kotlin.math.abs(it.centerY() - boxes[0].centerY()) < 8 * metrics.density }

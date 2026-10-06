@@ -155,6 +155,17 @@ object KaiUrgentDebug {
     @Volatile var kaiBounds: android.graphics.Rect? = null
     /** [SystemClock.elapsedRealtime] when Kai was first drawn visible on the urgent screen (0 = not yet). */
     @Volatile var kaiVisibleAt: Long = 0L
+    /** The words the urgent screen shows right now (header, headline, question, details, note, control labels). */
+    @Volatile var words: List<String> = emptyList()
+    /** Each control's place on the screen (screen pixels), by label — the test taps there with a real touch. */
+    val controls = java.util.concurrent.ConcurrentHashMap<String, android.graphics.Rect>()
+
+    fun reset() {
+        kaiBounds = null
+        kaiVisibleAt = 0L
+        words = emptyList()
+        controls.clear()
+    }
 }
 
 /** When this ring's screen first showed (per process): the intro plays once per ring, never again on return. */

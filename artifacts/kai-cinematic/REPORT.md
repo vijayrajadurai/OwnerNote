@@ -18,6 +18,26 @@ renders: **active character.** The body moves (head, eyes, brows, shoulders, che
 the hand), there is no ring and no particle field, and the only effect is a faint floor light.
 **This still has to be confirmed on the Pixel 8.**
 
+## Round 5 — R7 result (000dbe3) and the device-test lookup
+
+R7 on the Pixel 8 emulator, comparing R6 with R7:
+
+| Check | R6 | R7 |
+|---|---|---|
+| Locked: ring → first word | 7.5 s | 3.6 s (cold process, first ring after login) |
+| Unlocked: ring → first word (t7) | 5.5 s | 1.1 s |
+| When the notification is removed | before Kai was visible | after Kai is visible (no empty gap) |
+| Done → "சரி ஓனர்." | — | 0.16 s |
+
+The **locked-screen test PASSED**, with `voice engine=sarvam` throughout.
+
+The remaining t1/t3/t6/t7 failures were the test's own in-process accessibility lookup: it found no
+text, although `uiautomator dump` from outside saw every word and button. The test now falls back to:
+- the words the urgent screen composed (`KaiUrgentDebug.words`);
+- a **real touch** (`input tap`) at each control's laid-out position on screen (`KaiUrgentDebug.controls`).
+
+Each tap logs `via=a11y` or `via=touch`.
+
 ## Round 4 — fixes for the R6 Pixel 8 report (43d7340)
 
 R6 confirmed these work:

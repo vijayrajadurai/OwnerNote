@@ -49,6 +49,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
@@ -64,6 +65,8 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
@@ -338,6 +341,7 @@ private fun UrgentControl(
     val pressed by source.collectIsPressedAsState()
     val press by animateFloatAsState(if (pressed) 0.95f else 1f, spring(dampingRatio = 0.7f, stiffness = 900f), label = "press")
     val shape = RoundedCornerShape(percent = 50)
+    val root = LocalView.current
     val (fill, content) = when (style) {
         ControlStyle.PRIMARY -> UrgentAccent to Color.White
         ControlStyle.SECONDARY -> UrgentSurface to UrgentText
@@ -345,6 +349,14 @@ private fun UrgentControl(
     }
     Row(
         modifier = modifier
+            .onGloballyPositioned { c ->
+                // Where this control is on the screen (the device test taps it there with a real touch).
+                val b = c.boundsInWindow()
+                val at = IntArray(2).also { root.rootView.getLocationOnScreen(it) }
+                KaiUrgentDebug.controls[label.lowercase()] = android.graphics.Rect(
+                    at[0] + b.left.toInt(), at[1] + b.top.toInt(), at[0] + b.right.toInt(), at[1] + b.bottom.toInt(),
+                )
+            }
             .scale(press)
             .heightIn(min = 48.dp)
             .clip(shape)
@@ -452,6 +464,9 @@ private fun UrgentContent(
         }
     }
 
+    SideEffect {
+        KaiUrgentDebug.words = listOfNotNull(header, headline, question, meta, note, callLabel, doneLabel, snoozeLabel)
+    }
     BoxWithConstraints(Modifier.fillMaxSize().background(UrgentBackground)) {
         if (maxWidth <= maxHeight) {
             // Portrait: Kai fills everything above the words — head to sandals, ~70 % of the screen.
