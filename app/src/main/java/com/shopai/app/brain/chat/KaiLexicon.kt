@@ -28,6 +28,7 @@ object KaiLexicon {
         nalla nallaa semma sari seri aama ama illa okva sapadu saapadu tea coffee
         call phone message remind reminder nyabagam marakkama
         owner sir anna akka thambi thangachi amma appa bro kai
+        நான் நீ நீங்க நீங்கள் உன் உங்க உங்கள் என் எனக்கு
     """.trim().split(Regex("""\s+""")).toSet()
 
     fun knows(word: String): Boolean = word.lowercase() in words

@@ -13,28 +13,70 @@ import java.util.Locale
  */
 object KaiSmallTalk {
 
-    enum class Kind { ATE, DOING, BUSY, TIRED, PRAISE, GREETING_MORNING, GREETING_AFTERNOON, GREETING_EVENING, GREETING_NIGHT, HELLO, HOW_ARE_YOU, THANKS, OK, BYE, WHO }
+    enum class Kind { ATE, DOING, BUSY, TIRED, STATUS, PRAISE, GREETING_MORNING, GREETING_AFTERNOON, GREETING_EVENING, GREETING_NIGHT, HELLO, HOW_ARE_YOU, THANKS, OK, BYE, NAME, WHO }
 
     private fun r(p: String) = Regex("""(?i)(?<![\p{L}])(?:$p)(?![\p{L}])""")
 
-    private val rules: List<Pair<Kind, Regex>> = listOf(
-        Kind.ATE to r("""saaptiya|saptiya|sapteya|saapteengala|sapteengala|saptingala|saaptingala|saapiteengala|saapadu\s*aachaa|saapadu\s*achaa|""" +
+    /** A whole Tamil-script word or phrase (Tamil vowel signs are marks, not letters). */
+    private fun ta(p: String) = Regex("""(?<![\p{L}\p{M}])(?:$p)(?![\p{L}\p{M}])""")
+
+    private fun anyOf(vararg r: Regex) = Regex(r.joinToString("|") { "(?:${it.pattern})" })
+
+    /**
+     * A small-talk kind: [said] matches the message as written; [family] matches its casual
+     * spelling key ([casualKey]) — the same question however it is spelled or heard
+     * ("saptiya", "saptia", "saptya", "saaptiyaa" are one word to Kai).
+     */
+    private class Rule(val kind: Kind, val said: Regex, val family: Regex? = null)
+
+    private val rules: List<Rule> = listOf(
+        Rule(Kind.ATE, r("""saaptiya|saptiya|sapteya|saapteengala|sapteengala|saptingala|saaptingala|saapiteengala|saapadu\s*aachaa|saapadu\s*achaa|""" +
             """saaptacha|saaptachaa|sapta|saapta|did you eat|have you eaten|had (?:your )?(?:lunch|dinner|breakfast)|lunch\s*aachaa|tiffin\s*aachaa"""),
-        Kind.HOW_ARE_YOU to r("""(?:eppadi|epdi|eppdi|yepdi)\s*irukk?eenga|(?:epdi|eppdi|yepdi)\s*irukk?a|eppadi\s*irukk?a|eppadi\s*iruka|nalla\s*irukk?eengala|nalla\s*irukk?iya|how are you|how r u|hows it going|how is it going"""),
-        Kind.DOING to r("""enna\s*panra|enna\s*panre|enna\s*panreenga|enna\s*pannitu\s*irukk?a|enna\s*pannikitu\s*irukk?a|what are you doing|wat r u doing|what's up|whats up|wassup"""),
-        Kind.BUSY to r("""busy|bijy|velai\s*adhigam|romba\s*velai|neraya\s*velai|time\s*illa"""),
-        Kind.TIRED to r("""tired|kalaippa|kalaipa|tiredah|tired-ah|soarvaa|sorva|mudiyala|thookam\s*varudhu|thookama"""),
-        Kind.GREETING_MORNING to r("""good\s*morning|gud\s*morning|gm"""),
-        Kind.GREETING_AFTERNOON to r("""good\s*afternoon"""),
-        Kind.GREETING_EVENING to r("""good\s*evening"""),
-        Kind.GREETING_NIGHT to r("""good\s*night|gn"""),
-        Kind.THANKS to r("""thanks|thank\s*you|thank u|thx|nandri|romba\s*nandri"""),
-        Kind.BYE to r("""bye|bye\s*bye|poitu\s*varen|poittu\s*varen|see you|apram\s*pesalam|appuram\s*pesalam"""),
-        Kind.WHO to r("""nee\s*yaaru|nee\s*yaar|neenga\s*yaaru|who are you|unga\s*peru\s*enna|un\s*peru\s*enna|your name"""),
-        Kind.PRAISE to r("""super|semma|nice|great|awesome|good\s*job|well\s*done|sema"""),
-        Kind.HELLO to r("""hi|hii|hello|helo|hey|vanakkam|vanakam|kai"""),
-        Kind.OK to r("""ok|okay|okk|seri|sari|good"""),
+            // "saap(pi)t" + a question ending (-aa, -iya, -ingala, -acha); "saapten" / "saapadu" are not asking.
+            family = anyOf(r("""sapi?t(?:[ie]?ya|[ie]ngala|acha|a)|did u eat|have u eaten"""), ta("""சாப்[\p{L}\p{M}]*ா"""))),
+        Rule(Kind.HOW_ARE_YOU, r("""(?:eppadi|epdi|eppdi|yepdi)\s*irukk?eenga|(?:epdi|eppdi|yepdi)\s*irukk?a|eppadi\s*irukk?a|eppadi\s*iruka|nalla\s*irukk?eengala|nalla\s*irukk?iya|how are you|how r u|hows it going|how is it going"""),
+            family = r("""(?:epadi|epdi|yepdi|yepadi) iru(?:ka|kiya|kinga|kenga|kingala|kengala)|nala iru(?:kiya|kingala|kengala)""")),
+        Rule(Kind.DOING, r("""enna\s*panra|enna\s*panre|enna\s*panreenga|enna\s*pannitu\s*irukk?a|enna\s*pannikitu\s*irukk?a|what are you doing|wat r u doing|what's up|whats up|wassup""")),
+        // Asking how Kai is ("romba tired ah iruka?", "busy ah irukiya?", "are you tired?") — not the owner saying they are.
+        Rule(Kind.STATUS, r("""are you (?:tired|busy|free|ok|okay)|r u (?:tired|busy|free)"""),
+            family = r("""(?:tired|busy|bijy|kalaipa|sorva)(?: ah?)? iru(?:ka|kiya|kinga|kingala|kengala)""")),
+        Rule(Kind.BUSY, r("""busy|bijy|velai\s*adhigam|romba\s*velai|neraya\s*velai|time\s*illa""")),
+        Rule(Kind.TIRED, r("""tired|kalaippa|kalaipa|tiredah|tired-ah|soarvaa|sorva|mudiyala|thookam\s*varudhu|thookama""")),
+        Rule(Kind.GREETING_MORNING, r("""good\s*morning|gud\s*morning|gm""")),
+        Rule(Kind.GREETING_AFTERNOON, r("""good\s*afternoon""")),
+        Rule(Kind.GREETING_EVENING, r("""good\s*evening""")),
+        Rule(Kind.GREETING_NIGHT, r("""good\s*night|gn""")),
+        Rule(Kind.THANKS, r("""thanks|thank\s*you|thank u|thx|nandri|romba\s*nandri"""), family = r("""thanks?|thank ?u|thanku|tq|tnx|tanks|nandri|nanri""")),
+        Rule(Kind.BYE, r("""bye|bye\s*bye|poitu\s*varen|poittu\s*varen|see you|apram\s*pesalam|appuram\s*pesalam""")),
+        // Kai's name: "un name enna?", "unga peru enna?", "what's your name?", "உன் பேர் என்ன?".
+        Rule(Kind.NAME, r("""unga\s*peru\s*enna|un\s*peru\s*enna|your name"""),
+            family = anyOf(
+                r("""(?:un|unga|ungal|unoda|ungaloda|your|ur) (?:name|per|peru|pere|peyar|peyaru)|what is (?:your|ur) name|whats (?:your|ur) name"""),
+                ta("""(?:உன்|உங்க|உங்கள்|உன்னோட|உங்களோட)\s*(?:பேர்|பேரு|பெயர்)"""),
+            )),
+        // Who Kai is: "nee yaaru?", "who are you?", "நீ யாரு?".
+        Rule(Kind.WHO, r("""nee\s*yaaru|nee\s*yaar|neenga\s*yaaru|who are you"""),
+            family = anyOf(
+                r("""(?:ni|ne|nenga|ningal) yaru?|yaru? (?:ni|ne|nenga)|who (?:are|r) (?:you|u)"""),
+                ta("""(?:நீ|நீங்க|நீங்கள்)\s*(?:யாரு|யார்)|(?:யாரு|யார்)\s*(?:நீ|நீங்க)"""),
+            )),
+        Rule(Kind.PRAISE, r("""super|semma|nice|great|awesome|good\s*job|well\s*done|sema""")),
+        Rule(Kind.HELLO, r("""hi|hii|hello|helo|hey|vanakkam|vanakam|kai"""), family = r("""hi|helo|hey|vanakam""")),
+        Rule(Kind.OK, r("""ok|okay|okk|seri|sari|good"""), family = r("""ok|okay|hm""")),
     )
+
+    /**
+     * The message's casual spelling key — used ONLY to recognise small talk, never passed on:
+     * lower case, repeated letters once ("saaptiyaa" → "saptiya"), and "consonant-y-vowel" /
+     * a final "-ia" spelled as "-iya" ("saptya", "saptia" → "saptiya"). Messages with names,
+     * amounts or business words never get here (they are not small talk, see [kindOf]).
+     */
+    internal fun casualKey(text: String): String = text.lowercase(Locale.ROOT)
+        .replace(Regex("""(\p{L})\1+"""), "$1")
+        .replace(Regex("""(?<=[bcdfghjklmnpqrstvwxz])y(?=[aeiou])"""), "iy")
+        .replace(Regex("""(?<=[bcdfghjklmnpqrstvwxz])ia(?![\p{L}])"""), "iya")
+        .replace(Regex("""\s+"""), " ")
+        .trim()
 
     /** Words that make a message business, not chit-chat. */
     private val business = r(
@@ -47,7 +89,8 @@ object KaiSmallTalk {
         val text = KaiSpokenWords.normalize(raw).lowercase(Locale.ROOT).replace(Regex("""[^\p{L}\p{M}\s']"""), " ").replace(Regex("""\s+"""), " ").trim()
         if (text.isEmpty() || raw.any(Char::isDigit) || business.containsMatchIn(text)) return null
         if (text.split(' ').size > 8) return null
-        return rules.firstOrNull { it.second.containsMatchIn(text) }?.first
+        val key = casualKey(text)
+        return rules.firstOrNull { it.said.containsMatchIn(text) || it.family?.containsMatchIn(key) == true }?.kind
     }
 
     /** Kai's answer in the owner's language, or null when it isn't small talk. */
@@ -100,6 +143,16 @@ object KaiSmallTalk {
             Kind.THANKS -> pick("பரவாயில்ல ஓனர் 🙏", "Welcome Owner 🙏 Eppo venumnaalum sollunga.", "You're welcome, Owner 🙏")
             Kind.OK -> pick("சரி ஓனர் 👍", "Seri Owner 👍", "Okay, Owner 👍")
             Kind.BYE -> pick("சரி ஓனர், அப்புறம் பேசலாம் 👋", "Seri Owner, apram pesalaam 👋", "Okay Owner, talk soon 👋")
+            Kind.STATUS -> pick(
+                "கொஞ்சம் busy தான் ஓனர் 😄 ஆனா உங்களுக்கு எப்பவும் ready. என்ன உதவி வேணும்?",
+                "Konjam busy dhaan Owner 😄 Aana ungalukku eppavum ready. Enna help venum?",
+                "A little busy, Owner 😄 but always ready for you. What do you need?",
+            )
+            Kind.NAME -> pick(
+                "என் பேர் Kai ஓனர் 😊 நான் உங்க business assistant.",
+                "En peru Kai Owner 😊 Naan unga business assistant.",
+                "My name is Kai, Owner 😊 I'm your business assistant.",
+            )
             Kind.WHO -> pick(
                 "நான் Kai — உங்க கடை உதவியாளர் 😊 கணக்கு, stock, reminder, bill எல்லாம் பார்த்துக்கறேன்.",
                 "Naan Kai — unga kadai assistant 😊 Kanakku, stock, reminder, bill ellam paathukaren.",

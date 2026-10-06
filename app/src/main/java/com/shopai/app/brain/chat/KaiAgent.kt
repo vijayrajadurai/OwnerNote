@@ -257,6 +257,8 @@ class KaiAgent(
     private val stockPlans = LinkedHashMap<String, StockPlan>()
     /** The product just talked about ("Colgate stock low ah?" … "20 add pannu"). */
     private var lastProduct: com.shopai.app.brain.tools.ProductRef? = null
+    /** "athula", "adhu", "idhula" — the product just talked about, when no product is named. */
+    private val productReference = Regex("""(?i)(?<![\p{L}])(?:athula|adhula|athila|adhila|athil|adhil|idhula|ithula|athu|adhu|idhu|ithu)(?![\p{L}])|அதுல|அதில்|இதுல""")
     private var stockQuestion: StockQuestion? = null
     /** The last morning brief (Skip → its next task). */
     private var lastBrief: com.shopai.app.brain.morning.MorningBrief? = null
@@ -629,7 +631,12 @@ class KaiAgent(
     // ------------------------------------------------------------ stock in / out
 
     private suspend fun stockChange(text: String, said: String, lang: KaiLang, products: List<com.shopai.app.brain.tools.ProductRef>, people: List<String>): KaiTurn? {
-        val req = com.shopai.app.brain.tools.KaiStock.understand(text, products)
+        val direct = com.shopai.app.brain.tools.KaiStock.understand(text, products)
+        // "athula 5 pochu" after talking about Colgate: "athula" is Colgate, not a new product — only when no product is named.
+        val referred = if (direct?.product != null) null else lastProduct
+            ?.takeIf { KaiCommands.personIn(text, people) == null && productReference.containsMatchIn(text) }
+            ?.let { p -> com.shopai.app.brain.tools.KaiStock.understand(productReference.replace(text, p.name), products)?.takeIf { it.product?.id == p.id } }
+        val req = referred ?: direct
             // "20 add pannu" after talking about Colgate — never when someone else is named (that is a payment).
             ?: lastProduct?.takeIf { KaiCommands.personIn(text, people) == null }
                 ?.let { p -> com.shopai.app.brain.tools.KaiStock.understand("${p.name} $text", products)?.takeIf { it.product?.id == p.id } }
