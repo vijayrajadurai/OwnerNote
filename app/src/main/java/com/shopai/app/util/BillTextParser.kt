@@ -3,8 +3,39 @@ package com.shopai.app.util
 import java.math.BigDecimal
 import java.math.RoundingMode
 
-/** One itemised line of a bill: what it was and what it cost. */
-data class BillLineItem(val description: String, val amount: BigDecimal)
+/**
+ * One itemised line of a bill: what it was and what it cost. On a GST table
+ * row the HSN/SAC code, quantity, unit and unit price are read too — only
+ * when qty × unit price comes to the line amount (never guessed).
+ */
+data class BillLineItem(
+    val description: String,
+    val amount: BigDecimal,
+    val hsn: String? = null,
+    val quantity: BigDecimal? = null,
+    val unit: String? = null,
+    val unitPrice: BigDecimal? = null,
+)
+
+/** CGST / SGST (or UTGST) / IGST as printed; [suspect] when the lines disagree with each other. */
+data class GstBreakdown(
+    val cgst: BigDecimal?,
+    val sgst: BigDecimal?,
+    val igst: BigDecimal?,
+    /** A plain "Tax / GST amount" line when no CGST/SGST/IGST line is printed. */
+    val otherTax: BigDecimal?,
+    /** GST rates printed next to the tax lines ("@9%" → 9). Rates, never money. */
+    val rates: List<BigDecimal>,
+    val suspect: Boolean,
+) {
+    /** CGST + SGST, or IGST, or the plain tax line; null when no tax is printed. */
+    val total: BigDecimal?
+        get() = when {
+            cgst != null && sgst != null -> cgst + sgst
+            igst != null -> igst
+            else -> otherTax
+        }
+}
 
 /**
  * What could be read from a bill photo. Every field is optional; the
@@ -28,8 +59,23 @@ data class ExtractedBill(
     val paid: BigDecimal? = null,
     /** "Invoice No: INV-2041" / "Bill No. 118". */
     val invoiceNumber: String? = null,
-    /** The tax on the bill: CGST + SGST, or IGST, or a "Tax / GST" line. */
+    /**
+     * The tax on the bill: CGST + SGST, or IGST, or a "Tax / GST" line — null
+     * when it isn't printed or when the checks ([check]) found it impossible.
+     */
     val tax: BigDecimal? = null,
+    /** "Taxable Value" / "Sub Total" before tax, when printed. */
+    val taxableValue: BigDecimal? = null,
+    /** CGST / SGST / IGST as read (all rate lines added up); see [check] before trusting them. */
+    val gst: GstBreakdown? = null,
+    val roundOff: BigDecimal? = null,
+    /** "Discount 100.00" / "Less: Discount" (the amount; a "10%" rate alone is not read as money). */
+    val discount: BigDecimal? = null,
+    /** The issuer's GSTIN (first one on the bill) and the buyer's, each with its checksum result. */
+    val sellerGstin: GstinRead? = null,
+    val buyerGstin: GstinRead? = null,
+    /** Financial and field checks on what was read: READY / REVIEW_REQUIRED / INVALID / PARTIAL. */
+    val check: BillCheck = BillCheck.READY_EMPTY,
 )
 
 /** What could be read from a handwritten note. */
@@ -103,6 +149,9 @@ object BillTextParser {
         "discount", "round", "roundoff", "cash", "change", "balance", "paid", "tender", "upi",
         "card", "savings", "saved", "mrp", "invoice", "bill no", "date", "time", "phone", "mobile",
         "ph", "mob", "gstin", "fssai", "qty", "items", "rate", "amount", "amt", "tel", "mode",
+        // GST invoice summary / footer rows: "Taxable Value 4,000.00" is not something bought.
+        "taxable", "utgst", "terms", "declaration", "summary", "signature", "authorised", "authorized",
+        "ifsc", "a/c", "e & o.e", "e.& o.e", "e. & o.e",
         "மொத்தம்",
     )
 
@@ -123,9 +172,7 @@ object BillTextParser {
     private val maxPlausibleAmount = BigDecimal("10000000")
 
     fun parse(ocrText: String): ExtractedBill {
-        val lines = ocrText.lines()
-            .map { it.replace('\t', ' ').replace(Regex("""\s+"""), " ").trim() }
-            .filter { it.isNotEmpty() }
+        val lines = cleanLines(ocrText)
 
         val (labelledTotal, totalLineIndex) = findLabelledTotal(lines)
         // "Rupees Thirty One Thousand ... Only": letters survive OCR far
@@ -144,7 +191,9 @@ object BillTextParser {
             else -> largestAmount(lines)
         }
         val items = findItems(lines, endExclusive = totalLineIndex ?: lines.size)
-        return ExtractedBill(
+        val gst = gstBreakdown(lines)
+        val gstins = GstinReader.findAll(lines)
+        val read = ExtractedBill(
             merchantName = findMerchantName(lines),
             total = total,
             totalFromLabel = labelledTotal != null || wordsTotal != null || gstTotal != null,
@@ -154,8 +203,65 @@ object BillTextParser {
             customerName = findCustomerName(lines),
             paid = findPaid(lines, total),
             invoiceNumber = findInvoiceNumber(lines),
-            tax = findTax(lines),
+            tax = gst.total,
+            taxableValue = findTaxableValue(lines),
+            gst = gst,
+            roundOff = findRoundOff(lines),
+            discount = findDiscount(lines),
+            sellerGstin = gstins.firstOrNull { !it.buyer },
+            buyerGstin = gstins.firstOrNull { it.buyer },
         )
+        val check = BillValidation.check(read, lines)
+        // A tax the checks found impossible (e.g. a dropped decimal point: "436.20" read as "43620")
+        // is never shown as read — the owner is asked to check the bill instead.
+        return read.copy(tax = read.tax?.takeUnless { check.has(BillIssue.TAX_IMPOSSIBLE) }, check = check)
+    }
+
+    /** The OCR text as lines: spaces tidied, Tamil letters slipped into English label words removed. */
+    internal fun cleanLines(ocrText: String): List<String> = ocrText.lines()
+        .map { repairMixedScript(it.replace('\t', ' ').replace(Regex("""\s+"""), " ").trim()) }
+        .filter { it.isNotEmpty() }
+
+    // Bill label words the eng+tam model garbles with a Tamil letter ("Taxaபble", "Invoிce", "Toடtal").
+    private val labelWords = listOf(
+        "total", "grand", "invoice", "taxable", "value", "amount", "cgst", "sgst", "igst", "utgst", "discount", "round",
+        "terms", "conditions", "gstin", "date", "bill", "subtotal", "declaration", "authorised", "signatory", "rate", "qty",
+    )
+    private val tamilLetters = Regex("""[\u0B80-\u0BFF]+""")
+
+    /**
+     * A word mixing Latin letters and Tamil script is an OCR slip, never real
+     * text: the Tamil letters are dropped, and when what is left is one letter
+     * away from a bill label word ("Invoce" → "Invoice") the label is restored.
+     * Pure-Tamil words (a Tamil shop name) are left alone.
+     */
+    internal fun repairMixedScript(line: String): String {
+        if (!tamilLetters.containsMatchIn(line)) return line
+        return line.split(' ').joinToString(" ") { word ->
+            val latin = word.count { it in 'A'..'Z' || it in 'a'..'z' }
+            if (latin < 2 || !tamilLetters.containsMatchIn(word)) return@joinToString word
+            val stripped = word.replace(tamilLetters, "")
+            val core = stripped.trimEnd(':', '.', ',', '-')
+            val label = labelWords.firstOrNull { editDistance(core.lowercase(), it) <= 1 && it.length >= 4 }
+            if (label == null) stripped else matchCase(core, label) + stripped.substring(core.length)
+        }
+    }
+
+    private fun matchCase(like: String, word: String) = when {
+        like.all { !it.isLetter() || it.isUpperCase() } -> word.uppercase()
+        like.firstOrNull()?.isUpperCase() == true -> word.replaceFirstChar { it.uppercase() }
+        else -> word
+    }
+
+    private fun editDistance(a: String, b: String): Int {
+        if (kotlin.math.abs(a.length - b.length) > 1) return 2
+        val d = Array(a.length + 1) { IntArray(b.length + 1) }
+        for (i in 0..a.length) d[i][0] = i
+        for (j in 0..b.length) d[0][j] = j
+        for (i in 1..a.length) for (j in 1..b.length) {
+            d[i][j] = minOf(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + if (a[i - 1] == b[j - 1]) 0 else 1)
+        }
+        return d[a.length][b.length]
     }
 
     // ---- Invoice number / tax ----
@@ -168,18 +274,87 @@ object BillTextParser {
         invoiceNo.find(line)?.groupValues?.get(1)?.takeIf { it.any(Char::isDigit) }
     }
 
-    /** CGST + SGST (or UTGST), or IGST, or a "Total tax / GST" line; null when the bill shows no tax. */
-    private fun findTax(lines: List<String>): BigDecimal? {
-        fun taxLine(word: String): BigDecimal? = lines.firstNotNullOfOrNull { line ->
-            val key = labelKey(line)
-            if (!key.startsWith(word) || isTaxSummaryRow(line)) null else lastAmount(line)
+    private val ratePercent = Regex("""(\d{1,2}(?:[.,]\d{1,2})?)\s*%""")
+
+    /**
+     * CGST / SGST (UTGST) / IGST from every tax line on the bill — a bill with
+     * items at 5 %, 12 % and 18 % prints one CGST and one SGST line per rate,
+     * and all of them count. "@9%" is a rate, never an amount. When a line
+     * without a rate repeats the sum of the rate lines (the footer total), it
+     * is not counted twice; when it doesn't match, the breakdown is [GstBreakdown.suspect].
+     */
+    internal fun gstBreakdown(lines: List<String>): GstBreakdown {
+        var suspect = false
+        val rates = mutableListOf<BigDecimal>()
+        fun component(vararg words: String): BigDecimal? {
+            val rated = mutableListOf<BigDecimal>()
+            val plain = mutableListOf<BigDecimal>()
+            lines.forEachIndexed { i, line ->
+                val key = labelKey(line)
+                if (words.none { key.startsWith(it) } || isTaxSummaryRow(line)) return@forEachIndexed
+                // The amount on the line, or alone on the next line ("CGST @ 9%" / "90.00").
+                val amount = lastAmount(line)
+                    ?: lines.getOrNull(i + 1)?.takeIf { labelKey(it).isEmpty() && !ratePercent.containsMatchIn(it) }?.let { lastAmount(it) }
+                    ?: return@forEachIndexed
+                val rate = ratePercent.find(line)?.groupValues?.get(1)?.replace(',', '.')?.toBigDecimalOrNull()
+                if (rate != null) { rated += amount; rates += rate } else plain += amount
+            }
+            val ratedSum = rated.fold(BigDecimal.ZERO, BigDecimal::add)
+            return when {
+                rated.isEmpty() && plain.isEmpty() -> null
+                plain.isEmpty() -> ratedSum
+                rated.isEmpty() -> when {
+                    plain.size == 1 -> plain.single()
+                    // "CGST 12.50 / CGST 90.00 / CGST 102.50": the last line is the total of the others.
+                    plain.size >= 3 && near(plain.last(), plain.dropLast(1).fold(BigDecimal.ZERO, BigDecimal::add)) -> plain.last()
+                    else -> plain.fold(BigDecimal.ZERO, BigDecimal::add)
+                }
+                // Rate lines plus a footer line: the footer must be their sum.
+                plain.any { near(it, ratedSum) } -> ratedSum
+                else -> { suspect = true; ratedSum }
+            }
         }
-        val cgst = taxLine("cgst")
-        val sgst = taxLine("sgst") ?: taxLine("utgst")
-        return when {
-            cgst != null && sgst != null -> cgst + sgst
-            else -> taxLine("igst") ?: taxLine("total tax") ?: taxLine("tax amount") ?: taxLine("gst amount") ?: taxLine("gst")
+        val cgst = component("cgst")
+        val sgst = component("sgst", "utgst")
+        val igst = component("igst")
+        val other = if (cgst == null && sgst == null && igst == null) {
+            listOf("totaltax", "taxamount", "gstamount", "gst").firstNotNullOfOrNull { word ->
+                lines.firstNotNullOfOrNull { line ->
+                    val key = labelKey(line)
+                    // "GSTIN: 33AB…" / "GST No" is an identity line, not a tax amount.
+                    if (!key.startsWith(word) || key.startsWith("gstin") || key.startsWith("gstno") || isTaxSummaryRow(line)) null
+                    else lastAmount(line)
+                }
+            }
+        } else null
+        // Only CGST or only SGST: half of the tax is missing.
+        if ((cgst == null) != (sgst == null)) suspect = true
+        return GstBreakdown(cgst, sgst, igst, other, rates.distinct(), suspect)
+    }
+
+    private fun near(a: BigDecimal, b: BigDecimal) = (a - b).abs() <= BigDecimal("0.05")
+
+    /** "Taxable Value 10,000.00", "Taxable Amount", "Sub Total" — the value before tax. */
+    private fun findTaxableValue(lines: List<String>): BigDecimal? =
+        listOf("totaltaxablevalue", "taxablevalue", "taxableamount", "taxableamt", "taxable", "subtotal").firstNotNullOfOrNull { word ->
+            lines.indices.reversed().firstNotNullOfOrNull { i ->
+                val line = lines[i]
+                if (!labelKey(line).startsWith(word) || isTaxSummaryRow(line)) null
+                else lastAmount(line) ?: lines.getOrNull(i + 1)?.takeIf { labelKey(it).isEmpty() }?.let { lastAmount(it) }
+            }
         }
+
+    private fun findDiscount(lines: List<String>): BigDecimal? = lines.firstNotNullOfOrNull { line ->
+        val key = labelKey(line)
+        if (!(key.startsWith("discount") || key.startsWith("lessdiscount") || key.startsWith("less")) || !key.contains("discount")) null
+        else lastAmount(line)
+    }
+
+    /** "Round Off (-) 0.40" → -0.40; "Round Off 0.50" → 0.50 (the sign as printed). */
+    private fun findRoundOff(lines: List<String>): BigDecimal? = lines.firstNotNullOfOrNull { line ->
+        if (!labelKey(line).startsWith("round")) return@firstNotNullOfOrNull null
+        val amount = lastAmount(line, allowZero = true) ?: return@firstNotNullOfOrNull null
+        if (Regex("""\(-\)|-\s*\d|less""", RegexOption.IGNORE_CASE).containsMatchIn(line)) amount.negate() else amount
     }
 
     // ---- Customer name ----
@@ -197,9 +372,21 @@ object BillTextParser {
             cleanCustomer(value)
         } ?: buyerOnNextLine(lines)
 
+    /** A "Buyer / Bill to / Customer" heading is printed, so the bill names a buyer (read or not). */
+    internal fun namesABuyer(lines: List<String>): Boolean =
+        lines.any { buyerHeading.containsMatchIn(it) || customerLabel.find(it)?.groupValues?.get(0)?.lowercase()?.let { l -> !l.startsWith("name") } == true }
+
+    // "Bill To:            Invoice No: CSH-2041": the right-hand column, with the name on the next line.
+    private val sideColumnStart = Regex(
+        """^(?:inv(?:oice)?\.?\s*(?:no|number|#|date)|bill\s*no|dated|date\s*[:\-]|dispatch|delivery\s*note|place\s*of\s*supply|state\s*(?:name|code)|gstin|e-?way)\b""",
+        RegexOption.IGNORE_CASE,
+    )
+
     private fun cleanCustomer(value: String): String? {
         val lower = value.lowercase()
         if (notAName.any { lower.startsWith(it) && (lower.length == it.length || !lower[it.length].isLetter()) }) return null
+        // Never a name: another field from the next column.
+        if (sideColumnStart.containsMatchIn(value.trim())) return null
         // Drop a phone number or other digits printed after the name.
         return value.replace(Regex("""[\d+()]{4,}.*$"""), "")
             .replace(sideColumnFields, "")
@@ -219,7 +406,7 @@ object BillTextParser {
     // The right-hand header column OCR merges into the same line
     // ("SAMPATHI CREDITS PRIVATE LIMITED Dispatch Doc No.").
     private val sideColumnFields = Regex(
-        """\s+(?:dispatch|delivery\s*note|invoice\s*no|dated|buyer'?s\s*order|reference|other\s*references|mode\s*/?\s*terms|terms\s*of|destination|e-?way).*$""",
+        """\s+(?:dispatch|delivery\s*note|inv(?:oice)?\.?\s*(?:no|number|#|date)|bill\s*no|dated|date\s*[:\-]|place\s*of\s*supply|buyer'?s\s*order|reference|other\s*references|mode\s*/?\s*terms|terms\s*of|destination|e-?way).*$""",
         RegexOption.IGNORE_CASE,
     )
 
@@ -230,7 +417,8 @@ object BillTextParser {
             (" " + line.substring(m.range.last + 1)).replace(sideColumnFields, "").isBlank()
         }
         if (index < 0) return null
-        val next = lines.getOrNull(index + 1) ?: return null
+        // "Ravi Traders         Date: 12/09/2026": the right-hand column goes first.
+        val next = lines.getOrNull(index + 1)?.replace(sideColumnFields, "")?.trim() ?: return null
         val lower = next.lowercase()
         if (looksLikeMetadata(lower) || lower.startsWith("gstin") || lower.startsWith("no.")) return null
         return cleanCustomer(next)?.takeIf { name -> name.count { it.isLetter() } >= 3 && !name.first().isDigit() }
@@ -384,7 +572,8 @@ object BillTextParser {
     private fun isTaxSummaryRow(line: String): Boolean =
         moneyWithPaise.findAll(line).count() >= 3
 
-    private val moneyWithPaise = Regex("""(?<![\d.,])\d[\d,]*[.,]\d{2}(?![\d])""")
+    // "9.00%" is a rate with two decimals, not money.
+    private val moneyWithPaise = Regex("""(?<![\d.,])\d[\d,]*[.,]\d{2}(?![\d])(?!\s*%)""")
 
     // "Sub Total", "Total Qty", "Total Items", "Total Tax" are not the bill total.
     private fun isNotTheBillTotal(key: String): Boolean =
@@ -425,9 +614,81 @@ object BillTextParser {
             val description = line.replace(trailingNumbersRegex, "")
                 .trim(' ', '-', ':', '.', '|', '*')
             if (description.count { it.isLetter() } < 2) continue
-            items += BillLineItem(description, amount)
+            items += itemColumns(line, description, amount)
         }
         return items
+    }
+
+    // "Basmati Rice 1006 18 % 10 KG 85.00 850.00": HSN, GST rate, qty, unit, rate, amount.
+    // The HSN code is followed by numbers (rate / qty), never by words ("Mixer 1000 Watt" is a name).
+    private val hsnInDescription = Regex("""^(.*\p{L}.*?)\s+(\d{4}|\d{6}|\d{8})(?=\s+\d|$)(.*)$""")
+    private val itemUnits = setOf("nos", "no", "pcs", "pc", "kg", "kgs", "g", "gm", "gms", "l", "ltr", "ml", "btl", "pkt", "box", "bag", "bags", "dozen", "doz", "set", "mtr", "m", "unit", "units", "each", "ea")
+
+    /**
+     * Splits a GST table row: the HSN/SAC code leaves the description, and the
+     * quantity / unit / unit price are kept only when qty × price = the line
+     * amount (within a paisa per unit). A leading serial number ("1 ", "2.")
+     * is dropped when the row has an HSN code.
+     */
+    private fun itemColumns(line: String, description: String, amount: BigDecimal): BillLineItem {
+        var desc = description
+        var hsn: String? = null
+        hsnInDescription.find(desc)?.let { m ->
+            hsn = m.groupValues[2]
+            desc = m.groupValues[1].replace(Regex("""^\d{1,3}[.)]?\s+(?=\p{L})"""), "").trim(' ', '-', ':', '.', '|', '*')
+        }
+        // Numbers after the description (after the HSN code), in order; rates ("18 %") are not quantities or prices.
+        val start = hsn?.let { h -> line.indexOf(h).takeIf { it >= 0 }?.plus(h.length) }
+            ?: (line.indexOf(description).coerceAtLeast(0) + description.length)
+        val tail = line.substring(start)
+        val tokens = numberToken.findAll(tail).filterNot { isPercent(tail, it) }.toList()
+        var values = tokens.map { m -> m to tokenAmountOrZero(m.groupValues[1]) }
+        // "Basmati Rice 1006 10 85.00 850.00": a bare 4/6/8-digit first column is the HSN code.
+        if (hsn == null && values.size >= 4 && Regex("""\d{4}|\d{6}|\d{8}""").matches(values.first().first.groupValues[1])) {
+            hsn = values.first().first.groupValues[1]
+            values = values.drop(1)
+        }
+        var quantity: BigDecimal? = null
+        var unitPrice: BigDecimal? = null
+        var unit: String? = null
+        val before = values.dropLast(1).filter { (m, v) -> v != null && m.groupValues[1] != hsn }
+        loop@ for (i in before.indices) for (j in i + 1 until before.size) {
+            val q = before[i].second!!
+            val p = before[j].second!!
+            if (q.signum() <= 0 || p.signum() <= 0) continue
+            val tolerance = BigDecimal("0.01").max(q.multiply(BigDecimal("0.01")))
+            if ((q.multiply(p) - amount).abs() <= tolerance) {
+                quantity = q.stripTrailingZeros().let { if (it.scale() < 0) it.setScale(0) else it }
+                unitPrice = p
+                unit = tail.substring(before[i].first.range.last + 1).trim().split(' ').firstOrNull()
+                    ?.lowercase()?.trim('.', ',')?.takeIf { it in itemUnits }
+                break@loop
+            }
+        }
+        // "Cashew 0.5 kg 900.00 450.00": the quantity and unit are at the end of the description.
+        if (quantity == null) {
+            qtyAtEnd.find(desc)?.let { m ->
+                val q = m.groupValues[1].replace(',', '.').toBigDecimalOrNull() ?: return@let
+                val prices = values.dropLast(1).mapNotNull { it.second }
+                val p = prices.firstOrNull { p -> q.signum() > 0 && (q.multiply(p) - amount).abs() <= BigDecimal("0.01").max(q.multiply(BigDecimal("0.01"))) }
+                    ?: return@let
+                quantity = q.stripTrailingZeros().let { if (it.scale() < 0) it.setScale(0) else it }
+                unitPrice = p
+                unit = m.groupValues[2].lowercase()
+                desc = desc.substring(0, m.range.first).trim()
+            }
+        }
+        return BillLineItem(desc, amount, hsn, quantity, unit, unitPrice)
+    }
+
+    // A quantity with a space before its unit ("0.5 kg"); "5kg" glued to the name is a pack size.
+    private val qtyAtEnd = Regex("""\s(\d+(?:[.,]\d+)?)\s+(${itemUnitsPattern()})\.?$""", RegexOption.IGNORE_CASE)
+
+    private fun itemUnitsPattern() = listOf("nos", "no", "pcs", "pc", "kgs", "kg", "gms", "gm", "g", "ltr", "ml", "l", "btl", "pkt", "box", "bags", "bag", "dozen", "doz", "set", "mtr", "m", "units", "unit", "each", "ea").joinToString("|")
+
+    private fun tokenAmountOrZero(token: String): BigDecimal? {
+        val plain = token.replace(",", "")
+        return plain.toBigDecimalOrNull()?.takeIf { plain.count { it == '.' } <= 1 } ?: tokenAmount(token, allowZero = false)
     }
 
     // "SRI BALAJI  GSTIN : 33AB…" read as one line → keep "SRI BALAJI".
@@ -451,7 +712,8 @@ object BillTextParser {
             Regex("""\d{10}""").containsMatchIn(lower.replace(" ", "")) && !lower.contains('.')
 
     private fun lastAmount(line: String, mustEndLine: Boolean = false, allowZero: Boolean = false): BigDecimal? {
-        val match = numberToken.findAll(line).lastOrNull() ?: return null
+        // "CGST 90.00 @ 9%": a number followed by % is a rate, never money.
+        val match = numberToken.findAll(line).lastOrNull { !isPercent(line, it) } ?: return null
         val rest = line.substring(match.range.last + 1)
         // A number glued to letters (e.g. "5kg", "B12") is not a price.
         if (rest.firstOrNull()?.isLetter() == true) return null
@@ -462,7 +724,10 @@ object BillTextParser {
 
     /** Every money amount on a line (used to confirm the amount in words). */
     private fun amountsIn(line: String): List<BigDecimal> =
-        numberToken.findAll(line).mapNotNull { tokenAmount(it.groupValues[1], allowZero = false) }.toList()
+        numberToken.findAll(line).filterNot { isPercent(line, it) }.mapNotNull { tokenAmount(it.groupValues[1], allowZero = false) }.toList()
+
+    private fun isPercent(line: String, match: MatchResult): Boolean =
+        line.substring(match.range.last + 1).trimStart().startsWith("%")
 
     // A run of digits with any "," / "." separators, e.g. 31,930.00 / 31.930,00.
     private val numberToken = Regex("""(?:₹|rs\.?|inr)?\s*(\d[\d.,]*\d|\d)""", RegexOption.IGNORE_CASE)

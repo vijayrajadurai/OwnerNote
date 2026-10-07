@@ -1,0 +1,1441 @@
+[
+ {
+  "id": "TXT-001",
+  "kind": "single",
+  "corruption": null,
+  "text": "SRI LAKSHMI TRADERS\nGSTIN: 33HMCKV9914E1Z0\nTAX INVOICE\nInvoice No: SRI-1000\nDate: 10/09/2026\nBill To: Kumar Stores\nGSTIN: 33STDDR0318F1ZB\nDescription HSN Qty Rate Amount\nBasmati Rice 1006 11 kg 268.30 2,951.30\nSugar 1701 12 kg 796.74 9,560.88\nTaxable Value 12,512.18\nCGST @ 2.5% 312.80\nSGST @ 2.5% 312.80\nGrand Total 13,137.78\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "13137.78",
+   "tax": "625.60",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Kumar Stores",
+   "sellerGstin": "33HMCKV9914E1Z0",
+   "items": [
+    [
+     "Basmati Rice",
+     "2951.30"
+    ],
+    [
+     "Sugar",
+     "9560.88"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-002",
+  "kind": "multi",
+  "corruption": null,
+  "text": "MURUGAN AGENCIES\nGSTIN: 33RHAUL4803T1ZC\nTAX INVOICE\nInvoice No: MUR-1001\nDate: 11/09/2026\nBill To: Ravi Traders\nGSTIN: 33BBZCB0080Q1ZZ\nDescription HSN Qty Rate Amount\nSugar 1701 11 kg 833.64 9,170.04\nTaxable Value 9,170.04\nCGST @ 9% 825.30\nSGST @ 9% 825.30\nGrand Total 10,820.64\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "10820.64",
+   "tax": "1650.60",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Ravi Traders",
+   "sellerGstin": "33RHAUL4803T1ZC",
+   "items": [
+    [
+     "Sugar",
+     "9170.04"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-003",
+  "kind": "igst",
+  "corruption": null,
+  "text": "KAVERI DISTRIBUTORS\nGSTIN: 33BBZQG8686E1ZY\nTAX INVOICE\nInvoice No: KAV-1002\nDate: 12/09/2026\nBill To: Meena Supermarket\nGSTIN: 29HTTNW2188W1ZQ\nDescription HSN Qty Rate Amount\nToor Dal 0713 15 kg 377.20 5,658.00\nSunflower Oil 1512 12 ltr 587.21 7,046.52\nColgate Toothpaste 100g 3306 20 nos 89.56 1,791.20\nTaxable Value 14,495.72\nIGST @ 5% 724.79\nGrand Total 15,220.51\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "15220.51",
+   "tax": "724.79",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Meena Supermarket",
+   "sellerGstin": "33BBZQG8686E1ZY",
+   "items": [
+    [
+     "Toor Dal",
+     "5658.00"
+    ],
+    [
+     "Sunflower Oil",
+     "7046.52"
+    ],
+    [
+     "Colgate Toothpaste 100g",
+     "1791.20"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-004",
+  "kind": "discount",
+  "corruption": null,
+  "text": "SAI ENTERPRISES\nGSTIN: 33PMMZH7734N1ZL\nTAX INVOICE\nInvoice No: SAI-1003\nDate: 13/09/2026\nBill To: Praba Mart\nGSTIN: 33PCTPB0258C1ZN\nDescription HSN Qty Rate Amount\nSunflower Oil 1512 20 ltr 151.22 3,024.40\nColgate Toothpaste 100g 3306 7 nos 363.22 2,542.54\nDettol Soap 3401 12 pcs 17.45 209.40\nLED Bulb 9W 8539 17 nos 351.00 5,967.00\nDiscount 5% 587.17\nTaxable Value 11,156.17\nCGST @ 2.5% 278.90\nSGST @ 2.5% 278.90\nGrand Total 11,713.97\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "11713.97",
+   "tax": "557.80",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Praba Mart",
+   "sellerGstin": "33PMMZH7734N1ZL",
+   "items": [
+    [
+     "Sunflower Oil",
+     "3024.40"
+    ],
+    [
+     "Colgate Toothpaste 100g",
+     "2542.54"
+    ],
+    [
+     "Dettol Soap",
+     "209.40"
+    ],
+    [
+     "LED Bulb 9W",
+     "5967.00"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-005",
+  "kind": "roundoff",
+  "corruption": null,
+  "text": "ANBU WHOLESALE\nGSTIN: 33KBEDB2285P1Z0\nTAX INVOICE\nInvoice No: ANB-1004\nDate: 14/09/2026\nBill To: Selvi Provisions\nGSTIN: 33NMSSA4269A1ZT\nDescription HSN Qty Rate Amount\nColgate Toothpaste 100g 3306 18 nos 369.41 6,649.38\nTaxable Value 6,649.38\nCGST @ 6% 398.96\nSGST @ 6% 398.96\nRound Off (-) 0.30\nGrand Total 7,447.00\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "7447.00",
+   "tax": "797.92",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Selvi Provisions",
+   "sellerGstin": "33KBEDB2285P1Z0",
+   "items": [
+    [
+     "Colgate Toothpaste 100g",
+     "6649.38"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-006",
+  "kind": "many",
+  "corruption": null,
+  "text": "VINAYAKA STORES\nGSTIN: 33HCDNE4769U1ZV\nTAX INVOICE\nInvoice No: VIN-1005\nDate: 15/09/2026\nBill To: Arun Medicals\nGSTIN: 33FWGVB0514U1Z1\nDescription HSN Qty Rate Amount\nDettol Soap 3401 15 pcs 237.48 3,562.20\nLED Bulb 9W 8539 17 nos 682.70 11,605.90\nCopper Wire 1.5 sqmm 8544 5 mtr 382.87 1,914.35\nCotton Saree Premium Long Name Edition 5208 14 nos 325.79 4,561.06\nCashew Nuts 0801 20 kg 397.52 7,950.40\nWall Putty 3214 2 bag 613.76 1,227.52\nNotebook 200 Pages 4820 3 nos 27.85 83.55\nBasmati Rice 1006 7 kg 292.80 2,049.60\nSugar 1701 9 kg 851.72 7,665.48\nToor Dal 0713 13 kg 572.27 7,439.51\nSunflower Oil 1512 9 ltr 467.82 4,210.38\nColgate Toothpaste 100g 3306 16 nos 512.35 8,197.60\nTaxable Value 60,467.55\nCGST @ 14% 8,465.46\nSGST @ 14% 8,465.46\nGrand Total 77,398.47\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "77398.47",
+   "tax": "16930.92",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Arun Medicals",
+   "sellerGstin": "33HCDNE4769U1ZV",
+   "items": [
+    [
+     "Dettol Soap",
+     "3562.20"
+    ],
+    [
+     "LED Bulb 9W",
+     "11605.90"
+    ],
+    [
+     "Copper Wire 1.5 sqmm",
+     "1914.35"
+    ],
+    [
+     "Cotton Saree Premium Long Name Edition",
+     "4561.06"
+    ],
+    [
+     "Cashew Nuts",
+     "7950.40"
+    ],
+    [
+     "Wall Putty",
+     "1227.52"
+    ],
+    [
+     "Notebook 200 Pages",
+     "83.55"
+    ],
+    [
+     "Basmati Rice",
+     "2049.60"
+    ],
+    [
+     "Sugar",
+     "7665.48"
+    ],
+    [
+     "Toor Dal",
+     "7439.51"
+    ],
+    [
+     "Sunflower Oil",
+     "4210.38"
+    ],
+    [
+     "Colgate Toothpaste 100g",
+     "8197.60"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-007",
+  "kind": "decimalqty",
+  "corruption": null,
+  "text": "SELVAM HARDWARES\nGSTIN: 33MEJUX8712Y1ZK\nTAX INVOICE\nInvoice No: SEL-1006\nDate: 16/09/2026\nBill To: Kumar Stores\nGSTIN: 33MXXGF8970R1ZG\nDescription HSN Qty Rate Amount\nLED Bulb 9W 8539 0.5 nos 652.49 326.25\nTaxable Value 326.25\nCGST @ 6% 19.58\nSGST @ 6% 19.58\nGrand Total 365.41\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "365.41",
+   "tax": "39.16",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Kumar Stores",
+   "sellerGstin": "33MEJUX8712Y1ZK",
+   "items": [
+    [
+     "LED Bulb 9W",
+     "326.25"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-008",
+  "kind": "tamil",
+  "corruption": "decimal_drop",
+  "text": "PRIYA TEXTILES\nஸ்ரீ லட்சுமி டிரேடர்ஸ்\nGSTIN: 33KKFSH7204X1Z6\nTAX INVOICE\nInvoice No: PRI-1007\nDate: 17/09/2026\nBill To: Ravi Traders\nGSTIN: 33AXKGA6435F1ZB\nDescription HSN Qty Rate Amount\nCopper Wire 1.5 sqmm 8544 10 mtr 649.07 6,490.70\nCotton Saree Premium Long Name Edition 5208 18 nos 281.09 5,059.62\nCashew Nuts 0801 4 kg 239.92 959.68\nWall Putty 3214 2 bag 327.96 655.92\nTaxable Value 13,165.92\nCGST @ 14% 184323\nSGST @ 14% 1,843.23\nGrand Total 16,852.38\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "16852.38",
+   "tax": "3686.46",
+   "taxReadable": false,
+   "totalReadable": true,
+   "buyer": "Ravi Traders",
+   "sellerGstin": "33KKFSH7204X1Z6",
+   "items": [
+    [
+     "Copper Wire 1.5 sqmm",
+     "6490.70"
+    ],
+    [
+     "Cotton Saree Premium Long Name Edition",
+     "5059.62"
+    ],
+    [
+     "Cashew Nuts",
+     "959.68"
+    ],
+    [
+     "Wall Putty",
+     "655.92"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-009",
+  "kind": "nobuyer",
+  "corruption": null,
+  "text": "GANESH ELECTRICALS\nGSTIN: 33RFULW8348D1ZK\nTAX INVOICE\nInvoice No: GAN-1008\nDate: 18/09/2026\nDescription HSN Qty Rate Amount\nCotton Saree Premium Long Name Edition 5208 9 nos 32.21 289.89\nCashew Nuts 0801 4 kg 84.58 338.32\nWall Putty 3214 15 bag 268.15 4,022.25\nNotebook 200 Pages 4820 9 nos 881.26 7,931.34\nTaxable Value 12,581.80\nCGST @ 6% 754.91\nSGST @ 6% 754.91\nGrand Total 14,091.62\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "14091.62",
+   "tax": "1509.82",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": null,
+   "sellerGstin": "33RFULW8348D1ZK",
+   "items": [
+    [
+     "Cotton Saree Premium Long Name Edition",
+     "289.89"
+    ],
+    [
+     "Cashew Nuts",
+     "338.32"
+    ],
+    [
+     "Wall Putty",
+     "4022.25"
+    ],
+    [
+     "Notebook 200 Pages",
+     "7931.34"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-010",
+  "kind": "single",
+  "corruption": null,
+  "text": "ARUL PHARMA\nGSTIN: 33BJTYP3672T1ZJ\nTAX INVOICE\nInvoice No: ARU-1009\nDate: 19/09/2026\nBill To: Praba Mart\nGSTIN: 33XSNCU6876G1Z4\nDescription HSN Qty Rate Amount\nCashew Nuts 0801 17 kg 798.90 13,581.30\nWall Putty 3214 15 bag 698.30 10,474.50\nNotebook 200 Pages 4820 6 nos 632.07 3,792.42\nTaxable Value 27,848.22\nCGST @ 14% 3,898.75\nSGST @ 14% 3,898.75\nGrand Total 35,645.72\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "35645.72",
+   "tax": "7797.50",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Praba Mart",
+   "sellerGstin": "33BJTYP3672T1ZJ",
+   "items": [
+    [
+     "Cashew Nuts",
+     "13581.30"
+    ],
+    [
+     "Wall Putty",
+     "10474.50"
+    ],
+    [
+     "Notebook 200 Pages",
+     "3792.42"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-011",
+  "kind": "single",
+  "corruption": null,
+  "text": "SRI LAKSHMI TRADERS\nGSTIN: 33YSQYU7747S1Z6\nTAX INVOICE\nInvoice No: SRI-1010\nDate: 20/09/2026\nBill To: Selvi Provisions\nGSTIN: 33XHZBY2668S1ZY\nDescription HSN Qty Rate Amount\nWall Putty 3214 2 bag 634.93 1,269.86\nNotebook 200 Pages 4820 14 nos 387.04 5,418.56\nBasmati Rice 1006 13 kg 94.00 1,222.00\nSugar 1701 4 kg 670.36 2,681.44\nTaxable Value 10,591.86\nCGST @ 6% 635.51\nSGST @ 6% 635.51\nGrand Total 11,862.88\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "11862.88",
+   "tax": "1271.02",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Selvi Provisions",
+   "sellerGstin": "33YSQYU7747S1Z6",
+   "items": [
+    [
+     "Wall Putty",
+     "1269.86"
+    ],
+    [
+     "Notebook 200 Pages",
+     "5418.56"
+    ],
+    [
+     "Basmati Rice",
+     "1222.00"
+    ],
+    [
+     "Sugar",
+     "2681.44"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-012",
+  "kind": "multi",
+  "corruption": null,
+  "text": "MURUGAN AGENCIES\nGSTIN: 33NYFJX3919S1ZH\nTAX INVOICE\nInvoice No: MUR-1011\nDate: 21/09/2026\nBill To: Arun Medicals\nGSTIN: 33JYCDL6407Z1Z2\nDescription HSN Qty Rate Amount\nNotebook 200 Pages 4820 13 nos 844.80 10,982.40\nBasmati Rice 1006 1 kg 526.11 526.11\nTaxable Value 11,508.51\nCGST @ 2.5% 13.15\nSGST @ 2.5% 13.15\nCGST @ 9% 988.42\nSGST @ 9% 988.42\nGrand Total 13,511.65\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "13511.65",
+   "tax": "2003.14",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Arun Medicals",
+   "sellerGstin": "33NYFJX3919S1ZH",
+   "items": [
+    [
+     "Notebook 200 Pages",
+     "10982.40"
+    ],
+    [
+     "Basmati Rice",
+     "526.11"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-013",
+  "kind": "igst",
+  "corruption": null,
+  "text": "KAVERI DISTRIBUTORS\nGSTIN: 33DPPGG5199J1ZT\nTAX INVOICE\nInvoice No: KAV-1012\nDate: 22/09/2026\nBill To: Kumar Stores\nGSTIN: 29KDZNL0604J1ZY\nDescription HSN Qty Rate Amount\nBasmati Rice 1006 3 kg 321.41 964.23\nSugar 1701 11 kg 514.51 5,659.61\nToor Dal 0713 7 kg 716.35 5,014.45\nTaxable Value 11,638.29\nIGST @ 5% 581.91\nGrand Total 12,220.20\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "12220.20",
+   "tax": "581.91",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Kumar Stores",
+   "sellerGstin": "33DPPGG5199J1ZT",
+   "items": [
+    [
+     "Basmati Rice",
+     "964.23"
+    ],
+    [
+     "Sugar",
+     "5659.61"
+    ],
+    [
+     "Toor Dal",
+     "5014.45"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-014",
+  "kind": "discount",
+  "corruption": "tamil_inject",
+  "text": "SAI ENTERPRISES\nGSTIN: 33LYVWF9090Q1ZP\nTAX INVOICE\nInvoிce No: SAI-1013\nDate: 23/09/2026\nBill To: Ravi Traders\nGSTIN: 33AMSRJ2606B1ZC\nDescription HSN Qty Rate Amount\nSugar 1701 2 kg 675.79 1,351.58\nDiscount 5% 67.58\nTaxaபble Value 1,284.00\nCGST @ 14% 179.76\nSGST @ 14% 179.76\nGrand Total 1,643.52\nTeரms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "1643.52",
+   "tax": "359.52",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Ravi Traders",
+   "sellerGstin": "33LYVWF9090Q1ZP",
+   "items": [
+    [
+     "Sugar",
+     "1351.58"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-015",
+  "kind": "roundoff",
+  "corruption": null,
+  "text": "ANBU WHOLESALE\nGSTIN: 33EPNVF1956W1ZL\nTAX INVOICE\nInvoice No: ANB-1014\nDate: 24/09/2026\nBill To: Meena Supermarket\nGSTIN: 33ZFKUZ9107M1ZR\nDescription HSN Qty Rate Amount\nToor Dal 0713 18 kg 19.97 359.46\nSunflower Oil 1512 20 ltr 314.22 6,284.40\nColgate Toothpaste 100g 3306 1 nos 528.99 528.99\nDettol Soap 3401 14 pcs 602.76 8,438.64\nTaxable Value 15,611.49\nCGST @ 2.5% 390.29\nSGST @ 2.5% 390.29\nRound Off (-) 0.07\nGrand Total 16,392.00\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "16392.00",
+   "tax": "780.58",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Meena Supermarket",
+   "sellerGstin": "33EPNVF1956W1ZL",
+   "items": [
+    [
+     "Toor Dal",
+     "359.46"
+    ],
+    [
+     "Sunflower Oil",
+     "6284.40"
+    ],
+    [
+     "Colgate Toothpaste 100g",
+     "528.99"
+    ],
+    [
+     "Dettol Soap",
+     "8438.64"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-016",
+  "kind": "many",
+  "corruption": null,
+  "text": "VINAYAKA STORES\nGSTIN: 33MSCNY2826B1ZR\nTAX INVOICE\nInvoice No: VIN-1015\nDate: 25/09/2026\nBill To: Praba Mart\nGSTIN: 33HJECH5157H1ZY\nDescription HSN Qty Rate Amount\nSunflower Oil 1512 3 ltr 19.75 59.25\nColgate Toothpaste 100g 3306 14 nos 766.00 10,724.00\nDettol Soap 3401 15 pcs 479.02 7,185.30\nLED Bulb 9W 8539 5 nos 142.58 712.90\nCopper Wire 1.5 sqmm 8544 7 mtr 348.20 2,437.40\nCotton Saree Premium Long Name Edition 5208 1 nos 92.11 92.11\nCashew Nuts 0801 14 kg 697.00 9,758.00\nWall Putty 3214 17 bag 349.81 5,946.77\nNotebook 200 Pages 4820 9 nos 730.17 6,571.53\nBasmati Rice 1006 12 kg 347.18 4,166.16\nSugar 1701 2 kg 892.27 1,784.54\nToor Dal 0713 19 kg 12.24 232.56\nTaxable Value 49,670.52\nCGST @ 6% 2,980.23\nSGST @ 6% 2,980.23\nGrand Total 55,630.98\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "55630.98",
+   "tax": "5960.46",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Praba Mart",
+   "sellerGstin": "33MSCNY2826B1ZR",
+   "items": [
+    [
+     "Sunflower Oil",
+     "59.25"
+    ],
+    [
+     "Colgate Toothpaste 100g",
+     "10724.00"
+    ],
+    [
+     "Dettol Soap",
+     "7185.30"
+    ],
+    [
+     "LED Bulb 9W",
+     "712.90"
+    ],
+    [
+     "Copper Wire 1.5 sqmm",
+     "2437.40"
+    ],
+    [
+     "Cotton Saree Premium Long Name Edition",
+     "92.11"
+    ],
+    [
+     "Cashew Nuts",
+     "9758.00"
+    ],
+    [
+     "Wall Putty",
+     "5946.77"
+    ],
+    [
+     "Notebook 200 Pages",
+     "6571.53"
+    ],
+    [
+     "Basmati Rice",
+     "4166.16"
+    ],
+    [
+     "Sugar",
+     "1784.54"
+    ],
+    [
+     "Toor Dal",
+     "232.56"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-017",
+  "kind": "decimalqty",
+  "corruption": null,
+  "text": "SELVAM HARDWARES\nGSTIN: 33VQRHH9005G1ZQ\nTAX INVOICE\nInvoice No: SEL-1016\nDate: 26/09/2026\nBill To: Selvi Provisions\nGSTIN: 33FVPCP1658P1ZE\nDescription HSN Qty Rate Amount\nColgate Toothpaste 100g 3306 0.5 nos 129.10 64.55\nTaxable Value 64.55\nCGST @ 6% 3.87\nSGST @ 6% 3.87\nGrand Total 72.29\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "72.29",
+   "tax": "7.74",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Selvi Provisions",
+   "sellerGstin": "33VQRHH9005G1ZQ",
+   "items": [
+    [
+     "Colgate Toothpaste 100g",
+     "64.55"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-018",
+  "kind": "tamil",
+  "corruption": null,
+  "text": "PRIYA TEXTILES\nஸ்ரீ லட்சுமி டிரேடர்ஸ்\nGSTIN: 33TLUBW6660Y1ZO\nTAX INVOICE\nInvoice No: PRI-1017\nDate: 27/09/2026\nBill To: Arun Medicals\nGSTIN: 33KWCVK3930W1ZD\nDescription HSN Qty Rate Amount\nDettol Soap 3401 17 pcs 469.31 7,978.27\nLED Bulb 9W 8539 19 nos 55.74 1,059.06\nTaxable Value 9,037.33\nCGST @ 9% 813.36\nSGST @ 9% 813.36\nGrand Total 10,664.05\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "10664.05",
+   "tax": "1626.72",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Arun Medicals",
+   "sellerGstin": "33TLUBW6660Y1ZO",
+   "items": [
+    [
+     "Dettol Soap",
+     "7978.27"
+    ],
+    [
+     "LED Bulb 9W",
+     "1059.06"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-019",
+  "kind": "nobuyer",
+  "corruption": null,
+  "text": "GANESH ELECTRICALS\nGSTIN: 33DXAAB8093J1ZA\nTAX INVOICE\nInvoice No: GAN-1018\nDate: 10/09/2026\nDescription HSN Qty Rate Amount\nLED Bulb 9W 8539 4 nos 688.92 2,755.68\nCopper Wire 1.5 sqmm 8544 18 mtr 39.97 719.46\nCotton Saree Premium Long Name Edition 5208 14 nos 847.01 11,858.14\nCashew Nuts 0801 13 kg 336.96 4,380.48\nTaxable Value 19,713.76\nCGST @ 14% 2,759.93\nSGST @ 14% 2,759.93\nGrand Total 25,233.62\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "25233.62",
+   "tax": "5519.86",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": null,
+   "sellerGstin": "33DXAAB8093J1ZA",
+   "items": [
+    [
+     "LED Bulb 9W",
+     "2755.68"
+    ],
+    [
+     "Copper Wire 1.5 sqmm",
+     "719.46"
+    ],
+    [
+     "Cotton Saree Premium Long Name Edition",
+     "11858.14"
+    ],
+    [
+     "Cashew Nuts",
+     "4380.48"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-020",
+  "kind": "single",
+  "corruption": "buyer_merge",
+  "text": "ARUL PHARMA\nGSTIN: 33HESRB5853B1ZF\nTAX INVOICE\nBill To:            Invoice No: ARU-1019\nRavi Traders         Date: 11/09/2026\nGSTIN: 33LQHXX1487N1ZC\nDescription HSN Qty Rate Amount\nCopper Wire 1.5 sqmm 8544 12 mtr 519.99 6,239.88\nCotton Saree Premium Long Name Edition 5208 15 nos 390.03 5,850.45\nTaxable Value 12,090.33\nCGST @ 9% 1,088.13\nSGST @ 9% 1,088.13\nGrand Total 14,266.59\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "14266.59",
+   "tax": "2176.26",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Ravi Traders",
+   "sellerGstin": "33HESRB5853B1ZF",
+   "items": [
+    [
+     "Copper Wire 1.5 sqmm",
+     "6239.88"
+    ],
+    [
+     "Cotton Saree Premium Long Name Edition",
+     "5850.45"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-021",
+  "kind": "single",
+  "corruption": null,
+  "text": "SRI LAKSHMI TRADERS\nGSTIN: 33GMUJM3848G1ZT\nTAX INVOICE\nInvoice No: SRI-1020\nDate: 12/09/2026\nBill To: Meena Supermarket\nGSTIN: 33TLTCR1615U1ZF\nDescription HSN Qty Rate Amount\nCotton Saree Premium Long Name Edition 5208 14 nos 328.52 4,599.28\nTaxable Value 4,599.28\nCGST @ 2.5% 114.98\nSGST @ 2.5% 114.98\nGrand Total 4,829.24\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "4829.24",
+   "tax": "229.96",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Meena Supermarket",
+   "sellerGstin": "33GMUJM3848G1ZT",
+   "items": [
+    [
+     "Cotton Saree Premium Long Name Edition",
+     "4599.28"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-022",
+  "kind": "multi",
+  "corruption": "rate_after",
+  "text": "MURUGAN AGENCIES\nGSTIN: 33YUFDG7730V1Z1\nTAX INVOICE\nInvoice No: MUR-1021\nDate: 13/09/2026\nBill To: Praba Mart\nGSTIN: 33HUAPT7575G1Z5\nDescription HSN Qty Rate Amount\nCashew Nuts 0801 7 kg 350.99 2,456.93\nWall Putty 3214 11 bag 483.66 5,320.26\nTaxable Value 7,777.19\nCGST 319.22 @ 6%\nSGST 319.22 @ 6%\nCGST 221.12 @ 9%\nSGST 221.12 @ 9%\nGrand Total 8,857.87\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "8857.87",
+   "tax": "1080.68",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Praba Mart",
+   "sellerGstin": "33YUFDG7730V1Z1",
+   "items": [
+    [
+     "Cashew Nuts",
+     "2456.93"
+    ],
+    [
+     "Wall Putty",
+     "5320.26"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-023",
+  "kind": "igst",
+  "corruption": null,
+  "text": "KAVERI DISTRIBUTORS\nGSTIN: 33KRYAP2046F1Z5\nTAX INVOICE\nInvoice No: KAV-1022\nDate: 14/09/2026\nBill To: Selvi Provisions\nGSTIN: 29TUCPN7196G1ZL\nDescription HSN Qty Rate Amount\nWall Putty 3214 17 bag 172.72 2,936.24\nNotebook 200 Pages 4820 13 nos 433.47 5,635.11\nTaxable Value 8,571.35\nIGST @ 18% 1,542.84\nGrand Total 10,114.19\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "10114.19",
+   "tax": "1542.84",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Selvi Provisions",
+   "sellerGstin": "33KRYAP2046F1Z5",
+   "items": [
+    [
+     "Wall Putty",
+     "2936.24"
+    ],
+    [
+     "Notebook 200 Pages",
+     "5635.11"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-024",
+  "kind": "discount",
+  "corruption": null,
+  "text": "SAI ENTERPRISES\nGSTIN: 33ZFWBU2071N1ZS\nTAX INVOICE\nInvoice No: SAI-1023\nDate: 15/09/2026\nBill To: Arun Medicals\nGSTIN: 33CYCJH3915G1Z4\nDescription HSN Qty Rate Amount\nNotebook 200 Pages 4820 16 nos 556.07 8,897.12\nBasmati Rice 1006 4 kg 545.39 2,181.56\nSugar 1701 20 kg 789.71 15,794.20\nToor Dal 0713 14 kg 764.31 10,700.34\nDiscount 5% 1,878.66\nTaxable Value 35,694.56\nCGST @ 6% 2,141.67\nSGST @ 6% 2,141.67\nGrand Total 39,977.90\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "39977.90",
+   "tax": "4283.34",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Arun Medicals",
+   "sellerGstin": "33ZFWBU2071N1ZS",
+   "items": [
+    [
+     "Notebook 200 Pages",
+     "8897.12"
+    ],
+    [
+     "Basmati Rice",
+     "2181.56"
+    ],
+    [
+     "Sugar",
+     "15794.20"
+    ],
+    [
+     "Toor Dal",
+     "10700.34"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-025",
+  "kind": "roundoff",
+  "corruption": null,
+  "text": "ANBU WHOLESALE\nGSTIN: 33MLKEP6788D1Z0\nTAX INVOICE\nInvoice No: ANB-1024\nDate: 16/09/2026\nBill To: Kumar Stores\nGSTIN: 33EDUQM8760P1ZC\nDescription HSN Qty Rate Amount\nBasmati Rice 1006 19 kg 462.98 8,796.62\nTaxable Value 8,796.62\nCGST @ 9% 791.70\nSGST @ 9% 791.70\nRound Off (-) 0.02\nGrand Total 10,380.00\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "10380.00",
+   "tax": "1583.40",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Kumar Stores",
+   "sellerGstin": "33MLKEP6788D1Z0",
+   "items": [
+    [
+     "Basmati Rice",
+     "8796.62"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-026",
+  "kind": "many",
+  "corruption": null,
+  "text": "VINAYAKA STORES\nGSTIN: 33VTQCE7306Q1ZD\nTAX INVOICE\nInvoice No: VIN-1025\nDate: 17/09/2026\nBill To: Ravi Traders\nGSTIN: 33FFQGV7799M1ZG\nDescription HSN Qty Rate Amount\nSugar 1701 8 kg 666.03 5,328.24\nToor Dal 0713 6 kg 753.33 4,519.98\nSunflower Oil 1512 2 ltr 693.41 1,386.82\nColgate Toothpaste 100g 3306 6 nos 816.47 4,898.82\nDettol Soap 3401 18 pcs 867.64 15,617.52\nLED Bulb 9W 8539 17 nos 252.56 4,293.52\nCopper Wire 1.5 sqmm 8544 2 mtr 866.71 1,733.42\nCotton Saree Premium Long Name Edition 5208 18 nos 460.61 8,290.98\nCashew Nuts 0801 11 kg 604.17 6,645.87\nWall Putty 3214 11 bag 842.74 9,270.14\nNotebook 200 Pages 4820 17 nos 720.69 12,251.73\nBasmati Rice 1006 4 kg 549.24 2,196.96\nTaxable Value 76,434.00\nCGST @ 6% 4,586.04\nSGST @ 6% 4,586.04\nGrand Total 85,606.08\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "85606.08",
+   "tax": "9172.08",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Ravi Traders",
+   "sellerGstin": "33VTQCE7306Q1ZD",
+   "items": [
+    [
+     "Sugar",
+     "5328.24"
+    ],
+    [
+     "Toor Dal",
+     "4519.98"
+    ],
+    [
+     "Sunflower Oil",
+     "1386.82"
+    ],
+    [
+     "Colgate Toothpaste 100g",
+     "4898.82"
+    ],
+    [
+     "Dettol Soap",
+     "15617.52"
+    ],
+    [
+     "LED Bulb 9W",
+     "4293.52"
+    ],
+    [
+     "Copper Wire 1.5 sqmm",
+     "1733.42"
+    ],
+    [
+     "Cotton Saree Premium Long Name Edition",
+     "8290.98"
+    ],
+    [
+     "Cashew Nuts",
+     "6645.87"
+    ],
+    [
+     "Wall Putty",
+     "9270.14"
+    ],
+    [
+     "Notebook 200 Pages",
+     "12251.73"
+    ],
+    [
+     "Basmati Rice",
+     "2196.96"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-027",
+  "kind": "decimalqty",
+  "corruption": null,
+  "text": "SELVAM HARDWARES\nGSTIN: 33JQGZC3694Q1ZL\nTAX INVOICE\nInvoice No: SEL-1026\nDate: 18/09/2026\nBill To: Meena Supermarket\nGSTIN: 33CFYUP5188Y1ZD\nDescription HSN Qty Rate Amount\nToor Dal 0713 1.25 kg 600.72 750.90\nTaxable Value 750.90\nCGST @ 2.5% 18.77\nSGST @ 2.5% 18.77\nGrand Total 788.44\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "788.44",
+   "tax": "37.54",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Meena Supermarket",
+   "sellerGstin": "33JQGZC3694Q1ZL",
+   "items": [
+    [
+     "Toor Dal",
+     "750.90"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-028",
+  "kind": "tamil",
+  "corruption": "rate_nextline",
+  "text": "PRIYA TEXTILES\nஸ்ரீ லட்சுமி டிரேடர்ஸ்\nGSTIN: 33LYAHQ2036P1ZG\nTAX INVOICE\nInvoice No: PRI-1027\nDate: 19/09/2026\nBill To: Praba Mart\nGSTIN: 33PNANU3579A1ZU\nDescription HSN Qty Rate Amount\nSunflower Oil 1512 18 ltr 215.15 3,872.70\nColgate Toothpaste 100g 3306 4 nos 505.65 2,022.60\nTaxable Value 5,895.30\nCGST @ 2.5%\n147.38\nSGST @ 2.5%\n147.38\nGrand Total 6,190.06\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "6190.06",
+   "tax": "294.76",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Praba Mart",
+   "sellerGstin": "33LYAHQ2036P1ZG",
+   "items": [
+    [
+     "Sunflower Oil",
+     "3872.70"
+    ],
+    [
+     "Colgate Toothpaste 100g",
+     "2022.60"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-029",
+  "kind": "nobuyer",
+  "corruption": null,
+  "text": "GANESH ELECTRICALS\nGSTIN: 33FTUJG4211L1ZS\nTAX INVOICE\nInvoice No: GAN-1028\nDate: 20/09/2026\nDescription HSN Qty Rate Amount\nColgate Toothpaste 100g 3306 18 nos 857.48 15,434.64\nDettol Soap 3401 15 pcs 267.09 4,006.35\nLED Bulb 9W 8539 8 nos 859.88 6,879.04\nCopper Wire 1.5 sqmm 8544 16 mtr 77.49 1,239.84\nTaxable Value 27,559.87\nCGST @ 2.5% 689.00\nSGST @ 2.5% 689.00\nGrand Total 28,937.87\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "28937.87",
+   "tax": "1378.00",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": null,
+   "sellerGstin": "33FTUJG4211L1ZS",
+   "items": [
+    [
+     "Colgate Toothpaste 100g",
+     "15434.64"
+    ],
+    [
+     "Dettol Soap",
+     "4006.35"
+    ],
+    [
+     "LED Bulb 9W",
+     "6879.04"
+    ],
+    [
+     "Copper Wire 1.5 sqmm",
+     "1239.84"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-030",
+  "kind": "single",
+  "corruption": null,
+  "text": "ARUL PHARMA\nGSTIN: 33DWTQX3952F1ZT\nTAX INVOICE\nInvoice No: ARU-1029\nDate: 21/09/2026\nBill To: Arun Medicals\nGSTIN: 33DPSXM4962F1Z1\nDescription HSN Qty Rate Amount\nDettol Soap 3401 10 pcs 699.21 6,992.10\nTaxable Value 6,992.10\nCGST @ 14% 978.89\nSGST @ 14% 978.89\nGrand Total 8,949.88\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "8949.88",
+   "tax": "1957.78",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Arun Medicals",
+   "sellerGstin": "33DWTQX3952F1ZT",
+   "items": [
+    [
+     "Dettol Soap",
+     "6992.10"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-031",
+  "kind": "single",
+  "corruption": null,
+  "text": "SRI LAKSHMI TRADERS\nGSTIN: 33XPJFG3502E1ZH\nTAX INVOICE\nInvoice No: SRI-1030\nDate: 22/09/2026\nBill To: Kumar Stores\nGSTIN: 33EWSYR6003N1ZE\nDescription HSN Qty Rate Amount\nLED Bulb 9W 8539 9 nos 791.71 7,125.39\nCopper Wire 1.5 sqmm 8544 19 mtr 494.67 9,398.73\nTaxable Value 16,524.12\nCGST @ 2.5% 413.10\nSGST @ 2.5% 413.10\nGrand Total 17,350.32\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "17350.32",
+   "tax": "826.20",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Kumar Stores",
+   "sellerGstin": "33XPJFG3502E1ZH",
+   "items": [
+    [
+     "LED Bulb 9W",
+     "7125.39"
+    ],
+    [
+     "Copper Wire 1.5 sqmm",
+     "9398.73"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-032",
+  "kind": "multi",
+  "corruption": null,
+  "text": "MURUGAN AGENCIES\nGSTIN: 33MLTPT7014L1Z6\nTAX INVOICE\nInvoice No: MUR-1031\nDate: 23/09/2026\nBill To: Ravi Traders\nGSTIN: 33YCRLL1741W1ZB\nDescription HSN Qty Rate Amount\nCopper Wire 1.5 sqmm 8544 8 mtr 338.48 2,707.84\nCotton Saree Premium Long Name Edition 5208 9 nos 786.56 7,079.04\nCashew Nuts 0801 4 kg 495.03 1,980.12\nWall Putty 3214 14 bag 421.73 5,904.22\nTaxable Value 17,671.22\nCGST @ 2.5% 49.50\nSGST @ 2.5% 49.50\nCGST @ 6% 516.72\nSGST @ 6% 516.72\nCGST @ 9% 637.11\nSGST @ 9% 637.11\nGrand Total 20,077.88\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "20077.88",
+   "tax": "2406.66",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Ravi Traders",
+   "sellerGstin": "33MLTPT7014L1Z6",
+   "items": [
+    [
+     "Copper Wire 1.5 sqmm",
+     "2707.84"
+    ],
+    [
+     "Cotton Saree Premium Long Name Edition",
+     "7079.04"
+    ],
+    [
+     "Cashew Nuts",
+     "1980.12"
+    ],
+    [
+     "Wall Putty",
+     "5904.22"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-033",
+  "kind": "igst",
+  "corruption": null,
+  "text": "KAVERI DISTRIBUTORS\nGSTIN: 33KTXMC3299T1ZG\nTAX INVOICE\nInvoice No: KAV-1032\nDate: 24/09/2026\nBill To: Meena Supermarket\nGSTIN: 29VUGNC4908Q1ZN\nDescription HSN Qty Rate Amount\nCotton Saree Premium Long Name Edition 5208 4 nos 611.97 2,447.88\nCashew Nuts 0801 16 kg 640.93 10,254.88\nWall Putty 3214 20 bag 64.11 1,282.20\nTaxable Value 13,984.96\nIGST @ 5% 699.25\nGrand Total 14,684.21\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "14684.21",
+   "tax": "699.25",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Meena Supermarket",
+   "sellerGstin": "33KTXMC3299T1ZG",
+   "items": [
+    [
+     "Cotton Saree Premium Long Name Edition",
+     "2447.88"
+    ],
+    [
+     "Cashew Nuts",
+     "10254.88"
+    ],
+    [
+     "Wall Putty",
+     "1282.20"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-034",
+  "kind": "discount",
+  "corruption": "text_loss",
+  "text": "SAI ENTERPRISES\nGSTIN: 33GZPYR0772M1Z3\nTAX INVOICE",
+  "truth": {
+   "total": "3635.79",
+   "tax": "173.14",
+   "taxReadable": false,
+   "totalReadable": false,
+   "buyer": null,
+   "sellerGstin": "33GZPYR0772M1Z3",
+   "items": []
+  }
+ },
+ {
+  "id": "TXT-035",
+  "kind": "roundoff",
+  "corruption": null,
+  "text": "ANBU WHOLESALE\nGSTIN: 33GDAKD3656K1ZW\nTAX INVOICE\nInvoice No: ANB-1034\nDate: 26/09/2026\nBill To: Selvi Provisions\nGSTIN: 33UNDUC5258B1ZS\nDescription HSN Qty Rate Amount\nWall Putty 3214 6 bag 63.23 379.38\nTaxable Value 379.38\nCGST @ 14% 53.11\nSGST @ 14% 53.11\nRound Off 0.40\nGrand Total 486.00\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "486.00",
+   "tax": "106.22",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Selvi Provisions",
+   "sellerGstin": "33GDAKD3656K1ZW",
+   "items": [
+    [
+     "Wall Putty",
+     "379.38"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-036",
+  "kind": "many",
+  "corruption": null,
+  "text": "VINAYAKA STORES\nGSTIN: 33EKRLG1380Z1ZA\nTAX INVOICE\nInvoice No: VIN-1035\nDate: 27/09/2026\nBill To: Arun Medicals\nGSTIN: 33RZPUR4506J1ZA\nDescription HSN Qty Rate Amount\nNotebook 200 Pages 4820 13 nos 834.24 10,845.12\nBasmati Rice 1006 7 kg 866.93 6,068.51\nSugar 1701 5 kg 679.15 3,395.75\nToor Dal 0713 17 kg 236.28 4,016.76\nSunflower Oil 1512 4 ltr 698.41 2,793.64\nColgate Toothpaste 100g 3306 10 nos 261.71 2,617.10\nDettol Soap 3401 14 pcs 150.53 2,107.42\nLED Bulb 9W 8539 20 nos 230.51 4,610.20\nCopper Wire 1.5 sqmm 8544 12 mtr 450.09 5,401.08\nCotton Saree Premium Long Name Edition 5208 16 nos 246.49 3,943.84\nCashew Nuts 0801 9 kg 722.29 6,500.61\nWall Putty 3214 8 bag 75.32 602.56\nTaxable Value 52,902.59\nCGST @ 2.5% 1,322.56\nSGST @ 2.5% 1,322.56\nGrand Total 55,547.71\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "55547.71",
+   "tax": "2645.12",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Arun Medicals",
+   "sellerGstin": "33EKRLG1380Z1ZA",
+   "items": [
+    [
+     "Notebook 200 Pages",
+     "10845.12"
+    ],
+    [
+     "Basmati Rice",
+     "6068.51"
+    ],
+    [
+     "Sugar",
+     "3395.75"
+    ],
+    [
+     "Toor Dal",
+     "4016.76"
+    ],
+    [
+     "Sunflower Oil",
+     "2793.64"
+    ],
+    [
+     "Colgate Toothpaste 100g",
+     "2617.10"
+    ],
+    [
+     "Dettol Soap",
+     "2107.42"
+    ],
+    [
+     "LED Bulb 9W",
+     "4610.20"
+    ],
+    [
+     "Copper Wire 1.5 sqmm",
+     "5401.08"
+    ],
+    [
+     "Cotton Saree Premium Long Name Edition",
+     "3943.84"
+    ],
+    [
+     "Cashew Nuts",
+     "6500.61"
+    ],
+    [
+     "Wall Putty",
+     "602.56"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-037",
+  "kind": "decimalqty",
+  "corruption": null,
+  "text": "SELVAM HARDWARES\nGSTIN: 33XZXJC0592E1Z2\nTAX INVOICE\nInvoice No: SEL-1036\nDate: 10/09/2026\nBill To: Kumar Stores\nGSTIN: 33YQQWL4243G1ZR\nDescription HSN Qty Rate Amount\nBasmati Rice 1006 1.25 kg 861.24 1,076.55\nTaxable Value 1,076.55\nCGST @ 6% 64.59\nSGST @ 6% 64.59\nGrand Total 1,205.73\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "1205.73",
+   "tax": "129.18",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Kumar Stores",
+   "sellerGstin": "33XZXJC0592E1Z2",
+   "items": [
+    [
+     "Basmati Rice",
+     "1076.55"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-038",
+  "kind": "tamil",
+  "corruption": "decimal_drop",
+  "text": "PRIYA TEXTILES\nஸ்ரீ லட்சுமி டிரேடர்ஸ்\nGSTIN: 33SPTMB8711G1ZL\nTAX INVOICE\nInvoice No: PRI-1037\nDate: 11/09/2026\nBill To: Ravi Traders\nGSTIN: 33FCYEF8460A1Z3\nDescription HSN Qty Rate Amount\nSugar 1701 3 kg 687.31 2,061.93\nToor Dal 0713 10 kg 201.00 2,010.00\nTaxable Value 4,071.93\nCGST @ 2.5% 10180\nSGST @ 2.5% 101.80\nGrand Total 4,275.53\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "4275.53",
+   "tax": "203.60",
+   "taxReadable": false,
+   "totalReadable": true,
+   "buyer": "Ravi Traders",
+   "sellerGstin": "33SPTMB8711G1ZL",
+   "items": [
+    [
+     "Sugar",
+     "2061.93"
+    ],
+    [
+     "Toor Dal",
+     "2010.00"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-039",
+  "kind": "nobuyer",
+  "corruption": null,
+  "text": "GANESH ELECTRICALS\nGSTIN: 33PQTAN6511W1Z8\nTAX INVOICE\nInvoice No: GAN-1038\nDate: 12/09/2026\nDescription HSN Qty Rate Amount\nToor Dal 0713 17 kg 881.61 14,987.37\nSunflower Oil 1512 18 ltr 230.84 4,155.12\nTaxable Value 19,142.49\nCGST @ 2.5% 478.56\nSGST @ 2.5% 478.56\nGrand Total 20,099.61\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "20099.61",
+   "tax": "957.12",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": null,
+   "sellerGstin": "33PQTAN6511W1Z8",
+   "items": [
+    [
+     "Toor Dal",
+     "14987.37"
+    ],
+    [
+     "Sunflower Oil",
+     "4155.12"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-040",
+  "kind": "single",
+  "corruption": null,
+  "text": "ARUL PHARMA\nGSTIN: 33JQDHZ8998Z1Z3\nTAX INVOICE\nInvoice No: ARU-1039\nDate: 13/09/2026\nBill To: Praba Mart\nGSTIN: 33CTGYR1576C1Z9\nDescription HSN Qty Rate Amount\nSunflower Oil 1512 7 ltr 330.95 2,316.65\nTaxable Value 2,316.65\nCGST @ 6% 139.00\nSGST @ 6% 139.00\nGrand Total 2,594.65\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "2594.65",
+   "tax": "278.00",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Praba Mart",
+   "sellerGstin": "33JQDHZ8998Z1Z3",
+   "items": [
+    [
+     "Sunflower Oil",
+     "2316.65"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-041",
+  "kind": "single",
+  "corruption": null,
+  "text": "SRI LAKSHMI TRADERS\nGSTIN: 33MPJZV6967W1ZG\nTAX INVOICE\nInvoice No: SRI-1040\nDate: 14/09/2026\nBill To: Selvi Provisions\nGSTIN: 33PBHBN8637K1ZM\nDescription HSN Qty Rate Amount\nColgate Toothpaste 100g 3306 16 nos 200.48 3,207.68\nTaxable Value 3,207.68\nCGST @ 2.5% 80.19\nSGST @ 2.5% 80.19\nGrand Total 3,368.06\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "3368.06",
+   "tax": "160.38",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Selvi Provisions",
+   "sellerGstin": "33MPJZV6967W1ZG",
+   "items": [
+    [
+     "Colgate Toothpaste 100g",
+     "3207.68"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-042",
+  "kind": "multi",
+  "corruption": "tamil_inject",
+  "text": "MURUGAN AGENCIES\nGSTIN: 33GPMDA9741N1Z1\nTAX INVOICE\nInvoிce No: MUR-1041\nDate: 15/09/2026\nBill To: Arun Medicals\nGSTIN: 33UJYXS3105C1Z9\nDescription HSN Qty Rate Amount\nDettol Soap 3401 16 pcs 287.68 4,602.88\nLED Bulb 9W 8539 11 nos 676.45 7,440.95\nCopper Wire 1.5 sqmm 8544 10 mtr 579.84 5,798.40\nTaxaபble Value 17,842.23\nCGST @ 2.5% 115.07\nSGST @ 2.5% 115.07\nCGST @ 6% 446.46\nSGST @ 6% 446.46\nCGST @ 9% 521.86\nSGST @ 9% 521.86\nGrand Total 20,009.01\nTeரms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "20009.01",
+   "tax": "2166.78",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Arun Medicals",
+   "sellerGstin": "33GPMDA9741N1Z1",
+   "items": [
+    [
+     "Dettol Soap",
+     "4602.88"
+    ],
+    [
+     "LED Bulb 9W",
+     "7440.95"
+    ],
+    [
+     "Copper Wire 1.5 sqmm",
+     "5798.40"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-043",
+  "kind": "igst",
+  "corruption": null,
+  "text": "KAVERI DISTRIBUTORS\nGSTIN: 33WAHPH1114D1ZZ\nTAX INVOICE\nInvoice No: KAV-1042\nDate: 16/09/2026\nBill To: Kumar Stores\nGSTIN: 29RRMHN9145L1ZW\nDescription HSN Qty Rate Amount\nLED Bulb 9W 8539 3 nos 783.74 2,351.22\nTaxable Value 2,351.22\nIGST @ 12% 282.15\nGrand Total 2,633.37\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "2633.37",
+   "tax": "282.15",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Kumar Stores",
+   "sellerGstin": "33WAHPH1114D1ZZ",
+   "items": [
+    [
+     "LED Bulb 9W",
+     "2351.22"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-044",
+  "kind": "discount",
+  "corruption": null,
+  "text": "SAI ENTERPRISES\nGSTIN: 33YPRWM8836V1ZH\nTAX INVOICE\nInvoice No: SAI-1043\nDate: 17/09/2026\nBill To: Ravi Traders\nGSTIN: 33DBGSJ4898W1Z9\nDescription HSN Qty Rate Amount\nCopper Wire 1.5 sqmm 8544 16 mtr 225.21 3,603.36\nCotton Saree Premium Long Name Edition 5208 3 nos 810.24 2,430.72\nCashew Nuts 0801 12 kg 66.95 803.40\nDiscount 5% 341.87\nTaxable Value 6,495.61\nCGST @ 2.5% 162.39\nSGST @ 2.5% 162.39\nGrand Total 6,820.39\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "6820.39",
+   "tax": "324.78",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Ravi Traders",
+   "sellerGstin": "33YPRWM8836V1ZH",
+   "items": [
+    [
+     "Copper Wire 1.5 sqmm",
+     "3603.36"
+    ],
+    [
+     "Cotton Saree Premium Long Name Edition",
+     "2430.72"
+    ],
+    [
+     "Cashew Nuts",
+     "803.40"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-045",
+  "kind": "roundoff",
+  "corruption": "buyer_merge",
+  "text": "ANBU WHOLESALE\nGSTIN: 33KYMVN5931M1ZB\nTAX INVOICE\nBill To:            Invoice No: ANB-1044\nMeena Supermarket         Date: 18/09/2026\nGSTIN: 33SUPCJ2670B1Z4\nDescription HSN Qty Rate Amount\nCotton Saree Premium Long Name Edition 5208 15 nos 857.68 12,865.20\nCashew Nuts 0801 18 kg 743.37 13,380.66\nWall Putty 3214 10 bag 768.31 7,683.10\nTaxable Value 33,928.96\nCGST @ 6% 2,035.74\nSGST @ 6% 2,035.74\nRound Off (-) 0.44\nGrand Total 38,000.00\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "38000.00",
+   "tax": "4071.48",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Meena Supermarket",
+   "sellerGstin": "33KYMVN5931M1ZB",
+   "items": [
+    [
+     "Cotton Saree Premium Long Name Edition",
+     "12865.20"
+    ],
+    [
+     "Cashew Nuts",
+     "13380.66"
+    ],
+    [
+     "Wall Putty",
+     "7683.10"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-046",
+  "kind": "many",
+  "corruption": null,
+  "text": "VINAYAKA STORES\nGSTIN: 33QTTSB1495S1ZB\nTAX INVOICE\nInvoice No: VIN-1045\nDate: 19/09/2026\nBill To: Praba Mart\nGSTIN: 33LSWHZ6434H1Z4\nDescription HSN Qty Rate Amount\nCashew Nuts 0801 18 kg 225.18 4,053.24\nWall Putty 3214 8 bag 389.77 3,118.16\nNotebook 200 Pages 4820 10 nos 688.66 6,886.60\nBasmati Rice 1006 9 kg 895.10 8,055.90\nSugar 1701 11 kg 110.93 1,220.23\nToor Dal 0713 12 kg 178.64 2,143.68\nSunflower Oil 1512 20 ltr 78.91 1,578.20\nColgate Toothpaste 100g 3306 7 nos 435.44 3,048.08\nDettol Soap 3401 14 pcs 486.50 6,811.00\nLED Bulb 9W 8539 16 nos 31.05 496.80\nCopper Wire 1.5 sqmm 8544 11 mtr 339.56 3,735.16\nCotton Saree Premium Long Name Edition 5208 1 nos 297.69 297.69\nTaxable Value 41,444.74\nCGST @ 14% 5,802.26\nSGST @ 14% 5,802.26\nGrand Total 53,049.26\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "53049.26",
+   "tax": "11604.52",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Praba Mart",
+   "sellerGstin": "33QTTSB1495S1ZB",
+   "items": [
+    [
+     "Cashew Nuts",
+     "4053.24"
+    ],
+    [
+     "Wall Putty",
+     "3118.16"
+    ],
+    [
+     "Notebook 200 Pages",
+     "6886.60"
+    ],
+    [
+     "Basmati Rice",
+     "8055.90"
+    ],
+    [
+     "Sugar",
+     "1220.23"
+    ],
+    [
+     "Toor Dal",
+     "2143.68"
+    ],
+    [
+     "Sunflower Oil",
+     "1578.20"
+    ],
+    [
+     "Colgate Toothpaste 100g",
+     "3048.08"
+    ],
+    [
+     "Dettol Soap",
+     "6811.00"
+    ],
+    [
+     "LED Bulb 9W",
+     "496.80"
+    ],
+    [
+     "Copper Wire 1.5 sqmm",
+     "3735.16"
+    ],
+    [
+     "Cotton Saree Premium Long Name Edition",
+     "297.69"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-047",
+  "kind": "decimalqty",
+  "corruption": null,
+  "text": "SELVAM HARDWARES\nGSTIN: 33MXRGW1620B1ZT\nTAX INVOICE\nInvoice No: SEL-1046\nDate: 20/09/2026\nBill To: Selvi Provisions\nGSTIN: 33QFTTY1408S1ZU\nDescription HSN Qty Rate Amount\nWall Putty 3214 0.5 bag 80.34 40.17\nTaxable Value 40.17\nCGST @ 14% 5.62\nSGST @ 14% 5.62\nGrand Total 51.41\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "51.41",
+   "tax": "11.24",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Selvi Provisions",
+   "sellerGstin": "33MXRGW1620B1ZT",
+   "items": [
+    [
+     "Wall Putty",
+     "40.17"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-048",
+  "kind": "tamil",
+  "corruption": null,
+  "text": "PRIYA TEXTILES\nஸ்ரீ லட்சுமி டிரேடர்ஸ்\nGSTIN: 33BUKSC7709P1Z1\nTAX INVOICE\nInvoice No: PRI-1047\nDate: 21/09/2026\nBill To: Arun Medicals\nGSTIN: 33YPRMR7045M1ZN\nDescription HSN Qty Rate Amount\nNotebook 200 Pages 4820 19 nos 304.80 5,791.20\nBasmati Rice 1006 2 kg 625.76 1,251.52\nSugar 1701 7 kg 370.19 2,591.33\nTaxable Value 9,634.05\nCGST @ 2.5% 240.85\nSGST @ 2.5% 240.85\nGrand Total 10,115.75\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "10115.75",
+   "tax": "481.70",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Arun Medicals",
+   "sellerGstin": "33BUKSC7709P1Z1",
+   "items": [
+    [
+     "Notebook 200 Pages",
+     "5791.20"
+    ],
+    [
+     "Basmati Rice",
+     "1251.52"
+    ],
+    [
+     "Sugar",
+     "2591.33"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-049",
+  "kind": "nobuyer",
+  "corruption": "rate_after",
+  "text": "GANESH ELECTRICALS\nGSTIN: 33MVLPZ4137C1Z5\nTAX INVOICE\nInvoice No: GAN-1048\nDate: 22/09/2026\nDescription HSN Qty Rate Amount\nBasmati Rice 1006 17 kg 833.64 14,171.88\nTaxable Value 14,171.88\nCGST 354.30 @ 2.5%\nSGST 354.30 @ 2.5%\nGrand Total 14,880.48\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "14880.48",
+   "tax": "708.60",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": null,
+   "sellerGstin": "33MVLPZ4137C1Z5",
+   "items": [
+    [
+     "Basmati Rice",
+     "14171.88"
+    ]
+   ]
+  }
+ },
+ {
+  "id": "TXT-050",
+  "kind": "single",
+  "corruption": null,
+  "text": "ARUL PHARMA\nGSTIN: 33HHWTR1957P1ZV\nTAX INVOICE\nInvoice No: ARU-1049\nDate: 23/09/2026\nBill To: Ravi Traders\nGSTIN: 33TLZPU7030C1ZB\nDescription HSN Qty Rate Amount\nSugar 1701 10 kg 876.61 8,766.10\nToor Dal 0713 16 kg 897.54 14,360.64\nSunflower Oil 1512 18 ltr 291.25 5,242.50\nColgate Toothpaste 100g 3306 8 nos 385.73 3,085.84\nTaxable Value 31,455.08\nCGST @ 2.5% 786.38\nSGST @ 2.5% 786.38\nGrand Total 33,027.84\nTerms & Conditions: Goods once sold will not be taken back\nAuthorised Signatory",
+  "truth": {
+   "total": "33027.84",
+   "tax": "1572.76",
+   "taxReadable": true,
+   "totalReadable": true,
+   "buyer": "Ravi Traders",
+   "sellerGstin": "33HHWTR1957P1ZV",
+   "items": [
+    [
+     "Sugar",
+     "8766.10"
+    ],
+    [
+     "Toor Dal",
+     "14360.64"
+    ],
+    [
+     "Sunflower Oil",
+     "5242.50"
+    ],
+    [
+     "Colgate Toothpaste 100g",
+     "3085.84"
+    ]
+   ]
+  }
+ }
+]

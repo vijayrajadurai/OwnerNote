@@ -119,7 +119,8 @@ fun DocumentCaptureSection(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val recognizer = remember { DeviceTextRecognizer(context) }
+    // Bills: English-first, several passes, the best by what the bill says (DeviceTextRecognizer).
+    val recognizer = remember { DeviceTextRecognizer(context, printedBills = true) }
     DisposableEffect(Unit) { onDispose { recognizer.release() } }
 
     val documents by container.capturedDocumentRepository.observe()

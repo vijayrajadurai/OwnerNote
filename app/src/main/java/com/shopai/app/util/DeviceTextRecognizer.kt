@@ -19,21 +19,52 @@ data class OcrRecognitionResult(
 )
 
 /**
- * On-device OCR using Tesseract (eng + tam). No network, API keys, or usage limits.
+ * On-device OCR using Tesseract. No network, API keys, or usage limits.
+ *
+ * Printed bills ([printedBills], with the default [languages] "eng+tam") are read English-first:
+ * the eng+tam model tends to slip Tamil letters into English words on printed
+ * GST invoices. When the English read is not clearly good (no labelled total,
+ * or the bill's own arithmetic fails — see [OcrResultChooser.goodEnough]),
+ * eng+tam is tried, then a cleaned-up image (deskew + adaptive threshold),
+ * then a quarter turn each way for a sideways photo; the best text by
+ * [OcrResultChooser.score] wins. Tesseract's own confidence never decides.
+ *
+ * One TessBaseAPI is native and not thread-safe: every use goes through
+ * [apiMutex], so two scans can never touch it at once. Every bitmap made here
+ * is recycled when its pass is done.
  */
 class DeviceTextRecognizer(
     private val context: Context,
     /** Tesseract languages. Printed bills use the default; handwriting may use its own. */
     private val languages: String = "eng+tam",
+    /**
+     * Bill scanner only: several passes, the best by what the bill says (see above).
+     * Other photos (product labels) keep the single eng+tam read.
+     */
+    private val printedBills: Boolean = false,
 ) {
 
     private val initMutex = Mutex()
+    private val apiMutex = Mutex()
     private var tess: TessBaseAPI? = null
     private var initialized = false
+    /** English-only engine for the first pass over printed bills (made only when needed). */
+    private var tessEnglish: TessBaseAPI? = null
+    /** [release] was called: no further reads touch the (recycled) engines. */
+    @Volatile private var closed = false
+    /** [release] came while a read held the engine: the read frees them when it is done. */
+    @Volatile private var releasePending = false
+
+    private val englishFirst: Boolean get() = printedBills && languages == "eng+tam"
 
     suspend fun recognizeFromUri(uri: Uri): OcrRecognitionResult = withContext(Dispatchers.IO) {
         val bitmap = decodeSampled(uri) ?: return@withContext OcrRecognitionResult("", success = false)
-        recognizeBitmap(bitmap, uri)
+        // The decoded photo is ours: freed as soon as the read is done, not left for the GC.
+        try {
+            recognizeBitmap(bitmap, uri)
+        } finally {
+            bitmap.recycle()
+        }
     }
 
     /**
@@ -60,10 +91,49 @@ class DeviceTextRecognizer(
         if (!ensureInitialized()) {
             return OcrRecognitionResult("", success = false)
         }
-        val api = tess ?: return OcrRecognitionResult("", success = false)
+        val mixed = tess ?: return OcrRecognitionResult("", success = false)
         val prepared = OcrImagePreprocessor.prepare(context, bitmap, imageUri)
-        return runCatching {
-            api.setImage(prepared)
+        try {
+            if (!englishFirst) return read(mixed, prepared)
+            // Each pass: the engine used and what it read.
+            val passes = mutableListOf<Pair<TessBaseAPI, OcrRecognitionResult>>()
+            fun done() = passes.lastOrNull()?.second?.let { it.success && OcrResultChooser.goodEnough(it.text) } == true
+            fun bestEngine() = passes[OcrResultChooser.best(passes.map { it.second.text })].first
+            englishApi()?.let { passes += it to read(it, prepared) }
+            if (!done()) passes += mixed to read(mixed, prepared)
+            if (!done()) {
+                // The cleaned image (deskew + adaptive threshold) with whichever engine read better so far.
+                val clean = OcrImagePreprocessor.cleanVariant(prepared)
+                try {
+                    val engine = bestEngine()
+                    passes += engine to read(engine, clean)
+                } finally {
+                    clean.recycle()
+                }
+            }
+            // No pass found a labelled total: perhaps the bill was photographed sideways (either way).
+            for (degrees in listOf(90, 270)) {
+                if (passes.any { BillTextParser.parse(it.second.text).totalFromLabel }) break
+                val turned = OcrImagePreprocessor.rotated(prepared, degrees)
+                try {
+                    val engine = bestEngine()
+                    passes += engine to read(engine, turned)
+                } finally {
+                    turned.recycle()
+                }
+            }
+            val chosen = OcrResultChooser.best(passes.map { it.second.text })
+            return passes.getOrNull(chosen)?.second ?: OcrRecognitionResult("", success = false)
+        } finally {
+            prepared.recycle()
+        }
+    }
+
+    /** One Tesseract read of [image]; the engine is always cleared afterwards, even on failure. */
+    private suspend fun read(api: TessBaseAPI, image: Bitmap): OcrRecognitionResult = apiMutex.withLock {
+        if (closed) return@withLock OcrRecognitionResult("", success = false)
+        try {
+            api.setImage(image)
             // Keep line breaks: bill/note parsing reads the text line by line
             // (the header line and the "Total" line must stay separate).
             val text = api.utF8Text.orEmpty()
@@ -72,10 +142,31 @@ class DeviceTextRecognizer(
                 .filter { it.isNotEmpty() }
                 .joinToString("\n")
             val confidence = runCatching { api.meanConfidence() }.getOrDefault(-1)
-            api.clear()
             OcrRecognitionResult(text = text, success = text.isNotBlank(), meanConfidence = confidence)
-        }.getOrElse {
+        } catch (e: Exception) {
+            android.util.Log.w("DeviceTextRecognizer", "OCR pass failed", e)
             OcrRecognitionResult("", success = false)
+        } finally {
+            runCatching { api.clear() }
+            if (releasePending) recycleEngines()
+        }
+    }
+
+    /** The English-only engine, made on first use (null if it can't be set up: eng+tam is used alone). */
+    private suspend fun englishApi(): TessBaseAPI? = initMutex.withLock {
+        if (closed) return null
+        tessEnglish?.let { return it }
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val api = TessBaseAPI()
+                if (!api.init(prepareTessData(), "eng", TessBaseAPI.OEM_LSTM_ONLY)) {
+                    api.recycle()
+                    null
+                } else {
+                    api.setPageSegMode(TessBaseAPI.PageSegMode.PSM_AUTO)
+                    api.also { tessEnglish = it }
+                }
+            }.getOrNull()
         }
     }
 
@@ -125,7 +216,7 @@ class DeviceTextRecognizer(
     ): List<OcrLine> = withContext(Dispatchers.IO) {
         if (!ensureInitialized()) return@withContext emptyList()
         val api = tess ?: return@withContext emptyList()
-        runCatching {
+        apiMutex.withLock { if (closed) return@withLock emptyList(); runCatching {
             api.setPageSegMode(pageSegMode)
             api.setImage(image)
             api.utF8Text // runs recognition; the iterator reads its results
@@ -168,18 +259,41 @@ class DeviceTextRecognizer(
             android.util.Log.w("DeviceTextRecognizer", "recognizeLines failed", it)
             emptyList()
         }.also {
+            runCatching { api.clear() }
             // Printed-bill reads (recognizeBitmap) rely on the default mode.
             api.setPageSegMode(TessBaseAPI.PageSegMode.PSM_AUTO)
-        }
+            if (releasePending) recycleEngines()
+        } }
     }
 
     private companion object {
         const val MAX_DECODE_SIDE_PX = 2048
     }
 
+    /**
+     * Frees the native engines (the screen is gone). Never while a read is using
+     * them: if one is running, it frees them as soon as it finishes.
+     */
     fun release() {
+        closed = true
+        if (apiMutex.tryLock()) {
+            try {
+                recycleEngines()
+            } finally {
+                apiMutex.unlock()
+            }
+        } else {
+            releasePending = true
+        }
+    }
+
+    /** Called with [apiMutex] held. */
+    private fun recycleEngines() {
+        releasePending = false
         tess?.recycle()
         tess = null
+        tessEnglish?.recycle()
+        tessEnglish = null
         initialized = false
     }
 }

@@ -1421,6 +1421,9 @@ NewonX — Owner Note. ஆப்பில் உதவி & ஆதரவு.]]><
     <string name="kai_stock_pack">Pack அளவு</string>
     <string name="bill_invoice_number">இன்வாய்ஸ் / பில் எண்</string>
     <string name="bill_tax_read">பில்லில் வரி: %1$s</string>
+    <string name="bill_warn_check_details">பில்லில் சில விவரங்களை சரி பார்க்கணும். குறித்த தொகைகளை பில்லுடன் ஒப்பிடுங்க.</string>
+    <string name="bill_tax_check">⚠ பில்லில் வரியை சரியா படிக்க முடியல — பில்லில் பார்த்து சரி பாருங்க.</string>
+    <string name="bill_total_check_reason">பில்லில் தொகைகள் கூட்டினா சரியா வரல — மொத்தத்தை சரி பாருங்க.</string>
     <string name="bill_cancel">ரத்து</string>
     <string name="morning_notification_channel">காலை வேலை</string>
     <string name="morning_notification_title">காலை வேலை அறிவிப்பு</string>

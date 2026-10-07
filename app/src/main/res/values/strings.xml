@@ -1476,6 +1476,9 @@ NewonX — Owner Note. Use Help & Support in the app.]]></string>
     <string name="kai_stock_pack">Pack size</string>
     <string name="bill_invoice_number">Invoice / bill number</string>
     <string name="bill_tax_read">Tax on the bill: %1$s</string>
+    <string name="bill_warn_check_details">Some bill details need verification. Check the marked values against the bill.</string>
+    <string name="bill_tax_check">⚠ Tax on the bill could not be read reliably — please check it on the bill.</string>
+    <string name="bill_total_check_reason">The amounts on the bill don’t add up — check the total.</string>
     <string name="bill_cancel">Cancel</string>
     <string name="morning_notification_channel">Morning Work</string>
     <string name="morning_notification_title">Morning Work Notification</string>

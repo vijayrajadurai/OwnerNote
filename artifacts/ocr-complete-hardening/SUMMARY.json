@@ -1,0 +1,32 @@
+{
+  "branch": "feature/ocr-complete-hardening",
+  "base": "origin/main fdb9205",
+  "committed": false,
+  "environment": "cloud container: JVM unit tests + Android type-check only; no Android SDK, emulator or device",
+  "baseline_device_34_images": {
+    "device": "OnePlus 7 GM1901, Android 12",
+    "overall_ocr": 0.772, "critical_financial": 0.842, "gst_total": 0.706, "grand_total": 1.0,
+    "strict_pass": 0, "strict_fail": 34, "crash_after_scans": 23
+  },
+  "after_device_real_images": "BLOCKED (images and harness on unpushed PC branch feature/ocr-gst-stress-test; no device here)",
+  "text_benchmark_50": {
+    "dataset": "artifacts/ocr-complete-hardening/dataset/text_invoices.json (synthetic OCR text, self-generated, seeded)",
+    "before": {"grand_total": "50/50", "gst_tax": "41/50", "wrong_tax_shown": 9, "catastrophic_tax_shown": 1, "buyer": "48/50", "wrong_buyer_shown": 2, "exact_item_lists": "1/50", "item_rows_correct": "0/160", "junk_item_rows": 211},
+    "after": {"grand_total": "50/50", "gst_tax": "50/50", "wrong_tax_shown": 0, "catastrophic_tax_shown": 0, "buyer": "50/50", "wrong_buyer_shown": 0, "exact_item_lists": "50/50", "item_rows_correct": "160/160", "junk_item_rows": 0, "seller_gstin": "50/50", "ready_but_wrong": 0}
+  },
+  "unit_tests": {"total": 662, "pass": 662, "fail": 0, "existing_pass": 614, "previously_blocked_now_run": 16, "new": 32, "blocked_android_suites": 17},
+  "android_typecheck": "PASS (android-all + stubs)",
+  "test_024": {"text_pattern": "PASS (tax withheld, status INVALID, total held for owner check)", "real_image": "BLOCKED"},
+  "test_025": {"text_pattern": "PASS (TOO_LITTLE_TEXT, not READY, Save disabled)", "real_image": "BLOCKED"},
+  "crash": {"code_fixes": ["mutex around native TessBaseAPI", "api.clear() in finally", "decoded + intermediate bitmaps recycled", "release() never recycles an engine during a running read"], "root_cause_confirmed": false, "fifty_scan_device_test": "BLOCKED"},
+  "dependencies_added": [],
+  "llm_or_cloud_ocr_added": false,
+  "database_changes": false,
+  "saves_without_owner_confirm": false,
+  "production_verdict": {
+    "owner_review_flow": "safer: impossible/inconsistent GST never shown as read; mismatched money holds Save",
+    "automatic_financial_acceptance": "NOT READY",
+    "targets_met": "text benchmark only; real-image accuracy unverified"
+  },
+  "counts": {"PASS": 662, "FAIL": 0, "BLOCKED": "17 Android unit suites + 30 spec areas on device + 13 device checks", "NOT_TESTED": 2}
+}

@@ -34,7 +34,7 @@ import java.math.BigDecimal
 import java.time.LocalDate
 
 /** Why a field may need the owner's attention after a scan. */
-enum class BillScanWarning { NO_SHOP, NO_TOTAL, TOTAL_GUESSED, NO_DATE, PAID_UNKNOWN }
+enum class BillScanWarning { NO_SHOP, NO_TOTAL, TOTAL_GUESSED, NO_DATE, PAID_UNKNOWN, CHECK_DETAILS }
 
 /** A value read from the bill that the owner must check before it can be saved. */
 enum class BillField { SHOP, PERSON, TOTAL }
@@ -67,6 +67,12 @@ class BillEntryState {
     var invoiceNumber by mutableStateOf("")
     /** The tax printed on the bill (shown for checking; the total already includes it). */
     var tax by mutableStateOf<BigDecimal?>(null)
+        private set
+    /** The tax lines failed the GST checks: the tax is not shown as read, the owner checks it on the bill. */
+    var taxNeedsCheck by mutableStateOf(false)
+        private set
+    /** The bill's own amounts don't add up (taxable + tax ≠ total): the total is marked for checking. */
+    var totalDoesNotAddUp by mutableStateOf(false)
         private set
     var billDate by mutableStateOf<LocalDate?>(null)
     var total by mutableStateOf("")
@@ -170,6 +176,8 @@ class BillEntryState {
         customerName = ""
         invoiceNumber = ""
         tax = null
+        taxNeedsCheck = false
+        totalDoesNotAddUp = false
         billDate = null
         total = ""
         paid = ""
@@ -216,6 +224,9 @@ class BillEntryState {
         customerName = person.orEmpty()
         invoiceNumber = bill.invoiceNumber.orEmpty()
         tax = bill.tax
+        val check = bill.check
+        taxNeedsCheck = check.fieldNeedsCheck(com.shopai.app.util.BillCheckField.TAX)
+        totalDoesNotAddUp = check.moneyNeedsCheck
         billDate = bill.date?.takeIf { !it.isAfter(LocalDate.now()) }
         // Only a total written as "Total / Grand total / Net amount" is filled in.
         total = labelledTotal?.toPlainString().orEmpty()
@@ -227,12 +238,17 @@ class BillEntryState {
             if (person != null && (unsureOcr || looksGarbled(person))) add(BillField.PERSON)
             // The written total disagrees with the amount in words, or the photo read poorly.
             if (labelledTotal != null && (unsureOcr || totalInWords != null)) add(BillField.TOTAL)
+            // The bill's own arithmetic or tax lines failed the checks: the total is confirmed by the owner.
+            if (labelledTotal != null && check.moneyNeedsCheck) add(BillField.TOTAL)
         }
         warnings = buildSet {
             if (shop == null) add(BillScanWarning.NO_SHOP)
             if (labelledTotal == null) add(if (totalSuggestion != null) BillScanWarning.TOTAL_GUESSED else BillScanWarning.NO_TOTAL)
             if (billDate == null) add(BillScanWarning.NO_DATE)
             if (bill.paid == null) add(BillScanWarning.PAID_UNKNOWN)
+            if (check.status == com.shopai.app.util.BillStatus.REVIEW_REQUIRED || check.status == com.shopai.app.util.BillStatus.INVALID) {
+                add(BillScanWarning.CHECK_DETAILS)
+            }
         }
         visible = true
     }
@@ -265,6 +281,7 @@ fun BillEntrySection(
                         BillScanWarning.TOTAL_GUESSED -> R.string.bill_warn_total_guessed
                         BillScanWarning.NO_DATE -> R.string.bill_warn_no_date
                         BillScanWarning.PAID_UNKNOWN -> R.string.bill_warn_paid_unknown
+                        BillScanWarning.CHECK_DETAILS -> R.string.bill_warn_check_details
                     },
                 ),
                 style = MaterialTheme.typography.bodyMedium,
@@ -353,6 +370,13 @@ fun BillEntrySection(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         )
         VerifyNote(state, BillField.TOTAL)
+        if (state.totalDoesNotAddUp && BillField.TOTAL in state.toVerify) {
+            Text(
+                stringResource(R.string.bill_total_check_reason),
+                style = MaterialTheme.typography.bodySmall,
+                color = Danger,
+            )
+        }
         // Not written as "Total": offered only — the owner checks the bill and taps to use it.
         state.totalSuggestion?.let { amount ->
             TextButton(onClick = { state.useTotalSuggestion() }) {
@@ -370,13 +394,23 @@ fun BillEntrySection(
                 Text(stringResource(R.string.bill_use_words_total, wordsText), fontWeight = FontWeight.SemiBold)
             }
         }
-        state.tax?.let { t ->
+        if (state.taxNeedsCheck) {
+            // Never show a tax the checks found wrong as if it were read correctly.
             Text(
-                stringResource(R.string.bill_tax_read, BillNotesFormatter.rupees(t)),
+                stringResource(R.string.bill_tax_check),
                 style = MaterialTheme.typography.bodyMedium,
-                color = ShopAiThemeColors.onSurfaceVariant,
+                color = Danger,
                 modifier = Modifier.padding(top = 4.dp),
             )
+        } else {
+            state.tax?.let { t ->
+                Text(
+                    stringResource(R.string.bill_tax_read, BillNotesFormatter.rupees(t)),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = ShopAiThemeColors.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
         }
         ShopTextField(
             stringResource(R.string.bill_paid),

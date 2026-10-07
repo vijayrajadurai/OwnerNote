@@ -1,0 +1,2337 @@
+{
+ "before": {
+  "n": 50,
+  "total": 50,
+  "tax": 41,
+  "wrongTaxShown": 9,
+  "catastrophicTaxShown": 1,
+  "buyer": 48,
+  "buyerWrongName": 2,
+  "items": 1,
+  "itemRows": 160,
+  "itemRowsTrue": 0,
+  "itemRowsJunk": 211
+ },
+ "after": {
+  "n": 50,
+  "total": 50,
+  "tax": 50,
+  "wrongTaxShown": 0,
+  "catastrophicTaxShown": 0,
+  "buyer": 50,
+  "buyerWrongName": 0,
+  "items": 50,
+  "itemRows": 160,
+  "itemRowsTrue": 160,
+  "itemRowsJunk": 0,
+  "gstin": 50,
+  "wrongAny": 0,
+  "flaggedWhenWrong": 0,
+  "readyButWrong": 0
+ },
+ "rows": [
+  {
+   "id": "TXT-001",
+   "kind": "single",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Kumar Stores",
+   "gotTax": "625.60",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-002",
+   "kind": "multi",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Ravi Traders",
+   "gotTax": "1650.60",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-003",
+   "kind": "igst",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Meena Supermarket",
+   "gotTax": "724.79",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-004",
+   "kind": "discount",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Praba Mart",
+   "gotTax": "557.80",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-005",
+   "kind": "roundoff",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Selvi Provisions",
+   "gotTax": "797.92",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-006",
+   "kind": "many",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Arun Medicals",
+   "gotTax": "16930.92",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-007",
+   "kind": "decimalqty",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Kumar Stores",
+   "gotTax": "39.16",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-008",
+   "kind": "tamil",
+   "corruption": "decimal_drop",
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "REVIEW_REQUIRED",
+   "issues": [
+    "TAX_LINES_INCONSISTENT"
+   ],
+   "gotBuyer": "Ravi Traders",
+   "gotTax": null,
+   "gotItems": null
+  },
+  {
+   "id": "TXT-009",
+   "kind": "nobuyer",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": null,
+   "gotTax": "1509.82",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-010",
+   "kind": "single",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Praba Mart",
+   "gotTax": "7797.50",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-011",
+   "kind": "single",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Selvi Provisions",
+   "gotTax": "1271.02",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-012",
+   "kind": "multi",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Arun Medicals",
+   "gotTax": "2003.14",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-013",
+   "kind": "igst",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Kumar Stores",
+   "gotTax": "581.91",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-014",
+   "kind": "discount",
+   "corruption": "tamil_inject",
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Ravi Traders",
+   "gotTax": "359.52",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-015",
+   "kind": "roundoff",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Meena Supermarket",
+   "gotTax": "780.58",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-016",
+   "kind": "many",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Praba Mart",
+   "gotTax": "5960.46",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-017",
+   "kind": "decimalqty",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Selvi Provisions",
+   "gotTax": "7.74",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-018",
+   "kind": "tamil",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Arun Medicals",
+   "gotTax": "1626.72",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-019",
+   "kind": "nobuyer",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": null,
+   "gotTax": "5519.86",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-020",
+   "kind": "single",
+   "corruption": "buyer_merge",
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Ravi Traders",
+   "gotTax": "2176.26",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-021",
+   "kind": "single",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Meena Supermarket",
+   "gotTax": "229.96",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-022",
+   "kind": "multi",
+   "corruption": "rate_after",
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Praba Mart",
+   "gotTax": "1080.68",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-023",
+   "kind": "igst",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Selvi Provisions",
+   "gotTax": "1542.84",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-024",
+   "kind": "discount",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Arun Medicals",
+   "gotTax": "4283.34",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-025",
+   "kind": "roundoff",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Kumar Stores",
+   "gotTax": "1583.40",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-026",
+   "kind": "many",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Ravi Traders",
+   "gotTax": "9172.08",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-027",
+   "kind": "decimalqty",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Meena Supermarket",
+   "gotTax": "37.54",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-028",
+   "kind": "tamil",
+   "corruption": "rate_nextline",
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Praba Mart",
+   "gotTax": "294.76",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-029",
+   "kind": "nobuyer",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": null,
+   "gotTax": "1378.00",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-030",
+   "kind": "single",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Arun Medicals",
+   "gotTax": "1957.78",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-031",
+   "kind": "single",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Kumar Stores",
+   "gotTax": "826.20",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-032",
+   "kind": "multi",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Ravi Traders",
+   "gotTax": "2406.66",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-033",
+   "kind": "igst",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Meena Supermarket",
+   "gotTax": "699.25",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-034",
+   "kind": "discount",
+   "corruption": "text_loss",
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "REVIEW_REQUIRED",
+   "issues": [
+    "TOO_LITTLE_TEXT"
+   ],
+   "gotBuyer": null,
+   "gotTax": null,
+   "gotItems": null
+  },
+  {
+   "id": "TXT-035",
+   "kind": "roundoff",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Selvi Provisions",
+   "gotTax": "106.22",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-036",
+   "kind": "many",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Arun Medicals",
+   "gotTax": "2645.12",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-037",
+   "kind": "decimalqty",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Kumar Stores",
+   "gotTax": "129.18",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-038",
+   "kind": "tamil",
+   "corruption": "decimal_drop",
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "INVALID",
+   "issues": [
+    "CGST_SGST_MISMATCH",
+    "DECIMAL_SUSPECT",
+    "TAX_IMPOSSIBLE"
+   ],
+   "gotBuyer": "Ravi Traders",
+   "gotTax": null,
+   "gotItems": null
+  },
+  {
+   "id": "TXT-039",
+   "kind": "nobuyer",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": null,
+   "gotTax": "957.12",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-040",
+   "kind": "single",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Praba Mart",
+   "gotTax": "278.00",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-041",
+   "kind": "single",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Selvi Provisions",
+   "gotTax": "160.38",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-042",
+   "kind": "multi",
+   "corruption": "tamil_inject",
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Arun Medicals",
+   "gotTax": "2166.78",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-043",
+   "kind": "igst",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Kumar Stores",
+   "gotTax": "282.15",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-044",
+   "kind": "discount",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Ravi Traders",
+   "gotTax": "324.78",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-045",
+   "kind": "roundoff",
+   "corruption": "buyer_merge",
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Meena Supermarket",
+   "gotTax": "4071.48",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-046",
+   "kind": "many",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Praba Mart",
+   "gotTax": "11604.52",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-047",
+   "kind": "decimalqty",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Selvi Provisions",
+   "gotTax": "11.24",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-048",
+   "kind": "tamil",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Arun Medicals",
+   "gotTax": "481.70",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-049",
+   "kind": "nobuyer",
+   "corruption": "rate_after",
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": null,
+   "gotTax": "708.60",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-050",
+   "kind": "single",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": true,
+   "status": "READY",
+   "issues": [],
+   "gotBuyer": "Ravi Traders",
+   "gotTax": "1572.76",
+   "gotItems": null
+  }
+ ],
+ "beforeRows": [
+  {
+   "id": "TXT-001",
+   "kind": "single",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Kumar Stores",
+   "gotTax": "625.60",
+   "gotItems": [
+    [
+     "Basmati Rice 1006 11 kg",
+     "2951.30"
+    ],
+    [
+     "Sugar 1701 12 kg",
+     "9560.88"
+    ],
+    [
+     "Taxable Value",
+     "12512.18"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-002",
+   "kind": "multi",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Ravi Traders",
+   "gotTax": "1650.60",
+   "gotItems": [
+    [
+     "Sugar 1701 11 kg",
+     "9170.04"
+    ],
+    [
+     "Taxable Value",
+     "9170.04"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-003",
+   "kind": "igst",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Meena Supermarket",
+   "gotTax": "724.79",
+   "gotItems": [
+    [
+     "Toor Dal 0713 15 kg",
+     "5658.00"
+    ],
+    [
+     "Sunflower Oil 1512 12 ltr",
+     "7046.52"
+    ],
+    [
+     "Colgate Toothpaste 100g 3306 20 nos",
+     "1791.20"
+    ],
+    [
+     "Taxable Value",
+     "14495.72"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-004",
+   "kind": "discount",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Praba Mart",
+   "gotTax": "557.80",
+   "gotItems": [
+    [
+     "Sunflower Oil 1512 20 ltr",
+     "3024.40"
+    ],
+    [
+     "Colgate Toothpaste 100g 3306 7 nos",
+     "2542.54"
+    ],
+    [
+     "Dettol Soap 3401 12 pcs",
+     "209.40"
+    ],
+    [
+     "LED Bulb 9W 8539 17 nos",
+     "5967.00"
+    ],
+    [
+     "Taxable Value",
+     "11156.17"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-005",
+   "kind": "roundoff",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Selvi Provisions",
+   "gotTax": "797.92",
+   "gotItems": [
+    [
+     "Colgate Toothpaste 100g 3306 18 nos",
+     "6649.38"
+    ],
+    [
+     "Taxable Value",
+     "6649.38"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-006",
+   "kind": "many",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Arun Medicals",
+   "gotTax": "16930.92",
+   "gotItems": [
+    [
+     "Dettol Soap 3401 15 pcs",
+     "3562.20"
+    ],
+    [
+     "LED Bulb 9W 8539 17 nos",
+     "11605.90"
+    ],
+    [
+     "Copper Wire 1.5 sqmm 8544 5 mtr",
+     "1914.35"
+    ],
+    [
+     "Cotton Saree Premium Long Name Edition 5208 14 nos",
+     "4561.06"
+    ],
+    [
+     "Cashew Nuts 0801 20 kg",
+     "7950.40"
+    ],
+    [
+     "Wall Putty 3214 2 bag",
+     "1227.52"
+    ],
+    [
+     "Notebook 200 Pages 4820 3 nos",
+     "83.55"
+    ],
+    [
+     "Basmati Rice 1006 7 kg",
+     "2049.60"
+    ],
+    [
+     "Sugar 1701 9 kg",
+     "7665.48"
+    ],
+    [
+     "Toor Dal 0713 13 kg",
+     "7439.51"
+    ],
+    [
+     "Sunflower Oil 1512 9 ltr",
+     "4210.38"
+    ],
+    [
+     "Colgate Toothpaste 100g 3306 16 nos",
+     "8197.60"
+    ],
+    [
+     "Taxable Value",
+     "60467.55"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-007",
+   "kind": "decimalqty",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Kumar Stores",
+   "gotTax": "39.16",
+   "gotItems": [
+    [
+     "LED Bulb 9W 8539 0.5 nos",
+     "326.25"
+    ],
+    [
+     "Taxable Value",
+     "326.25"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-008",
+   "kind": "tamil",
+   "corruption": "decimal_drop",
+   "total": true,
+   "tax": false,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Ravi Traders",
+   "gotTax": "6.00",
+   "gotItems": [
+    [
+     "Copper Wire 1.5 sqmm 8544 10 mtr",
+     "6490.70"
+    ],
+    [
+     "Cotton Saree Premium Long Name Edition 5208 18 nos",
+     "5059.62"
+    ],
+    [
+     "Cashew Nuts 0801 4 kg",
+     "959.68"
+    ],
+    [
+     "Wall Putty 3214 2 bag",
+     "655.92"
+    ],
+    [
+     "Taxable Value",
+     "13165.92"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-009",
+   "kind": "nobuyer",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": null,
+   "gotTax": "1509.82",
+   "gotItems": [
+    [
+     "Cotton Saree Premium Long Name Edition 5208 9 nos",
+     "289.89"
+    ],
+    [
+     "Cashew Nuts 0801 4 kg",
+     "338.32"
+    ],
+    [
+     "Wall Putty 3214 15 bag",
+     "4022.25"
+    ],
+    [
+     "Notebook 200 Pages 4820 9 nos",
+     "7931.34"
+    ],
+    [
+     "Taxable Value",
+     "12581.80"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-010",
+   "kind": "single",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Praba Mart",
+   "gotTax": "7797.50",
+   "gotItems": [
+    [
+     "Cashew Nuts 0801 17 kg",
+     "13581.30"
+    ],
+    [
+     "Wall Putty 3214 15 bag",
+     "10474.50"
+    ],
+    [
+     "Notebook 200 Pages 4820 6 nos",
+     "3792.42"
+    ],
+    [
+     "Taxable Value",
+     "27848.22"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-011",
+   "kind": "single",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Selvi Provisions",
+   "gotTax": "1271.02",
+   "gotItems": [
+    [
+     "Wall Putty 3214 2 bag",
+     "1269.86"
+    ],
+    [
+     "Notebook 200 Pages 4820 14 nos",
+     "5418.56"
+    ],
+    [
+     "Basmati Rice 1006 13 kg",
+     "1222.00"
+    ],
+    [
+     "Sugar 1701 4 kg",
+     "2681.44"
+    ],
+    [
+     "Taxable Value",
+     "10591.86"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-012",
+   "kind": "multi",
+   "corruption": null,
+   "total": true,
+   "tax": false,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Arun Medicals",
+   "gotTax": "26.30",
+   "gotItems": [
+    [
+     "Notebook 200 Pages 4820 13 nos",
+     "10982.40"
+    ],
+    [
+     "Basmati Rice 1006 1 kg",
+     "526.11"
+    ],
+    [
+     "Taxable Value",
+     "11508.51"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-013",
+   "kind": "igst",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Kumar Stores",
+   "gotTax": "581.91",
+   "gotItems": [
+    [
+     "Basmati Rice 1006 3 kg",
+     "964.23"
+    ],
+    [
+     "Sugar 1701 11 kg",
+     "5659.61"
+    ],
+    [
+     "Toor Dal 0713 7 kg",
+     "5014.45"
+    ],
+    [
+     "Taxable Value",
+     "11638.29"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-014",
+   "kind": "discount",
+   "corruption": "tamil_inject",
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Ravi Traders",
+   "gotTax": "359.52",
+   "gotItems": [
+    [
+     "Invoிce No: SAI",
+     "1013.00"
+    ],
+    [
+     "Sugar 1701 2 kg",
+     "1351.58"
+    ],
+    [
+     "Taxaபble Value",
+     "1284.00"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-015",
+   "kind": "roundoff",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Meena Supermarket",
+   "gotTax": "780.58",
+   "gotItems": [
+    [
+     "Toor Dal 0713 18 kg",
+     "359.46"
+    ],
+    [
+     "Sunflower Oil 1512 20 ltr",
+     "6284.40"
+    ],
+    [
+     "Colgate Toothpaste 100g 3306 1 nos",
+     "528.99"
+    ],
+    [
+     "Dettol Soap 3401 14 pcs",
+     "8438.64"
+    ],
+    [
+     "Taxable Value",
+     "15611.49"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-016",
+   "kind": "many",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Praba Mart",
+   "gotTax": "5960.46",
+   "gotItems": [
+    [
+     "Sunflower Oil 1512 3 ltr",
+     "59.25"
+    ],
+    [
+     "Colgate Toothpaste 100g 3306 14 nos",
+     "10724.00"
+    ],
+    [
+     "Dettol Soap 3401 15 pcs",
+     "7185.30"
+    ],
+    [
+     "LED Bulb 9W 8539 5 nos",
+     "712.90"
+    ],
+    [
+     "Copper Wire 1.5 sqmm 8544 7 mtr",
+     "2437.40"
+    ],
+    [
+     "Cotton Saree Premium Long Name Edition 5208 1 nos",
+     "92.11"
+    ],
+    [
+     "Cashew Nuts 0801 14 kg",
+     "9758.00"
+    ],
+    [
+     "Wall Putty 3214 17 bag",
+     "5946.77"
+    ],
+    [
+     "Notebook 200 Pages 4820 9 nos",
+     "6571.53"
+    ],
+    [
+     "Basmati Rice 1006 12 kg",
+     "4166.16"
+    ],
+    [
+     "Sugar 1701 2 kg",
+     "1784.54"
+    ],
+    [
+     "Toor Dal 0713 19 kg",
+     "232.56"
+    ],
+    [
+     "Taxable Value",
+     "49670.52"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-017",
+   "kind": "decimalqty",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Selvi Provisions",
+   "gotTax": "7.74",
+   "gotItems": [
+    [
+     "Colgate Toothpaste 100g 3306 0.5 nos",
+     "64.55"
+    ],
+    [
+     "Taxable Value",
+     "64.55"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-018",
+   "kind": "tamil",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Arun Medicals",
+   "gotTax": "1626.72",
+   "gotItems": [
+    [
+     "Dettol Soap 3401 17 pcs",
+     "7978.27"
+    ],
+    [
+     "LED Bulb 9W 8539 19 nos",
+     "1059.06"
+    ],
+    [
+     "Taxable Value",
+     "9037.33"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-019",
+   "kind": "nobuyer",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": null,
+   "gotTax": "5519.86",
+   "gotItems": [
+    [
+     "LED Bulb 9W 8539 4 nos",
+     "2755.68"
+    ],
+    [
+     "Copper Wire 1.5 sqmm 8544 18 mtr",
+     "719.46"
+    ],
+    [
+     "Cotton Saree Premium Long Name Edition 5208 14 nos",
+     "11858.14"
+    ],
+    [
+     "Cashew Nuts 0801 13 kg",
+     "4380.48"
+    ],
+    [
+     "Taxable Value",
+     "19713.76"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-020",
+   "kind": "single",
+   "corruption": "buyer_merge",
+   "total": true,
+   "tax": true,
+   "buyer": false,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Invoice No: ARU",
+   "gotTax": "2176.26",
+   "gotItems": [
+    [
+     "Copper Wire 1.5 sqmm 8544 12 mtr",
+     "6239.88"
+    ],
+    [
+     "Cotton Saree Premium Long Name Edition 5208 15 nos",
+     "5850.45"
+    ],
+    [
+     "Taxable Value",
+     "12090.33"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-021",
+   "kind": "single",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Meena Supermarket",
+   "gotTax": "229.96",
+   "gotItems": [
+    [
+     "Cotton Saree Premium Long Name Edition 5208 14 nos",
+     "4599.28"
+    ],
+    [
+     "Taxable Value",
+     "4599.28"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-022",
+   "kind": "multi",
+   "corruption": "rate_after",
+   "total": true,
+   "tax": false,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Praba Mart",
+   "gotTax": "12.00",
+   "gotItems": [
+    [
+     "Cashew Nuts 0801 7 kg",
+     "2456.93"
+    ],
+    [
+     "Wall Putty 3214 11 bag",
+     "5320.26"
+    ],
+    [
+     "Taxable Value",
+     "7777.19"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-023",
+   "kind": "igst",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Selvi Provisions",
+   "gotTax": "1542.84",
+   "gotItems": [
+    [
+     "Wall Putty 3214 17 bag",
+     "2936.24"
+    ],
+    [
+     "Notebook 200 Pages 4820 13 nos",
+     "5635.11"
+    ],
+    [
+     "Taxable Value",
+     "8571.35"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-024",
+   "kind": "discount",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Arun Medicals",
+   "gotTax": "4283.34",
+   "gotItems": [
+    [
+     "Notebook 200 Pages 4820 16 nos",
+     "8897.12"
+    ],
+    [
+     "Basmati Rice 1006 4 kg",
+     "2181.56"
+    ],
+    [
+     "Sugar 1701 20 kg",
+     "15794.20"
+    ],
+    [
+     "Toor Dal 0713 14 kg",
+     "10700.34"
+    ],
+    [
+     "Taxable Value",
+     "35694.56"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-025",
+   "kind": "roundoff",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Kumar Stores",
+   "gotTax": "1583.40",
+   "gotItems": [
+    [
+     "Basmati Rice 1006 19 kg",
+     "8796.62"
+    ],
+    [
+     "Taxable Value",
+     "8796.62"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-026",
+   "kind": "many",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Ravi Traders",
+   "gotTax": "9172.08",
+   "gotItems": [
+    [
+     "Sugar 1701 8 kg",
+     "5328.24"
+    ],
+    [
+     "Toor Dal 0713 6 kg",
+     "4519.98"
+    ],
+    [
+     "Sunflower Oil 1512 2 ltr",
+     "1386.82"
+    ],
+    [
+     "Colgate Toothpaste 100g 3306 6 nos",
+     "4898.82"
+    ],
+    [
+     "Dettol Soap 3401 18 pcs",
+     "15617.52"
+    ],
+    [
+     "LED Bulb 9W 8539 17 nos",
+     "4293.52"
+    ],
+    [
+     "Copper Wire 1.5 sqmm 8544 2 mtr",
+     "1733.42"
+    ],
+    [
+     "Cotton Saree Premium Long Name Edition 5208 18 nos",
+     "8290.98"
+    ],
+    [
+     "Cashew Nuts 0801 11 kg",
+     "6645.87"
+    ],
+    [
+     "Wall Putty 3214 11 bag",
+     "9270.14"
+    ],
+    [
+     "Notebook 200 Pages 4820 17 nos",
+     "12251.73"
+    ],
+    [
+     "Basmati Rice 1006 4 kg",
+     "2196.96"
+    ],
+    [
+     "Taxable Value",
+     "76434.00"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-027",
+   "kind": "decimalqty",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Meena Supermarket",
+   "gotTax": "37.54",
+   "gotItems": [
+    [
+     "Toor Dal 0713 1.25 kg",
+     "750.90"
+    ],
+    [
+     "Taxable Value",
+     "750.90"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-028",
+   "kind": "tamil",
+   "corruption": "rate_nextline",
+   "total": true,
+   "tax": false,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Praba Mart",
+   "gotTax": "5.00",
+   "gotItems": [
+    [
+     "Sunflower Oil 1512 18 ltr",
+     "3872.70"
+    ],
+    [
+     "Colgate Toothpaste 100g 3306 4 nos",
+     "2022.60"
+    ],
+    [
+     "Taxable Value",
+     "5895.30"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-029",
+   "kind": "nobuyer",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": null,
+   "gotTax": "1378.00",
+   "gotItems": [
+    [
+     "Colgate Toothpaste 100g 3306 18 nos",
+     "15434.64"
+    ],
+    [
+     "Dettol Soap 3401 15 pcs",
+     "4006.35"
+    ],
+    [
+     "LED Bulb 9W 8539 8 nos",
+     "6879.04"
+    ],
+    [
+     "Copper Wire 1.5 sqmm 8544 16 mtr",
+     "1239.84"
+    ],
+    [
+     "Taxable Value",
+     "27559.87"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-030",
+   "kind": "single",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Arun Medicals",
+   "gotTax": "1957.78",
+   "gotItems": [
+    [
+     "Dettol Soap 3401 10 pcs",
+     "6992.10"
+    ],
+    [
+     "Taxable Value",
+     "6992.10"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-031",
+   "kind": "single",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Kumar Stores",
+   "gotTax": "826.20",
+   "gotItems": [
+    [
+     "LED Bulb 9W 8539 9 nos",
+     "7125.39"
+    ],
+    [
+     "Copper Wire 1.5 sqmm 8544 19 mtr",
+     "9398.73"
+    ],
+    [
+     "Taxable Value",
+     "16524.12"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-032",
+   "kind": "multi",
+   "corruption": null,
+   "total": true,
+   "tax": false,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Ravi Traders",
+   "gotTax": "99.00",
+   "gotItems": [
+    [
+     "Copper Wire 1.5 sqmm 8544 8 mtr",
+     "2707.84"
+    ],
+    [
+     "Cotton Saree Premium Long Name Edition 5208 9 nos",
+     "7079.04"
+    ],
+    [
+     "Cashew Nuts 0801 4 kg",
+     "1980.12"
+    ],
+    [
+     "Wall Putty 3214 14 bag",
+     "5904.22"
+    ],
+    [
+     "Taxable Value",
+     "17671.22"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-033",
+   "kind": "igst",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Meena Supermarket",
+   "gotTax": "699.25",
+   "gotItems": [
+    [
+     "Cotton Saree Premium Long Name Edition 5208 4 nos",
+     "2447.88"
+    ],
+    [
+     "Cashew Nuts 0801 16 kg",
+     "10254.88"
+    ],
+    [
+     "Wall Putty 3214 20 bag",
+     "1282.20"
+    ],
+    [
+     "Taxable Value",
+     "13984.96"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-034",
+   "kind": "discount",
+   "corruption": "text_loss",
+   "total": true,
+   "tax": false,
+   "buyer": true,
+   "items": true,
+   "status": null,
+   "issues": null,
+   "gotBuyer": null,
+   "gotTax": "3.00",
+   "gotItems": null
+  },
+  {
+   "id": "TXT-035",
+   "kind": "roundoff",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Selvi Provisions",
+   "gotTax": "106.22",
+   "gotItems": [
+    [
+     "Wall Putty 3214 6 bag",
+     "379.38"
+    ],
+    [
+     "Taxable Value",
+     "379.38"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-036",
+   "kind": "many",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Arun Medicals",
+   "gotTax": "2645.12",
+   "gotItems": [
+    [
+     "Notebook 200 Pages 4820 13 nos",
+     "10845.12"
+    ],
+    [
+     "Basmati Rice 1006 7 kg",
+     "6068.51"
+    ],
+    [
+     "Sugar 1701 5 kg",
+     "3395.75"
+    ],
+    [
+     "Toor Dal 0713 17 kg",
+     "4016.76"
+    ],
+    [
+     "Sunflower Oil 1512 4 ltr",
+     "2793.64"
+    ],
+    [
+     "Colgate Toothpaste 100g 3306 10 nos",
+     "2617.10"
+    ],
+    [
+     "Dettol Soap 3401 14 pcs",
+     "2107.42"
+    ],
+    [
+     "LED Bulb 9W 8539 20 nos",
+     "4610.20"
+    ],
+    [
+     "Copper Wire 1.5 sqmm 8544 12 mtr",
+     "5401.08"
+    ],
+    [
+     "Cotton Saree Premium Long Name Edition 5208 16 nos",
+     "3943.84"
+    ],
+    [
+     "Cashew Nuts 0801 9 kg",
+     "6500.61"
+    ],
+    [
+     "Wall Putty 3214 8 bag",
+     "602.56"
+    ],
+    [
+     "Taxable Value",
+     "52902.59"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-037",
+   "kind": "decimalqty",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Kumar Stores",
+   "gotTax": "129.18",
+   "gotItems": [
+    [
+     "Basmati Rice 1006 1.25 kg",
+     "1076.55"
+    ],
+    [
+     "Taxable Value",
+     "1076.55"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-038",
+   "kind": "tamil",
+   "corruption": "decimal_drop",
+   "total": true,
+   "tax": false,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Ravi Traders",
+   "gotTax": "10281.80",
+   "gotItems": [
+    [
+     "Sugar 1701 3 kg",
+     "2061.93"
+    ],
+    [
+     "Toor Dal 0713 10 kg",
+     "2010.00"
+    ],
+    [
+     "Taxable Value",
+     "4071.93"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-039",
+   "kind": "nobuyer",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": null,
+   "gotTax": "957.12",
+   "gotItems": [
+    [
+     "Toor Dal 0713 17 kg",
+     "14987.37"
+    ],
+    [
+     "Sunflower Oil 1512 18 ltr",
+     "4155.12"
+    ],
+    [
+     "Taxable Value",
+     "19142.49"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-040",
+   "kind": "single",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Praba Mart",
+   "gotTax": "278.00",
+   "gotItems": [
+    [
+     "Sunflower Oil 1512 7 ltr",
+     "2316.65"
+    ],
+    [
+     "Taxable Value",
+     "2316.65"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-041",
+   "kind": "single",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Selvi Provisions",
+   "gotTax": "160.38",
+   "gotItems": [
+    [
+     "Colgate Toothpaste 100g 3306 16 nos",
+     "3207.68"
+    ],
+    [
+     "Taxable Value",
+     "3207.68"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-042",
+   "kind": "multi",
+   "corruption": "tamil_inject",
+   "total": true,
+   "tax": false,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Arun Medicals",
+   "gotTax": "230.14",
+   "gotItems": [
+    [
+     "Invoிce No: MUR",
+     "1041.00"
+    ],
+    [
+     "Dettol Soap 3401 16 pcs",
+     "4602.88"
+    ],
+    [
+     "LED Bulb 9W 8539 11 nos",
+     "7440.95"
+    ],
+    [
+     "Copper Wire 1.5 sqmm 8544 10 mtr",
+     "5798.40"
+    ],
+    [
+     "Taxaபble Value",
+     "17842.23"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-043",
+   "kind": "igst",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Kumar Stores",
+   "gotTax": "282.15",
+   "gotItems": [
+    [
+     "LED Bulb 9W 8539 3 nos",
+     "2351.22"
+    ],
+    [
+     "Taxable Value",
+     "2351.22"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-044",
+   "kind": "discount",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Ravi Traders",
+   "gotTax": "324.78",
+   "gotItems": [
+    [
+     "Copper Wire 1.5 sqmm 8544 16 mtr",
+     "3603.36"
+    ],
+    [
+     "Cotton Saree Premium Long Name Edition 5208 3 nos",
+     "2430.72"
+    ],
+    [
+     "Cashew Nuts 0801 12 kg",
+     "803.40"
+    ],
+    [
+     "Taxable Value",
+     "6495.61"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-045",
+   "kind": "roundoff",
+   "corruption": "buyer_merge",
+   "total": true,
+   "tax": true,
+   "buyer": false,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Invoice No: ANB",
+   "gotTax": "4071.48",
+   "gotItems": [
+    [
+     "Cotton Saree Premium Long Name Edition 5208 15 nos",
+     "12865.20"
+    ],
+    [
+     "Cashew Nuts 0801 18 kg",
+     "13380.66"
+    ],
+    [
+     "Wall Putty 3214 10 bag",
+     "7683.10"
+    ],
+    [
+     "Taxable Value",
+     "33928.96"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-046",
+   "kind": "many",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Praba Mart",
+   "gotTax": "11604.52",
+   "gotItems": [
+    [
+     "Cashew Nuts 0801 18 kg",
+     "4053.24"
+    ],
+    [
+     "Wall Putty 3214 8 bag",
+     "3118.16"
+    ],
+    [
+     "Notebook 200 Pages 4820 10 nos",
+     "6886.60"
+    ],
+    [
+     "Basmati Rice 1006 9 kg",
+     "8055.90"
+    ],
+    [
+     "Sugar 1701 11 kg",
+     "1220.23"
+    ],
+    [
+     "Toor Dal 0713 12 kg",
+     "2143.68"
+    ],
+    [
+     "Sunflower Oil 1512 20 ltr",
+     "1578.20"
+    ],
+    [
+     "Colgate Toothpaste 100g 3306 7 nos",
+     "3048.08"
+    ],
+    [
+     "Dettol Soap 3401 14 pcs",
+     "6811.00"
+    ],
+    [
+     "LED Bulb 9W 8539 16 nos",
+     "496.80"
+    ],
+    [
+     "Copper Wire 1.5 sqmm 8544 11 mtr",
+     "3735.16"
+    ],
+    [
+     "Cotton Saree Premium Long Name Edition 5208 1 nos",
+     "297.69"
+    ],
+    [
+     "Taxable Value",
+     "41444.74"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-047",
+   "kind": "decimalqty",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Selvi Provisions",
+   "gotTax": "11.24",
+   "gotItems": [
+    [
+     "Wall Putty 3214 0.5 bag",
+     "40.17"
+    ],
+    [
+     "Taxable Value",
+     "40.17"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-048",
+   "kind": "tamil",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Arun Medicals",
+   "gotTax": "481.70",
+   "gotItems": [
+    [
+     "Notebook 200 Pages 4820 19 nos",
+     "5791.20"
+    ],
+    [
+     "Basmati Rice 1006 2 kg",
+     "1251.52"
+    ],
+    [
+     "Sugar 1701 7 kg",
+     "2591.33"
+    ],
+    [
+     "Taxable Value",
+     "9634.05"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-049",
+   "kind": "nobuyer",
+   "corruption": "rate_after",
+   "total": true,
+   "tax": false,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": null,
+   "gotTax": "5.00",
+   "gotItems": [
+    [
+     "Basmati Rice 1006 17 kg",
+     "14171.88"
+    ],
+    [
+     "Taxable Value",
+     "14171.88"
+    ]
+   ]
+  },
+  {
+   "id": "TXT-050",
+   "kind": "single",
+   "corruption": null,
+   "total": true,
+   "tax": true,
+   "buyer": true,
+   "items": false,
+   "status": null,
+   "issues": null,
+   "gotBuyer": "Ravi Traders",
+   "gotTax": "1572.76",
+   "gotItems": [
+    [
+     "Sugar 1701 10 kg",
+     "8766.10"
+    ],
+    [
+     "Toor Dal 0713 16 kg",
+     "14360.64"
+    ],
+    [
+     "Sunflower Oil 1512 18 ltr",
+     "5242.50"
+    ],
+    [
+     "Colgate Toothpaste 100g 3306 8 nos",
+     "3085.84"
+    ],
+    [
+     "Taxable Value",
+     "31455.08"
+    ]
+   ]
+  }
+ ]
+}

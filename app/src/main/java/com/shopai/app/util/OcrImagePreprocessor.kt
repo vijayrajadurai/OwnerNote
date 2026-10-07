@@ -9,24 +9,58 @@ import android.graphics.Matrix
 import android.graphics.Paint
 import android.net.Uri
 import androidx.exifinterface.media.ExifInterface
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
 /**
  * Prepares camera/gallery images for on-device Tesseract OCR:
  * EXIF rotation, downscaling, grayscale, and contrast boost.
+ *
+ * Only the standard preparation runs on every photo. The heavier
+ * [cleanVariant] (deskew + adaptive threshold, for dark / shadowed / tilted
+ * photos) and [rotated] are tried by the recognizer only when the standard
+ * read is poor — a clean bill is never over-processed.
+ *
+ * Every intermediate bitmap made here is recycled as soon as it is no longer
+ * needed; the caller's own bitmap is never recycled.
  */
 object OcrImagePreprocessor {
 
     private const val MAX_SIDE_PX = 2048
     private const val MIN_SIDE_PX = 640
 
+    /** The standard preparation. Always returns a new bitmap (the contrast pass draws a copy). */
     fun prepare(context: Context, source: Bitmap, imageUri: Uri? = null): Bitmap {
         val rotation = imageUri?.let { readExifRotation(context, it) } ?: 0
         val oriented = applyRotation(source, rotation)
         val scaled = scaleForOcr(oriented)
-        return enhanceForText(scaled)
+        if (oriented !== source && oriented !== scaled) oriented.recycle()
+        val enhanced = enhanceForText(scaled)
+        if (scaled !== source) scaled.recycle()
+        return enhanced
     }
+
+    /**
+     * For a poor read: small tilt corrected (±6°) and an adaptive threshold
+     * (each pixel against its neighbourhood) so shadows and dark corners
+     * don't swallow the text. Works on an already [prepare]d bitmap; returns a new one.
+     */
+    fun cleanVariant(prepared: Bitmap): Bitmap {
+        val angle = estimateSkewDegrees(prepared)
+        val straight = if (abs(angle) >= 1f) {
+            Bitmap.createBitmap(prepared, 0, 0, prepared.width, prepared.height, Matrix().apply { postRotate(-angle) }, true)
+        } else {
+            prepared
+        }
+        val binary = adaptiveThreshold(straight)
+        if (straight !== prepared) straight.recycle()
+        return binary
+    }
+
+    /** The photo turned by [degrees] (a sideways bill). Returns a new bitmap. */
+    fun rotated(source: Bitmap, degrees: Int): Bitmap =
+        Bitmap.createBitmap(source, 0, 0, source.width, source.height, Matrix().apply { postRotate(degrees.toFloat()) }, true)
 
     private fun readExifRotation(context: Context, uri: Uri): Int {
         return runCatching {
@@ -87,5 +121,33 @@ object OcrImagePreprocessor {
         }
         canvas.drawBitmap(source, 0f, 0f, paint)
         return output
+    }
+
+    /** Gray levels (0–255) of a bitmap. */
+    private fun grayOf(bitmap: Bitmap): IntArray {
+        val px = IntArray(bitmap.width * bitmap.height)
+        bitmap.getPixels(px, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+        for (i in px.indices) {
+            val c = px[i]
+            px[i] = (((c shr 16) and 0xFF) * 299 + ((c shr 8) and 0xFF) * 587 + (c and 0xFF) * 114) / 1000
+        }
+        return px
+    }
+
+    private fun adaptiveThreshold(source: Bitmap): Bitmap {
+        val out = OcrImageMath.bradley(grayOf(source), source.width, source.height)
+        return Bitmap.createBitmap(out, source.width, source.height, Bitmap.Config.ARGB_8888)
+    }
+
+    /** Skew angle (degrees, ±6) where the rows of ink line up best, measured on a ~600 px copy. */
+    private fun estimateSkewDegrees(source: Bitmap): Float {
+        val step = max(1, max(source.width, source.height) / 600)
+        val w = source.width / step
+        val h = source.height / step
+        if (w < 50 || h < 50) return 0f
+        val small = Bitmap.createScaledBitmap(source, w, h, false)
+        val gray = grayOf(small)
+        if (small !== source) small.recycle()
+        return OcrImageMath.skewDegrees(gray, w, h)
     }
 }
