@@ -35,7 +35,19 @@ class KaiContextFollowupTest {
     private val now = LocalDateTime.of(2026, 10, 8, 11, 0)
 
     private class Books(val customers: List<PartySummary> = listOf(PartySummary("c1", "Kumar", "9000000001", 3000.0, "2026-10-20T00:00:00Z"))) : KaiBooks {
-        override suspend fun snapshot() = BusinessSnapshot(customers = customers, suppliers = listOf(PartySummary("s1", "Ramesh", null, 2500.0, null)))
+        /** The entries the engine confirmed: the books show them (Kai reads a save back before saying it is saved). */
+        var confirmed: () -> List<ActionPlan> = { emptyList() }
+        private fun withSaved(base: List<PartySummary>, kind: PlanKind): List<PartySummary> {
+            val saved = confirmed().filter { it.kind == kind }
+            val existing = base.map { p -> p.copy(pendingTotal = p.pendingTotal + saved.filter { it.partyId == p.id }.sumOf { it.amount.toDouble() }) }
+            val added = saved.filter { s -> s.partyId == null || base.none { it.id == s.partyId } }.groupBy { it.partyName }
+                .map { (name, plans) -> PartySummary("new-$name", name, null, plans.sumOf { it.amount.toDouble() }, null) }
+            return existing + added
+        }
+        override suspend fun snapshot() = BusinessSnapshot(
+            customers = withSaved(customers, PlanKind.CREDIT_GIVEN),
+            suppliers = withSaved(listOf(PartySummary("s1", "Ramesh", null, 2500.0, null)), PlanKind.DEBIT_TAKEN),
+        )
         override suspend fun history(party: PartyFacts): PartyHistory? = null
         override suspend fun cashBook(from: LocalDate, to: LocalDate) = null
     }
@@ -58,7 +70,7 @@ class KaiContextFollowupTest {
 
     private var tools = Tools()
     private fun kai(books: Books = Books(), t: Tools = tools) =
-        KaiAgent(KaiBusinessBrain(books, today = { now.toLocalDate() }, random = Random(1)), books, t, now = { now }).also { tools = t }
+        KaiAgent(KaiBusinessBrain(books, today = { now.toLocalDate() }, random = Random(1)), books, t, now = { now }).also { tools = t; books.confirmed = { t.confirmed } }
     private fun KaiAgent.say(text: String) = runBlocking { ask(text) }
     private fun KaiAgent.chat(vararg lines: String): KaiTurn = lines.map { say(it) }.last()
     private fun noSaveClaim(text: String) {

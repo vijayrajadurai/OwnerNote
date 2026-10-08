@@ -134,6 +134,8 @@ object KaiReminderUnderstanding {
         """$B(evlo|evvalavu|how much|enna|what|yaar|yaaru|yar|yaru|yaarukku|yarukku|yaruku|yaroda|yaaroda|yaar\s*kitta|yar\s*kitta|who|whom|whose)$E|யார்|யாருக்கு|யாரோட""",
         RegexOption.IGNORE_CASE,
     )
+    /** A report from the books asked for with "sollu": a list, details, dues, balances. */
+    private val ledgerReport = Regex("""$B(list|details?|overdue|due|pending|balance|baaki|bakki|total|motham|mothama)$E|விவரம்|பாக்கி|லிஸ்ட்""", RegexOption.IGNORE_CASE)
     private val timeWords = Regex("""$B(time|timing|neram|nera|naeram|time-a|time-ah|time-ai)$E|நேரம்""", RegexOption.IGNORE_CASE)
     private val listWords = Regex("""$B(list|show|enna|ennenna|what|pending|today'?s|innaiku|innikku|inniku|sollu|iruku|irukku|irukka|my|en|ella|all)$E|என்ன""", RegexOption.IGNORE_CASE)
 
@@ -187,6 +189,8 @@ object KaiReminderUnderstanding {
         // Create: a reminder word, or a time with something to do ("10 mins kalichu Kumar call"), or "… sollu" with a time.
         val create = mentionsReminder || (time != null && (doVerbs.containsMatchIn(text) || tellMe.containsMatchIn(text)))
         if (!create) return null
+        // "today due + overdue list sollu": "tell me" a report from the books, not a reminder to set.
+        if (!mentionsReminder && !doVerbs.containsMatchIn(text) && ledgerReport.containsMatchIn(text)) return null
         // A question about the business that happens to have a time ("inniku evlo sales?") is not a reminder.
         // So is "Innaikku yaar payment tharanum?", "today payment yaarukku?" — asking WHO is a question, not an action.
         if (!mentionsReminder && questionWords.containsMatchIn(text)) return null

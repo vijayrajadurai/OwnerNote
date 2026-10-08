@@ -89,9 +89,14 @@ class KaiBrain(
         loaded
     }
 
+    /** Bumped on every [forget]: caches built on the ledger (party histories) know they are stale. */
+    @Volatile var version = 0L
+        private set
+
     /** Something changed in the ledger: the next question reloads it. */
     fun forget() {
         loadedAt = 0L
+        version++
     }
 
     // ---------------------------------------------------- conversation

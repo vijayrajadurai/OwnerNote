@@ -279,6 +279,8 @@ internal object KaiConversationSemantics {
         """(?<![\p{L}])(?:note|save|add|record|entry)\s*-?\s*(?:pannu|panniko|pannikko|pannikkonga|pannunga|pannikonga|pannidu|panniru|pannirunga|podu|pottudu)(?![\p{L}])|""" +
             """(?<![\p{L}])(?:kanakku\s*-?\s*la|kanakkula|kanakkil|account\s*-?\s*la|accountla|books\s*-?\s*la|ledger\s*-?\s*la)\s*(?:podu|pottudu|pottu\s*vai|ezhudhu|add\s*pannu|serthudu|serthu\s*vidu)(?![\p{L}])|""" +
             """(?<![\p{L}])(?:serthu\s*vidu|serthudu|saerthu\s*vidu)(?![\p{L}])|(?<![\p{L}])(?:save|add)\s+it(?![\p{L}])|""" +
+            // "confirm" said to a stated payment: show its card (the card's Confirm still does the save).
+            """(?<![\p{L}])confirm(?:\s*-?\s*(?:pannu|panniko|pannikko|pannunga|pannidu))?(?![\p{L}])|""" +
             """சேவ்\s*பண்ணு|சேமி|சேர்த்து\s*விடு|சேர்த்துடு|கணக்குல\s*போடு|கணக்கில்\s*போடு|நோட்\s*பண்ணிக்கோ|பதிவு\s*பண்ணு""",
     )
     /** "add pannitiya?", "save aagiducha?": the owner asks whether it was saved — never itself a request to save. */
@@ -526,6 +528,14 @@ class KaiAgent(
         val products = runCatching { tools.products() }.getOrNull()
 
         // Who is being talked about: "Kumar-aa Ramesh-aa?" answered, people named together, "avan" → the person in the conversation.
+        // "details sollu", "avanga total evlo?", "12 பேருடைய details": the people of Kai's last list answer, re-read from the
+        // ledger — never "yaar pathi?", and never the last single person (a stock or small-talk detour in between is fine).
+        // "Nagapattinam" / "rendavadhu" to the Brain's "which Lokesh?": that record's answer.
+        if (plans.isEmpty()) brain.answerChoice(spoken)?.let { reply -> return KaiTurn(reply) }
+        if (plans.isEmpty()) brain.listFollowUp(spoken)?.let { reply ->
+            conversationState.currentIntent = "BUSINESS_QUERY"
+            return KaiTurn(reply)
+        }
         val named = KaiEntityResolver.peopleIn(spoken, people)
         conversationState.referentQuestion?.let { q ->
             conversationState.referentQuestion = null
@@ -2593,13 +2603,23 @@ class KaiAgent(
         return when (val outcome = tools.confirm(plan)) {
             is ActionOutcome.Done -> {
                 tools.log("${plan.kind.name.lowercase()} ${plan.partyName}", "transaction engine", "saved ${outcome.reference}", ActionStatus.CONFIRMED, plan.reference ?: plan.key)
-                // Only the engine's Done makes "add pannitten" true; the stated payment is now in the books (said again: not added twice).
-                conversationState.lastSaved = KaiSavedPayment(plan.partyName, plan.amount, outcome.reference, plan.dueDate,
-                    receivable = plan.kind == PlanKind.CREDIT_GIVEN || plan.kind == PlanKind.PAYMENT_IN)
+                // The same stated payment is never drafted again, whatever the read-back says (no duplicate entry).
                 if (plan.key == conversationState.statedDraftKey) {
                     conversationState.stated = null
                     conversationState.statedDraftKey = null
                 }
+                // Read the books back before saying it is saved: the entry's party, on the right side, with the balance the engine reported.
+                books.changed()
+                if (!readBack(plan, outcome)) {
+                    tools.log("${plan.kind.name.lowercase()} ${plan.partyName}", "read-back", "not verified ${outcome.reference}", ActionStatus.FAILED, plan.reference ?: plan.key)
+                    return say(lang, KaiMood.CONCERNED, null,
+                        ta = "ஓனர், entry அனுப்பிட்டேன் (${outcome.reference}), ஆனா books-ல திரும்ப படிச்சு சரிபார்க்க முடியல. Collect / Pay screen-ல பாருங்க — திரும்ப save பண்ணாதீங்க.",
+                        tl = "Owner, entry anuppitten (${outcome.reference}), aanaa books-la thirumba padichu check panna mudiyala. Collect / Pay screen-la paarunga — thirumba save pannaadheenga.",
+                        en = "Owner, I sent the entry (${outcome.reference}) but couldn't read it back from the books to verify. Please check the Collect / Pay screen — don't save it again.")
+                }
+                // Only the engine's Done, read back from the books, makes "add pannitten" true.
+                conversationState.lastSaved = KaiSavedPayment(plan.partyName, plan.amount, outcome.reference, plan.dueDate,
+                    receivable = plan.kind == PlanKind.CREDIT_GIVEN || plan.kind == PlanKind.PAYMENT_IN)
                 val a = KaiFormat.rupees(plan.amount.toDouble())
                 val after = outcome.balanceAfter?.let { KaiFormat.rupees(it.toDouble()) }
                 val due = plan.dueDate?.let { KaiFormat.date(it, lang, now().toLocalDate()) }
@@ -2618,6 +2638,25 @@ class KaiAgent(
                     en = "Owner, it wasn't saved. I did not save the amount. (${outcome.reason})")
             }
         }
+    }
+
+    /**
+     * The saved entry, read back from the ledger (not a cached copy): the party is there on the entry's side, and its
+     * balance is the one the engine reported. False when the books can't be read or disagree.
+     */
+    private suspend fun readBack(plan: ActionPlan, outcome: ActionOutcome.Done): Boolean {
+        val snapshot = runCatching { books.snapshot() }.getOrNull() ?: return false
+        val side = if (plan.kind == PlanKind.CREDIT_GIVEN || plan.kind == PlanKind.PAYMENT_IN) com.shopai.app.brain.Direction.RECEIVABLE
+            else com.shopai.app.brain.Direction.PAYABLE
+        val onSide = snapshot.parties.filter { it.side == side }
+        val party = plan.partyId?.let { id -> onSide.firstOrNull { it.id == id } }
+            ?: onSide.filter { it.name.equals(plan.partyName, ignoreCase = true) }.let { same ->
+                // A new party saved by name: the one whose balance is the engine's.
+                same.singleOrNull() ?: outcome.balanceAfter?.let { b -> same.firstOrNull { p -> kotlin.math.abs(p.pending - b.toDouble()) < 0.005 } }
+            }
+            ?: return false
+        val expected = outcome.balanceAfter ?: return true
+        return kotlin.math.abs(party.pending - expected.toDouble()) < 0.005
     }
 
     private suspend fun cancelPlan(key: String, lang: KaiLang): KaiTurn {
@@ -2768,9 +2807,29 @@ class KaiAgent(
                 return KaiTurn(ChatReply(text2, KaiMood.EXPLAINING, q.intent))
             }
         }
+        hintSameNames(text, people)
         val reply = brain.ask(text)
         tools.log(reply.intent.name.lowercase(), "business brain", "answered", ActionStatus.ANSWERED)
         return KaiTurn(reply)
+    }
+
+    /**
+     * Several records share the name in the question ("Lokesh" in Chennai and in Nagapattinam): the existing entity
+     * resolver picks the one the words or the conversation point to, and names each one for the Brain's "which one?".
+     */
+    private suspend fun hintSameNames(text: String, people: List<String>) {
+        // Every name the books hold more than once gets its label, so a list line says which Lokesh it is.
+        val repeated = runCatching { books.snapshot() }.getOrNull()?.parties.orEmpty()
+            .groupBy { it.name.trim().lowercase(Locale.ROOT) }.filterValues { same -> same.distinctBy { it.id }.size > 1 }.values.map { it.first().name }
+        val labels = repeated.flatMap { n -> runCatching { tools.parties(n) }.getOrNull()?.let { KaiEntityResolver.sameName(n, it) }.orEmpty() }
+            .distinctBy { it.id }.associate { it.id to KaiEntityResolver.label(it) }
+        val name = com.shopai.app.brain.KaiUnderstanding.knownPerson(text, people)
+        val exact = name?.let { n -> runCatching { tools.parties(n) }.getOrNull()?.let { KaiEntityResolver.sameName(n, it).distinctBy { p -> p.id } } }.orEmpty()
+        if (name == null || exact.size < 2) return brain.hint(null, labels)
+        val focus = conversationState.focusPartyId?.takeIf { conversationState.lastPerson.equals(name, ignoreCase = true) }
+        val one = KaiEntityResolver.resolve(name, text, exact, focus) as? KaiEntityResolver.Result.One
+        one?.let { conversationState.focusPartyId = it.party.id }
+        brain.hint(one?.party?.id, labels + exact.associate { it.id to KaiEntityResolver.label(it) })
     }
 
     // ------------------------------------------------------------ wording

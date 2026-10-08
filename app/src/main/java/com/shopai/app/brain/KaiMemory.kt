@@ -104,9 +104,10 @@ data class BusinessSnapshot(
     /** Suppliers the owner owes, soonest due (and biggest) first. */
     fun iOwe(): List<PartyFacts> = pendingOn(Direction.PAYABLE)
 
-    private fun pendingOn(side: Direction) = parties
+    /** Everyone with money pending on [side]: soonest due first, then the biggest, then by name (always the same order). */
+    fun pendingOn(side: Direction) = parties
         .filter { it.side == side && it.pending > 0.005 }
-        .sortedWith(compareBy<PartyFacts, LocalDate?>(nullsLast()) { it.nextDue }.thenByDescending { it.pending })
+        .sortedWith(compareBy<PartyFacts, LocalDate?>(nullsLast()) { it.nextDue }.thenByDescending { it.pending }.thenBy { it.name })
 
     fun totalReceivable(): Double = cashFlow?.pendingReceivables ?: owesMe().sumOf { it.pending }
     fun totalPayable(): Double = cashFlow?.pendingPayables ?: iOwe().sumOf { it.pending }

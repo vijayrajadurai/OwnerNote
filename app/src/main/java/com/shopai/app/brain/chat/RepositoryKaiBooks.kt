@@ -28,18 +28,21 @@ class RepositoryKaiBooks(
     private val dailyCash: DailyCashRepository,
 ) : KaiBooks {
 
-    private val histories = HashMap<String, Pair<Long, PartyHistory>>()
+    /** A party's history, with when it was read and the ledger version it was read at. */
+    private class Cached(val at: Long, val version: Long, val history: PartyHistory)
+    private val histories = HashMap<String, Cached>()
 
     override suspend fun snapshot(): BusinessSnapshot? = runCatching { memory.memory() }.getOrNull()
 
     override suspend fun history(party: PartyFacts): PartyHistory? {
         val key = "${party.side}:${party.id}"
-        histories[key]?.takeIf { System.currentTimeMillis() - it.first < 60_000 }?.let { return it.second }
+        // A save anywhere in the app (KaiBrain.forget) makes the cached copy stale at once, not after a minute.
+        histories[key]?.takeIf { System.currentTimeMillis() - it.at < 60_000 && it.version == memory.version }?.let { return it.history }
         val loaded = runCatching {
             if (party.side == Direction.RECEIVABLE) PartyHistory.ofCustomer(party, parties.getCustomer(party.id).transactions)
             else PartyHistory.ofSupplier(party, parties.getSupplier(party.id).transactions)
         }.getOrNull() ?: return null
-        histories[key] = System.currentTimeMillis() to loaded
+        histories[key] = Cached(System.currentTimeMillis(), memory.version, loaded)
         return loaded
     }
 
@@ -87,4 +90,7 @@ class RepositoryKaiBooks(
         histories.clear()
         memory.forget()
     }
+
+    /** Kai Chat confirmed an entry: the next question reads the ledger itself, not the minute-old copy. */
+    override fun changed() = forget()
 }
