@@ -299,8 +299,8 @@ class KaiPaymentContextNoDueDateTest {
     fun d2_dueVenamWithTheDraftAlreadyOpenDropsOnlyTheDate() {
         val k = kai(Db(selvamOwes = null))
         k.say("selvam 5000 tharanum")
-        k.say("next month 10")
-        assertEquals(LocalDate.of(2026, 11, 10), k.say("save panniko").plan!!.dueDate)
+        // The date answer brings the draft at once.
+        assertEquals(LocalDate.of(2026, 11, 10), k.say("next month 10").plan!!.dueDate)
         val t = k.say("due venam")
         neverClearedOrCancelled(t)
         assertNull(t.plan!!.dueDate)

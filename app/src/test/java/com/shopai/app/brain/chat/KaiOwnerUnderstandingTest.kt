@@ -129,7 +129,8 @@ class KaiOwnerUnderstandingTest {
         k.say("eppa?")
         assertEquals("Owner, indha maasam 10-aa, illa adutha maasam 10-aa?", k.say("10").text())
         val t = k.say("next month")
-        assertEquals("Seri Owner, Kumar kitta irundhu ₹3,000 adutha maasam 10-m thethi vaanganum.", t.text())
+        // The books already hold Kumar ₹3,000: same-or-new is asked with the date (nothing saved).
+        assertEquals("Seri Owner, Kumar kitta irundhu ₹3,000 adutha maasam 10-m thethi vaanganum. Owner, records-la already Kumar ₹3,000 tharanum-nu irukku. Adhey ₹3,000-aa, illa pudhu ₹3,000-aa?", t.text())
         val st = k.conversationState.stated!!
         assertEquals("Kumar", st.person)
         assertEquals(BigDecimal("3000.00"), st.amount)

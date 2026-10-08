@@ -128,12 +128,16 @@ object KaiCommands {
         "return pannitaar", "collect pannitten", "collect panniten", "collect pannen", "vasool pannitten", "vasool panniten",
         "குடுத்தான்", "குடுத்தாங்க", "குடுத்தார்", "குடுத்துட்டான்", "கொடுத்தார்", "கொடுத்துட்டாங்க", "அனுப்பினான்", "அனுப்பிட்டான்",
         "வாங்கினேன்", "வந்துச்சு", "தந்தான்", "தந்தார்", "கொடுத்தான்")
+    /** "Suresh gpay la 5000 pay pannan", "5000 transfer pannittaan": the person paid (any spelling of the 3rd-person past). */
+    private val personPaidVerb = Regex("""(?i)(?<![\p{L}])(pay|gpay|g\s*pay|upi|phonepe|paytm|transfer|payment|return|settle|send|online)\s*(?:-?\s*la\s+)?(pannan|pannaan|pannaar|pannar|pannanga|pannaanga|pannitan|pannitaan|pannittan|pannittaan|pannitar|pannitaar|pannitanga|pannitaanga|pannunan|pannunaan|pannunaar|pannirukkaan|pannirukkan|pannirukaan|pannirukkaanga)(?![\p{L}])""")
+    /** "Ramesh-ku 400 GPay pannen", "transfer pannitten": the owner paid. */
+    private val ownerPaidVerb = Regex("""(?i)(?<![\p{L}])(pay|gpay|g\s*pay|upi|phonepe|paytm|transfer|payment|send|online)\s*(?:-?\s*la\s+)?(pannen|panninen|pannunen|panniten|pannitten|pannittaen|pannirukken|pannirken)(?![\p{L}])""")
     private val goodsWords = Regex("""(?i)\b(kg|kgs|kilo|litre|ltr|bag|bags|pcs|pieces|packet|box|dozen|rice|arisi|sugar|oil|maavu|paal)\b""")
 
     private fun payment(text: String, t: String, has: (Array<out String>) -> Boolean, question: Boolean, known: List<String>): KaiCommand.Payment? {
         fun hasAny(list: List<String>) = has(list.toTypedArray())
-        val out = hasAny(outWords)
-        val incoming = hasAny(inWords)
+        val out = hasAny(outWords) || ownerPaidVerb.containsMatchIn(t)
+        val incoming = hasAny(inWords) || personPaidVerb.containsMatchIn(t)
         if (out == incoming) return null
         // "Kuduthana?" (did he give?), "5000 pending", "tharanum" — questions or dues, not something that happened.
         if (question || has(arrayOf("pending", "baaki", "bakki", "tharanum", "kudukkanum", "kodukkanum", "varanum", "remind", " ah ", " aa "))) return null

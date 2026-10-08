@@ -449,8 +449,10 @@ class KaiNegativePaymentContextTest {
         val q = s.turn("September 30")
         assertEquals("Owner, September 30th 2026 already thaandiduchu. Andha date-aa (2026), illa adutha varusham September 30th 2027-aa?", q.reply.text)
         assertNull(q.plan)
-        has(s.say("2026"), "₹2,000", "September 30th")
-        assertTrue(s.turn("save pannu").plan != null)
+        val draft = s.turn("2026")
+        has(draft.reply.text, "₹2,000", "September 30th")
+        assertEquals(LocalDate.of(2026, 9, 30), draft.plan!!.dueDate)
+        assertTrue(s.db.saved.isEmpty())
         has(s.say("seri"), "Save aagiduchu")
         assertEquals(LocalDate.of(2026, 9, 30), s.db.saved.single().dueDate)
     }

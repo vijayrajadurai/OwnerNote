@@ -238,7 +238,7 @@ class KaiPaymentSavePersistenceTest {
     fun theDateTheBooksGetParsesBackToTheSameDay() {
         // AppKaiTools sends plan.dueDate.toString() to createCredit / createDebit; the books read it with parseIsoToLocalDate.
         val kai = kai()
-        val draft = kai.chat("Mahesh enaku 5000 tharanum", "July 6", "save panniko")
+        val draft = kai.chat("Mahesh enaku 5000 tharanum", "July 6")
         assertEquals(LocalDate.of(2027, 7, 6), parseIsoToLocalDate(draft.plan!!.dueDate!!.toString()))
     }
 

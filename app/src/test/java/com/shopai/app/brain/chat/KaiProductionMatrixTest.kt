@@ -764,4 +764,85 @@ class KaiProductionMatrixTest {
         has(s.say("confirm"), "Save aagiduchu", "₹2,600")
         assertEquals(listOf("c1/PAYMENT_IN"), s.tools.saved.map { "${it.partyId}/${it.kind}" })
     }
+
+    // ================================================================== 17. reported on the Pixel 8 (8 Oct 2026)
+
+    private fun deviceLedger() = Ledger().apply {
+        add("c1", "Kumar", true, "5000", d(9, 1), d(10, 8)).payments += BigDecimal("2000") to d(10, 3)
+        add("c9", "Praba", true, "5000", d(10, 8), d(11, 10))
+        add("c10", "Suresh", true, "8000", d(9, 1), d(10, 20))
+        add("c11", "Lokesh", true, "2000", d(9, 10), d(10, 20))
+        add("s1", "Ramesh", false, "2500", d(9, 20), d(10, 8))
+    }
+
+    @Test
+    fun m17_deviceReports() {
+        val c = Category("device-reports")
+        c.case("payable: due date answer brings the draft at once") {
+            val s = Shop(l = deviceLedger())
+            has(s.say("naan Selvam ku 3000 tharanum"), "Due date eppa?")
+            val t = s.turn("nalaiku")
+            has(t.reply.text, "Selvam-ku ₹3,000 naalaikku kudukkanum. Add pannalama?")
+            check(t.plan?.kind == PlanKind.DEBIT_TAKEN && t.plan.dueDate == d(10, 9)) { "plan ${t.plan}" }
+            check(s.tools.saved.isEmpty()) { "saved before Confirm" }
+            has(s.say("seri"), "Save aagiduchu", "₹3,000")
+        }
+        c.case("receivable: tomorrow brings the draft") {
+            val s = Shop(l = deviceLedger())
+            s.say("Kumar enaku 1000 tharanum")
+            val t = s.turn("tomorrow")
+            has(t.reply.text, "Add pannalama?")
+            check(t.plan?.partyId == "c1" && t.plan.dueDate == d(10, 9)) { "plan ${t.plan}" }
+        }
+        for (spelling in listOf("tmrw", "tomorow", "tommorow", "nalaiki"))
+            c.case("due date spelling $spelling") {
+                val s = Shop(l = deviceLedger()); s.say("Kumar enaku 1000 tharanum")
+                check(s.turn(spelling).plan?.dueDate == d(10, 9)) { "no draft for $spelling: ${s.last?.reply?.text}" }
+            }
+        for (text in listOf("Suresh gpay la 5000 pay pannan", "Suresh 5000 gpay pannan", "Suresh 5000 pay pannitaan", "Suresh 5000 UPI la transfer pannitaan"))
+            c.case(text) {
+                val s = Shop(l = deviceLedger())
+                val t = s.turn(text)
+                plan(s.draft(), PlanKind.PAYMENT_IN, "c10", "5000")
+                has(t.reply.text, "Add pannalama?")
+            }
+        c.case("owner paid by GPay") { val s = Shop(l = deviceLedger()); s.turn("Ramesh-ku 400 GPay pannen"); plan(s.draft(), PlanKind.PAYMENT_OUT, "s1", "400") }
+        c.case("Praba thambi is asked, then a new person") {
+            val s = Shop(l = deviceLedger())
+            has(s.say("Praba thambi enaku 6000 tharanum"), "Praba dhaan-aa", "Praba-oda thambi")
+            check(s.tools.prepared.isEmpty()) { "drafted before asking" }
+            s.say("vera aal")
+            check(s.draft()?.partyId == null && s.draft()?.partyName == "Praba Thambi" && s.draft()?.kind == PlanKind.CREDIT_GIVEN) { "draft ${s.draft()}" }
+        }
+        c.case("Praba thambi is asked, then Praba himself") {
+            val s = Shop(l = deviceLedger())
+            s.say("Praba thambi enaku 6000 tharanum"); s.say("Praba dhaan")
+            plan(s.draft(), PlanKind.CREDIT_GIVEN, "c9", "6000")
+        }
+        c.case("Praba thambi payment is asked too") {
+            val s = Shop(l = deviceLedger())
+            has(s.say("Praba thambi 500 kuduthaan"), "Praba dhaan-aa")
+            s.say("Praba")
+            plan(s.draft(), PlanKind.PAYMENT_IN, "c9", "500")
+        }
+        c.case("ten thousand is ₹10,000") { has(Shop(l = deviceLedger()).say("Chennai Lokesh ten thousand tharanum"), "₹10,000") }
+        c.case("new two-word name keeps both words") {
+            val s = Shop(l = deviceLedger())
+            has(s.say("Madurai Ravi enakku 10000 tharanum"), "Madurai Ravi kitta")
+            s.say("naalaikku")
+            check(s.draft()?.partyName == "Madurai Ravi" && s.draft()?.partyId == null) { "draft ${s.draft()}" }
+        }
+        c.case("unknown product and customer said plainly") { has(Shop(l = deviceLedger()).say("Dettol evlo irukku?"), "product-um illa, customer-um illa") }
+        c.case("known product still answers stock") { has(Shop(l = deviceLedger()).say("Colgate evlo irukku?"), "20") }
+        for (q in listOf("today yar payment tharanum", "today yaar payment tharanum?", "innaikku yaar payment tharanum?"))
+            c.case(q) { val r = Shop(l = deviceLedger()).say(q); has(r, "Innaikku", "Kumar"); hasNot(r, "kitta evlo vaanganum") }
+        c.case("add pannitiya? shows the draft again") {
+            val s = Shop(l = deviceLedger())
+            s.say("Kumar enaku 1000 tharanum"); s.say("naalaikku")
+            val t = s.turn("add pannitiya?")
+            has(t.reply.text, "Innum save pannala")
+            check(t.card?.buttons?.any { it.label == "Confirm" } == true && t.plan != null) { "no card" }
+        }
+        c.done(22)
+    }
 }

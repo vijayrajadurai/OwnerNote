@@ -38,6 +38,11 @@ object KaiLanguage {
         val english = setOf("what", "how", "who", "whom", "when", "which", "is", "are", "does", "do", "did", "the", "much", "owe", "owes",
             "my", "me", "i", "today", "tomorrow", "show", "tell", "total", "pay", "paid", "will", "has", "have", "from", "this", "next", "last",
             "remind", "gave", "received", "call", "stock", "low", "sales", "balance", "add", "scan", "every", "after", "minutes", "hour")
+        // "Suresh gpay la 5000 pay pannan": an English word ("pay") inside a Tanglish sentence — the reply stays Tanglish.
+        val tanglish = setOf("pannan", "pannaan", "pannitaan", "pannittaan", "pannen", "pannitten", "panniten", "pannu", "pannunga", "pannanum",
+            "kitta", "enakku", "enaku", "tharanum", "kudukkanum", "kuduthaan", "kuduthen", "kuduthutaan", "vandhuchu", "irukku", "evlo",
+            "naan", "avan", "avar", "sollu", "vaanganum", "anuppitaan", "anuppinen", "innaikku", "naalaikku", "nalaiku")
+        if (words.any { it in tanglish }) return KaiLang.TANGLISH
         return if (words.any { it in english }) KaiLang.ENGLISH else KaiLang.TANGLISH
     }
 

@@ -166,7 +166,8 @@ class KaiContextPaymentDateTest {
         k.say("Kumaran enaku 3000 tharanum")
         val t = k.say("next month 10")
         assertEquals(LocalDate.of(2026, 11, 10), k.conversationState.lastDate)
-        assertEquals("Seri Owner, Kumaran kitta irundhu ₹3,000 adutha maasam 10-m thethi vaanganum.", t.reply.text)
+        // "Kumaran" is not "Kumar": the draft step asks whether it is a separate customer — never merged silently.
+        assertEquals("Seri Owner, Kumaran kitta irundhu ₹3,000 adutha maasam 10-m thethi vaanganum. Owner, Kumaran-nu separate customer-aa? Kumar-a?", t.reply.text)
         assertNull(k.conversationState.pendingQuestion)
         assertEquals("IN", k.conversationState.lastPaymentDirection)
         noWrites()
@@ -232,7 +233,8 @@ class KaiContextPaymentDateTest {
         val t = k.say("10")
         assertTrue(t.reply.text, t.reply.text.contains("adutha maasam 10"))
         val done = k.say("next month 10")
-        assertEquals("Seri Owner, Kumaran-ku ₹3,000 adutha maasam 10-m thethi kudukkanum.", done.reply.text)
+        assertEquals("Seri Owner, Kumaran-ku ₹3,000 adutha maasam 10-m thethi kudukkanum. Add pannalama?", done.reply.text)
+        assertEquals(LocalDate.of(2026, 11, 10), done.plan!!.dueDate)
         assertEquals("OUT", k.conversationState.lastPaymentDirection)
     }
 
@@ -243,7 +245,8 @@ class KaiContextPaymentDateTest {
         assertEquals("இந்த மாதம் 10-ஆ Owner, அடுத்த மாதம் 10-ஆ?", k.say("10").reply.text)
         val t = k.say("அடுத்த மாதம் 10")
         assertEquals(LocalDate.of(2026, 11, 10), k.conversationState.lastDate)
-        assertEquals("சரி Owner, Kumar கிட்ட இருந்து ₹3,000 அடுத்த மாதம் 10-ம் தேதி வாங்கணும்.", t.reply.text)
+        // The books already hold Kumar ₹3,000: the draft step asks same-or-new right away (in Tamil).
+        assertEquals("சரி Owner, Kumar கிட்ட இருந்து ₹3,000 அடுத்த மாதம் 10-ம் தேதி வாங்கணும். Owner, Records-ல ஏற்கனவே Kumar ₹3,000 தரணும்-னு இருக்கு. அதே ₹3,000-ஆ, இல்ல புது ₹3,000-ஆ?", t.reply.text)
     }
 
     @Test

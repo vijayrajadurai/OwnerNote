@@ -328,7 +328,7 @@ object KaiTime {
         }
         when {
             has("day after tomorrow", "naalanniku", "nalanniku", "naalannaikku", "naalai marunaal", "nalai marunaal", "marunaal", "நாளன்னைக்கு", "நாளை மறுநாள்") -> return today.plusDays(2) to DaySource.WORD
-            has("tomorrow", "naalaikku", "naalaiku", "nalaiku", "nalaikku", "naalai", "நாளைக்கு", "நாளை") -> return today.plusDays(1) to DaySource.WORD
+            has("tomorrow", "tomorow", "tommorow", "tommorrow", "tomarrow", "tmrw", "tmr", "tomoro", "tumaro", "naalaikku", "naalaiku", "nalaiku", "nalaikku", "naalaiki", "nalaiki", "naalai", "நாளைக்கு", "நாளை") -> return today.plusDays(1) to DaySource.WORD
             has("today", "inniku", "innaikku", "innaiku", "innikku", "inniki", "indru", "tonight", "இன்னைக்கு", "இன்று") -> return today to DaySource.WORD
         }
         weekdaysIn(t).singleOrNull()?.let { dow ->

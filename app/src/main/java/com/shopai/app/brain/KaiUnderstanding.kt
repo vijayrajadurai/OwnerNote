@@ -235,7 +235,9 @@ object KaiUnderstanding {
             }
         }
         val tamil = (total + current).takeIf { saw && it >= 10 }?.toDouble()
-        if (tamil != null) return tamil
+        // "ten thousand": the English run has a number before its scale word — that is the amount, not "thousand" alone.
+        val englishRun = Regex("""(?i)\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fifteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)\s+(?:hundred|thousand|lakh)\b""")
+        if (tamil != null && !englishRun.containsMatchIn(text)) return tamil
         // English words ("three thousand"): only a run that parses as a number.
         val english = Regex("""(?i)\b((?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fifteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|lakh|and)(?:\s+(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fifteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|lakh|and))*)\b""")
             .find(text)?.value ?: return null
@@ -271,7 +273,7 @@ object KaiUnderstanding {
         // Common English and question words.
         "have", "need", "must", "should", "got", "gave", "lent", "lend", "borrowed", "money", "cash", "for", "with", "want",
         "wants", "my", "you", "your", "he", "she", "they", "them", "him", "her", "it", "this", "that", "please", "note", "save",
-        "record", "yaar", "yaaru", "yaarukku", "enna", "evlo", "eppo", "epdi", "sollu", "history", "last", "next", "total",
+        "record", "yaar", "yaaru", "yaarukku", "yar", "yaru", "yarukku", "yaarum", "yarum", "enna", "evlo", "eppo", "epdi", "sollu", "history", "last", "next", "total",
         "who", "what", "how", "when", "show", "tell", "vaaram", "motham", "collection", "moola", "romba", "konjam",
     )
 
@@ -289,6 +291,19 @@ object KaiUnderstanding {
         } ?: return null
         val base = stripSuffix(word.lowercase(Locale.ROOT))
         return word.take(base.length).replaceFirstChar { it.titlecase(Locale.ROOT) }
+    }
+
+    /**
+     * A new person's full name when the owner typed two capitalised name words ("Madurai Ravi", "Chennai Lokesh"):
+     * both words, never just the place. Lower-case speech keeps the first word (Kai's draft says "puthu customer").
+     */
+    fun personPhraseIn(text: String): String? {
+        val first = personIn(text) ?: return null
+        val m = Regex("""(?<![\p{L}])${Regex.escape(first)}\s+(\p{Lu}[\p{L}\p{M}]+)""").find(text) ?: return first
+        val second = m.groupValues[1]
+        val base = stripSuffix(second.lowercase(Locale.ROOT))
+        if (base in notNames || base.length < 2 || second.lowercase(Locale.ROOT) in notNames) return first
+        return "$first ${second.take(base.length)}"
     }
 
     // "Kumar-ku", "Kumarukku", "Ravikitta", "Ravi-kitta" → the name.

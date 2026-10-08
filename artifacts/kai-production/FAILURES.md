@@ -35,3 +35,18 @@
 | Behaviour | Decision |
 |---|---|
 | "seri" / "ama" saves the open draft also after a detour (calculator, a balance answer) — as long as Kai's last reply did not ask the owner something else. If it did (a "which Lokesh?" choice, a missing time, Save for a word, "neenga saptingala?"), "seri" answers that question and the draft waits for "confirm" / "save pannu" / the button | Owner asked for this (8 Oct 2026). Locked by `KaiProductionMatrixTest.j8_…` (detour → "seri" saves) and `j8b_…` (Kai's question → "seri" does not save), plus the existing `KaiContextFollowupTest` / `KaiHumanUnderstandingTest` stale-"ama" tests |
+
+## Found on the Pixel 8 by the owner (8 Oct 2026) — fixed on `feature/kai-device-fixes`
+
+| # | Owner saw | Root cause | Fix |
+|---|---|---|---|
+| D1 | "naan Selvam ku 3000 tharanum" → "nalaiku" → Kai only repeated it; "add pannu" was another step | the due-date answer ended the turn without a draft | `dueDateResolved` now makes the draft at once: "…naalaikku kudukkanum. Add pannalama?" + Confirm card |
+| D2 | "Suresh gpay la 5000 pay pannan" → "innaikku UPI la edhuvum nadakkala" / asked what "pannan" means | 3rd-person past "pannan / pannitaan …" after pay / gpay / upi / transfer not in the payment lexicon | one rule for "<pay word> pann(an/aan/itaan/…)" (person paid) and "pann(en/itten/…)" (owner paid) in `KaiCommands` |
+| D3 | "Praba thambi enakku 6000 tharanum" → merged into Praba | a relation word after a known name was dropped | relation words (thambi, anna, akka, amma, magan, wife …) are asked: "Praba dhaan-aa, illa Praba-oda thambi (vera aal)-aa?" — typed / spoken / button answer; "Remember" offered |
+| D4 | due date "tomorrow" asked for a meaning | spelling variants not in `KaiTime` (tmrw, tomorow, tommorow, nalaiki …) | added |
+| D5 | "Chennai Lokesh ten thousand" → ₹1,000; "Madurai Ravi" saved as "Madurai" | "thousand" read alone as a Tamil scale word; a new person's name cut to its first word | English number run wins; two capitalised name words kept for a new person |
+| D6 | "Colgate evlo irukku?" → "customer record illa" | a name that is neither a product nor a customer fell to the people answer | said plainly: "X-nu product-um illa, customer-um illa" (a known product answers its stock) |
+| D7 | "today yar payment tharanum" → "Yar kitta evlo vaanganum?" | "yar" spelling read as a person's name | yar / yaru / yarukku added as question words |
+| D8 | English reply to a Tanglish sentence with "pay" in it | one English word made the whole sentence English | Tanglish words win |
+| D9 | after a payable draft, the follow-up direction could flip | the draft path stored cash-flow direction, the stated path stored who-pays | one meaning: IN = owner receives, OUT = owner pays |
+| D10 | "add pannitiya?" with a draft open showed no Confirm | the reply had no card | the same draft card is shown again |

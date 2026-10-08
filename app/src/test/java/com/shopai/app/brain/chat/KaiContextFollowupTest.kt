@@ -86,7 +86,8 @@ class KaiContextFollowupTest {
         val kai = kai()
         assertEquals("Owner, indha maasam 5-aa, illa adutha maasam 5-aa?", kai.chat("Mahesh enaku 5000 tharanum", "5").reply.text)
         val t = kai.say("ama next month")
-        assertEquals("Seri Owner, Mahesh kitta irundhu ₹5,000 adutha maasam 5-m thethi vaanganum.", t.reply.text)
+        assertEquals("Seri Owner, Mahesh kitta irundhu ₹5,000 adutha maasam 5-m thethi vaanganum. Add pannalama?", t.reply.text)
+        assertEquals(LocalDate.of(2026, 11, 5), t.plan!!.dueDate)
         assertEquals(LocalDate.of(2026, 11, 5), kai.conversationState.lastDate)
         assertTrue(tools.confirmed.isEmpty())
     }
@@ -170,7 +171,8 @@ class KaiContextFollowupTest {
     fun payableKeepsItsDirectionThroughTheDate() {
         val kai = kai()
         val t = kai.chat("Mahesh-ku 5000 kudukkanum", "July 6")
-        assertTrue(t.reply.text, t.reply.text.startsWith("Seri Owner, Mahesh-ku ₹5,000") && t.reply.text.contains("2027") && t.reply.text.endsWith("kudukkanum."))
+        assertTrue(t.reply.text, t.reply.text.startsWith("Seri Owner, Mahesh-ku ₹5,000") && t.reply.text.contains("2027") && t.reply.text.endsWith("kudukkanum. Add pannalama?"))
+        assertEquals(PlanKind.DEBIT_TAKEN, t.plan!!.kind)
         assertEquals("OUT", kai.conversationState.lastPaymentDirection)
     }
 
@@ -382,7 +384,8 @@ class KaiContextFollowupTest {
     @Test
     fun theDueDateAnsweredBeforeSavingGoesOnTheDraft() {
         val kai = kai()
-        val turn = kai.chat("Mahesh enaku 5000 tharanum", "5", "ama next month", "kanakkula podu")
+        // The date answer itself brings the draft (no separate "kanakkula podu" step).
+        val turn = kai.chat("Mahesh enaku 5000 tharanum", "5", "ama next month")
         assertEquals(LocalDate.of(2026, 11, 5), turn.plan!!.dueDate)
         assertTrue(turn.card!!.lines.any { it.startsWith("Due date:") && it.contains("November") })
     }

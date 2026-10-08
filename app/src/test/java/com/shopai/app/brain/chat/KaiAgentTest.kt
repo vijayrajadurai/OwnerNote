@@ -362,7 +362,8 @@ class KaiAgentTest {
             assertNull(a.conversationState.pendingEntity)
             assertNull(a.conversationState.pendingAmount)
             assertNull(a.conversationState.pendingPaymentDirection)
-            assertNull(resolved.plan)
+            // Who, how much, which way and when are known: the draft comes with the date (saved only on Confirm).
+            assertEquals("draft due for '$answer'", expectedDate, resolved.plan!!.dueDate)
             assertTrue(resolved.reply.text, resolved.reply.text.contains("Praba"))
             assertTrue(resolved.reply.text, resolved.reply.text.contains("5,000"))
         }

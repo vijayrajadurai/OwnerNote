@@ -337,7 +337,7 @@ class KaiChatChecklistTest {
     @Test
     fun s17_mixedTanglish() {
         val k = kai()
-        assertEquals("Seri Owner, Kumar kitta irundhu ₹3,000 adutha maasam 10-m thethi vaanganum.",
+        assertEquals("Seri Owner, Kumar kitta irundhu ₹3,000 adutha maasam 10-m thethi vaanganum. Owner, records-la already Kumar ₹3,000 tharanum-nu irukku. Adhey ₹3,000-aa, illa pudhu ₹3,000-aa?",
             k.say("Kumar enakku 3000 tharanum, next month 10-ku").reply.text)
         has(k.say("avanukku remind pannu"), "remind")
         // The books already have Kumar ₹3,000: Kai asks whether this is the same ₹3,000 or a new one.
