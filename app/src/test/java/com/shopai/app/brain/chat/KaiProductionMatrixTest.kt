@@ -845,4 +845,56 @@ class KaiProductionMatrixTest {
         }
         c.done(22)
     }
+
+    /**
+     * One real shop day through chat, checked against the books after every save: payments in (cash / GPay), a credit
+     * to one of two same-named customers, a payment from the other, a supplier purchase with a due date, payments out,
+     * a credit with no due date, a brand-new customer, a NEW third "Murugan", then the owner's questions — and a restart.
+     */
+    @Test
+    fun j9_realShopDayLedgerStaysExact() {
+        val l = Ledger().apply {
+            add("c1", "Kumar", true, "5000", d(9, 1), d(10, 8)).payments += BigDecimal("2000") to d(10, 3)
+            add("c3", "Selvi", true, "4200", d(9, 15), d(10, 8))
+            add("c20", "Murugan", true, "1000", d(9, 20), d(10, 20), city = "Chennai")
+            add("c21", "Murugan", true, "2500", d(9, 22), d(10, 12), city = "Madurai")
+            add("c5", "Priya", true, "800", d(9, 20), null)
+            add("s1", "Ramesh", false, "2500", d(9, 20), d(10, 8))
+            add("s2", "Basha", false, "9000", d(9, 1), d(9, 30)).payments += BigDecimal("1000") to d(10, 6)
+        }
+        val s = Shop(l = l)
+        fun books() = s.l.parties.associate { p -> (p.city?.let { "$it " }.orEmpty() + p.name) to p.pending.stripTrailingZeros().toPlainString() }
+        fun step(expected: Map<String, String>, vararg lines: String): String {
+            val last = lines.map { s.say(it) }.last()
+            val b = books()
+            expected.forEach { (who, amount) -> assertEquals("$who after ${lines.toList()} → $last", amount, b[who]) }
+            return last
+        }
+
+        has(step(mapOf("Selvi" to "2200"), "Selvi 2000 kuduthaanga", "seri"), "Save aagiduchu", "₹2,200")
+        has(step(mapOf("Kumar" to "2500"), "Kumar gpay la 500 pay pannan", "seri"), "₹2,500")
+        has(s.say("Murugan enakku 1500 tharanum"), "Chennai Murugan", "Madurai Murugan")
+        has(step(mapOf("Madurai Murugan" to "4000", "Chennai Murugan" to "1000"), "Madurai", "naalaikku", "seri"), "Madurai Murugan — ₹1,500", "₹4,000")
+        has(step(mapOf("Chennai Murugan" to "0", "Madurai Murugan" to "4000"), "Chennai Murugan 1000 kuduthaan", "seri"), "Chennai Murugan — ₹1,000")
+        has(step(mapOf("Ramesh" to "14500"), "naan Ramesh-ku 12000 kudukkanum", "next week", "seri"), "₹14,500")
+        has(step(mapOf("Ramesh" to "9500"), "Ramesh-ku 5000 GPay pannen", "seri"), "₹9,500")
+        has(step(mapOf("Basha" to "5000"), "Basha-ku 3000 cash kuduthen", "seri"), "₹5,000")
+        has(step(mapOf("Priya" to "1250"), "Priya enakku 450 tharanum", "due venam", "seri"), "₹1,250")
+        has(step(mapOf("Ganesh" to "700"), "Ganesh enakku 700 tharanum", "naalaikku", "seri"), "₹700")
+        has(s.say("Trichy Murugan enakku 600 tharanum"), "Illa puthu customer 'Trichy Murugan'-aa?")
+        has(step(mapOf("Trichy Murugan" to "600", "Chennai Murugan" to "0", "Madurai Murugan" to "4000"), "pudhu", "naalaikku", "seri"), "Trichy Murugan — ₹600")
+        assertEquals(10, s.tools.saved.size)
+
+        // The owner's questions, answered from the books.
+        has(s.say("Rendu Murugan-oda balance sollu"), "Chennai Murugan — ₹0", "Madurai Murugan — ₹4,000")
+        val all = s.say("yaar yaar evlo tharanum?")
+        has(all, "6 per", "₹11,250", "Priya — ₹1,250", "Kumar — ₹2,500", "Selvi — ₹2,200", "Madurai Murugan — ₹4,000", "Ganesh — ₹700", "Trichy Murugan — ₹600")
+        has(s.say("naan yaarukku evlo kudukkanum?"), "₹14,500", "Basha ₹5,000", "Ramesh ₹9,500")
+        has(s.say("innaikku yaar tharanum?"), "₹4,700", "Kumar ₹2,500", "Selvi ₹2,200")
+        has(s.say("Mothama evlo varanum?"), "₹11,250", "₹14,500")
+        assertEquals(10, s.tools.saved.size)
+        s.restart()
+        has(s.say("Madurai Murugan evlo tharanum?"), "₹4,000")
+        has(s.say("Ramesh-ku evlo kudukkanum?"), "₹9,500")
+    }
 }

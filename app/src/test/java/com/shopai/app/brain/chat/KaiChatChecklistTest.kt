@@ -274,7 +274,8 @@ class KaiChatChecklistTest {
         val k = kai()
         has(k.say("Innaikku yaar payment tharanum?"), "Innaikku yaarum")
         has(k.say("Innaikku yaarukku payment pannanum?"), "Innaikku yaarukkum")
-        has(k.say("yar kitta collection irukku?"), "Selvi ₹4,200", "Kumar ₹3,000")
+        // "Who all owe me" is the whole list now (every person, each with its amount), not a top-3 summary.
+        has(k.say("yar kitta collection irukku?"), "5 per", "₹10,150", "Selvi — ₹4,200", "Kumar — ₹3,000")
         has(k.say("yarukku cash kudukanum?"), "Basha ₹9,000", "Ramesh ₹2,500")
         has(k.say("Mahesh enaku evlo tharanum?"), "kidaikala")
         has(k.say("Kumar balance evlo?"), "₹3,000")

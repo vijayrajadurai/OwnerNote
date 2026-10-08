@@ -139,7 +139,8 @@ class KaiBusinessBrain(
     /** The answer to "which Lokesh?" ("Nagapattinam", "rendavadhu"), or null when the words don't pick one (the question is dropped). */
     suspend fun answerChoice(text: String): ChatReply? {
         if (choices.isEmpty()) return null
-        if (everyOne.containsMatchIn(text)) {
+        // "Rendu Murugan-oda sollu" to "which Murugan?": both, not the second one.
+        if (everyOne.containsMatchIn(text) || bothOf(choices.first().name).containsMatchIn(text)) {
             val all = choices
             val q = choiceQuery ?: ChatQuery(ChatIntent.CUSTOMER_BALANCE)
             choices = emptyList()
@@ -354,6 +355,8 @@ class KaiBusinessBrain(
                 // The record the owner's own words (or the conversation) point to among same-named ones.
                 val hinted = hintId?.let { id -> matches.firstOrNull { it.id == id } }
                 when {
+                    // "Rendu Murugan-oda balance sollu": each record on its own, even when one was just talked about.
+                    matches.size > 1 && (everyOne.containsMatchIn(rawText) || bothOf(ref.name).containsMatchIn(rawText)) -> return everyRecord(ref.name, matches, query.intent, lang, rawText)
                     hinted != null -> hinted
                     all.isEmpty() -> return reply(query.intent, KaiMood.CLARIFY, lang, notFound(ref.name, lang))
                     matches.isEmpty() -> {
@@ -639,7 +642,7 @@ class KaiBusinessBrain(
                 KaiLang.TAMIL -> "அடுத்து"; KaiLang.TANGLISH -> "Next"; KaiLang.ENGLISH -> "Next"
             }
             val kept = keepList(if (period == null) ListKind.PENDING else ListKind.DUE, Direction.RECEIVABLE, period, list)
-            if (q.fullList && list.isNotEmpty()) reply(q.intent, KaiMood.CREDIT, lang, listText(kept, lang, day))
+            if ((q.fullList || period == null) && list.isNotEmpty()) reply(q.intent, KaiMood.CREDIT, lang, listText(kept, lang, day))
             else collections(list, ChatIntent.UPCOMING_COLLECTIONS, lang, day, label, overdue = emptyList())
         }
         ChatIntent.OVERDUE_COLLECTIONS -> {
