@@ -299,6 +299,14 @@ internal object KaiConversationSemantics {
     fun asksIfSaved(text: String): Boolean = savedQuestion.containsMatchIn(plain(text))
     /** A bare "ama" / "seri" / "ok" / "yes" — or "seri add pannu" — said to a draft Kai just showed. */
     fun confirmsDraft(text: String): Boolean = plain(text) in yesWords || savesDraft(text)
+    /** "due venam", "due date vendaam", "date venam", "no due date": the payment stays — only its due date is not wanted. */
+    private val noDueDate = Regex(
+        """^(?:(?:seri|ok|okay|illa|no)\s+)?(?:due\s*date|due\s*thethi|due|date|thethi|deadline)\s*(?:-?\s*(?:um|lam|ellam))?\s*""" +
+            """(?:venam|venaam|vendam|vendaam|venda|vendaa|veenam|illa|illai|thevai\s*illa|theva\s*illa|thevaiyilla|no|none|not\s*needed|skip|வேண்டாம்|இல்லை)$|""" +
+            """^(?:no|without)\s+(?:due\s*date|due|date)$|^(?:தேதி|டியூ)\s*(?:வேண்டாம்|இல்லை)$""",
+    )
+    fun dropsDueDate(text: String): Boolean = noDueDate.matches(plain(text))
+
     /** "venam", "cancel", "vidunga": dropping a stated payment that has no draft yet ("illa" / "no" alone may answer a question). */
     fun dropsStated(text: String): Boolean = cancelsDraft(text) && plain(text) !in setOf("no", "illa", "illai")
 }
@@ -412,6 +420,11 @@ class KaiAgent(
                 return revise(openPayment.key, openPayment.partyName, correctedAmount, openPayment.mode, outgoing, lang)
                     .also { conversationState.pendingCorrection = false }
             }
+            // "due venam" with the draft on screen: the same draft, with no due date — never a cancel, never "paid".
+            if (openPayment.key == conversationState.statedDraftKey && KaiConversationSemantics.dropsDueDate(said)) {
+                val l = shortLang(said, lang)
+                return withText(redraftStated(openPayment, openPayment.amount, null, l), noDueDateText(conversationState.stated, l))
+            }
             if (KaiConversationSemantics.cancelsDraft(said)) {
                 return act(KaiAction.CancelPlan(openPayment.key), lang)!!
             }
@@ -441,6 +454,9 @@ class KaiAgent(
             conversationState.entityChoice = null
             KaiEntityResolver.pick(com.shopai.app.brain.tools.KaiSpokenWords.normalize(said), choice.candidates)?.let { picked -> return entityPicked(choice, picked, said, lang) }
         }
+
+        // "due venam" after "Due date eppa?": the stated payment has no due date — it is drafted for Confirm, still pending.
+        if (openPayment == null && KaiConversationSemantics.dropsDueDate(said)) conversationState.stated?.let { st -> return withoutDueDate(st, said, lang) }
 
         pendingDueDateAnswer(said, lang)?.let { return it }
 
@@ -662,6 +678,10 @@ class KaiAgent(
         // "Kumar 3000 eppo tharanum?", "Kumar evlo tharanum?" ask the records — they are questions, not statements.
         val asking = Regex("(?i)(?<![\\p{L}])(evlo|evvalavu|eppo|eppa|epo|how much|when|yaar|yaaru|who)(?![\\p{L}])|(?<![\\p{L}])enna(?!\\s*(?:₹|rs\\.?)?\\s*\\d)(?![\\p{L}])|\\?|எவ்வளவு|எப்போ|யார்")
             .containsMatchIn(text)
+        // "Selvam enaku already 3000 tharanum, ippa oru 2000 tharanum": what is already owed, and a NEW amount on top.
+        if (person != null && owed != null && !asking) existingAndNew(amountText)?.let { (said, new) ->
+            return newOnTopOfExisting(person, said, new, owed, saidDate, text, lang)
+        }
         if (hasReceivableMeaning && person != null && amount != null && cmd == KaiCommand.Question && !asking) {
             dropStatedDraft()
             val ownerIsRecipient = Regex("(?i)\\b(enakku|enaku|to me|for me)\\b").containsMatchIn(text)
@@ -767,6 +787,102 @@ class KaiAgent(
             tl = " Neenga sonna $asked $a innum save aagala — save panna 'save pannu'-nu sollunga.",
             en = " The $a you mentioned for $asked isn't saved yet — say 'save it' to save it.")
         return answer.copy(reply = answer.reply.copy(text = answer.reply.text + note))
+    }
+
+    // ------------------------------------------------------------ an amount already owed + a new one; no due date
+
+    private val numberToken = Regex("""(?i)(?<![\d\p{L}])(?:₹|rs\.?\s*)?\d[\d,]*(?:\.\d+)?\s*k?(?![\d\p{L}])""")
+    /** Words that put a second amount on top of the first: "ippa / ippo / innum / innoru / oru / pudhusa / another". */
+    private val newAmountWords = Regex("""(?i)(?<![\p{L}])(ippa|ippo|ipo|ipa|innum|inum|innoru|inoru|innonnu|puthusa|pudhusa|puthu|pudhu|new|another|additional|extra|more|again|meendum|marubadiyum|thirumba|aprom|apram)(?![\p{L}])|இப்போ|இன்னும்|இன்னொரு|புதுசா""")
+
+    /**
+     * (amount already owed, new amount) when the owner says both — "already 3000 … ippa oru 2000", "3000 pending
+     * irukku, innum 2000", "3000 tharanum, innoru 2000". The second is the new entry; the first is never edited.
+     */
+    private fun existingAndNew(text: String): Pair<BigDecimal, BigDecimal>? {
+        val tokens = numberToken.findAll(text).filter { m -> m.value.filter(Char::isDigit).length in 1..8 }.toList()
+        if (tokens.size != 2) return null
+        if (!newAmountWords.containsMatchIn(text.substring(tokens[0].range.last + 1, tokens[1].range.first))) return null
+        val amounts = com.shopai.app.brain.KaiUnderstanding.amountsIn(text, now().toLocalDate()).filter { it > 0 }
+        if (amounts.size != 2) return null
+        fun money(v: Double) = BigDecimal.valueOf(v).setScale(2, java.math.RoundingMode.HALF_UP)
+        return money(amounts[0]) to money(amounts[1])
+    }
+
+    /** What the books say this person owes / is owed now (null: not in the books, or unreadable). */
+    private suspend fun recordedPending(st: KaiStatedPayment): BigDecimal? {
+        val receivable = st.direction == KaiConversationPaymentDirection.PAYMENT_IN
+        val parties = runCatching { books.snapshot() }.getOrNull()?.parties ?: return null
+        val side = if (receivable) com.shopai.app.brain.Direction.RECEIVABLE else com.shopai.app.brain.Direction.PAYABLE
+        val p = parties.firstOrNull { it.id == st.partyId } ?: parties.firstOrNull { it.side == side && it.name.equals(st.person, ignoreCase = true) }
+        return p?.pending?.let { BigDecimal.valueOf(it).setScale(2, java.math.RoundingMode.HALF_UP) }
+    }
+
+    /**
+     * "Selvam enaku already 3000 tharanum ippa oru 2000 tharanum": a NEW ₹2,000 draft (Confirm saves it as its own
+     * entry); the ₹3,000 already in the books is left as it is, and the card shows the total after Confirm.
+     */
+    private suspend fun newOnTopOfExisting(
+        person: String, existingSaid: BigDecimal, newAmount: BigDecimal, owed: com.shopai.app.brain.tools.OwedDirection,
+        saidDate: LocalDate?, text: String, lang: KaiLang,
+    ): KaiTurn {
+        dropStatedDraft()
+        val direction = if (owed == com.shopai.app.brain.tools.OwedDirection.PAYABLE) KaiConversationPaymentDirection.PAYMENT_OUT else KaiConversationPaymentDirection.PAYMENT_IN
+        remember(person, newAmount, direction, text, lang)
+        identify(person, text, lang)?.let { return it }
+        if (saidDate != null) conversationState.stated = conversationState.stated?.copy(dueDate = saidDate)
+        val st = conversationState.stated!!
+        val draft = draftStated(st, lang, text)
+        if (draft.plan == null) return draft
+        val who = st.label ?: st.person
+        val recorded = recordedPending(st) ?: BigDecimal.ZERO
+        val out = direction == KaiConversationPaymentDirection.PAYMENT_OUT
+        val n = KaiFormat.rupees(newAmount.toDouble())
+        val total = KaiFormat.rupees((recorded + newAmount).toDouble())
+        val old = KaiFormat.rupees(recorded.toDouble())
+        val oldLine = if (recorded.compareTo(existingSaid) == 0) pickLang(lang,
+            ta = "$who-ஓட ஏற்கனவே இருக்கிற $old அப்படியே இருக்கும் — இது புது $n entry.",
+            tl = "$who-oda already irukkura $old apdiye irukkum — idhu pudhu $n entry.",
+            en = "The $old $who already has stays as it is — this is a new $n entry.")
+        else pickLang(lang,
+            ta = "Records-ல $who பாக்கி $old தான் இருக்கு (நீங்க சொன்ன ${KaiFormat.rupees(existingSaid.toDouble())} இல்ல) — இது புது $n entry.",
+            tl = "Records-la $who pending $old dhaan irukku (neenga sonna ${KaiFormat.rupees(existingSaid.toDouble())} illa) — idhu pudhu $n entry.",
+            en = "The records show $old for $who (not the ${KaiFormat.rupees(existingSaid.toDouble())} you said) — this is a new $n entry.")
+        val ask = if (out) pickLang(lang, ta = " Confirm பண்ணா மொத்தம் $total கொடுக்கணும். Due date வேணும்னா சொல்லுங்க, இல்லனா Confirm பண்ணுங்க.",
+            tl = " Confirm pannina mothama $total kudukkanum. Due date venumna sollunga, illana Confirm pannunga.",
+            en = " After Confirm you owe $total in all. Tell me a due date if you want one, or Confirm.")
+        else pickLang(lang, ta = " Confirm பண்ணா மொத்தம் $total வரணும். Due date வேணும்னா சொல்லுங்க, இல்லனா Confirm பண்ணுங்க.",
+            tl = " Confirm pannina mothama $total varanum. Due date venumna sollunga, illana Confirm pannunga.",
+            en = " After Confirm, $total in all is due to you. Tell me a due date if you want one, or Confirm.")
+        return withText(draft, pickLang(lang, ta = "சரி Owner. ", tl = "Seri Owner. ", en = "Okay Owner. ") + oldLine + ask)
+    }
+
+    private fun withText(turn: KaiTurn, text: String) = turn.copy(reply = turn.reply.copy(text = text))
+
+    /** "Seri Owner 👍 Due date illa. Selvam kitta ₹5,000 collect panna vendiyadhu. Save pannava?" */
+    private fun noDueDateText(st: KaiStatedPayment?, lang: KaiLang): String {
+        val who = st?.let { it.label ?: it.person } ?: ""
+        val a = st?.amount?.let { KaiFormat.rupees(it.toDouble()) } ?: ""
+        val out = st?.direction == KaiConversationPaymentDirection.PAYMENT_OUT
+        return if (out) pickLang(lang, ta = "சரி Owner 👍 Due date இல்ல. $who-க்கு $a கொடுக்க வேண்டியது. சேமிக்கட்டுமா?",
+            tl = "Seri Owner 👍 Due date illa. $who-ku $a kudukka vendiyadhu. Save pannava?",
+            en = "Okay Owner 👍 No due date. You owe $who $a. Save it?")
+        else pickLang(lang, ta = "சரி Owner 👍 Due date இல்ல. $who கிட்ட $a collect பண்ண வேண்டியது. சேமிக்கட்டுமா?",
+            tl = "Seri Owner 👍 Due date illa. $who kitta $a collect panna vendiyadhu. Save pannava?",
+            en = "Okay Owner 👍 No due date. $a is to be collected from $who. Save it?")
+    }
+
+    /** "due venam" to "Due date eppa?": the stated payment keeps everything but its date, and goes to the draft card. */
+    private suspend fun withoutDueDate(st: KaiStatedPayment, said: String, rawLang: KaiLang): KaiTurn {
+        val lang = shortLang(said, rawLang)
+        val now = st.copy(dueDate = null)
+        conversationState.stated = now
+        conversationState.pendingDay = null
+        conversationState.pendingMonthOffset = null
+        conversationState.lastDate = null
+        tools.log("payment", "conversation", "no due date for the stated payment", ActionStatus.ANSWERED, null, said)
+        val draft = draftStated(now, lang, said)
+        return if (draft.plan != null) withText(draft, noDueDateText(now, lang)) else draft
     }
 
     // ------------------------------------------------------------ returning to a topic, clarifying against it
@@ -2183,6 +2299,15 @@ class KaiAgent(
             add(pick(lang, ta = "முறை: ${modeName(plan.mode, lang)}", tl = "Mode: ${modeName(plan.mode, lang)}", en = "Mode: ${modeName(plan.mode, lang)}"))
             // A stated payment ("Mahesh enaku 2000 tharanum"): its due date, and whether the person is new to the books.
             if (r.stated) {
+                // Already owed something: this is a separate NEW entry — the old amount is not edited.
+                val before = plan.balanceBefore ?: conversationState.stated?.takeIf { partyId != null }?.let { recordedPending(it) }
+                if (before != null && before.signum() > 0) {
+                    add(pick(lang, ta = "புது entry: $a (பழைய ${KaiFormat.rupees(before.toDouble())} மாறாது)",
+                        tl = "Pudhu entry: $a (pazhaya ${KaiFormat.rupees(before.toDouble())} maaraadhu)",
+                        en = "New entry: $a (the existing ${KaiFormat.rupees(before.toDouble())} is unchanged)"))
+                    if (plan.balanceBefore == null) add(pick(lang, ta = "பாக்கி: ", tl = "Balance: ", en = "Balance: ") +
+                        "${KaiFormat.rupees(before.toDouble())} → ${KaiFormat.rupees((before + plan.amount).toDouble())}")
+                }
                 val due = plans[plan.key]?.dueDate
                 add(if (due != null) pick(lang, ta = "Due date: ${KaiFormat.date(due, lang, now().toLocalDate())}", tl = "Due date: ${KaiFormat.date(due, lang, now().toLocalDate())}", en = "Due date: ${KaiFormat.date(due, lang, now().toLocalDate())}")
                     else pick(lang, ta = "Due date: இல்லை", tl = "Due date: illa", en = "Due date: not set"))

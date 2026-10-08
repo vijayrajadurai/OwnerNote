@@ -55,6 +55,7 @@ object KaiPaymentDirection {
     /** Words that end in -ku but are not a person's dative ("enakku", "innaikku", "yaarukku", "manikku"…). */
     private val notDative = setOf(
         "ena", "enak", "enna", "una", "unak", "unna", "yaar", "yaaru", "yar", "yaru", "innai", "innaik", "inni", "innik", "naalai", "naalaik", "nalai",
+        "ir", "iru", "iruk", "irukk", "irukkudh", "irukkuth",
         "mani", "manik", "adhu", "idhu", "athu", "ithu", "avan", "avanu", "avar", "avaru", "avanga", "avangalu", "time", "date", "thethi", "month", "week",
     )
     private val latinDative = Regex("""(?i)([a-z]{2,})\s*-?\s*(?:ukku|kku|ku|uku)(?![a-z])""")
