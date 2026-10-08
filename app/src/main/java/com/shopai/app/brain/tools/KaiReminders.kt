@@ -129,6 +129,7 @@ object KaiReminderUnderstanding {
         """^\s*(ok\s*)?(done|completed|complete|finished|mudinjiduchu|mudinjidhu|mudinjathu|mudichiten|mudichitten|aachu|pannitten|panniten|seithuten)\s*[.!]?\s*$|^\s*முடிஞ்சது\s*$""",
         RegexOption.IGNORE_CASE,
     )
+    private val timeWords = Regex("""$B(time|timing|neram|nera|naeram|time-a|time-ah|time-ai)$E|நேரம்""", RegexOption.IGNORE_CASE)
     private val listWords = Regex("""$B(list|show|enna|ennenna|what|pending|today'?s|innaiku|innikku|inniku|sollu|iruku|irukku|irukka|my|en|ella|all)$E|என்ன""", RegexOption.IGNORE_CASE)
 
     /** The owner explicitly asked for a reminder ("remind pannu", "reminder", "nyabagam paduthu", Tamil script too). */
@@ -139,8 +140,10 @@ object KaiReminderUnderstanding {
         val text = KaiSpokenWords.normalize(raw.trim()).replace(Regex("""\s+"""), " ")
         if (text.isEmpty()) return null
         val lower = text.lowercase(Locale.ROOT)
-        val time = KaiTime.parse(text, now)
         val mentionsReminder = remindWords.containsMatchIn(text)
+        // "4-ku school pickup irukku, remind me": a bare "4-ku" is an hour only when a reminder is asked for / changed.
+        val time = KaiTime.parse(text, now)
+            ?: if (mentionsReminder || changeWords.containsMatchIn(text)) KaiTime.parse(spokenHour(text), now) else null
 
         // "Done." / "Completed." — the reminder that just rang.
         if (doneWords.containsMatchIn(lower)) return ReminderRequest.Complete(ReminderTarget.Last)
@@ -159,6 +162,12 @@ object KaiReminderUnderstanding {
         }
         if (changeWords.containsMatchIn(text) && (mentionsReminder || thatWords.containsMatchIn(text))) {
             return ReminderRequest.Update(target(text, people), time)
+        }
+        // "Time maathu", "neram maathu", "5 manikku time change pannu": the reminder just talked about, nothing else said.
+        if (changeWords.containsMatchIn(text) && timeWords.containsMatchIn(text) && KaiCommands.personIn(text, people) == null) {
+            val rest = cleanTask(KaiTime.strip(spokenHour(text))).replace(changeWords, " ").replace(timeWords, " ")
+                .replace(Regex("""(?i)$B(pannu|pannunga|panni|pannidu|ah|a|ai|ku|kku|to|the|konjam|please|pls|ok|seri)$E"""), " ")
+            if (rest.none(Char::isLetter)) return ReminderRequest.Update(ReminderTarget.Last, time)
         }
         if (Regex("""$B(complete|done|mudinjiduchu)$E""", RegexOption.IGNORE_CASE).containsMatchIn(text) && mentionsReminder) {
             return ReminderRequest.Complete(target(text, people))
@@ -194,7 +203,7 @@ object KaiReminderUnderstanding {
             else -> null
         }
         val person = KaiCommands.personIn(text, people)
-        val cleaned = cleanTask(KaiTime.strip(text))
+        val cleaned = cleanTask(KaiTime.strip(spokenHour(text)))
         val taskSaid = cleaned.any(Char::isLetter)
         val task = cleaned.ifBlank { text }
         val title = when (action) {
@@ -222,13 +231,25 @@ object KaiReminderUnderstanding {
         else ReminderTarget.Matching(words, person)
     }
 
+    /** "4-ku" / "4ku" → "4 manikku" (an hour 1–12 said with only the dative), for reminder sentences. */
+    fun spokenHour(text: String): String =
+        Regex("""(?i)(?<![\d.:,])(1[0-2]|0?[1-9])\s*-?\s*(?:ku|kku)$E""").replace(text) { "${it.groupValues[1]} manikku" }
+
     /** The owner's words without "remind pannu" and fillers. */
     fun cleanTask(text: String): String = (" $text ")
         .replace(Regex("""(?i)$B(remind\s*(pannu|pannunga|me\s*to|me|panni|pannidu)?|reminder\s*(vai|vechudu|set\s*pannu|set|podu|poodu|pottu)?|reminder|""" +
-            """nyabagam\s*(paduthu|padutthu|paduthunga)?|gnabagam\s*(paduthu)?|niyabagam\s*(paduthu)?|ninaivu\s*(paduthu|paduthunga)?|ninaivupaduthu|""" +
-            """please|pls|enakku|ennaku|kai|bro|set|pannu|pannunga|sollu|sollunga|nu|appo|later|me\s*to|la)$E"""), " ")
+            """nyabagam\s*(paduthu|padutthu|paduthunga|padutha|paduthanum)?|gnabagam\s*(paduthu)?|niyabagam\s*(paduthu)?|ninaivu\s*(paduthu|paduthunga)?|ninaivupaduthu|""" +
+            """please|pls|enakku|ennaku|kai|bro|set|pannu|pannunga|sollu|sollunga|appo|later|me\s*to)$E"""), " ")
+        // "school-la", "pickup-nu": a case ending stays on its word; only a loose "la" / "nu" / "aagumbodhu" is filler.
+        .replace(Regex("""(?i)(?<![\p{L}-])(nu|la|solli|aagumbodhu|aagumbothu|aagum\s*bodhu|aagum\s*pothu|aanadhum|aanathum|aanavudan)$E"""), " ")
+        // A case ending whose word was a time ("10 minutes-la", "4 PM-ku" → " -la", " -ku").
+        .replace(Regex("""(?i)(?<=\s)-\s*(la|le|ku|kku|ukku)$E"""), " ")
         .replace(Regex("""நினைவூட்டு|ஞாபகப்படுத்து|சொல்லு"""), " ")
         .replace(Regex("""\s+"""), " ").trim().trim('-', ',', '.').trim()
+        // What a time leaves behind ("4 PM-ku son-a …" → "-ku son-a …"), and "… pickup irukku".
+        .replace(Regex("""(?i)^(-\s*)?(ku|kku)$E[\s,]*"""), "")
+        .replace(Regex("""(?i)[\s,]+(irukku|iruku)$"""), "")
+        .trim().trim('-', ',', '.').trim()
 }
 
 /** How Kai words reminders (confirmation, notification). */

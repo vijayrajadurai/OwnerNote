@@ -149,13 +149,13 @@ class KaiFinalFixesTest {
     fun onlyTheMissingFieldIsAsked() = runBlocking {
         // Time said, task missing → "Enna remind pannanum?" (the time is kept).
         val q = kai.ask("2 minutes la remind pannu")
-        assertEquals("Sure Owner. Enna remind pannanum?", q.reply.text)
+        assertEquals("Seri Owner. Enna nyabagam paduthanum?", q.reply.text)
         assertTrue(tools.scheduled.isEmpty())
         val done = kai.askConfirmed("Ruthran-ku call panna")
         assertEquals("Done Owner ✅ 2 minutes kalichi Ruthran-ku call panna remind pannuren.", done.reply.text)
         assertEquals(nowMillis + 120_000, tools.scheduled.single().triggerAt)
         // Task said, time missing → only the time is asked.
-        assertTrue(kai.ask("Ruthran-ku call remind pannu").reply.text.startsWith("Eppo remind pannanum Owner?"))
+        assertTrue(kai.ask("Ruthran-ku call remind pannu").reply.text.startsWith("Seri Owner. Eppa remind pannanum?"))
     }
 
     @Test

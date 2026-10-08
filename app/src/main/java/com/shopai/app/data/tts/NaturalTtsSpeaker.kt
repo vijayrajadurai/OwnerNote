@@ -197,6 +197,56 @@ class NaturalTtsSpeaker(context: Context) {
         }
     }
 
+    /**
+     * Speaks [parts] (one reminder turn) as ONE continuous clip: each sentence's kept natural-voice audio,
+     * joined with exactly [gapsMs] of silence between them ([WavJoin]) and played by one player — so the
+     * sentences flow like one person talking, never a voice restarting for each sentence.
+     *
+     * When a sentence's audio can't be had, the whole turn is one request instead (the voice's own
+     * sentence pauses), then device TTS — still one utterance. [stop] drops it at any point.
+     */
+    fun speakTurn(
+        parts: List<String>,
+        gapsMs: List<Long>,
+        languageCode: String = "ta-IN",
+        onDone: (() -> Unit)? = null,
+    ) {
+        val asked = generation
+        val lines = parts.map { it.trim() }.filter { it.isNotEmpty() }
+        val whole = lines.joinToString(" ")
+        scope.launch {
+            withContext(NonCancellable) {
+                if (lines.size > 1 && ttsApi != null) {
+                    val started = System.currentTimeMillis()
+                    // All sentences at once (usually already kept on disk from the prefetch: no network).
+                    val clips = kotlinx.coroutines.coroutineScope {
+                        lines.map { async { runCatching { keptAudio(it, languageCode) }.getOrNull() } }.map { it.await() }
+                    }
+                    if (asked != generation) { onDone?.invoke(); return@withContext }
+                    val joined = clips.takeIf { c -> c.all { it != null } }?.let { files ->
+                        withContext(Dispatchers.IO) { runCatching { WavJoin.join(files.map { it!!.readBytes() }, gapsMs) }.getOrNull() }
+                    }
+                    if (joined != null) {
+                        val file = withContext(Dispatchers.IO) { File.createTempFile("turn_", ".wav", appContext.cacheDir).apply { writeBytes(joined) } }
+                        Log.i(TAG, "voice turn: ${lines.size} sentences joined in ${System.currentTimeMillis() - started} ms, gaps=$gapsMs")
+                        val played = if (asked == generation) playWavFile(file, false) else false
+                        file.delete()
+                        if (played) {
+                            lastEngine = "sarvam"
+                            lastProxyProblem = null
+                            onDone?.invoke()
+                            return@withContext
+                        }
+                        if (asked != generation) { onDone?.invoke(); return@withContext }
+                    } else {
+                        Log.i(TAG, "voice turn: sentences not all available (${clips.count { it != null }}/${lines.size}); one request for the turn")
+                    }
+                }
+                speakNaturalInternal(whole, languageCode, whole, languageCode, false, null, onDone, asked)
+            }
+        }
+    }
+
     /** Stops what is playing and drops every request still being prepared (nothing queued plays later). */
     fun stop() {
         generation++

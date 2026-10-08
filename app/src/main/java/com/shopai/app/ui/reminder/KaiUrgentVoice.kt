@@ -17,6 +17,13 @@ interface KaiVoiceOut {
     /** Speaks [text] and returns when it has finished (or was hushed). */
     suspend fun say(text: String, languageCode: String)
 
+    /**
+     * Speaks one turn — its sentences [parts] with [gapsMs] of silence between them — as one continuous
+     * utterance, returning when it has finished (or was hushed). A voice that can't join clips says the
+     * sentences as one text.
+     */
+    suspend fun sayTurn(parts: List<String>, gapsMs: List<Long>, languageCode: String) = say(parts.joinToString(" "), languageCode)
+
     /** Stops what is playing now and anything still being prepared — nothing queued survives. */
     fun hush()
 }
@@ -45,7 +52,7 @@ class KaiUrgentVoice(
 
     private var ring: String? = null
     private var job: Job? = null
-    /** Per ring: the next utterance number (so a paused cycle continues). */
+    /** Per ring: the next turn number (so a paused cycle continues). */
     private val next = HashMap<String, Int>()
     /** Rings the owner answered: they never speak again. */
     private val answered = HashSet<String>()
@@ -77,7 +84,10 @@ class KaiUrgentVoice(
                 log("voice line $n $ringKey: ${line.text}")
                 try {
                     // A voice that never reports back (stopped elsewhere) can't stall the reminder.
-                    withTimeoutOrNull(LINE_TIMEOUT_MS) { out.say(line.text, languageCode) }
+                    // One turn = one utterance: its sentences flow with short breaths, never a restart per sentence.
+                    withTimeoutOrNull(LINE_TIMEOUT_MS) {
+                        if (line.parts.size > 1) out.sayTurn(line.parts, line.gapsMs, languageCode) else out.say(line.text, languageCode)
+                    }
                 } finally {
                     endCue(mine)
                 }

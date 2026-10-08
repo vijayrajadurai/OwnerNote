@@ -110,7 +110,9 @@ object KaiTime {
     )
     private val tamilRelative = Regex("""(\d+)\s*(வினாடி|நிமிடம்|நிமிஷம்|மணி\s*நேரம்)\s*(?:கழிச்சு|கழித்து|பிறகு|ல)?""")
 
-    private val dailyWords = Regex("""$B(daily|every\s*day|everyday|dhinamum|thinamum|dinamum|dhinam|daily-um|ovvoru\s*naalum|naal\s*thorum)$E|தினமும்|ஒவ்வொரு\s*நாளும்""", RegexOption.IGNORE_CASE)
+    // "Every morning 8 manikku medicine", "ovvoru kaalaiyum": every day, at that part of the day.
+    private val dailyWords = Regex("""$B(daily|every\s*day|everyday|dhinamum|thinamum|dinamum|dhinam|daily-um|ovvoru\s*naalum|naal\s*thorum|""" +
+        """every\s*(?:morning|afternoon|evening|night)|ovvoru\s*(?:kaalaiyum|kalaiyum|saayangalamum|iravum|raathiriyum))$E|தினமும்|ஒவ்வொரு\s*நாளும்""", RegexOption.IGNORE_CASE)
     private val weekdaysWords = Regex("""$B(weekdays?|week\s*days|monday\s*(?:to|-|muthal)\s*friday|mon\s*(?:to|-)\s*fri)$E""", RegexOption.IGNORE_CASE)
     private val everyWords = Regex("""$B(every|ovvoru|each|ella)$E|ஒவ்வொரு""", RegexOption.IGNORE_CASE)
     private val monthlyWords = Regex("""$B(monthly|every\s*month|ovvoru\s*maasamum|ovvoru\s*masamum|maasa\s*maasam|masa\s*masam|month\s*thorum)$E|ஒவ்வொரு\s*மாதமும்|மாசா\s*மாசம்""", RegexOption.IGNORE_CASE)
@@ -207,7 +209,9 @@ object KaiTime {
                 """inniku|innaikku|innaiku|innikku|indru|naalaikku|naalaiku|nalaiku|naalai|naalanniku|nalanniku|marunaal|""" +
                 """kaalaila|kalaila|kaalaiyil|kaalai|kalai|madhiyam|mathiyam|madhiyanam|saayangalam|sayangalam|saayangaalam|saayandhiram|maalaila|maalai|""" +
                 """iravu|raathiri|rathiri|raatri|nite)$E"""),
-            Regex("""(?i)$B(at\s+|@\s*)?\d{1,2}([:.]\d{2})?\s*(am|pm|a\.m\.?|p\.m\.?|mani(kku|ku|kki|ki)?|manikku|o'?\s*clock)$E"""),
+            Regex("""(?i)$B(at\s+|@\s*)?\d{1,2}([:.]\d{2})?\s*(am|pm|a\.m\.?|p\.m\.?|mani(kku|ku|kki|ki)?|manikku|o'?\s*clock)(\s*-\s*(ku|kku))?$E"""),
+            // "Weekdays 8:30-ku office" — a clock time with minutes, with or without "-ku".
+            Regex("""(?i)$B(at\s+|@\s*)?\d{1,2}:\d{2}(\s*-?\s*(ku|kku))?(?![\d\p{L}])"""),
             Regex("""(?i)$B($numberAlt)\s+(mani(kku|ku|kki|ki)?|manikku)$E"""),
             Regex("""(?i)$B$ordinalDay$E"""),
             Regex("""(?i)$B(at\s+)\d{1,2}$E"""),

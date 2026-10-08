@@ -113,7 +113,7 @@ class KaiReminderConfirmTest {
         }
         // "2 minutes-la remind pannu": the task is asked, then confirmed.
         val q = kai.ask("2 minutes-la remind pannu")
-        assertEquals("Sure Owner. Enna remind pannanum?", q.reply.text)
+        assertEquals("Seri Owner. Enna nyabagam paduthanum?", q.reply.text)
         val c = kai.ask("Praba-ku call panna")
         assertEquals("Seri Owner. Praba-ku 2 minutes-la call reminder set pannalama?", c.reply.text)
         assertTrue(tools.scheduled.isEmpty())
@@ -152,7 +152,7 @@ class KaiReminderConfirmTest {
 
         val ask = kai.ask("Kumar-ku 5 minutes apram call remind pannu")
         val edit = kai.act(ask.button("Edit"), KaiLang.TANGLISH)!!
-        assertTrue(edit.reply.text, edit.reply.text.startsWith("Seri Owner. Eppo remind pannanum?"))
+        assertTrue(edit.reply.text, edit.reply.text.startsWith("Seri Owner. Eppa remind pannanum?"))
         val again = kai.ask("10 minutes la")
         assertEquals("Seri Owner. Kumar-ku 10 minutes-la call reminder set pannalama?", again.reply.text)
         assertEquals(1, tools.scheduled.size)

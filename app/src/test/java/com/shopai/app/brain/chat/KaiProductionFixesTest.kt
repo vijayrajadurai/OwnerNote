@@ -275,7 +275,7 @@ class KaiProductionFixesTest {
     @Test
     fun reminderFollowUpTakesARelativeTime() = runBlocking {
         val q = kai.ask("Kumar-ku reminder pannu")
-        assertTrue(q.reply.text, q.reply.text.startsWith("Eppo remind pannanum Owner?"))
+        assertTrue(q.reply.text, q.reply.text.startsWith("Seri Owner. Eppa remind pannanum?"))
         assertTrue(tools.scheduled.isEmpty())
         val done = kai.askConfirmed("10 minutes la")
         assertTrue(done.reply.text, done.reply.text.startsWith("Done Owner ✅ 10 minutes kalichi"))

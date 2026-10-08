@@ -169,6 +169,11 @@ object KaiCommands {
         // Verbs after "call" ("call panna", "call pannu") — never names.
         "panna", "pannu", "pannunga", "pannanum", "panni", "pannidu", "pannalama", "pannava", "podu", "sollu", "message", "whatsapp", "back",
         "vandhiru", "vanthiru", "vandhuru", "iru", "irukku",
+        // Places, things and errands in personal reminders ("car service-ku", "gym-ku", "school-ku") — never names.
+        "service", "servicing", "gym", "car", "bike", "vandi", "medicine", "marunthu", "maathirai", "tablet", "current", "eb", "gas", "cylinder",
+        "documents", "document", "walking", "walk", "college", "tuition", "class", "temple", "kovil", "church", "market", "hotel", "station",
+        "airport", "bus", "train", "court", "function", "marriage", "kalyanam", "party", "meeting", "pickup", "drop", "gate", "rent", "emi", "loan",
+        "home", "house", "veettu", "ration", "iruk", "irukk", "iruku",
     )
 
     /** A known party in the text, else the word before -ku / kitta ("Ramesh ku", "Kumar kitta"), or after "call / to / from". */

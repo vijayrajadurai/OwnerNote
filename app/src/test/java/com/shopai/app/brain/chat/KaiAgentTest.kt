@@ -253,7 +253,7 @@ class KaiAgentTest {
         // "Kumar call reminder-a 30 minutes-ku change pannu": the same reminder moves, no duplicate.
         val kumar = tools.scheduled.first()
         val updated = a.ask("Kumar call reminder-a 30 minutes-ku change pannu")
-        assertTrue(updated.reply.text, updated.reply.text.startsWith("Updated Owner."))
+        assertTrue(updated.reply.text, updated.reply.text.startsWith("Seri Owner,"))
         assertEquals(2, tools.scheduled.size)
         val nowMillis = now.atZone(java.time.ZoneId.of("Asia/Kolkata")).toInstant().toEpochMilli()
         assertEquals(nowMillis + 30 * 60_000, tools.scheduled.first { it.id == kumar.id }.triggerAt)

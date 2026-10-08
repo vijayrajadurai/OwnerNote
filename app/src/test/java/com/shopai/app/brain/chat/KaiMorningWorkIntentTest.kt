@@ -182,7 +182,7 @@ class KaiMorningWorkIntentTest {
         assertTrue(add.reply.text, add.reply.text.contains("Evlo pieces vandhirukku"))
         // Remind Me → Kai asks when; nothing is scheduled yet.
         val remind = k.act(t.actions().filterIsInstance<KaiAction.RemindAbout>().single(), KaiLang.TANGLISH)!!
-        assertTrue(remind.reply.text, remind.reply.text.startsWith("Eppo remind pannanum Owner?"))
+        assertTrue(remind.reply.text, remind.reply.text.startsWith("Seri Owner. Eppa remind pannanum?"))
         noWrites()
     }
 

@@ -220,8 +220,8 @@ class KaiReminderAssistant(
             waiting = Waiting.TASK
             waitingKey = p.key
             return KaiTurn(ChatReply(pick(lang,
-                ta = "சரி ஓனர். என்ன நினைவூட்டணும்?",
-                tl = "Sure Owner. Enna remind pannanum?",
+                ta = "சரி ஓனர். என்ன ஞாபகப்படுத்தணும்?",
+                tl = "Seri Owner. Enna nyabagam paduthanum?",
                 en = "Sure Owner. What should I remind you about?"), KaiMood.CLARIFY, ChatIntent.REMINDER_QUERY), KaiCard(emptyList(), listOf(cancelButton(p.key, lang))))
         }
         val time = p.time
@@ -244,8 +244,8 @@ class KaiReminderAssistant(
                 tl = "${partName(part.name, lang)}-la exact time sollunga Owner.",
                 en = "What exact time in the ${partName(part.name, lang)}, Owner?")
             else pick(lang,
-                ta = "எப்போ நினைவூட்டணும் ஓனர்? (உதா: 10 நிமிஷத்துல, நாளைக்கு காலை 10 மணிக்கு)",
-                tl = "Eppo remind pannanum Owner? (eg: 10 minutes la, naalaikku kaalaila 10 manikku)",
+                ta = "சரி ஓனர். எப்போ நினைவூட்டணும்? (உதா: 10 நிமிஷத்துல, நாளைக்கு காலை 10 மணிக்கு)",
+                tl = "Seri Owner. Eppa remind pannanum? (eg: 10 minutes la, naalaikku kaalaila 10 manikku)",
                 en = "When should I remind you, Owner? (e.g. in 10 minutes, tomorrow 10 AM)")
             return KaiTurn(ChatReply(text, KaiMood.CLARIFY, ChatIntent.REMINDER_QUERY), KaiCard(emptyList(), buttons + cancelButton(p.key, lang)))
         }
@@ -347,7 +347,7 @@ class KaiReminderAssistant(
 
     /** Confirm: only now is the reminder saved and its alarm armed (2 minutes counts from now). */
     private fun confirmCreate(p: Pending, lang: KaiLang): KaiTurn {
-        val time = p.time ?: return say(lang, KaiMood.CLARIFY, ta = "எப்போ நினைவூட்டணும் ஓனர்?", tl = "Eppo remind pannanum Owner?", en = "When should I remind you, Owner?")
+        val time = p.time ?: return say(lang, KaiMood.CLARIFY, ta = "எப்போ நினைவூட்டணும் ஓனர்?", tl = "Seri Owner. Eppa remind pannanum?", en = "When should I remind you, Owner?")
         pending.remove(p.key)
         if (waitingKey == p.key) { waiting = Waiting.NOTHING; waitingKey = null }
         return create(p, time, p.lang ?: lang)
@@ -361,7 +361,7 @@ class KaiReminderAssistant(
         return KaiTurn(
             ChatReply(pick(lang,
                 ta = "சரி ஓனர். எப்போ நினைவூட்டணும்? (உதா: 10 நிமிஷத்துல, நாளைக்கு காலை 10 மணிக்கு)",
-                tl = "Seri Owner. Eppo remind pannanum? (eg: 10 minutes la, naalaikku kaalaila 10 manikku)",
+                tl = "Seri Owner. Eppa remind pannanum? (eg: 10 minutes la, naalaikku kaalaila 10 manikku)",
                 en = "Sure Owner. When should I remind you? (e.g. in 10 minutes, tomorrow 10 AM)"), KaiMood.CLARIFY, ChatIntent.REMINDER_QUERY),
             KaiCard(emptyList(), listOf(cancelButton(p.key, lang))),
         )
@@ -543,9 +543,10 @@ class KaiReminderAssistant(
         lastTouched = r.id
         tools.log("update reminder", "reminder engine", "${r.title} → ${Instant.ofEpochMilli(saved.reminder.triggerAt)}", ActionStatus.SCHEDULED, r.id)
         val whenText = whenText(saved.reminder, null, lang)
+        // "Seri Owner, Innaikku 5:00 PM-ku maathitten" — the same reminder moved, never a second one.
         return say(lang, KaiMood.REMINDER,
-            ta = "மாத்திட்டேன் ஓனர். “${r.title}” இப்போ $whenText.",
-            tl = "Updated Owner. “${r.title}” reminder ippo $whenText.",
+            ta = "சரி ஓனர், $whenText-க்கு மாத்திட்டேன் — “${r.title}”.",
+            tl = "Seri Owner, $whenText-ku maathitten — “${r.title}”.",
             en = "Updated Owner. “${r.title}” reminder is now $whenText.")
     }
 
@@ -590,7 +591,8 @@ class KaiReminderAssistant(
     /** A clock time from a short reply ("10", "10:30", "6 pm", "kaalaila 10"); the day part said before decides AM / PM. */
     private fun clockFrom(text: String, partWord: String?): LocalTime? {
         val trimmed = text.trim()
-        val probe = if (Regex("""^\d{1,2}([:.]\d{2})?$""").matches(trimmed)) "${partWord ?: ""} at $trimmed" else "${partWord ?: ""} $trimmed"
+        val probe = if (Regex("""^\d{1,2}([:.]\d{2})?$""").matches(trimmed)) "${partWord ?: ""} at $trimmed"
+            else "${partWord ?: ""} ${com.shopai.app.brain.tools.KaiReminderUnderstanding.spokenHour(trimmed)}"
         val w = KaiTime.parse(probe, now()) ?: return null
         if (w.relative != null || Missing.TIME in w.missing) return null
         return w.at.toLocalTime()

@@ -16,5 +16,12 @@ class NaturalVoiceOut(private val speaker: NaturalTtsSpeaker) : KaiVoiceOut {
         })
     }
 
+    override suspend fun sayTurn(parts: List<String>, gapsMs: List<Long>, languageCode: String) = suspendCancellableCoroutine { cont ->
+        speaker.speakTurn(parts, gapsMs, languageCode = languageCode, onDone = {
+            Log.i("KaiReminder", "voice turn engine=${speaker.lastEngine}" + (speaker.lastProxyProblem?.let { " (natural voice not used: $it)" } ?: ""))
+            if (cont.isActive) cont.resume(Unit)
+        })
+    }
+
     override fun hush() = speaker.stop()
 }
