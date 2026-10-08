@@ -21,7 +21,13 @@ data class StockFact(
 data class ProductSalesFact(val name: String, val qty: BigDecimal, val value: BigDecimal)
 
 /** A customer or supplier in the books. [balance]: what they owe me (customer) / what I owe them (supplier). */
-data class PartyMatch(val id: String, val name: String, val customer: Boolean, val phone: String?, val balance: BigDecimal)
+data class PartyMatch(
+    val id: String, val name: String, val customer: Boolean, val phone: String?, val balance: BigDecimal,
+    /** The party's town ("Nagapattinam") — tells same-named people apart. */
+    val city: String? = null,
+    /** Address / shop words from the party's record ("Sri Vinayaga Hardware, Main Road"). */
+    val details: String? = null,
+)
 
 // ------------------------------------------------------------ actions
 

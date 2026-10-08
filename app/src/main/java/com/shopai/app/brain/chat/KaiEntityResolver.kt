@@ -1,0 +1,145 @@
+package com.shopai.app.brain.chat
+
+import com.shopai.app.brain.tools.PartyMatch
+import java.util.Locale
+
+/**
+ * Which customer / supplier the owner means. A name is not an identity: the books may hold three
+ * "Lokesh"es. Kai uses what the owner said and what was just talked about, in this order —
+ * phone number, exact name + place / shop name, the person already in the conversation — and when
+ * more than one record still fits, it asks. It never picks the first match, never maps "Kumaran"
+ * to "Kumar", and only ever sees the candidates the books returned for that name (this business only).
+ */
+object KaiEntityResolver {
+
+    sealed interface Result {
+        /** Exactly one record fits; [by] says why (phone / place / context / only one). */
+        data class One(val party: PartyMatch, val by: String) : Result
+        /** More than one record fits what was said: ask. */
+        data class Many(val candidates: List<PartyMatch>) : Result
+        /** No record has this exact name. */
+        data object None : Result
+    }
+
+    private const val B = """(?<![\p{L}\p{M}])"""
+    private const val E = """(?![\p{L}\p{M}])"""
+    private val phone = Regex("""(?<!\d)(?:\+?91[\s-]?)?([6-9]\d{9})(?!\d)""")
+
+    /** A 10-digit Indian mobile number in the words, if any. */
+    fun phoneIn(text: String): String? = phone.find(text.replace(Regex("""(?<=\d)[\s-](?=\d)"""), ""))?.groupValues?.get(1)
+
+    private fun digits(p: String?) = p?.filter(Char::isDigit)?.takeLast(10)
+
+    /** The words that set this record apart from others with the same name: its town, its address / shop words. */
+    private fun marks(p: PartyMatch): List<String> {
+        val words = listOfNotNull(p.city, p.details).joinToString(" ")
+            .split(Regex("""[^\p{L}\p{M}]+""")).map { it.lowercase(Locale.ROOT) }.filter { it.length >= 3 }
+        val name = p.name.lowercase(Locale.ROOT).split(' ').toSet()
+        return words.filter { it !in name && it !in common }.distinct()
+    }
+    private val common = setOf("street", "road", "nagar", "main", "shop", "the", "and", "near", "opp", "cross", "colony", "salai")
+
+    private fun says(text: String, word: String) = Regex("""$B${Regex.escape(word)}""", RegexOption.IGNORE_CASE).containsMatchIn(text)
+
+    /** The records with exactly this name (or the same name in the other script): never a longer or shorter name. */
+    fun sameName(name: String, candidates: List<PartyMatch>): List<PartyMatch> =
+        candidates.filter { it.name.trim().equals(name.trim(), ignoreCase = true) || com.shopai.app.util.NameSound.same(it.name, name) }
+
+    /**
+     * [name] as said, [said] the owner's words (place, shop, phone may be in them), [candidates] the books' records for
+     * that name, [contextId] the record already being talked about.
+     */
+    fun resolve(name: String, said: String, candidates: List<PartyMatch>, contextId: String? = null): Result {
+        val exact = sameName(name, candidates).distinctBy { it.id }
+        if (exact.isEmpty()) return Result.None
+        // 1. A phone number is the strongest identifier.
+        phoneIn(said)?.let { number ->
+            exact.filter { digits(it.phone) == number }.singleOrNull()?.let { return Result.One(it, "phone") }
+        }
+        // 2. Name + place / shop words that only one record has.
+        val scored = exact.map { p -> p to marks(p).count { says(said, it) } }
+        val best = scored.maxOf { it.second }
+        if (best > 0) {
+            val top = scored.filter { it.second == best }.map { it.first }
+            return if (top.size == 1) Result.One(top.single(), "place") else Result.Many(top)
+        }
+        if (exact.size == 1) return Result.One(exact.single(), "only one")
+        // 3. The one already in the conversation.
+        exact.firstOrNull { it.id == contextId }?.let { return Result.One(it, "context") }
+        return Result.Many(exact)
+    }
+
+    /** How Kai names one record among same-named ones: "Nagapattinam Lokesh", "Lokesh (…3210)", or just the name. */
+    fun label(p: PartyMatch): String = when {
+        !p.city.isNullOrBlank() -> "${p.city.trim()} ${p.name}"
+        !p.details.isNullOrBlank() -> "${p.name} (${p.details.trim().take(30)})"
+        digits(p.phone)?.length == 10 -> "${p.name} (…${digits(p.phone)!!.takeLast(4)})"
+        else -> p.name
+    }
+
+    private val countWord = mapOf(2 to "rendu", 3 to "moonu", 4 to "naalu", 5 to "anju")
+
+    /** "Owner, Lokesh-nu rendu records irukku. Chennai Lokesh-aa illa Nagapattinam Lokesh-aa?" */
+    fun question(name: String, candidates: List<PartyMatch>, lang: com.shopai.app.brain.KaiLang): String {
+        val labels = candidates.map(::label)
+        return when (lang) {
+            com.shopai.app.brain.KaiLang.TAMIL -> "Owner, $name-னு ${candidates.size} records இருக்கு. " + labels.joinToString("-ஆ, ") + "-ஆ?"
+            com.shopai.app.brain.KaiLang.ENGLISH -> "Owner, there are ${candidates.size} records named $name. " + labels.joinToString(", ", postfix = "?").replaceLast(", ", " or ")
+            com.shopai.app.brain.KaiLang.TANGLISH -> "Owner, $name-nu ${countWord[candidates.size] ?: candidates.size.toString()} records irukku. " +
+                if (labels.size == 2) "${labels[0]}-aa illa ${labels[1]}-aa?" else labels.dropLast(1).joinToString("-aa, ") + "-aa, illa ${labels.last()}-aa?"
+        }
+    }
+
+    private fun String.replaceLast(old: String, new: String): String {
+        val i = lastIndexOf(old)
+        return if (i < 0) this else substring(0, i) + new + substring(i + old.length)
+    }
+
+    /** The answer to "which Lokesh?": a place / shop word / phone that picks one of [candidates], or "first" / "rendavadhu". */
+    fun pick(answer: String, candidates: List<PartyMatch>): PartyMatch? {
+        phoneIn(answer)?.let { n -> candidates.singleOrNull { digits(it.phone) == n }?.let { return it } }
+        val byMark = candidates.filter { p -> marks(p).any { says(answer, it) } }
+        if (byMark.size == 1) return byMark.single()
+        val ordinals = listOf(
+            Regex("""(?i)${B}(first|1st|onnu|mudhal|mudhalavadhu|modhal)$E|^\s*1\s*$"""),
+            Regex("""(?i)${B}(second|2nd|rendavadhu|rendaavadhu|rendu)$E|^\s*2\s*$"""),
+            Regex("""(?i)${B}(third|3rd|moonavadhu|moonaavadhu)$E|^\s*3\s*$"""),
+        )
+        ordinals.forEachIndexed { i, r -> if (r.containsMatchIn(answer) && i < candidates.size) return candidates[i] }
+        return null
+    }
+
+    // ------------------------------------------------------------ references: "avan", "avanukku", "andha customer"
+
+    private val personRef = Regex(
+        """$B(avanukku|avanuku|avanuk|avarukku|avaruku|avangalukku|avangaluku|avalukku|avaluku|avan|avanu|avar|avaru|avanga|avangal|aval|ava|""" +
+            """avanoda|avaroda|avangaloda|avanai|avarai|avana|avara|indha\s+aal|andha\s+aal|andha\s+customer|andha\s+supplier|indha\s+customer|""" +
+            """same\s+person|same\s+customer|him|her|he|she)$E|அவனுக்கு|அவருக்கு|அவங்களுக்கு|அவளுக்கு|அவன்|அவர்|அவங்க|அவள்""",
+        RegexOption.IGNORE_CASE,
+    )
+
+    fun mentionsPerson(text: String): Boolean = personRef.containsMatchIn(text)
+
+    /** "avanukku 500 tharanum" → "Lokesh-ku 500 tharanum": the reference becomes the name, with its case ending kept. */
+    fun withName(text: String, name: String): String = personRef.replace(text) { m ->
+        val w = m.value.lowercase(Locale.ROOT)
+        when {
+            w.endsWith("ukku") || w.endsWith("uku") || w.endsWith("nuk") || w.endsWith("க்கு") -> "$name-ku"
+            w.endsWith("oda") -> "$name oda"
+            w.endsWith("ai") || w == "avana" || w == "avara" -> "$name-a"
+            else -> name
+        }
+    }
+
+    /** Known people named in the words, each once, in the order said ("Kumar and Ramesh" → [Kumar, Ramesh]). */
+    fun peopleIn(text: String, people: List<String>): List<String> {
+        val lower = text.lowercase(Locale.ROOT)
+        return people.filter { it.isNotBlank() }.distinct().sortedByDescending { it.length }
+            .mapNotNull { name ->
+                Regex("""(?<![\p{L}])${Regex.escape(name.lowercase(Locale.ROOT))}(?:u?k?ku|kitta|kita|oda|odu|idam|ai|um|ukkum|a|aa|ah|u|க்கு|கிட்ட)?(?![\p{L}\p{M}])""")
+                    .find(lower)?.let { name to it.range.first }
+            }
+            .fold(emptyList<Pair<String, Int>>()) { acc, p -> if (acc.any { it.second == p.second }) acc else acc + p }
+            .sortedBy { it.second }.map { it.first }
+    }
+}

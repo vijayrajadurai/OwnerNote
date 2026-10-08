@@ -32,13 +32,13 @@ object KaiPaymentDirection {
     private const val E = """(?![\p{L}\p{M}])"""
 
     private val giving = Regex(
-        """$B(tharanum|tharanu|tharanam|tharavendum|thara\s*vendum|thara\s*venum|thara\s*venam|tharuvaan|kudukanum|kudukkanum|kodukkanum|kodukanum|kudukanu|""" +
+        """$B(tharanum|tharanu|tharanam|tharan|kudukan|kodukan|tharavendum|thara\s*vendum|thara\s*venum|thara\s*venam|tharuvaan|kudukanum|kudukkanum|kodukkanum|kodukanum|kudukanu|""" +
             """kudukka\s*venum|kudukka\s*vendum|kodukka\s*vendum|pay\s*pannanum|pay\s*panna\s*venum|payment\s*pannanum|kattanum|katta\s*venum|settle\s*pannanum|""" +
             """owe|owes|give)$E|தரணும்|தர\s*வேண்டும்|தரவேண்டும்|கொடுக்கணும்|குடுக்கணும்|கொடுக்க\s*வேண்டும்|கட்டணும்""",
         RegexOption.IGNORE_CASE,
     )
     private val taking = Regex(
-        """$B(vanganum|vaanganum|vanganu|vaanganu|vangu|vaangu|vanga\s*venum|vaanga\s*venum|collect\s*pannanum|collect|varanum|vasool|""" +
+        """$B(vanganum|vaanganum|vanganu|vaanganu|vangan|vaangan|vangu|vaangu|vanga\s*venum|vaanga\s*venum|collect\s*pannanum|collect|varanum|vasool|""" +
             """receive|get)$E|வாங்கணும்|வாங்க\s*வேண்டும்|வரணும்|வசூல்""",
         RegexOption.IGNORE_CASE,
     )
@@ -61,6 +61,8 @@ object KaiPaymentDirection {
     private val tamilDative = Regex("""([஀-௿]+)க்கு""")
     /** Spoken Tamil after normalising: "குமாருக்கு" → "குமார்-ku" (a Tamil name, a Tanglish ending). */
     private val mixedDative = Regex("""([஀-௿]+)\s*-?\s*(?:ukku|kku|ku)(?![a-z])""", RegexOption.IGNORE_CASE)
+    /** "Lokesh 9876543210-ku": the person named by their phone number. */
+    private val numberDative = Regex("""\d{10}\s*-?\s*(?:ukku|kku|ku)(?![a-z])""", RegexOption.IGNORE_CASE)
     private val tamilNotDative = setOf("என", "உன", "யாரு", "இன்னை", "நாளை", "மணி", "அது", "இது", "அவனு", "அவரு")
 
     /** The sentence talks about owing / paying / collecting money. */
@@ -83,5 +85,6 @@ object KaiPaymentDirection {
     private fun hasPersonDative(text: String): Boolean =
         latinDative.findAll(text).any { it.groupValues[1] !in notDative } ||
             tamilDative.findAll(text).any { it.groupValues[1] !in tamilNotDative } ||
-            mixedDative.findAll(text).any { m -> tamilNotDative.none { m.groupValues[1].startsWith(it) } }
+            mixedDative.findAll(text).any { m -> tamilNotDative.none { m.groupValues[1].startsWith(it) } } ||
+            numberDative.containsMatchIn(text)
 }

@@ -209,7 +209,9 @@ class AppKaiTools(
                 .map { p ->
                 val customer = kind == PartyKind.CUSTOMER
                 PartyMatch(p.id, p.name, customer, p.mobile?.let { "+91$it" },
-                    rupees(if (customer) s.ledger.receivable(p.id) else s.ledger.payable(p.id)))
+                    rupees(if (customer) s.ledger.receivable(p.id) else s.ledger.payable(p.id)),
+                    city = p.city?.takeIf { it.isNotBlank() },
+                    details = listOfNotNull(p.address, p.notes).filter { it.isNotBlank() }.joinToString(", ").takeIf { it.isNotBlank() })
             }
         }
     }
