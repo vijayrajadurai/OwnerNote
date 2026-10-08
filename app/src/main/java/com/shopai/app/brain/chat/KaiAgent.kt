@@ -520,6 +520,8 @@ class KaiAgent(
         fragment(said, text, people, lang)?.let { return it }
         // "Nagapattinam Lokesh pathi pesuren": the exact record the next "avan" / "avanukku" means.
         aboutPerson(text, named, lang)?.let { return it }
+        // "same", "again", "innoru thadava": vague on their own — asked about against what is being discussed.
+        if (vague.matches(text.trim())) return clarify(text, lang)
         // "Colgate 20 pieces irukku": the owner states what is on the shelf — compared with the books, never a stock-in.
         if (products != null) stockStatement(text, products, lang)?.let { return it }
 
@@ -631,7 +633,7 @@ class KaiAgent(
                     ?: run {
                         val answer = questionOrLearn(routed, text, said, lang, at.toLocalDate(), people, products.orEmpty())
                         if (answer.reply.intent != ChatIntent.UNKNOWN) conversationState.currentIntent = "BUSINESS_QUERY"
-                        answer
+                        if (answer.reply.intent == ChatIntent.UNKNOWN && unclearReply.containsMatchIn(answer.reply.text)) clarify(text, lang) else answer
                     }
             }
         }
@@ -686,6 +688,8 @@ class KaiAgent(
                 ta = "$person கிட்ட எவ்வளவு வாங்கணும் Owner?", tl = "Owner, $person kitta evlo vaanganum?", en = "How much should you collect from $person, Owner?")
         }
 
+        // "Kumar eppa tharuvaan?" after talking about Colgate: the owner returns to the payment stated earlier.
+        returnToStated(text, people, lang)?.let { return it }
         if (conversationState.lastBusinessTopic != "RECEIVABLE_CONTEXT" || conversationState.lastPerson == null || conversationState.lastAmount == null) return null
         val followUp = Regex("(?i)\\b(eppa|eppo|when|collect|varum|tharuvaan|tharuvar|adha|adhu|athu|avan|avar|amount)\\b|எப்ப|அத")
             .containsMatchIn(text)
@@ -734,6 +738,94 @@ class KaiAgent(
             ta = "$shown $value எப்போ தரணும்-னு கேக்குறீங்க Owner. அந்த due date record-ல இல்லை — date சொல்லுங்க.",
             tl = "Owner, $shown $value eppo tharanum-nu kekkureenga. Andha due date record-la illa — date sollunga.",
             en = "You're asking when $shown pays the $value, Owner. I don't have that due date recorded — tell me the date.")
+    }
+
+    // ------------------------------------------------------------ returning to a topic, clarifying against it
+
+    private fun statedTopic(st: KaiStatedPayment, lang: KaiLang): String {
+        val who = st.label ?: st.person
+        val a = st.amount?.let { " " + KaiFormat.rupees(it.toDouble()) }.orEmpty()
+        return pickLang(lang, ta = "$who$a payment", tl = "$who$a payment", en = "the $who$a payment")
+    }
+
+    /** The topic Kai would ask about: the stated payment, the product, or the person just discussed. */
+    private fun activeTopic(lang: KaiLang): String? {
+        conversationState.stated?.let { return statedTopic(it, lang) }
+        if (conversationState.lastBusinessTopic == "STOCK_QUERY") conversationState.lastProduct?.let { return pickLang(lang, ta = "$it stock", tl = "$it stock", en = "$it stock") }
+        return conversationState.lastPerson
+    }
+
+    private val vague = Regex("""(?i)(same|same\s+thing|again|one\s+more|innoru|innoru\s+thadava|marubadiyum|thirumba|adhae|adhe|adhey|athe|repeat)[.!?]*""")
+    private val unclearReply = Regex("""clear-ah sollunga|தெளிவா சொல்லுங்க|more clearly""")
+
+    /**
+     * A message Kai can't place: never a blank "clear-ah sollunga". With a topic open it asks whether this is about
+     * it; a lone number, "adhu", or nothing at all gets a question that says what is missing.
+     */
+    private fun clarify(text: String, rawLang: KaiLang): KaiTurn {
+        val lang = conversationState.pendingLang ?: KaiConversationSemantics.phraseLang(text, rawLang)
+        val t = text.trim().trimEnd('.', '?', '!')
+        activeTopic(lang)?.let { topic -> return say(lang, KaiMood.CLARIFY, "clarify: active topic",
+            ta = "Owner, இது $topic பத்தியா, இல்ல வேற விஷயம் பத்தியா?",
+            tl = "Owner, idhu $topic pathiyaa, illa vera vishayam pathiyaa?",
+            en = "Owner, is this about $topic, or something else?") }
+        if (amountOnly.matches(t)) return say(lang, KaiMood.CLARIFY, "clarify: lone number",
+            ta = "Owner, $t — தொகையா, தேதியா? யார் பத்தி-னு சொல்லுங்க.",
+            tl = "Owner, $t — amount-aa, date-aa? Yaar pathi-nu sollunga.",
+            en = "Owner, $t — an amount or a date? Who is it about?")
+        if (Regex("""(?i)(?<![\p{L}])(adhu|athu|idhu|ithu|athula|idhula|adha|idha)(?![\p{L}])""").containsMatchIn(t)) return say(lang, KaiMood.CLARIFY, "clarify: no referent",
+            ta = "Owner, எதைப் பத்தி கேக்குறீங்க? Product பேர் சொல்லுங்க.",
+            tl = "Owner, edha pathi kekkureenga? Product per sollunga.",
+            en = "Owner, which one do you mean? Tell me the product.")
+        return say(lang, KaiMood.CLARIFY, "clarify: nothing open",
+            ta = "Owner, எதைப் பத்தி சொல்றீங்க? Payment-ஆ, stock-ஆ, reminder-ஆ?",
+            tl = "Owner, edha pathi sollureenga? Payment-aa, stock-aa, reminder-aa?",
+            en = "Owner, what is this about — a payment, stock, or a reminder?")
+    }
+
+    /**
+     * "Kumar eppa tharuvaan?" / "Kumar payment eppa?" after the conversation moved to Colgate: the payment the owner
+     * stated about Kumar comes back (with what the records already say about Kumar, kept apart from it).
+     */
+    private suspend fun returnToStated(text: String, people: List<String>, lang: KaiLang): KaiTurn? {
+        val st = conversationState.stated ?: return null
+        if (conversationState.lastBusinessTopic == "RECEIVABLE_CONTEXT" || st.amount == null) return null
+        val named = KaiCommands.personIn(text, people) ?: com.shopai.app.brain.KaiUnderstanding.personIn(text)
+        if (!named.equals(st.person, ignoreCase = true)) return null
+        if (!Regex("""(?i)(?<![\p{L}])(eppa|eppo|epo|when|tharuvaan|tharuvar|tharuvaanga|kudukkanum|kudukanum|vaanganum|payment)(?![\p{L}])|எப்ப""").containsMatchIn(text)) return null
+        conversationState.lastBusinessTopic = "RECEIVABLE_CONTEXT"
+        conversationState.lastPerson = st.person
+        conversationState.lastAmount = st.amount
+        conversationState.lastPaymentDirection = if (st.direction == KaiConversationPaymentDirection.PAYMENT_OUT) "OUT" else "IN"
+        val l = conversationState.pendingLang ?: lang
+        val who = st.label ?: st.person
+        val value = KaiFormat.rupees(st.amount.toDouble())
+        val out = st.direction == KaiConversationPaymentDirection.PAYMENT_OUT
+        // What the books already hold for this person — said separately, never mixed into the new amount.
+        val books = runCatching { books.snapshot() }.getOrNull()?.parties
+            ?.firstOrNull { it.name.equals(st.person, ignoreCase = true) && it.pending > 0.005 }
+        val recordNote = books?.let { p ->
+            val due = p.nextDue?.let { " " + KaiFormat.date(it, l, now().toLocalDate()) + " due" }.orEmpty()
+            pickLang(l, ta = " (Records-ல ${p.name} ${KaiFormat.rupees(p.pending)}$due ஏற்கனவே இருக்கு.)",
+                tl = " (Records-la ${p.name} ${KaiFormat.rupees(p.pending)}$due already irukku.)",
+                en = " (The records already show ${p.name} at ${KaiFormat.rupees(p.pending)}$due.)")
+        }.orEmpty()
+        st.dueDate?.let { due ->
+            val w = dueText(due, l)
+            return if (out) say(l, KaiMood.EXPLAINING, null, ta = "Owner, நீங்க சொன்ன $who-க்கு $value $w கொடுக்கணும். இன்னும் சேமிக்கல.$recordNote",
+                tl = "Owner, neenga sonna $who-ku $value $w kudukkanum. Innum save pannala.$recordNote", en = "Owner, the $value you said you owe $who is due $w. Not saved yet.$recordNote")
+            else say(l, KaiMood.EXPLAINING, null, ta = "Owner, நீங்க சொன்ன $who $value $w தருவார். இன்னும் சேமிக்கல.$recordNote",
+                tl = "Owner, neenga sonna $who $value $w tharuvaar. Innum save pannala.$recordNote", en = "Owner, the $value from $who you mentioned is due $w. Not saved yet.$recordNote")
+        }
+        conversationState.pendingQuestion = KaiPendingQuestion.DUE_DATE
+        conversationState.pendingEntity = st.person
+        conversationState.pendingAmount = st.amount
+        conversationState.pendingPaymentDirection = st.direction
+        conversationState.pendingAskedTurn = conversationState.conversationTurn
+        return if (out) say(l, KaiMood.CLARIFY, null, ta = "Owner, நீங்க சொன்ன $who-க்கு $value — due date இன்னும் சொல்லல. எப்போ கொடுக்கணும்?$recordNote",
+            tl = "Owner, neenga sonna $who-ku $value — due date innum sollala. Eppa kudukkanum?$recordNote", en = "Owner, the $value you owe $who — no due date yet. When is it due?$recordNote")
+        else say(l, KaiMood.CLARIFY, null, ta = "Owner, நீங்க சொன்ன $who $value — due date இன்னும் சொல்லல. எப்போ வாங்கணும்?$recordNote",
+            tl = "Owner, neenga sonna $who $value — due date innum sollala. Eppa vaanganum?$recordNote", en = "Owner, the $value from $who you mentioned — no due date yet. When should you collect it?$recordNote")
     }
 
     // ------------------------------------------------------------ who / what the owner means
