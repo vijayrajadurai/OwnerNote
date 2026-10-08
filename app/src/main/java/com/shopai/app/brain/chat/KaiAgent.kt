@@ -179,6 +179,14 @@ internal data class KaiConversationState(
     var previousBusinessContext: String? = null,
     var previousTopicBeforeCalculator: String? = null,
     var conversationTurn: Long = 0,
+    /** A payment the owner stated in conversation ("Mahesh enaku 2000 tharanum") and has not saved yet. */
+    var stated: KaiStatedPayment? = null,
+    /** The draft card made from [stated] ("save panniko"); confirming it saves the stated payment. */
+    var statedDraftKey: String? = null,
+    /** The last payment the books confirmed as saved in this conversation (never set without the engine's Done). */
+    var lastSaved: KaiSavedPayment? = null,
+    /** The turn whose answer showed (or pointed at) the open payment draft: a bare "ama" / "seri" confirms it only right after. */
+    var draftShownTurn: Long = -1,
 ) {
     fun clear() {
         currentIntent = null; currentAction = null; lastRelevantEntity = null
@@ -190,8 +198,20 @@ internal data class KaiConversationState(
         pendingDraft = null; pendingConfirmation = false; pendingCorrection = false
         lastBusinessTopic = null; previousBusinessContext = null; previousTopicBeforeCalculator = null
         conversationTurn = 0
+        stated = null; statedDraftKey = null; lastSaved = null; draftShownTurn = -1
     }
 }
+
+/** "Mahesh enaku 2000 tharanum": who, how much (null: not said yet), which way, and the due date once given. Session only — not a ledger entry. */
+internal data class KaiStatedPayment(
+    val person: String,
+    val amount: BigDecimal?,
+    val direction: KaiConversationPaymentDirection,
+    val dueDate: LocalDate? = null,
+)
+
+/** A payment the books saved (the engine returned Done with [reference]). */
+internal data class KaiSavedPayment(val person: String, val amount: BigDecimal, val reference: String, val dueDate: LocalDate?)
 
 /** Context-aware safety language for an already open action draft. */
 internal object KaiConversationSemantics {
@@ -216,6 +236,47 @@ internal object KaiConversationSemantics {
         return n in setOf("venda", "venam", "venaam", "vendaam", "vendam", "cancel", "skip", "vidunga", "viddu", "no", "no need", "illa", "illai", "வேண்டாம்") ||
             listOf("cancel pannu", "cancel pannunga", "don't add", "dont add", "add panna vendam", "add pannadhe", "வேண்டாம்").any(n::contains)
     }
+
+    private fun plain(text: String) = text.lowercase(Locale.ROOT).trim()
+        .replace(Regex("""[.!?,;:]+"""), " ")
+        .replace(Regex("""(?<![\p{L}])(owner|kai|anna|ji|please|pls)(?![\p{L}])"""), " ")
+        .replace(Regex("""\s+"""), " ").trim()
+
+    /** "note panniko", "save pannu", "kanakkula podu", "serthu vidu": the owner asks for the stated payment to go into the books. */
+    private val saveWords = Regex(
+        """(?<![\p{L}])(?:note|save|add|record|entry)\s*-?\s*(?:pannu|panniko|pannikko|pannikkonga|pannunga|pannikonga|pannidu|panniru|pannirunga|podu|pottudu)(?![\p{L}])|""" +
+            """(?<![\p{L}])(?:kanakku\s*-?\s*la|kanakkula|kanakkil|account\s*-?\s*la|accountla|books\s*-?\s*la|ledger\s*-?\s*la)\s*(?:podu|pottudu|pottu\s*vai|ezhudhu|add\s*pannu|serthudu|serthu\s*vidu)(?![\p{L}])|""" +
+            """(?<![\p{L}])(?:serthu\s*vidu|serthudu|saerthu\s*vidu)(?![\p{L}])|(?<![\p{L}])(?:save|add)\s+it(?![\p{L}])|""" +
+            """சேவ்\s*பண்ணு|சேமி|சேர்த்து\s*விடு|சேர்த்துடு|கணக்குல\s*போடு|கணக்கில்\s*போடு|நோட்\s*பண்ணிக்கோ|பதிவு\s*பண்ணு""",
+    )
+    /** "add pannitiya?", "save aagiducha?": the owner asks whether it was saved — never itself a request to save. */
+    private val savedQuestion = Regex(
+        """(?<![\p{L}])(?:(?:add|save|note|record|entry)\s*-?\s*)?(?:pannitiya|pannittiya|panitiya|pannitiyaa|pannitteengala|panniteengala|pannitingala|pannittingala|pannittaya)(?![\p{L}])|""" +
+            """(?<![\p{L}])save\s*(?:aagiducha|agiducha|aachaa|aacha|achaa|acha|aayiducha)(?![\p{L}])|(?<![\p{L}])(?:did\s+you\s+(?:save|add)|is\s+it\s+saved)(?![\p{L}])|""" +
+            """சேமிச்சியா|சேர்த்தியா|பண்ணிட்டியா""",
+    )
+    private val yesWords = setOf(
+        "ama", "aama", "aamaa", "amaa", "aam", "yes", "yeah", "yep", "seri", "sari", "correct", "correct dhaan", "ok", "okay", "okey", "ok seri", "seri ok",
+        "confirm", "confirm pannu", "confirm pannunga", "podu", "done", "ஆமா", "ஆம்", "சரி", "ஓகே", "உறுதி",
+    )
+
+    fun savesDraft(text: String): Boolean = !asksIfSaved(text) && saveWords.containsMatchIn(plain(text))
+    private val filler = Regex("""(?<![\p{L}])(seri|sari|ok|okay|idha|idhai|adha|adhai|atha|athai|ithu|idhu|athu|adhu|this|that|ama|aama|yes|ippo|now|ellam|motham|பண்ணு|அதை|இதை|சரி)(?![\p{L}])""")
+    /** Nothing but the save words ("save panniko", "seri, kanakkula podu") — or with [person] named — not "Colgate stock add pannu". */
+    fun onlySave(text: String, person: String? = null): Boolean {
+        if (!savesDraft(text)) return false
+        var rest = saveWords.replace(plain(text), " ")
+        if (person != null) rest = rest.replace(Regex("""(?i)(?<![\p{L}])${Regex.escape(person.lowercase(Locale.ROOT))}\S*"""), " ")
+        return filler.replace(rest, " ").isBlank()
+    }
+    /** The language a short Tanglish phrase is in ("add pannitiya?" reads as English to a word counter). */
+    fun phraseLang(text: String, lang: com.shopai.app.brain.KaiLang): com.shopai.app.brain.KaiLang =
+        if (lang == com.shopai.app.brain.KaiLang.ENGLISH && Regex("""(?i)pann|podu|aagi|achaa|aacha|serthu|kanakku""").containsMatchIn(text)) com.shopai.app.brain.KaiLang.TANGLISH else lang
+    fun asksIfSaved(text: String): Boolean = savedQuestion.containsMatchIn(plain(text))
+    /** A bare "ama" / "seri" / "ok" / "yes" — or "seri add pannu" — said to a draft Kai just showed. */
+    fun confirmsDraft(text: String): Boolean = plain(text) in yesWords || savesDraft(text)
+    /** "venam", "cancel", "vidunga": dropping a stated payment that has no draft yet ("illa" / "no" alone may answer a question). */
+    fun dropsStated(text: String): Boolean = cancelsDraft(text) && plain(text) !in setOf("no", "illa", "illai")
 }
 
 /**
@@ -275,6 +336,10 @@ class KaiAgent(
     private data class PaymentRequest(
         val key: String, val name: String?, val amount: BigDecimal?, val outgoing: Boolean,
         val mode: PaymentMode, val said: String, val directionKnown: Boolean = true,
+        /** A stated payment's due date ("adutha maasam 5"): kept on the Credit / Debit entry. */
+        val dueDate: LocalDate? = null,
+        /** Drafted from the payment the owner stated in conversation ("Mahesh enaku 2000 tharanum" … "save panniko"). */
+        val stated: Boolean = false,
     )
 
     private val plans = LinkedHashMap<String, ActionPlan>()
@@ -316,6 +381,9 @@ class KaiAgent(
             val correctedAmount = KaiConversationSemantics.correctionAmount(said)
             if (correctedAmount != null && correctedAmount.compareTo(openPayment.amount) != 0) {
                 conversationState.pendingCorrection = true
+                // A stated payment's draft keeps its person, direction and due date; only the amount changes.
+                if (openPayment.key == conversationState.statedDraftKey) return redraftStated(openPayment, correctedAmount, openPayment.dueDate, conversationState.pendingLang ?: lang)
+                    .also { conversationState.pendingCorrection = false }
                 val outgoing = openPayment.kind == PlanKind.PAYMENT_OUT || openPayment.kind == PlanKind.CREDIT_GIVEN
                 return revise(openPayment.key, openPayment.partyName, correctedAmount, openPayment.mode, outgoing, lang)
                     .also { conversationState.pendingCorrection = false }
@@ -323,9 +391,43 @@ class KaiAgent(
             if (KaiConversationSemantics.cancelsDraft(said)) {
                 return act(KaiAction.CancelPlan(openPayment.key), lang)!!
             }
+            // "ama", "seri", "save pannu", "seri add pannu" to the draft on screen: the owner's confirmation — saved by the engine.
+            // A bare "ama" counts only as the answer to the draft Kai just showed — not to a later question (Kai asking about a word).
+            val draftJustShown = conversationState.conversationTurn == conversationState.draftShownTurn + 1
+            if (said.none(Char::isDigit) && !waitingForLearningAnswer &&
+                (KaiConversationSemantics.onlySave(said, openPayment.partyName) || (draftJustShown && KaiConversationSemantics.confirmsDraft(said)))) {
+                if (openPayment.problems.isNotEmpty()) return say(lang, KaiMood.CLARIFY, null,
+                    ta = "ஓனர், இதை இப்போ சேமிக்க முடியாது: ${openPayment.problems.joinToString("; ")}. நான் எதுவும் சேமிக்கல.",
+                    tl = "Owner, idha ippo save panna mudiyadhu: ${openPayment.problems.joinToString("; ")}. Naan edhuvum save pannala.",
+                    en = "Owner, this can't be saved right now: ${openPayment.problems.joinToString("; ")}. Nothing was saved.")
+                return confirm(openPayment.key, shortLang(said, lang))!!
+            }
+            if (KaiConversationSemantics.asksIfSaved(said)) return notSavedYet(shortLang(said, lang)).also { conversationState.draftShownTurn = conversationState.conversationTurn }
+            // "next month 5", "July 6" while a stated payment's draft is open: the draft gets that due date (still waiting for Confirm).
+            if (openPayment.key == conversationState.statedDraftKey) KaiTime.parse(said, now())?.takeIf { it.daySpecified }?.let { t ->
+                return redraftStated(openPayment, openPayment.amount, t.at.toLocalDate(), conversationState.pendingLang ?: lang)
+            }
         }
 
+        // "add pannitiya?": answered from what the books confirmed — never "saved" unless the engine said Done.
+        if (openPayment == null && KaiConversationSemantics.asksIfSaved(said)) return savedAnswer(KaiConversationSemantics.phraseLang(said, lang))
+
         pendingDueDateAnswer(said, lang)?.let { return it }
+
+        // "note panniko", "save pannu", "kanakkula podu" — the stated payment goes to a draft with Confirm (never saved by itself).
+        if (openPayment == null) statedSave(said, lang)?.let { return it }
+        // "venam" right after Kai talked about the stated payment (no draft yet): it is dropped — nothing was or will be saved.
+        if (openPayment == null && conversationState.stated != null && KaiConversationSemantics.dropsStated(said) &&
+            conversationState.currentIntent in setOf("RECEIVABLE_CONTEXT", "DUE_DATE_ANSWER", "RECEIVABLE_FOLLOW_UP")) {
+            val l = shortLang(said, lang)
+            conversationState.stated = null
+            conversationState.pendingQuestion = null
+            conversationState.pendingDay = null
+            conversationState.pendingMonthOffset = null
+            conversationState.currentIntent = "STATED_PAYMENT_DROPPED"
+            tools.log("payment", "conversation", "stated payment dropped by the owner", ActionStatus.CANCELLED, null, said)
+            return say(l, KaiMood.NEUTRAL, null, ta = "சரி Owner, எதுவும் சேமிக்கல.", tl = "Seri Owner, edhuvum save pannala.", en = "Okay Owner, nothing was saved.")
+        }
 
         val draftBefore = lastDraft
         lastDraft = null
@@ -497,6 +599,7 @@ class KaiAgent(
         val asking = Regex("(?i)(?<![\\p{L}])(evlo|evvalavu|eppo|eppa|epo|how much|when|yaar|yaaru|who)(?![\\p{L}])|(?<![\\p{L}])enna(?!\\s*(?:₹|rs\\.?)?\\s*\\d)(?![\\p{L}])|\\?|எவ்வளவு|எப்போ|யார்")
             .containsMatchIn(text)
         if (hasReceivableMeaning && person != null && amount != null && cmd == KaiCommand.Question && !asking) {
+            dropStatedDraft()
             val ownerIsRecipient = Regex("(?i)\\b(enakku|enaku|to me|for me)\\b").containsMatchIn(text)
             val direction = when (owed) {
                 com.shopai.app.brain.tools.OwedDirection.RECEIVABLE -> KaiConversationPaymentDirection.PAYMENT_IN
@@ -505,11 +608,14 @@ class KaiAgent(
                     else KaiConversationPaymentDirection.PAYMENT_OUT
             }
             remember(person, amount, direction, text, lang)
+            // "Mahesh enaku 2000 tharanum, save panniko": straight to the draft (Confirm still saves it).
+            if (KaiConversationSemantics.savesDraft(text)) return draftStated(conversationState.stated!!, lang, text)
             conversationState.pendingQuestion = KaiPendingQuestion.DUE_DATE
             return askDueDate(person, amount, direction, lang)
         }
         // "Kumar-ku cash kudukanum": who and which way, but no amount — ask only the amount.
         if (owed != null && person != null && amount == null && cmd == KaiCommand.Question && !asking) {
+            dropStatedDraft()
             val direction = if (owed == com.shopai.app.brain.tools.OwedDirection.PAYABLE) KaiConversationPaymentDirection.PAYMENT_OUT else KaiConversationPaymentDirection.PAYMENT_IN
             remember(person, null, direction, text, lang)
             conversationState.pendingQuestion = KaiPendingQuestion.AMOUNT
@@ -549,6 +655,15 @@ class KaiAgent(
             en = "You're asking when $personName pays the $value, Owner. I don't have that due date recorded — tell me the date.")
     }
 
+    /** A new payment stated while the previous one's draft is still open: that draft is discarded (never saved by a later "seri"). */
+    private suspend fun dropStatedDraft() {
+        val key = conversationState.statedDraftKey ?: return
+        plans.remove(key)?.let { runCatching { tools.discard(it) } }
+        conversationState.statedDraftKey = null
+        conversationState.pendingDraft = null
+        conversationState.pendingConfirmation = false
+    }
+
     /** The stated payment, kept for the short answers that complete it ("10", "next month", "5000"). */
     private fun remember(person: String, amount: BigDecimal?, direction: KaiConversationPaymentDirection, text: String, lang: KaiLang) {
         val out = direction == KaiConversationPaymentDirection.PAYMENT_OUT
@@ -568,6 +683,8 @@ class KaiAgent(
         conversationState.pendingDay = null
         conversationState.pendingMonthOffset = null
         conversationState.pendingLang = lang
+        conversationState.lastDate = null
+        conversationState.stated = KaiStatedPayment(person, amount, direction)
     }
 
     private fun askDueDate(person: String, amount: BigDecimal, direction: KaiConversationPaymentDirection, lang: KaiLang): KaiTurn {
@@ -575,7 +692,7 @@ class KaiAgent(
         val value = KaiFormat.rupees(amount.toDouble())
         return say(lang, KaiMood.EXPLAINING, null,
             ta = if (direction == KaiConversationPaymentDirection.PAYMENT_OUT) "$person-க்கு $value கொடுக்கணும்னு சொல்றீங்க Owner. Due date தெரியல; எந்த தேதிக்குள் pay பண்ணணும்?" else "$person கிட்டிருந்து $value வரணும்னு சொல்றீங்க Owner. Due date எனக்குத் தெரியல; எந்த தேதிக்குள் collect பண்ணணும்?",
-            tl = if (direction == KaiConversationPaymentDirection.PAYMENT_OUT) "Owner, $person-ku $value pay pannanum-nu note pannikiren. Due date theriyala; endha date-kulla pay pannanum?" else "Owner, $person kitta $value collect pannanum-nu note pannikiren. Due date theriyala; endha date-kulla collect pannanum?",
+            tl = if (direction == KaiConversationPaymentDirection.PAYMENT_OUT) "Owner, $person-ku $value pay pannanum-nu purinjudhu. Due date theriyala; endha date-kulla pay pannanum?" else "Owner, $person kitta $value collect pannanum-nu purinjudhu. Due date theriyala; endha date-kulla collect pannanum?",
             en = if (direction == KaiConversationPaymentDirection.PAYMENT_OUT) "Got it, Owner. You need to pay $value to $person. I don't have a due date; what date should I use?" else "Got it, Owner. You said $value is due from $person. I don't have a due date for that amount; what date should I use?")
     }
 
@@ -621,6 +738,7 @@ class KaiAgent(
                 ?: return null
             conversationState.pendingAmount = amount
             conversationState.lastAmount = amount
+            conversationState.stated = conversationState.stated?.copy(amount = amount)
             conversationState.pendingQuestion = KaiPendingQuestion.DUE_DATE
             return askDueDate(entity, amount, direction, lang)
         }
@@ -637,8 +755,20 @@ class KaiAgent(
                 tl = "Owner, indha maasam $day-aa, illa adutha maasam $day-aa?",
                 en = "The ${day}${ordinalSuffix(day)} of this month or next month, Owner?")
         }
-        // "next month" / "indha maasam": the day was given before, or is asked now.
-        if (justAsked) monthChoice(text, conversationState.pendingDay != null)?.let { offset ->
+        // "ama" / "seri" alone to "indha maasam 5-aa, illa adutha maasam 5-aa?" says yes to neither: the two choices again, short.
+        if (justAsked && conversationState.pendingDay != null && text.none(Char::isDigit) && !monthWord.containsMatchIn(text) &&
+            !nextMonthWords.containsMatchIn(text) && !thisMonthWords.containsMatchIn(text) && KaiConversationSemantics.confirmsDraft(text) && !KaiConversationSemantics.savesDraft(text)) {
+            val day = conversationState.pendingDay!!
+            conversationState.pendingAskedTurn = conversationState.conversationTurn
+            return say(lang, KaiMood.CLARIFY, null,
+                ta = "இந்த மாதம் $day-ஆ, அடுத்த மாதம் $day-ஆ Owner?",
+                tl = "Owner, indha maasam $day-aa, adutha maasam $day-aa?",
+                en = "This month's ${day}${ordinalSuffix(day)} or next month's, Owner?")
+        }
+        // "next month" / "ama next month" / "indha maasam": the day was given before, or is asked now. Said with the
+        // month word it still answers a few turns later ("saptiya?" in between); a bare "next" only right after.
+        val recent = conversationState.conversationTurn - conversationState.pendingAskedTurn in 1..4
+        monthChoice(text, conversationState.pendingDay != null)?.takeIf { justAsked || (recent && monthWord.containsMatchIn(text)) }?.let { offset ->
             conversationState.pendingDay?.let { day -> return dueDateResolved(monthDay(today, offset, day), entity, amount, direction, lang, text) }
             conversationState.pendingMonthOffset = offset
             conversationState.pendingAskedTurn = conversationState.conversationTurn
@@ -652,6 +782,7 @@ class KaiAgent(
         if (justAsked) KaiConversationSemantics.correctionAmount(text)?.takeIf { it.compareTo(amount) != 0 && it > BigDecimal(31) }?.let { corrected ->
             conversationState.pendingAmount = corrected
             conversationState.lastAmount = corrected
+            conversationState.stated = conversationState.stated?.copy(amount = corrected)
             return askDueDate(entity, corrected, direction, lang)
         }
         return null
@@ -689,6 +820,7 @@ class KaiAgent(
         conversationState.pendingDay = null
         conversationState.pendingMonthOffset = null
         conversationState.lastDate = date
+        conversationState.stated = conversationState.stated?.takeIf { it.person == entity }?.copy(amount = amount, dueDate = date)
         conversationState.lastPerson = entity
         conversationState.lastRelevantEntity = entity
         conversationState.lastCustomer = entity
@@ -704,8 +836,146 @@ class KaiAgent(
             en = if (out) "Okay Owner, pay $amountText to $entity $whenText." else "Okay Owner, collect $amountText from $entity $whenText.")
     }
 
+    /** A short reply ("ok", "add panniko") keeps the language the payment was said in. */
+    private fun shortLang(said: String, lang: KaiLang): KaiLang =
+        if (said.trim().split(Regex("""\s+""")).size <= 4) conversationState.pendingLang ?: KaiConversationSemantics.phraseLang(said, lang)
+        else KaiConversationSemantics.phraseLang(said, lang)
+
     private fun pickLang(lang: KaiLang, ta: String, tl: String, en: String) = when (lang) {
         KaiLang.TAMIL -> ta; KaiLang.TANGLISH -> tl; KaiLang.ENGLISH -> en
+    }
+
+    // ------------------------------------------------------------ a stated payment → draft → confirm → books
+
+    /**
+     * "note panniko" / "save pannu" / "kanakkula podu" after "Mahesh enaku 2000 tharanum": the stated payment
+     * becomes a draft card (Credit: they owe the owner; Debit: the owner owes them) — written only on Confirm.
+     * Said again after it was saved: never a second entry.
+     */
+    private suspend fun statedSave(said: String, lang: KaiLang): KaiTurn? {
+        val st = conversationState.stated
+        if (said.any(Char::isDigit) || !KaiConversationSemantics.onlySave(said, st?.person ?: conversationState.lastSaved?.person)) return null
+        val l = conversationState.pendingLang ?: KaiConversationSemantics.phraseLang(said, lang)
+        if (st == null) {
+            val saved = conversationState.lastSaved ?: return say(l, KaiMood.CLARIFY, null,
+                ta = "ஓனர், சேமிக்க இப்போ எதுவும் இல்ல. யார், எவ்வளவு-னு சொல்லுங்க — உதா: “Mahesh எனக்கு 2000 தரணும்”.",
+                tl = "Owner, save panna ippo edhuvum illa. Yaar, evlo-nu sollunga — eg: “Mahesh enaku 2000 tharanum”.",
+                en = "Owner, there's nothing to save yet. Tell me who and how much — e.g. “Mahesh owes me 2000”.")
+            return say(l, KaiMood.NEUTRAL, null,
+                ta = "ஓனர், அது ஏற்கனவே சேமிச்சாச்சு — ${saved.person} ${KaiFormat.rupees(saved.amount.toDouble())} (${saved.reference}). மறுபடி சேர்க்கல.",
+                tl = "Owner, adhu already save aagiduchu — ${saved.person} ${KaiFormat.rupees(saved.amount.toDouble())} (${saved.reference}). Thirumba add pannala.",
+                en = "Owner, that's already saved — ${saved.person} ${KaiFormat.rupees(saved.amount.toDouble())} (${saved.reference}). I didn't add it again.")
+        }
+        return draftStated(st, l, said)
+    }
+
+    private suspend fun draftStated(st: KaiStatedPayment, lang: KaiLang, said: String): KaiTurn {
+        val amount = st.amount ?: run {
+            conversationState.pendingQuestion = KaiPendingQuestion.AMOUNT
+            conversationState.pendingAskedTurn = conversationState.conversationTurn
+            return if (st.direction == KaiConversationPaymentDirection.PAYMENT_OUT) say(lang, KaiMood.CLARIFY, null,
+                ta = "${st.person}-க்கு எவ்வளவு கொடுக்கணும் Owner? தொகை இல்லாம சேமிக்க மாட்டேன்.",
+                tl = "Owner, ${st.person}-ku evlo kudukkanum? Amount illama save panna maatten.",
+                en = "How much do you owe ${st.person}, Owner? I won't save it without the amount.")
+            else say(lang, KaiMood.CLARIFY, null,
+                ta = "${st.person} கிட்ட எவ்வளவு வாங்கணும் Owner? தொகை இல்லாம சேமிக்க மாட்டேன்.",
+                tl = "Owner, ${st.person} kitta evlo vaanganum? Amount illama save panna maatten.",
+                en = "How much should you collect from ${st.person}, Owner? I won't save it without the amount.")
+        }
+        // The date question is answered by the draft now (a date said next goes onto the draft).
+        conversationState.pendingQuestion = null
+        conversationState.pendingDay = null
+        conversationState.pendingMonthOffset = null
+        val receivable = st.direction == KaiConversationPaymentDirection.PAYMENT_IN
+        val kind = if (receivable) PlanKind.CREDIT_GIVEN else PlanKind.DEBIT_TAKEN
+        val r = PaymentRequest(newKey(), st.person, amount, outgoing = receivable, mode = PaymentMode.CASH, said = said, dueDate = st.dueDate, stated = true)
+        val matches = tools.parties(st.person) ?: return notSaved(lang, "books unavailable")
+        // A receivable is a customer's Credit entry, a payable a supplier's Debit entry: only that side's people.
+        val sameSide = matches.filter { it.customer == receivable }
+        val exact = sameSide.filter { it.name.trim().equals(st.person.trim(), ignoreCase = true) || com.shopai.app.util.NameSound.same(it.name, st.person) }
+        if (exact.size == 1) return prepared(r, kind, exact.single().name, exact.single().id, lang)
+        requests[r.key] = r
+        val role = if (receivable) pick(lang, ta = "வாடிக்கையாளர்", tl = "customer", en = "customer") else pick(lang, ta = "சப்ளையர்", tl = "supplier", en = "supplier")
+        if (exact.size > 1) return KaiTurn(
+            ChatReply(pick(lang, ta = "எந்த ${st.person} ஓனர்?", tl = "Endha ${st.person} Owner?", en = "Which ${st.person}, Owner?"), KaiMood.CLARIFY, ChatIntent.GENERAL_BUSINESS_QUERY),
+            KaiCard(emptyList(), exact.take(6).map { p -> KaiButton("${p.name} · ${KaiFormat.rupees(p.balance.toDouble())}", KaiAction.ChoosePlan(r.key, kind, p.id, p.name)) } +
+                KaiButton(cancelLabel(lang), KaiAction.CancelRequest(r.key))),
+        )
+        // "Kumaran" is not "Kumar": a similar name in the books is asked about, never used silently.
+        val similar = similarParties(st.person, sameSide, receivable)
+        if (similar.isNotEmpty()) {
+            val names = similar.joinToString(pick(lang, ta = "-ஆ, ", tl = "-a, ", en = " or ")) { it.name }
+            return KaiTurn(
+                ChatReply(pick(lang,
+                    ta = "ஓனர், ${st.person} தனி $role-ஆ? $names-ஆ?",
+                    tl = "Owner, ${st.person}-nu separate $role-aa? $names-a?",
+                    en = "Owner, is ${st.person} a separate $role, or $names?"), KaiMood.CLARIFY, ChatIntent.GENERAL_BUSINESS_QUERY),
+                KaiCard(emptyList(),
+                    listOf(KaiButton(pick(lang, ta = "${st.person} — புது $role", tl = "${st.person} — puthu $role", en = "${st.person} — new $role"),
+                        KaiAction.ChoosePlan(r.key, kind, null, st.person), primary = true)) +
+                        similar.map { p -> KaiButton("${p.name} · ${KaiFormat.rupees(p.balance.toDouble())}", KaiAction.ChoosePlan(r.key, kind, p.id, p.name)) } +
+                        KaiButton(cancelLabel(lang), KaiAction.CancelRequest(r.key))),
+            )
+        }
+        requests.remove(r.key)
+        // Not in the books yet: the draft says it will be a new customer / supplier.
+        return prepared(r, kind, st.person, null, lang)
+    }
+
+    /** Customers (or suppliers) whose name contains the stated one or is contained in it: "Kumar" for "Kumaran", "Siva" for "Sivakumar". */
+    private suspend fun similarParties(name: String, sameSide: List<PartyMatch>, receivable: Boolean): List<PartyMatch> {
+        val n = name.trim().lowercase(Locale.ROOT)
+        fun near(other: String): Boolean {
+            val o = other.trim().lowercase(Locale.ROOT)
+            return o != n && minOf(o.length, n.length) >= 3 && (o.startsWith(n) || n.startsWith(o))
+        }
+        val fromSearch = sameSide.filter { near(it.name) }
+        val people = runCatching { books.snapshot()?.people.orEmpty() }.getOrDefault(emptyList()).filter(::near)
+        val fromBooks = people.flatMap { p -> runCatching { tools.parties(p) }.getOrNull().orEmpty() }
+            .filter { it.customer == receivable && near(it.name) }
+        return (fromSearch + fromBooks).distinctBy { it.id }.take(5)
+    }
+
+    /** The Kai draft for a stated payment, prepared again: a new amount, or the due date said while it is open. */
+    private suspend fun redraftStated(plan: ActionPlan, amount: BigDecimal, dueDate: LocalDate?, lang: KaiLang): KaiTurn {
+        plans.remove(plan.key)?.let { runCatching { tools.discard(it) } }
+        conversationState.stated = conversationState.stated?.copy(amount = amount, dueDate = dueDate)
+        val r = PaymentRequest(newKey(), plan.partyName, amount, outgoing = plan.kind == PlanKind.CREDIT_GIVEN, mode = plan.mode, said = plan.said, dueDate = dueDate, stated = true)
+        return prepared(r, plan.kind, plan.partyName, plan.partyId, lang)
+    }
+
+    /** "add pannitiya?" with a draft still open: not saved — Confirm saves it. */
+    private fun notSavedYet(lang: KaiLang): KaiTurn = say(conversationState.pendingLang ?: lang, KaiMood.CLARIFY, null,
+        ta = "இன்னும் சேமிக்கல Owner. Confirm பண்ணுங்க, சேமிச்சிடறேன்.",
+        tl = "Innum save pannala Owner. Confirm pannunga, save pannidren.",
+        en = "Not saved yet, Owner. Confirm it and I'll save it.")
+
+    /** "add pannitiya?" with no draft open: yes only when the books confirmed the save; else the stated payment's draft is shown. */
+    private suspend fun savedAnswer(lang: KaiLang): KaiTurn {
+        val l = conversationState.pendingLang ?: lang
+        conversationState.stated?.takeIf { it.amount != null }?.let { st ->
+            val draft = draftStated(st, l, "add pannitiya?")
+            return if (draft.plan != null) draft.copy(reply = draft.reply.copy(text = notSavedYet(l).reply.text)) else draft
+        }
+        conversationState.lastSaved?.let { saved ->
+            val a = KaiFormat.rupees(saved.amount.toDouble())
+            return say(l, KaiMood.SUCCESS, null,
+                ta = "ஆம் Owner, சேர்த்துட்டேன். ${saved.person} — $a (${saved.reference}).",
+                tl = "ஆம் Owner, add pannitten. ${saved.person} — $a (${saved.reference}).",
+                en = "Yes Owner, it's added. ${saved.person} — $a (${saved.reference}).")
+        }
+        if (stockPlans.isNotEmpty() || plans.isNotEmpty()) return notSavedYet(l)
+        return say(l, KaiMood.NEUTRAL, null,
+            ta = "ஓனர், இன்னும் எதுவும் சேமிக்கல.", tl = "Owner, innum edhuvum save pannala.", en = "Owner, nothing has been saved yet.")
+    }
+
+    /** The books did not take it: said plainly — the amount is not in the books. */
+    private fun notSaved(lang: KaiLang, reason: String): KaiTurn {
+        tools.log("payment", "transaction engine", "not saved: $reason", ActionStatus.FAILED)
+        return say(lang, KaiMood.ERROR, null,
+            ta = "ஓனர், சேமிக்க முடியல. நான் தொகையை சேமிக்கல.",
+            tl = "Owner, save aagala. Naan amount-a save pannala.",
+            en = "Owner, it wasn't saved. I did not save the amount.")
     }
 
     /**
@@ -1457,7 +1727,9 @@ class KaiAgent(
             ?: return say(lang, KaiMood.ERROR, "draft failed", ta = "இதை இப்போ தயார் பண்ண முடியல ஓனர்.", tl = "Owner, idha ippo ready panna mudiyala.", en = "I couldn't prepare this right now, Owner.")
         // A short reference for the owner (the draft's internal id stays in the log result).
         val ref = tools.log("${kind.name.lowercase()} ${plan.partyName}", "draft", "${KaiFormat.rupees(plan.amount.toDouble())} ${plan.mode} draft=${plan.key}", ActionStatus.DRAFT, null)
-        plans[plan.key] = plan.copy(reference = ref)
+        plans[plan.key] = plan.copy(reference = ref, dueDate = r.dueDate ?: plan.dueDate)
+        if (r.stated) conversationState.statedDraftKey = plan.key
+        conversationState.draftShownTurn = conversationState.conversationTurn
         conversationState.pendingDraft = plans[plan.key]
         conversationState.pendingConfirmation = true
         conversationState.pendingCorrection = false
@@ -1480,6 +1752,14 @@ class KaiAgent(
             add("${plan.partyName} — $a")
             add(what)
             add(pick(lang, ta = "முறை: ${modeName(plan.mode, lang)}", tl = "Mode: ${modeName(plan.mode, lang)}", en = "Mode: ${modeName(plan.mode, lang)}"))
+            // A stated payment ("Mahesh enaku 2000 tharanum"): its due date, and whether the person is new to the books.
+            if (r.stated) {
+                val due = plans[plan.key]?.dueDate
+                add(if (due != null) pick(lang, ta = "Due date: ${KaiFormat.date(due, lang, now().toLocalDate())}", tl = "Due date: ${KaiFormat.date(due, lang, now().toLocalDate())}", en = "Due date: ${KaiFormat.date(due, lang, now().toLocalDate())}")
+                    else pick(lang, ta = "Due date: இல்லை", tl = "Due date: illa", en = "Due date: not set"))
+                if (partyId == null) add(if (kind == PlanKind.CREDIT_GIVEN) pick(lang, ta = "புது வாடிக்கையாளர்-ஆ சேரும்", tl = "Puthu customer-ah add aagum", en = "Will be added as a new customer")
+                    else pick(lang, ta = "புது சப்ளையர்-ஆ சேரும்", tl = "Puthu supplier-ah add aagum", en = "Will be added as a new supplier"))
+            }
             if (plan.settles.isNotEmpty()) add(pick(lang, ta = "சரி செய்வது: ", tl = "Settles: ", en = "Settles: ") +
                 plan.settles.joinToString(", ") { (n, v) -> "$n ${KaiFormat.rupees(v.toDouble())}" })
             if (plan.advance.signum() > 0) add(pick(lang, ta = "${KaiFormat.rupees(plan.advance.toDouble())} advance-ஆ சேமிக்கப்படும்",
@@ -1515,17 +1795,28 @@ class KaiAgent(
         return when (val outcome = tools.confirm(plan)) {
             is ActionOutcome.Done -> {
                 tools.log("${plan.kind.name.lowercase()} ${plan.partyName}", "transaction engine", "saved ${outcome.reference}", ActionStatus.CONFIRMED, plan.reference ?: plan.key)
+                // Only the engine's Done makes "add pannitten" true; the stated payment is now in the books (said again: not added twice).
+                conversationState.lastSaved = KaiSavedPayment(plan.partyName, plan.amount, outcome.reference, plan.dueDate)
+                if (plan.key == conversationState.statedDraftKey) {
+                    conversationState.stated = null
+                    conversationState.statedDraftKey = null
+                }
                 val a = KaiFormat.rupees(plan.amount.toDouble())
                 val after = outcome.balanceAfter?.let { KaiFormat.rupees(it.toDouble()) }
+                val due = plan.dueDate?.let { KaiFormat.date(it, lang, now().toLocalDate()) }
                 say(lang, KaiMood.SUCCESS, null,
-                    ta = "சேமிச்சுட்டேன் ஓனர். ${plan.partyName} — $a (${outcome.reference})." + (after?.let { " இப்போ பாக்கி $it." } ?: ""),
-                    tl = "Save aagiduchu Owner. ${plan.partyName} — $a (${outcome.reference})." + (after?.let { " Ippo balance $it." } ?: ""),
-                    en = "Saved, Owner. ${plan.partyName} — $a (${outcome.reference})." + (after?.let { " Balance now $it." } ?: ""))
+                    ta = "சேமிச்சுட்டேன் ஓனர். ${plan.partyName} — $a (${outcome.reference})." + (due?.let { " Due: $it." } ?: "") + (after?.let { " இப்போ பாக்கி $it." } ?: ""),
+                    tl = "Save aagiduchu Owner. ${plan.partyName} — $a (${outcome.reference})." + (due?.let { " Due: $it." } ?: "") + (after?.let { " Ippo balance $it." } ?: ""),
+                    en = "Saved, Owner. ${plan.partyName} — $a (${outcome.reference})." + (due?.let { " Due: $it." } ?: "") + (after?.let { " Balance now $it." } ?: ""))
             }
             is ActionOutcome.Failed -> {
                 tools.log("${plan.kind.name.lowercase()} ${plan.partyName}", "transaction engine", outcome.reason, ActionStatus.FAILED, plan.reference ?: plan.key)
+                // Not saved: the stated payment stays (the owner can try again) and nothing claims it was added.
+                if (plan.key == conversationState.statedDraftKey) conversationState.statedDraftKey = null
                 say(lang, KaiMood.ERROR, null,
-                    ta = "சேமிக்க முடியல ஓனர்: ${outcome.reason}", tl = "Owner, save aagala: ${outcome.reason}", en = "It wasn't saved, Owner: ${outcome.reason}")
+                    ta = "ஓனர், சேமிக்க முடியல. நான் தொகையை சேமிக்கல. (${outcome.reason})",
+                    tl = "Owner, save aagala. Naan amount-a save pannala. (${outcome.reason})",
+                    en = "Owner, it wasn't saved. I did not save the amount. (${outcome.reason})")
             }
         }
     }
@@ -1535,6 +1826,10 @@ class KaiAgent(
             conversationState.pendingDraft = null
             conversationState.pendingConfirmation = false
             conversationState.pendingCorrection = false
+            if (it.key == conversationState.statedDraftKey) {
+                conversationState.stated = null
+                conversationState.statedDraftKey = null
+            }
             tools.discard(it)
             tools.log("${it.kind.name.lowercase()} ${it.partyName}", "draft", "discarded", ActionStatus.CANCELLED, it.reference ?: it.key)
         }

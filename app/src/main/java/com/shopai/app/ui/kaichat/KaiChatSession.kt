@@ -136,6 +136,15 @@ class KaiChatSession(
         messages[index] = messages[index].copy(cardClosed = true)
     }
 
+    /** A draft confirmed or cancelled by voice ("seri", "venam") or redrafted ("3000"): its old card can't be tapped again. */
+    private fun closeSpentDrafts() {
+        for (i in messages.indices) {
+            val m = messages[i]
+            val keys = m.card?.buttons?.mapNotNull { (it.action as? KaiAction.ConfirmPlan)?.key }.orEmpty()
+            if (!m.cardClosed && keys.isNotEmpty() && keys.all { agent.plan(it) == null }) close(i)
+        }
+    }
+
     private suspend fun respond(lang: KaiLang, turn: suspend () -> KaiTurn) {
         thinking = true
         val started = System.currentTimeMillis()
@@ -151,6 +160,7 @@ class KaiChatSession(
         }
         // A short, visible moment of thinking (the brain itself is instant).
         kotlinx.coroutines.delay((650 - (System.currentTimeMillis() - started)).coerceAtLeast(0))
+        closeSpentDrafts()
         val id = nextId++
         messages += KaiChatMessage(id, fromOwner = false, text = result.reply.text, mood = result.reply.mood, card = result.card, lang = lang)
         result.direct?.let { pendingDirect = id to it }

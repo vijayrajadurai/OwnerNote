@@ -60,6 +60,8 @@ data class ActionPlan(
     val said: String,
     /** Kai's short action reference ("K-261003-1131-A3F2") shown to the owner. */
     val reference: String? = null,
+    /** When a Credit / Debit entry is due ("Mahesh enaku 2000 tharanum … adutha maasam 5"): saved on the entry. */
+    val dueDate: java.time.LocalDate? = null,
 )
 
 sealed interface ActionOutcome {

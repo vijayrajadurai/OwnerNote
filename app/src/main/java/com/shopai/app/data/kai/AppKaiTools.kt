@@ -271,7 +271,8 @@ class AppKaiTools(
             }
             PlanKind.CREDIT_GIVEN -> {
                 val detail = transactions.createCredit(
-                    CreateCreditInput(customerId = plan.partyId, customerName = plan.partyName, amount = plan.amount.toDouble(), description = "Kai: ${plan.said}".take(120)),
+                    CreateCreditInput(customerId = plan.partyId, customerName = plan.partyName, amount = plan.amount.toDouble(), description = "Kai: ${plan.said}".take(120),
+                        dueDate = plan.dueDate?.toString()),
                     source = TxnSource.VOICE,
                 )
                 val s = session()
@@ -280,7 +281,8 @@ class AppKaiTools(
             }
             PlanKind.DEBIT_TAKEN -> {
                 val detail = transactions.createDebit(
-                    CreateDebitInput(supplierId = plan.partyId, supplierName = plan.partyName, amount = plan.amount.toDouble(), description = "Kai: ${plan.said}".take(120)),
+                    CreateDebitInput(supplierId = plan.partyId, supplierName = plan.partyName, amount = plan.amount.toDouble(), description = "Kai: ${plan.said}".take(120),
+                        dueDate = plan.dueDate?.toString()),
                     source = TxnSource.VOICE,
                 )
                 val s = session()
