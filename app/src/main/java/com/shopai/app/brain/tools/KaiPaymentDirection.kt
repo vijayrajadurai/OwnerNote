@@ -34,7 +34,7 @@ object KaiPaymentDirection {
     private val giving = Regex(
         """$B(tharanum|tharanu|tharanam|tharan|kudukan|kodukan|tharavendum|thara\s*vendum|thara\s*venum|thara\s*venam|tharuvaan|kudukanum|kudukkanum|kodukkanum|kodukanum|kudukanu|""" +
             """kudukka\s*venum|kudukka\s*vendum|kodukka\s*vendum|pay\s*pannanum|pay\s*panna\s*venum|payment\s*pannanum|kattanum|katta\s*venum|settle\s*pannanum|""" +
-            """owe|owes|give)$E|தரணும்|தர\s*வேண்டும்|தரவேண்டும்|கொடுக்கணும்|குடுக்கணும்|கொடுக்க\s*வேண்டும்|கட்டணும்""",
+            """owe|owes|give|(?:have|has|need|needs|must|should)\s+to\s+(?:pay|give))$E|தரணும்|தர\s*வேண்டும்|தரவேண்டும்|கொடுக்கணும்|குடுக்கணும்|கொடுக்க\s*வேண்டும்|கட்டணும்""",
         RegexOption.IGNORE_CASE,
     )
     private val taking = Regex(

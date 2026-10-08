@@ -47,7 +47,6 @@ fun AddCreditScreen(
     val lockedToCustomer = !prefillCustomerName.isNullOrBlank() || !prefillCustomerId.isNullOrBlank()
     var customerName by remember { mutableStateOf(prefillCustomerName ?: "") }
     var amount by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
     var dueDate by remember { mutableStateOf<LocalDate?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var loading by remember { mutableStateOf(false) }
@@ -61,7 +60,6 @@ fun AddCreditScreen(
     val isValid = (lockedToCustomer || customerName.trim().length >= 2) &&
         enteredAmount > 0 &&
         !amountTooLarge &&
-        description.trim().isNotEmpty() &&
         dueDate != null
 
     ApiErrorAlertDialog(message = alertError, onDismiss = { alertError = null })
@@ -143,7 +141,8 @@ fun AddCreditScreen(
                                 customerId = customerId,
                                 customerName = if (customerId == null) name else null,
                                 amount = amount.toDouble(),
-                                description = description.trim(),
+                                // No note box on this screen (removed 3 Oct): the books name the line "Credit" / "Debit".
+                                description = null,
                                 dueDate = dueDate?.let { localDateToIsoInstant(it) },
                             ),
                         )

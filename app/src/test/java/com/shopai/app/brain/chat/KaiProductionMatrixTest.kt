@@ -897,4 +897,112 @@ class KaiProductionMatrixTest {
         has(s.say("Madurai Murugan evlo tharanum?"), "₹4,000")
         has(s.say("Ramesh-ku evlo kudukkanum?"), "₹9,500")
     }
+
+    // ================================================================== 18. Tamil / Tanglish / English combinations
+
+    @Test
+    fun m18_languageCombinations() {
+        val c = Category("language-combinations")
+        val custTa = listOf("குமார்" to "c1", "செல்வி" to "c3", "ரவி" to "c4", "மணி" to "c6")
+        val supTa = listOf("ரமேஷ்" to "s1", "பாஷா" to "s2")
+        val amounts = listOf("500", "1200", "350", "2000")
+        // Tamil script: the owner gives credit / owes / receives / pays.
+        for ((i, who) in custTa.withIndex()) {
+            val (n, id) = who; val a = amounts[i]
+            for (t in listOf("$n எனக்கு $a தரணும்", "$n எனக்கு $a ரூபாய் தரணும்", "$n கிட்ட $a வாங்கணும்"))
+                c.case(t) { val s = Shop(); plan(s.drafted(t), PlanKind.CREDIT_GIVEN, id, a) }
+            for (t in listOf("$n $a கொடுத்தான்", "$n $a குடுத்தாங்க", "$n $a அனுப்பினான்", "$n கிட்ட $a வாங்கினேன்"))
+                c.case(t) { val s = Shop(); s.turn(t); plan(s.draft(), PlanKind.PAYMENT_IN, id, a) }
+            c.case("$n எவ்வளவு தரணும்?") { has(Shop().say("$n எவ்வளவு தரணும்?"), KaiFormat.rupees(Shop().l.party(id).pending.toDouble()).removePrefix("₹")) }
+        }
+        for ((i, who) in supTa.withIndex()) {
+            val (n, id) = who; val a = amounts[i]
+            for (t in listOf("நான் $n-க்கு $a கொடுக்கணும்", "நான் ${n}க்கு $a தரணும்"))
+                c.case(t) { val s = Shop(); plan(s.drafted(t), PlanKind.DEBIT_TAKEN, id, a) }
+            for (t in listOf("$n-க்கு $a கொடுத்தேன்", "${n}க்கு $a அனுப்பினேன்"))
+                c.case(t) { val s = Shop(); s.turn(t); plan(s.draft(), PlanKind.PAYMENT_OUT, id, a) }
+        }
+        // English.
+        for ((n, id) in customers.take(4)) {
+            c.case("$n owes me 500") { val s = Shop(); plan(s.drafted("$n owes me 500"), PlanKind.CREDIT_GIVEN, id, "500") }
+            c.case("$n paid 300") { val s = Shop(); s.turn("$n paid 300"); plan(s.draft(), PlanKind.PAYMENT_IN, id, "300") }
+            c.case("Received 250 from $n") { val s = Shop(); s.turn("Received 250 from $n"); plan(s.draft(), PlanKind.PAYMENT_IN, id, "250") }
+            c.case("How much does $n owe?") { has(Shop().say("How much does $n owe?"), KaiFormat.rupees(Shop().l.party(id).pending.toDouble())) }
+        }
+        for ((n, id) in suppliers) {
+            c.case("I have to pay $n 900") { val s = Shop(); plan(s.drafted("I have to pay $n 900"), PlanKind.DEBIT_TAKEN, id, "900") }
+            c.case("I paid $n 400") { val s = Shop(); s.turn("I paid $n 400"); plan(s.draft(), PlanKind.PAYMENT_OUT, id, "400") }
+            c.case("Paid 400 to $n") { val s = Shop(); s.turn("Paid 400 to $n"); plan(s.draft(), PlanKind.PAYMENT_OUT, id, "400") }
+        }
+        // Tamil due-date answers bring the draft with the right date.
+        for ((ans, date) in listOf("நாளைக்கு" to d(10, 9), "நாளன்னைக்கு" to d(10, 10), "அடுத்த மாதம் 5" to d(11, 5), "நாளை" to d(10, 9)))
+            c.case("due $ans") {
+                val s = Shop(); s.say("குமார் எனக்கு 700 தரணும்")
+                val t = s.turn(ans)
+                check(t.plan?.dueDate == date && t.plan.partyId == "c1") { "plan ${t.plan} / ${t.reply.text}" }
+            }
+        // Questions across languages.
+        for (q in listOf("இன்னைக்கு யார் தரணும்?", "innaikku yaar tharanum?", "Who has to pay me today?"))
+            c.case(q) { has(Shop().say(q), "Kumar", "Selvi") }
+        for (q in listOf("மொத்தம் எவ்வளவு வரணும்?", "Mothama evlo varanum?", "How much do I have to collect in total?"))
+            c.case(q) { has(Shop().say(q), "16,973.10") }
+        for (q in listOf("நான் யாருக்கு எவ்வளவு கொடுக்கணும்?", "naan yaarukku evlo kudukkanum?", "Whom do I have to pay?"))
+            c.case(q) { has(Shop().say(q), "Ramesh", "Basha") }
+        c.done(75)
+    }
+
+    // ================================================================== 19. random combinations — safety invariants
+
+    /**
+     * 400 seeded random sentences (name × amount form × verb × filler, Tamil / Tanglish / English, typos and lower case).
+     * Whatever Kai understands, these must always hold: no crash; nothing saved before Confirm; never "saved" in the
+     * reply before Confirm; a draft only for the person named (or a new person); the draft's amount is the one said;
+     * and after "seri" the books hold exactly the draft that was shown.
+     */
+    @Test
+    fun m19_randomCombinationsKeepTheSafetyRules() {
+        val c = Category("random-invariants")
+        val rnd = Random(20261008)
+        val names = listOf("Kumar" to "c1", "Selvi" to "c3", "Ravi" to "c4", "Priya" to "c5", "Mani" to "c6", "Ramesh" to "s1", "Basha" to "s2",
+            "குமார்" to "c1", "செல்வி" to "c3", "kumar" to "c1", "selvi" to "c3", "Suresh" to null, "Lokesh" to null)
+        val amounts = listOf("500" to "500", "₹750" to "750", "1,200" to "1200", "2k" to "2000", "300 rs" to "300", "ainooru" to "500", "five hundred" to "500")
+        val verbs = listOf("kuduthaan", "kuduthutaan", "enakku {a} tharanum", "-ku {a} kuduthen", "-ku {a} kudukkanum", "GPay pannan", "paid", "{a} baaki",
+            "கொடுத்தான்", "எனக்கு {a} தரணும்", "-க்கு {a} கொடுத்தேன்", "pay pannitaan", "anuppitaan", "kitta {a} vaanginen")
+        val fillers = listOf("", "", "", "da ", "bro ", "inniku ", "ippo ", "owner ", "seri ")
+        var drafted = 0
+        var savedCount = 0
+        repeat(400) { i ->
+            val (n, id) = names[rnd.nextInt(names.size)]
+            val (aText, aValue) = amounts[rnd.nextInt(amounts.size)]
+            val v = verbs[rnd.nextInt(verbs.size)]
+            val f = fillers[rnd.nextInt(fillers.size)]
+            val text = when {
+                v.startsWith("-") -> f + n + v.replace("{a}", aText)
+                v.contains("{a}") -> "$f$n " + v.replace("{a}", aText)
+                else -> "$f$n $aText $v"
+            }
+            c.case("#$i $text") {
+                val s = Shop()
+                val first = s.turn(text)
+                check(s.tools.saved.isEmpty()) { "saved before Confirm: ${s.tools.saved}" }
+                hasNot(first.reply.text, *saveClaims)
+                // If Kai asked for a due date, answer it; then whatever draft exists is the one checked.
+                if (first.reply.text.contains("Due date eppa", ignoreCase = true) || first.reply.text.contains("due date", ignoreCase = true)) s.turn("naalaikku")
+                val draft = s.draft()
+                if (draft != null) {
+                    drafted++
+                    check(draft.partyId == null || draft.partyId == id) { "draft for ${draft.partyId}, said $n ($id): ${s.last?.reply?.text}" }
+                    check(draft.amount.compareTo(BigDecimal(aValue)) == 0) { "amount ${draft.amount} ≠ $aValue" }
+                    check(s.tools.saved.isEmpty()) { "saved before Confirm" }
+                    s.turn("seri")
+                    s.tools.saved.singleOrNull()?.let { saved ->
+                        savedCount++
+                        check(saved.partyId == draft.partyId && saved.amount.compareTo(draft.amount) == 0 && saved.kind == draft.kind) { "saved $saved ≠ draft $draft" }
+                    }
+                }
+            }
+        }
+        println("MATRIX random-invariants: $drafted drafts, $savedCount saved after Confirm, ${400 - drafted} asked / answered without a draft")
+        c.done(400)
+    }
 }
