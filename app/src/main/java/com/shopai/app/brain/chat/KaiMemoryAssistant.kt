@@ -119,6 +119,10 @@ class KaiMemoryAssistant(private val access: KaiMemoryAccess) {
         val lang = languageOf(text, chatLang)
         val mem = access.current()
         asking?.let { q -> answer(q, text, lang, mem)?.let { return it } }
+        // "potti" on its own, once taught: what it means to this owner (never read as another word).
+        if (mem != null && !text.contains(' ') && text.none(Char::isDigit) && mem.find(text.trim().trimEnd('?', '.', '!')) != null) {
+            return explainWord(text.trim().trimEnd('?', '.', '!'), lang, mem)
+        }
         // "'ramba' nu enna meaning?" — what the owner taught, or Kai asks to learn it (inline, no separate screen).
         KaiTeaching.wordQuestion(text)?.let { word -> if (mem != null) return explainWord(word, lang, mem) }
         val entities = if (mem != null) access.entities() else emptyList()
@@ -656,6 +660,24 @@ class KaiMemoryAssistant(private val access: KaiMemoryAccess) {
         if (mem == null) {
             asking = null
             return null
+        }
+        // "potti na box" … (not saved yet) … "Colgate 2 potti vandhudhu": the word is used before the owner said Save.
+        // Kai asks to save it first, then reads this sentence with it (a new teaching of the word is not a use of it).
+        if (q is Question.Confirm && !text.trim().endsWith("?") && KaiPrivateMemory.contains(text, KaiPrivateMemory.normalize(q.phrase)) &&
+            KaiPersonalTeaching.parse(text, access.entities()) == null && KaiTeaching.parse(text, access.entities()) == null &&
+            !KaiTeaching.isYes(text) && !KaiTeaching.isNo(text)) {
+            val single = KaiPrivateMemory.normalize(text) == KaiPrivateMemory.normalize(q.phrase)
+            val pending = if (single) q else q.copy(original = text)
+            asking = pending
+            val v = display(q.meaning, lang)
+            return MemoryStep.Reply(turn(lang, KaiMood.CLARIFY,
+                ta = "ஓனர், `${q.phrase}` = $v-னு இன்னும் சேமிக்கல. சேமிக்கட்டுமா?" + if (single) "" else " சேமிச்சா இதை $v-ஆ எடுத்துக்குவேன்.",
+                tl = "Owner, `${q.phrase}` = $v-nu innum save pannala. Save pannava?" + if (single) "" else " Save pannina idha $v-aa eduthukkuven.",
+                en = "Owner, `${q.phrase}` = $v isn't saved yet. Save it?" + if (single) "" else " Once saved I'll read this with it.",
+                card = KaiCard(emptyList(), listOf(
+                    KaiButton(pick(lang, "சேமி", "Save", "Save"), KaiAction.LearnWord(pending.key), primary = true),
+                    KaiButton(pick(lang, "இப்போ வேண்டாம்", "Not now", "Not now"), KaiAction.NotThis(pending.key)),
+                ))))
         }
         // Only a short answer answers Kai's question; a new sentence (or a question) is a new message.
         if (text.trim().endsWith("?") || KaiPrivateMemory.normalize(text).split(' ').size > (if (q is Question.Word) 6 else 4)) {

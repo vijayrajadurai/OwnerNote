@@ -633,7 +633,7 @@ class KaiAgent(
                     ?: run {
                         val answer = questionOrLearn(routed, text, said, lang, at.toLocalDate(), people, products.orEmpty())
                         if (answer.reply.intent != ChatIntent.UNKNOWN) conversationState.currentIntent = "BUSINESS_QUERY"
-                        if (answer.reply.intent == ChatIntent.UNKNOWN && unclearReply.containsMatchIn(answer.reply.text)) clarify(text, lang) else answer
+                        if (answer.reply.intent == ChatIntent.UNKNOWN && unclearReply.containsMatchIn(answer.reply.text)) clarify(text, lang) else withUnsaved(answer, text, people, lang)
                     }
             }
         }
@@ -652,7 +652,12 @@ class KaiAgent(
         // The person: one in the books, or — for a stated debt — the name the sentence starts with ("Kumaran enaku 3000 tharanum").
         val person = KaiCommands.personIn(text, people)
             ?: com.shopai.app.brain.KaiUnderstanding.personIn(text)?.takeIf { owed != null && it.length >= 3 && it.all { c -> c in 'A'..'Z' || c in 'a'..'z' } }
-        val amount = com.shopai.app.brain.KaiUnderstanding.amountsIn(text, now().toLocalDate())
+        // "Kumar enakku 3000 tharanum, next month 10-ku": the 10 belongs to the date, not the amount.
+        val saidDate = datePhrase.find(text)?.value
+            ?.replace(Regex("""(?i)\s*-?\s*(?:ku|kku|m|aam|am|thethi|date)$"""), "")
+            ?.let { KaiTime.parse(it, now()) }?.takeIf { it.daySpecified }?.at?.toLocalDate()
+        val amountText = if (saidDate != null) datePhrase.replace(text, " ") else text
+        val amount = com.shopai.app.brain.KaiUnderstanding.amountsIn(amountText, now().toLocalDate())
             .filter { it > 0 }.singleOrNull()?.let { BigDecimal.valueOf(it).setScale(2, java.math.RoundingMode.HALF_UP) }
         // "Kumar 3000 eppo tharanum?", "Kumar evlo tharanum?" ask the records — they are questions, not statements.
         val asking = Regex("(?i)(?<![\\p{L}])(evlo|evvalavu|eppo|eppa|epo|how much|when|yaar|yaaru|who)(?![\\p{L}])|(?<![\\p{L}])enna(?!\\s*(?:₹|rs\\.?)?\\s*\\d)(?![\\p{L}])|\\?|எவ்வளவு|எப்போ|யார்")
@@ -669,8 +674,10 @@ class KaiAgent(
             remember(person, amount, direction, text, lang)
             // Which "Lokesh": a phone / place / shop word in the sentence, or the one being talked about — else Kai asks.
             identify(person, text, lang)?.let { return it }
+            if (saidDate != null) conversationState.stated = conversationState.stated?.copy(dueDate = saidDate)
             // "Mahesh enaku 2000 tharanum, save panniko": straight to the draft (Confirm still saves it).
             if (KaiConversationSemantics.savesDraft(text)) return draftStated(conversationState.stated!!, lang, text)
+            if (saidDate != null) return dueDateResolved(saidDate, person, amount, direction, lang, text)
             conversationState.pendingQuestion = KaiPendingQuestion.DUE_DATE
             return askDueDate(conversationState.stated?.label ?: person, amount, direction, lang)
         }
@@ -738,6 +745,28 @@ class KaiAgent(
             ta = "$shown $value எப்போ தரணும்-னு கேக்குறீங்க Owner. அந்த due date record-ல இல்லை — date சொல்லுங்க.",
             tl = "Owner, $shown $value eppo tharanum-nu kekkureenga. Andha due date record-la illa — date sollunga.",
             en = "You're asking when $shown pays the $value, Owner. I don't have that due date recorded — tell me the date.")
+    }
+
+    /**
+     * "Mahesh enaku evlo tharanum?" while the owner's own "Mahesh ₹2,000" is still a draft / unsaved: the records'
+     * answer, plus a plain note that the new amount is not in them yet (so the owner isn't misled either way).
+     */
+    private fun withUnsaved(answer: KaiTurn, text: String, people: List<String>, lang: KaiLang): KaiTurn {
+        val asked = KaiCommands.personIn(text, people) ?: com.shopai.app.brain.KaiUnderstanding.personIn(text) ?: return answer
+        val draft = plans.values.firstOrNull { it.partyName.equals(asked, ignoreCase = true) }
+        val st = conversationState.stated?.takeIf { it.person.equals(asked, ignoreCase = true) && it.amount != null }
+        val amount = draft?.amount ?: st?.amount ?: return answer
+        val l = KaiConversationSemantics.phraseLang(text, lang)
+        val a = KaiFormat.rupees(amount.toDouble())
+        val note = if (draft != null) pickLang(l,
+            ta = " நீங்க சொன்ன $asked $a இன்னும் சேமிக்கல — Confirm பண்ணுங்க.",
+            tl = " Neenga sonna $asked $a innum save aagala — Confirm pannunga.",
+            en = " The $a you mentioned for $asked isn't saved yet — tap Confirm.")
+        else pickLang(l,
+            ta = " நீங்க சொன்ன $asked $a இன்னும் சேமிக்கல — சேமிக்க 'save pannu'-னு சொல்லுங்க.",
+            tl = " Neenga sonna $asked $a innum save aagala — save panna 'save pannu'-nu sollunga.",
+            en = " The $a you mentioned for $asked isn't saved yet — say 'save it' to save it.")
+        return answer.copy(reply = answer.reply.copy(text = answer.reply.text + note))
     }
 
     // ------------------------------------------------------------ returning to a topic, clarifying against it
@@ -1025,6 +1054,14 @@ class KaiAgent(
             tl = "Owner, records-la ${product.name} $q irukku. Maaririndha stock in / out-nu sollunga.",
             en = "Owner, the records show ${product.name} at $q. Tell me a stock in / out if it changed.")
     }
+
+    /** A day with its month in a sentence: "next month 10-ku", "adutha maasam 5", "July 6", "6 July", "அடுத்த மாதம் 10". */
+    private val datePhrase = Regex(
+        """(?i)(?<![\p{L}])(?:next|adutha|aduththa|indha|intha|this)\s*(?:month|maasam|masam)\s*\d{1,2}(?:\s*(?:st|nd|rd|th))?(?:\s*-?\s*(?:ku|kku|m|aam|am|thethi|date))?(?![\p{L}\d])|""" +
+            """(?<![\p{L}\d])\d{1,2}(?:\s*(?:st|nd|rd|th))?\s*(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*(?![\p{L}])|""" +
+            """(?<![\p{L}])(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\s*\d{1,2}(?:\s*(?:st|nd|rd|th))?(?![\p{L}\d])|""" +
+            """(?:அடுத்த|இந்த)\s*(?:மாதம்|மாசம்)\s*\d{1,2}""",
+    )
 
     /** A new payment stated while the previous one's draft is still open: that draft is discarded (never saved by a later "seri"). */
     private suspend fun dropStatedDraft() {

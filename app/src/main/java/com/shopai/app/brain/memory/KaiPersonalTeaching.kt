@@ -41,7 +41,8 @@ object KaiPersonalTeaching {
     private const val Q = """[`'"‘’“”]"""
     private const val TERM = """[\p{L}\p{M}][\p{L}\p{M}\s\-]{0,40}?"""
 
-    private val lead = Regex("""(?i)^\s*(?:(?:hey\s+)?kai|owner)[\s,.:-]+""")
+    /** "Kai, …", "Owner, …", and the "illa, …" of a correction ("illa, potti na packet") before the teaching itself. */
+    private val lead = Regex("""(?i)^\s*(?:(?:hey\s+)?kai|owner|illa|illai|ille|no|nope|இல்லை|இல்ல)[\s,.:-]+""")
     private val ownerWide = Regex(
         """(?i)(?<![\p{L}])(?:ella|ellaa|ellam|all)\s+(?:my\s+)?(?:kadaiyilum|kadaigalilum|kadaila|kadaiyila|business\s*-?\s*la(?:yum)?|businesses|shops|kadai)(?![\p{L}])|எல்லா\s+கடையிலும்""",
     )
