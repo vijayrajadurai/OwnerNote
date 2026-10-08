@@ -184,6 +184,9 @@ object KaiUnderstanding {
     private val tamilHundreds = mapOf(
         "nooru" to 100, "nuru" to 100, "irunooru" to 200, "munnooru" to 300, "naanooru" to 400, "ainooru" to 500,
         "anjooru" to 500, "arunooru" to 600, "ezhunooru" to 700, "ennooru" to 800, "tholayiram" to 900,
+        // Speech-to-text spellings of the same numbers ("ainnooru", "anjuru", "irunuru").
+        "ainnooru" to 500, "ainnuru" to 500, "ainuru" to 500, "anjuru" to 500, "irunuru" to 200, "munnuru" to 300, "naanuru" to 400,
+        "arunuru" to 600, "ezhunuru" to 700, "ennuru" to 800, "ஐந்நூறு" to 500,
         "நூறு" to 100, "இருநூறு" to 200, "முந்நூறு" to 300, "நானூறு" to 400, "ஐநூறு" to 500, "அஞ்சூறு" to 500,
     )
     private val tamilScales = mapOf(

@@ -380,6 +380,13 @@ class KaiReminderAssistant(
             return say(lang, KaiMood.ERROR, ta = "நினைவூட்டல் வைக்க முடியல ஓனர்.", tl = "Owner, reminder vekka mudiyala.", en = "I couldn't set the reminder, Owner.")
         }
         val r = saved.reminder
+        // "Remind pannuren" only for a reminder the store gives back: never claimed from the engine's word alone.
+        if (tools.reminderStored(r.id) == false) {
+            tools.log("reminder", "read-back", "not stored ${r.id}", ActionStatus.FAILED, r.id, p.draft.sourceText)
+            return say(lang, KaiMood.ERROR, ta = "நினைவூட்டல் சேமிச்சதா உறுதி பண்ண முடியல ஓனர் — Reminders screen-ல பாருங்க.",
+                tl = "Owner, reminder save aanadha confirm panna mudiyala — Reminders screen-la paarunga.",
+                en = "Owner, I couldn't confirm the reminder was saved — please check the Reminders screen.")
+        }
         lastTouched = r.id
         tools.log(KaiIntents.CREATE_REMINDER, "reminder engine", "${r.title}: ${r.recurrence.repeat} ${Instant.ofEpochMilli(r.triggerAt)}", if (saved.duplicate) ActionStatus.ANSWERED else ActionStatus.SCHEDULED, r.id, p.draft.sourceText)
         val what = KaiReminderWords.phrase(r.action, r.person, r.task, lang)

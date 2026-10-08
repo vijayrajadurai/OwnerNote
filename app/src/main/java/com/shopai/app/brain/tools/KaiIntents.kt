@@ -125,10 +125,11 @@ object KaiIntents {
         else -> KaiIntentKind.UPDATE_REMINDER
     }
 
-    /** Intents Kai Chat handles for the voice screen too (one conversation for voice and text). */
-    fun handledByKai(kind: KaiIntentKind) = kind in setOf(
-        KaiIntentKind.CREATE_REMINDER, KaiIntentKind.LIST_REMINDERS, KaiIntentKind.CANCEL_REMINDER, KaiIntentKind.UPDATE_REMINDER,
-        KaiIntentKind.STOCK_IN, KaiIntentKind.STOCK_OUT, KaiIntentKind.SCAN_STOCK, KaiIntentKind.SCAN_BILL, KaiIntentKind.CHAT, KaiIntentKind.LEARN_SLANG,
-        KaiIntentKind.MORNING_WORK, KaiIntentKind.MORNING_ROUTINE,
-    )
+    /**
+     * Intents Kai Chat handles for the voice screen too: ALL of them. Pesunga's words — money entries, ledger questions,
+     * the calculator, calls, unknown words — go through the same KaiAgent as Kai Chat (one understanding, one draft →
+     * confirm → ledger path, one conversation). A money draft is confirmed by voice ("seri") or on its Kai Chat card.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    fun handledByKai(kind: KaiIntentKind) = true
 }

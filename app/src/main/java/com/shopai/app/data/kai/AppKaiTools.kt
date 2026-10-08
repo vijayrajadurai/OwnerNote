@@ -305,6 +305,7 @@ class AppKaiTools(
         val (business, owner) = scope()
         return reminders.create(reminder.copy(businessId = reminder.businessId ?: business, ownerId = reminder.ownerId ?: owner))
     }
+    override fun reminderStored(id: String): Boolean = reminders.find(id) != null
     override fun updateReminder(reminder: KaiReminder): ReminderSaved = reminders.update(reminder)
     override fun cancelReminder(id: String): Boolean = reminders.cancel(id)
     override fun completeReminder(id: String): Boolean = reminders.complete(id)

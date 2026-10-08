@@ -141,11 +141,44 @@ class KaiMemoryAssistant(private val access: KaiMemoryAccess) {
     var correctionUsed: KaiMemory? = null
         private set
 
+    /**
+     * The owner's references found in the last message, with the exact record each one means ("Kumar House" → c2).
+     * The words become the record's name for understanding; the identity travels with them — never the name alone.
+     */
+    var lastReferences: List<Pair<String, KnownEntity>> = emptyList()
+        private set
+
+    /** How the owner names each record they gave a reference to (record id → "Kumar House"), for "which one?" choices. */
+    suspend fun referenceLabels(): Map<String, String> {
+        val mem = access.current() ?: return emptyMap()
+        return mem.usable().filter { (it.memoryType == MemoryType.CUSTOMER_ALIAS || it.memoryType == MemoryType.SUPPLIER_ALIAS) && it.referenceEntityId != null }
+            .groupBy { it.referenceEntityId!! }.mapValues { (_, m) -> m.maxByOrNull { it.updatedAt }!!.triggerPhrase.trim() }
+    }
+
+    /** The owner said who a reference means (an explicit pick or correction): remembered for this business. */
+    suspend fun learnReference(phrase: String, entityId: String): KnownEntity? {
+        val mem = access.current() ?: return null
+        val e = access.entities().firstOrNull { it.id == entityId } ?: return null
+        mem.forget(phrase)
+        learnedMemory(mem.teachEntity(phrase, e, MemorySource.OWNER_CONFIRMED))
+        lastPhrase = phrase
+        return e
+    }
+
+    /** "Kumar Anna vera Kumar": the owner says a remembered reference is wrong — it is dropped (asked again, never guessed). */
+    suspend fun dropReference(phrase: String): KaiMemory? {
+        val mem = access.current() ?: return null
+        val m = mem.find(phrase)?.takeIf { it.memoryType == MemoryType.CUSTOMER_ALIAS || it.memoryType == MemoryType.SUPPLIER_ALIAS } ?: return null
+        return mem.forget(m.normalizedPhrase)
+    }
+
     /** The owner's confirmed language applied to [text] (words the global core understands). */
     suspend fun apply(text: String): String {
         correctionUsed = null
+        lastReferences = emptyList()
         val mem = access.current() ?: return text
         val applied = mem.apply(text, access.entities())
+        lastReferences = applied.entities
         correctionUsed = applied.used.firstOrNull { it.memoryType == MemoryType.CORRECTION }
         if (applied.used.isNotEmpty()) mem.markUsed(applied.used)
         (applied.used.map { it.normalizedPhrase } + applied.fromThisConversation).firstOrNull()?.let { lastPhrase = it }

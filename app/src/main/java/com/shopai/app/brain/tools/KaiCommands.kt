@@ -113,12 +113,20 @@ object KaiCommands {
 
     private val outWords = listOf("kuduthen", "koduthen", "kuduthuten", "kuduthutten", "koduthuten", "kuduthaachu", "kuduthachu", "kuduthiten", "kudutha",
         "gave", "given", "paid", "pay panniten", "payment panniten", "pay pannen", "anuppinen", "anupinen", "anuppiten", "anupiten", "sent",
-        "கொடுத்தேன்", "கொடுத்துட்டேன்", "அனுப்பினேன்", "கொடுத்தாச்சு")
+        // The owner paid by UPI / GPay ("Ramesh-ku 400 GPay pannen", "pay pannitten").
+        "pay pannitten", "payment pannitten", "gpay pannen", "gpay panniten", "gpay pannitten", "upi pannen", "upi pannitten", "transfer pannen", "transfer pannitten",
+        "கொடுத்தேன்", "கொடுத்துட்டேன்", "அனுப்பினேன்", "கொடுத்தாச்சு", "குடுத்தேன்", "குடுத்துட்டேன்")
     private val inWords = listOf("vanginen", "vaanginen", "vangunen", "vaangunen", "vangiten", "vaangiten", "vanginaen", "vangitten", "received", "got",
         "vandhuchu", "vanthuchu", "vandhudhu", "thandhan", "thandhaan", "thandhaar", "thanthan", "kuduthan", "kuduthaan", "kuduthaar", "koduthan", "koduthaan", "koduthaar",
         // "Kumar 2000 kuduthutaan": he gave (and it's done) — the owner received it.
         "kuduthutaan", "kuduthuttaan", "kuduthutan", "kuduthittaan", "koduthutaan", "koduthuttaan", "kuduthutaanga", "kuduthaanga", "kuduthanga",
         "kuduthutaar", "thandhutaan", "thanthutaan", "கொடுத்துட்டான்", "கொடுத்தாங்க",
+        // The person sent / paid / returned it ("Kumar 500 GPay pannitaan", "anuppitaan"), or the owner collected it.
+        "kuduthutaru", "kuduthuttaru", "kuduthuttan", "kuduthuttaanga", "kuduthutaanga", "anuppitaan", "anupitaan", "anuppinaan", "anupinaan", "anuppunaan",
+        "anuppinaar", "anuppitaar", "anuppitaanga", "anuppinaanga", "pay pannitaan", "pay pannitaar", "pay pannitaanga", "pay pannaan", "payment pannitaan",
+        "gpay pannitaan", "gpay pannaan", "gpay pannitaar", "upi pannitaan", "upi pannaan", "transfer pannitaan", "return pannitaan", "return pannaan",
+        "return pannitaar", "collect pannitten", "collect panniten", "collect pannen", "vasool pannitten", "vasool panniten",
+        "குடுத்தான்", "குடுத்தாங்க", "குடுத்தார்", "குடுத்துட்டான்", "கொடுத்தார்", "கொடுத்துட்டாங்க", "அனுப்பினான்", "அனுப்பிட்டான்",
         "வாங்கினேன்", "வந்துச்சு", "தந்தான்", "தந்தார்", "கொடுத்தான்")
     private val goodsWords = Regex("""(?i)\b(kg|kgs|kilo|litre|ltr|bag|bags|pcs|pieces|packet|box|dozen|rice|arisi|sugar|oil|maavu|paal)\b""")
 
@@ -132,7 +140,9 @@ object KaiCommands {
         // "10 kg rice vanginen" is buying goods, not a payment.
         if (goodsWords.containsMatchIn(text)) return null
         val amounts = KaiUnderstanding.amountsIn(text, java.time.LocalDate.now()).filter { it > 0 }
-        val amount = amounts.singleOrNull()?.let { BigDecimal.valueOf(it).setScale(2, java.math.RoundingMode.HALF_UP) }
+        // "Kumar -500 kuduthaan": a minus amount is not a payment amount — Kai asks how much (never drops the sign).
+        val negative = Regex("""(?<![\p{L}\p{N}])-\s*(?:₹|rs\.?\s*)?\d""", RegexOption.IGNORE_CASE).containsMatchIn(text)
+        val amount = amounts.singleOrNull()?.takeUnless { negative }?.let { BigDecimal.valueOf(it).setScale(2, java.math.RoundingMode.HALF_UP) }
         val (mode, said) = when {
             has(arrayOf("upi", "gpay", "g pay", "google pay", "phonepe", "phone pe", "paytm")) -> PaymentMode.UPI to true
             // "account-la podalama" is a request to record the transaction, not a bank transfer.
@@ -147,12 +157,20 @@ object KaiCommands {
         // a bare "Kumar gave 5k" stays ambiguous and is not guessed as a payment.
         val ownerIsRecipient = has(arrayOf("me", "to me", "for me", "enakku", "enaku", "எனக்கு"))
         val ownerIsPayer = has(arrayOf("i gave", "i paid", "naan kuduth", "naan koduth", "நான் கொடுத்த"))
+        // "Kumar paid 500" / "Kumar 500 rs paid today": the person is the one who paid (English names the payer first);
+        // "I paid Kumar", "paid 500 to Ramesh", "Kumar-ku 500 sent" name the owner as the payer.
+        val person = personIn(text, known)
+        val personPaid = person != null && Regex("""(?<![\p{L}])(paid|gave|sent)(?![\p{L}])""").find(t)?.range?.first?.let { verb ->
+            val at = t.indexOf(person.lowercase(java.util.Locale.ROOT))
+            at in 0 until verb && !Regex("""(?<![\p{L}])${Regex.escape(person.lowercase(java.util.Locale.ROOT))}\s*-?\s*(?:ku|kku|ukku)(?![\p{L}])""").containsMatchIn(t) && !has(arrayOf("to"))
+        } == true
         val outgoing = when {
             ownerIsPayer -> true
+            personPaid -> false
             ownerIsRecipient && has(arrayOf("gave", "given", "paid", "received", "got", "kuduth", "koduth", "தந்த", "கொடுத்த")) -> false
             else -> out
         }
-        return KaiCommand.Payment(personIn(text, known), amount, outgoing = outgoing, mode = mode, modeSaid = said)
+        return KaiCommand.Payment(person, amount, outgoing = outgoing, mode = mode, modeSaid = said)
     }
 
     // ------------------------------------------------------------ people / words

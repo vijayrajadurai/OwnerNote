@@ -159,6 +159,8 @@ interface KaiTools {
     fun cancelReminder(id: String): Boolean = false
     fun completeReminder(id: String): Boolean = false
     fun snoozeReminder(id: String, minutes: Long): KaiReminder? = null
+    /** Read back from the reminder store: is a reminder with this id saved? null = this store can't be read back. */
+    fun reminderStored(id: String): Boolean? = null
     /** Open reminders (still to ring, or rang and waiting for Done / Snooze). */
     fun reminders(): List<KaiReminder> = emptyList()
     /** The reminder that rang most recently and is still open. */

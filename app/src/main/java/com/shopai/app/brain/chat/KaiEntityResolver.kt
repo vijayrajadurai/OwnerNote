@@ -19,7 +19,16 @@ object KaiEntityResolver {
         data class Many(val candidates: List<PartyMatch>) : Result
         /** No record has this exact name. */
         data object None : Result
+
+        /** How sure the identity is: only CONFIRMED may carry money; AMBIGUOUS is asked; UNKNOWN is asked / learned. */
+        val confidence: Confidence get() = when (this) {
+            is One -> Confidence.CONFIRMED
+            is Many -> Confidence.AMBIGUOUS
+            None -> Confidence.UNKNOWN
+        }
     }
+
+    enum class Confidence { CONFIRMED, AMBIGUOUS, UNKNOWN }
 
     private const val B = """(?<![\p{L}\p{M}])"""
     private const val E = """(?![\p{L}\p{M}])"""
@@ -49,9 +58,11 @@ object KaiEntityResolver {
      * [name] as said, [said] the owner's words (place, shop, phone may be in them), [candidates] the books' records for
      * that name, [contextId] the record already being talked about.
      */
-    fun resolve(name: String, said: String, candidates: List<PartyMatch>, contextId: String? = null): Result {
+    fun resolve(name: String, said: String, candidates: List<PartyMatch>, contextId: String? = null, referenceId: String? = null): Result {
         val exact = sameName(name, candidates).distinctBy { it.id }
         if (exact.isEmpty()) return Result.None
+        // 0. The owner's own established reference ("Kumar House" = this record), resolved to its canonical id.
+        referenceId?.let { id -> exact.firstOrNull { it.id == id }?.let { return Result.One(it, "owner reference") } }
         // 1. A phone number is the strongest identifier.
         phoneIn(said)?.let { number ->
             exact.filter { digits(it.phone) == number }.singleOrNull()?.let { return Result.One(it, "phone") }
@@ -77,11 +88,35 @@ object KaiEntityResolver {
         else -> p.name
     }
 
+    private val functionWords = setOf(
+        "enakku", "enaku", "ennaku", "yenakku", "yenaku", "naan", "nan", "na", "ku", "kku", "ukku", "kitta", "kita", "kitte", "irundhu", "irunthu",
+        "tharanum", "tharanu", "kudukkanum", "kudukanum", "kodukkanum", "vaanganum", "vanganum", "vanganu", "kuduthen", "kuduthaan", "kuduthutaan",
+        "vanginen", "vaanginen", "evlo", "evvalavu", "balance", "pending", "innum", "already", "ippa", "oru", "rs", "rupees", "and", "or", "the", "to",
+        "from", "me", "i", "owe", "owes", "paid", "pay", "save", "add", "pannu", "panniko", "sollu", "due", "eppa", "eppo", "history", "details",
+        "avan", "avar", "avanga", "enna", "how", "much", "is", "has", "have", "collect", "payment", "cash", "upi", "remind", "call",
+    )
+
+    /**
+     * The words the owner used to name one record when the plain name is shared — "Kumar House enaku 600", "Kumar Anna-ku 500",
+     * "Velachery Kumar" — or null when only the name was said. Never stored by itself: only offered to the owner to remember.
+     */
+    fun referenceIn(said: String, name: String): String? {
+        val tokens = Regex("""[\p{L}\p{M}][\p{L}\p{M}'.-]*""").findAll(said).map { it.value }.toList()
+        val i = tokens.indexOfFirst { it.substringBefore('-').equals(name, ignoreCase = true) }
+        if (i < 0) return null
+        fun clean(w: String) = w.substringBefore('-').trim('.', '\'')
+        fun usable(w: String) = clean(w).let { c -> c.length >= 2 && c.lowercase() !in functionWords && !c.equals(name, ignoreCase = true) }
+        if (tokens[i].contains('-')) return null // "Kumar-ku": the name alone
+        tokens.getOrNull(i + 1)?.takeIf(::usable)?.let { return "${tokens[i]} ${clean(it)}" }
+        tokens.getOrNull(i - 1)?.takeIf { i == 1 && usable(it) }?.let { return "${clean(it)} ${tokens[i]}" }
+        return null
+    }
+
     private val countWord = mapOf(2 to "rendu", 3 to "moonu", 4 to "naalu", 5 to "anju")
 
     /** "Owner, Lokesh-nu rendu records irukku. Chennai Lokesh-aa illa Nagapattinam Lokesh-aa?" */
-    fun question(name: String, candidates: List<PartyMatch>, lang: com.shopai.app.brain.KaiLang): String {
-        val labels = candidates.map(::label)
+    fun question(name: String, candidates: List<PartyMatch>, lang: com.shopai.app.brain.KaiLang, labelOf: (PartyMatch) -> String = ::label): String {
+        val labels = candidates.map(labelOf)
         return when (lang) {
             com.shopai.app.brain.KaiLang.TAMIL -> "Owner, $name-னு ${candidates.size} records இருக்கு. " + labels.joinToString("-ஆ, ") + "-ஆ?"
             com.shopai.app.brain.KaiLang.ENGLISH -> "Owner, there are ${candidates.size} records named $name. " + labels.joinToString(", ", postfix = "?").replaceLast(", ", " or ")

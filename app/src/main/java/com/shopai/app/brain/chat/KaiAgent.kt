@@ -238,7 +238,15 @@ internal data class KaiStatedPayment(
 )
 
 /** Same-named records the owner must pick from, and what to continue with once picked. */
-internal data class KaiEntityChoice(val name: String, val candidates: List<com.shopai.app.brain.tools.PartyMatch>, val purpose: Purpose) {
+internal data class KaiEntityChoice(
+    val name: String,
+    val candidates: List<com.shopai.app.brain.tools.PartyMatch>,
+    val purpose: Purpose,
+    /** The owner's own words that led to the question ("Kumar Shop enaku 300 tharanum"). */
+    val said: String = "",
+    /** An owner reference to remember for the record picked ("Kumar Anna" = this Kumar) — set only when the owner taught / corrected it. */
+    val reference: String? = null,
+) {
     enum class Purpose { STATED, DRAFT, FOCUS }
 }
 
@@ -382,7 +390,11 @@ class KaiAgent(
         val dueDate: LocalDate? = null,
         /** Drafted from the payment the owner stated in conversation ("Mahesh enaku 2000 tharanum" … "save panniko"). */
         val stated: Boolean = false,
+        /** "Lokesh-ku 500 add pannu": a new entry on the side the person's record is on (customer → credit, supplier → debit). */
+        val addEntry: Boolean = false,
     )
+    /** "Endha Lokesh Owner?" for a payment: the choices, so a typed / spoken "Chennai" picks one like its button. */
+    private var planChoice: List<Pair<PartyMatch, KaiAction.ChoosePlan>>? = null
 
     private val plans = LinkedHashMap<String, ActionPlan>()
     private val requests = LinkedHashMap<String, PaymentRequest>()
@@ -401,8 +413,20 @@ class KaiAgent(
     /** A reminder rang and the owner opened it: its message with Call / Snooze / Done. */
     fun rang(id: String, lang: KaiLang): KaiTurn? = reminders.rang(id, lang)
 
-    suspend fun ask(raw: String): KaiTurn {
+    /**
+     * Kai's last reply asked the owner something other than the open draft (a choice, a missing time, Save for a word,
+     * "neenga saptingala?"): a bare "seri" / "ama" answers that question, not the draft.
+     */
+    private var kaiAskedAfterDraft = false
+
+    suspend fun ask(raw: String): KaiTurn = answerOwner(raw).also { t ->
+        kaiAskedAfterDraft = conversationState.draftShownTurn != conversationState.conversationTurn &&
+            (t.reply.mood == KaiMood.CLARIFY || t.card?.buttons?.isNotEmpty() == true || t.reply.text.trimEnd().endsWith("?"))
+    }
+
+    private suspend fun answerOwner(raw: String): KaiTurn {
         val said = raw.trim()
+        ownerWords = said
         val lang = KaiLanguage.forChat(said)
         val scope = runCatching { memory?.current()?.let { "${it.businessId.orEmpty()}:${it.ownerId.orEmpty()}" } }.getOrNull()
         if (scope != null && conversationScope != null && scope != conversationScope) {
@@ -438,11 +462,12 @@ class KaiAgent(
             if (KaiConversationSemantics.cancelsDraft(said)) {
                 return act(KaiAction.CancelPlan(openPayment.key), lang)!!
             }
-            // "ama", "seri", "save pannu", "seri add pannu" to the draft on screen: the owner's confirmation — saved by the engine.
-            // A bare "ama" counts only as the answer to the draft Kai just showed — not to a later question (Kai asking about a word).
+            // "ama", "seri", "save pannu", "seri add pannu" to the open draft: the owner's confirmation — saved by the engine.
+            // Also after a detour whose answer asked nothing (calculator, a balance answer): the draft is still the open question.
+            // Not when Kai's last reply asked something else (a choice, a missing time, Save for a word) — "seri" answers that.
             val draftJustShown = conversationState.conversationTurn == conversationState.draftShownTurn + 1
             if (said.none(Char::isDigit) && !waitingForLearningAnswer &&
-                (KaiConversationSemantics.onlySave(said, openPayment.partyName) || (draftJustShown && KaiConversationSemantics.confirmsDraft(said)))) {
+                (KaiConversationSemantics.onlySave(said, openPayment.partyName) || ((draftJustShown || !kaiAskedAfterDraft) && KaiConversationSemantics.confirmsDraft(said)))) {
                 if (openPayment.problems.isNotEmpty()) return say(lang, KaiMood.CLARIFY, null,
                     ta = "ஓனர், இதை இப்போ சேமிக்க முடியாது: ${openPayment.problems.joinToString("; ")}. நான் எதுவும் சேமிக்கல.",
                     tl = "Owner, idha ippo save panna mudiyadhu: ${openPayment.problems.joinToString("; ")}. Naan edhuvum save pannala.",
@@ -459,6 +484,13 @@ class KaiAgent(
         // "add pannitiya?": answered from what the books confirmed — never "saved" unless the engine said Done.
         if (openPayment == null && KaiConversationSemantics.asksIfSaved(said)) return savedAnswer(KaiConversationSemantics.phraseLang(said, lang))
 
+        // "Chennai" after "Endha Lokesh Owner?" [Chennai Lokesh] [Nagapattinam Lokesh]: the same as tapping that choice.
+        planChoice?.let { options ->
+            planChoice = null
+            KaiEntityResolver.pick(com.shopai.app.brain.tools.KaiSpokenWords.normalize(said), options.map { it.first })?.let { picked ->
+                act(options.first { it.first.id == picked.id }.second, lang)?.let { return it }
+            }
+        }
         // "Nagapattinam" / "rendavadhu" / a phone number after "Lokesh-nu rendu records irukku…": the owner's pick.
         conversationState.entityChoice?.let { choice ->
             conversationState.entityChoice = null
@@ -509,8 +541,18 @@ class KaiAgent(
                 is MemoryStep.Rerun -> withPrefix(step.prefix, ask(step.text))
             }
         }
+        // "Kumar Anna enaku 500 tharanum" / "Kumar Anna vera Kumar": the owner teaches or corrects who a reference means.
+        referenceTeaching(said, lang)?.let { return it }
         // The owner's confirmed words → words the global Kai core understands.
         val applied = learner?.apply(said) ?: said
+        // Their references keep the exact record they mean ("Kumar House" → c2), even though the words become the name.
+        turnRefs = learner?.lastReferences.orEmpty().groupBy { it.second.name.trim().lowercase(Locale.ROOT) }
+            .filterValues { refs -> refs.map { it.second.id }.distinct().size == 1 }.mapValues { it.value.first().second.id }
+        // How the owner names each record — this message's own words first ("Kumar Bro" said now beats an older "Kumar Anna").
+        refLabels = runCatching { learner?.referenceLabels() }.getOrNull().orEmpty() +
+            learner?.lastReferences.orEmpty().associate { (phrase, e) ->
+                e.id to (Regex(Regex.escape(phrase), RegexOption.IGNORE_CASE).find(said)?.value ?: phrase)
+            }
         // Words the owner told Kai are NOT a payment / stock change: nothing is drafted, and Kai says why.
         learner?.correctionUsed?.let { c ->
             val what = c.meaningType.removePrefix("NOT_").lowercase()
@@ -570,6 +612,14 @@ class KaiAgent(
             val person = KaiCommands.personIn(text, people)!!
             return payment(PaymentRequest(newKey(), person, null, outgoing = false, mode = PaymentMode.CASH, said = text, directionKnown = false), lang)
         }
+        // "Lokesh-ku 500 add pannu": a new entry of 500 on Lokesh's record (no give / take verb) — drafted, saved only on Confirm.
+        if (isAmountAddRequest(text) && com.shopai.app.brain.tools.KaiPaymentDirection.of(text) == null && KaiCommands.route(text, at, people) !is KaiCommand.Payment)
+            KaiCommands.personIn(text, people)?.let { person ->
+                com.shopai.app.brain.KaiUnderstanding.amountsIn(text, at.toLocalDate()).filter { it > 0 }.singleOrNull()
+                    ?.takeUnless { Regex("""(?<![\p{L}\p{N}])-\s*\d""").containsMatchIn(text) }
+                    ?.let { a -> return payment(PaymentRequest(newKey(), person, BigDecimal.valueOf(a).setScale(2, java.math.RoundingMode.HALF_UP), outgoing = true,
+                        mode = PaymentMode.CASH, said = text, addEntry = true), lang) }
+            }
 
         contextualReceivable(text, lang, people)?.let { return it }
         contextualProductFollowUp(text, lang)?.let { return it }
@@ -652,13 +702,20 @@ class KaiAgent(
             is KaiCommand.Call -> call(cmd.name, lang, said)
             is KaiCommand.ScanBill -> scan(cmd.classifyOnly, lang, said)
             is KaiCommand.Stock -> {
-                cmd.product?.let { rememberProduct(it) }
-                stock(cmd.product, lang)
+                // "How much Colgate in stock?": the product the books know by that name, not the words around it.
+                val product = cmd.product?.let { p -> productNamed(text, products) ?: p }
+                product?.let { rememberProduct(it) }
+                stock(product, lang)
             }
             KaiCommand.LowStock -> lowStock(lang)
             is KaiCommand.MoneyBalance -> money(cmd.kind, lang)
             KaiCommand.TopProducts -> topProducts(text, lang, at.toLocalDate(), people)
             KaiCommand.Question -> {
+                // "Colgate evlo irukku?": a product of this shop and no person — its stock, never a customer lookup.
+                if (stockAsk.containsMatchIn(text) && KaiCommands.personIn(text, people) == null) productNamed(text, products)?.let { p ->
+                    rememberProduct(p)
+                    return stock(p, lang)
+                }
                 rememberNamedBusinessContext(text, people)
                 learner?.before(said, lang)?.let { step ->
                     return when (step) {
@@ -676,6 +733,13 @@ class KaiAgent(
             }
         }
     }
+
+    private val stockAsk = Regex("""(?i)(?<![\p{L}])(evlo|evvalavu|ewlo|how\s+much|how\s+many|irukk?a|irukku|iruku)(?![\p{L}])|எவ்வளவு|இருக்கா|இருக்கு""")
+
+    /** The one product of this shop named in [text] (a whole-word match), else null. */
+    private fun productNamed(text: String, products: List<com.shopai.app.brain.tools.ProductRef>?): String? =
+        products.orEmpty().filter { p -> Regex("""(?i)(?<![\p{L}\p{M}])${Regex.escape(p.name)}(?![\p{L}\p{M}])""").containsMatchIn(text) }
+            .map { it.name }.distinct().singleOrNull()
 
     /**
      * Save a receivable / payable mentioned in conversation as session context only; it is not a ledger entry.
@@ -802,6 +866,8 @@ class KaiAgent(
      * answer, plus a plain note that the new amount is not in them yet (so the owner isn't misled either way).
      */
     private suspend fun withUnsaved(answer: KaiTurn, text: String, people: List<String>, lang: KaiLang): KaiTurn {
+        // "Endha Kumar?" stays the answer: an unsaved amount is never shown as if the person were known.
+        if (brain.awaitingChoice()) return answer
         // The person the owner stated a payment for is "asked" even when the books don't know them yet.
         val spokenOf = (listOfNotNull(conversationState.stated?.person, conversationState.statedOtherSide?.person) + plans.values.map { it.partyName })
             .firstOrNull { n -> Regex("""(?i)(?<![\p{L}])${Regex.escape(n)}""").containsMatchIn(text) }
@@ -1094,21 +1160,123 @@ class KaiAgent(
      * Which record the stated payment's [person] is. One fits (phone, place, shop word, the one being talked
      * about, or the only one): it is kept on the stated payment. Several fit: Kai asks (null = nothing to ask).
      */
+    /** This message's owner references, resolved to records (record name, lower-case → id): "Kumar House" → c2. */
+    private var turnRefs: Map<String, String> = emptyMap()
+    /** How the owner names records they gave a reference to (id → "Kumar House"), for "which one?" choices. */
+    private var refLabels: Map<String, String> = emptyMap()
+
+    /** The owner's own words this message, before "avan" became a name: did they say the bare name themselves? */
+    private var ownerWords: String = ""
+
+    private fun pinned(name: String): String? = turnRefs[name.trim().lowercase(Locale.ROOT)]
+
+    /**
+     * The ONE identity step for every write and question: the owner's established reference first, then phone,
+     * place / shop words, the record being talked about — else AMBIGUOUS (asked) or UNKNOWN. Never a guess.
+     */
+    private fun resolveParty(name: String, said: String, candidates: List<PartyMatch>, contextId: String?): KaiEntityResolver.Result {
+        // The owner keeps these same-named records apart by their own references ("Kumar Anna" / "Kumar House"):
+        // a bare "Kumar" then does not say which one — the last one talked about is not a reason to pick, Kai asks.
+        // ("Avan innum 200" names no one: that still is the person being talked about.)
+        val referenced = KaiEntityResolver.sameName(name, candidates).count { it.id in refLabels }
+        val saidBare = Regex("""(?<![\p{L}\p{M}])""" + Regex.escape(name.trim()), RegexOption.IGNORE_CASE).containsMatchIn(ownerWords)
+        val context = contextId.takeIf { referenced < 2 || !saidBare }
+        return KaiEntityResolver.resolve(name, said, candidates, context, referenceId = pinned(name))
+    }
+
+    /** Same-named records Kai told apart in this conversation ("Chennai Lokesh"), so a draft / save line says which one. */
+    private val chosenLabels = HashMap<String, String>()
+
+    /** The owner's own name for a record ("Kumar House") when they gave it one, else which of the same-named ones it is, else its name. */
+    private fun ownerName(partyId: String?, name: String) = partyId?.let { refLabels[it] ?: chosenLabels[it] } ?: name
+
+    /** "Kumar House" when the owner gave that record a reference; else its place / shop / phone. */
+    private fun labelOf(p: PartyMatch): String = refLabels[p.id] ?: KaiEntityResolver.label(p)
+
+    private fun whichQuestion(name: String, candidates: List<PartyMatch>, lang: KaiLang) = KaiEntityResolver.question(name, candidates, lang, ::labelOf)
+
+    /** After the owner picked a record for words like "Kumar Shop": offer to remember them (stored only on the owner's tap). */
+    private suspend fun withLearnOffer(turn: KaiTurn, said: String, name: String, picked: PartyMatch, lang: KaiLang): KaiTurn {
+        val reference = KaiEntityResolver.referenceIn(said, name) ?: return turn
+        if (refLabels[picked.id].equals(reference, ignoreCase = true)) return turn
+        val button = learner?.aliasButton(reference, com.shopai.app.brain.memory.KnownEntity(picked.id, picked.name,
+            if (picked.customer) com.shopai.app.brain.memory.MemoryType.CUSTOMER_ALIAS else com.shopai.app.brain.memory.MemoryType.SUPPLIER_ALIAS), lang) ?: return turn
+        val card = turn.card?.let { it.copy(buttons = it.buttons + button) } ?: KaiCard(emptyList(), listOf(button))
+        return turn.copy(card = card)
+    }
+
+    private val referenceMeans = Regex("""(?i)^\s*(?:kai[, ]+)?(.{2,40}?)\s*-?\s*(?:na|nna|naa|means|endral|enral)\s+(.{2,60}?)\s*[.!]?\s*$|^\s*(.{2,40}?)\s*(?:=|என்றால்|-னா|னா)\s*(.{2,60}?)\s*[.!]?\s*$""")
+    private val referenceWrong = Regex("""(?i)^\s*(?:(?:illa|illai|illey|no|nope)[\s,]+)?(?:(?:bro|owner|sir|kai)[\s,]+)?(.{2,40}?)\s+vera\s+([\p{L}\p{M}]{2,})(?:\s*(?:aal|person|aalu))?\s*[.!]?\s*$""")
+
+    /**
+     * "Kumar Anna-na Sri Stores Kumar": the owner says which record a reference means. Used only when the name in it is
+     * shared by several records (a single record is taught by the normal teaching flow). The record is resolved from the
+     * owner's own words (shop / place / phone); if still several, Kai asks — and remembers the owner's pick.
+     * "Illai, Kumar Anna vera Kumar": the old reference is dropped and Kai asks who it is.
+     */
+    private suspend fun referenceTeaching(said: String, lang: KaiLang): KaiTurn? {
+        val l = learner ?: return null
+        if (said.any(Char::isDigit)) return null
+        referenceWrong.find(said)?.let { m ->
+            val ref = m.groupValues[1].trim()
+            val name = m.groupValues[2].trim()
+            val records = runCatching { tools.parties(name) }.getOrNull()?.let { KaiEntityResolver.sameName(name, it).distinctBy { p -> p.id } }.orEmpty()
+            if (l.dropReference(ref) == null && records.size < 2) return null
+            if (records.size < 2) return say(lang, KaiMood.NEUTRAL, null,
+                ta = "சரி Owner, `$ref` இனிமே யாருன்னு நான் நினைக்க மாட்டேன். யாருன்னு சொல்லுங்க.",
+                tl = "Seri Owner, `$ref` yaaru-nu ini naan ninaikka maatten. Yaaru-nu sollunga.",
+                en = "Okay Owner, I've dropped what `$ref` meant. Tell me who it is.")
+            refLabels = refLabels.filterValues { !it.equals(ref, ignoreCase = true) }
+            conversationState.entityChoice = KaiEntityChoice(name, records, KaiEntityChoice.Purpose.FOCUS, said, reference = ref)
+            return say(lang, KaiMood.CLARIFY, "reference corrected: $ref",
+                ta = "சரி Owner, `$ref` எந்த $name? " + records.mapIndexed { i, p -> "${i + 1}. ${KaiEntityResolver.label(p)}" }.joinToString("; "),
+                tl = "Seri Owner, `$ref` endha $name? " + records.mapIndexed { i, p -> "${i + 1}. ${KaiEntityResolver.label(p)}" }.joinToString("; "),
+                en = "Okay Owner, which $name is `$ref`? " + records.mapIndexed { i, p -> "${i + 1}. ${KaiEntityResolver.label(p)}" }.joinToString("; "))
+        }
+        val m = referenceMeans.find(said) ?: return null
+        val ref = (m.groupValues[1].ifBlank { m.groupValues[3] }).trim().trimEnd('-')
+        val meaning = (m.groupValues[2].ifBlank { m.groupValues[4] }).trim()
+        if (ref.split(Regex("""\s+""")).size > 3) return null
+        val people = runCatching { books.snapshot()?.people.orEmpty() }.getOrDefault(emptyList())
+        val name = com.shopai.app.brain.KaiUnderstanding.knownPerson(meaning, people) ?: return null
+        val records = runCatching { tools.parties(name) }.getOrNull()?.let { KaiEntityResolver.sameName(name, it).distinctBy { p -> p.id } }.orEmpty()
+        if (records.size < 2) return null
+        return when (val r = KaiEntityResolver.resolve(name, meaning, records, null)) {
+            is KaiEntityResolver.Result.One -> {
+                l.learnReference(ref, r.party.id) ?: return null
+                refLabels = refLabels + (r.party.id to ref)
+                tools.log(com.shopai.app.brain.tools.KaiIntents.LEARN_PERSONAL_TERM, "kai memory", "$ref = ${KaiEntityResolver.label(r.party)}", ActionStatus.CONFIRMED, r.party.id, said)
+                say(lang, KaiMood.SUCCESS, null,
+                    ta = "சரி Owner 👍 `$ref` = ${KaiEntityResolver.label(r.party)}. இனிமே அப்படியே புரிஞ்சுக்குவேன்.",
+                    tl = "Seri Owner 👍 `$ref` = ${KaiEntityResolver.label(r.party)}. Ini adhey maadhiri purinjukuven.",
+                    en = "Okay Owner 👍 `$ref` = ${KaiEntityResolver.label(r.party)}. I'll understand it that way from now on.")
+            }
+            else -> {
+                val options = (r as? KaiEntityResolver.Result.Many)?.candidates ?: records
+                conversationState.entityChoice = KaiEntityChoice(name, options, KaiEntityChoice.Purpose.FOCUS, said, reference = ref)
+                say(lang, KaiMood.CLARIFY, "reference: which $name",
+                    ta = "Owner, `$ref` எந்த $name? " + options.mapIndexed { i, p -> "${i + 1}. ${KaiEntityResolver.label(p)}" }.joinToString("; "),
+                    tl = "Owner, `$ref` endha $name? " + options.mapIndexed { i, p -> "${i + 1}. ${KaiEntityResolver.label(p)}" }.joinToString("; "),
+                    en = "Owner, which $name is `$ref`? " + options.mapIndexed { i, p -> "${i + 1}. ${KaiEntityResolver.label(p)}" }.joinToString("; "))
+            }
+        }
+    }
+
     private suspend fun identify(person: String, text: String, lang: KaiLang): KaiTurn? {
         val records = runCatching { tools.parties(person) }.getOrNull().orEmpty()
         val focus = conversationState.focusPartyId?.takeIf { conversationState.lastPerson.equals(person, ignoreCase = true) }
-        return when (val r = KaiEntityResolver.resolve(person, text, records, focus)) {
+        return when (val r = resolveParty(person, text, records, focus)) {
             is KaiEntityResolver.Result.One -> {
                 val several = KaiEntityResolver.sameName(person, records).size > 1
-                conversationState.stated = conversationState.stated?.copy(partyId = r.party.id, label = if (several) KaiEntityResolver.label(r.party) else null)
+                conversationState.stated = conversationState.stated?.copy(partyId = r.party.id, label = if (several) labelOf(r.party) else null)
                 conversationState.focusPartyId = r.party.id
                 null
             }
             is KaiEntityResolver.Result.Many -> {
-                conversationState.entityChoice = KaiEntityChoice(person, r.candidates, KaiEntityChoice.Purpose.STATED)
+                conversationState.entityChoice = KaiEntityChoice(person, r.candidates, KaiEntityChoice.Purpose.STATED, text)
                 conversationState.pendingAskedTurn = conversationState.conversationTurn
-                say(lang, KaiMood.CLARIFY, "entity: ${r.candidates.size} records named $person", KaiEntityResolver.question(person, r.candidates, KaiLang.TAMIL),
-                    KaiEntityResolver.question(person, r.candidates, KaiLang.TANGLISH), KaiEntityResolver.question(person, r.candidates, KaiLang.ENGLISH))
+                say(lang, KaiMood.CLARIFY, "entity: ${r.candidates.size} records named $person", whichQuestion(person, r.candidates, KaiLang.TAMIL),
+                    whichQuestion(person, r.candidates, KaiLang.TANGLISH), whichQuestion(person, r.candidates, KaiLang.ENGLISH))
             }
             KaiEntityResolver.Result.None -> null
         }
@@ -1116,7 +1284,23 @@ class KaiAgent(
 
     /** The owner said which record ("Nagapattinam"): the conversation continues with it. */
     private suspend fun entityPicked(choice: KaiEntityChoice, picked: PartyMatch, said: String, lang: KaiLang): KaiTurn {
-        val label = KaiEntityResolver.label(picked)
+        // The owner's pick for a reference they taught / corrected: that is who it means now.
+        choice.reference?.let { ref ->
+            val which = KaiEntityResolver.label(picked)
+            learner?.learnReference(ref, picked.id)
+            refLabels = refLabels + (picked.id to ref)
+            conversationState.lastPerson = picked.name
+            conversationState.focusPartyId = picked.id
+            val l = KaiConversationSemantics.phraseLang(said, lang)
+            return say(l, KaiMood.SUCCESS, null,
+                ta = "சரி Owner 👍 `$ref` = $which.", tl = "Seri Owner 👍 `$ref` = $which.",
+                en = "Okay Owner 👍 `$ref` = $which.")
+        }
+        return withLearnOffer(entityPickedTurn(choice, picked, said, lang), choice.said, choice.name, picked, lang)
+    }
+
+    private suspend fun entityPickedTurn(choice: KaiEntityChoice, picked: PartyMatch, said: String, lang: KaiLang): KaiTurn {
+        val label = labelOf(picked)
         conversationState.lastPerson = picked.name
         conversationState.lastRelevantEntity = picked.name
         conversationState.focusPartyId = picked.id
@@ -1265,13 +1449,13 @@ class KaiAgent(
         if (!aboutWords.containsMatchIn(text) || text.any(Char::isDigit)) return null
         val name = named.singleOrNull() ?: return null
         val records = runCatching { tools.parties(name) }.getOrNull().orEmpty()
-        return when (val r = KaiEntityResolver.resolve(name, text, records, null)) {
+        return when (val r = resolveParty(name, text, records, null)) {
             is KaiEntityResolver.Result.One -> entityPicked(KaiEntityChoice(name, listOf(r.party), KaiEntityChoice.Purpose.FOCUS), r.party, text, lang)
             is KaiEntityResolver.Result.Many -> {
-                conversationState.entityChoice = KaiEntityChoice(name, r.candidates, KaiEntityChoice.Purpose.FOCUS)
+                conversationState.entityChoice = KaiEntityChoice(name, r.candidates, KaiEntityChoice.Purpose.FOCUS, text)
                 conversationState.lastPerson = name
-                say(lang, KaiMood.CLARIFY, null, KaiEntityResolver.question(name, r.candidates, KaiLang.TAMIL),
-                    KaiEntityResolver.question(name, r.candidates, KaiLang.TANGLISH), KaiEntityResolver.question(name, r.candidates, KaiLang.ENGLISH))
+                say(lang, KaiMood.CLARIFY, null, whichQuestion(name, r.candidates, KaiLang.TAMIL),
+                    whichQuestion(name, r.candidates, KaiLang.TANGLISH), whichQuestion(name, r.candidates, KaiLang.ENGLISH))
             }
             KaiEntityResolver.Result.None -> null
         }
@@ -1681,15 +1865,15 @@ class KaiAgent(
         if (exact.size == 1) return prepared(r, kind, exact.single().name, exact.single().id, lang)
         val role = if (receivable) pick(lang, ta = "வாடிக்கையாளர்", tl = "customer", en = "customer") else pick(lang, ta = "சப்ளையர்", tl = "supplier", en = "supplier")
         if (exact.size > 1) {
-            when (val one = KaiEntityResolver.resolve(st.person, "$said ${st.label.orEmpty()}", exact, conversationState.focusPartyId)) {
+            when (val one = resolveParty(st.person, "$said ${st.label.orEmpty()}", exact, conversationState.focusPartyId)) {
                 is KaiEntityResolver.Result.One -> return prepared(r, kind, one.party.name, one.party.id, lang)
                 else -> {}
             }
             requests[r.key] = r
-            conversationState.entityChoice = KaiEntityChoice(st.person, exact.take(6), KaiEntityChoice.Purpose.DRAFT)
+            conversationState.entityChoice = KaiEntityChoice(st.person, exact.take(6), KaiEntityChoice.Purpose.DRAFT, conversationState.lastQuestion ?: said)
             return KaiTurn(
-                ChatReply(KaiEntityResolver.question(st.person, exact.take(6), lang), KaiMood.CLARIFY, ChatIntent.GENERAL_BUSINESS_QUERY),
-                KaiCard(emptyList(), exact.take(6).map { p -> KaiButton("${KaiEntityResolver.label(p)} · ${KaiFormat.rupees(p.balance.toDouble())}", KaiAction.ChoosePlan(r.key, kind, p.id, p.name)) } +
+                ChatReply(whichQuestion(st.person, exact.take(6), lang), KaiMood.CLARIFY, ChatIntent.GENERAL_BUSINESS_QUERY),
+                KaiCard(emptyList(), exact.take(6).map { p -> KaiButton("${labelOf(p)} · ${KaiFormat.rupees(p.balance.toDouble())}", KaiAction.ChoosePlan(r.key, kind, p.id, p.name)) } +
                     KaiButton(cancelLabel(lang), KaiAction.CancelRequest(r.key))),
             )
         }
@@ -1864,6 +2048,8 @@ class KaiAgent(
 
     // ------------------------------------------------------------ stock in / out
 
+    private val stockSaid = Regex("""(?i)(?<![\p{L}])(stock|inventory|iruppu|saamaan|saman|maal|items?|pieces?|pcs|kg|kilo|box|packet)(?![\p{L}])|இருப்பு|ஸ்டாக்""")
+
     private suspend fun stockChange(text: String, said: String, lang: KaiLang, products: List<com.shopai.app.brain.tools.ProductRef>, people: List<String>): KaiTurn? {
         val direct = com.shopai.app.brain.tools.KaiStock.understand(text, products)
         // "athula 5 pochu" after talking about Colgate: "athula" is Colgate, not a new product — only when no product is named.
@@ -1875,6 +2061,9 @@ class KaiAgent(
             ?: lastProduct?.takeIf { KaiCommands.personIn(text, people) == null }
                 ?.let { p -> com.shopai.app.brain.tools.KaiStock.understand("${p.name} $text", products)?.takeIf { it.product?.id == p.id } }
             ?: return null
+        // "Kumar kitta irundhu 500 vandhuchu", "Received 500 from Kumar": a person in the books, money with no stock word
+        // and no unit — that is money coming in, for the payment path (not a product called "Kumar Kitta Irundhu").
+        if (req.product == null && namesPerson(text, req.spokenName, people) && req.unit == null && !stockSaid.containsMatchIn(text)) return null
         // "Kumar account-la stock in 500": a person in the books, not a product — never guessed: Kai asks.
         if (req.product == null && namesPerson(text, req.spokenName, people)) {
             return say(lang, KaiMood.CLARIFY, "stock or payment: asked",
@@ -2383,7 +2572,7 @@ class KaiAgent(
             // "Kumar anna" → the owner picked Kumar Traders: offer to remember the nickname (this shop only).
             val alias = action.partyId?.let { id ->
                 val customer = action.kind == PlanKind.PAYMENT_IN || action.kind == PlanKind.CREDIT_GIVEN
-                learner?.aliasButton(r.name, com.shopai.app.brain.memory.KnownEntity(id, action.partyName,
+                learner?.aliasButton(r.name?.let { n -> KaiEntityResolver.referenceIn(r.said, n) } ?: r.name, com.shopai.app.brain.memory.KnownEntity(id, action.partyName,
                     if (customer) com.shopai.app.brain.memory.MemoryType.CUSTOMER_ALIAS else com.shopai.app.brain.memory.MemoryType.SUPPLIER_ALIAS), lang)
             }
             if (alias != null && turn.card != null) turn.copy(card = turn.card.copy(buttons = turn.card.buttons + alias)) else turn
@@ -2403,6 +2592,7 @@ class KaiAgent(
     }
 
     fun reset() {
+        kaiAskedAfterDraft = false
         plans.clear()
         requests.clear()
         incompletePayment = null
@@ -2477,6 +2667,7 @@ class KaiAgent(
         val candidates = (exact.ifEmpty { matches }).take(6)
         // Who they are decides what the money means.
         fun kindFor(p: PartyMatch) = when {
+            r.addEntry -> if (p.customer) PlanKind.CREDIT_GIVEN else PlanKind.DEBIT_TAKEN
             r.outgoing && !p.customer -> PlanKind.PAYMENT_OUT
             r.outgoing && p.customer -> PlanKind.CREDIT_GIVEN
             !r.outgoing && p.customer -> PlanKind.PAYMENT_IN
@@ -2487,7 +2678,8 @@ class KaiAgent(
             return prepared(r, kindFor(p), p.name, p.id, lang)
         }
         // Same name, several records: a phone / place / shop word in the sentence, or the one being talked about, picks one.
-        if (exact.size > 1) (KaiEntityResolver.resolve(r.name, r.said, exact, conversationState.focusPartyId) as? KaiEntityResolver.Result.One)?.let { one ->
+        if (exact.size > 1) (resolveParty(r.name, r.said, exact, conversationState.focusPartyId) as? KaiEntityResolver.Result.One)?.let { one ->
+            chosenLabels[one.party.id] = labelOf(one.party)
             return prepared(r, kindFor(one.party), one.party.name, one.party.id, lang)
         }
         requests[r.key] = r
@@ -2509,13 +2701,17 @@ class KaiAgent(
                 KaiCard(emptyList(), buttons + KaiButton(cancelLabel(lang), KaiAction.CancelRequest(r.key))),
             )
         }
-        // Several people with this name (or a customer and a supplier): the owner picks.
+        // Several people with this name (or a customer and a supplier): the owner picks — by button, or by saying which.
+        planChoice = candidates.map { p -> p to KaiAction.ChoosePlan(r.key, kindFor(p), p.id, p.name) }
         val buttons = candidates.map { p ->
             val role = if (p.customer) pick(lang, ta = "வாடிக்கையாளர்", tl = "Customer", en = "Customer") else pick(lang, ta = "சப்ளையர்", tl = "Supplier", en = "Supplier")
-            KaiButton("${KaiEntityResolver.label(p)} · $role · ${KaiFormat.rupees(p.balance.toDouble())}", KaiAction.ChoosePlan(r.key, kindFor(p), p.id, p.name))
+            KaiButton("${labelOf(p)} · $role · ${KaiFormat.rupees(p.balance.toDouble())}", KaiAction.ChoosePlan(r.key, kindFor(p), p.id, p.name))
         }
+        candidates.forEach { p -> chosenLabels[p.id] = labelOf(p) }
+        // The choices are said in the words too — a voice owner hears them (the buttons are only on the screen).
+        val choices = candidates.joinToString(" / ") { p -> labelOf(p) + if (p.customer) "" else " (${pick(lang, ta = "சப்ளையர்", tl = "Supplier", en = "Supplier")})" }
         return KaiTurn(
-            ChatReply(pick(lang, ta = "எந்த ${r.name} ஓனர்?", tl = "Endha ${r.name} Owner?", en = "Which ${r.name}, Owner?"), KaiMood.CLARIFY, ChatIntent.GENERAL_BUSINESS_QUERY),
+            ChatReply(pick(lang, ta = "எந்த ${r.name} ஓனர்? $choices", tl = "Endha ${r.name} Owner? $choices", en = "Which ${r.name}, Owner? $choices"), KaiMood.CLARIFY, ChatIntent.GENERAL_BUSINESS_QUERY),
             KaiCard(emptyList(), buttons + KaiButton(cancelLabel(lang), KaiAction.CancelRequest(r.key))),
         )
     }
@@ -2548,7 +2744,7 @@ class KaiAgent(
         }
         val lines = buildList {
             // "Nagapattinam Lokesh — ₹500": which of the same-named records this is.
-            add("${conversationState.stated?.takeIf { r.stated && it.partyId != null && it.partyId == partyId }?.label ?: plan.partyName} — $a")
+            add("${conversationState.stated?.takeIf { r.stated && it.partyId != null && it.partyId == partyId }?.label ?: ownerName(plan.partyId, plan.partyName)} — $a")
             add(what)
             add(pick(lang, ta = "முறை: ${modeName(plan.mode, lang)}", tl = "Mode: ${modeName(plan.mode, lang)}", en = "Mode: ${modeName(plan.mode, lang)}"))
             // A stated payment ("Mahesh enaku 2000 tharanum"): its due date, and whether the person is new to the books.
@@ -2624,9 +2820,9 @@ class KaiAgent(
                 val after = outcome.balanceAfter?.let { KaiFormat.rupees(it.toDouble()) }
                 val due = plan.dueDate?.let { KaiFormat.date(it, lang, now().toLocalDate()) }
                 say(lang, KaiMood.SUCCESS, null,
-                    ta = "சேமிச்சுட்டேன் ஓனர். ${plan.partyName} — $a (${outcome.reference})." + (due?.let { " Due: $it." } ?: "") + (after?.let { " இப்போ பாக்கி $it." } ?: ""),
-                    tl = "Save aagiduchu Owner. ${plan.partyName} — $a (${outcome.reference})." + (due?.let { " Due: $it." } ?: "") + (after?.let { " Ippo balance $it." } ?: ""),
-                    en = "Saved, Owner. ${plan.partyName} — $a (${outcome.reference})." + (due?.let { " Due: $it." } ?: "") + (after?.let { " Balance now $it." } ?: ""))
+                    ta = "சேமிச்சுட்டேன் ஓனர். ${ownerName(plan.partyId, plan.partyName)} — $a (${outcome.reference})." + (due?.let { " Due: $it." } ?: "") + (after?.let { " இப்போ பாக்கி $it." } ?: ""),
+                    tl = "Save aagiduchu Owner. ${ownerName(plan.partyId, plan.partyName)} — $a (${outcome.reference})." + (due?.let { " Due: $it." } ?: "") + (after?.let { " Ippo balance $it." } ?: ""),
+                    en = "Saved, Owner. ${ownerName(plan.partyId, plan.partyName)} — $a (${outcome.reference})." + (due?.let { " Due: $it." } ?: "") + (after?.let { " Balance now $it." } ?: ""))
             }
             is ActionOutcome.Failed -> {
                 tools.log("${plan.kind.name.lowercase()} ${plan.partyName}", "transaction engine", outcome.reason, ActionStatus.FAILED, plan.reference ?: plan.key)
@@ -2822,14 +3018,14 @@ class KaiAgent(
         val repeated = runCatching { books.snapshot() }.getOrNull()?.parties.orEmpty()
             .groupBy { it.name.trim().lowercase(Locale.ROOT) }.filterValues { same -> same.distinctBy { it.id }.size > 1 }.values.map { it.first().name }
         val labels = repeated.flatMap { n -> runCatching { tools.parties(n) }.getOrNull()?.let { KaiEntityResolver.sameName(n, it) }.orEmpty() }
-            .distinctBy { it.id }.associate { it.id to KaiEntityResolver.label(it) }
+            .distinctBy { it.id }.associate { it.id to labelOf(it) }
         val name = com.shopai.app.brain.KaiUnderstanding.knownPerson(text, people)
         val exact = name?.let { n -> runCatching { tools.parties(n) }.getOrNull()?.let { KaiEntityResolver.sameName(n, it).distinctBy { p -> p.id } } }.orEmpty()
         if (name == null || exact.size < 2) return brain.hint(null, labels)
         val focus = conversationState.focusPartyId?.takeIf { conversationState.lastPerson.equals(name, ignoreCase = true) }
-        val one = KaiEntityResolver.resolve(name, text, exact, focus) as? KaiEntityResolver.Result.One
+        val one = resolveParty(name, text, exact, focus) as? KaiEntityResolver.Result.One
         one?.let { conversationState.focusPartyId = it.party.id }
-        brain.hint(one?.party?.id, labels + exact.associate { it.id to KaiEntityResolver.label(it) })
+        brain.hint(one?.party?.id, labels + exact.associate { it.id to labelOf(it) })
     }
 
     // ------------------------------------------------------------ wording

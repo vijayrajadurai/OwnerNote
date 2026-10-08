@@ -101,9 +101,51 @@ class KaiBusinessBrain(
         if (labels.isNotEmpty() || choices.isEmpty()) hintLabels = labels
     }
 
+    /** Kai asked "which one?" and waits for the owner's pick. */
+    fun awaitingChoice(): Boolean = choices.isNotEmpty()
+
+    /** "rendu perum", "both", "ellaarum", "all Kumar": every record of that name, each shown on its own. */
+    private val everyOne = Regex("""(?i)(?<![\p{L}])(rendu\s*perum|rendu\s*per|both|ellaarum|ellarum|ellaa|ella|all|everyone|moonu\s*perum)(?![\p{L}])|ரெண்டு|எல்லா""")
+    private val combined = Regex("""(?i)(?<![\p{L}])(total|motham|mothama|serthu|together|combined)(?![\p{L}])|மொத்தம்|சேர்த்து""")
+
+    /** Each same-named record on its own line; a combined total only when the owner asked for one. Never merged silently. */
+    private fun everyRecord(name: String, records: List<PartyFacts>, intent: ChatIntent, lang: KaiLang, text: String): ChatReply {
+        val lines = records.mapIndexed { i, p ->
+            val a = KaiFormat.rupees(p.pending)
+            val pay = p.side == Direction.PAYABLE
+            "${i + 1}. ${label(p)} — $a " + when (lang) {
+                KaiLang.TAMIL -> if (pay) "கொடுக்கணும்" else "தரணும்"
+                KaiLang.TANGLISH -> if (pay) "kudukkanum" else "tharanum"
+                KaiLang.ENGLISH -> if (pay) "to pay" else "to collect"
+            }
+        }
+        val head = when (lang) {
+            KaiLang.TAMIL -> "ஓனர், $name-னு ${records.size} பேர்:"
+            KaiLang.TANGLISH -> "Owner, $name-nu ${records.size} per:"
+            KaiLang.ENGLISH -> "Owner, ${records.size} named $name:"
+        }
+        val total = if (combined.containsMatchIn(text)) {
+            val t = KaiFormat.rupees(records.fold(java.math.BigDecimal.ZERO) { s, p -> s + java.math.BigDecimal.valueOf(p.pending) }.toDouble())
+            "\n" + when (lang) {
+                KaiLang.TAMIL -> "${records.size} பேரும் சேர்த்து $t."
+                KaiLang.TANGLISH -> "${records.size} perum serthu $t."
+                KaiLang.ENGLISH -> "Together: $t."
+            }
+        } else ""
+        listIsLatest = false
+        return reply(intent, KaiMood.EXPLAINING, lang, head + "\n" + lines.joinToString("\n") + total)
+    }
+
     /** The answer to "which Lokesh?" ("Nagapattinam", "rendavadhu"), or null when the words don't pick one (the question is dropped). */
     suspend fun answerChoice(text: String): ChatReply? {
         if (choices.isEmpty()) return null
+        if (everyOne.containsMatchIn(text)) {
+            val all = choices
+            val q = choiceQuery ?: ChatQuery(ChatIntent.CUSTOMER_BALANCE)
+            choices = emptyList()
+            choiceQuery = null
+            return everyRecord(all.first().name, all, q.intent, chatLanguage(text), text)
+        }
         val chosen = pick(text, choices)
         val q = choiceQuery ?: ChatQuery(ChatIntent.CUSTOMER_BALANCE)
         choices = emptyList()
@@ -114,7 +156,11 @@ class KaiBusinessBrain(
         return answerAbout(named(chosen), q, chatLanguage(text), today())
     }
 
+    /** The words of the question being answered (for "rendu perum" / "total" checks). */
+    private var rawText = ""
+
     suspend fun ask(text: String): ChatReply {
+        rawText = text
         val day = today()
         val lang = chatLanguage(text)
         if (text.isBlank()) return reply(ChatIntent.UNKNOWN, KaiMood.CLARIFY, lang, unclear(lang))
@@ -315,6 +361,8 @@ class KaiBusinessBrain(
                         lastParty = all.first()
                         return noneOnThatSide(all.first().name, query.side!!, query.intent, lang)
                     }
+                    // "Rendu Kumar-oda balance sollu": each Kumar on its own (a total only when asked).
+                    matches.size > 1 && (everyOne.containsMatchIn(rawText) || bothOf(ref.name).containsMatchIn(rawText)) -> return everyRecord(ref.name, matches, query.intent, lang, rawText)
                     matches.size > 1 -> {
                         choices = matches
                         choiceQuery = query
@@ -335,6 +383,9 @@ class KaiBusinessBrain(
         lastParty = party
         return answerAbout(named(party), query, lang, day)
     }
+
+    /** "Rendu Kumar-oda" / "both Kumars" / "ரெண்டு குமார்": every record with that name. */
+    private fun bothOf(name: String) = Regex("""(?:rendu|both|ரெண்டு)\s+""" + Regex.escape(name), RegexOption.IGNORE_CASE)
 
     /** A person's name in a list: "Nagapattinam Lokesh" when the books hold more than one Lokesh. */
     private fun label(p: PartyFacts): String = hintLabels[p.id] ?: p.name
@@ -1074,6 +1125,7 @@ class KaiBusinessBrain(
     /** The owner's answer to "which one?": a name, or "first"/"second"/"1"/"2". */
     private fun pick(text: String, options: List<PartyFacts>): PartyFacts? {
         val lower = text.lowercase(Locale.ROOT)
+        if (everyOne.containsMatchIn(lower)) return null
         val ordinal = when {
             Regex("""\b(1|first|mudhal|modhal|onnu|oru)\b""").containsMatchIn(lower) -> 0
             Regex("""\b(2|second|rendavadhu|rendu|irandu)\b""").containsMatchIn(lower) -> 1

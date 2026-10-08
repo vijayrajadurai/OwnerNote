@@ -287,10 +287,11 @@ class KaiPrivateMemory(
             .filter { (p, _) -> p !in fromConversation }
             .sortedByDescending { it.first.length }
         for ((phrase, m) in candidates) {
+            var entity: KnownEntity? = null
             val replacement = when (m.memoryType) {
                 MemoryType.PRODUCT_ALIAS, MemoryType.CUSTOMER_ALIAS, MemoryType.SUPPLIER_ALIAS -> {
                     val e = m.referenceEntityId?.let(byId::get) ?: continue // the record is gone: not used
-                    found += phrase to e
+                    entity = e
                     e.name
                 }
                 MemoryType.ABBREVIATION, MemoryType.WORD, MemoryType.UNIT_ALIAS, MemoryType.REMINDER_TERM, MemoryType.CORRECTION -> m.meaningValue
@@ -305,6 +306,8 @@ class KaiPrivateMemory(
             val r = replace(out, phrase, replacement) ?: continue
             out = r
             used += m
+            // Only an alias the owner actually said this turn names an entity — not every saved alias.
+            entity?.let { found += phrase to it }
             m.meaning?.let { meanings += phrase to it }
         }
         return AppliedMemory(out, used.distinctBy { it.id }, meanings, found, fromConversation)
