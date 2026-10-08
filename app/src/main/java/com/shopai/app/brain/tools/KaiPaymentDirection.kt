@@ -44,7 +44,7 @@ object KaiPaymentDirection {
     )
     /** The owner is the one who gets the money. "Kumar enna 3000 tharanum" — "enna" right before the amount is "enakku" said fast. */
     private val ownerReceives = Regex(
-        """$B(enakku|enaku|ennaku|enakk|enakkum|to\s*me|owes\s*me|owe\s*me)$E|${B}enna(?=\s*(?:₹|rs\.?|rupees?)?\s*\d)|எனக்கு""",
+        """$B(enakku|enaku|ennaku|enakk|enakkum|yenakku|yenaku|yennaku|yenakk|yenakkum|to\s*me|owes\s*me|owe\s*me)$E|${B}enna(?=\s*(?:₹|rs\.?|rupees?)?\s*\d)|எனக்கு""",
         RegexOption.IGNORE_CASE,
     )
     /** The owner is the one who gives the money. */
@@ -54,7 +54,7 @@ object KaiPaymentDirection {
 
     /** Words that end in -ku but are not a person's dative ("enakku", "innaikku", "yaarukku", "manikku"…). */
     private val notDative = setOf(
-        "ena", "enak", "enna", "una", "unak", "unna", "yaar", "yaaru", "yar", "yaru", "innai", "innaik", "inni", "innik", "naalai", "naalaik", "nalai",
+        "ena", "enak", "enna", "yena", "yenak", "yenna", "una", "unak", "unna", "yaar", "yaaru", "yar", "yaru", "innai", "innaik", "inni", "innik", "naalai", "naalaik", "nalai",
         "ir", "iru", "iruk", "irukk", "irukkudh", "irukkuth",
         "mani", "manik", "adhu", "idhu", "athu", "ithu", "avan", "avanu", "avar", "avaru", "avanga", "avangalu", "time", "date", "thethi", "month", "week",
     )
@@ -81,6 +81,17 @@ object KaiPaymentDirection {
             hasPersonDative(text) -> OwedDirection.PAYABLE
             else -> OwedDirection.RECEIVABLE
         }
+    }
+
+    /**
+     * The side only when the words say whose it is — "enakku" / "naan" / "Kumar-ku" / "en kitta" — never the
+     * receivable default: "Ramesh enna tharanum?" names no side, so it is asked about whichever side Ramesh is on.
+     */
+    fun explicitOf(raw: String): OwedDirection? {
+        val text = raw.lowercase(Locale.ROOT)
+        val direction = of(text) ?: return null
+        val marked = ownerReceives.containsMatchIn(text) || ownerGives.containsMatchIn(text) || fromOwner.containsMatchIn(text) || hasPersonDative(text)
+        return direction.takeIf { marked }
     }
 
     private fun hasPersonDative(text: String): Boolean =

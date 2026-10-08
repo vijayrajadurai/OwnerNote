@@ -24,7 +24,9 @@ object KaiLanguage {
         val words = text.lowercase(Locale.ROOT).split(Regex("""[^a-z]+""")).filter { it.isNotEmpty() }
         // "Kumar-ku", "Ravi-kitta": suffixes count too.
         val tanglish = words.any { it in tanglishWords } ||
-            Regex("""[a-z]+-?(kitta|ukku|kku)\b""").containsMatchIn(text.lowercase(Locale.ROOT))
+            Regex("""[a-z]+-?(kitta|ukku|kku)\b""").containsMatchIn(text.lowercase(Locale.ROOT)) ||
+            // "Kumar paid ah?", "clear-aa?": the Tamil question ending, even after English words.
+            Regex("""(?<![a-z])(?:ah|aa|ahh|aah)\s*[?.!]*\s*$|[a-z]-(?:aa|ah)(?![a-z])""").containsMatchIn(text.lowercase(Locale.ROOT))
         return if (tanglish) KaiLang.TANGLISH else KaiLang.ENGLISH
     }
 

@@ -517,7 +517,8 @@ class KaiHumanUnderstandingTest {
     @Test
     fun o01_editThenSave() {
         val k = kai()
-        k.chat("Kumar enakku 3000 tharanum", "next month 10", "save panniko", "3500", "seri")
+        // "pudhusu": the books already hold Kumar ₹3,000, so Kai asks same-or-new before the draft.
+        k.chat("Kumar enakku 3000 tharanum", "next month 10", "save panniko", "pudhusu", "3500", "seri")
         assertEquals(BigDecimal("3500.00"), db.saved.single().amount)
         assertEquals(LocalDate.of(2026, 11, 10), db.saved.single().dueDate)
     }
@@ -525,7 +526,7 @@ class KaiHumanUnderstandingTest {
     @Test
     fun q01_businessBrainAfterSave() {
         val k = kai()
-        k.chat("Kumar enakku 3000 tharanum", "save panniko", "seri")
+        k.chat("Kumar enakku 3000 tharanum", "save panniko", "pudhusu", "seri")
         has(k.say("Kumar balance evlo?"), "₹6,000")
     }
 

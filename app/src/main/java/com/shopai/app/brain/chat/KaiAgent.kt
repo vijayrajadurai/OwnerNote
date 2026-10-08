@@ -181,6 +181,12 @@ internal data class KaiConversationState(
     var conversationTurn: Long = 0,
     /** A payment the owner stated in conversation ("Mahesh enaku 2000 tharanum") and has not saved yet. */
     var stated: KaiStatedPayment? = null,
+    /** "Kumar enakku 3000" then "naan Kumar-ku 3000": the earlier, opposite-side statement — still unsaved, still answerable. */
+    var statedOtherSide: KaiStatedPayment? = null,
+    /** The turn Kai asked "already ₹2,000 records-la irukku — adhey-aa, pudhusaa?" for [stated] (-1: not asked). */
+    var duplicateAskedTurn: Long = -1,
+    /** "September 30" said just after it passed: that day this year — Kai asks it or next year's (null: not asked). */
+    var pendingPastDate: LocalDate? = null,
     /** The draft card made from [stated] ("save panniko"); confirming it saves the stated payment. */
     var statedDraftKey: String? = null,
     /** The last payment the books confirmed as saved in this conversation (never set without the engine's Done). */
@@ -211,7 +217,7 @@ internal data class KaiConversationState(
         pendingDraft = null; pendingConfirmation = false; pendingCorrection = false
         lastBusinessTopic = null; previousBusinessContext = null; previousTopicBeforeCalculator = null
         conversationTurn = 0
-        stated = null; statedDraftKey = null; lastSaved = null; draftShownTurn = -1
+        stated = null; statedOtherSide = null; duplicateAskedTurn = -1; pendingPastDate = null; statedDraftKey = null; lastSaved = null; draftShownTurn = -1
         focusPartyId = null; mentionedPeople = emptyList(); mentionedTurn = -1; entityChoice = null; referentQuestion = null
         fragmentPerson = null; fragmentAmount = null; fragmentTurn = -1
     }
@@ -227,6 +233,8 @@ internal data class KaiStatedPayment(
     val partyId: String? = null,
     /** How Kai says who it is ("Nagapattinam Lokesh"); the name when it is unique. */
     val label: String? = null,
+    /** The owner said it is a NEW amount even though the same amount is already in the books. */
+    val newConfirmed: Boolean = false,
 )
 
 /** Same-named records the owner must pick from, and what to continue with once picked. */
@@ -455,6 +463,9 @@ class KaiAgent(
             KaiEntityResolver.pick(com.shopai.app.brain.tools.KaiSpokenWords.normalize(said), choice.candidates)?.let { picked -> return entityPicked(choice, picked, said, lang) }
         }
 
+        // "pudhu" / "adhey" after "already ₹2,000 records-la irukku — adhey-aa, pudhusaa?".
+        if (openPayment == null && conversationState.duplicateAskedTurn >= 0) duplicateAnswer(said, lang)?.let { return it }
+
         // "due venam" after "Due date eppa?": the stated payment has no due date — it is drafted for Confirm, still pending.
         if (openPayment == null && KaiConversationSemantics.dropsDueDate(said)) conversationState.stated?.let { st -> return withoutDueDate(st, said, lang) }
 
@@ -536,6 +547,7 @@ class KaiAgent(
         fragment(said, text, people, lang)?.let { return it }
         // "Nagapattinam Lokesh pathi pesuren": the exact record the next "avan" / "avanukku" means.
         aboutPerson(text, named, lang)?.let { return it }
+        if (named.isEmpty()) dueOnDay(text, lang)?.let { return it }
         // "same", "again", "innoru thadava": vague on their own — asked about against what is being discussed.
         if (vague.matches(text.trim())) return clarify(text, lang)
         // "Colgate 20 pieces irukku": the owner states what is on the shelf — compared with the books, never a stock-in.
@@ -697,7 +709,15 @@ class KaiAgent(
             if (saidDate != null) conversationState.stated = conversationState.stated?.copy(dueDate = saidDate)
             // "Mahesh enaku 2000 tharanum, save panniko": straight to the draft (Confirm still saves it).
             if (KaiConversationSemantics.savesDraft(text)) return draftStated(conversationState.stated!!, lang, text)
-            if (saidDate != null) return dueDateResolved(saidDate, person, amount, direction, lang, text)
+            if (saidDate != null) {
+                justPassed(saidDate, text, now().toLocalDate(), amount)?.let { past ->
+                    conversationState.stated = conversationState.stated?.copy(dueDate = null)
+                    conversationState.pendingQuestion = KaiPendingQuestion.DUE_DATE
+                    conversationState.pendingAskedTurn = conversationState.conversationTurn
+                    return askWhichYear(past, lang)
+                }
+                return dueDateResolved(saidDate, person, amount, direction, lang, text)
+            }
             conversationState.pendingQuestion = KaiPendingQuestion.DUE_DATE
             return askDueDate(conversationState.stated?.label ?: person, amount, direction, lang)
         }
@@ -771,22 +791,104 @@ class KaiAgent(
      * "Mahesh enaku evlo tharanum?" while the owner's own "Mahesh ₹2,000" is still a draft / unsaved: the records'
      * answer, plus a plain note that the new amount is not in them yet (so the owner isn't misled either way).
      */
-    private fun withUnsaved(answer: KaiTurn, text: String, people: List<String>, lang: KaiLang): KaiTurn {
-        val asked = KaiCommands.personIn(text, people) ?: com.shopai.app.brain.KaiUnderstanding.personIn(text) ?: return answer
-        val draft = plans.values.firstOrNull { it.partyName.equals(asked, ignoreCase = true) }
-        val st = conversationState.stated?.takeIf { it.person.equals(asked, ignoreCase = true) && it.amount != null }
-        val amount = draft?.amount ?: st?.amount ?: return answer
+    private suspend fun withUnsaved(answer: KaiTurn, text: String, people: List<String>, lang: KaiLang): KaiTurn {
+        // The person the owner stated a payment for is "asked" even when the books don't know them yet.
+        val spokenOf = (listOfNotNull(conversationState.stated?.person, conversationState.statedOtherSide?.person) + plans.values.map { it.partyName })
+            .firstOrNull { n -> Regex("""(?i)(?<![\p{L}])${Regex.escape(n)}""").containsMatchIn(text) }
+        val asked = spokenOf ?: KaiCommands.personIn(text, people) ?: com.shopai.app.brain.KaiUnderstanding.personIn(text) ?: return answer
+        // "naan Kumar-ku evlo tharanum?" asks the owner's side: an unsaved "Kumar enakku 2000" is not part of it.
+        val side = com.shopai.app.brain.tools.KaiPaymentDirection.explicitOf(text)?.let {
+            if (it == com.shopai.app.brain.tools.OwedDirection.PAYABLE) KaiConversationPaymentDirection.PAYMENT_OUT else KaiConversationPaymentDirection.PAYMENT_IN
+        }
+        fun planSide(p: ActionPlan) = if (p.kind == PlanKind.CREDIT_GIVEN || p.kind == PlanKind.PAYMENT_IN) KaiConversationPaymentDirection.PAYMENT_IN else KaiConversationPaymentDirection.PAYMENT_OUT
+        val draft = plans.values.firstOrNull { it.partyName.equals(asked, ignoreCase = true) && (side == null || planSide(it) == side) }
+        val st = listOfNotNull(conversationState.stated, conversationState.statedOtherSide)
+            .firstOrNull { it.person.equals(asked, ignoreCase = true) && it.amount != null && (side == null || it.direction == side) }
+        val earlier = st != null && st === conversationState.statedOtherSide
         val l = KaiConversationSemantics.phraseLang(text, lang)
+        val inBooks = people.any { it.equals(asked, ignoreCase = true) }
+        val amount = draft?.amount ?: st?.amount ?: run {
+            // "na avarukku evlo tharanum?" about someone only stated (not in the books) on the other side: nothing owed that way.
+            val statedOther = spokenOf != null && side != null && !inBooks
+            return if (statedOther) answer.copy(reply = answer.reply.copy(text = noneOnSide(asked, side == KaiConversationPaymentDirection.PAYMENT_OUT, l), mood = KaiMood.NEUTRAL))
+            else answer
+        }
+        // "due eppa?" about an unsaved stated payment: its own due date (or none) — the records' answer is not about it.
+        val dueAsked = answer.reply.intent == ChatIntent.CUSTOMER_DUE_DATE || answer.reply.intent == ChatIntent.SUPPLIER_DUE_DATE
+        if (dueAsked) {
+            val due = st?.dueDate ?: draft?.dueDate
+            val a = KaiFormat.rupees(amount.toDouble())
+            val about = if (due != null) pickLang(l,
+                ta = "நீங்க சொன்ன $asked $a-க்கு due ${KaiFormat.date(due, l, now().toLocalDate())}",
+                tl = "Neenga sonna $asked $a-ku due ${KaiFormat.date(due, l, now().toLocalDate())}",
+                en = "The $a you mentioned for $asked is due ${KaiFormat.date(due, l, now().toLocalDate())}")
+            else pickLang(l, ta = "நீங்க சொன்ன $asked $a-க்கு due date இல்ல", tl = "Neenga sonna $asked $a-ku due date illa", en = "The $a you mentioned for $asked has no due date")
+            val pending = pickLang(l, ta = " — இன்னும் சேமிக்கல.", tl = " — innum save aagala.", en = " — not saved yet.")
+            val recorded = st?.let { recordedPending(it) }
+            val text2 = if (recorded == null || recorded.signum() == 0) "Owner, $about$pending" else answer.reply.text + " " + about + pending
+            return answer.copy(reply = answer.reply.copy(text = text2))
+        }
         val a = KaiFormat.rupees(amount.toDouble())
+        // Nothing on that side in the records yet: the owner's own (unsaved) amount leads, with where it stands.
+        val ownSide = side ?: st?.direction ?: draft?.let(::planSide)
+        val recorded = st?.let { recordedPending(it.copy(direction = ownSide ?: it.direction)) }
+        if (st != null && (recorded == null || recorded.signum() == 0)) {
+            val out = ownSide == KaiConversationPaymentDirection.PAYMENT_OUT
+            val said = if (out) pickLang(l,
+                ta = "Owner, $asked-க்கு $a கொடுக்கணும்-னு நீங்க சொன்னீங்க — இன்னும் சேமிக்கல",
+                tl = "Owner, $asked-ku $a kudukkanum-nu neenga sonneenga — innum save aagala",
+                en = "Owner, you said you owe $asked $a — not saved yet")
+            else pickLang(l,
+                ta = "Owner, $asked உங்களுக்கு $a தரணும்-னு நீங்க சொன்னீங்க — இன்னும் சேமிக்கல",
+                tl = "Owner, $asked ungalukku $a tharanum-nu neenga sonneenga — innum save aagala",
+                en = "Owner, you said $asked owes you $a — not saved yet")
+            val confirm = if (draft != null) pickLang(l, ta = " — Confirm பண்ணுங்க", tl = " — Confirm pannunga", en = " — tap Confirm") else ""
+            val records = if (inBooks) pickLang(l, ta = " Records-ல $asked பாக்கி இல்ல.", tl = " Records-la $asked pending illa.", en = " The records show nothing pending for $asked.")
+            else pickLang(l, ta = " Records-ல $asked பதிவு கிடைக்கல.", tl = " Records-la $asked record kidaikala.", en = " There's no record for $asked yet.")
+            val lead = "$said$confirm.$records"
+            return answer.copy(reply = answer.reply.copy(text = lead))
+        }
         val note = if (draft != null) pickLang(l,
             ta = " நீங்க சொன்ன $asked $a இன்னும் சேமிக்கல — Confirm பண்ணுங்க.",
             tl = " Neenga sonna $asked $a innum save aagala — Confirm pannunga.",
             en = " The $a you mentioned for $asked isn't saved yet — tap Confirm.")
+        else if (earlier) pickLang(l,
+            ta = " நீங்க சொன்ன $asked $a இன்னும் சேமிக்கல.", tl = " Neenga sonna $asked $a innum save aagala.", en = " The $a you mentioned for $asked isn't saved yet.")
         else pickLang(l,
             ta = " நீங்க சொன்ன $asked $a இன்னும் சேமிக்கல — சேமிக்க 'save pannu'-னு சொல்லுங்க.",
             tl = " Neenga sonna $asked $a innum save aagala — save panna 'save pannu'-nu sollunga.",
             en = " The $a you mentioned for $asked isn't saved yet — say 'save it' to save it.")
         return answer.copy(reply = answer.reply.copy(text = answer.reply.text + note))
+    }
+
+    private fun noneOnSide(name: String, payable: Boolean, lang: KaiLang): String =
+        if (payable) pickLang(lang, ta = "ஓனர், $name-க்கு நீங்க கொடுக்கணும்-னு பாக்கி எதுவும் இல்ல.",
+            tl = "Owner, $name-ku neenga kudukkanum-nu pending amount illa.", en = "Owner, you don't owe $name anything.")
+        else pickLang(lang, ta = "ஓனர், $name உங்களுக்கு தரணும்-னு பாக்கி எதுவும் இல்ல.",
+            tl = "Owner, $name ungalukku tharanum-nu pending amount illa.", en = "Owner, $name doesn't owe you anything.")
+
+    private val amountAsk = Regex("""(?i)(?<![\p{L}])(evlo|evvalavu|how\s+much|enna\s+amount|total|mothama|motham)(?![\p{L}])|எவ்வளவு""")
+
+    /** "September 30-ku evlo?" — the amounts the records say fall due on that day (asked, never assumed, when none). */
+    private suspend fun dueOnDay(text: String, rawLang: KaiLang): KaiTurn? {
+        if (!amountAsk.containsMatchIn(text) || com.shopai.app.brain.tools.KaiPaymentDirection.mentionsMoneyOwed(text) && Regex("""\d{3,}""").containsMatchIn(text)) return null
+        val phrase = datePhrase.find(text)?.value ?: return null
+        val day = KaiTime.parse(phrase.replace(Regex("""(?i)\s*-?\s*(?:ku|kku|m|aam|am|thethi|date)$"""), ""), now())?.takeIf { it.daySpecified }?.at?.toLocalDate() ?: return null
+        val lang = KaiConversationSemantics.phraseLang(text, rawLang).let { if (it == KaiLang.ENGLISH && Regex("""(?i)-ku|evlo""").containsMatchIn(text)) KaiLang.TANGLISH else it }
+        val parties = runCatching { books.snapshot() }.getOrNull()?.parties ?: return unverified(lang, "due")
+        val due = parties.filter { p -> p.pending > 0.005 && p.nextDue?.let { it.monthValue == day.monthValue && it.dayOfMonth == day.dayOfMonth } == true }
+        val shown = KaiFormat.date(due.firstOrNull()?.nextDue ?: day, lang, now().toLocalDate())
+        if (due.isEmpty()) return say(lang, KaiMood.CLARIFY, null,
+            ta = "Owner, $shown-க்கு records-ல யாருக்கும் due இல்ல. யார் பத்தி கேக்குறீங்க?",
+            tl = "Owner, $shown-ku records-la yaarukkum due illa. Yaar pathi kekkureenga?",
+            en = "Owner, nothing in the records falls due on $shown. Who do you mean?")
+        val list = due.joinToString(", ") { p ->
+            val a = KaiFormat.rupees(p.pending)
+            if (p.side == com.shopai.app.brain.Direction.RECEIVABLE) pickLang(lang, ta = "${p.name} $a தரணும்", tl = "${p.name} $a tharanum", en = "${p.name} owes you $a")
+            else pickLang(lang, ta = "${p.name}-க்கு $a கொடுக்கணும்", tl = "${p.name}-ku $a kudukkanum", en = "you owe ${p.name} $a")
+        }
+        if (due.size == 1) { conversationState.lastPerson = due.single().name; conversationState.mentionedPeople = listOf(due.single().name); conversationState.mentionedTurn = conversationState.conversationTurn }
+        return say(lang, KaiMood.EXPLAINING, null, ta = "Owner, $shown due: $list.", tl = "Owner, $shown due: $list.", en = "Owner, due on $shown: $list.")
     }
 
     // ------------------------------------------------------------ an amount already owed + a new one; no due date
@@ -804,8 +906,10 @@ class KaiAgent(
         if (tokens.size != 2) return null
         if (!newAmountWords.containsMatchIn(text.substring(tokens[0].range.last + 1, tokens[1].range.first))) return null
         val amounts = com.shopai.app.brain.KaiUnderstanding.amountsIn(text, now().toLocalDate()).filter { it > 0 }
-        if (amounts.size != 2) return null
         fun money(v: Double) = BigDecimal.valueOf(v).setScale(2, java.math.RoundingMode.HALF_UP)
+        // "already 2000 … ippa oru 2000": the same number twice is still two amounts.
+        if (amounts.size == 1 && tokens.map { t -> t.value.filter(Char::isDigit) }.distinct().size == 1) return money(amounts[0]) to money(amounts[0])
+        if (amounts.size != 2) return null
         return money(amounts[0]) to money(amounts[1])
     }
 
@@ -814,7 +918,7 @@ class KaiAgent(
         val receivable = st.direction == KaiConversationPaymentDirection.PAYMENT_IN
         val parties = runCatching { books.snapshot() }.getOrNull()?.parties ?: return null
         val side = if (receivable) com.shopai.app.brain.Direction.RECEIVABLE else com.shopai.app.brain.Direction.PAYABLE
-        val p = parties.firstOrNull { it.id == st.partyId } ?: parties.firstOrNull { it.side == side && it.name.equals(st.person, ignoreCase = true) }
+        val p = parties.firstOrNull { it.id == st.partyId && it.side == side } ?: parties.firstOrNull { it.side == side && it.name.equals(st.person, ignoreCase = true) }
         return p?.pending?.let { BigDecimal.valueOf(it).setScale(2, java.math.RoundingMode.HALF_UP) }
     }
 
@@ -831,7 +935,7 @@ class KaiAgent(
         remember(person, newAmount, direction, text, lang)
         identify(person, text, lang)?.let { return it }
         if (saidDate != null) conversationState.stated = conversationState.stated?.copy(dueDate = saidDate)
-        val st = conversationState.stated!!
+        val st = conversationState.stated!!.copy(newConfirmed = true).also { conversationState.stated = it }
         val draft = draftStated(st, lang, text)
         if (draft.plan == null) return draft
         val who = st.label ?: st.person
@@ -877,6 +981,7 @@ class KaiAgent(
         val lang = shortLang(said, rawLang)
         val now = st.copy(dueDate = null)
         conversationState.stated = now
+        conversationState.pendingPastDate = null
         conversationState.pendingDay = null
         conversationState.pendingMonthOffset = null
         conversationState.lastDate = null
@@ -1048,7 +1153,23 @@ class KaiAgent(
      * "avan" / "avanukku" / "andha customer" → the person in the conversation, written as the name so every later
      * step (payment, question, reminder, call) reads one sentence. Null: two people were just named — Kai asks.
      */
+    private val bareAmountQuestion = Regex("""(?i)^\s*(?:evlo|evvalavu|ewlo|how\s+much|amount\s+evlo|balance\s+evlo|evlo\s+(?:pending|balance|amount)|எவ்வளவு)\s*[?.!]*\s*$""")
+
+    /** "due eppa?" / "eppa due?" with no name: the due date of the person just talked about. */
+    private val bareDueQuestion = Regex("""(?i)^\s*(?:due\s*(?:date\s*)?(?:eppa|eppo|eppadi|enna|when|\?)|(?:eppa|eppo|when)\s*due(?:\s*date)?)\s*[?.!]*\s*$""")
+
     private fun referenceResolved(spoken: String, named: List<String>): String? {
+        if (named.isEmpty() && bareDueQuestion.matches(spoken)) {
+            val fresh = conversationState.conversationTurn - conversationState.mentionedTurn <= 4
+            if (fresh && conversationState.mentionedPeople.size >= 2) return null
+            return conversationState.lastPerson?.let { "$it due eppa?" } ?: spoken
+        }
+        // "evlo?" right after talking about someone: their balance (either side) — the amount, never the due date.
+        if (named.isEmpty() && bareAmountQuestion.matches(spoken)) {
+            val fresh = conversationState.conversationTurn - conversationState.mentionedTurn <= 4
+            if (fresh && conversationState.mentionedPeople.size >= 2) return null
+            return conversationState.lastPerson?.let { "$it balance evlo?" } ?: spoken
+        }
         if (!KaiEntityResolver.mentionsPerson(spoken) || named.isNotEmpty()) return spoken
         val fresh = conversationState.conversationTurn - conversationState.mentionedTurn <= 4
         if (fresh && conversationState.mentionedPeople.size >= 2) return null
@@ -1208,7 +1329,12 @@ class KaiAgent(
         conversationState.pendingMonthOffset = null
         conversationState.pendingLang = lang
         conversationState.lastDate = null
+        val before = conversationState.stated
+        conversationState.statedOtherSide = listOfNotNull(before, conversationState.statedOtherSide)
+            .firstOrNull { it.person.equals(person, ignoreCase = true) && it.direction != direction && it.amount != null }
         conversationState.stated = KaiStatedPayment(person, amount, direction)
+        conversationState.duplicateAskedTurn = -1
+        conversationState.pendingPastDate = null
     }
 
     private fun askDueDate(person: String, amount: BigDecimal, direction: KaiConversationPaymentDirection, lang: KaiLang): KaiTurn {
@@ -1268,6 +1394,18 @@ class KaiAgent(
         }
         val amount = conversationState.pendingAmount ?: return null
 
+        // "2026" / "adutha varusham" after "September 30 2026 already thaandiduchu — andha date-aa, adutha varusham-aa?".
+        conversationState.pendingPastDate?.let { past ->
+            yearPicked(text, past)?.let { picked ->
+                conversationState.pendingPastDate = null
+                return dueDateResolved(picked, entity, amount, direction, lang, text)
+            }
+            if (justAsked && KaiConversationSemantics.confirmsDraft(text)) {
+                conversationState.pendingAskedTurn = conversationState.conversationTurn
+                return askWhichYear(past, lang)
+            }
+        }
+
         // "10": which month? asked, never guessed.
         if (justAsked) dayOnly.find(text)?.groupValues?.get(1)?.toIntOrNull()?.takeIf { it in 1..31 }?.let { day ->
             conversationState.pendingMonthOffset?.let { offset -> return dueDateResolved(monthDay(today, offset, day), entity, amount, direction, lang, text) }
@@ -1301,7 +1439,14 @@ class KaiAgent(
             else say(lang, KaiMood.CLARIFY, null, ta = "இந்த மாதம் எந்த தேதி Owner?", tl = "Owner, indha maasam endha thethi?", en = "Which day this month, Owner?")
         }
         // A full date: "next month 10", "indha month 10", "October 10", "naalaikku", "Friday" (KaiTime).
-        KaiTime.parse(text, at)?.takeIf { it.daySpecified }?.let { return dueDateResolved(it.at.toLocalDate(), entity, amount, direction, lang, text) }
+        KaiTime.parse(text, at)?.takeIf { it.daySpecified }?.let { t ->
+            val date = t.at.toLocalDate()
+            justPassed(date, text, today, amount)?.let { past ->
+                conversationState.pendingAskedTurn = conversationState.conversationTurn
+                return askWhichYear(past, lang)
+            }
+            return dueDateResolved(date, entity, amount, direction, lang, text)
+        }
         // "amount 5000", "500 dhaan": the amount was wrong — corrected, the date is still asked.
         if (justAsked) KaiConversationSemantics.correctionAmount(text)?.takeIf { it.compareTo(amount) != 0 && it > BigDecimal(31) }?.let { corrected ->
             conversationState.pendingAmount = corrected
@@ -1310,6 +1455,49 @@ class KaiAgent(
             return askDueDate(entity, corrected, direction, lang)
         }
         return null
+    }
+
+    private val yearWords = Regex("""(?i)varusham|varusam|varusa|year|வருஷ|வருட""")
+    private val yearNumber = Regex("""(?<![\d,.])20[2-9]\d(?![\d,.])""")
+
+    /**
+     * "September 30" said on 8 October: the next September 30 is a year away, and this year's has just passed.
+     * That day this year (passed within the last month) is returned so Kai can ask which one — a far-off one is clear.
+     */
+    private fun justPassed(date: LocalDate, text: String, today: LocalDate, amount: BigDecimal? = null): LocalDate? {
+        // "2026" said is a year — unless it is the amount itself ("Kumar enakku 2000 tharanum September 30").
+        val yearSaid = yearWords.containsMatchIn(text) || yearNumber.findAll(text).any { amount == null || it.value.toBigDecimal().compareTo(amount) != 0 }
+        if (date.year <= today.year || yearSaid) return null
+        val past = runCatching { LocalDate.of(today.year, date.month, date.dayOfMonth) }.getOrNull() ?: return null
+        return past.takeIf { it.isBefore(today) && java.time.temporal.ChronoUnit.DAYS.between(it, today) <= 31 }
+    }
+
+    private fun askWhichYear(past: LocalDate, lang: KaiLang): KaiTurn {
+        conversationState.pendingPastDate = past
+        conversationState.currentAction = "ASK_DUE_YEAR"
+        val today = now().toLocalDate()
+        val next = past.plusYears(1)
+        val p = "${KaiFormat.date(past, lang, today)} ${past.year}"
+        val n = KaiFormat.date(next, lang, today).let { if (it.contains(next.year.toString())) it else "$it ${next.year}" }
+        return say(lang, KaiMood.CLARIFY, null,
+            ta = "Owner, $p ஏற்கனவே தாண்டிடுச்சு. அந்த தேதியா (${past.year}), இல்ல அடுத்த வருஷம் $n-ஆ?",
+            tl = "Owner, $p already thaandiduchu. Andha date-aa (${past.year}), illa adutha varusham $n-aa?",
+            en = "Owner, $p has already passed. That date (${past.year}), or next year's $n?")
+    }
+
+    private val nextYearWords = Regex("""(?i)adutha\s*(?:varusham|varusam|year)|next\s*year|varra\s*varusham|vara\s*varusham|அடுத்த\s*வருஷ|அடுத்த\s*வருட""")
+    private val thisYearWords = Regex("""(?i)indha\s*(?:varusham|varusam|year)|this\s*year|andha\s*date|adhey\s*date|adhe\s*date|pona|ponadhu|pochu|thaandi|already|munnaadi|பழைய|இந்த\s*வருஷ|அந்த\s*தேதி|போன""")
+
+    /** "2026" / "andha date" → that (passed) day; "2027" / "adutha varusham" → next year's. Null: not an answer to it. */
+    private fun yearPicked(text: String, past: LocalDate): LocalDate? {
+        val next = past.plusYears(1)
+        val saysPast = text.contains(past.year.toString()) || thisYearWords.containsMatchIn(text)
+        val saysNext = text.contains(next.year.toString()) || nextYearWords.containsMatchIn(text)
+        return when {
+            saysNext && !saysPast -> next
+            saysPast && !saysNext -> past
+            else -> null
+        }
     }
 
     private fun monthDay(today: LocalDate, offset: Int, day: Int): LocalDate {
@@ -1336,6 +1524,7 @@ class KaiAgent(
         conversationState.pendingPaymentDirection = null
         conversationState.pendingDay = null
         conversationState.pendingMonthOffset = null
+        conversationState.pendingPastDate = null
         conversationState.lastDate = date
         conversationState.stated = conversationState.stated?.takeIf { it.person == entity }?.copy(amount = amount, dueDate = date)
         conversationState.lastPerson = entity
@@ -1398,6 +1587,59 @@ class KaiAgent(
         return draftStated(st, l, said)
     }
 
+    private fun askIfDuplicate(st: KaiStatedPayment, amount: BigDecimal, lang: KaiLang): KaiTurn {
+        conversationState.duplicateAskedTurn = conversationState.conversationTurn
+        val who = st.label ?: st.person
+        val a = KaiFormat.rupees(amount.toDouble())
+        return if (st.direction == KaiConversationPaymentDirection.PAYMENT_OUT) say(lang, KaiMood.CLARIFY, null,
+            ta = "Owner, Records-ல ஏற்கனவே $who-க்கு $a கொடுக்கணும்-னு இருக்கு. அதே $a-ஆ, இல்ல புது $a-ஆ?",
+            tl = "Owner, records-la already $who-ku $a kudukkanum-nu irukku. Adhey $a-aa, illa pudhu $a-aa?",
+            en = "Owner, the records already show you owe $who $a. Is it the same $a, or a new $a?")
+        else say(lang, KaiMood.CLARIFY, null,
+            ta = "Owner, Records-ல ஏற்கனவே $who $a தரணும்-னு இருக்கு. அதே $a-ஆ, இல்ல புது $a-ஆ?",
+            tl = "Owner, records-la already $who $a tharanum-nu irukku. Adhey $a-aa, illa pudhu $a-aa?",
+            en = "Owner, the records already show $who owes you $a. Is it the same $a, or a new $a?")
+    }
+
+    private val newDebtWords = Regex("""(?i)(?<![\p{L}])(pudhu|pudhusu|pudhusa|pudhusaa|puthu|puthusu|puthusa|new|innoru|another|vera|veru|extra|separate|thaniya|thaniyaa)(?![\p{L}])|புது|புதுசு|இன்னொரு|வேற""")
+    private val sameAmountWords = Regex("""(?i)(?<![\p{L}])(adhey|adhe|athey|athe|same|already|pazhaya|pazhasu|old|adhu\s*dhaan|adhu\s*than|athu\s*than|athu\s*dhaan)(?![\p{L}])|அதே|அது\s*தான்|பழைய|ஏற்கனவே""")
+
+    /** The answer to [askIfDuplicate]: a new amount goes to the draft; the same one adds nothing. */
+    private suspend fun duplicateAnswer(said: String, lang: KaiLang): KaiTurn? {
+        val asked = conversationState.duplicateAskedTurn
+        val st = conversationState.stated
+        if (asked < 0 || st == null) { conversationState.duplicateAskedTurn = -1; return null }
+        val l = shortLang(said, lang)
+        val isNew = newDebtWords.containsMatchIn(said)
+        val isSame = sameAmountWords.containsMatchIn(said)
+        if (isNew && !isSame) {
+            conversationState.duplicateAskedTurn = -1
+            val confirmed = st.copy(newConfirmed = true)
+            conversationState.stated = confirmed
+            return draftStated(confirmed, l, said)
+        }
+        if (isSame && !isNew) {
+            conversationState.duplicateAskedTurn = -1
+            conversationState.stated = null
+            val who = st.label ?: st.person
+            val a = st.amount?.let { KaiFormat.rupees(it.toDouble()) }.orEmpty()
+            tools.log("payment", "conversation", "same amount as the books — nothing added", ActionStatus.ANSWERED, null, said)
+            return say(l, KaiMood.HAPPY, null,
+                ta = "சரி Owner, புதுசா எதுவும் சேர்க்கல. Records-ல $who $a அப்படியே இருக்கு.",
+                tl = "Seri Owner, pudhusa edhuvum add pannala. Records-la $who $a apdiye irukku.",
+                en = "Okay Owner, nothing new added. $who's $a stays as it is in the records.")
+        }
+        // "ama" / "seri" says neither: the two choices again — never a guess.
+        if (conversationState.conversationTurn == asked + 1 && (KaiConversationSemantics.confirmsDraft(said) || isNew && isSame)) {
+            conversationState.duplicateAskedTurn = conversationState.conversationTurn
+            val a = st.amount?.let { KaiFormat.rupees(it.toDouble()) }.orEmpty()
+            return say(l, KaiMood.CLARIFY, null, ta = "அதே $a-ஆ, புது $a-ஆ Owner?", tl = "Owner, adhey $a-aa, pudhu $a-aa?", en = "The same $a or a new $a, Owner?")
+        }
+        // Anything else moves on; the stated amount stays unsaved (asked again on the next save).
+        conversationState.duplicateAskedTurn = -1
+        return null
+    }
+
     private suspend fun draftStated(st: KaiStatedPayment, lang: KaiLang, said: String): KaiTurn {
         val amount = st.amount ?: run {
             conversationState.pendingQuestion = KaiPendingQuestion.AMOUNT
@@ -1415,6 +1657,8 @@ class KaiAgent(
         conversationState.pendingQuestion = null
         conversationState.pendingDay = null
         conversationState.pendingMonthOffset = null
+        // The very same amount is already in the books for them: the same debt said again, or a new one? Asked, never assumed.
+        if (!st.newConfirmed) recordedPending(st)?.takeIf { it.compareTo(amount) == 0 }?.let { return askIfDuplicate(st, amount, lang) }
         val receivable = st.direction == KaiConversationPaymentDirection.PAYMENT_IN
         val kind = if (receivable) PlanKind.CREDIT_GIVEN else PlanKind.DEBIT_TAKEN
         val r = PaymentRequest(newKey(), st.person, amount, outgoing = receivable, mode = PaymentMode.CASH, said = said, dueDate = st.dueDate, stated = true)

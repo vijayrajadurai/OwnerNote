@@ -263,7 +263,7 @@ object KaiUnderstanding {
         "receive", "received", "collect", "panniten", "pannunga", "pannanum", "irukku", "iruku", "owes", "owe", "me", "i", "to",
         "from", "payment", "paid", "pay", "on", "by", "before", "date", "the", "a", "an", "of", "and", "is", "has", "will", "give",
         "get", "baaki", "bakki", "innaikku", "naalaikku", "today", "tomorrow", "month", "week", "entry", "add", "owner", "sir",
-        "naan", "enakku", "ennaku", "avan", "aval", "avar", "kaasu", "panam", "amount", "vandhu", "vandhuchu", "koduthen", "kuduthen",
+        "naan", "na", "naa", "nan", "enakku", "ennaku", "enaku", "yenakku", "yenaku", "yennaku", "yenak", "avan", "aval", "avar", "kaasu", "panam", "amount", "vandhu", "vandhuchu", "koduthen", "kuduthen",
         "kuduthuten", "vaangi", "vangi", "k", "th", "st", "nd", "rd",
         // Common English and question words.
         "have", "need", "must", "should", "got", "gave", "lent", "lend", "borrowed", "money", "cash", "for", "with", "want",

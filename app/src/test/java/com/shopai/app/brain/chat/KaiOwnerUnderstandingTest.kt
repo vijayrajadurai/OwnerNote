@@ -175,7 +175,8 @@ class KaiOwnerUnderstandingTest {
     @Test
     fun afterSavingTheSavedDateIsSaidBack() {
         val k = kai()
-        k.chat("Kumar enaku 3000 tharanum", "next month 10", "save panniko", "seri")
+        // "pudhusu": the books already hold Kumar ₹3,000, so Kai asks same-or-new before the draft.
+        k.chat("Kumar enaku 3000 tharanum", "next month 10", "save panniko", "pudhusu", "seri")
         val t = k.say("avan eppa tharuvaan?")
         assertEquals("Owner, Kumar ₹3,000 adutha maasam 10-m thethi tharuvaar.", t.text())
     }

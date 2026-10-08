@@ -114,9 +114,16 @@ class KaiBusinessBrain(
     private suspend fun personAnswer(query: ChatQuery, ledger: BusinessSnapshot, lang: KaiLang, day: LocalDate): ChatReply {
         val party: PartyFacts = when (val ref = query.person) {
             is PersonRef.Named -> {
-                val matches = ledger.find(ref.name).distinctBy { it.id }
+                val all = ledger.find(ref.name).distinctBy { it.id }
+                // "naan Kumar-ku evlo tharanum?" asks what the owner owes Kumar: only that side of the books answers it.
+                val matches = query.side?.let { side -> all.filter { it.side == side } } ?: all
                 when {
-                    matches.isEmpty() -> return reply(query.intent, KaiMood.CLARIFY, lang, notFound(ref.name, lang))
+                    all.isEmpty() -> return reply(query.intent, KaiMood.CLARIFY, lang, notFound(ref.name, lang))
+                    matches.isEmpty() -> {
+                        // Still the person being talked about: "due eppa?" next is about them.
+                        lastParty = all.first()
+                        return noneOnThatSide(all.first().name, query.side!!, query.intent, lang)
+                    }
                     matches.size > 1 -> {
                         choices = matches
                         choiceQuery = query
@@ -126,8 +133,13 @@ class KaiBusinessBrain(
                 }
             }
             // "avan" / a follow-up with no name: the person just talked about (refreshed from the ledger).
-            PersonRef.Pronoun, PersonRef.None -> lastParty?.let { p -> ledger.parties.firstOrNull { it.id == p.id } ?: p }
-                ?: return reply(query.intent, KaiMood.CLARIFY, lang, whoDoYouMean(lang))
+            PersonRef.Pronoun, PersonRef.None -> {
+                val last = lastParty?.let { p -> ledger.parties.firstOrNull { it.id == p.id } ?: p }
+                    ?: return reply(query.intent, KaiMood.CLARIFY, lang, whoDoYouMean(lang))
+                val side = query.side
+                if (side == null || last.side == side) last
+                else ledger.find(last.name).firstOrNull { it.side == side } ?: return noneOnThatSide(last.name, side, query.intent, lang)
+            }
         }
         lastParty = party
         return answerAbout(party, query, lang, day)
@@ -151,6 +163,19 @@ class KaiBusinessBrain(
         }
     }
 
+    /** The side the owner asked about has nothing pending — said for that side only, never the other side's amount. */
+    private fun noneOnThatSide(name: String, side: Direction, intent: ChatIntent, lang: KaiLang): ChatReply =
+        if (side == Direction.PAYABLE) reply(intent, KaiMood.HAPPY, lang, pick3(lang,
+            ta = listOf("ஓனர், $name-க்கு நீங்க கொடுக்கணும்-னு பாக்கி எதுவும் இல்ல."),
+            tl = listOf("Owner, $name-ku neenga kudukkanum-nu pending amount illa."),
+            en = listOf("Owner, you don't owe $name anything."),
+        ))
+        else reply(intent, KaiMood.NEUTRAL, lang, pick3(lang,
+            ta = listOf("ஓனர், $name உங்களுக்கு தரணும்-னு பாக்கி எதுவும் இல்ல."),
+            tl = listOf("Owner, $name ungalukku tharanum-nu pending amount illa."),
+            en = listOf("Owner, $name doesn't owe you anything."),
+        ))
+
     private fun balance(p: PartyFacts, said: Double?, lang: KaiLang, day: LocalDate, intent: ChatIntent): ChatReply {
         val n = p.name
         val a = KaiFormat.rupees(p.pending)
@@ -161,7 +186,7 @@ class KaiBusinessBrain(
                 en = listOf("Nothing is pending with $n, Owner."),
             ))
         }
-        val due = p.nextDue?.let { dueText(it, lang, day) }
+        // An amount question gets the amount; the due date / overdue is for "eppa?" (never "account clear" for a passed date).
         val base = if (p.side == Direction.RECEIVABLE) pick3(lang,
             ta = listOf("$n உங்களுக்கு $a தரணும் ஓனர்.", "ஓனர், $n பாக்கி $a இருக்கு."),
             tl = listOf("$n ungalukku $a tharanum owner.", "Owner, $n balance $a pending irukku.", "$n kitta $a receive panna vendiyirukku owner."),
@@ -172,7 +197,7 @@ class KaiBusinessBrain(
             en = listOf("You owe $n $a, Owner."),
         )
         return reply(intent, if (p.side == Direction.RECEIVABLE) KaiMood.CREDIT else KaiMood.DEBIT, lang,
-            base + (due?.let { " " + it.sentence } ?: "") + mismatch(said, p.pending, lang))
+            base + mismatch(said, p.pending, lang))
     }
 
     private suspend fun dueDate(p: PartyFacts, said: Double?, lang: KaiLang, day: LocalDate, intent: ChatIntent): ChatReply {
@@ -658,16 +683,6 @@ class KaiBusinessBrain(
     }
 
     // ------------------------------------------------------------ helpers
-
-    private data class Due(val sentence: String)
-
-    private fun dueText(date: LocalDate, lang: KaiLang, day: LocalDate): Due = Due(
-        when (lang) {
-            KaiLang.TAMIL -> if (date.isBefore(day)) "${KaiFormat.date(date, lang, day)} due — தேதி தாண்டிடுச்சு." else "${KaiFormat.date(date, lang, day)} due."
-            KaiLang.TANGLISH -> if (date.isBefore(day)) "${KaiFormat.date(date, lang, day)} due — date thaandiduchu." else "${KaiFormat.date(date, lang, day)} due."
-            KaiLang.ENGLISH -> if (date.isBefore(day)) "Due ${KaiFormat.date(date, lang, day)} — overdue." else "Due ${KaiFormat.date(date, lang, day)}."
-        },
-    )
 
     private fun dueSuffix(p: PartyFacts, lang: KaiLang, day: LocalDate) =
         p.nextDue?.let { if (lang == KaiLang.ENGLISH) " (due ${KaiFormat.date(it, lang, day)})" else " — ${KaiFormat.date(it, lang, day)}" }.orEmpty()

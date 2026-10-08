@@ -340,7 +340,9 @@ class KaiChatChecklistTest {
         assertEquals("Seri Owner, Kumar kitta irundhu ₹3,000 adutha maasam 10-m thethi vaanganum.",
             k.say("Kumar enakku 3000 tharanum, next month 10-ku").reply.text)
         has(k.say("avanukku remind pannu"), "remind")
-        val d = k.say("seri save panniko")
+        // The books already have Kumar ₹3,000: Kai asks whether this is the same ₹3,000 or a new one.
+        has(k.say("seri save panniko"), "Adhey ₹3,000-aa, illa pudhu ₹3,000-aa?")
+        val d = k.say("pudhusu")
         assertEquals(BigDecimal("3000.00"), d.plan!!.amount)
         assertEquals(LocalDate.of(2026, 11, 10), d.plan.dueDate)
         nothingWritten()

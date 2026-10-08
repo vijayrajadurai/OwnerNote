@@ -69,6 +69,11 @@ data class ChatQuery(
     val personQuestion: Boolean = false,
     /** For [ChatIntent.DAILY_CASH]: which figure. */
     val cashAsk: CashAsk? = null,
+    /**
+     * Which side the owner asked about: "Kumar enakku evlo tharanum?" (they owe the owner) vs "naan Kumar-ku evlo
+     * tharanum?" (the owner owes them). Null: either side ("Kumar balance evlo?").
+     */
+    val side: com.shopai.app.brain.Direction? = null,
 )
 
 /**
@@ -106,7 +111,7 @@ object KaiChatUnderstanding {
             " vandhucha", " vanthucha", " paid ", " has paid", " pay pannana", " ஏற்கனவே ", " கொடுத்தான", " கொடுத்தார")
         val lastPayment = has(" last payment", " kadaisi", " kadaisiya", " recent payment", " latest payment", " கடைசி")
         val history = has(" history", " details", " statement", " transactions", " varalaaru", " kanakku ", " full kanakku", " விவரம்", " கணக்கு ")
-        val due = has(" eppo", " eppa ", " when ", " due ", " date ", " எப்போ", " எப்ப ")
+        val due = has(" eppo", " eppa ", " when ", " due ", " date ", " date-la", " date la", " thethi", " எப்போ", " எப்ப ", " தேதி")
         val balance = has(" evlo", " evvalavu", " how much", " balance", " pending", " baaki", " bakki", " tharanum", " kudukkanum", " kodukkanum",
             " varanum", " owe", " outstanding", " எவ்வளவு", " பாக்கி", " தரணும்", " கொடுக்கணும்")
         val personWords = paidAlready || lastPayment || history || due
@@ -124,7 +129,13 @@ object KaiChatUnderstanding {
                     balance || person != PersonRef.None -> ChatIntent.CUSTOMER_BALANCE
                     else -> ChatIntent.UNKNOWN
                 }
-                return ChatQuery(intent, person, amount, period, personQuestion = personWords)
+                // The same grammar as a payment decides the side asked about — never the verb alone.
+                val side = if (intent == ChatIntent.CUSTOMER_BALANCE) when (com.shopai.app.brain.tools.KaiPaymentDirection.explicitOf(lower)) {
+                    com.shopai.app.brain.tools.OwedDirection.RECEIVABLE -> com.shopai.app.brain.Direction.RECEIVABLE
+                    com.shopai.app.brain.tools.OwedDirection.PAYABLE -> com.shopai.app.brain.Direction.PAYABLE
+                    null -> null
+                } else null
+                return ChatQuery(intent, person, amount, period, personQuestion = personWords, side = side)
             }
         }
 
