@@ -98,7 +98,7 @@ Write-Host ""
 Write-Host "================ KAI REMINDER VOICE - LIVE RESULT ================" -ForegroundColor Cyan
 $summary = Join-Path $out "summary.txt"
 if (Test-Path $summary) {
-    Get-Content $summary -Encoding UTF8 | Where-Object { $_ -match "RESULT=|JOIN_GAPS_MS|TURN1|voiceStoppedAfterMs|afterAnswer|NEXT_TURN|NOT_MEASURED|log: |remindersWithThisTask|RANG|sarvamClipPadding" } | ForEach-Object { Write-Host $_ }
+    Get-Content $summary -Encoding UTF8 | Where-Object { $_ -match "RESULT=|JOIN_GAPS_MS|turn1 parts|TURN1|voiceStoppedAfterMs|afterAnswer|NEXT_TURN|NOT_MEASURED|log: |remindersWithThisTask|RANG|sarvamClipPadding" } | ForEach-Object { Write-Host $_ }
 } else {
     Write-Host "summary.txt varala - test odala. instrument output:" -ForegroundColor Red
     $run | Select-Object -Last 30 | ForEach-Object { Write-Host $_ }
@@ -107,12 +107,15 @@ if (Test-Path $summary) {
 # Each test: OK / FAIL with the first line of its error.
 $text = ($run -join "`n")
 $run | Where-Object { $_ -match "^\d+\) v\d_" -or $_ -match "(AssertionError|Exception): " } | Select-Object -First 20 | ForEach-Object { Write-Host ("FAIL " + $_.Trim()) -ForegroundColor Red }
-if ($crash) { Write-Host "CRASH LOG:" -ForegroundColor Red; $crash | Select-Object -First 40 | ForEach-Object { Write-Host $_ } }
+# Only OUR app's crashes count. The emulator's own services (e.g. android.hardware.uwb-service) crash on some images - not the app.
+$appCrash = $crash | Select-String -Pattern "ownernote|shopai"
+if ($appCrash) { Write-Host "APP CRASH LOG:" -ForegroundColor Red; $appCrash | Select-Object -First 40 | ForEach-Object { Write-Host $_ } }
+elseif ($crash) { Write-Host ("Note: emulator system crash log has " + @($crash).Count + " lines (not the app - e.g. uwb-service). Ignored.") -ForegroundColor DarkGray }
 
 Write-Host ""
 Write-Host "Results folder: $out  (turn1 .wav files = Kai's first turn exactly as joined - double-click to listen)"
 if (-not (Test-Path $summary)) { Write-Host "FINAL: BLOCKER" -ForegroundColor Red }
-elseif ($text -match "Process crashed" -or $crash) { Write-Host "FINAL: BUG (crash)" -ForegroundColor Red }
+elseif ($text -match "Process crashed" -or $appCrash) { Write-Host "FINAL: BUG (app crash)" -ForegroundColor Red }
 elseif ($text -match "BLOCKER") { Write-Host "FINAL: BLOCKER" -ForegroundColor Red }
 elseif ($text -match "FAILURES!!!") { Write-Host "FINAL: BUG" -ForegroundColor Red }
 elseif ($text -match "OK \(\d+ tests?\)") { Write-Host "FINAL: PASS" -ForegroundColor Green }

@@ -29,28 +29,28 @@ class KaiUrgentVoiceScriptTest {
         val r = reminder()
         assertEquals(
             listOf(
-                "ஓனர்... Praba-க்கு கால் பண்ண வேண்டிய நேரம் ஆச்சு. கால் பண்ணுங்க. கால் பண்ணலாமா?",
-                "சீக்கிரம் கால் பண்ணுங்க ஓனர்.",
-                "ஓனர், கால் பண்ணலாமா?",
+                "ஓனர்... பிரபாக்கு கால் பண்ண வேண்டிய நேரம் ஆச்சு. கால் பண்ணிடுங்க. இப்போ பண்ணலாமா?",
+                "சீக்கிரம் கால் பண்ணிடுங்க ஓனர்.",
+                "ஓனர், இப்போ பண்ணலாமா?",
                 "மறக்காதீங்க ஓனர்.",
                 "ஓனர், இதை இப்போ முடிச்சிடலாமா?",
             ),
             KaiUrgentVoiceScript.lines(r).map { it.text },
         )
         assertEquals("ta-IN", KaiUrgentVoiceScript.languageCode(KaiLang.TANGLISH))
-        // The opening is one turn of three sentences: a short breath, then a beat before the question.
+        // The opening is one turn: the statement (its sentences in one request, so they flow), a beat, the question.
         val opening = KaiUrgentVoiceScript.lines(r).first()
-        assertEquals(listOf("ஓனர்... Praba-க்கு கால் பண்ண வேண்டிய நேரம் ஆச்சு.", "கால் பண்ணுங்க.", "கால் பண்ணலாமா?"), opening.parts)
-        assertEquals(listOf(KaiUrgentVoiceScript.GAP_AFTER_FIRST_MS, KaiUrgentVoiceScript.GAP_BEFORE_QUESTION_MS), opening.gapsMs)
+        assertEquals(listOf("ஓனர்... பிரபாக்கு கால் பண்ண வேண்டிய நேரம் ஆச்சு. கால் பண்ணிடுங்க.", "இப்போ பண்ணலாமா?"), opening.parts)
+        assertEquals(listOf(KaiUrgentVoiceScript.GAP_BEFORE_QUESTION_MS), opening.gapsMs)
         // The lines that ask bring the hand out; "Seekiram" is attention, not a gesture.
         assertEquals(listOf(true, false, true, false, true), KaiUrgentVoiceScript.lines(r).map { it.gesture })
         // The same words the owner reads (Tanglish on screen), in the spec's order.
         assertEquals(
-            listOf("Seekiram call pannunga Owner.", "Owner, call pannalama?", "Marakkadheenga Owner."),
+            listOf("Seekiram call pannidunga Owner.", "Owner, ippo pannalama?", "Marakkadheenga Owner."),
             KaiUrgentVoiceScript.written(r, KaiLang.TANGLISH).drop(1).take(3).map { it.text },
         )
         // The name once, not in every line.
-        assertEquals(1, KaiUrgentVoiceScript.lines(r).count { it.text.contains("Praba") })
+        assertEquals(1, KaiUrgentVoiceScript.lines(r).count { it.text.contains("பிரபா") })
     }
 
     // No Latin word is left for the Tamil voice to stumble on — only names.
@@ -66,7 +66,7 @@ class KaiUrgentVoiceScriptTest {
             }
         }
         // English owners hear English.
-        assertEquals(listOf("Owner... it's time to call Praba.", "Please call.", "Shall we call?"), KaiUrgentVoiceScript.lines(reminder(lang = KaiLang.ENGLISH))[0].parts)
+        assertEquals(listOf("Owner... it's time to call Praba. Please call.", "Shall we call now?"), KaiUrgentVoiceScript.lines(reminder(lang = KaiLang.ENGLISH))[0].parts)
         assertEquals("Let's call soon, Owner.", KaiUrgentVoiceScript.lines(reminder(lang = KaiLang.ENGLISH))[1].text)
         assertEquals("Okay Owner.", KaiUrgentVoiceScript.doneAck(KaiLang.ENGLISH))
     }
@@ -96,9 +96,9 @@ class KaiUrgentVoiceScriptTest {
     fun shortAnswersNeverClaimACall() {
         val r = reminder()
         // Spoken in Tamil script for a Tanglish owner (the spec's "Seri Owner, Praba-ku call screen open pannuren.").
-        assertEquals("சரி ஓனர், Praba-க்கு கால் ஸ்க்ரீன் திறக்குறேன்.", KaiUrgentVoiceScript.callAck(r))
+        assertEquals("சரி ஓனர், பிரபாக்கு கால் ஸ்க்ரீன் திறக்குறேன்.", KaiUrgentVoiceScript.callAck(r))
         assertEquals("சரி ஓனர்.", KaiUrgentVoiceScript.doneAck(KaiLang.TANGLISH))
-        assertEquals("சரி ஓனர், 5 நிமிஷம் கழிச்சு நினைவூட்டுறேன்.", KaiUrgentVoiceScript.snoozeAck(5, KaiLang.TANGLISH))
+        assertEquals("சரி ஓனர், அஞ்சு நிமிஷம் கழிச்சு மறுபடியும் சொல்றேன்.", KaiUrgentVoiceScript.snoozeAck(5, KaiLang.TANGLISH))
         assertEquals("சரி ஓனர், கால் ஸ்க்ரீன் திறக்குறேன்.", KaiUrgentVoiceScript.callAck(reminder(person = null)))
         assertEquals("Seri Owner, Praba-ku call screen open pannuren.", KaiUrgentVoiceScript.callAckWritten(r, KaiLang.TANGLISH))
         for (lang in KaiLang.values()) {

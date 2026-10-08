@@ -3,9 +3,9 @@ package com.shopai.app.brain.tools
 import com.shopai.app.brain.KaiLang
 
 /**
- * One thing Kai says while a reminder rings — one **turn**: its [parts] (sentences) are spoken as
- * one continuous clip with short, exact silences between them ([gapsMs]), like a person who
- * pauses for breath, not a speaker restarting for every sentence.
+ * One thing Kai says while a reminder rings — one **turn**, played as one continuous clip: the
+ * statement ([parts] [0], its sentences synthesized together so they flow like one person talking)
+ * and, after a short beat ([gapsMs]), the question.
  */
 data class VoiceLine(
     /** The whole turn as one text (logs, tests, and the fallback when the parts can't be joined). */
@@ -18,36 +18,31 @@ data class VoiceLine(
 )
 
 /**
- * What Kai keeps saying while a reminder rings, until the owner acts — like a person gently
- * but persistently reminding, never a recording on repeat. The first turn says everything at
- * once, with only a breath between the sentences:
+ * What Kai keeps saying while a reminder rings, until the owner acts — the way a person in the shop
+ * would remind, in spoken Tamil, gently but persistently:
  *
- *   "Owner... Praba-ku call panna vendiya neram aachu." ~0.35 s "Call pannunga." ~0.9 s "Call pannalama?"
- *        … 6.5 s …  "Seekiram call pannunga Owner."
- *        … 9 s …    "Owner, call pannalama?"
+ *   "Owner... Praba-ku call panna vendiya neram aachu. Call pannidunga."  ~0.9 s  "Ippo pannalama?"
+ *        … 6.5 s …  "Seekiram call pannidunga Owner."
+ *        … 9 s …    "Owner, ippo pannalama?"
  *        … 11 s …   "Marakkadheenga Owner."
  *        … 13 s …   "Owner, idha ippo mudichidalaama?"
  *        … then the follow-ups again, longer apart — never the same line twice in a row.
  *
- * The name is said once (the first sentence), not in every line. The words follow the reminder's
- * kind ([KaiReminderKind]: call, payment, personal, task…) and get more direct on later attempts
- * (attempt 1 natural, 2 more direct, 3+ urgent — never angry); the attempts themselves are the
- * reminder engine's, unchanged.
+ * The statement's sentences are ONE request to the voice, so their rhythm and intonation run on
+ * like speech (separately made sentences sound like three announcements). The name is said once.
+ * The words follow the reminder's kind ([KaiReminderKind]) and get more direct on later attempts
+ * (1 natural, 2 more direct, 3+ urgent — never angry); the attempts themselves are the reminder
+ * engine's, unchanged. Pauses between turns are counted from the end of the previous turn.
+ * Call / Done / Snooze end it at once with one short answer. Plain rules, no AI.
  *
- * Pauses between turns are counted from the end of the previous turn. Call / Done / Snooze end it at
- * once with one short answer. Plain rules, no AI.
- *
- * The voice is the app's natural Sarvam voice, which reads Tamil **script** (like every other Kai
- * reply — see KaiResponder): for Tamil and Tanglish owners the words are spoken in Tamil script
- * ([spoken]), so the screen stays Tanglish while the voice sounds like a person, not a machine
- * reading Latin letters. English stays English.
+ * The voice is the app's natural Sarvam voice, which reads Tamil **script**: for Tamil and
+ * Tanglish owners every word is spoken in Tamil letters ([spoken]) — names too, with the spoken
+ * case ending ("Kumar-ku" → "குமாருக்கு"), and hours as people say them ("நாலு மணி", "எட்டரை மணி").
+ * The screen stays Tanglish. English stays English.
  */
 object KaiUrgentVoiceScript {
 
-    /** The breath after the first sentence of a turn (the joined clip adds ~0.1 s of the clips' own edges). */
-    const val GAP_AFTER_FIRST_MS = 300L
-
-    /** The beat before the question at the end of a turn. */
+    /** The beat before the question at the end of a turn (the joined clip adds ~0.1 s of the clips' own edges). */
     const val GAP_BEFORE_QUESTION_MS = 850L
 
     private fun pick(lang: KaiLang, ta: String, tl: String, en: String) = when (lang) {
@@ -63,19 +58,19 @@ object KaiUrgentVoiceScript {
 
     /**
      * English and Tanglish words inside Tamil lines (also the owner's own task words, e.g. "Praba-ku call panna",
-     * "Paiyana school-la irundhu kootitu vara"), as a Tamil speaker says them. Names and anything unknown stay
-     * as they are. Words, never whole phrases.
+     * "Paiyana school-la irundhu kootitu vara"), as a Tamil speaker says them. Words, never whole phrases.
      */
     private val spokenWords = listOf(
         "call screen" to "கால் ஸ்க்ரீன்", "call" to "கால்", "message" to "மெசேஜ்", "reminder" to "ரிமைண்டர்",
         "pending" to "பெண்டிங்", "payment" to "பேமெண்ட்", "collection" to "கலெக்ஷன்", "collect" to "கலெக்ட்", "done" to "டன்",
         "stock" to "ஸ்டாக்", "order" to "ஆர்டர்", "whatsapp" to "வாட்ஸ்அப்", "open" to "ஓபன்", "check" to "செக்",
         "pannanum" to "பண்ணணும்", "panna" to "பண்ண", "pannu" to "பண்ணு", "pannunga" to "பண்ணுங்க",
-        "vaanganum" to "வாங்கணும்", "vaanga" to "வாங்க", "vanganum" to "வாங்கணும்", "kudukkanum" to "குடுக்கணும்",
-        "kudu" to "குடு", "anuppanum" to "அனுப்பணும்", "kitta" to "கிட்ட", "kaasu" to "காசு", "panam" to "பணம்",
+        "vaanganum" to "வாங்கணும்", "vaanga" to "வாங்க", "vanganum" to "வாங்கணும்", "kudukkanum" to "குடுக்கணும்", "kudukka" to "குடுக்க",
+        "kudu" to "குடு", "anuppanum" to "அனுப்பணும்", "anuppa" to "அனுப்ப", "kitta" to "கிட்ட", "kaasu" to "காசு", "panam" to "பணம்",
+        "mudikkanum" to "முடிக்கணும்", "paakkanum" to "பாக்கணும்", "vaikkanum" to "வைக்கணும்",
         // The owner's own life: family, school, health, home, errands.
         "paiyana" to "பையனை", "paiyan" to "பையன்", "ponna" to "பொண்ணை", "ponnu" to "பொண்ணு", "pasanga" to "பசங்க",
-        "amma" to "அம்மா", "appa" to "அப்பா", "wife" to "வைஃப்", "son" to "சன்",
+        "amma" to "அம்மா", "appa" to "அப்பா", "wife" to "வைஃப்", "son" to "பையன்", "daughter" to "பொண்ணு",
         "school" to "ஸ்கூல்", "college" to "காலேஜ்", "tuition" to "ட்யூஷன்", "office" to "ஆபீஸ்",
         "documents" to "டாக்குமெண்ட்ஸ்", "document" to "டாக்குமெண்ட்", "medicine" to "மெடிசின்", "tablet" to "டேப்லெட்",
         "maathirai" to "மாத்திரை", "doctor" to "டாக்டர்", "hospital" to "ஹாஸ்பிடல்", "gym" to "ஜிம்", "walking" to "வாக்கிங்",
@@ -83,33 +78,45 @@ object KaiUrgentVoiceScript {
         "current" to "கரண்ட்", "bill" to "பில்", "pay" to "பே", "rent" to "ரென்ட்", "pickup" to "பிக்கப்", "drop" to "டிராப்",
         "irundhu" to "இருந்து", "kootitu" to "கூட்டிட்டு", "kooptu" to "கூப்டு", "eduthutu" to "எடுத்துட்டு", "kondu" to "கொண்டு",
         "vara" to "வர", "varanum" to "வரணும்", "poga" to "போக", "poganum" to "போகணும்", "kelamba" to "கிளம்ப", "kelambanum" to "கிளம்பணும்",
-        "edukka" to "எடுக்க", "edukkanum" to "எடுக்கணும்", "katta" to "கட்ட", "kattanum" to "கட்டணும்", "vaanga" to "வாங்க",
+        "edukka" to "எடுக்க", "edukkanum" to "எடுக்கணும்", "katta" to "கட்ட", "kattanum" to "கட்டணும்", "time" to "டைம்",
     ).map { (en, ta) -> Regex("(?<![A-Za-z])" + Regex.escape(en) + "(?![A-Za-z])", RegexOption.IGNORE_CASE) to ta }
 
-    /** [text] ready for the Tamil voice: the English words in it written in Tamil script. */
-    fun spoken(text: String, lang: KaiLang): String {
+    private const val TA = "\\u0B80-\\u0BFF"
+
+    /**
+     * [text] ready for the Tamil voice: English / Tanglish words in Tamil letters, the [names] in Tamil
+     * letters with the spoken case ending ("Kumar-ku" → "குமாருக்கு", "office-ku" → "ஆபீஸுக்கு").
+     */
+    fun spoken(text: String, lang: KaiLang, names: List<String> = emptyList()): String {
         if (lang == KaiLang.ENGLISH) return text
-        // "Praba-ku" → "Praba-க்கு", "school-la" → "school-ல" (the word stays, the case ending is Tamil).
         var out = text.replace(Regex("(?<=[A-Za-z])-ku(?![A-Za-z])"), "-க்கு")
             .replace(Regex("(?<=[A-Za-z])-la(?![A-Za-z])"), "-ல")
             .replace(Regex("(?<=[A-Za-z])-nu(?![A-Za-z])"), "-னு")
             .replace(Regex("(?<=[A-Za-z])-a(?![A-Za-z])"), "-ஐ")
         for ((word, ta) in spokenWords) out = out.replace(word, ta)
-        // "school-ல" → "ஸ்கூல்-ல" reads as one word once both halves are Tamil.
-        return out.replace(Regex("(?<=[\u0B80-\u0BFF])-(?=[\u0B80-\u0BFF])"), "")
+        // A person's name in Tamil letters (a name the voice would otherwise read as English).
+        for (word in names.flatMap { it.split(' ') }.filter { it.isNotBlank() }.distinct()) {
+            KaiTamilVoice.tamil(word)?.let { ta -> out = out.replace(Regex("(?<![A-Za-z])" + Regex.escape(word) + "(?![A-Za-z])", RegexOption.IGNORE_CASE), ta) }
+        }
+        // The spoken dative on a Tamil word: "குமார்-க்கு" → "குமாருக்கு", "அம்மா-க்கு" → "அம்மாக்கு".
+        out = Regex("([$TA]+)-க்கு").replace(out) { KaiTamilVoice.dative(it.groupValues[1]) }
+        // The spoken object ending: "பையன்-ஐ" ("son-a") → "பையனை".
+        out = Regex("([$TA]+)-ஐ").replace(out) { KaiTamilVoice.accusative(it.groupValues[1]) }
+        // "ஸ்கூல்-ல" → "ஸ்கூல்ல": one word once both halves are Tamil.
+        return out.replace(Regex("(?<=[$TA])-(?=[$TA])"), "")
     }
 
     /** The lines in order, as the voice says them: [0] is the opening turn, then the follow-ups. */
     fun lines(r: KaiReminder, lang: KaiLang = r.lang): List<VoiceLine> {
         val v = voiceLang(lang)
-        return written(r, v).map { l -> l.copy(text = spoken(l.text, v), parts = l.parts.map { spoken(it, v) }) }
+        val names = listOfNotNull(r.person)
+        return written(r, v).map { l -> l.copy(text = spoken(l.text, v, names), parts = l.parts.map { spoken(it, v, names) }) }
     }
 
-    /** One turn of [parts] with the natural gaps: a breath after the first, a beat before the last (the question). */
-    private fun turn(parts: List<String>, gesture: Boolean): VoiceLine {
-        val p = parts.map { it.trim() }.filter { it.isNotEmpty() }
-        val gaps = p.indices.drop(1).map { i -> if (i == p.lastIndex) GAP_BEFORE_QUESTION_MS else GAP_AFTER_FIRST_MS }
-        return VoiceLine(p.joinToString(" "), gesture, p, gaps)
+    /** One turn: the [statement] sentences spoken together, then a beat, then the [question]. */
+    private fun turn(statement: List<String>, question: String, gesture: Boolean = true): VoiceLine {
+        val said = statement.map { it.trim() }.filter { it.isNotEmpty() }.joinToString(" ")
+        return VoiceLine("$said $question", gesture, listOf(said, question), listOf(GAP_BEFORE_QUESTION_MS))
     }
 
     private fun one(text: String, gesture: Boolean) = VoiceLine(text, gesture)
@@ -133,24 +140,26 @@ object KaiUrgentVoiceScript {
     private fun cap(s: String) = s.replaceFirstChar { it.uppercase() }
     private fun low(s: String) = s.replaceFirstChar { it.lowercase() }
 
-    /** "4 mani aachu" / "8:30 aachu" for a clock-time reminder; null for "in 10 minutes". */
+    /** "4 mani aachu" (Tamil: "நாலு மணி ஆச்சு", "எட்டரை மணி ஆச்சு") for a clock-time reminder; null for "in 10 minutes". */
     private fun clockWords(r: KaiReminder, lang: KaiLang): String? {
         val t = r.time ?: return null
         val h = (t.hour % 12).let { if (it == 0) 12 else it }
         val hm = if (t.minute == 0) null else "$h:" + t.minute.toString().padStart(2, '0')
         return when (lang) {
-            KaiLang.TAMIL -> (hm ?: "$h மணி") + " ஆச்சு."
+            KaiLang.TAMIL -> KaiTamilVoice.clock(t) + " ஆச்சு."
             KaiLang.TANGLISH -> (hm ?: "$h mani") + " aachu."
             KaiLang.ENGLISH -> "it's " + (hm ?: "$h o'clock") + "."
         }
     }
 
     /** The question that ends the first turn: what the owner would do next. */
-    private fun question(r: KaiReminder, kind: ReminderKind, lang: KaiLang): String {
+    private fun question(r: KaiReminder, kind: ReminderKind, lang: KaiLang, urgent: Boolean): String {
         val task = r.task
         return when {
-            r.action == ReminderAction.CALL && r.person != null -> pick(lang, ta = "Call பண்ணலாமா?", tl = "Call pannalama?", en = "Shall we call?")
-            r.action == ReminderAction.MESSAGE && r.person != null -> pick(lang, ta = "Message அனுப்பலாமா?", tl = "Message anuppalama?", en = "Shall we send it?")
+            r.action == ReminderAction.CALL && r.person != null ->
+                if (urgent) pick(lang, ta = "இப்போவே பண்ணலாமா?", tl = "Ippove pannalama?", en = "Shall we call right now?")
+                else pick(lang, ta = "இப்போ பண்ணலாமா?", tl = "Ippo pannalama?", en = "Shall we call now?")
+            r.action == ReminderAction.MESSAGE && r.person != null -> pick(lang, ta = "இப்போ அனுப்பலாமா?", tl = "Ippo anuppalama?", en = "Shall we send it now?")
             kind == ReminderKind.PAYMENT -> pick(lang, ta = "Open பண்ணலாமா?", tl = "Open pannalama?", en = "Shall I open it?")
             exerciseWords.containsMatchIn(task) -> pick(lang, ta = "ரெடியா?", tl = "Ready-a?", en = "Ready?")
             goWords.containsMatchIn(task) -> pick(lang, ta = "கிளம்பலாமா?", tl = "Kelambalama?", en = "Shall we leave?")
@@ -165,91 +174,87 @@ object KaiUrgentVoiceScript {
         val level = level(r)
         val p = r.person?.takeIf { it.isNotBlank() }
         val task = r.task.trim().trimEnd('.', ' ')
-        val q = question(r, kind, lang)
+        val q = question(r, kind, lang, urgent = level >= 3)
         val call = r.action == ReminderAction.CALL && p != null
         val message = r.action == ReminderAction.MESSAGE && p != null
         val owner = pick(lang, ta = "ஓனர்", tl = "Owner", en = "Owner")
+        val oo = pick(lang, ta = "ஓனர்... ", tl = "Owner... ", en = "Owner... ")
 
         val opening: VoiceLine = when {
             call -> when (level) {
                 1 -> turn(listOf(
                     pick(lang, ta = "ஓனர்... $p-க்கு call பண்ண வேண்டிய நேரம் ஆச்சு.", tl = "Owner... $p-ku call panna vendiya neram aachu.", en = "Owner... it's time to call $p."),
-                    pick(lang, ta = "Call பண்ணுங்க.", tl = "Call pannunga.", en = "Please call."), q), true)
+                    pick(lang, ta = "Call பண்ணிடுங்க.", tl = "Call pannidunga.", en = "Please call.")), q)
                 2 -> turn(listOf(
-                    pick(lang, ta = "ஓனர், $p-க்கு இன்னும் call பண்ணல.", tl = "Owner, $p-ku innum call pannala.", en = "Owner, you still haven't called $p."),
-                    pick(lang, ta = "இப்போ call பண்ணுங்க.", tl = "Ippo call pannunga.", en = "Please call now."), q), true)
+                    pick(lang, ta = "ஓனர், $p-க்கு இன்னும் call பண்ணலையே.", tl = "Owner, $p-ku innum call pannalaye.", en = "Owner, you still haven't called $p."),
+                    pick(lang, ta = "இப்போ பண்ணிடுங்க.", tl = "Ippo pannidunga.", en = "Please call now.")), q)
                 else -> turn(listOf(
-                    pick(lang, ta = "ஓனர், $p call ரொம்ப நேரமா pending-ல இருக்கு.", tl = "Owner, $p call romba neram-a pending-la irukku.", en = "Owner, the call to $p has been waiting a while."),
-                    pick(lang, ta = "உடனே call பண்ணுங்க.", tl = "Udane call pannunga.", en = "Please call right away."),
-                    pick(lang, ta = "இப்போவே call பண்ணலாமா?", tl = "Ippove call pannalama?", en = "Shall we call now?")), true)
+                    pick(lang, ta = "ஓனர், $p-க்கு இன்னும் call பண்ணவே இல்லையே.", tl = "Owner, $p-ku innum call pannave illaye.", en = "Owner, the call to $p is still waiting."),
+                    pick(lang, ta = "ரொம்ப நேரம் ஆச்சு, உடனே பண்ணிடுங்க.", tl = "Romba neram aachu, udane pannidunga.", en = "It's been a while, please call right away.")), q)
             }
             message -> when (level) {
                 1 -> turn(listOf(
-                    pick(lang, ta = "ஓனர்... $p-க்கு message அனுப்ப வேண்டிய நேரம் ஆச்சு.", tl = "Owner... $p-ku message panna vendiya neram aachu.", en = "Owner... it's time to message $p."),
-                    pick(lang, ta = "Message அனுப்புங்க.", tl = "Message anuppunga.", en = "Please send it."), q), true)
+                    pick(lang, ta = "ஓனர்... $p-க்கு message அனுப்ப வேண்டிய நேரம் ஆச்சு.", tl = "Owner... $p-ku message anuppa vendiya neram aachu.", en = "Owner... it's time to message $p."),
+                    pick(lang, ta = "Message அனுப்பிடுங்க.", tl = "Message anuppidunga.", en = "Please send it.")), q)
                 2 -> turn(listOf(
-                    pick(lang, ta = "ஓனர், $p-க்கு இன்னும் message அனுப்பல.", tl = "Owner, $p-ku innum message anuppala.", en = "Owner, you still haven't messaged $p."),
-                    pick(lang, ta = "இப்போ அனுப்புங்க.", tl = "Ippo anuppunga.", en = "Please send it now."), q), true)
+                    pick(lang, ta = "ஓனர், $p-க்கு இன்னும் message அனுப்பலையே.", tl = "Owner, $p-ku innum message anuppalaye.", en = "Owner, you still haven't messaged $p."),
+                    pick(lang, ta = "இப்போ அனுப்பிடுங்க.", tl = "Ippo anuppidunga.", en = "Please send it now.")), q)
                 else -> turn(listOf(
-                    pick(lang, ta = "ஓனர், $p message ரொம்ப நேரமா pending-ல இருக்கு.", tl = "Owner, $p message romba neram-a pending-la irukku.", en = "Owner, the message to $p has been waiting a while."),
-                    pick(lang, ta = "உடனே அனுப்புங்க.", tl = "Udane anuppunga.", en = "Please send it right away."), q), true)
+                    pick(lang, ta = "ஓனர், $p-க்கு இன்னும் message அனுப்பவே இல்லையே.", tl = "Owner, $p-ku innum message anuppave illaye.", en = "Owner, the message to $p is still waiting."),
+                    pick(lang, ta = "உடனே அனுப்பிடுங்க.", tl = "Udane anuppidunga.", en = "Please send it right away.")), q)
             }
             else -> {
-                // "Kumar-ku payment panna", "current bill pay panna", "paiyana school-la irundhu kootitu vara".
                 val amount = r.amount?.let { KaiUrgentWords.rupees(it) + " " } ?: ""
+                // "Kumar-ku payment panna", "current bill pay panna", "paiyana school-la irundhu kootitu vara".
                 val what: String? = when {
                     r.action == ReminderAction.PAYMENT && p != null -> pick(lang, ta = "$p-க்கு ${amount}payment பண்ண", tl = "$p-ku ${amount}payment panna", en = "pay $p $amount".trim())
                     r.action == ReminderAction.COLLECTION && p != null -> pick(lang, ta = "$p கிட்ட ${amount}collect பண்ண", tl = "$p kitta ${amount}collect panna", en = "collect ${amount}from $p")
-                    else -> infinitive(task)?.let { if (lang == KaiLang.ENGLISH) null else it }
+                    else -> infinitive(task)?.takeIf { lang != KaiLang.ENGLISH }
                 }
-                // What it is called when it is still waiting ("Kumar payment", "gym poganum").
+                // What it is called while it is still waiting ("Kumar payment", "gym poganum").
                 val label = when {
                     r.action == ReminderAction.PAYMENT && p != null -> pick(lang, ta = "$p payment", tl = "$p payment", en = "the $p payment")
                     r.action == ReminderAction.COLLECTION && p != null -> pick(lang, ta = "$p collection", tl = "$p collection", en = "the $p collection")
                     lang == KaiLang.ENGLISH -> "“$task”"
                     else -> task
                 }
-                val doIt = if (kind == ReminderKind.PAYMENT && p != null) pick(lang, ta = "இதை check பண்ணுங்க.", tl = "Idha check pannunga.", en = "Please check it.")
-                    else pick(lang, ta = "இதை இப்போ பண்ணுங்க.", tl = "Idha ippo pannunga.", en = "Please do it now.")
                 when (level) {
-                    1 -> {
-                        val clock = clockWords(r, lang)
-                        if (kind == ReminderKind.PERSONAL) {
-                            // "Owner... 4 mani aachu." "Paiyana school-la irundhu kootitu vara vendiya neram." "Kelambalama?"
-                            val first = pick(lang, ta = "ஓனர்... ", tl = "Owner... ", en = "Owner... ") +
-                                (clock ?: pick(lang, ta = "நேரம் ஆச்சு.", tl = "neram aachu.", en = "it's time."))
-                            val second = when {
-                                lang == KaiLang.ENGLISH -> "Time for “$task”."
-                                anumEnding.containsMatchIn(task) -> pick(lang, ta = "${cap(task)}-னு நினைவூட்டல்.", tl = "${cap(task)}-nu reminder.", en = "")
-                                what != null -> pick(lang, ta = "${cap(what)} வேண்டிய நேரம்.", tl = "${cap(what)} vendiya neram.", en = "")
-                                else -> pick(lang, ta = "${cap(task)} நேரம்.", tl = "${cap(task)} neram.", en = "")
-                            }
-                            turn(listOf(first, second, q), true)
-                        } else {
-                            // "Owner... Kumar-ku payment panna vendiya time aachu." "Idha check pannunga." "Open pannalama?"
-                            val first = when {
-                                what != null -> pick(lang, ta = "ஓனர்... $what வேண்டிய நேரம் ஆச்சு.", tl = "Owner... $what vendiya time aachu.", en = "Owner... time to $what.")
-                                lang == KaiLang.ENGLISH && r.action == ReminderAction.PAYMENT && p != null -> "Owner... time to pay $p."
-                                else -> pick(lang, ta = "ஓனர்... ${low(task)} — நீங்க நினைவூட்ட சொன்னது.", tl = "Owner... ${low(task)}-nu remind panna sonneenga.", en = "Owner... you asked me to remind you: “$task”.")
-                            }
-                            turn(listOf(first, doIt, q), true)
+                    1 -> if (kind == ReminderKind.PERSONAL) {
+                        // "Owner... nalu mani aachu. Paiyana school-la irundhu kootitu varanum." … "Kelambalama?"
+                        val first = oo + (clockWords(r, lang) ?: pick(lang, ta = "நேரம் ஆச்சு.", tl = "neram aachu.", en = "it's time."))
+                        val second = when {
+                            lang == KaiLang.ENGLISH -> "Time for “$task”."
+                            anumEnding.containsMatchIn(task) -> "${cap(task)}."
+                            what != null -> "${cap(what)}num."
+                            else -> pick(lang, ta = "${cap(task)} நேரம்.", tl = "${cap(task)} time.", en = "")
                         }
+                        turn(listOf(first, second), q)
+                    } else {
+                        // "Owner... Kumar-ku payment panna vendiya time aachu. Oru thadava check pannidunga." … "Open pannalama?"
+                        val first = when {
+                            what != null -> pick(lang, ta = "ஓனர்... $what வேண்டிய நேரம் ஆச்சு.", tl = "Owner... $what vendiya time aachu.", en = "Owner... time to $what.")
+                            lang == KaiLang.ENGLISH && r.action == ReminderAction.PAYMENT && p != null -> "Owner... time to pay $p."
+                            else -> pick(lang, ta = "ஓனர்... ${low(task)} பத்தி ஞாபகப்படுத்த சொன்னீங்க.", tl = "Owner... ${low(task)} pathi nyabagapaduththa sonneenga.", en = "Owner... you asked me to remind you: “$task”.")
+                        }
+                        val doIt = if (kind == ReminderKind.PAYMENT && p != null) pick(lang, ta = "ஒரு தடவை check பண்ணிடுங்க.", tl = "Oru thadava check pannidunga.", en = "Please check it.")
+                            else pick(lang, ta = "இப்போ பண்ணிடுங்க.", tl = "Ippo pannidunga.", en = "Please do it now.")
+                        turn(listOf(first, doIt), q)
                     }
                     2 -> turn(listOf(
                         pick(lang, ta = "ஓனர், $label இன்னும் pending-ல இருக்கு.", tl = "Owner, $label innum pending-la irukku.", en = "Owner, $label is still pending."),
-                        pick(lang, ta = "இப்போ பண்ணுங்க.", tl = "Ippo pannunga.", en = "Please do it now."), q), true)
+                        pick(lang, ta = "இப்போ பண்ணிடுங்க.", tl = "Ippo pannidunga.", en = "Please do it now.")), q)
                     else -> turn(listOf(
                         pick(lang, ta = "ஓனர், $label ரொம்ப நேரமா pending-ல இருக்கு.", tl = "Owner, $label romba neram-a pending-la irukku.", en = "Owner, $label has been waiting a while."),
-                        pick(lang, ta = "உடனே பண்ணுங்க.", tl = "Udane pannunga.", en = "Please do it right away."), q), true)
+                        pick(lang, ta = "உடனே பண்ணிடுங்க.", tl = "Udane pannidunga.", en = "Please do it right away.")), q)
                 }
             }
         }
 
         // The follow-ups: short, no name again, more direct as the attempts go on.
         val v = when {
-            call -> pick(lang, ta = "call பண்ணுங்க", tl = "call pannunga", en = "call")
-            message -> pick(lang, ta = "message அனுப்புங்க", tl = "message anuppunga", en = "send the message")
-            else -> pick(lang, ta = "பண்ணுங்க", tl = "pannunga", en = "do it")
+            call -> pick(lang, ta = "call பண்ணிடுங்க", tl = "call pannidunga", en = "call")
+            message -> pick(lang, ta = "message அனுப்பிடுங்க", tl = "message anuppidunga", en = "send the message")
+            else -> pick(lang, ta = "பண்ணிடுங்க", tl = "pannidunga", en = "do it")
         }
         val ask = "$owner, ${low(q)}"
         val followUps = when (level) {
@@ -292,7 +297,7 @@ object KaiUrgentVoiceScript {
 
     /**
      * The pause before the [n]th turn (after the previous one ended), ms — longer as it goes on, capped.
-     * Only between turns: the sentences inside a turn are [GAP_AFTER_FIRST_MS] / [GAP_BEFORE_QUESTION_MS] apart.
+     * Only between turns: inside a turn the question follows the statement after [GAP_BEFORE_QUESTION_MS].
      */
     fun pauseBefore(n: Int): Long = when (n) {
         0 -> 0L
@@ -307,7 +312,7 @@ object KaiUrgentVoiceScript {
     // ------------------------------------------------------------------ the owner acted: one short answer
 
     /** Call Now — before the dialer opens. Never "called": only that the call screen is opening. */
-    fun callAck(r: KaiReminder, lang: KaiLang = r.lang): String = voiceLang(lang).let { v -> spoken(callAckWritten(r, v), v) }
+    fun callAck(r: KaiReminder, lang: KaiLang = r.lang): String = voiceLang(lang).let { v -> spoken(callAckWritten(r, v), v, listOfNotNull(r.person)) }
 
     internal fun callAckWritten(r: KaiReminder, lang: KaiLang): String {
         val p = r.person?.takeIf { it.isNotBlank() }
@@ -318,7 +323,7 @@ object KaiUrgentVoiceScript {
     fun doneAck(lang: KaiLang) = pick(voiceLang(lang), ta = "சரி ஓனர்.", tl = "Seri Owner.", en = "Okay Owner.")
 
     fun snoozeAck(minutes: Long, lang: KaiLang) =
-        pick(voiceLang(lang), ta = "சரி ஓனர், $minutes நிமிஷம் கழிச்சு நினைவூட்டுறேன்.", tl = "Seri Owner, $minutes minutes-ku remind pannuren.", en = "Okay Owner, I'll remind you in $minutes minutes.")
+        pick(voiceLang(lang), ta = "சரி ஓனர், ${KaiTamilVoice.count(minutes)} நிமிஷம் கழிச்சு மறுபடியும் சொல்றேன்.", tl = "Seri Owner, $minutes minutes kalichu thirumba solren.", en = "Okay Owner, I'll remind you in $minutes minutes.")
 
     // ------------------------------------------------------------------ the screen's compact controls
 

@@ -82,7 +82,7 @@ class KaiUrgentVoiceTurnTest {
         runCurrent()
         assertEquals(1, out.turns.size)
         assertEquals(lines[0].parts, out.turns.single().second)
-        assertEquals(listOf(KaiUrgentVoiceScript.GAP_AFTER_FIRST_MS, KaiUrgentVoiceScript.GAP_BEFORE_QUESTION_MS), out.gaps.single())
+        assertEquals(listOf(KaiUrgentVoiceScript.GAP_BEFORE_QUESTION_MS), out.gaps.single())
         assertTrue("no sentence of the opening said on its own", out.said.isEmpty())
         // The next line comes only after the turn has ended + the pause between turns.
         advanceTimeBy(5_000 + KaiUrgentVoiceScript.pauseBefore(1) - 100)

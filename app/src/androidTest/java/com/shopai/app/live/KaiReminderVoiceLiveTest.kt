@@ -55,7 +55,8 @@ import kotlin.math.abs
  *   v3 (B) "2 minutes-la paiyana school-la irundhu kootitu vara nyabagam paduthu" → … → DONE mid-sentence.
  *   v4 (C) "5 minutes-la Amma-ku call panna remind pannu" → … → SNOOZE mid-sentence.
  *
- * Measured: the silences at the joins of the real Sarvam clips (target ~0.25–0.5 s, then ~0.7–1.2 s),
+ * Measured: the beat before the question at the join of the real Sarvam clips (~0.7–1.2 s), the voice's own
+ * breaths inside the statement (one request, so the sentences flow),
  * the silence the old way would have had (clip padding + 6.5 s), whether the turn played as one
  * uninterrupted utterance, and how fast Call / Done / Snooze cut the voice.
  *
@@ -239,9 +240,14 @@ class KaiReminderVoiceLiveTest {
             at += line.gapsMs[i]
         }
         File(out, "$tag-turn1.wav").writeBytes(joined)
-        report("$tag JOIN_GAPS_MS=$joinGaps (targets 250..500, 700..1200) BEFORE_FIX_SILENCE_MS=$oldGap clipMs=${pcm.durationMs}")
-        assertTrue("BUG: the pause after the first sentence is ${joinGaps[0]} ms (target 250–500)", joinGaps[0] in 250L..500L)
-        if (joinGaps.size > 1) assertTrue("BUG: the pause before the question is ${joinGaps[1]} ms (target 700–1200)", joinGaps[1] in 700L..1_200L)
+        // Inside the statement (its sentences made in one request): the voice's own breath between sentences.
+        val inner = WavJoin.silences(WavJoin.trim(pcms[0]), minMs = 120).map { it.second }
+        report("$tag JOIN_GAPS_MS=$joinGaps (before the question, target 700..1200) STATEMENT_INNER_PAUSES_MS=$inner BEFORE_FIX_SILENCE_MS=$oldGap clipMs=${pcm.durationMs}")
+        joinGaps.forEachIndexed { i, g ->
+            val range = if (i == joinGaps.lastIndex) 700L..1_200L else 250L..500L
+            assertTrue("BUG: the pause at join ${i + 1} is $g ms (target ${range.first}–${range.last})", g in range)
+        }
+        assertTrue("BUG: a silence of ${inner.maxOrNull()} ms inside the statement (a restart, not a breath)", inner.all { it <= 1_200 })
         return pcm.durationMs
     }
 

@@ -262,3 +262,42 @@ The steps are in `DEVICE_TEST.md` (tests A, B and C).
 - **"7 manikku" with no morning/evening** is still taken as 7 AM. That is the timing engine's existing rule (7–11 is morning), left unchanged as the spec asked. The owner sees "7:00 AM" on the confirmation card and can use Edit.
 - **"Open pannalama?" for payments** is the spec's wording. The urgent screen itself is unchanged (Call / Done / Snooze); there is no new "Open" button.
 - **"Personal" is worked out from words, not stored.** An unusual personal task with none of the known words is GENERIC. That changes only the wording, never the scheduling.
+
+## 9. Second pass: natural spoken Tamil (after the Pixel 8 live run)
+
+**Live result (b752dc8, Pixel 8):** 4 / 4 PASS. The voice engine was Sarvam.
+
+| Test | Join gaps | Before-fix silence | Breaks inside turn | Stop after button |
+|---|---|---|---|---|
+| A | [390, 920] ms | 6867 ms | 0 | 682 ms |
+| B | [390, 930] ms | 6742 ms | 0 | 310 ms |
+| C | [390, 920] ms | 6870 ms | 0 | 448 ms |
+
+- Nothing played after any stop.
+- The script's "BUG (crash)" was the emulator's `android.hardware.uwb-service`, not the app. **Fixed:** the script now counts only the app's own crashes.
+
+**The owner's feedback:** "Kai pesum pothu natural Tamil maari illa." Four causes in the code, all fixed:
+
+| # | Why it didn't sound like spoken Tamil | Fix |
+|---|---|---|
+| 1 | Each short sentence ("கால் பண்ணுங்க.") was synthesized **alone**, so each sounded like a separate announcement. | The statement's sentences are now **one request**, so the rhythm and intonation run on like speech. Then a ~0.9 s beat, then the question. |
+| 2 | Names stayed in Latin letters, glued to a Tamil ending ("Kumar-க்கு"). | Names are written in Tamil letters with the spoken ending: **குமாருக்கு**, **பிரபாக்கு**, **ஆபீஸுக்கு**, **பையனை**. `KaiTamilVoice` uses plain rules plus a small pronunciation list for common names. |
+| 3 | Digits are read formally ("4 மணி" is read "நான்கு மணி"). | Times are said the way people say them: **நாலு மணி**, **எட்டரை மணி**, **ஒம்பதே கால்**, **அஞ்சு நிமிஷம்**. |
+| 4 | Bookish or repeated wording ("…-னு நினைவூட்டல்", "call pannunga … call pannalama"). | Spoken forms: "**கூட்டிட்டு வரணும்**", "**ஜிம் போகணும்**", "**பண்ணிடுங்க**", "**இப்போ பண்ணலாமா?**" |
+
+**Now heard (Tamil script, exactly what is sent to the voice):**
+
+- **Kumar call:** "ஓனர்... குமாருக்கு கால் பண்ண வேண்டிய நேரம் ஆச்சு. கால் பண்ணிடுங்க." · "இப்போ பண்ணலாமா?"
+- **Son's pickup:** "ஓனர்... நாலு மணி ஆச்சு. பையனை ஸ்கூல்ல இருந்து கூட்டிட்டு வரணும்." · "கிளம்பலாமா?"
+- **Office:** "ஓனர்... எட்டரை மணி ஆச்சு. ஆபீஸுக்கு கிளம்பணும்." · "கிளம்பலாமா?"
+- **Payment:** "ஓனர்... குமாருக்கு பேமெண்ட் பண்ண வேண்டிய நேரம் ஆச்சு. ஒரு தடவை செக் பண்ணிடுங்க." · "ஓபன் பண்ணலாமா?"
+
+**Tests**
+- JVM: **698 / 698 pass**. One new test, `spokenTamilIsColloquial`; the voice expectations were updated.
+- The live test now checks:
+  - the beat before the question (700–1200 ms);
+  - the voice's own breaths inside the statement (none over 1.2 s).
+
+**Still to judge by ear:**
+- names that are not on the pronunciation list (the rules guess long vowels: "Gokul" → கோகுல்);
+- Sarvam's own pause after "ஓனர்...".
