@@ -333,15 +333,12 @@ class KaiAgentTest {
             "next month 10" to LocalDate.of(2026, 11, 10),
             "next month 15" to LocalDate.of(2026, 11, 15),
             "October 10" to LocalDate.of(2026, 10, 10),
-            "10th" to LocalDate.of(2026, 10, 10),
             "10 October" to LocalDate.of(2026, 10, 10),
             "October 10th" to LocalDate.of(2026, 10, 10),
             "naalaikku" to LocalDate.of(2026, 10, 4),
             "tomorrow" to LocalDate.of(2026, 10, 4),
             "next week" to LocalDate.of(2026, 10, 10),
             "Friday" to LocalDate.of(2026, 10, 9),
-            "10th date" to LocalDate.of(2026, 10, 10),
-            "10 தேதி" to LocalDate.of(2026, 10, 10),
             "அடுத்த மாதம் 10" to LocalDate.of(2026, 11, 10),
             "அக்டோபர் 10" to LocalDate.of(2026, 10, 10),
         )
@@ -368,6 +365,24 @@ class KaiAgentTest {
             assertNull(resolved.plan)
             assertTrue(resolved.reply.text, resolved.reply.text.contains("Praba"))
             assertTrue(resolved.reply.text, resolved.reply.text.contains("5,000"))
+        }
+    }
+
+    // A day with no month ("10th", "10th date", "10 தேதி") is never guessed: Kai asks this month or next, then resolves.
+    @Test
+    fun dayWithoutMonthAsksWhichMonthThenResolves() = runBlocking {
+        for ((answer, month) in listOf("10th" to "next month", "10th date" to "indha month", "10 தேதி" to "adutha maasam")) {
+            val a = agent(FakeTools())
+            a.ask("Praba ku 5000 tharanum")
+            val ask = a.ask(answer)
+            assertTrue("$answer → ${ask.reply.text}", ask.reply.text.contains("10") && (ask.reply.text.contains("maasam") || ask.reply.text.contains("மாதம்")))
+            assertNull("no date guessed for '$answer'", a.conversationState.lastDate)
+            assertEquals(KaiPendingQuestion.DUE_DATE, a.conversationState.pendingQuestion)
+            val resolved = a.ask(month)
+            val expected = if (month == "indha month") LocalDate.of(2026, 10, 10) else LocalDate.of(2026, 11, 10)
+            assertEquals("$answer + $month", expected, a.conversationState.lastDate)
+            assertTrue(resolved.reply.text, resolved.reply.text.contains("Praba") && resolved.reply.text.contains("5,000"))
+            assertEquals("OUT", a.conversationState.lastPaymentDirection)
         }
     }
 

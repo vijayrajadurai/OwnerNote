@@ -320,6 +320,12 @@ object KaiTime {
                 ?: Regex("""(\d{1,2})$""").find(t.trim())?.groupValues?.get(1)?.toIntOrNull()
             return (day?.let { runCatching { first.withDayOfMonth(minOf(it, first.lengthOfMonth())) }.getOrNull() } ?: first) to DaySource.DATE
         }
+        // "indha month 10" / "this month 10th" / "இந்த மாதம் 10": this month's day (said on purpose, even if it has passed).
+        if (has("this month", "indha month", "intha month", "indha maasam", "intha maasam", "indha masam", "intha masam", "இந்த மாதம்", "இந்த மாசம்")) {
+            val day = Regex(ordinalDay).find(t)?.groupValues?.get(1)?.toIntOrNull()
+                ?: Regex("""(?<![\d:.])(\d{1,2})(?![\d:.])(?!\s*(?:mani|am|pm|மணி))""").find(t)?.groupValues?.get(1)?.toIntOrNull()
+            if (day != null && day in 1..31) return today.withDayOfMonth(minOf(day, today.lengthOfMonth())) to DaySource.DATE
+        }
         when {
             has("day after tomorrow", "naalanniku", "nalanniku", "naalannaikku", "naalai marunaal", "nalai marunaal", "marunaal", "நாளன்னைக்கு", "நாளை மறுநாள்") -> return today.plusDays(2) to DaySource.WORD
             has("tomorrow", "naalaikku", "naalaiku", "nalaiku", "nalaikku", "naalai", "நாளைக்கு", "நாளை") -> return today.plusDays(1) to DaySource.WORD

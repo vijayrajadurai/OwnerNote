@@ -140,7 +140,8 @@ data class KaiCard(val lines: List<String>, val buttons: List<KaiButton>, val wa
 data class KaiTurn(val reply: ChatReply, val card: KaiCard? = null, val plan: ActionPlan? = null, val direct: KaiAction? = null)
 
 /** A specific field Kai is waiting for in the current conversation. */
-internal enum class KaiPendingQuestion { DUE_DATE }
+/** What Kai asked and is waiting for: the due date of a stated payment, or its amount ("Kumar-ku cash kudukanum"). */
+internal enum class KaiPendingQuestion { DUE_DATE, AMOUNT }
 internal enum class KaiConversationPaymentDirection { PAYMENT_IN, PAYMENT_OUT }
 
 /** Conversation facts only. Business facts still come from KaiBooks/KaiTools and learned phrases from KaiPrivateMemory. */
@@ -163,6 +164,14 @@ internal data class KaiConversationState(
     var pendingEntity: String? = null,
     var pendingAmount: BigDecimal? = null,
     var pendingPaymentDirection: KaiConversationPaymentDirection? = null,
+    /** "10" said for a due date without a month: Kai asks this month or next (never guesses). */
+    var pendingDay: Int? = null,
+    /** "adutha maasam" said without a day: 0 = this month, 1 = next month; Kai asks the day. */
+    var pendingMonthOffset: Int? = null,
+    /** The language the payment was stated in — short answers ("10", "next month") keep it. */
+    var pendingLang: com.shopai.app.brain.KaiLang? = null,
+    /** The turn in which Kai asked for the amount / date / month: a bare "10" answers only the very next turn. */
+    var pendingAskedTurn: Long = -1,
     var pendingDraft: ActionPlan? = null,
     var pendingConfirmation: Boolean = false,
     var pendingCorrection: Boolean = false,
@@ -177,6 +186,7 @@ internal data class KaiConversationState(
         lastAmount = null; lastUnit = null; lastDate = null; lastTime = null
         lastPaymentDirection = null; lastPaymentMode = null; lastQuestion = null
         pendingQuestion = null; pendingEntity = null; pendingAmount = null; pendingPaymentDirection = null
+        pendingDay = null; pendingMonthOffset = null; pendingLang = null; pendingAskedTurn = -1
         pendingDraft = null; pendingConfirmation = false; pendingCorrection = false
         lastBusinessTopic = null; previousBusinessContext = null; previousTopicBeforeCalculator = null
         conversationTurn = 0
@@ -415,6 +425,9 @@ class KaiAgent(
         val morningAsk = com.shopai.app.brain.morning.MorningCommands.morningRequest(said) ?: com.shopai.app.brain.morning.MorningCommands.morningRequest(text)
         if (morningAsk != null && !com.shopai.app.brain.tools.KaiReminderUnderstanding.mentionsReminder(text)) return morningWork(morningAsk, text, said, lang, people)
 
+        // "pakkathula hardware kadai irukka?", "supermarket enga irukku?": a place nearby, not the books (and not a reminder).
+        if (!com.shopai.app.brain.tools.KaiReminderUnderstanding.mentionsReminder(text)) KaiLocalDiscovery.request(text)?.let { return localDiscovery(it, lang, said) }
+
         // Priority: pending action/context → reminder → stock → bill scan → call → money → calculator → questions → memory → conversation.
         com.shopai.app.brain.tools.KaiReminderUnderstanding.understand(text, at, people)?.let { return reminders.handle(it, lang) }
         if (products != null) {
@@ -465,40 +478,46 @@ class KaiAgent(
         }
     }
 
-    /** Save a receivable mentioned in conversation as session context only; it is not a ledger entry. */
+    /**
+     * Save a receivable / payable mentioned in conversation as session context only; it is not a ledger entry.
+     * Who owes whom comes from the one direction model ([com.shopai.app.brain.tools.KaiPaymentDirection]):
+     * "Kumar enakku 3000 tharanum" (Kumar owes the owner) vs "naan Kumar-ku 3000 tharanum" (the owner owes Kumar).
+     */
     private suspend fun contextualReceivable(text: String, lang: KaiLang, people: List<String>): KaiTurn? {
         val cmd = KaiCommands.route(text, now(), people)
-        val hasReceivableMeaning = Regex("(?i)\\b(tharanum|tharanum|pending|baaki|bakki|owe|owes|collect|varanum)\\b|தரணும்|பாக்கி")
+        val owed = com.shopai.app.brain.tools.KaiPaymentDirection.of(text)
+        val hasReceivableMeaning = owed != null || Regex("(?i)\\b(tharanum|tharanum|pending|baaki|bakki|owe|owes|collect|varanum)\\b|தரணும்|பாக்கி")
             .containsMatchIn(text)
+        // The person: one in the books, or — for a stated debt — the name the sentence starts with ("Kumaran enaku 3000 tharanum").
         val person = KaiCommands.personIn(text, people)
+            ?: com.shopai.app.brain.KaiUnderstanding.personIn(text)?.takeIf { owed != null && it.length >= 3 && it.all { c -> c in 'A'..'Z' || c in 'a'..'z' } }
         val amount = com.shopai.app.brain.KaiUnderstanding.amountsIn(text, now().toLocalDate())
             .filter { it > 0 }.singleOrNull()?.let { BigDecimal.valueOf(it).setScale(2, java.math.RoundingMode.HALF_UP) }
-        if (hasReceivableMeaning && person != null && amount != null && cmd == KaiCommand.Question) {
+        // "Kumar 3000 eppo tharanum?", "Kumar evlo tharanum?" ask the records — they are questions, not statements.
+        val asking = Regex("(?i)(?<![\\p{L}])(evlo|evvalavu|eppo|eppa|epo|how much|when|yaar|yaaru|who)(?![\\p{L}])|(?<![\\p{L}])enna(?!\\s*(?:₹|rs\\.?)?\\s*\\d)(?![\\p{L}])|\\?|எவ்வளவு|எப்போ|யார்")
+            .containsMatchIn(text)
+        if (hasReceivableMeaning && person != null && amount != null && cmd == KaiCommand.Question && !asking) {
             val ownerIsRecipient = Regex("(?i)\\b(enakku|enaku|to me|for me)\\b").containsMatchIn(text)
-            val direction = if (ownerIsRecipient || !Regex("(?i)\\btharanum\\b|தரணும்").containsMatchIn(text)) {
-                KaiConversationPaymentDirection.PAYMENT_IN
-            } else {
-                KaiConversationPaymentDirection.PAYMENT_OUT
+            val direction = when (owed) {
+                com.shopai.app.brain.tools.OwedDirection.RECEIVABLE -> KaiConversationPaymentDirection.PAYMENT_IN
+                com.shopai.app.brain.tools.OwedDirection.PAYABLE -> KaiConversationPaymentDirection.PAYMENT_OUT
+                null -> if (ownerIsRecipient || !Regex("(?i)\\btharanum\\b|தரணும்").containsMatchIn(text)) KaiConversationPaymentDirection.PAYMENT_IN
+                    else KaiConversationPaymentDirection.PAYMENT_OUT
             }
-            conversationState.currentIntent = "RECEIVABLE_CONTEXT"
-            conversationState.currentAction = if (direction == KaiConversationPaymentDirection.PAYMENT_OUT) "PAY" else "COLLECT"
-            conversationState.lastBusinessTopic = "RECEIVABLE_CONTEXT"
-            conversationState.previousBusinessContext = "RECEIVABLE_CONTEXT"
-            conversationState.lastPerson = person
-            conversationState.lastCustomer = person
-            conversationState.lastRelevantEntity = person
-            conversationState.lastAmount = amount
-            conversationState.lastPaymentDirection = if (direction == KaiConversationPaymentDirection.PAYMENT_OUT) "OUT" else "IN"
-            conversationState.lastQuestion = text
+            remember(person, amount, direction, text, lang)
             conversationState.pendingQuestion = KaiPendingQuestion.DUE_DATE
-            conversationState.pendingEntity = person
-            conversationState.pendingAmount = amount
-            conversationState.pendingPaymentDirection = direction
-            val value = KaiFormat.rupees(amount.toDouble())
-            return say(lang, KaiMood.EXPLAINING, null,
-                ta = if (direction == KaiConversationPaymentDirection.PAYMENT_OUT) "$person-க்கு $value கொடுக்கணும்னு சொல்றீங்க Owner. Due date தெரியல; எந்த தேதிக்குள் pay பண்ணணும்?" else "$person கிட்டிருந்து $value வரணும்னு சொல்றீங்க Owner. Due date எனக்குத் தெரியல; எந்த தேதிக்குள் collect பண்ணணும்?",
-                tl = if (direction == KaiConversationPaymentDirection.PAYMENT_OUT) "Owner, $person-ku $value pay pannanum-nu note pannikiren. Due date theriyala; endha date-kulla pay pannanum?" else "Owner, $person kitta $value collect pannanum-nu note pannikiren. Due date theriyala; endha date-kulla collect pannanum?",
-                en = if (direction == KaiConversationPaymentDirection.PAYMENT_OUT) "Got it, Owner. You need to pay $value to $person. I don't have a due date; what date should I use?" else "Got it, Owner. You said $value is due from $person. I don't have a due date for that amount; what date should I use?")
+            return askDueDate(person, amount, direction, lang)
+        }
+        // "Kumar-ku cash kudukanum": who and which way, but no amount — ask only the amount.
+        if (owed != null && person != null && amount == null && cmd == KaiCommand.Question && !asking) {
+            val direction = if (owed == com.shopai.app.brain.tools.OwedDirection.PAYABLE) KaiConversationPaymentDirection.PAYMENT_OUT else KaiConversationPaymentDirection.PAYMENT_IN
+            remember(person, null, direction, text, lang)
+            conversationState.pendingQuestion = KaiPendingQuestion.AMOUNT
+            conversationState.pendingAskedTurn = conversationState.conversationTurn
+            return if (direction == KaiConversationPaymentDirection.PAYMENT_OUT) say(lang, KaiMood.CLARIFY, null,
+                ta = "$person-க்கு எவ்வளவு கொடுக்கணும் Owner?", tl = "Owner, $person-ku evlo kudukkanum?", en = "How much do you need to pay $person, Owner?")
+            else say(lang, KaiMood.CLARIFY, null,
+                ta = "$person கிட்ட எவ்வளவு வாங்கணும் Owner?", tl = "Owner, $person kitta evlo vaanganum?", en = "How much should you collect from $person, Owner?")
         }
 
         if (conversationState.lastBusinessTopic != "RECEIVABLE_CONTEXT" || conversationState.lastPerson == null || conversationState.lastAmount == null) return null
@@ -513,42 +532,193 @@ class KaiAgent(
         conversationState.lastPerson = personName
         conversationState.lastCustomer = personName
         conversationState.lastRelevantEntity = personName
-        return say(lang, KaiMood.CLARIFY, null,
-            ta = "இந்த $value-ஐ $personName கிட்ட collect பண்ண due date கேக்குறீங்களா Owner? அந்தத் தேதி record-ல இல்லை.",
-            tl = "Owner, indha $value $personName kitta collect panna due date kekkureengala? Andha date record-la illa.",
-            en = "Are you asking for the due date to collect this $value from $personName, Owner? I don't have that date recorded.")
+        if (conversationState.pendingQuestion == null) conversationState.pendingQuestion = KaiPendingQuestion.DUE_DATE.also {
+            conversationState.pendingEntity = personName
+            conversationState.pendingAmount = conversationState.lastAmount
+            conversationState.pendingPaymentDirection = if (conversationState.lastPaymentDirection == "OUT") KaiConversationPaymentDirection.PAYMENT_OUT else KaiConversationPaymentDirection.PAYMENT_IN
+        }
+        val l = conversationState.pendingLang ?: lang
+        conversationState.pendingAskedTurn = conversationState.conversationTurn
+        return if (conversationState.lastPaymentDirection == "OUT") say(l, KaiMood.CLARIFY, null,
+            ta = "$personName-க்கு $value எப்போ கொடுக்கணும்-னு கேக்குறீங்க Owner. அந்த due date record-ல இல்லை — date சொல்லுங்க.",
+            tl = "Owner, $personName-ku $value eppo kudukkanum-nu kekkureenga. Andha due date record-la illa — date sollunga.",
+            en = "You're asking when to pay $value to $personName, Owner. I don't have that due date recorded — tell me the date.")
+        else say(l, KaiMood.CLARIFY, null,
+            ta = "$personName $value எப்போ தரணும்-னு கேக்குறீங்க Owner. அந்த due date record-ல இல்லை — date சொல்லுங்க.",
+            tl = "Owner, $personName $value eppo tharanum-nu kekkureenga. Andha due date record-la illa — date sollunga.",
+            en = "You're asking when $personName pays the $value, Owner. I don't have that due date recorded — tell me the date.")
     }
 
-    /** Resolve a parsed calendar date while a specific due-date field is pending. */
-    private fun pendingDueDateAnswer(text: String, lang: KaiLang): KaiTurn? {
-        if (conversationState.pendingQuestion != KaiPendingQuestion.DUE_DATE) return null
-        val at = now()
-        val parsed = KaiTime.parse(text, at)?.takeIf { it.daySpecified } ?: return null
+    /** The stated payment, kept for the short answers that complete it ("10", "next month", "5000"). */
+    private fun remember(person: String, amount: BigDecimal?, direction: KaiConversationPaymentDirection, text: String, lang: KaiLang) {
+        val out = direction == KaiConversationPaymentDirection.PAYMENT_OUT
+        conversationState.currentIntent = "RECEIVABLE_CONTEXT"
+        conversationState.currentAction = if (out) "PAY" else "COLLECT"
+        conversationState.lastBusinessTopic = "RECEIVABLE_CONTEXT"
+        conversationState.previousBusinessContext = "RECEIVABLE_CONTEXT"
+        conversationState.lastPerson = person
+        conversationState.lastCustomer = person
+        conversationState.lastRelevantEntity = person
+        conversationState.lastAmount = amount
+        conversationState.lastPaymentDirection = if (out) "OUT" else "IN"
+        conversationState.lastQuestion = text
+        conversationState.pendingEntity = person
+        conversationState.pendingAmount = amount
+        conversationState.pendingPaymentDirection = direction
+        conversationState.pendingDay = null
+        conversationState.pendingMonthOffset = null
+        conversationState.pendingLang = lang
+    }
+
+    private fun askDueDate(person: String, amount: BigDecimal, direction: KaiConversationPaymentDirection, lang: KaiLang): KaiTurn {
+        conversationState.pendingAskedTurn = conversationState.conversationTurn
+        val value = KaiFormat.rupees(amount.toDouble())
+        return say(lang, KaiMood.EXPLAINING, null,
+            ta = if (direction == KaiConversationPaymentDirection.PAYMENT_OUT) "$person-க்கு $value கொடுக்கணும்னு சொல்றீங்க Owner. Due date தெரியல; எந்த தேதிக்குள் pay பண்ணணும்?" else "$person கிட்டிருந்து $value வரணும்னு சொல்றீங்க Owner. Due date எனக்குத் தெரியல; எந்த தேதிக்குள் collect பண்ணணும்?",
+            tl = if (direction == KaiConversationPaymentDirection.PAYMENT_OUT) "Owner, $person-ku $value pay pannanum-nu note pannikiren. Due date theriyala; endha date-kulla pay pannanum?" else "Owner, $person kitta $value collect pannanum-nu note pannikiren. Due date theriyala; endha date-kulla collect pannanum?",
+            en = if (direction == KaiConversationPaymentDirection.PAYMENT_OUT) "Got it, Owner. You need to pay $value to $person. I don't have a due date; what date should I use?" else "Got it, Owner. You said $value is due from $person. I don't have a due date for that amount; what date should I use?")
+    }
+
+    /** "10", "10th", "10 தேதி", "10-ம் தேதி": a day of the month with no month. */
+    private val dayOnly = Regex("""(?i)^\s*(\d{1,2})\s*(?:st|nd|rd|th)?\s*(?:-?\s*(?:aam|am|m|ம்))?\s*(?:thethi|thedhi|date|தேதி)?\s*[.?!]*\s*$""")
+    private val nextMonthWords = Regex("""(?i)(?<![\p{L}])(next|adutha|aduththa|adhutha)\s*(month|maasam|masam|maasathula)?(?![\p{L}])|அடுத்த\s*(மாதம்|மாசம்)?""")
+    private val thisMonthWords = Regex("""(?i)(?<![\p{L}])(this|indha|intha|inda)\s*(month|maasam|masam|maasathula)?(?![\p{L}])|இந்த\s*(மாதம்|மாசம்)?""")
+    private val monthWord = Regex("""(?i)(?<![\p{L}])(month|maasam|masam|maasathula)(?![\p{L}])|மாதம்|மாசம்""")
+
+    /** "next month" / "indha maasam" (and, once a day was given, just "next" / "indha"): 1, 0, or null. */
+    private fun monthChoice(text: String, dayKnown: Boolean): Int? {
+        if (text.any(Char::isDigit)) return null
+        val words = text.trim().split(Regex("""\s+""")).size
+        val hasMonth = monthWord.containsMatchIn(text)
+        if (!hasMonth && !(dayKnown && words <= 3)) return null
+        return when {
+            nextMonthWords.containsMatchIn(text) -> 1
+            thisMonthWords.containsMatchIn(text) -> 0
+            else -> null
+        }
+    }
+
+    /**
+     * Completes the stated payment from a short answer: its amount ("5000"), or its due date — "next month 10"
+     * (KaiTime), "10" (then this month or next is asked, never guessed), "adutha maasam" (then the day is asked).
+     */
+    private fun pendingDueDateAnswer(text: String, chatLang: KaiLang): KaiTurn? {
+        val pending = conversationState.pendingQuestion ?: return null
         val entity = conversationState.pendingEntity ?: return null
-        val amount = conversationState.pendingAmount ?: return null
         val direction = conversationState.pendingPaymentDirection ?: return null
-        val date = parsed.at.toLocalDate()
-        val dateText = KaiFormat.date(date, lang, at.toLocalDate())
+        val at = now()
+        val today = at.toLocalDate()
+        // A short reply keeps the language the payment was said in ("10" is no language at all).
+        val lang = if (text.trim().split(Regex("""\s+""")).size <= 4) conversationState.pendingLang ?: chatLang else chatLang
+        // A bare "10" / "next month" / "5000" answers Kai's question only right after it was asked —
+        // later it may answer something else (a stock count, a reminder time). A full date always works.
+        val justAsked = conversationState.conversationTurn == conversationState.pendingAskedTurn + 1
+
+        if (pending == KaiPendingQuestion.AMOUNT) {
+            if (!justAsked) return null
+            val amount = KaiConversationSemantics.correctionAmount(text)
+                ?: com.shopai.app.brain.KaiUnderstanding.amountsIn(text, today).filter { it > 0 }.singleOrNull()?.let { BigDecimal.valueOf(it).setScale(2, java.math.RoundingMode.HALF_UP) }
+                ?: return null
+            conversationState.pendingAmount = amount
+            conversationState.lastAmount = amount
+            conversationState.pendingQuestion = KaiPendingQuestion.DUE_DATE
+            return askDueDate(entity, amount, direction, lang)
+        }
+        val amount = conversationState.pendingAmount ?: return null
+
+        // "10": which month? asked, never guessed.
+        if (justAsked) dayOnly.find(text)?.groupValues?.get(1)?.toIntOrNull()?.takeIf { it in 1..31 }?.let { day ->
+            conversationState.pendingMonthOffset?.let { offset -> return dueDateResolved(monthDay(today, offset, day), entity, amount, direction, lang, text) }
+            conversationState.pendingDay = day
+            conversationState.pendingAskedTurn = conversationState.conversationTurn
+            conversationState.currentAction = "ASK_DUE_MONTH"
+            return say(lang, KaiMood.CLARIFY, null,
+                ta = "இந்த மாதம் $day-ஆ Owner, அடுத்த மாதம் $day-ஆ?",
+                tl = "Owner, indha maasam $day-aa, illa adutha maasam $day-aa?",
+                en = "The ${day}${ordinalSuffix(day)} of this month or next month, Owner?")
+        }
+        // "next month" / "indha maasam": the day was given before, or is asked now.
+        if (justAsked) monthChoice(text, conversationState.pendingDay != null)?.let { offset ->
+            conversationState.pendingDay?.let { day -> return dueDateResolved(monthDay(today, offset, day), entity, amount, direction, lang, text) }
+            conversationState.pendingMonthOffset = offset
+            conversationState.pendingAskedTurn = conversationState.conversationTurn
+            conversationState.currentAction = "ASK_DUE_DAY"
+            return if (offset == 1) say(lang, KaiMood.CLARIFY, null, ta = "அடுத்த மாதம் எந்த தேதி Owner?", tl = "Owner, adutha maasam endha thethi?", en = "Which day next month, Owner?")
+            else say(lang, KaiMood.CLARIFY, null, ta = "இந்த மாதம் எந்த தேதி Owner?", tl = "Owner, indha maasam endha thethi?", en = "Which day this month, Owner?")
+        }
+        // A full date: "next month 10", "indha month 10", "October 10", "naalaikku", "Friday" (KaiTime).
+        KaiTime.parse(text, at)?.takeIf { it.daySpecified }?.let { return dueDateResolved(it.at.toLocalDate(), entity, amount, direction, lang, text) }
+        // "amount 5000", "500 dhaan": the amount was wrong — corrected, the date is still asked.
+        if (justAsked) KaiConversationSemantics.correctionAmount(text)?.takeIf { it.compareTo(amount) != 0 && it > BigDecimal(31) }?.let { corrected ->
+            conversationState.pendingAmount = corrected
+            conversationState.lastAmount = corrected
+            return askDueDate(entity, corrected, direction, lang)
+        }
+        return null
+    }
+
+    private fun monthDay(today: LocalDate, offset: Int, day: Int): LocalDate {
+        val month = today.withDayOfMonth(1).plusMonths(offset.toLong())
+        return month.withDayOfMonth(minOf(day, month.lengthOfMonth()))
+    }
+
+    private fun ordinalSuffix(day: Int) = when {
+        day in 11..13 -> "th"; day % 10 == 1 -> "st"; day % 10 == 2 -> "nd"; day % 10 == 3 -> "rd"; else -> "th"
+    }
+
+    /** "Seri Owner, Kumar kitta irundhu ₹3,000 adutha maasam 10-m thethi vaanganum." — the same payment, now with its date. */
+    private fun dueDateResolved(date: LocalDate, entity: String, amount: BigDecimal, direction: KaiConversationPaymentDirection, lang: KaiLang, text: String): KaiTurn {
+        val today = now().toLocalDate()
+        val out = direction == KaiConversationPaymentDirection.PAYMENT_OUT
         val amountText = KaiFormat.rupees(amount.toDouble())
+        conversationState.pendingAskedTurn = -1
+        val month = today.withDayOfMonth(1)
+        val sameMonth = date.withDayOfMonth(1) == month
+        val nextMonth = date.withDayOfMonth(1) == month.plusMonths(1)
+        val whenText = when {
+            date == today || date == today.plusDays(1) -> KaiFormat.date(date, lang, today)
+            sameMonth -> pickLang(lang, ta = "இந்த மாதம் ${date.dayOfMonth}-ம் தேதி", tl = "indha maasam ${date.dayOfMonth}-m thethi", en = "on ${KaiFormat.date(date, lang, today)}")
+            nextMonth -> pickLang(lang, ta = "அடுத்த மாதம் ${date.dayOfMonth}-ம் தேதி", tl = "adutha maasam ${date.dayOfMonth}-m thethi", en = "on ${KaiFormat.date(date, lang, today)}")
+            else -> if (lang == KaiLang.ENGLISH) "on ${KaiFormat.date(date, lang, today)}" else KaiFormat.date(date, lang, today)
+        }
 
         conversationState.pendingQuestion = null
         conversationState.pendingEntity = null
         conversationState.pendingAmount = null
         conversationState.pendingPaymentDirection = null
+        conversationState.pendingDay = null
+        conversationState.pendingMonthOffset = null
         conversationState.lastDate = date
         conversationState.lastPerson = entity
         conversationState.lastRelevantEntity = entity
         conversationState.lastCustomer = entity
         conversationState.lastAmount = amount
-        conversationState.lastPaymentDirection = if (direction == KaiConversationPaymentDirection.PAYMENT_OUT) "OUT" else "IN"
+        conversationState.lastPaymentDirection = if (out) "OUT" else "IN"
         conversationState.currentIntent = "DUE_DATE_ANSWER"
         conversationState.currentAction = "DUE_DATE_CAPTURED"
         conversationState.lastQuestion = text
 
         return say(lang, KaiMood.EXPLAINING, null,
-            ta = if (direction == KaiConversationPaymentDirection.PAYMENT_OUT) "$entity-க்கு $amountText pay பண்ண due date $dateText Owner." else "$entity கிட்ட $amountText collect பண்ண due date $dateText Owner.",
-            tl = if (direction == KaiConversationPaymentDirection.PAYMENT_OUT) "Owner, $entity-ku $amountText pay panna due date $dateText." else "Owner, $entity kitta $amountText collect panna due date $dateText.",
-            en = if (direction == KaiConversationPaymentDirection.PAYMENT_OUT) "Got it, Owner. Pay $amountText to $entity by $dateText." else "Got it, Owner. Collect $amountText from $entity by $dateText.")
+            ta = if (out) "சரி Owner, $entity-க்கு $amountText $whenText கொடுக்கணும்." else "சரி Owner, $entity கிட்ட இருந்து $amountText $whenText வாங்கணும்.",
+            tl = if (out) "Seri Owner, $entity-ku $amountText $whenText kudukkanum." else "Seri Owner, $entity kitta irundhu $amountText $whenText vaanganum.",
+            en = if (out) "Okay Owner, pay $amountText to $entity $whenText." else "Okay Owner, collect $amountText from $entity $whenText.")
+    }
+
+    private fun pickLang(lang: KaiLang, ta: String, tl: String, en: String) = when (lang) {
+        KaiLang.TAMIL -> ta; KaiLang.TANGLISH -> tl; KaiLang.ENGLISH -> en
+    }
+
+    /**
+     * "pakkathula hardware kadai irukka?", "supermarket enga irukku?": finding a place nearby. Kai has no
+     * nearby-search, so it says so plainly — never a ledger answer, never an invented shop.
+     */
+    private fun localDiscovery(place: KaiLocalDiscovery.Place, lang: KaiLang, said: String): KaiTurn {
+        tools.log("local discovery", "none", "nearby ${place.english}: not available", ActionStatus.ANSWERED, null, said)
+        conversationState.currentIntent = "LOCAL_BUSINESS_DISCOVERY"
+        return say(lang, KaiMood.NEUTRAL, null,
+            ta = "Owner, பக்கத்துல இருக்கிற ${place.tamil} தேடிக் குடுக்கிற வசதி Kai-க்கு இன்னும் இல்ல. Google Maps-ல “${place.english} near me”-னு தேடுங்க. நான் கடை பேர் எதுவும் ஊகிச்சு சொல்ல மாட்டேன்.",
+            tl = "Owner, pakkathula irukka ${place.tanglish} thedi kudukkura vasathi Kai-kku innum illa. Google Maps-la “${place.english} near me”-nu thedunga. Naan kadai per edhuvum guess panni solla maatten.",
+            en = "Owner, I can't search for nearby places yet. Try “${place.english} near me” in Google Maps — I won't guess shop names.")
     }
 
     /** Resolve a stock pronoun against the last product mentioned, while reading quantity only from inventory. */

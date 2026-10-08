@@ -110,7 +110,11 @@ object KaiChatUnderstanding {
         val balance = has(" evlo", " evvalavu", " how much", " balance", " pending", " baaki", " bakki", " tharanum", " kudukkanum", " kodukkanum",
             " varanum", " owe", " outstanding", " எவ்வளவு", " பாக்கி", " தரணும்", " கொடுக்கணும்")
         val personWords = paidAlready || lastPayment || history || due
-        if (person != PersonRef.None || (personWords && !has(" yaar", " who ", " யார்", " yaarukku"))) {
+        // "yaar / yaaru / yar / who" — asking WHO (a list from the records), never one person.
+        val asksWho = has(" yaar", " yar ", " yaru ", " yaroda", " yaaroda", " yarukku", " yaruku", " who ", " whom", " whose", " யார்", " யாரு", " யாருக்கு")
+        // "yaarukku / yarukku / to whom / யாருக்கு" — the owner pays them.
+        val toWhom = has(" yaarukku", " yarukku", " yaruku", " to whom", " whom", " யாருக்கு")
+        if (person != PersonRef.None || (personWords && !asksWho)) {
             if (person != PersonRef.None || isShortFollowUp(lower)) {
                 val intent = when {
                     paidAlready -> ChatIntent.CUSTOMER_PAYMENTS
@@ -125,9 +129,9 @@ object KaiChatUnderstanding {
         }
 
         // ---- about the business ----
-        val payWords = has(" kudukkanum", " kodukkanum", " kudukka ", " pay ", " payable", " supplier", " i owe", " do i owe", " கொடுக்க")
+        val payWords = has(" kudukkanum", " kodukkanum", " kudukanum", " kodukanum", " kudukanu", " kudukka ", " pay ", " payable", " supplier", " i owe", " do i owe", " கொடுக்க", " குடுக்க")
         val collectWords = has(" collect", " vasool", " tharanum", " varanum", " vanganum", " vaanganum", " receive", " receivable", " owes me",
-            " owe me", " payment", " cash tharanum", " வசூல்", " தரணும்", " வரணும்", " வாங்கணும்")
+            " owe me", " payment", " cash tharanum", " vanganu", " vaanganu", " வசூல்", " தரணும்", " வரணும்", " வாங்கணும்")
         val intent = when {
             has(" reminder", " remind", " ninaivu", " நினைவூட்ட", " ரிமைண்டர்") -> ChatIntent.REMINDER_QUERY
             has(" overdue", " late ", " thaandi", " thandi", " kadandhu", " miss aa", " தாண்டி") -> ChatIntent.OVERDUE_COLLECTIONS
@@ -140,7 +144,11 @@ object KaiChatUnderstanding {
             has(" debit") -> ChatIntent.DEBIT_SUMMARY
             has(" transaction", " entries", " entry", " enna nadandhu", " enna nadanthu", " நடந்துச்சு") ->
                 if (period == null || period.kind == ChatPeriod.Kind.TODAY) ChatIntent.TODAY_TRANSACTIONS else ChatIntent.BUSINESS_SUMMARY
-            payWords && has(" yaar", " yaarukku", " who", " whom", " யாருக்கு", " யார்") -> ChatIntent.TOTAL_PAYABLE
+            payWords && asksWho -> ChatIntent.TOTAL_PAYABLE
+            // "innaikku yaarukku payment pannanum?", "today payment yaarukku?": the owner pays — to whom.
+            toWhom && has(" payment", " pannanum", " cash", " panam", " kaasu", " money", " pay") -> ChatIntent.TOTAL_PAYABLE
+            // "yaroda due irukku?", "yaroda payment pending?": whose money is still to come.
+            asksWho && has(" due", " pending", " baaki", " bakki", " பாக்கி") -> ChatIntent.UPCOMING_COLLECTIONS
             collectWords || has(" yaar", " who ", " யார்") && has(" payment", " money", " cash", " panam", " kaasu") -> when {
                 period?.kind == ChatPeriod.Kind.TODAY -> ChatIntent.TODAY_COLLECTIONS
                 else -> ChatIntent.UPCOMING_COLLECTIONS
@@ -249,6 +257,7 @@ object KaiChatUnderstanding {
         "paid", "pay", "has", "have", "this", "that", "and", "or", "for", "from", "with", "of", "on", "in", "at", "by", "ku", "kku", "ukku",
         "nethu", "netru", "overdue", "late", "thaandi", "hello", "hi", "vanakkam", "ok", "okay", "seri", "romba", "konjam", "epdi", "eppadi",
         "pogudhu", "nalla", "illa", "venum", "theriyanum", "kattina", "katti", "vandhucha", "statement",
+        "yar", "yaru", "yaroda", "yaaroda", "yarukku", "yaruku", "vanganu", "vaanganu", "kudukanum", "kodukanum",
     )
 
     /**

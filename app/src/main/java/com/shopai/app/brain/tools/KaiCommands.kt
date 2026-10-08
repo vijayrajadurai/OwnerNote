@@ -174,6 +174,8 @@ object KaiCommands {
         "documents", "document", "walking", "walk", "college", "tuition", "class", "temple", "kovil", "church", "market", "hotel", "station",
         "airport", "bus", "train", "court", "function", "marriage", "kalyanam", "party", "meeting", "pickup", "drop", "gate", "rent", "emi", "loan",
         "home", "house", "veettu", "ration", "iruk", "irukk", "iruku",
+        // "enaku" / "enakku" read as "ena" + "-ku" — the owner, never a name.
+        "ena", "enak", "enakk", "enna", "una", "unak", "yaar", "yaaru", "yar", "yaru",
     )
 
     /** A known party in the text, else the word before -ku / kitta ("Ramesh ku", "Kumar kitta"), or after "call / to / from". */

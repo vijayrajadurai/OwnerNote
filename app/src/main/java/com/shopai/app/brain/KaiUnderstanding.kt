@@ -245,7 +245,11 @@ object KaiUnderstanding {
     fun knownPerson(text: String, known: List<String>): String? {
         val lower = text.lowercase(Locale.ROOT)
         val names = known.filter { it.isNotBlank() }.sortedByDescending { it.length } // "Ravi Kumar" before "Ravi"
-        names.firstOrNull { name -> Regex("""(?<![\p{L}])${Regex.escape(name.lowercase(Locale.ROOT))}""").containsMatchIn(lower) }?.let { return it }
+        // The whole name, or the name with a case ending ("Kumar-ku", "Kumarukku", "Kumarkitta") — never the start of
+        // a longer name ("Kumaran" is not "Kumar").
+        names.firstOrNull { name ->
+            Regex("""(?<![\p{L}])${Regex.escape(name.lowercase(Locale.ROOT))}(?:u?k?ku|kitta|kita|kitte|kittae|oda|odu|idam|ai|um|ukkum|a|aa|ah|u|க்கு|கிட்ட|கிட்டே|ஓட)?(?![\p{L}\p{M}])""").containsMatchIn(lower)
+        }?.let { return it }
         // The same name in the other script: "Kumar-ku" for "குமார்", "குமார்க்கு" for "Kumar".
         val words = Regex("""[\p{L}\p{M}]+""").findAll(text).map { w ->
             w.value.replace(Regex("""(?i)(kitta|kita|kitte|ukku|kku|ku|oda|idam)$"""), "").replace(Regex("""(க்கு|கிட்ட|கிட்டே|உக்கு)$"""), "")

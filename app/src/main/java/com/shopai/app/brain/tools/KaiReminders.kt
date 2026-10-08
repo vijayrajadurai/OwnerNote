@@ -129,6 +129,11 @@ object KaiReminderUnderstanding {
         """^\s*(ok\s*)?(done|completed|complete|finished|mudinjiduchu|mudinjidhu|mudinjathu|mudichiten|mudichitten|aachu|pannitten|panniten|seithuten)\s*[.!]?\s*$|^\s*முடிஞ்சது\s*$""",
         RegexOption.IGNORE_CASE,
     )
+    /** Asking for information, not asking Kai to do something: "evlo", "yaar", "yaarukku", "who", "யார்". */
+    private val questionWords = Regex(
+        """$B(evlo|evvalavu|how much|enna|what|yaar|yaaru|yar|yaru|yaarukku|yarukku|yaruku|yaroda|yaaroda|yaar\s*kitta|yar\s*kitta|who|whom|whose)$E|யார்|யாருக்கு|யாரோட""",
+        RegexOption.IGNORE_CASE,
+    )
     private val timeWords = Regex("""$B(time|timing|neram|nera|naeram|time-a|time-ah|time-ai)$E|நேரம்""", RegexOption.IGNORE_CASE)
     private val listWords = Regex("""$B(list|show|enna|ennenna|what|pending|today'?s|innaiku|innikku|inniku|sollu|iruku|irukku|irukka|my|en|ella|all)$E|என்ன""", RegexOption.IGNORE_CASE)
 
@@ -183,7 +188,8 @@ object KaiReminderUnderstanding {
         val create = mentionsReminder || (time != null && (doVerbs.containsMatchIn(text) || tellMe.containsMatchIn(text)))
         if (!create) return null
         // A question about the business that happens to have a time ("inniku evlo sales?") is not a reminder.
-        if (!mentionsReminder && Regex("""$B(evlo|evvalavu|how much|enna|what)$E""", RegexOption.IGNORE_CASE).containsMatchIn(text)) return null
+        // So is "Innaikku yaar payment tharanum?", "today payment yaarukku?" — asking WHO is a question, not an action.
+        if (!mentionsReminder && questionWords.containsMatchIn(text)) return null
         return ReminderRequest.Create(draft(text, time, people))
     }
 

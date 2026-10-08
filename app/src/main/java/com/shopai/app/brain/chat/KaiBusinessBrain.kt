@@ -314,7 +314,25 @@ class KaiBusinessBrain(
                 en = listOf("Owner, you have $r to collect in all, and $p to pay."),
             ))
         }
-        ChatIntent.TOTAL_PAYABLE -> {
+        // "Innaikku yaarukku payment pannanum?": only what falls due in that period, from the records.
+        ChatIntent.TOTAL_PAYABLE -> if (q.period != null) {
+            val period = q.period
+            val list = s.iOwe().filter { p -> p.nextDue?.let { it in period } == true }
+            val label = periodLabel(period, lang, day)
+            if (list.isEmpty()) reply(q.intent, KaiMood.NEUTRAL, lang, when (lang) {
+                KaiLang.TAMIL -> "$label யாருக்கும் கொடுக்க வேண்டிய payment record இல்ல ஓனர்."
+                KaiLang.TANGLISH -> "$label yaarukkum kudukka vendiya payment record illa owner."
+                KaiLang.ENGLISH -> "$label: no payments due to anyone in your records, Owner."
+            }) else {
+                val total = KaiFormat.rupees(list.sumOf { it.pending })
+                val top = list.take(3).joinToString(", ") { "${it.name} ${KaiFormat.rupees(it.pending)}" }
+                reply(q.intent, KaiMood.DEBIT, lang, when (lang) {
+                    KaiLang.TAMIL -> "$label ${list.size} பேருக்கு கொடுக்கணும் ஓனர் (மொத்தம் $total): $top."
+                    KaiLang.TANGLISH -> "$label ${list.size} per-ukku kudukkanum owner (mothama $total): $top."
+                    KaiLang.ENGLISH -> "$label, you have ${list.size} to pay ($total), Owner: $top."
+                })
+            }
+        } else {
             val list = s.iOwe()
             if (list.isEmpty()) reply(q.intent, KaiMood.HAPPY, lang, pick3(lang,
                 ta = listOf("நீங்க யாருக்கும் கொடுக்க வேண்டியது இல்ல ஓனர்."),
