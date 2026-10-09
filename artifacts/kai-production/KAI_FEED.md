@@ -38,3 +38,10 @@ saved before Confirm). A line that fails is a bug to fix or a word to add to `Ka
 (or fix the rule) → the test passes → it can never break again.
 
 Today: 214 owner lines (193 in the test + 21 in the feed file), all passing.
+
+## 3. Spoken words — `app/src/main/java/com/shopai/app/brain/tools/KaiSpokenWords.kt`
+
+Kai Chat's mic writes Tamil script. Every word Kai's rules read in Tanglish needs its spoken form here
+(`"அனுப்பியாச்சு" to "anuppiachu"`). Every owner line is also played as the mic writes it (`KaiMicForm`, in the tests):
+a word with no spoken form shows up there as a failing `[mic: …]` line. See `CLAUDE.md`.
+

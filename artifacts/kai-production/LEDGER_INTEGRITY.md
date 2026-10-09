@@ -138,3 +138,12 @@ a new name stays as said. Kai still answers in Tamil.
 Also fixed on the way: "டியூ டேட் வேண்டாம்" (no due date) cancelled the whole entry.
 These lines are generated from patterns; the real phone's speech-to-text can still write words differently — those go into
 `owner-lines.txt`. Not yet checked on a device.
+
+## Text box = mic, checked on every line (`fix/kai-mic-parity`)
+
+`KaiOwnerSweepTest` now plays every owner line twice: typed, and as Kai Chat's mic writes it (`KaiMicForm`: Tamil script).
+First run: 31 of the ~233 spoken lines did something different from the typed line — words with no spoken form
+(ஓவர்டியூ, கஸ்டமர்ஸ், பேக், இறக்கினேன், பொட்டலம், டெய்லி, வாங்குனேன், தராங்க, அனுப்பிச்சான், தந்துட்டாங்க, கம்மியா, வித்தது …),
+"ரெண்டு ஆயிரம்" (a number then thousand), "சப்ளையருக்கு" (a loan word with -க்கு), and product names cut short in Tamil
+("கோல்கா 1 பாக்ஸ்" = Colgate, "பனியா 10" = Baniyan). All fixed: 473 lines, typed and spoken, 0 failures.
+

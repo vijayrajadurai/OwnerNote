@@ -145,10 +145,21 @@ class KaiOwnerSweepTest {
 
     private val failures = mutableListOf<String>()
     private var count = 0
-    private fun fail(what: String, s: Shop, why: String) { failures += "[$what] $why${s.log}" }
+    private fun fail(what: String, s: Shop, why: String) { failures += "[${if (mic) "mic: " else ""}$what] $why${s.log}" }
+
+    /**
+     * Every line is played twice: typed, then as Kai Chat's mic writes it ([KaiMicForm]: Tamil script). The text box and the
+     * mic go to the same Kai and must do the same thing (owner's rule, 10 Oct 2026) — a fix that works only typed fails here.
+     */
+    private var mic = false
+    /** The owner's line, typed or as the mic writes it (null: the mic would not hear it as typed — not replayed). */
+    private fun heard(typed: String): String? = if (mic) KaiMicForm.of(typed) else typed
+    /** A short answer to Kai's question, said the same way as the line. */
+    private fun answer(typed: String): String = if (mic) KaiMicForm.of(typed) ?: typed else typed
 
     /** A money entry: drafted, confirmed (answering a due-date question with "due venam"), then exactly this in the books. */
-    private fun entry(said: String, kind: PlanKind, party: String, amount: String, due: LocalDate? = null, mode: PaymentMode? = null) {
+    private fun entry(typed: String, kind: PlanKind, party: String, amount: String, due: LocalDate? = null, mode: PaymentMode? = null) {
+        val said = heard(typed) ?: return
         count++
         val s = Shop()
         var t = s.say(said)
@@ -162,24 +173,27 @@ class KaiOwnerSweepTest {
             }
             val txt = t.reply.text
             t = when {
-                Regex("""(?i)due date eppa|eppo tharuvaanga|eppa tharuvaanga|eppo kudukkanum|eppa kudukkanum|due date""").containsMatchIn(txt) && txt.trim().endsWith("?") -> s.say("due venam")
+                Regex("""(?i)due date eppa|eppo tharuvaanga|eppa tharuvaanga|eppo kudukkanum|eppa kudukkanum|due date""").containsMatchIn(txt) && txt.trim().endsWith("?") -> s.say(answer("due venam"))
                 // "records-la already ₹4,000 irukku — adhey-aa, illa pudhu-aa?": this is a new entry.
-                txt.contains("illa pudhu") -> s.say("pudhu")
+                txt.contains("illa pudhu") || txt.contains("இல்ல புது") -> s.say(answer("pudhu"))
                 // "'Lakshmi Akka' — Lakshmi dhaan-aa, illa Lakshmi-oda akka-aa?": the owner means the person in the books.
-                txt.contains("dhaan-aa") && t.card?.buttons?.isNotEmpty() == true -> s.act(t.card!!.buttons.first().action) ?: t
+                (txt.contains("dhaan-aa") || txt.contains("தானா")) && t.card?.buttons?.isNotEmpty() == true -> s.act(t.card!!.buttons.first().action) ?: t
                 else -> return fail(said, s, "no draft to confirm")
             }
         }
         val p = s.tools.saved.singleOrNull() ?: return fail(said, s, "saved ${s.tools.saved.size} entries")
         if (p.kind != kind) return fail(said, s, "kind ${p.kind} ≠ $kind")
-        if (!p.partyName.equals(party, true)) return fail(said, s, "party ${p.partyName} ≠ $party")
+        // Spoken, a new name stays in Tamil letters ("சுஜித்") — the same name.
+        if (!p.partyName.equals(party, true) && !(mic && com.shopai.app.util.NameSound.same(p.partyName, party)))
+            return fail(said, s, "party ${p.partyName} ≠ $party")
         if (p.amount.compareTo(BigDecimal(amount)) != 0) return fail(said, s, "amount ${p.amount} ≠ $amount")
         if (due != null && p.dueDate != due) return fail(said, s, "due ${p.dueDate} ≠ $due")
         if (mode != null && p.mode != mode) return fail(said, s, "mode ${p.mode} ≠ $mode")
     }
 
     /** A reminder: asked, confirmed, stored at that local time with that person / words. */
-    private fun reminder(said: String, at: LocalDateTime?, has: String? = null, repeat: Boolean = false) {
+    private fun reminder(typed: String, at: LocalDateTime?, has: String? = null, repeat: Boolean = false) {
+        val said = heard(typed) ?: return
         count++
         val s = Shop()
         val t = s.say(said)
@@ -189,13 +203,15 @@ class KaiOwnerSweepTest {
         val r = s.tools.rems.singleOrNull() ?: return fail(said, s, "stored ${s.tools.rems.size} reminders")
         val time = LocalDateTime.ofInstant(Instant.ofEpochMilli(r.triggerAt), zone)
         if (at != null && time != at) return fail(said, s, "at $time ≠ $at")
-        if (has != null && !(r.title + " " + r.task + " " + (r.person ?: "")).contains(has, true)) return fail(said, s, "'${r.title}' / '${r.task}' lacks '$has'")
+        val words = r.title + " " + r.task + " " + (r.person ?: "")
+        if (has != null && !words.contains(has, true) && !(mic && KaiMicForm.of(has)?.let { words.contains(it) } == true)) return fail(said, s, "'${r.title}' / '${r.task}' lacks '$has'")
         if (repeat && r.recurrence.repeat == com.shopai.app.brain.tools.Repeat.ONCE) return fail(said, s, "not repeating")
         if (s.tools.saved.isNotEmpty() || s.inv.moves.isNotEmpty()) return fail(said, s, "a reminder wrote money / stock")
     }
 
     /** Stock: drafted, confirmed (new products: answer what Kai asks), the product's stock after. */
-    private fun stock(said: String, product: String, after: String) {
+    private fun stock(typed: String, product: String, after: String) {
+        val said = heard(typed) ?: return
         count++
         val s = Shop()
         var t = s.say(said)
@@ -204,7 +220,8 @@ class KaiOwnerSweepTest {
             if (b != null) {
                 if (s.inv.moves.isNotEmpty()) return fail(said, s, "stock changed before Confirm")
                 s.act(b.action)
-                val i = s.inv.items.firstOrNull { it.name.equals(product, true) } ?: return fail(said, s, "'$product' not in inventory: ${s.inv.items.map { it.name }}")
+                // Spoken, a new product keeps the name as said ("ஹார்லிக்ஸ்") — the same product.
+                val i = s.inv.items.firstOrNull { it.name.equals(product, true) || mic && com.shopai.app.util.NameSound.same(it.name, product) } ?: return fail(said, s, "'$product' not in inventory: ${s.inv.items.map { it.name }}")
                 if (i.stock.compareTo(BigDecimal(after)) != 0) fail(said, s, "$product stock ${i.stock.toPlainString()} ≠ $after")
                 if (s.tools.saved.isNotEmpty() && s.inv.bills.isEmpty()) fail(said, s, "stock wrote a money entry")
                 return
@@ -212,11 +229,11 @@ class KaiOwnerSweepTest {
             val txt = t.reply.text
             t = when {
                 // "petti" is the owner's word for box; Kai asks once which it is.
-                txt.contains("pieces-aa") && said.contains("petti") -> s.say("box")
-                txt.contains("pieces-aa") || txt.contains("pieces-ஆ") -> s.say("pieces")
-                txt.contains("evlo pieces") -> s.say("12")
-                txt.contains("rate evlo") || txt.contains("'skip'") -> s.say("skip")
-                txt.contains("Stock add pannattuma") -> s.say("aama")
+                (txt.contains("pieces-aa") || txt.contains("pieces-ஆ")) && typed.contains("petti") -> s.say(answer("box"))
+                txt.contains("pieces-aa") || txt.contains("pieces-ஆ") -> s.say(answer("pieces"))
+                txt.contains("evlo pieces") || txt.contains("எத்தனை pieces") -> s.say("12")
+                txt.contains("rate evlo") || txt.contains("rate எவ்வளவு") || txt.contains("'skip'") -> s.say(answer("skip"))
+                txt.contains("Stock add pannattuma") -> s.say(answer("aama"))
                 else -> return fail(said, s, "no stock draft")
             }
         }
@@ -224,11 +241,14 @@ class KaiOwnerSweepTest {
     }
 
     /** A question: answered from the records — these words in the reply (or card), never those; nothing written. */
-    private fun ask(said: String, has: List<String>, not: List<String> = emptyList()) {
+    private fun ask(typed: String, wanted: List<String>, not: List<String> = emptyList()) {
+        val said = heard(typed) ?: return
         count++
         val s = Shop()
         val t = s.say(said)
         val all = t.reply.text + " " + t.card?.lines.orEmpty().joinToString(" ")
+        // Spoken, Kai answers in Tamil: the amounts, numbers and names must still be there.
+        val has = if (mic) wanted.filter(KaiMicForm::keepsInTamil).map(KaiMicForm::inTamil) else wanted
         has.firstOrNull { !all.contains(it, true) }?.let { return fail(said, s, "lacks '$it'") }
         not.firstOrNull { all.contains(it, true) }?.let { return fail(said, s, "has '$it'") }
         if (!s.nothingWritten()) fail(said, s, "a question wrote something")
@@ -513,6 +533,10 @@ class KaiOwnerSweepTest {
 
     @Test fun ownersDay() {
         moneyLines(); reminderLines(); stockLines(); questionLines(); conversationLines(); feedLines()
+        // The same lines said into the mic.
+        mic = true
+        moneyLines(); reminderLines(); stockLines(); questionLines(); feedLines()
+        mic = false
         System.getProperty("sweep.out")?.let { java.io.File(it).writeText("$count lines, ${failures.size} failed\n\n" + failures.joinToString("\n\n")) }
         assertTrue("${failures.size} of $count owner lines failed:\n\n" + failures.joinToString("\n\n"), failures.isEmpty())
     }

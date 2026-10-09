@@ -71,6 +71,12 @@ object KaiSpokenWords {
         "அனுப்பியாச்சு" to "anuppiachu", "அனுப்பிட்டாச்சு" to "anuppiachu", "அனுப்பிச்சாச்சு" to "anuppiachu", "குட்தான்" to "kudthan",
         "கொட்தான்" to "kodthan", "குடுதான்" to "kudthan", "குட்டான்" to "kudthan", "நெஃப்ட்" to "neft", "நெப்ட்" to "neft", "ஐஎம்பிஎஸ்" to "imps",
         "ம்ம்" to "hmm", "ம்ம்ம்" to "hmm", "ஹ்ம்" to "hmm", "அய்யோ" to "ayyo", "ஐயோ" to "ayyo",
+        "வாங்குனேன்" to "vangunen", "வாங்குனது" to "vangunadhu", "அனுப்பிச்சான்" to "anuppichan", "அனுப்பிச்சாரு" to "anuppichaaru",
+        "அனுப்பிச்சேன்" to "anuppichen", "தந்துட்டாங்க" to "thandhutaanga", "தந்துட்டாரு" to "thandhutaaru", "தராங்க" to "tharanga", "தர்றாங்க" to "tharraanga",
+        "இறக்கினேன்" to "irakkinen", "இறக்கிட்டேன்" to "irakkitten", "பொட்டலம்" to "pottalam", "பொட்டலங்கள்" to "pottalangal", "பேக்" to "bag",
+        "பேக்ஸ்" to "bags", "ஓவர்டியூ" to "overdue", "கஸ்டமர்ஸ்" to "customers", "சப்ளையர்ஸ்" to "suppliers", "எல்லா" to "ellaa", "எல்லாம்" to "ellam",
+        "எல்லாரும்" to "ellaarum", "கம்மியா" to "kammiya", "அதிகமா" to "adhigama", "வித்தது" to "vithadhu", "மாசம்" to "maasam", "வாரம்" to "vaaram",
+        "டெய்லி" to "daily", "தினமும்" to "daily", "ஸ்கிப்" to "skip", "எந்த" to "endha", "ஹிஸ்டரி" to "history", "லாஸ்ட்" to "last",
         "குடுத்தேன்" to "kuduthen", "கொடுத்தேன்" to "kuduthen", "குடுத்துட்டேன்" to "kuduthuten", "கொடுத்துட்டேன்" to "kuduthuten",
         "தந்தேன்" to "kuduthen", "அனுப்பினேன்" to "anuppinen", "அனுப்பிட்டேன்" to "anuppiten", "அனுப்பிச்சேன்" to "anuppichen",
         "கட்டினேன்" to "kattinen", "கட்டிட்டேன்" to "kattiten", "வாங்கிட்டேன்" to "vangiten", "வாங்கினேன்" to "vaanginen", "வாங்கி" to "vaangi", "இருக்கேன்" to "irukken", "வாங்கியிருக்கேன்" to "vaangi irukken", "வாங்கிருக்கேன்" to "vaangi irukken",
@@ -135,7 +141,12 @@ object KaiSpokenWords {
     private val amountWords = Regex("""(?<![$TA])(${thousandsMap.keys.sortedByDescending { it.length }.joinToString("|")})(?:\s+(${hundreds.map { it.first }.sortedByDescending { it.length }.joinToString("|")}))?(?![$TA])|""" +
         """(?<![$TA])(${hundreds.map { it.first }.sortedByDescending { it.length }.joinToString("|")})(?![$TA])""")
 
-    private fun amounts(text: String): String = amountWords.replace(text) { m ->
+    /** "ரெண்டு ஆயிரம்", "மூணு ஆயிரம்": a number said, then thousand. */
+    private val countThousand = Regex("""(?<![$TA])(ஒரு|ஒன்னு|ரெண்டு|இரண்டு|மூணு|மூன்று|நாலு|நான்கு|அஞ்சு|ஐந்து|ஆறு|ஏழு|எட்டு|ஒன்பது|பத்து)\s+ஆயிரம்(?![$TA])""")
+    private val counts = mapOf("ஒரு" to 1, "ஒன்னு" to 1, "ரெண்டு" to 2, "இரண்டு" to 2, "மூணு" to 3, "மூன்று" to 3, "நாலு" to 4, "நான்கு" to 4,
+        "அஞ்சு" to 5, "ஐந்து" to 5, "ஆறு" to 6, "ஏழு" to 7, "எட்டு" to 8, "ஒன்பது" to 9, "பத்து" to 10)
+
+    private fun amounts(raw: String): String = amountWords.replace(countThousand.replace(raw) { m -> "${counts.getValue(m.groupValues[1]) * 1000}" }) { m ->
         val (t, h, alone) = m.destructured
         if (alone.isNotEmpty()) hundredsMap.getValue(alone).toString()
         else (thousandsMap.getValue(t) * 1000 + (hundredsMap[h] ?: 0)).toString()
@@ -148,7 +159,7 @@ object KaiSpokenWords {
         for ((re, unit) in units) {
             s = re.replace(s) { m -> if (m.value.endsWith("ல") || m.value.endsWith("ல்") || m.value.endsWith("லே")) "$unit la" else unit }
         }
-        s = tamilWord.replace(s) { m -> wordMap[m.value] ?: dative(m.value) ?: m.value }
+        s = tamilWord.replace(s) { m -> wordMap[m.value] ?: dative(m.value)?.let { d -> wordMap[d.substringBefore('-')]?.let { "$it-${d.substringAfter('-')}" } ?: d } ?: m.value }
         return s.replace(Regex("""\s+"""), " ").trim()
     }
 
@@ -170,7 +181,13 @@ object KaiSpokenWords {
             if (w in tamilKept) return@replace m.value
             KaiFeed.productNames[w]?.let { english -> if (shopWords.any { it.equals(english, ignoreCase = true) }) return@replace english + m.groupValues[2] }
             nameWords.filter { n -> spelled(n) == w || startsAlike(w, n) && (sounds(w, n) || sounds(w, soft(n))) }.singleOrNull()
-                ?.let { it + m.groupValues[2] } ?: m.value
+                ?.let { return@replace it + m.groupValues[2] }
+            // A name cut short, said right before its quantity ("கோல்கா 1 பாக்ஸ்" = Colgate): the one name it is the start of.
+            val beforeQty = Regex("""^\s*\d""").containsMatchIn(text.substring(m.range.last + 1))
+            val key = com.shopai.app.util.NameSound.key(w)
+            if (beforeQty && key.length >= 3) nameWords.filter { n -> startsAlike(w, n) && com.shopai.app.util.NameSound.key(n).let { it.length == key.length + 1 && it.startsWith(key) } }
+                .singleOrNull()?.let { return@replace it + m.groupValues[2] }
+            m.value
         }
     }
 
