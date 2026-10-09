@@ -96,3 +96,32 @@ Full JVM suite: **1204 tests, 0 failures** (1231 − 30 removed + 3 new).
 | `ProductArt.kt`, `InventoryScreen.kt`, `ShopAiApp.kt`, `AppKaiTools.kt` | **Not compiled** — Android build BLOCKED here (no Android SDK). Reviewed by hand. |
 | How the animation looks | Not seen — no device / emulator. |
 | Pixel 8 | **BLOCKED**. |
+
+## Owner check — 100 owners + 150 combinations (`KaiInventoryOwnersTest`)
+
+Every dialogue is played to the end: Kai's question is read (pack size / gram / size / purchase / selling / unit / summary),
+the owner's answer for THAT question is given, Confirm, and then the inventory itself is checked: product name, stock unit,
+quantity, pack conversion, purchase and selling price per stock unit, category, exactly one opening movement, the saved
+reply, nothing saved before Confirm, and a second "yes" saving nothing more.
+
+- **100 owners** — kirana (16), general store (18), cool drinks (11), oil / dairy (10), textile (10), footwear (5),
+  hardware (8), mobile / electrical (7), stationery / bakery (5), safety (correction at the summary, cancel mid-question,
+  rejected save, existing product) (4), shops already stocked (moota stock-in, damage, box sale, stock question, price
+  change, purchase on credit with the supplier's balance) (6). Tanglish, Tamil script and English; spoken numbers
+  ("anju box", "naarpathettu"), ₹ / rs / rupees.
+- **150 combinations** — 10 products (FMCG, grocery, drinks, oil, shirt, slippers, screws, charger, sugar, soap) ×
+  5 phrasings × 3 languages, each played to the save.
+
+Result after the fixes below: **100 / 100 owners, 150 / 150 combinations.** Full JVM suite: **1206 tests, 0 failures.**
+
+Bugs the owner check found (all fixed at the root, in the existing parsers):
+
+| Owner said | Before | Fix |
+|---|---|---|
+| "Colgate 5 box சேர்த்துடு", "அரிசி 10 மூட்டை சேர்த்துடு" | "எதைப் பத்தி சொல்றீங்க?" | Tamil stock-in verbs (சேர்த்துடு, சேர்த்து, வந்தது …) |
+| "Colgate 5 box arrived", "5 box Colgate came in today" | "edha pathi sollureenga?" | "arrived", "came in" |
+| "Add 5 box of Colgate to stock" | product saved as "Colgate To" | "to" / "into" are not part of a name |
+| "Parle G 10 box add pannu" | saved as "Parle" | a one-letter unit ("g") is a unit only right after a number |
+| "Bata shoe 6 jodi", "செருப்பு 10 ஜோடி" | asked "pairs-aa, boxes-aa?" | jodi / ஜோடி = pair |
+| "Moong dal 3 moota" (no verb) | "edha pathi sollureenga?" | a new product's bare "name + number + unit" starts the questions (never for a product the books have — in / out isn't said) |
+| "Cement 10 bag" | "1 bag-la evlo pieces?" and kept in kg | a hardware bag is itself the stock unit |

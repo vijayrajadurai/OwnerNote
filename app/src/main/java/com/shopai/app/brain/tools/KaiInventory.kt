@@ -136,13 +136,16 @@ object KaiInventory {
         else -> "PCS"
     }
 
-    fun needsPerPack(spec: ItemSpec): Boolean = KaiUnits.canon(spec.unit) in packUnits
+    /** Whether [unit] holds other units for this kind — a hardware bag (cement, putty) is itself the unit stock is kept in. */
+    private fun isPack(kind: ProductKind, unit: String?): Boolean = unit in packUnits && !(kind == ProductKind.HARDWARE && unit == "BAG")
+
+    fun needsPerPack(spec: ItemSpec): Boolean = isPack(spec.kind, KaiUnits.canon(spec.unit))
 
     /** The product's stock unit: pieces of a box, kg of a bag, else the unit it was said in. */
     fun baseUnit(spec: ItemSpec): String {
         val u = KaiUnits.canon(spec.unit) ?: return "PCS"
         if (u == "DOZEN") return "PCS"
-        return if (u in packUnits) KaiUnits.canon(spec.inner) ?: innerOf(spec.kind, u) else u
+        return if (isPack(spec.kind, u)) KaiUnits.canon(spec.inner) ?: innerOf(spec.kind, u) else u
     }
 
     /** Whether a size (weight / volume / clothes size / spec) is asked for this kind and stock unit. */

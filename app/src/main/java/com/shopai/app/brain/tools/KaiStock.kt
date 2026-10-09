@@ -52,6 +52,7 @@ object KaiStock {
         "purchase panninen", "purchase pannen", "received", "in pannu", "inward", "restock", "restocked",
         "vandhuduchu", "vanthuduchu", "vandhachu", "vanthachu", "vandhurukku", "vandhudhu", "vanthudhu", "vanthuthu", "vandhadhu", "vanthathu",
         "ஸ்டாக் உள்ளே", "சேர்", "வந்திருக்கு", "புது ஸ்டாக்",
+        "சேர்த்துடு", "சேர்த்திடு", "சேர்த்து", "சேர்த்தேன்", "சேருங்க", "வந்துருக்கு", "வந்தது", "arrived", "came in", "has come",
         // A customer brought goods back: they come into stock again.
         "customer return", "customer returned", "sales return", "sale return", "return vandhuchu", "return vanthuchu", "thirumbi vandhuchu",
         "thiruppi kuduthaanga", "thiruppi kuduthaan", "thiruppi kuduthutaanga",
@@ -85,7 +86,7 @@ object KaiStock {
         "box" to "BOX", "boxes" to "BOX", "packet" to "PACK", "packets" to "PACK", "pack" to "PACK", "packs" to "PACK",
         "litre" to "LITRE", "litres" to "LITRE", "liter" to "LITRE", "ltr" to "LITRE", "dozen" to "DOZEN", "bottle" to "BOTTLE", "bottles" to "BOTTLE",
         "carton" to "CARTON", "cartons" to "CARTON", "case" to "CASE", "cases" to "CASE", "bundle" to "BUNDLE", "bundles" to "BUNDLE",
-        "strip" to "STRIP", "strips" to "STRIP", "pair" to "PAIR", "pairs" to "PAIR", "can" to "CAN", "cans" to "CAN",
+        "strip" to "STRIP", "strips" to "STRIP", "pair" to "PAIR", "pairs" to "PAIR", "jodi" to "PAIR", "ஜோடி" to "PAIR", "can" to "CAN", "cans" to "CAN",
         "gram" to "GRAM", "grams" to "GRAM", "gm" to "GRAM", "gms" to "GRAM", "g" to "GRAM", "ml" to "ML", "dozens" to "DOZEN",
     )
 
@@ -118,7 +119,7 @@ object KaiStock {
         "serthu", "sethu", "serthudu", "inward", "outward", "owner", "kai", "please", "pls", "ah", "aa", "la", "ku", "kku", "na", "new", "pudhu",
         "puthu", "pudhusa", "puthusa", "pudhusaa", "fresh", "inventory", "inventoryku", "inventory-ku", "podu", "stockla", "stock-la", "aachu", "achu",
         "aagiduchu", "vandhachu", "vanthachu", "restock", "restocked", "the", "my", "of", "some", "konjam", "indha", "intha", "innaiku", "inniku", "today",
-        "kadaiku", "kadaila", "shop", "irukku", "iruku", "vandhu", "vanthu", "mattum", "ellam", "items", "photo", "edu", "edunga", "camera", "open",
+        "kadaiku", "kadaila", "shop", "to", "into", "irukku", "iruku", "vandhu", "vanthu", "mattum", "ellam", "items", "photo", "edu", "edunga", "camera", "open",
         "sell", "kuduthen", "kuduthuten", "kuduthutten", "koduthen", "koduthuten", "gave", "given", "vandhuduchu", "vanthuduchu",
         "damage", "damaged", "wastage", "waste", "expiry", "expired", "missing", "customer", "supplier", "return", "returned", "sales",
         "kuraivu", "kuraichu", "kuraichi", "kuraichudu", "kuraichiru",
@@ -140,10 +141,15 @@ object KaiStock {
         .firstOrNull { p -> Regex("""(?<![\p{L}\p{N}])${Regex.escape(p.name.lowercase(Locale.ROOT))}(?![\p{L}])""").containsMatchIn(lower) }
 
     /** The words left once stock words, numbers and units are taken out — the product's name as said. */
-    private fun spokenName(rest: String): String = rest.split(' ').filter { it.isNotEmpty() }.filter { w ->
-        w !in fillers && w !in units && w !in numberWords && w.none(Char::isDigit) &&
-            (inWords + outWords).none { k -> k.split(' ').contains(w) }
-    }.joinToString(" ").trim().trim('-')
+    private fun spokenName(rest: String): String {
+        val words = rest.split(' ').filter { it.isNotEmpty() }
+        return words.filterIndexed { i, w ->
+            // A one-letter unit ("g") is a unit only right after a number — "Parle G" keeps its G.
+            val unit = w in units && (w.length > 1 || words.getOrNull(i - 1)?.let { p -> p.any(Char::isDigit) || p in numberWords } == true)
+            w !in fillers && !unit && w !in numberWords && w.none(Char::isDigit) &&
+                (inWords + outWords).none { k -> k.split(' ').contains(w) }
+        }.joinToString(" ").trim().trim('-')
+    }
 
     private fun direction(lower: String, product: ProductRef?): Boolean? {
         val isIn = has(lower, inWords) || (newWords.containsMatchIn(lower) && stockContext.containsMatchIn(lower))

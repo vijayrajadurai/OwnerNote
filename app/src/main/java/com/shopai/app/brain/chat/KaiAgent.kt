@@ -2517,9 +2517,14 @@ class KaiAgent(
         if (com.shopai.app.brain.KaiUnderstanding.knownPerson(text, people) != null || namesPerson(text, name, people)) return null
         val kind = com.shopai.app.brain.tools.KaiInventory.kindOf(name, unit)
         val spec = com.shopai.app.brain.tools.ItemSpec(name, kind, qty, unit)
-        if (!asked && !com.shopai.app.brain.tools.KaiInventory.hasDetails(text, spec)) return null
-        stockLineAskedTurn = -10L
         val product = products.firstOrNull { KaiPrivateMemory.normalize(it.name) == KaiPrivateMemory.normalize(name) }
+        // "Moong dal 3 moota" — only a new product's name, a quantity and a unit: it can only be stock coming in, so Kai starts
+        // asking (nothing is saved before Confirm). For a product the books have, in or out isn't said, so it is not taken here.
+        // "Rice actual 255 kg" names Rice, which the books have — a count, not a new product called "Rice Actual".
+        val namesKnown = products.any { p -> p.name.isNotBlank() && Regex("""(?i)(?<![\p{L}])${Regex.escape(p.name)}(?![\p{L}])""").containsMatchIn(text) }
+        val bareNewLine = product == null && !namesKnown && unit != null && bareStockLine.matches(text.trim())
+        if (!asked && !bareNewLine && !com.shopai.app.brain.tools.KaiInventory.hasDetails(text, spec)) return null
+        stockLineAskedTurn = -10L
         if (product != null) {
             // A product the books have: its own units and prices — nothing asked again. A box size said now is used for this draft.
             val detailed = com.shopai.app.brain.tools.KaiInventory.withDetails(spec, text)
@@ -2531,6 +2536,8 @@ class KaiAgent(
         tools.log(com.shopai.app.brain.tools.KaiIntents.STOCK_IN, "kai", "$name: new product by chat", ActionStatus.ANSWERED, null, said)
         return itemStep(newKey(), com.shopai.app.brain.tools.KaiInventory.withDetails(spec, text), said, lang)
     }
+
+    private val bareStockLine = Regex("""^[\p{L}\p{M}][\p{L}\p{M}\s.'-]{1,40}?\s+\d+(?:\.\d+)?\s*[\p{L}\p{M}]+\s*[.!]?$""")
 
     /** The next question for a new product — or, when nothing is missing, the summary with Confirm. Nothing is saved here. */
     private fun itemStep(key: String, spec: com.shopai.app.brain.tools.ItemSpec, said: String, lang: KaiLang): KaiTurn {
