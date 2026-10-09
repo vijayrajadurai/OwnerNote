@@ -181,7 +181,10 @@ class AppKaiTools(
                 productId = p.id, qtyMilli = bill.qty.multiply(BigDecimal(1000)).setScale(0, RoundingMode.HALF_UP).longValueExact(),
                 unit = p.primaryUnit, ratePaise = paise(bill.rate),
             )
+            // Quotes need no draft; the post carries the owner's reviewed entry as a voice draft (the books refuse a voice post without one).
             val meta = com.shopai.app.books.engine.PostMeta(java.util.UUID.randomUUID().toString(), TxnSource.VOICE, notes = "Kai: ${bill.said.take(80)}")
+            var draftId: String? = null
+            suspend fun reviewed(kind: String) = meta.copy(draftId = voiceDraft(s, kind, bill.said).also { draftId = it })
             suspend fun paidNow(grandTotal: Long?): List<com.shopai.app.books.engine.PaymentPart> {
                 if (bill.credit || grandTotal == null || grandTotal <= 0) return emptyList()
                 val account = MoneyAccounts.accountFor(s, bill.mode) ?: return emptyList()
@@ -191,19 +194,30 @@ class AppKaiTools(
                 val base = com.shopai.app.books.engine.PurchaseInput(partyId = bill.partyId, billNumber = null, date = LocalDate.now(), items = listOf(item), meta = meta)
                 val quote = s.engine.quotePurchase(base)
                 if (!quote.ok) return ActionOutcome.Failed(quote.errors.firstOrNull()?.message ?: "not saved")
-                s.engine.postPurchase(base.copy(paid = paidNow(quote.totals?.grandTotalPaise)))
+                s.engine.postPurchase(base.copy(paid = paidNow(quote.totals?.grandTotalPaise), meta = reviewed("PurchaseInput")))
             } else {
                 val base = com.shopai.app.books.engine.SaleInput(partyId = bill.partyId, date = LocalDate.now(), items = listOf(item), meta = meta)
                 val quote = s.engine.quoteSale(base)
                 if (!quote.ok) return ActionOutcome.Failed(quote.errors.firstOrNull()?.message ?: "not saved")
-                s.engine.postSale(base.copy(received = paidNow(quote.totals?.grandTotalPaise)))
+                s.engine.postSale(base.copy(received = paidNow(quote.totals?.grandTotalPaise), meta = reviewed("SaleInput")))
             }
             when (result) {
                 is PostResult.Posted -> ActionOutcome.Done(result.txn.number, qty(s.ledger.stock(p.id)))
-                is PostResult.Rejected -> ActionOutcome.Failed(result.errors.firstOrNull()?.message ?: "not saved")
+                is PostResult.Rejected -> {
+                    draftId?.let { runCatching { s.engine.discardDraft(it) } }
+                    android.util.Log.w("Kai", "stock bill refused: ${result.errors.joinToString { it.message }}")
+                    ActionOutcome.Failed(result.errors.firstOrNull()?.message ?: "not saved")
+                }
             }
         }.getOrElse { ActionOutcome.Failed(it.message ?: "not saved") }
     }
+
+    /**
+     * Kai's entry was reviewed in the chat (the owner saw the summary and tapped Confirm). The books accept a voice post only
+     * with its reviewed draft, so it is kept as one — the same as the stock screens' voice entries ([LegacyBridge]).
+     */
+    private suspend fun voiceDraft(s: BooksSession, kind: String, said: String): String =
+        s.engine.saveDraft(kind, TxnSource.VOICE, "{\"by\":\"kai\"}", rawInput = said.take(200))
 
     /** Only called after the owner confirmed the stock draft. */
     override suspend fun changeStock(product: com.shopai.app.brain.tools.ProductRef, qty: BigDecimal, incoming: Boolean, said: String): ActionOutcome {
@@ -228,7 +242,10 @@ class AppKaiTools(
         // A chat entry ("Colgate 5 box, boxku 48 pieces, purchase 28 …"): units, prices and opening stock in one write of the books.
         if (product.secondaryUnit != null || product.purchasePrice != null || product.sellingPrice != null || (product.openingQty?.signum() ?: 0) > 0) {
             // Without the books (local / server mode) the same entry goes through the inventory screen's own store below.
-            session()?.let { s -> return runCatching { createWithOpening(s, product) }.getOrNull() }
+            session()?.let { s ->
+                return runCatching { createWithOpening(s, product) }
+                    .onFailure { android.util.Log.w("Kai", "product not saved: ${product.name}: ${it.message}") }.getOrNull()
+            }
         }
         val inv = inventory ?: return null
         val name = listOfNotNull(product.name.trim(), product.variant?.trim()?.takeIf { it.isNotEmpty() && !product.name.contains(it, true) })
@@ -290,7 +307,8 @@ class AppKaiTools(
                     imagePath = product.imageUri, description = notes,
                 ),
             )
-            val row = (result as? com.shopai.app.books.engine.MasterResult.Ok)?.value ?: error("Product not saved")
+            val row = (result as? com.shopai.app.books.engine.MasterResult.Ok)?.value
+                ?: error((result as? com.shopai.app.books.engine.MasterResult.Rejected)?.errors?.firstOrNull()?.message ?: "Product not saved")
             created = row
             val opening = product.openingQty?.takeIf { it.signum() > 0 }
                 ?.multiply(BigDecimal(1000))?.setScale(0, RoundingMode.HALF_UP)?.longValueExact() ?: 0L
@@ -298,10 +316,15 @@ class AppKaiTools(
                 val posted = s.engine.postOpeningStock(
                     com.shopai.app.books.engine.OpeningStockInput(
                         productId = row.id, date = LocalDate.now(), qtyMilli = opening,
-                        meta = com.shopai.app.books.engine.PostMeta(java.util.UUID.randomUUID().toString(), TxnSource.VOICE, notes = "Kai: opening stock"),
+                        meta = com.shopai.app.books.engine.PostMeta(
+                            java.util.UUID.randomUUID().toString(), TxnSource.VOICE,
+                            // The owner reviewed it in the chat; without its draft the books refuse a voice post (and nothing was saved).
+                            draftId = voiceDraft(s, "OpeningStockInput", "${product.name} ${product.openingQty?.toPlainString().orEmpty()} ${product.unit}"),
+                            notes = "Kai: opening stock",
+                        ),
                     ),
                 )
-                if (posted !is PostResult.Posted) error("Opening stock not saved")
+                if (posted !is PostResult.Posted) error((posted as? PostResult.Rejected)?.errors?.firstOrNull()?.message ?: "Opening stock not saved")
             }
         }
         val p = created ?: error("Product not saved")

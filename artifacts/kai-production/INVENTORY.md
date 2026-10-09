@@ -248,3 +248,19 @@ Bugs it found (fixed at the root):
 | "1 packets kuraichiten" | plural for one | one / many said right |
 
 Full JVM suite: **1216 tests, 0 failures.** Android build / Pixel 8 still blocked here.
+
+## Phone bug: "Colgate save aagala" — `fix/kai-voice-draft-save`
+
+Owner's phone: Colgate 50 boxes → summary → Confirm → "Owner, Colgate save aagala — edhuvum save pannala."
+**Root cause:** the books engine accepts a VOICE entry only with its reviewed draft (`post()` → DRAFT_REQUIRED; the rule is
+already tested in `BooksAccountingTest.voiceEntryNeedsAReviewedDraft`). Kai posted the opening stock (and the purchase / sale of
+goods with a supplier / customer) as `TxnSource.VOICE` with no draft, so every chat product was refused and rolled back. The
+JVM tests use a fake inventory, so they could not see it.
+
+Fix (`AppKaiTools`): the owner's reviewed chat entry is kept as a voice draft (`engine.saveDraft`) and posted with its
+`draftId` — the same as the stock screens' voice entries (`LegacyBridge.meta`). Opening stock: inside the same transaction
+as the product. Stock bills: the draft is made right before the post and discarded if the books refuse. The books' own reason is
+now logged (`Kai` tag) instead of a bare "not saved".
+
+Test: `BooksAccountingTest.kaiChatProductAndOpeningStockNeedTheReviewedDraft` (Robolectric — runs with `./gradlew test` where the
+Android SDK is present; not runnable here). JVM brain suite: 1216 tests, 0 failures. AppKaiTools still not compiled here.

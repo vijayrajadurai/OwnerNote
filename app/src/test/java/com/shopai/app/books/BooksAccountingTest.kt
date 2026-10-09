@@ -1,6 +1,7 @@
 package com.shopai.app.books
 
 import androidx.room.Room
+import androidx.room.withTransaction
 import androidx.test.core.app.ApplicationProvider
 import com.shopai.app.books.data.BooksDatabase
 import com.shopai.app.books.engine.BooksErrorCode
@@ -9,6 +10,7 @@ import com.shopai.app.books.engine.CashOutInput
 import com.shopai.app.books.engine.MoneyOpeningInput
 import com.shopai.app.books.engine.PartyOpeningInput
 import com.shopai.app.books.engine.PaymentInput
+import com.shopai.app.books.engine.OpeningStockInput
 import com.shopai.app.books.engine.PostResult
 import com.shopai.app.books.engine.ReturnInput
 import com.shopai.app.books.engine.ReturnLine
@@ -269,6 +271,27 @@ class BooksAccountingTest {
             PaymentInput(ramesh.id, rs(5000), f.cash, PaymentMode.CASH, f.today, allowSameDayDuplicate = true, keepExcessAsAdvance = true, meta = f.meta(TxnSource.VOICE, draftId)),
         )
         assertEquals(listOf(BooksErrorCode.DRAFT_REQUIRED), again.codes())
+    }
+
+    @Test
+    fun kaiChatProductAndOpeningStockNeedTheReviewedDraft(): Unit = runBlocking {
+        // Owner's phone (9 Oct 2026): "Colgate 50 box …" → summary → Confirm → "Colgate save aagala". Kai posted the opening
+        // stock as a voice entry with no draft, the books refused it, and the product rolled back with it.
+        val colgate = f.product("Colgate", sell = rs(20), buy = rs(18), unit = "PCS")
+        val noDraft = f.engine.postOpeningStock(OpeningStockInput(colgate.id, f.today, q(2500), meta = f.meta(TxnSource.VOICE)))
+        assertEquals(listOf(BooksErrorCode.DRAFT_REQUIRED), noDraft.codes())
+        assertEquals(0L, f.ledger.stock(colgate.id))
+
+        // What Kai does now: product + its reviewed draft + opening stock in ONE transaction (as AppKaiTools.createWithOpening).
+        var created: com.shopai.app.books.data.ProductEntity? = null
+        db.withTransaction {
+            val rice = f.masters.createProduct(com.shopai.app.books.engine.ProductInput(name = "Arisi", primaryUnit = "PCS", purchasePricePaise = rs(56), sellingPricePaise = rs(65))).ok()
+            val draftId = f.engine.saveDraft("OpeningStockInput", TxnSource.VOICE, """{"by":"kai"}""", "Arisi 1250 PCS")
+            f.engine.postOpeningStock(OpeningStockInput(rice.id, f.today, q(1250), meta = f.meta(TxnSource.VOICE, draftId))).ok()
+            assertEquals("CONFIRMED", f.dao.draft(draftId)!!.status)
+            created = rice
+        }
+        assertEquals(q(1250), f.ledger.stock(created!!.id))
     }
 
     @Test
