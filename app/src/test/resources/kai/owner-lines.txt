@@ -98,3 +98,10 @@ ASK    | yaru correct ah payment pannuvanga              | Ramesh; Kumar; Selvam
 ASK    | யாரு கரெக்டா பேமெண்ட் பண்ணுவாங்க                 | Ramesh; Kumar; Selvam; late
 ASK    | yaaru correct time la payment kudupanga         | Ramesh; Kumar; Selvam; late
 ASK    | Kumar correct ah pay pannuvana                  | Kumar; late-aa; thadava
+
+# The same words said into the mic (voice writes Tamil script): text worked, voice didn't (10 Oct 2026).
+ENTRY  | ABC டிரேடர்ஸுக்கு 2000 அனுப்பியாச்சு             | OUT ABC Traders 2000
+ENTRY  | குமார் 1500 குட்தான்                            | IN Kumar 1500
+ENTRY  | ம்ம் குமார் 1500 குடுத்தான்                        | IN Kumar 1500
+ENTRY  | ABC டிரேடர்ஸுக்கு 3000 நெஃப்ட் பண்ணிட்டேன்          | OUT ABC Traders 3000
+ASK    | குமார் கரெக்டா பேமெண்ட் பண்ணுவானா                  | Kumar; late
