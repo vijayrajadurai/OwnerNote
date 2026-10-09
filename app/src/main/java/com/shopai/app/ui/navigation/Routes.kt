@@ -40,7 +40,6 @@ object Routes {
     const val GroupBuyingResult = "group_buying_result/{requestId}"
     const val Inventory = "inventory"
     const val ProductDetail = "product_detail/{productId}"
-    const val VoiceStockEntry = "voice_stock_entry"
     const val LocalOffers = "local_offers"
     const val AskBusiness = "ask_business"
     const val HandwrittenNotes = "handwritten_notes"

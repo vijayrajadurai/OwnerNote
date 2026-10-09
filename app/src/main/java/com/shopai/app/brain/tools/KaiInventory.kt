@@ -98,6 +98,32 @@ object KaiInventory {
         }
     }
 
+    /**
+     * The picture a product gets in the inventory list: Kai's own category ("Grocery"), else its name ("Arisi", "Coke"),
+     * else the owner's category word ("rice", "kids wear"), else its unit — a plain box when nothing fits.
+     */
+    fun artKindOf(name: String, category: String?, unit: String?): ProductKind {
+        val c = category?.trim().orEmpty()
+        ProductKind.values().firstOrNull { it != ProductKind.GENERAL && it.category.equals(c, ignoreCase = true) }?.let { return it }
+        kindOf(name, null).takeIf { it != ProductKind.GENERAL }?.let { return it }
+        if (c.isNotEmpty()) {
+            val byCategory = kindOf(c, null)
+            if (byCategory != ProductKind.GENERAL) return byCategory
+            val lc = c.lowercase(Locale.ROOT)
+            when {
+                Regex("""grocer|provision|kirana|maligai|pulse|grain""").containsMatchIn(lc) -> return ProductKind.GROCERY
+                Regex("""beverage|drink|juice|cool""").containsMatchIn(lc) -> return ProductKind.BEVERAGE
+                Regex("""oil|liquid|dairy|milk""").containsMatchIn(lc) -> return ProductKind.LIQUID
+                Regex("""garment|textile|cloth|wear|dress|kids|apparel|fashion|saree""").containsMatchIn(lc) -> return ProductKind.GARMENT
+                Regex("""foot|shoe|chappal|slipper""").containsMatchIn(lc) -> return ProductKind.FOOTWEAR
+                Regex("""hardware|tool|electrical|paint|plumb""").containsMatchIn(lc) -> return ProductKind.HARDWARE
+                Regex("""electronic|mobile|accessor|gadget""").containsMatchIn(lc) -> return ProductKind.ELECTRONICS
+                Regex("""fmcg|personal|care|cosmetic|toiletr|snack|biscuit|soap""").containsMatchIn(lc) -> return ProductKind.FMCG
+            }
+        }
+        return kindOf(name, unit)
+    }
+
     /** Units that hold other units ("1 box = 48 pieces") — their size is asked, never assumed. */
     private val packUnits = setOf("BOX", "BAG", "CASE", "CARTON", "CAN", "BUNDLE", "STRIP")
 

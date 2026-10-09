@@ -2634,10 +2634,14 @@ class KaiAgent(
         }
         tools.log(com.shopai.app.brain.tools.KaiIntents.STOCK_IN, "inventory engine", "${created.name} +$total (opening) saved", ActionStatus.CONFIRMED, null, item.said)
         val qtyText = if (said == total) said else "$said ($total)"
-        return say(lang, KaiMood.SUCCESS, null,
+        val done = say(lang, KaiMood.SUCCESS, null,
             ta = "சரி ஓனர் ✅ ${created.name} — $qtyText stock-ல சேர்த்துட்டேன். இப்போ stock $total.",
             tl = "Done Owner ✅ ${created.name} — $qtyText stock-la add panniten. Ippo stock $total.",
             en = "Done Owner ✅ ${created.name} — $qtyText added to stock. Stock now $total.")
+        // The new product is in Inventory / Stock now: one tap to see it there.
+        return done.copy(card = KaiCard(emptyList(), listOf(
+            KaiButton(pick(lang, ta = "📦 Inventory-ல பாருங்க", tl = "📦 Inventory-la paarunga", en = "📦 See it in Inventory"), KaiAction.OpenRecord("INVENTORY")),
+        )))
     }
 
     // ------------------------------------------------------------ inventory by chat: edits, details, summary, bills

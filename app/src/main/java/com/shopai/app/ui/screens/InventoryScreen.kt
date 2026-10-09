@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -23,6 +24,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import com.shopai.app.ui.components.OutlinedButton
+import com.shopai.app.ui.components.ProductArt
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -77,7 +79,8 @@ fun InventoryScreen(
     onOpenProduct: (String) -> Unit = {},
     /** Full Product Master form — used once the books are in use. */
     onNewProduct: () -> Unit = {},
-    onOpenVoiceStockEntry: () -> Unit = {},
+    /** Stock by voice / text: Kai Chat (the one inventory logic). */
+    onOpenKaiChat: () -> Unit = {},
 ) {
     var products by remember { mutableStateOf<List<InventoryProduct>>(emptyList()) }
     var summary by remember { mutableStateOf<InventoryIntelligenceSummaryDto?>(null) }
@@ -198,7 +201,7 @@ fun InventoryScreen(
         title = stringResource(R.string.inv_title),
         onBack = onBack,
         actions = {
-            IconButton(onClick = onOpenVoiceStockEntry) {
+            IconButton(onClick = onOpenKaiChat) {
                 Icon(Icons.Default.Mic, contentDescription = stringResource(R.string.stock_voice_entry_title))
             }
         },
@@ -301,42 +304,49 @@ fun InventoryScreen(
                     ShopCard(
                         modifier = Modifier.clickable { onOpenProduct(product.id) },
                     ) {
-                        Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                            Text(
-                                text = product.name,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = ShopAiThemeColors.onSurface,
-                                modifier = Modifier.weight(1f),
-                            )
-                            val status = computeStockStatus(product.currentStock, product.minimumStock)
-                            Text(
-                                text = if (status == STOCK_STATUS_LOW_STOCK) {
-                                    stringResource(R.string.inv_status_low)
-                                } else {
-                                    stringResource(R.string.inv_status_healthy)
-                                },
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.SemiBold,
-                                color = if (status == STOCK_STATUS_LOW_STOCK) Danger else Success,
-                            )
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                            // Animated picture for the product's kind (rice sack for grocery, bottle, shirt, …).
+                            ProductArt(name = product.name, category = product.category, unit = product.unit)
+                            Spacer(Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                                    Text(
+                                        text = product.name,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = ShopAiThemeColors.onSurface,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                    val status = computeStockStatus(product.currentStock, product.minimumStock)
+                                    Text(
+                                        text = if (status == STOCK_STATUS_LOW_STOCK) {
+                                            stringResource(R.string.inv_status_low)
+                                        } else {
+                                            stringResource(R.string.inv_status_healthy)
+                                        },
+                                        style = MaterialTheme.typography.labelLarge,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = if (status == STOCK_STATUS_LOW_STOCK) Danger else Success,
+                                    )
+                                }
+                                Text(
+                                    text = product.category,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = ShopAiThemeColors.onSurfaceVariant,
+                                )
+                                Text(
+                                    text = stringResource(R.string.inv_current_stock_line, formatQty(product.currentStock), product.unit),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = ShopAiThemeColors.onSurface,
+                                    modifier = Modifier.padding(top = 6.dp),
+                                )
+                                Text(
+                                    text = stringResource(R.string.inv_min_stock_line, formatQty(product.minimumStock), product.unit),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = ShopAiThemeColors.onSurfaceVariant,
+                                )
+                            }
                         }
-                        Text(
-                            text = product.category,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = ShopAiThemeColors.onSurfaceVariant,
-                        )
-                        Text(
-                            text = stringResource(R.string.inv_current_stock_line, formatQty(product.currentStock), product.unit),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = ShopAiThemeColors.onSurface,
-                            modifier = Modifier.padding(top = 6.dp),
-                        )
-                        Text(
-                            text = stringResource(R.string.inv_min_stock_line, formatQty(product.minimumStock), product.unit),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = ShopAiThemeColors.onSurfaceVariant,
-                        )
                         Spacer(Modifier.height(8.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OutlinedButton(onClick = { stockChangeTarget = product to true }) {

@@ -68,3 +68,31 @@ Full JVM suite: **1231 tests, 0 failures**.
 | "Intha product supplier yaaru?", "innaikku enna stock vandhuchu?", "nethu evlo sale?" | Not done in this branch. |
 | Customer return as a credit note against the original sale | Recorded as a stock-in with reason "Customer return" (no original bill picked). |
 | "TypeScript / lint" criteria in the brief | Not applicable — this app is Kotlin / Android. |
+
+## Inventory / Stock screen — `feature/kai-inventory-screen`
+
+Owner's request (9 Oct 2026, with Home + Inventory screenshots): what Kai saves must show in Inventory / Stock; the old
+stock-entry logic goes; "arisi moota 50 add pannu" → Kai's questions → saved → shown with a rice-sack picture; every
+category with its own animated picture. Main / master NOT touched.
+
+- **Kai entries in the screen**: Inventory reads `inventoryRepository.listProducts()`. With the books on, that is the books'
+  products — exactly where Kai writes (`createWithOpening`). Without the books (local / API mode) `AppKaiTools.createProduct`
+  now also passes the opening stock and prices to the inventory repository, so the product shows with its stock.
+- **Old logic removed** (one stock logic = Kai): `VoiceStockEntryScreen`, `StockVoiceParser`, `StockVoiceResolver`,
+  `ConfirmStockChangeDialog`, its route, and their two test files (30 tests of the removed parser / resolver). The Inventory
+  mic button now opens Kai Chat. Stock In / Stock Out buttons and the product form are unchanged.
+- **"moota" / "sack" / "மூட்டை" = bag**, said before or after the number ("arisi moota 50", "arisi 50 moota").
+- **After saving**, Kai's reply has a "📦 Inventory-la paarunga" button that opens the Inventory screen.
+- **Animated pictures** (`ui/components/ProductArt.kt`): drawn in code (no image files, no network): rice sack (grocery),
+  bottle (drinks), oil can (liquids), shirt (garments), shoe (footwear), screw (hardware), charger (electronics), tube (FMCG),
+  carton (other). Pops in once, then a slow bob. Kind from category / name (`KaiInventory.artKindOf`).
+
+Tests added to `KaiInventoryChatTest`: the arisi moota dialogue (state checked: KG, 1250 kg, BAG = 25, ₹56 / ₹65, Grocery,
+one OPENING movement, Inventory button, rice-sack kind), moota before / after the number + "sack", picture kind per category.
+Full JVM suite: **1204 tests, 0 failures** (1231 − 30 removed + 3 new).
+
+| Not verified | Status |
+|---|---|
+| `ProductArt.kt`, `InventoryScreen.kt`, `ShopAiApp.kt`, `AppKaiTools.kt` | **Not compiled** — Android build BLOCKED here (no Android SDK). Reviewed by hand. |
+| How the animation looks | Not seen — no device / emulator. |
+| Pixel 8 | **BLOCKED**. |

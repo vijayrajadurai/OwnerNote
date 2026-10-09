@@ -227,8 +227,8 @@ class AppKaiTools(
     override suspend fun createProduct(product: com.shopai.app.brain.tools.NewProduct): com.shopai.app.brain.tools.ProductRef? {
         // A chat entry ("Colgate 5 box, boxku 48 pieces, purchase 28 …"): units, prices and opening stock in one write of the books.
         if (product.secondaryUnit != null || product.purchasePrice != null || product.sellingPrice != null || (product.openingQty?.signum() ?: 0) > 0) {
-            val s = session() ?: return null
-            return runCatching { createWithOpening(s, product) }.getOrNull()
+            // Without the books (local / server mode) the same entry goes through the inventory screen's own store below.
+            session()?.let { s -> return runCatching { createWithOpening(s, product) }.getOrNull() }
         }
         val inv = inventory ?: return null
         val name = listOfNotNull(product.name.trim(), product.variant?.trim()?.takeIf { it.isNotEmpty() && !product.name.contains(it, true) })
@@ -245,8 +245,10 @@ class AppKaiTools(
                     category = product.category.ifBlank { "General" },
                     brand = product.brand?.takeIf { it.isNotBlank() },
                     unit = product.unit.ifBlank { "PCS" },
-                    currentStock = 0.0,
+                    currentStock = product.openingQty?.toDouble() ?: 0.0,
                     minimumStock = 0.0,
+                    purchasePrice = product.purchasePrice?.toDouble(),
+                    sellingPrice = product.sellingPrice?.toDouble(),
                     imageUri = product.imageUri,
                     notes = notes,
                 ),

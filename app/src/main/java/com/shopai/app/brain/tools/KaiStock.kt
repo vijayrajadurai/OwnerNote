@@ -80,7 +80,8 @@ object KaiStock {
 
     private val units = mapOf(
         "pcs" to "PCS", "pc" to "PCS", "piece" to "PCS", "pieces" to "PCS", "peice" to "PCS", "peices" to "PCS", "nos" to "PCS",
-        "kg" to "KG", "kgs" to "KG", "kilo" to "KG", "bag" to "BAG", "bags" to "BAG", "mootai" to "BAG", "moottai" to "BAG",
+        "kg" to "KG", "kgs" to "KG", "kilo" to "KG", "bag" to "BAG", "bags" to "BAG", "mootai" to "BAG", "moottai" to "BAG", "moota" to "BAG", "mootta" to "BAG", "mutta" to "BAG",
+        "sack" to "BAG", "sacks" to "BAG", "மூட்டை" to "BAG",
         "box" to "BOX", "boxes" to "BOX", "packet" to "PACK", "packets" to "PACK", "pack" to "PACK", "packs" to "PACK",
         "litre" to "LITRE", "litres" to "LITRE", "liter" to "LITRE", "ltr" to "LITRE", "dozen" to "DOZEN", "bottle" to "BOTTLE", "bottles" to "BOTTLE",
         "carton" to "CARTON", "cartons" to "CARTON", "case" to "CASE", "cases" to "CASE", "bundle" to "BUNDLE", "bundles" to "BUNDLE",
@@ -219,13 +220,18 @@ object KaiStock {
         val words = lower.split(' ').filter { it.isNotEmpty() }
         val out = mutableListOf<QtyPart>()
         var i = 0
+        var usedUnitAt = -1
         while (i < words.size) {
             val w = words[i]
             val n = w.toBigDecimalOrNull()?.takeIf { w.first().isDigit() } ?: numberWords[w]?.toBigDecimal()
             if (n != null && n.signum() > 0) {
-                val unit = words.getOrNull(i + 1)?.let { units[it] }
+                val after = words.getOrNull(i + 1)?.let { units[it] }
+                // "arisi moota 50", "Colgate box 5": the unit said just before the number (when none follows it).
+                val before = if (after == null && i - 1 > usedUnitAt) words.getOrNull(i - 1)?.let { units[it] } else null
+                val unit = after ?: before
                 out += QtyPart(n, unit)
-                i += if (unit != null) 2 else 1
+                if (after != null) usedUnitAt = i + 1
+                i += if (after != null) 2 else 1
             } else {
                 i++
             }

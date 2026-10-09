@@ -600,4 +600,55 @@ class KaiInventoryChatTest {
             assertTrue(ans, near(shop.item("Colgate").purchase, "28") && near(shop.item("Colgate").selling, "35"))
         }
     }
+
+    // ------------------------------------------------------------------ Inventory screen (owner's request: "arisi moota 50 add pannu")
+
+    @Test
+    fun arisiMootaFiftyIsAskedThenSavedForTheInventoryScreen() {
+        assertEquals("Seri Owner 👍 1 bag evlo kg?", say("arisi moota 50 add pannu").reply.text)
+        assertEquals("Oru bag purchase rate evlo?", say("25 kg").reply.text)
+        assertEquals("Oru kg selling rate evlo?", say("1400").reply.text)
+        val s = say("65")
+        assertEquals("Seri Owner. Arisi — 50 bags = 1250 kg. Purchase ₹70,000. Selling value ₹81,250. Stock add pannattuma?", s.reply.text)
+        assertTrue("nothing saved before Confirm", inv.items.isEmpty() && inv.moves.isEmpty())
+        val done = say("aama")
+        assertTrue(done.reply.text, done.reply.text.startsWith("Done Owner ✅"))
+        // Saved in the books' inventory (the Inventory / Stock screen lists these products).
+        val r = inv.item("Arisi")
+        assertEquals(1, inv.items.size)
+        assertEquals("KG", r.unit)
+        assertTrue(near(r.stock, "1250") && near(r.conversions["BAG"], "25"))
+        assertTrue("₹1,400 a bag = ₹56 a kg", near(r.purchase, "56") && near(r.selling, "65"))
+        assertEquals("Grocery", r.category)
+        assertEquals(listOf(Inventory.Move(r.id, BigDecimal("1250"), "OPENING", "")), inv.moves)
+        // The saved reply offers the Inventory screen, and the product's picture there is the rice sack.
+        assertTrue(done.card!!.buttons.any { it.action == KaiAction.OpenRecord("INVENTORY") })
+        assertEquals(ProductKind.GROCERY, KaiInventory.artKindOf(r.name, r.category, r.unit))
+    }
+
+    @Test
+    fun mootaIsABagWhetherSaidBeforeOrAfterTheNumber() {
+        assertEquals("Seri Owner 👍 1 bag evlo kg?", say("arisi 50 moota add pannu").reply.text)
+        val shop = Inventory()
+        val k = KaiAgent(KaiBusinessBrain(Books()), Books(), shop, { now })
+        assertEquals("Seri Owner 👍 1 bag evlo kg?", runBlocking { k.ask("Rice sack 10 vandhuchu") }.reply.text)
+    }
+
+    @Test
+    fun everyCategoryGetsItsOwnPicture() {
+        val cases = listOf(
+            Triple("Arisi", "Grocery", "KG") to ProductKind.GROCERY,
+            Triple("Ponni Rice", "General", "BAG") to ProductKind.GROCERY,
+            Triple("Coke", "Beverages", "BOTTLE") to ProductKind.BEVERAGE,
+            Triple("Sunflower Oil", null, "LITRE") to ProductKind.LIQUID,
+            Triple("Shirt", "Garments", "PCS") to ProductKind.GARMENT,
+            Triple("Kids frock", "Kids wear", "PCS") to ProductKind.GARMENT,
+            Triple("Slippers", "Footwear", "PAIR") to ProductKind.FOOTWEAR,
+            Triple("Screw", "Hardware", "PCS") to ProductKind.HARDWARE,
+            Triple("Charger", "Electronics", "PCS") to ProductKind.ELECTRONICS,
+            Triple("Colgate", "FMCG", "PCS") to ProductKind.FMCG,
+            Triple("Item 7", "General", "PCS") to ProductKind.GENERAL,
+        )
+        for ((p, kind) in cases) assertEquals(p.toString(), kind, KaiInventory.artKindOf(p.first, p.second, p.third))
+    }
 }
