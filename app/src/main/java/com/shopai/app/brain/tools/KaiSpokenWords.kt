@@ -83,7 +83,7 @@ object KaiSpokenWords {
         "பேமெண்ட்" to "payment", "பேமென்ட்" to "payment", "பேமண்ட்" to "payment", "செட்டில்" to "settle", "கிளியர்" to "clear",
         "கேஷ்" to "cash", "கேஷா" to "cash", "ஆன்லைன்" to "online", "ஆன்லைன்ல" to "online la", "டிரான்ஸ்பர்" to "transfer", "ட்ரான்ஸ்ஃபர்" to "transfer",
         "கிரெடிட்" to "credit", "கிரெடிட்ல" to "credit la", "க்ரெடிட்" to "credit", "டெபிட்" to "debit", "உதார்" to "udhaar",
-        "பெண்டிங்" to "pending", "பேலன்ஸ்" to "balance", "லிஸ்ட்" to "list", "டோட்டல்" to "total", "மொத்தம்" to "motham", "மொத்தமா" to "mothama",
+        "பெண்டிங்" to "pending", "பேலன்ஸ்" to "balance", "லிஸ்ட்" to "list", "டோட்டல்" to "total", "டோட்டலா" to "total", "டோட்டல்ல" to "total la", "மொத்தத்துல" to "mothathula", "மொத்தம்" to "motham", "மொத்தமா" to "mothama",
         "டியூ" to "due", "டேட்" to "date", "தேதி" to "thethi", "வேண்டாம்" to "venam", "வேணாம்" to "venam", "வேணும்" to "venum",
         "கஸ்டமர்" to "customer", "சப்ளையர்" to "supplier", "ஓனர்" to "owner", "அண்ணா" to "anna", "அண்ணே" to "anna", "சார்" to "sir",
         "சரி" to "seri", "ஓகே" to "ok", "ஆமா" to "aama", "ஆமாம்" to "aama", "இல்ல" to "illa", "இல்லை" to "illa", "சேவ்" to "save",

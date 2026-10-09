@@ -448,6 +448,11 @@ class KaiAgent(
             (t.reply.mood == KaiMood.CLARIFY || t.card?.buttons?.isNotEmpty() == true || t.reply.text.trimEnd().endsWith("?"))
     }
 
+    /** The owner's spellings of Kai's words, as the feed knows them ("totel ah" = "total ah"). */
+    private fun spelled(text: String): String = Regex("""[\p{L}]+""").replace(text) { m ->
+        com.shopai.app.brain.tools.KaiFeed.spellings[m.value.lowercase(Locale.ROOT)] ?: m.value
+    }
+
     /** The people and products of this shop, by name (for reading spoken Tamil). */
     private suspend fun knownNames(): List<String> =
         runCatching { books.snapshot()?.people.orEmpty() }.getOrDefault(emptyList()) +
@@ -460,8 +465,8 @@ class KaiAgent(
         val tamil = com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(raw)
         val read = if (!tamil) raw.trim() else com.shopai.app.brain.tools.KaiSpokenWords.withNames(
             com.shopai.app.brain.tools.KaiSpokenWords.normalize(raw.trim()), knownNames())
-        // "Power bank" is a product, not a bank: product names that hold a money word are joined first.
-        val said = com.shopai.app.brain.tools.KaiInventory.joinProductWords(read)
+        // "Power bank" is a product, not a bank: product names that hold a money word are joined first. "totel" = total (KaiFeed).
+        val said = com.shopai.app.brain.tools.KaiInventory.joinProductWords(spelled(read))
         ownerWords = said
         val lang = if (tamil) KaiLang.TAMIL else KaiLanguage.forChat(said)
         brain.spokenLang = if (tamil) KaiLang.TAMIL else null
