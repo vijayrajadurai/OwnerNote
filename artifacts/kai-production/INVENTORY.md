@@ -229,3 +229,22 @@ Tests: `twentyShopCategories` — **133 / 133** owner dialogues across all 20 ca
 quantity, pack, purchase / selling per stock unit, category, size / colour / model / vehicle, batch, expiry; some followed by a
 sale). All earlier checks still pass (owners 100, combinations 150 + 120 + 80, Tamil Nadu 62). Full JVM suite: **1215 tests,
 0 failures.** `ProductArt.kt`, `AppKaiTools.kt` not compiled here (Android build blocked); Pixel 8 blocked.
+
+## 100 owners, a day each — `feature/kai-owner-sessions`
+
+Owner asked: "all categories-la 100 real owner stock add and exit pandramari full test panni bug iruntha fix panni production
+move pandramari paru". `hundredOwnersAddThenSellAcrossAllCategories`: 5 owners in each of the 20 categories add their product
+by chat (all questions answered, Confirm), then do a day's work — stock in (a pack, or 5 of its unit), a sale, a damage, a
+customer return, an entry started and dropped ("venam" / "வேண்டாம்" / "cancel"), and "how much is left?" — owners rotate
+Tanglish / Tamil / English. Every step is checked on the inventory (and the dropped entry and the stock answer on Kai's reply).
+**100 / 100 owners, 700 steps.**
+
+Bugs it found (fixed at the root):
+| Owner said | Before | Fix |
+|---|---|---|
+| "venam" / "வேண்டாம்" / "cancel" right after a stock draft | "edha pathi sollureenga?" (draft left open) | the draft is dropped: "Seri Owner, cancel pannitten. Edhuvum save aagala." |
+| "Sugar எவ்வளவு இருக்கு?" | "இது இர் பத்தியா?" — "இருக்கு" was read as a name with "-க்கு" | இருக்கு / இருக்கா / எவ்வளவு / எத்தனை are words, never names |
+| "Murukku evlo irukku?", "How much Phone Cover is left?" | "Murukku-nu customer record illa", "is this about Cover?" | a product of the shop named in full in a stock question is answered with its stock (a real person in the books still wins) |
+| "1 packets kuraichiten" | plural for one | one / many said right |
+
+Full JVM suite: **1216 tests, 0 failures.** Android build / Pixel 8 still blocked here.

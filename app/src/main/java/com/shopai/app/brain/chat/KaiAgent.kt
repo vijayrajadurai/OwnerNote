@@ -530,8 +530,9 @@ class KaiAgent(
 
         // A new product by chat: "48" / "200 gram" / "28" / "skip" / "illa 3 box dhaan" / "aama" to Kai's one question.
         if (openPayment == null) newItemAnswer(said, lang)?.let { return it }
-        // "illa 3 box dhaan" right after a stock draft: the same draft, corrected.
+        // "illa 3 box dhaan" right after a stock draft: the same draft, corrected; "venam" / "cancel" / "வேண்டாம்" drops it.
         if (openPayment == null) stockDraftCorrection(said, lang)?.let { return it }
+        if (openPayment == null) stockDraftCancel(said, lang)?.let { return it }
         // "box" / "pieces" to "Colgate 5 — 5 pieces-aa, 5 boxes-aa?".
         if (openPayment == null) unitPicked(said, lang)?.let { return it }
         // "aama" / "venam" to a product change; "credit" / "28" / "box" to a bill with goods.
@@ -621,6 +622,17 @@ class KaiAgent(
         if (plans.isEmpty() && products != null) newStockLine(spoken, said, lang, products, people)?.let { return it }
         // Inventory by chat: bills with goods, product changes / details, the inventory summary — before reminders and payments.
         if (plans.isEmpty() && products != null) inventoryChat(spoken, said, lang, products, people)?.let { return it }
+        // "Murukku evlo irukku?", "How much Phone Cover is left?": a product of this shop named in full in a stock question is
+        // its stock — even when the name ends like "-ku" (not a person) or holds a word Kai knows for something else ("phone").
+        // Only a person who really is in the books stops it ("Murukku" is not "Muruk-ku").
+        if (plans.isEmpty() && products != null && stockAsk.containsMatchIn(spoken) && spoken.none(Char::isDigit) &&
+            KaiEntityResolver.peopleIn(spoken, people).isEmpty() &&
+            !com.shopai.app.brain.tools.KaiInventory.buys(spoken) && !com.shopai.app.brain.tools.KaiInventory.sells(spoken)) {
+            productNamed(spoken, products)?.let { p ->
+                rememberProduct(p)
+                return stock(p, lang)
+            }
+        }
         if (plans.isEmpty()) brain.answerChoice(spoken)?.let { reply -> return KaiTurn(reply) }
         if (plans.isEmpty()) brain.listFollowUp(spoken)?.let { reply ->
             conversationState.currentIntent = "BUSINESS_QUERY"
@@ -2607,6 +2619,15 @@ class KaiAgent(
      * "illa 3 box dhaan" / "3 box dhaan" right after a stock draft on a product the books have: the quantity is corrected in the
      * same draft (same key, nothing written) — never a second entry. The unit said first is kept when none is said now.
      */
+    /** "venam" / "cancel" / "வேண்டாம்" right after a stock draft: the draft is dropped and nothing is saved. */
+    private suspend fun stockDraftCancel(said: String, lang: KaiLang): KaiTurn? {
+        val last = lastDraft?.takeIf { it.second == "STOCK" } ?: return null
+        val plan = stockPlans.values.lastOrNull { it.said == last.first } ?: return null
+        if (!KaiConversationSemantics.cancelsDraft(said)) return null
+        lastDraft = null
+        return act(KaiAction.CancelStock(plan.key), lang)
+    }
+
     private fun stockDraftCorrection(said: String, lang: KaiLang): KaiTurn? {
         val last = lastDraft?.takeIf { it.second == "STOCK" } ?: return null
         val plan = stockPlans.values.lastOrNull { it.said == last.first } ?: return null
@@ -3162,7 +3183,7 @@ class KaiAgent(
     /** "Done Owner ✅ Colgate stock-la 12 pieces add panniten." */
     private fun stockDone(name: String, q: BigDecimal, unit: String, incoming: Boolean, after: String?, lang: KaiLang): KaiTurn {
         val n = q.stripTrailingZeros().let { if (it.scale() < 0) it.setScale(0) else it }.toPlainString()
-        val u = com.shopai.app.brain.tools.KaiStock.unitWord(unit)
+        val u = com.shopai.app.brain.tools.KaiStock.unitWord(unit, q)
         return if (incoming) say(lang, KaiMood.SUCCESS, null,
             ta = "சரி ஓனர் ✅ $name ஸ்டாக்-ல $n $u சேர்த்துட்டேன்." + (after?.let { " இப்போ ஸ்டாக் $it." } ?: ""),
             tl = "Done Owner ✅ $name stock-la $n $u add panniten." + (after?.let { " Ippo stock $it." } ?: ""),

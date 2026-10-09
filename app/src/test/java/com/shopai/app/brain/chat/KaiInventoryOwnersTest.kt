@@ -743,4 +743,58 @@ class KaiInventoryOwnersTest {
         assertTrue(twenty.map { it.shop.substringBefore(' ') }.toSet().size == 20)
         assertTrue(failures.joinToString("\n\n"), failures.isEmpty())
     }
+
+    // ------------------------------------------------------------------ 100 owners: add a product, then a day of stock in / out
+
+    private val baseWord = mapOf("PCS" to "pieces", "KG" to "kg", "BOTTLE" to "bottle", "PACK" to "packet", "PAIR" to "pair", "METER" to "meter",
+        "LITRE" to "litre", "BAG" to "bag", "SET" to "set", "TABLET" to "tablet", "STRIP" to "strip", "REAM" to "ream", "BUNDLE" to "kattu", "MUZHAM" to "muzham")
+    private val packWord = mapOf("BOX" to "box", "BAG" to "moota", "CASE" to "case", "CARTON" to "carton", "STRIP" to "strip", "TRAY" to "tray",
+        "ROLL" to "roll", "COIL" to "coil", "BUNDLE" to "kattu", "BASKET" to "basket", "CAN" to "dabba")
+
+    /** How each owner speaks after the product is in: stock in, sale, damage, customer return, a draft dropped, a stock question. */
+    private data class Talk(val inn: String, val sale: String, val damage: String, val ret: String, val query: String, val no: String, val dropped: String)
+    private val talks = listOf(
+        Talk("{p} {q} vandhuchu", "{p} {q} vithuten", "{p} {q} damage aachu", "{p} {q} customer return vandhuchu", "{p} evlo irukku?", "venam", "cancel pannitten"),
+        Talk("{p} {q} வந்திருக்கு", "{p} {q} விற்றேன்", "{p} {q} சேதம்", "{p} {q} customer return", "{p} எவ்வளவு இருக்கு?", "வேண்டாம்", "ரத்து"),
+        Talk("Received {q} {p}", "Sold {q} {p}", "{q} {p} damaged", "Customer returned {q} {p}", "How much {p} is left?", "cancel", "cancel pannitten"),
+    )
+
+    private fun plainQty(q: BigDecimal) = q.stripTrailingZeros().let { if (it.scale() < 0) it.setScale(0) else it }.toPlainString()
+
+    /** One owner's day after adding the product; every step checks the stock it must leave. */
+    private fun day(o: Owner, talk: Talk): List<St> {
+        val e = o.exp!!
+        var stock = BigDecimal(e.stock)
+        val name = o.first.let { f -> e.name.takeIf { f.contains(it, ignoreCase = true) } ?: e.name }
+        val base = baseWord[e.unit] ?: return emptyList()
+        fun t(tpl: String, q: String) = tpl.replace("{p}", name).replace("{q}", q)
+        val steps = mutableListOf<St>()
+        // Stock in: a pack when the product has one, else 5 of its unit.
+        val pack = e.pack
+        if (pack != null && packWord[pack.first] != null) {
+            stock += BigDecimal(pack.second)
+            steps += St(t(talk.inn, "1 ${packWord.getValue(pack.first)}"), stock = plainQty(stock))
+        } else {
+            stock += BigDecimal(5)
+            steps += St(t(talk.inn, "5 $base"), stock = plainQty(stock))
+        }
+        stock -= BigDecimal(2); steps += St(t(talk.sale, "2 $base"), stock = plainQty(stock))
+        stock -= BigDecimal.ONE; steps += St(t(talk.damage, "1 $base"), stock = plainQty(stock))
+        stock += BigDecimal.ONE; steps += St(t(talk.ret, "1 $base"), stock = plainQty(stock))
+        // The owner starts an entry and drops it: nothing changes.
+        steps += St(t(talk.inn, "3 $base"), follow = listOf(talk.no), tap = false, has = talk.dropped, stock = plainQty(stock))
+        steps += St(t(talk.query, ""), tap = false, has = plainQty(stock), stock = plainQty(stock))
+        return steps
+    }
+
+    @Test
+    fun hundredOwnersAddThenSellAcrossAllCategories() {
+        val five = twenty.groupBy { it.shop.substringBefore(' ') }.values.flatMap { it.take(5) }
+        val sessions = five.mapIndexed { i, o -> o.copy(then = day(o, talks[i % talks.size])) }
+        val failures = sessions.mapNotNull(::play)
+        val steps = sessions.sumOf { 1 + it.then.size }
+        println("MATRIX inventory-100-owner-days ${sessions.size - failures.size}/${sessions.size} owners, $steps steps")
+        assertTrue("${sessions.size} owners", sessions.size == 100)
+        assertTrue(failures.joinToString("\n\n"), failures.isEmpty())
+    }
 }

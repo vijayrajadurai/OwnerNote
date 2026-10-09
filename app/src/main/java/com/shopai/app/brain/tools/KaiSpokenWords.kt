@@ -54,6 +54,9 @@ object KaiSpokenWords {
         "என்ன" to "enna", "பண்ற" to "panra", "பண்றீங்க" to "panreenga", "குட்" to "good", "மார்னிங்" to "morning", "நைட்" to "night",
         "வணக்கம்" to "vanakkam", "ரொம்ப" to "romba", "பிஸி" to "busy", "நன்றி" to "nandri", "தேங்க்ஸ்" to "thanks",
         "எப்படி" to "eppadi", "இருக்கீங்க" to "irukkeenga", "இருக்க" to "irukka",
+        // "இருக்கு" is "is there", never a name with "-க்கு" ("இர்-ku"); "எவ்வளவு" is "evlo".
+        "இருக்கு" to "irukku", "இருக்கா" to "irukka", "இருக்குதா" to "irukka", "இருக்குது" to "irukku",
+        "எவ்வளவு" to "evlo", "எவ்ளோ" to "evlo", "எத்தனை" to "ethana",
     ).sortedByDescending { it.first.length }
 
     private val wordMap = words.toMap()
