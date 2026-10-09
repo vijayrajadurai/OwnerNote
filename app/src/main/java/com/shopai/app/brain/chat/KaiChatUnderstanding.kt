@@ -174,7 +174,10 @@ object KaiChatUnderstanding {
         // "Who has to pay me?" is money coming in, not the owner paying.
         // "Yaaru kudukkanum?" (who has to give — me): the person asked about gives; "yaarukku kudukkanum?" (to whom) is the owner paying.
         val whoGives = has(" yaar ", " yaaru ", " yar ", " yaru ") && !toWhom && !has(" naan ", " nan ", " neenga ")
-        val paysMe = has(" pay me", " pays me", " paying me", " pay us") || whoGives && has(" kudukkanum", " kodukkanum", " kudukanum", " kodukanum")
+        val paysMe = has(" pay me", " pays me", " paying me", " pay us") || whoGives && has(" kudukkanum", " kodukkanum", " kudukanum", " kodukanum") ||
+            // "Today who has to pay?", "who owes": the person asked about pays — unless the owner is the one paying ("who do I have to pay?").
+            has(" who has to pay", " who have to pay", " who needs to pay", " who should pay", " who must pay", " who will pay", " who is paying", " who pays") &&
+            !has(" do i ", " i have", " should i", " i need", " i must", " i owe")
         val payWords = !paysMe && has(" kudukkanum", " kodukkanum", " kudukanum", " kodukanum", " kudukanu", " kudukka ", " pay ", " payable", " supplier", " i owe", " do i owe", " கொடுக்க", " குடுக்க")
         val collectWords = paysMe || has(" collect", " vasool", " tharanum", " varanum", " vanganum", " vaanganum", " receive", " receivable", " owes me",
             " owe me", " payment", " cash tharanum", " vanganu", " vaanganu", " வசூல்", " தரணும்", " வரணும்", " வாங்கணும்")

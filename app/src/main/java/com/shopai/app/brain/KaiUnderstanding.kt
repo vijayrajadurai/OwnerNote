@@ -228,7 +228,8 @@ object KaiUnderstanding {
 
     // "moonu ayiram", "rendu ayirathu anjooru", "three thousand five hundred".
     private fun wordAmount(text: String): Double? {
-        val tokens = text.lowercase(Locale.ROOT).split(Regex("""[\s,\-]+""")).filter { it.isNotEmpty() }
+        // "moonu aayiram." / "rendu aayiram!" — a sentence's own punctuation is not part of the number word.
+        val tokens = text.lowercase(Locale.ROOT).split(Regex("""[\s,\-]+""")).map { it.trim('.', '!', '?', ';', ':') }.filter { it.isNotEmpty() }
         var total = 0L
         var current = 0L
         var saw = false

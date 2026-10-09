@@ -30,6 +30,18 @@ object KaiFeed {
         settle pannitaar
         clear pannitaan
         clear pannitaar
+        kattinan
+        kattinaan
+        kattinar
+        kattinaar
+        kattinanga
+        kattinaanga
+        katti tan
+        katti taan
+        kattitaan
+        kattittan
+        kattittaan
+        kattitaru
     """)
 
     /** Money the owner PAID — "ABC Traders-ku 500 ____". */
@@ -137,6 +149,7 @@ object KaiFeed {
         monday tuesday wednesday thursday friday saturday sunday
         general generala yarlam yaarlam yaarellam yarukita yarukitta
         late correct usually phone number mobile contact
+        ippo ipo ippa ipa ippodhu ippothu ipodhu indru inru
     """)
 
     /** Everyday words Kai reads without asking what they mean. */

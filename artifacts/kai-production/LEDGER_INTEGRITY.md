@@ -82,3 +82,22 @@ Found and fixed at the root in this round:
 
 Kept on purpose (Kai asks, never guesses): "Lakshmi akka 500 kuduthanga" asks Lakshmi herself or her sister; "Colgate 2 petti" asks
 box or pieces (petti stays an owner-taught word); "Maggi 2 box" asks pieces per box when the product has no box size.
+
+## 1000 owners, 1,00,000 lines (`fix/kai-mass-sweep`)
+
+`KaiThousandOwnersTest`: each owner has their own customers (20% with two records of one name), suppliers and products, and says
+100 lines in their own way — Tanglish, Tamil-script names, English, "innaiku / ippo / anna / pa / da", amounts as 2000 / 2,000 /
+₹2000 / 2000 rs / 2k / "rendu aayiram". Each line runs on a fresh copy of that shop and is checked in the books and stock.
+Default 100 owners (10,000 lines); `KAI_OWNERS=1000` runs 1,00,000.
+
+| Run | Correct | Wrong entry | Not understood |
+|---|---|---|---|
+| Before (1,00,000 lines) | 97.1% | 16 | 1,918 |
+| After (1,00,000 lines) | **100%** (98,908 done + 1,092 right questions: which Kumar / 1 piece or box) | **0** | **0** |
+
+Fixed: "kattinan / katti tan" (paid) read as a question · "today who has to pay" listed suppliers · "innaiku ABC ku 3000 kudukkanum"
+and "innaiku … pay pannen" asked for a reminder time · "Karthik kuduthar 5000" took "Kuduthar" as part of the name · Tamil
+"லட்சுமி" didn't match Lakshmi (ட்ச = ksh) · "ippo லட்சுமி enakku 750 tharanum" drafted credit for a person called "Ippo" ·
+"moonu aayiram." (number words before a full stop) not read as an amount.
+
+These lines are generated from patterns; real owners will say things outside them — those go into `owner-lines.txt`.

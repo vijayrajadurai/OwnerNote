@@ -30,7 +30,9 @@ object NameSound {
         return if (s.any(::isTamil)) tamil(s) else latin(s)
     }
 
-    private fun tamil(s: String): Pair<String, String> {
+    private fun tamil(raw: String): Pair<String, String> {
+        // "ட்ச" is how Tamil writes "ksh" / "x" (லட்சுமி = Lakshmi, லட்சம் = laksham): read as "க்ச" (k + s).
+        val s = raw.replace("ட்ச", "க்ச").replace("க்ஷ", "க்ச")
         val cons = StringBuilder()
         val vowels = StringBuilder()
         var i = 0

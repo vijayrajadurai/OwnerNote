@@ -36,3 +36,14 @@ ASK    | Kumar evlo baaki                               | ₹4,000
 ASK    | Ennai stock evlo                               | 240
 ASK    | Innaiku yaaru yaaru kudukkanum                 | Kumar; Ramesh
 ASK    | Selvam eppo tharuvan                           | Selvam
+
+# From the 1,00,000-line run (9 Oct 2026): each was misread before.
+ENTRY  | Kumar 2000 kattinan                            | IN Kumar 2000
+ENTRY  | Kumar 2000 rupees katti tan                    | IN Kumar 2000
+ENTRY  | Kumar kuduthar 2000                            | IN Kumar 2000
+ENTRY  | Kumar kuduthar moonu aayiram.                  | IN Kumar 3000
+ENTRY  | innaiku ABC Traders ku 3000 kudukkanum         | DEBIT ABC Traders 3000
+ENTRY  | innaiku ABC Traders ku 1500 pay pannen         | OUT ABC Traders 1500
+ENTRY  | ippo லட்சுமி enakku 750 tharanum               | CREDIT Lakshmi 750
+ASK    | லட்சுமி evlo tharanum                          | ₹1,000
+ASK    | today who has to pay                           | Kumar; Ramesh

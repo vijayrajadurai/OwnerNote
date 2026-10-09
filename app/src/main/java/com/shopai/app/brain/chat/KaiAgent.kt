@@ -1401,6 +1401,8 @@ class KaiAgent(
             val k = w.lowercase(Locale.ROOT)
             if (w.length < 3 || k in known || k in notQualifiers || k in relationWords || KaiEntityResolver.isFunctionWord(k)) return null
             if (verbEnding.containsMatchIn(k) || samePerson(k, person) || com.shopai.app.brain.KaiUnderstanding.isNumberWord(k)) return null
+            // "Karthik kuduthar 5000", "Divya pay pannitaan": the verb, never a second name ("Karthik Kuduthar").
+            if (giveVerb.matches(k) || k in com.shopai.app.brain.tools.KaiFeed.receivedWords || k in com.shopai.app.brain.tools.KaiFeed.paidWords) return null
             if (com.shopai.app.brain.tools.KaiPaymentDirection.of(w) != null) return null
             if (runCatching { com.shopai.app.brain.KaiUnderstanding.amountsIn(w, today) }.getOrDefault(emptyList()).isNotEmpty()) return null
             if (runCatching { KaiTime.parse(w, now()) }.getOrNull() != null) return null
@@ -2347,6 +2349,7 @@ class KaiAgent(
     }
 
     private val modeOnly = Regex("""(?i)^[\p{L}][\p{L}\s.'-]{1,40}?\s+(?:₹|rs\.?\s*)?\d[\d,]*(?:\.\d+)?\s*(?:rs|rupees|ruba|rubai)?\s*(?:gpay|g\s*pay|upi|phonepe|phone\s*pe|paytm|cash|online|bank)\s*[.!]?$""")
+    private val giveVerb = Regex("""(?i)(kuduth|koduth|kudupp|thandh|thanth|anupp|anup|katt|vaang|vang|pann|vandh|vanth|pay|gpay|settle|clear)\p{L}*""")
     private val creditWord = Regex("""(?i)(?<![\p{L}])(credit|kadan|kadana|kadanaa|udhaar|udhar)(?![\p{L}])|கடன்""")
     private val questionLike = Regex("""(?i)(?<![\p{L}])(evlo|evvalavu|eppo|eppa|yaar|yaaru|enna|how|what|when|who|ah|aa)(?![\p{L}])|\?""")
 

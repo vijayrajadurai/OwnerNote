@@ -117,6 +117,8 @@ object KaiReminderUnderstanding {
         RegexOption.IGNORE_CASE,
     )
     private val tellMe = Regex("""$B(sollu|sollunga|tell me|solli)$E|சொல்லு""", RegexOption.IGNORE_CASE)
+    /** "pay pannen", "kuduthen", "anuppinen": done already — nothing to be reminded of. */
+    private val donePast = Regex("""$B(pannen|panninen|panniten|pannitten|kuduthen|koduthen|kuduthuten|anuppinen|anuppiten|kattinen|vanginen|vaanginen)$E""", RegexOption.IGNORE_CASE)
     private val doVerbs = Regex(
         """$B(call|phone|message|msg|whatsapp|sms|pay|payment|collect|vasool|check|eduka|edukka|eduthuka|pannanum|panna|poganum|vaanganum|""" +
             """kudukkanum|kattanum|follow\s*up|follow-up)$E|கால்|போன்|மெசேஜ்""",
@@ -189,6 +191,10 @@ object KaiReminderUnderstanding {
         // Create: a reminder word, or a time with something to do ("10 mins kalichu Kumar call"), or "… sollu" with a time.
         val create = mentionsReminder || (time != null && (doVerbs.containsMatchIn(text) || tellMe.containsMatchIn(text)))
         if (!create) return null
+        // "innaiku ABC ku 3000 kudukkanum", "innaiku ABC ku pay pannen": money owed / paid today, said without "remind" and without a
+        // clock time — an entry, not a reminder. (Kai never asks "eppa remind pannanum?" for words that didn't ask for one.)
+        if (!mentionsReminder && time != null && time.relative == null && time.needsTime && time.at.toLocalDate() == now.toLocalDate()) return null
+        if (!mentionsReminder && donePast.containsMatchIn(text)) return null
         // "today due + overdue list sollu": "tell me" a report from the books, not a reminder to set.
         if (!mentionsReminder && !doVerbs.containsMatchIn(text) && ledgerReport.containsMatchIn(text)) return null
         // A question about the business that happens to have a time ("inniku evlo sales?") is not a reminder.
