@@ -147,7 +147,7 @@ object KaiCommands {
     /** "anuppinan", "anuppichan", "anupitaanga": they sent it (any spelling of the 3rd-person past of anuppu). */
     private val personSent = Regex("""(?i)(?<![\p{L}])anupp?[iu](?:n|tt?|ch{1,2}|cch)?(?:aan|an|aar|ar|aru|aaru|aanga|anga)(?![\p{L}])""")
     /** "kuduthaaru", "kuduthar", "koduthutaanga", "thandhaaru": they gave it (any spelling of the 3rd-person past of kudu / thaa). */
-    private val personGave = Regex("""(?i)(?<![\p{L}])(?:kuduth|koduth|thandh|thanth)(?:u?tt?|it?t?)?(?:aan|an|aar|ar|aaru|aru|aanga|anga)(?![\p{L}])""")
+    private val personGave = Regex("""(?i)(?<![\p{L}])(?:kudh?u?th|kodh?u?th|thandh|thanth)(?:u?tt?|it?t?)?(?:aan|an|aar|ar|aaru|aru|aanga|anga)(?![\p{L}])""")
     /** "anuppinen", "anuppichen", "anupiten": the owner sent it. */
     private val ownerSent = Regex("""(?i)(?<![\p{L}])anupp?[iu](?:n|tt?|ch{1,2}|cch)?(?:en|een|aen)(?![\p{L}])""")
     private val goodsWords = Regex("""(?i)\b(kg|kgs|kilo|litre|ltr|bag|bags|pcs|pieces|packet|box|dozen|rice|arisi|sugar|oil|maavu|paal)\b""")

@@ -185,7 +185,17 @@ object KaiStock {
             head.length >= 3 && head.first().isLetter() && head !in units && head !in fillers &&
                 words.withIndex().any { (i, w) -> w == head && beforeQty(i + 1) }
         }
-        return first.singleOrNull()
+        first.singleOrNull()?.let { return it }
+        // "Suga 5", "Biscui 2 box", "Horlick 3": the one product whose first word the said word is the start of (four letters
+        // or more, most of the name) — a name cut short while typing, never a new product.
+        val cut = named.filter { p ->
+            val head = p.name.lowercase(Locale.ROOT).split(Regex("""\s+""")).first()
+            words.withIndex().any { (i, w) ->
+                w.length >= 4 && w.length < head.length && w.length * 10 >= head.length * 7 && head.startsWith(w) &&
+                    w.first().isLetter() && w !in units && w !in fillers && beforeQty(i + 1)
+            }
+        }
+        return cut.singleOrNull()
     }
 
     /** The common Tamil names of grocery goods, for a shop that keeps them in English ("arisi" = Rice). */

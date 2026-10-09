@@ -47,3 +47,13 @@ ENTRY  | innaiku ABC Traders ku 1500 pay pannen         | OUT ABC Traders 1500
 ENTRY  | ippo லட்சுமி enakku 750 tharanum               | CREDIT Lakshmi 750
 ASK    | லட்சுமி evlo tharanum                          | ₹1,000
 ASK    | today who has to pay                           | Kumar; Ramesh
+
+# From the 1,00,00,000-line run (9 Oct 2026): each was misread before.
+ENTRY  | ABC Traders ku 2000 anuppiachu                 | OUT ABC Traders 2000
+ENTRY  | ABC Traders ku 3000 neft panniten              | OUT ABC Traders 3000
+ENTRY  | Kumar 1500 kudthan                             | IN Kumar 1500
+ENTRY  | kudhuthan Kumar 1500                           | IN Kumar 1500
+ENTRY  | hmm Kumar 1500 kuduthan                        | IN Kumar 1500
+STOCK  | Colga 1 box maal vandhuchu                     | Colgate 288
+STOCK  | Baniya 10 vithuchu                             | Baniyan 40
+REMIND | naalaiku 9 manikku செல்வம் kitta payment vaanga remind pannu | 2026-10-09 09:00 Selvam

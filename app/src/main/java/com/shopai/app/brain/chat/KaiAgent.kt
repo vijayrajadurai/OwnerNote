@@ -1365,7 +1365,7 @@ class KaiAgent(
 
     /** Words said next to a name that are never who it is: time, money ways, fillers, the owner, roles. */
     private val notQualifiers = setOf(
-        "late", "lateaa", "latea", "correct", "early", "seekiram", "sikkiram", "usually", "eppavum", "eppavume",
+        "hmm", "hmmm", "umm", "ahh", "aah", "haan", "ohh", "ayyo", "ayyoo", "late", "lateaa", "latea", "correct", "early", "seekiram", "sikkiram", "usually", "eppavum", "eppavume",
         "inniku", "innikku", "innaiku", "innaikku", "indru", "naalaikku", "nalaikku", "naalaiku", "nalaiku", "nethu", "nethiku", "today", "tomorrow",
         "yesterday", "ippo", "ipo", "ippa", "ipa", "appo", "seri", "sari", "ok", "okay", "bro", "boss", "owner", "sir", "madam", "kanakku", "kanakkula",
         "account", "entry", "credit", "debit", "gpay", "phonepe", "paytm", "upi", "online", "bank", "card", "cheque", "mattum", "dhaan", "than",

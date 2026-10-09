@@ -42,6 +42,13 @@ object KaiFeed {
         kattittan
         kattittaan
         kattitaru
+        kudthan
+        kudthaan
+        kudhuthan
+        kudhuthaan
+        kodthan
+        kodthaan
+        kodhuthan
     """)
 
     /** Money the owner PAID — "ABC Traders-ku 500 ____". */
@@ -54,6 +61,21 @@ object KaiFeed {
         kattinen
         katten
         kattiten
+        anuppiachu
+        anupiachu
+        anuppiyachu
+        anuppiyaachu
+        anuppiyachu
+        neft panniten
+        neft pannen
+        imps panniten
+        imps pannen
+        rtgs panniten
+        rtgs pannen
+        kudthen
+        kudhuthen
+        kodthen
+        kodhuthen
     """)
 
     /** Stock that CAME IN — "Colgate 2 box ____". */
@@ -150,6 +172,7 @@ object KaiFeed {
         general generala yarlam yaarlam yaarellam yarukita yarukitta
         late correct usually phone number mobile contact
         ippo ipo ippa ipa ippodhu ippothu ipodhu indru inru
+        hmm hm hmmm umm um mm ahh aah haan han oh ohh ayyo ayyoo seri sari ok okay
     """)
 
     /** Everyday words Kai reads without asking what they mean. */

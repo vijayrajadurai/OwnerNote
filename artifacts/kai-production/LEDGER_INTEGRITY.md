@@ -101,3 +101,18 @@ and "innaiku … pay pannen" asked for a reminder time · "Karthik kuduthar 5000
 "moonu aayiram." (number words before a full stop) not read as an amount.
 
 These lines are generated from patterns; real owners will say things outside them — those go into `owner-lines.txt`.
+
+## Wider words, 1,00,000 lines (`fix/kai-10m-sweep`)
+
+A second probe with more ways of saying each thing (two spellings and word orders for "paid", English lines, Tamil-script
+names, credit with a due date, purchase, no amount, reminders, cut-short product names, fillers like "hmm / seri").
+
+| Run | Correct | Wrong entry | Not understood |
+|---|---|---|---|
+| Before (1,00,000 lines) | 94.9% | — | ~5,100 |
+| After (1,00,000 lines) | **100%** (98,064 done + 1,867 right questions) | **0** | **0** |
+
+Fixed: "ABC ku 2000 anuppiachu", "neft / imps / rtgs panniten" (paid) not understood · "kudthan / kudhuthan / kodthan" (received)
+not understood · "Suga 5", "Biscui 2", "Horlick 3" (a product name cut short) taken as a new product · "hmm Kumar 1500 kuduthan"
+asked "'Hmm Kumar' — adhey Kumar-aa?" · "naalaiku 10 manikku Kumar ku call panna" set "Call Mani" when a customer Mani exists
+(10 manikku is a time) · same with a Tamil-script name ("குமார் kitta … 9 manikku") — the reminder wasn't linked to Kumar.

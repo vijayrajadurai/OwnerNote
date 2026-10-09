@@ -40,4 +40,14 @@ class NameSoundTest {
         val ledger = BusinessSnapshot(customers = listOf(PartySummary("c1", "குமார்", null, 2000.0, null)))
         assertEquals("c1", ledger.find("Kumar").single().id)
     }
+
+    @Test
+    fun `a clock time is never a customer named Mani`() {
+        val known = listOf("Mani", "Kumar")
+        assertEquals("Kumar", KaiUnderstanding.knownPerson("naalaiku 10 manikku Kumar ku call panna remind pannu", known))
+        assertEquals("Kumar", KaiUnderstanding.knownPerson("naalaiku 10 manikku குமார் ku call panna remind pannu", known))
+        assertEquals("Kumar", KaiUnderstanding.knownPerson("குமார் kitta payment vaanga naalaiku kaalaila 9 manikku remind pannu", known))
+        assertEquals("Mani", KaiUnderstanding.knownPerson("naalaiku 10 manikku Mani ku call panna remind pannu", known))
+        assertEquals("Mani", KaiUnderstanding.knownPerson("Mani 500 kuduthan", known))
+    }
 }

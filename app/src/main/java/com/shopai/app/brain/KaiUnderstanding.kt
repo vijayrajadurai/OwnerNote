@@ -257,8 +257,13 @@ object KaiUnderstanding {
 
     // ------------------------------------------------------------ people
 
+    /** "10 manikku", "5 மணிக்கு": a clock time. */
+    private val clockTime = Regex("""(?i)(?<![\p{L}\p{N}])\d{1,2}(?:[.:]\d{2})?\s*(?:mani|மணி)[\p{L}\p{M}]*""")
+
     /** A known customer/supplier named in the words ("Kumar-ku", "kumarukku" included). */
-    fun knownPerson(text: String, known: List<String>): String? {
+    fun knownPerson(raw: String, known: List<String>): String? {
+        // "10 manikku", "5 மணிக்கு": a clock time, never a customer named Mani.
+        val text = raw.replace(clockTime, " ")
         val lower = text.lowercase(Locale.ROOT)
         val names = known.filter { it.isNotBlank() }.sortedByDescending { it.length } // "Ravi Kumar" before "Ravi"
         // The whole name, or the name with a case ending ("Kumar-ku", "Kumarukku", "Kumarkitta") — never the start of
