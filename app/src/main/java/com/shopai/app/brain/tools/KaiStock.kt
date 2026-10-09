@@ -33,6 +33,8 @@ data class StockRequest(
     val unit: String?,
     /** Every quantity said, in order ("1 box 3 pieces" → [1 BOX, 3 PCS]); the stock flow converts them. */
     val parts: List<QtyPart> = emptyList(),
+    /** A size said as part of the name ("5 inch" in "5inch tape 10"): the product's size, never the quantity. */
+    val size: String? = null,
 )
 
 /**
@@ -150,10 +152,30 @@ object KaiStock {
 
     private fun has(lower: String, list: List<String>) = list.any { w -> Regex("""(?<![\p{L}])${Regex.escape(w)}(?![\p{L}])""").containsMatchIn(lower) }
 
-    /** The longest real product name in the words (names may contain numbers: "Colgate 200g"). */
-    private fun productIn(lower: String, products: List<ProductRef>) = products.filter { it.name.isNotBlank() }
-        .sortedByDescending { it.name.length }
-        .firstOrNull { p -> Regex("""(?<![\p{L}\p{N}])${Regex.escape(p.name.lowercase(Locale.ROOT))}(?![\p{L}])""").containsMatchIn(lower) }
+    /**
+     * The longest real product name in the words (names may contain numbers: "Colgate 200g") — else the one product that
+     * sounds the same as the words said ("bhaniyan" for Baniyan, "kolgate" for Colgate): names of five letters or more only,
+     * and only when exactly one product sounds like that.
+     */
+    private fun productIn(lower: String, products: List<ProductRef>): ProductRef? {
+        val named = products.filter { it.name.isNotBlank() }
+        named.sortedByDescending { it.name.length }
+            .firstOrNull { p -> Regex("""(?<![\p{L}\p{N}])${Regex.escape(p.name.lowercase(Locale.ROOT))}(?![\p{L}])""").containsMatchIn(lower) }
+            ?.let { return it }
+        val words = lower.split(' ').filter { it.isNotEmpty() }
+        val sounds = named.filter { p ->
+            val pw = p.name.lowercase(Locale.ROOT).split(Regex("""\s+"""))
+            pw.size <= 3 && p.name.count(Char::isLetter) >= 5 && words.windowed(pw.size).any { w ->
+                w.none { it in units || it in fillers || it in numberWords || it.first().isDigit() } &&
+                    w.zip(pw).all { (a, b) -> a == b || (a.length >= 4 && b.length >= 4 && soundsSame(a, b)) }
+            }
+        }
+        return sounds.singleOrNull()
+    }
+
+    /** Two spellings of one word ("bhaniyan" / "baniyan", "kolgate" / "colgate"): the same consonant skeleton, three or more of them. */
+    private fun soundsSame(a: String, b: String): Boolean =
+        com.shopai.app.util.NameSound.same(a, b) || com.shopai.app.util.NameSound.key(a).let { k -> k.length >= 3 && k == com.shopai.app.util.NameSound.key(b) }
 
     /** The words left once stock words, numbers and units are taken out — the product's name as said. */
     private fun spokenName(rest: String): String {
@@ -207,15 +229,33 @@ object KaiStock {
         return null
     }
 
+    /** "5inch", "10 inch", "2.5 mm", "4 sqmm", "9 watt": a size number with its size word. */
+    private val specSize = Regex("""(?<![\p{L}\d.])(\d+(?:\.\d+)?)\s*(inch|inches|mm|cm|ft|feet|sqmm|sq\s*mm|watt|watts|volt|volts|amp|amps|hp|gauge)(?![\p{L}])""")
+
+    /**
+     * "5inch tape 10 add pannu", "10 inch pipe 90": the size is part of the product ("5 inch Tape") and the other number is
+     * the quantity. Only when another number is said — "pipe 20 feet" alone keeps 20 feet as what came in.
+     */
+    private fun sizeInName(rest: String): Pair<String, String>? {
+        val specs = specSize.findAll(rest).toList().takeIf { it.isNotEmpty() } ?: return null
+        val left = specSize.replace(rest, " ")
+        if (Regex("""(?<![\p{L}\d.])\d+(?:\.\d+)?(?![\d])""").find(left) == null && left.split(' ').none { it in numberWords }) return null
+        val shown = specs.joinToString(" ") { m -> "${m.groupValues[1]} ${m.groupValues[2].replace(Regex("""\s+"""), "")}" }
+        return shown to left.replace(Regex("""\s+"""), " ")
+    }
+
     fun understand(text: String, products: List<ProductRef>): StockRequest? {
-        val lower = lowerOf(text)
+        // "5inch tape" is said and written "5 inch tape": the same product.
+        val lower = lowerOf(text).replace(Regex("""(?<![\p{L}\d.])(\d+(?:\.\d+)?)(inch|inches|mm|cm|ft|feet|sqmm|watt|watts|volt|volts|amp|amps|hp)(?![\p{L}])"""), "$1 $2")
         if (notStock.containsMatchIn(lower) || timeAfterNumber.containsMatchIn(lower)) return null
         val product = productIn(lower, products)
         val isIn = direction(lower, product) ?: return null
-        val rest = product?.let { lower.replace(it.name.lowercase(Locale.ROOT), " ") } ?: lower
+        val named = product?.let { lower.replace(it.name.lowercase(Locale.ROOT), " ") } ?: lower
+        val sized = if (product == null) sizeInName(named) else null
+        val rest = sized?.second ?: named
         val words = rest.split(' ').filter { it.isNotEmpty() }
         val (qty, saidUnit) = quantityIn(rest) ?: (null to words.firstNotNullOfOrNull { units[it] })
-        val spoken = product?.name ?: spokenName(rest)
+        val spoken = product?.name ?: spokenName(rest).let { n -> if (sized != null && n.isNotEmpty()) "${sized.first} $n" else n }
         if (spoken.isEmpty()) return null
         if (product == null) {
             // A name Kai doesn't have: only when it clearly is stock ("Pepsodent stock vandhiruku", "2 Pepsodent box pochu").
@@ -224,7 +264,8 @@ object KaiStock {
             // A big number with no unit is money, not pieces.
             if (qty != null && saidUnit == null && qty > BigDecimal(999) && !stockContext.containsMatchIn(lower)) return null
         }
-        return StockRequest(incoming = isIn, product = product, spokenName = displayName(spoken), qty = qty, unit = saidUnit ?: product?.unit, parts = partsIn(rest))
+        val shownName = if (product == null && sized != null) "${sized.first} ${displayName(spoken.removePrefix(sized.first).trim())}" else displayName(spoken)
+        return StockRequest(incoming = isIn, product = product, spokenName = shownName, qty = qty, unit = saidUnit ?: product?.unit, parts = partsIn(rest), size = sized?.first)
     }
 
     /**

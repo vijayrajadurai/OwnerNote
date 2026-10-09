@@ -280,3 +280,18 @@ Android SDK is present; not runnable here). JVM brain suite: 1216 tests, 0 failu
 Not moving = `KaiTools.stock(null)` with qty > 0 minus the products in `topProducts(last 30 days)`. Both read the books: the
 sales side counts **sale bill lines** (`txn_items` SALE less SALE_RETURN). A stock-out done without a bill is not a sale there, so
 the reply says "sales bill padi". With no item sales at all in the period Kai says it can't tell (otherwise every product would look unsold).
+
+## Owner lines: "men shorts 60", "bhaniyan 70", "5inch tape 10", "10inch pipe 90" (`fix/kai-stock-add-words`)
+
+`KaiStockAddWordsTest` (3 tests, JVM).
+
+| Said | Before | Now |
+|---|---|---|
+| "5inch tape 10 add pannu" | product "Tape", quantity **5** | product "5 inch Tape" (size 5 inch), quantity 10 |
+| "10inch pipe 90 add pannu" / "10 inch pipe 90" | "Pipe 10" / "Inch Pipe 10" | "10 inch Pipe" (size 10 inch), quantity 90 |
+| "men shorts 60", "bhaniyan 70" (new) | category General | Garments & Textiles (size / colour asked, skippable) |
+| "bhaniyan 70 add pannu" with Baniyan in stock | a second, new product | stock in to Baniyan (5 → 75 after Confirm) |
+
+A number joined to a size word (inch, mm, cm, ft, sqmm, watt, volt, amp, hp, gauge) is part of the name only when another number is
+said ("pipe 20 feet vandhuchu" keeps 20 feet as the quantity). A product is matched by sound ("bhaniyan" / "baniyan") only for names of
+five letters or more and only when exactly one product sounds like that.

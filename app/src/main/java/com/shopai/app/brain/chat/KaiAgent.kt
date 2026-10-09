@@ -2511,7 +2511,8 @@ class KaiAgent(
         val name = line?.first?.split(' ')?.filter { it.lowercase(Locale.ROOT) in spokenWords }?.joinToString(" ")?.takeIf { it.isNotBlank() } ?: req.spokenName
         val unit = com.shopai.app.brain.tools.KaiUnits.canon(req.parts.firstOrNull()?.unit ?: req.unit)
         val qty = req.parts.firstOrNull()?.qty ?: req.qty
-        val spec = com.shopai.app.brain.tools.ItemSpec(name, com.shopai.app.brain.tools.KaiInventory.kindOf(name, unit), qty, unit)
+        // "5inch tape 10": the size said in the name is the product's size too (Kai doesn't ask it again).
+        val spec = com.shopai.app.brain.tools.ItemSpec(name, com.shopai.app.brain.tools.KaiInventory.kindOf(name, unit), qty, unit, size = req.size)
         tools.log(com.shopai.app.brain.tools.KaiIntents.STOCK_IN, "kai", "$name: new product by chat", ActionStatus.ANSWERED, null, said)
         return itemStep(newKey(), com.shopai.app.brain.tools.KaiInventory.withDetails(spec, said), said, lang)
     }
