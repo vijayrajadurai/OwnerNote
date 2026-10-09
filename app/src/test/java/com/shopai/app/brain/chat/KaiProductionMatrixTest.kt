@@ -1260,4 +1260,87 @@ class KaiProductionMatrixTest {
 
         c.done(105)
     }
+
+    // ================================================================== 21. "Abi pay pannitaru" — paid, no amount said (owner's phone, 9 Oct 2026)
+
+    /** அபி ₹1,000 (saved in Tamil script) · Kumar ₹3,000 · supplier Ramesh ₹2,500. */
+    private fun paidLedger() = Ledger().apply {
+        add("c40", "அபி", true, "1000", d(9, 10), d(10, 20))
+        add("c1", "Kumar", true, "3000", d(9, 1), d(10, 8))
+        add("s1", "Ramesh", false, "2500", d(9, 20), d(10, 8))
+    }
+
+    @Test
+    fun m21_paidWithoutAnAmount() {
+        val c = Category("paid-no-amount")
+        val ask = "Abi evlo kuduthaanga Owner? Full ₹1,000-aa, illa konjam mattum-aa?"
+        // Paid, no amount: asked with what the books say — never a balance answer, never guessed, never English
+        listOf("abi pay pannitaru", "Abi pay pannitaar", "abi pay pannitaaru", "abi gpay pannitaru", "abi kuduthutaru", "abi panam kuduthutaan",
+            "abi upi pannitaru", "abi pay pannaru").forEach { said ->
+            c.case("asks: $said") {
+                val s = Shop(l = paidLedger())
+                has(s.say(said), ask)
+                check(s.tools.prepared.isEmpty()) { "drafted ${s.draft()}" }
+            }
+        }
+        listOf("avar pay pannitaru", "avan kuduthutaan", "avanga pay pannitaanga").forEach { said ->
+            c.case("after 'abi evlo tharanum': $said") {
+                val s = Shop(l = paidLedger())
+                has(s.say("abi evlo tharanum"), "Abi ungalukku ₹1,000 tharanum")
+                has(s.say(said), ask)
+            }
+        }
+        // The answer: full / a part — drafted, saved only on Confirm, books right after
+        listOf("full" to "1000", "fulla" to "1000", "motham" to "1000", "full amount" to "1000", "500" to "500", "300 rs" to "300").forEach { (ans, amount) ->
+            c.case("answer '$ans' → ₹$amount") {
+                val s = Shop(l = paidLedger())
+                s.say("abi pay pannitaru")
+                s.say(ans)
+                plan(s.draft(), PlanKind.PAYMENT_IN, "c40", amount)
+                check(s.balance("c40") == "1000") { "saved before Confirm" }
+                has(s.say("confirm"), "Save aagiduchu")
+                check(s.balance("c40") == (BigDecimal("1000") - BigDecimal(amount)).toPlainString()) { "books ${s.balance("c40")}" }
+            }
+        }
+        // Full said in the same sentence: the pending amount drafted at once
+        listOf("abi full ah pay pannitaru", "abi settle pannitaru", "abi fulla kuduthutaru", "abi motham pay pannitaru").forEach { said ->
+            c.case("full in one go: $said") {
+                val s = Shop(l = paidLedger())
+                s.say(said)
+                plan(s.draft(), PlanKind.PAYMENT_IN, "c40", "1000")
+                check(s.balance("c40") == "1000") { "saved before Confirm" }
+            }
+        }
+        // With an amount: drafted as before
+        listOf("abi 500 pay pannitaru", "abi 500 kuduthutaru", "abi gpay la 500 pay pannitaru").forEach { said ->
+            c.case("amount said: $said") {
+                val s = Shop(l = paidLedger())
+                s.say(said)
+                plan(s.draft(), PlanKind.PAYMENT_IN, "c40", "500")
+            }
+        }
+        c.case("after the question, 'avar 500 pay pannitaru' drafts (not a word to learn)") {
+            val s = Shop(l = paidLedger())
+            s.say("abi evlo tharanum")
+            hasNot(s.say("avar 500 pay pannitaru"), "mean pannureengala")
+            plan(s.draft(), PlanKind.PAYMENT_IN, "c40", "500")
+        }
+        // Supplier side: the owner paid
+        c.case("owner paid supplier, no amount → asked") {
+            val s = Shop(l = paidLedger())
+            has(s.say("Ramesh-ku pay panniten"), "Ramesh-ku evlo kuduthinga Owner? Full ₹2,500-aa, illa konjam mattum-aa?")
+        }
+        c.case("owner paid supplier in full") {
+            val s = Shop(l = paidLedger())
+            s.say("Ramesh-ku full ah pay panniten")
+            plan(s.draft(), PlanKind.PAYMENT_OUT, "s1", "2500")
+        }
+        c.case("Tamil-script name shown as the owner wrote it") {
+            val s = Shop(l = paidLedger())
+            val r = s.say("abi evlo tharanum")
+            has(r, "Abi")
+            hasNot(r, "அபி")
+        }
+        c.done(28)
+    }
 }

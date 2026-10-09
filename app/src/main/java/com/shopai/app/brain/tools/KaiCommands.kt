@@ -129,7 +129,7 @@ object KaiCommands {
         "குடுத்தான்", "குடுத்தாங்க", "குடுத்தார்", "குடுத்துட்டான்", "கொடுத்தார்", "கொடுத்துட்டாங்க", "அனுப்பினான்", "அனுப்பிட்டான்",
         "வாங்கினேன்", "வந்துச்சு", "தந்தான்", "தந்தார்", "கொடுத்தான்")
     /** "Suresh gpay la 5000 pay pannan", "5000 transfer pannittaan": the person paid (any spelling of the 3rd-person past). */
-    private val personPaidVerb = Regex("""(?i)(?<![\p{L}])(pay|gpay|g\s*pay|upi|phonepe|paytm|transfer|payment|return|settle|send|online)\s*(?:-?\s*la\s+)?(pannan|pannaan|pannaar|pannar|pannanga|pannaanga|pannitan|pannitaan|pannittan|pannittaan|pannitar|pannitaar|pannitanga|pannitaanga|pannunan|pannunaan|pannunaar|pannirukkaan|pannirukkan|pannirukaan|pannirukkaanga)(?![\p{L}])""")
+    private val personPaidVerb = Regex("""(?i)(?<![\p{L}])(pay|gpay|g\s*pay|upi|phonepe|paytm|transfer|payment|return|settle|send|online)\s*(?:-?\s*la\s+)?(pannan|pannaan|pannaar|pannar|pannaru|pannaaru|pannanga|pannaanga|pannitan|pannitaan|pannittan|pannittaan|pannitar|pannitaar|pannitaru|pannitaaru|pannittaru|pannittaaru|pannitanga|pannitaanga|pannunan|pannunaan|pannunaar|pannunaru|pannirukkaan|pannirukkan|pannirukaan|pannirukkaar|pannirukkaru|pannirukkaanga)(?![\p{L}])""")
     /** "Ramesh-ku 400 GPay pannen", "transfer pannitten": the owner paid. */
     private val ownerPaidVerb = Regex("""(?i)(?<![\p{L}])(pay|gpay|g\s*pay|upi|phonepe|paytm|transfer|payment|send|online)\s*(?:-?\s*la\s+)?(pannen|panninen|pannunen|panniten|pannitten|pannittaen|pannirukken|pannirken)(?![\p{L}])""")
     private val goodsWords = Regex("""(?i)\b(kg|kgs|kilo|litre|ltr|bag|bags|pcs|pieces|packet|box|dozen|rice|arisi|sugar|oil|maavu|paal)\b""")
@@ -140,7 +140,10 @@ object KaiCommands {
         val incoming = hasAny(inWords) || personPaidVerb.containsMatchIn(t)
         if (out == incoming) return null
         // "Kuduthana?" (did he give?), "5000 pending", "tharanum" — questions or dues, not something that happened.
-        if (question || has(arrayOf("pending", "baaki", "bakki", "tharanum", "kudukkanum", "kodukkanum", "varanum", "remind", " ah ", " aa "))) return null
+        // "full ah pay pannitaru", "cash ah kuduthaan": that "ah" says how it was paid — not a question.
+        val howPaid = Regex("""(?<![\p{L}])(full|motham|mothama|muzhusa|cash|gpay|upi|online|seekiram)\s+(?:ah|aa)(?![\p{L}])""").replace(t, "$1")
+        if (question || has(arrayOf("pending", "baaki", "bakki", "tharanum", "kudukkanum", "kodukkanum", "varanum", "remind")) ||
+            Regex("""\s(?:ah|aa)\s""").containsMatchIn(" $howPaid ")) return null
         // "10 kg rice vanginen" is buying goods, not a payment.
         if (goodsWords.containsMatchIn(text)) return null
         val amounts = KaiUnderstanding.amountsIn(text, java.time.LocalDate.now()).filter { it > 0 }

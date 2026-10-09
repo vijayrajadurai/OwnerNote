@@ -60,3 +60,14 @@
 | S3 | "Lokesh-ku 10 minutes la call … remind pannu" set the reminder for the old Lokesh | contacts took the exact name only; the pick was buttons only | contacts return both (`AppKaiTools.contacts`, `KaiReminderAssistant`), the names are said in the reply, a typed / spoken pick works |
 | S4 | "confirm" to a reminder right after a saved payment said "already save aagiduchu" | the stated-payment "save" check ran before the reminder's own answer | the reminder's yes / no / edit is read first (`KaiReminderAssistant.answersConfirm`) |
 | S5 | "Madurai Lokesh evlo?" listed both Lokeshes | `peopleIn` counted the "Lokesh" inside "Madurai Lokesh" as a second person | a name inside a longer name already found is not another person |
+
+## Owner's phone (9 Oct 2026) — "Abi pay pannitaru" — fixed on `feature/kai-paid-no-amount`
+
+| # | Owner saw | Root cause | Fix |
+|---|---|---|---|
+| P1 | "avar pay pannitaru" / "abi pay pannitaru" answered the balance ("அபி பாக்கி ₹1,000") — the payment was not understood | the honorific "-aru" forms (pannitaru, pannaru, pannitaaru …) were not in the person-paid rule | added to the one person-paid verb rule (`KaiCommands`) |
+| P2 | Paid with no amount → only "Evlo amount Owner?" (or a balance) | no use of what the books say is pending | "Abi evlo kuduthaanga Owner? Full ₹1,000-aa, illa konjam mattum-aa?"; "full" / "motham" / an amount answers it; "full ah pay pannitaru" / "settle pannitaru" drafts the pending amount — always Confirm first |
+| P3 | "full ah pay pannitaru" read as a question | "ah" after "full" / "cash" was taken as the question marker | "full ah", "cash ah" … are how it was paid, not a question |
+| P4 | Replies switched to English ("அபி has ₹1,000 pending") or Tamil script | "pay" made the sentence English; "pannitaru" was not a known Tanglish word | Tanglish verb forms (pann… / kudu… / …itaru) keep the reply Tanglish (`KaiLanguage.forChat`) |
+| P5 | "அபி ungalukku …" — a Tamil-script record name inside a Tanglish reply | the record's stored name was always used | the answer uses the owner's own spelling ("Abi"); the record keeps its name; "avar" later in the chat uses it too |
+| P6 | "avar 500 pay pannitaru" → "`pannitaru`-na Payment Out-nu mean pannureengala?" | same as P1 | same as P1 — drafted as Payment in |

@@ -42,7 +42,9 @@ object KaiLanguage {
         val tanglish = setOf("pannan", "pannaan", "pannitaan", "pannittaan", "pannen", "pannitten", "panniten", "pannu", "pannunga", "pannanum",
             "kitta", "enakku", "enaku", "tharanum", "kudukkanum", "kuduthaan", "kuduthen", "kuduthutaan", "vandhuchu", "irukku", "evlo",
             "naan", "avan", "avar", "sollu", "vaanganum", "anuppitaan", "anuppinen", "innaikku", "naalaikku", "nalaiku")
-        if (words.any { it in tanglish }) return KaiLang.TANGLISH
+        // "pay pannitaru", "kuduthutaanga", "anuppinaar": a Tanglish verb form, whatever its ending.
+        val tanglishVerb = Regex("""(?:pann|kudu|kodu|anupp|vaang|vang|vandh|thar)[a-z]*|[a-z]+(?:itaan|ittaan|itaar|itaru|ittaru|itaanga|inaan|inaar|itten|anum|kanum)""")
+        if (words.any { it in tanglish || tanglishVerb.matches(it) }) return KaiLang.TANGLISH
         return if (words.any { it in english }) KaiLang.ENGLISH else KaiLang.TANGLISH
     }
 

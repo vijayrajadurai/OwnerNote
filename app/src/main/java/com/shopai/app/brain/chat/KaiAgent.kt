@@ -658,6 +658,9 @@ class KaiAgent(
         // "1 box = 10 pieces" while a converted draft is open: the conversion is corrected and the draft recalculated.
         conversionEdit(text, lang)?.let { return it }
         incompletePayment?.let { p ->
+            // "full" / "motham" to "Full ₹1,000-aa, illa konjam mattum-aa?": the pending amount from the books.
+            if (p.amount == null && fullAmount.containsMatchIn(text) && com.shopai.app.brain.KaiUnderstanding.amountsIn(text, at.toLocalDate()).isEmpty())
+                pendingOf(p)?.let { a -> incompletePayment = null; return payment(p.copy(amount = a), lang) }
             val cmd = KaiCommands.route(text, at, people)
             if (!p.directionKnown && cmd is KaiCommand.Payment) {
                 incompletePayment = null
@@ -2841,6 +2844,30 @@ class KaiAgent(
 
     // ------------------------------------------------------------ payments (draft → confirm → engine)
 
+    /** A Tamil-script record name ("அபி") as the owner typed it in English letters ("abi" → "Abi"); else the name itself. */
+    private fun asWritten(name: String, said: String): String {
+        if (!Regex("""[\u0B80-\u0BFF]""").containsMatchIn(name)) return name
+        val typed = Regex("""[A-Za-z]{2,}""").findAll(said).map { it.value }
+            .firstOrNull { w -> w.lowercase(Locale.ROOT) !in notSpellings && !KaiEntityResolver.isFunctionWord(w) && com.shopai.app.util.NameSound.same(w, name) }
+            ?.replaceFirstChar { it.titlecase(Locale.ROOT) }
+        // "avar pay pannitaru" names no one: the spelling the owner used for them earlier in this chat.
+        typed?.let { spellings[name] = it }
+        return typed ?: spellings[name] ?: name
+    }
+    private val spellings = HashMap<String, String>()
+    private val notSpellings = setOf("pay", "gpay", "upi", "cash", "full", "paid", "bill", "avar", "avan", "aval", "avanga", "ava", "owner", "bro", "sir", "kai")
+
+    private val fullAmount = Regex("""(?i)(?<![\p{L}])(full|fulla|fullah|full-aa|full\s+amount|full\s+payment|settle|settled|motham|mothama|muzhusa|muzhusaa|muzhu|clear|whole|all|ellam|ellaam)(?![\p{L}])|முழுசா|மொத்தம்|ஃபுல்""")
+
+    /** What the books say is pending with the one record [r] names, on the side the payment is for — null when unclear. */
+    private suspend fun pendingOf(r: PaymentRequest): BigDecimal? {
+        val name = r.name?.takeIf { it.isNotBlank() } ?: return null
+        val records = runCatching { tools.parties(name) }.getOrNull()?.let { KaiEntityResolver.sameName(name, it) }?.distinctBy { it.id }.orEmpty()
+        val one = pinned(name)?.let { id -> records.firstOrNull { it.id == id } }
+            ?: records.filter { it.customer != r.outgoing }.singleOrNull() ?: return null
+        return one.balance.takeIf { it.signum() > 0 }
+    }
+
     private suspend fun payment(r: PaymentRequest, lang: KaiLang): KaiTurn {
         conversationState.currentIntent = "PAYMENT"
         conversationState.currentAction = "DRAFT_PAYMENT"
@@ -2851,8 +2878,21 @@ class KaiAgent(
         conversationState.lastPaymentMode = r.mode
         conversationState.lastQuestion = r.said
         if (r.amount == null || r.amount.signum() <= 0) {
+            // "Abi full-aa pay pannitaru" / "settle pannitaru": the whole pending amount, from the books (Confirm still saves it).
+            // Only when who paid whom is known ("Kumar-ku amount add pannu" says neither): else just "Evlo amount?".
+            val pending = if (r.amount == null && r.directionKnown && !r.addEntry) pendingOf(r) else null
+            if (pending != null && fullAmount.containsMatchIn(r.said)) return payment(r.copy(amount = pending), lang)
             incompletePayment = r
             conversationState.pendingCorrection = true
+            // "Abi pay pannitaru": never guessed — asked, with what the books say is pending.
+            if (pending != null) {
+                val who = asWritten(r.name!!, r.said)
+                val a = KaiFormat.rupees(pending.toDouble())
+                return say(lang, KaiMood.CLARIFY, "payment: amount missing",
+                    ta = if (r.outgoing) "$who-க்கு எவ்வளவு கொடுத்தீங்க ஓனர்? Full $a-ஆ, இல்ல கொஞ்சம் மட்டும்-ஆ?" else "$who எவ்வளவு கொடுத்தாங்க ஓனர்? Full $a-ஆ, இல்ல கொஞ்சம் மட்டும்-ஆ?",
+                    tl = if (r.outgoing) "$who-ku evlo kuduthinga Owner? Full $a-aa, illa konjam mattum-aa?" else "$who evlo kuduthaanga Owner? Full $a-aa, illa konjam mattum-aa?",
+                    en = if (r.outgoing) "How much did you pay $who, Owner? The full $a, or part of it?" else "How much did $who pay, Owner? The full $a, or part of it?")
+            }
             return say(lang, KaiMood.CLARIFY, "payment: amount missing",
                 ta = "எவ்வளவு தொகை ஓனர்?", tl = "Evlo amount Owner?", en = "How much was it, Owner?")
         }
@@ -3236,9 +3276,12 @@ class KaiAgent(
      */
     private suspend fun hintSameNames(text: String, people: List<String>) {
         // Every name the books hold more than once gets its label, so a list line says which Lokesh it is.
-        val repeated = runCatching { books.snapshot() }.getOrNull()?.parties.orEmpty()
+        val snapshot = runCatching { books.snapshot() }.getOrNull()?.parties.orEmpty()
+        val repeated = snapshot
             .groupBy { it.name.trim().lowercase(Locale.ROOT) }.filterValues { same -> same.distinctBy { it.id }.size > 1 }.values.map { it.first().name }
-        val labels = repeated.flatMap { n -> runCatching { tools.parties(n) }.getOrNull()?.let { KaiEntityResolver.sameName(n, it) }.orEmpty() }
+        // "abi evlo tharanum" for a record saved as "அபி": the answer says "Abi", as the owner wrote it (the record keeps its name).
+        val spelled = snapshot.mapNotNull { p -> asWritten(p.name, text).takeIf { it != p.name }?.let { p.id to it } }.toMap()
+        val labels = spelled + repeated.flatMap { n -> runCatching { tools.parties(n) }.getOrNull()?.let { KaiEntityResolver.sameName(n, it) }.orEmpty() }
             .distinctBy { it.id }.associate { it.id to labelOf(it) }
         val name = com.shopai.app.brain.KaiUnderstanding.knownPerson(text, people)
         val exact = name?.let { n -> runCatching { tools.parties(n) }.getOrNull()?.let { KaiEntityResolver.sameName(n, it).distinctBy { p -> p.id } } }.orEmpty()
