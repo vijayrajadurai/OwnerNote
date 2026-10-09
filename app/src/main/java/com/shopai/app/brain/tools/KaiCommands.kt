@@ -160,7 +160,7 @@ object KaiCommands {
         // "Kuduthana?" (did he give?), "5000 pending", "tharanum" — questions or dues, not something that happened.
         // "full ah pay pannitaru", "cash ah kuduthaan": that "ah" says how it was paid — not a question.
         val howPaid = Regex("""(?<![\p{L}])(full|motham|mothama|muzhusa|cash|gpay|upi|online|seekiram)\s+(?:ah|aa)(?![\p{L}])""").replace(t, "$1")
-        if (question || has(arrayOf("pending", "baaki", "bakki", "tharanum", "kudukkanum", "kodukkanum", "varanum", "remind")) ||
+        if (question || has(arrayOf("pending", "baaki", "bakki", "tharanum", "kudukkanum", "kodukkanum", "varanum", "remind", "பாக்கி", "தரணும்", "குடுக்கணும்", "கொடுக்கணும்")) ||
             Regex("""\s(?:ah|aa)\s""").containsMatchIn(" $howPaid ")) return null
         // "10 kg rice vanginen" is buying goods, not a payment.
         if (goodsWords.containsMatchIn(text)) return null
@@ -273,7 +273,9 @@ object KaiCommands {
                 val word = m.groupValues[1].trim('.', '\'')
                 val key = word.lowercase(Locale.ROOT)
                 if (key in notNames || key.length < 2 || key.any(Char::isDigit)) continue
-                return word.replaceFirstChar { it.titlecase(Locale.ROOT) }
+                // "Sujithukku" read as "Sujithuk" + "ku": the name is "Sujith" (+ "ukku").
+                val name = if (p === patterns[0] && key.endsWith("uk") && key.length >= 6) word.dropLast(2) else word
+                return name.replaceFirstChar { it.titlecase(Locale.ROOT) }
             }
         }
         return null

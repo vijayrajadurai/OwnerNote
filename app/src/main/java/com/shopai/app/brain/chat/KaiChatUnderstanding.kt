@@ -380,7 +380,8 @@ object KaiChatUnderstanding {
         val words = Regex("""[\p{L}][\p{L}\p{M}'.]*""").findAll(text).map { it.value.trim('.', '\'') }.toList()
         val first = words.firstOrNull() ?: return null
         val lower = text.lowercase(Locale.ROOT)
-        val asksAboutSomeone = listOf("evlo", "tharanum", "kudukkanum", "balance", "pending", "eppo", "history", "last payment", "kuduthana", "owe")
+        val asksAboutSomeone = listOf("evlo", "tharanum", "kudukkanum", "balance", "pending", "eppo", "history", "last payment", "kuduthana", "owe",
+            "தரணும்", "குடுக்கணும்", "கொடுக்கணும்", "எவ்வளவு", "பாக்கி", "பேலன்ஸ்")
             .any { lower.contains(it) }
         if (!asksAboutSomeone) return null
         val base = first.lowercase(Locale.ROOT).removeSuffix("-kitta").removeSuffix("kitta").removeSuffix("-ku").trimEnd('-')

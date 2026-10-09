@@ -694,7 +694,9 @@ class KaiAgent(
         // "Kumar 1000 credit", "Ravi ku 2500 kadan", "Kumar 1000 ku saamaan credit la eduthutu ponaan": an entry on that person's record
         // (credit for a customer, debit for a supplier, asked for a new name) — drafted, saved only on Confirm.
         if (creditWord.containsMatchIn(text) && KaiCommands.route(text, at, people) !is KaiCommand.Payment && !questionLike.containsMatchIn(text))
-            KaiCommands.personIn(text, people)?.let { person ->
+            // A new name the line starts with ("Sujith 2000 kadan", "சுஜித் 2000 கடன்") too.
+            (KaiCommands.personIn(text, people) ?: com.shopai.app.brain.KaiUnderstanding.personPhraseIn(text)
+                ?.takeIf { p -> text.trimStart().startsWith(p, ignoreCase = true) && Regex("""[\p{L}\p{M} ]+""").matches(p) })?.let { person ->
                 com.shopai.app.brain.KaiUnderstanding.amountsIn(text, at.toLocalDate()).filter { it > 0 }.singleOrNull()
                     ?.takeUnless { Regex("""(?<![\p{L}\p{N}])-\s*\d""").containsMatchIn(text) }
                     ?.let { a -> return payment(PaymentRequest(newKey(), person, BigDecimal.valueOf(a).setScale(2, java.math.RoundingMode.HALF_UP), outgoing = true,
@@ -875,7 +877,9 @@ class KaiAgent(
             .containsMatchIn(text)
         // The person: one in the books, or — for a stated debt — the name the sentence starts with ("Kumaran enaku 3000 tharanum").
         val person = KaiCommands.personIn(text, people)
-            ?: com.shopai.app.brain.KaiUnderstanding.personPhraseIn(text)?.takeIf { owed != null && it.length >= 3 && it.all { c -> c in 'A'..'Z' || c in 'a'..'z' || c == ' ' } }
+            // A Tamil-script name too ("சுஜித் எனக்கு 2000 தரணும்").
+            ?: com.shopai.app.brain.KaiUnderstanding.personPhraseIn(text)
+            ?.takeIf { owed != null && it.length >= 3 && Regex("""[\p{L}\p{M} ]+""").matches(it) }
         // "Kumar enakku 3000 tharanum, next month 10-ku": the 10 belongs to the date, not the amount.
         val saidDate = datePhrase.find(text)?.value
             ?.replace(Regex("""(?i)\s*-?\s*(?:ku|kku|m|aam|am|thethi|date)$"""), "")

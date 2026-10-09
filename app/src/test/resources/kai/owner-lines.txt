@@ -57,3 +57,13 @@ ENTRY  | hmm Kumar 1500 kuduthan                        | IN Kumar 1500
 STOCK  | Colga 1 box maal vandhuchu                     | Colgate 288
 STOCK  | Baniya 10 vithuchu                             | Baniyan 40
 REMIND | naalaiku 9 manikku செல்வம் kitta payment vaanga remind pannu | 2026-10-09 09:00 Selvam
+
+# Tamil-script lines from the owner (9 Oct 2026): "என" was saved as a customer, or a list came instead of an entry.
+ENTRY  | சுஜித் எனக்கு 2000 தரணும்                       | CREDIT சுஜித் 2000
+ENTRY  | சுஜித் 2000 தரணும்                             | CREDIT சுஜித் 2000
+ENTRY  | சுஜித் எனக்கு 2000 குடுக்கணும்                   | CREDIT சுஜித் 2000
+ENTRY  | சுஜித் 2000 கடன்                               | CREDIT சுஜித் 2000
+ENTRY  | குமார் எனக்கு 2000 தரணும்                       | CREDIT Kumar 2000
+ENTRY  | Sujith 2000 kadan                              | CREDIT Sujith 2000
+ENTRY  | Sujithukku 2000 kadan koduthen                 | CREDIT Sujith 2000
+ASK    | சுஜித் எவ்வளவு தரணும்                          | சுஜித்

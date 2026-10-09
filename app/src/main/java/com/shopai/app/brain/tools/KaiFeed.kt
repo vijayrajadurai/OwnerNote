@@ -173,6 +173,12 @@ object KaiFeed {
         late correct usually phone number mobile contact
         ippo ipo ippa ipa ippodhu ippothu ipodhu indru inru
         hmm hm hmmm umm um mm ahh aah haan han oh ohh ayyo ayyoo seri sari ok okay
+        # Tamil-script "me / you / him / who / today …" — and what is left of them once -க்கு is read as the dative ("என|க்கு").
+        நான் நா என் என எனக் எனக்கு எனக்கும் நீ நீங்க உன் உன உனக் உனக்கு உங்க உங்களுக்கு நம்ம நமக்கு
+        அவன் அவன அவனுக்கு அவள் அவள அவளுக்கு அவர் அவர அவருக்கு அவங்க அவங்களுக்கு
+        யார் யாரு யாருக்கு யார யாருகிட்ட இன்னைக்கு இன்னை நாளைக்கு நாளை மணி மணிக்கு கடை கடைக்கு
+        மொத்தம் மொத்த மொத்தமா எவ்வளவு எவ்ளோ என்ன எப்போ எப்ப எப்படி எந்த இந்த அந்த எல்லாம் எல்லாரும் எல்லாருக்கும்
+        பாக்கி பேலன்ஸ் கடன் பணம் காசு ரூபாய் ஸ்டாக் சரக்கு பொருள் வாரம் மாசம் இன்று நேற்று நேத்து
     """)
 
     /** Everyday words Kai reads without asking what they mean. */
