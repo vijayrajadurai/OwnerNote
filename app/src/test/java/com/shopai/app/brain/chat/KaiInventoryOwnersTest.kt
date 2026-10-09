@@ -208,7 +208,7 @@ class KaiInventoryOwnersTest {
             Exp("Colgate", "PCS", "240", "BOX" to "48", "28", "35", F)),
         Owner("general", "Vim bar 4 box vandhuchu", a(Q.PER_PACK to "50", Q.SIZE to "skip", Q.PURCHASE to "9", Q.SELLING to "10"), Exp("Vim Bar", "PCS", "200", "BOX" to "50", "9", "10", F)),
         Owner("general", "Horlicks 12 bottle add pannu", a(Q.SIZE to "500 g", Q.PURCHASE to "240", Q.SELLING to "275"), Exp("Horlicks", "BOTTLE", "12", null, "240", "275", F)),
-        Owner("general", "Agarbatti 6 box add pannu", a(Q.PER_PACK to "12", Q.PURCHASE to "20", Q.SELLING to "25"), Exp("Agarbatti", "PCS", "72", "BOX" to "12", "20", "25", F)),
+        Owner("general", "Agarbatti 6 box add pannu", a(Q.PER_PACK to "12", Q.PURCHASE to "20", Q.SELLING to "25"), Exp("Agarbatti", "PCS", "72", "BOX" to "12", "20", "25", "Pooja & Flowers")),
 
         // Cool drinks shops — cases of bottles
         Owner("drinks", "Coke 3 case vandhuchu", a(Q.PER_PACK to "24 bottles", Q.SIZE to "300 ml", Q.PURCHASE to "30", Q.SELLING to "40"),
@@ -285,7 +285,7 @@ class KaiInventoryOwnersTest {
         Owner("stationery", "Pen 10 dozen vandhuchu", a(Q.PURCHASE to "4", Q.SELLING to "5"), Exp("Pen", "PCS", "120", null, "4", "5", GN)),
         Owner("general", "Candle 3 box add pannu", a(Q.PER_PACK to "50", Q.PURCHASE to "2", Q.SELLING to "3"), Exp("Candle", "PCS", "150", "BOX" to "50", "2", "3", GN)),
         Owner("general", "Matchbox 10 bundle add pannu", a(Q.PER_PACK to "10", Q.PURCHASE to "1", Q.SELLING to "2"), Exp("Matchbox", "PCS", "100", "BUNDLE" to "10", "1", "2", GN)),
-        Owner("bakery", "Bread 20 packet vandhuchu", a(Q.PURCHASE to "35", Q.SELLING to "40"), Exp("Bread", "PACK", "20", null, "35", "40", GN)),
+        Owner("bakery", "Bread 20 packet vandhuchu", a(Q.PURCHASE to "35", Q.SELLING to "40"), Exp("Bread", "PACK", "20", null, "35", "40", "Sweets & Bakery")),
 
         // Safety: corrections, cancel, rejected save, an existing product
         Owner("general", "Colgate 5 box add pannu", a(Q.PER_PACK to "48", Q.PURCHASE to "28", Q.SELLING to "35"), Exp("Colgate", "PCS", "192", "BOX" to "48", "28", "35", F),
@@ -442,5 +442,114 @@ class KaiInventoryOwnersTest {
         println("MATRIX inventory-stocked-80 ${cases.size - failures.size}/${cases.size}")
         assertTrue("${cases.size} cases", cases.size == 80)
         assertTrue(failures.joinToString("\n\n"), failures.isEmpty())
+    }
+
+    // ------------------------------------------------------------------ Tamil Nadu shops (owner: "Mutta oru tray" — check every kind of shop)
+
+    private val VG = "Vegetables & Fruits"; private val MT = "Meat & Fish"; private val SW = "Sweets & Bakery"
+    private val PJ = "Pooja & Flowers"; private val AG = "Agri & Fertilizer"
+
+    private val tamilNadu: List<Owner> = listOf(
+        // Kaaikari / pazham kadai
+        Owner("kaaikari", "Thakkali 20 kg vandhuchu", a(Q.PURCHASE to "30", Q.SELLING to "40"), Exp("Thakkali", "KG", "20", null, "30", "40", VG),
+            then = listOf(St("Thakkali 5 kg vithuten", stock = "15"))),
+        Owner("kaaikari", "Vengayam 2 moota vandhuchu", a(Q.PER_PACK to "50", Q.PURCHASE to "1500", Q.SELLING to "40"), Exp("Vengayam", "KG", "100", "BAG" to "50", "30", "40", VG)),
+        Owner("kaaikari", "Urulai kizhangu 25 kg add pannu", a(Q.PURCHASE to "28", Q.SELLING to "35"), Exp("Urulai Kizhangu", "KG", "25", null, "28", "35", VG)),
+        Owner("pazham", "Vazhaipazham 10 seepu vandhuchu", a(Q.PER_PACK to "12", Q.PURCHASE to "48", Q.SELLING to "5"),
+            Exp("Vazhaipazham", "PCS", "120", "SEEPU" to "12", "4", "5", VG), then = listOf(St("Vazhaipazham 1 seepu vithuten", stock = "108"))),
+        Owner("pazham", "Vazhaipazham 2 thaar vandhuchu", a(Q.PER_PACK to "150", Q.PURCHASE to "450", Q.SELLING to "5"), Exp("Vazhaipazham", "PCS", "300", "THAAR" to "150", "3", "5", VG)),
+        Owner("kaaikari", "Thengai 100 vandhuchu", a(Q.UNIT to "pieces", Q.PURCHASE to "20", Q.SELLING to "30"), Exp("Thengai", "PCS", "100", null, "20", "30", VG)),
+        Owner("kaaikari", "Thengai 2 moota vandhuchu", a(Q.PER_PACK to "50", Q.PURCHASE to "1000", Q.SELLING to "30"), Exp("Thengai", "PCS", "100", "BAG" to "50", "20", "30", VG)),
+        // Poo kadai / pooja store
+        Owner("poo", "Malli poo 50 muzham vandhuchu", a(Q.PURCHASE to "10", Q.SELLING to "15"), Exp("Malli Poo", "MUZHAM", "50", null, "10", "15", PJ),
+            then = listOf(St("Malli poo 10 muzham sale", stock = "40"))),
+        Owner("poo", "Malli poo 2 kg vandhuchu", a(Q.PURCHASE to "400", Q.SELLING to "600"), Exp("Malli Poo", "KG", "2", null, "400", "600", PJ)),
+        Owner("pooja", "Karpooram 20 packet vandhuchu", a(Q.PURCHASE to "30", Q.SELLING to "40"), Exp("Karpooram", "PACK", "20", null, "30", "40", PJ)),
+        Owner("pooja", "Kungumam 30 packet vandhuchu", a(Q.PURCHASE to "10", Q.SELLING to "15"), Exp("Kungumam", "PACK", "30", null, "10", "15", PJ)),
+        Owner("pooja", "Agarbathi 5 box vandhuchu", a(Q.PER_PACK to "12", Q.PURCHASE to "25", Q.SELLING to "35"), Exp("Agarbathi", "PCS", "60", "BOX" to "12", "25", "35", PJ)),
+        Owner("pooja", "Vilakku ennai 12 bottle vandhuchu", a(Q.SIZE to "1 litre", Q.PURCHASE to "120", Q.SELLING to "150"), Exp("Vilakku Ennai", "BOTTLE", "12", null, "120", "150", L)),
+        // Kozhi / meen / mutton kadai
+        Owner("kozhi", "Kozhi 15 kg vandhuchu", a(Q.PURCHASE to "180", Q.SELLING to "220"), Exp("Kozhi", "KG", "15", null, "180", "220", MT),
+            then = listOf(St("Kozhi 2 kg sale", stock = "13"))),
+        Owner("meen", "Meen 10 kg vandhuchu", a(Q.PURCHASE to "250", Q.SELLING to "320"), Exp("Meen", "KG", "10", null, "250", "320", MT)),
+        Owner("mutton", "Mutton 5 kg vandhuchu", a(Q.PURCHASE to "700", Q.SELLING to "800"), Exp("Mutton", "KG", "5", null, "700", "800", MT)),
+        // Paal / dairy
+        Owner("paal", "Paal 50 packet vandhuchu", a(Q.SIZE to "500 ml", Q.PURCHASE to "22", Q.SELLING to "25"), Exp("Paal", "PACK", "50", null, "22", "25", L)),
+        Owner("paal", "Thayir 20 packet vandhuchu", a(Q.SIZE to "500 ml", Q.PURCHASE to "25", Q.SELLING to "30"), Exp("Thayir", "PACK", "20", null, "25", "30", L)),
+        Owner("paal", "Paneer 10 packet add pannu", a(Q.PURCHASE to "80", Q.SELLING to "95"), Exp("Paneer", "PACK", "10", null, "80", "95", GN)),
+        // Bakery / sweet stall
+        Owner("bakery", "Bun 3 tray vandhuchu", a(Q.PER_PACK to "12", Q.PURCHASE to "60", Q.SELLING to "8"), Exp("Bun", "PCS", "36", "TRAY" to "12", "5", "8", SW)),
+        Owner("bakery", "Rusk 10 packet vandhuchu", a(Q.PURCHASE to "35", Q.SELLING to "45"), Exp("Rusk", "PACK", "10", null, "35", "45", SW)),
+        Owner("bakery", "Cake 5 piece add pannu", a(Q.PURCHASE to "400", Q.SELLING to "550"), Exp("Cake", "PCS", "5", null, "400", "550", SW)),
+        Owner("sweets", "Mysore pak 3 kg add pannu", a(Q.PURCHASE to "400", Q.SELLING to "500"), Exp("Mysore Pak", "KG", "3", null, "400", "500", SW)),
+        Owner("sweets", "Laddu 50 piece add pannu", a(Q.PURCHASE to "8", Q.SELLING to "10"), Exp("Laddu", "PCS", "50", null, "8", "10", SW)),
+        // Maligai
+        Owner("maligai", "Tea thool 5 kg vandhuchu", a(Q.PURCHASE to "300", Q.SELLING to "380"), Exp("Tea Thool", "KG", "5", null, "300", "380", G)),
+        Owner("maligai", "Puli 10 kg vandhuchu", a(Q.PURCHASE to "120", Q.SELLING to "150"), Exp("Puli", "KG", "10", null, "120", "150", G)),
+        Owner("maligai", "Milagai thool 5 kg vandhuchu", a(Q.PURCHASE to "200", Q.SELLING to "260"), Exp("Milagai Thool", "KG", "5", null, "200", "260", G)),
+        Owner("maligai", "Kadugu 2 kg vandhuchu", a(Q.PURCHASE to "100", Q.SELLING to "130"), Exp("Kadugu", "KG", "2", null, "100", "130", G)),
+        Owner("maligai", "Pottu kadalai 10 kg vandhuchu", a(Q.PURCHASE to "110", Q.SELLING to "130"), Exp("Pottu Kadalai", "KG", "10", null, "110", "130", G)),
+        Owner("maligai", "Vellam 1 moota vandhuchu", a(Q.PER_PACK to "30", Q.PURCHASE to "1500", Q.SELLING to "60"), Exp("Vellam", "KG", "30", "BAG" to "30", "50", "60", G)),
+        Owner("maligai", "Nallennai 5 dabba vandhuchu", a(Q.PER_PACK to "15", Q.PURCHASE to "270", Q.SELLING to "300"), Exp("Nallennai", "LITRE", "75", "CAN" to "15", "270", "300", L)),
+        Owner("muttai", "Muttai 5 tray vandhuchu", a(Q.PER_PACK to "30", Q.PURCHASE to "150", Q.SELLING to "6"), Exp("Muttai", "PCS", "150", "TRAY" to "30", "5", "6", G)),
+        // Fancy / stationery / medical / petti kadai ("petti" is each owner's own word: Kai asks pieces or boxes — never guesses)
+        Owner("fancy", "Valayal 5 dozen vandhuchu", a(Q.PURCHASE to "3", Q.SELLING to "5"), Exp("Valayal", "PCS", "60", null, "3", "5", GN)),
+        Owner("stationery", "Notebook 2 kattu vandhuchu", a(Q.PER_PACK to "12", Q.PURCHASE to "30", Q.SELLING to "40"), Exp("Notebook", "PCS", "24", "BUNDLE" to "12", "30", "40", GN)),
+        Owner("stationery", "Pencil 4 petti vandhuchu", a(Q.UNIT to "box", Q.PER_PACK to "10", Q.PURCHASE to "3", Q.SELLING to "5"), Exp("Pencil", "PCS", "40", "BOX" to "10", "3", "5", GN)),
+        Owner("stationery", "Pen 2 petti vandhuchu", a(Q.UNIT to "box", Q.PER_PACK to "50", Q.PURCHASE to "4", Q.SELLING to "5"), Exp("Pen", "PCS", "100", "BOX" to "50", "4", "5", GN)),
+        Owner("medical", "Paracetamol 20 strip vandhuchu", a(Q.PER_PACK to "10", Q.PURCHASE to "1.5", Q.SELLING to "2"), Exp("Paracetamol", "PCS", "200", "STRIP" to "10", "1.5", "2", GN)),
+        Owner("medical", "Cough syrup 12 bottle add pannu", a(Q.SIZE to "100 ml", Q.PURCHASE to "60", Q.SELLING to "85"), Exp("Cough Syrup", "BOTTLE", "12", null, "60", "85", L)),
+        Owner("petti kadai", "Beedi 10 kattu vandhuchu", a(Q.PER_PACK to "25", Q.PURCHASE to "0.8", Q.SELLING to "1"), Exp("Beedi", "PCS", "250", "BUNDLE" to "25", "0.8", "1", GN)),
+        Owner("petti kadai", "Goli soda 5 crate vandhuchu", a(Q.PER_PACK to "24", Q.PURCHASE to "8", Q.SELLING to "15"), Exp("Goli Soda", "BOTTLE", "120", "CASE" to "24", "8", "15", B)),
+        Owner("ilai", "Ilai 10 kattu vandhuchu", a(Q.PER_PACK to "100", Q.PURCHASE to "1.5", Q.SELLING to "2"), Exp("Ilai", "PCS", "1000", "BUNDLE" to "100", "1.5", "2", GN)),
+        // Hardware / electrical / uram
+        Owner("hardware", "Cement 20 moota vandhuchu", a(Q.SIZE to "50 kg", Q.PURCHASE to "380", Q.SELLING to "420"), Exp("Cement", "BAG", "20", null, "380", "420", H),
+            then = listOf(St("Cement 5 moota sale", stock = "15"))),
+        Owner("hardware", "Kambi 100 kg vandhuchu", a(Q.SIZE to "8mm", Q.PURCHASE to "65", Q.SELLING to "72"), Exp("Kambi", "KG", "100", null, "65", "72", H)),
+        Owner("hardware", "Paint 4 bucket vandhuchu", a(Q.SIZE to "20 litre", Q.PURCHASE to "2500", Q.SELLING to "3000"), Exp("Paint", "BUCKET", "4", null, "2500", "3000", H)),
+        Owner("electrical", "Wire 5 churul vandhuchu", a(Q.PER_PACK to "90", Q.SIZE to "1.5 sqmm", Q.PURCHASE to "13", Q.SELLING to "17"),
+            Exp("Wire", "METER", "450", "COIL" to "90", "13", "17", H), then = listOf(St("Wire 1 churul vithuten", stock = "360"))),
+        Owner("uram", "Uram 20 moota vandhuchu", a(Q.PURCHASE to "1300", Q.SELLING to "1350"), Exp("Uram", "BAG", "20", null, "1300", "1350", AG)),
+        // Textiles / footwear / vessels / plastic
+        Owner("jauli", "Thundu 3 dozen vandhuchu", a(Q.PURCHASE to "60", Q.SELLING to "90"), Exp("Thundu", "PCS", "36", null, "60", "90", W)),
+        Owner("jauli", "Lungi 2 kattu vandhuchu", a(Q.PER_PACK to "20", Q.PURCHASE to "150", Q.SELLING to "220"), Exp("Lungi", "PCS", "40", "BUNDLE" to "20", "150", "220", W)),
+        Owner("cheruppu", "Cheruppu 10 jodi vandhuchu", a(Q.PURCHASE to "120", Q.SELLING to "199"), Exp("Cheruppu", "PAIR", "10", null, "120", "199", FW)),
+        Owner("paathiram", "Kodam 5 piece add pannu", a(Q.PURCHASE to "450", Q.SELLING to "550"), Exp("Kodam", "PCS", "5", null, "450", "550", GN)),
+        Owner("paathiram", "Paathiram 20 kg vandhuchu", a(Q.PURCHASE to "300", Q.SELLING to "380"), Exp("Paathiram", "KG", "20", null, "300", "380", GN)),
+        Owner("plastic", "Bucket 10 piece vandhuchu", a(Q.PURCHASE to "80", Q.SELLING to "120"), Exp("Bucket", "PCS", "10", null, "80", "120", GN)),
+        // Tamil script
+        Owner("kaaikari", "தக்காளி 20 கிலோ வந்திருக்கு", a(Q.PURCHASE to "30", Q.SELLING to "40"), Exp("தக்காளி", "KG", "20", null, "30", "40", VG), confirm = listOf("ஆமா")),
+        Owner("kaaikari", "வெங்காயம் 2 மூட்டை வந்திருக்கு", a(Q.PER_PACK to "50", Q.PURCHASE to "1500", Q.SELLING to "40"),
+            Exp("வெங்காயம்", "KG", "100", "BAG" to "50", "30", "40", VG), confirm = listOf("ஆமா")),
+        Owner("poo", "மல்லிப்பூ 50 முழம் வந்திருக்கு", a(Q.PURCHASE to "10", Q.SELLING to "15"), Exp("மல்லிப்பூ", "MUZHAM", "50", null, "10", "15", PJ), confirm = listOf("ஆமா")),
+        Owner("paal", "பால் 50 பாக்கெட் வந்திருக்கு", a(Q.SIZE to "500 ml", Q.PURCHASE to "22", Q.SELLING to "25"), Exp("பால்", "PACK", "50", null, "22", "25", L), confirm = listOf("ஆமா")),
+        Owner("hardware", "சிமெண்ட் 20 மூட்டை வந்திருக்கு", a(Q.SIZE to "50 kg", Q.PURCHASE to "380", Q.SELLING to "420"), Exp("சிமெண்ட்", "BAG", "20", null, "380", "420", H), confirm = listOf("ஆமா")),
+        Owner("pazham", "வாழைப்பழம் 10 சீப்பு வந்திருக்கு", a(Q.PER_PACK to "12", Q.PURCHASE to "48", Q.SELLING to "5"),
+            Exp("வாழைப்பழம்", "PCS", "120", "SEEPU" to "12", "4", "5", VG), confirm = listOf("ஆமா")),
+        Owner("kozhi", "கோழி 15 கிலோ வந்திருக்கு", a(Q.PURCHASE to "180", Q.SELLING to "220"), Exp("கோழி", "KG", "15", null, "180", "220", MT), confirm = listOf("ஆமா")),
+        Owner("uram", "உரம் 10 மூட்டை வந்திருக்கு", a(Q.PURCHASE to "1300", Q.SELLING to "1350"), Exp("உரம்", "BAG", "10", null, "1300", "1350", AG), confirm = listOf("ஆமா")),
+        Owner("kaaikari", "தேங்காய் 1 மூட்டை வந்திருக்கு", a(Q.PER_PACK to "50", Q.PURCHASE to "1000", Q.SELLING to "30"),
+            Exp("தேங்காய்", "PCS", "50", "BAG" to "50", "20", "30", VG), confirm = listOf("ஆமா")),
+        Owner("muttai", "முட்டை 2 ட்ரே வந்திருக்கு", a(Q.PER_PACK to "30", Q.PURCHASE to "150", Q.SELLING to "6"), Exp("முட்டை", "PCS", "60", "TRAY" to "30", "5", "6", G), confirm = listOf("ஆமா")),
+    )
+
+    @Test
+    fun tamilNaduShops() {
+        val failures = tamilNadu.mapNotNull(::play)
+        println("MATRIX inventory-tamil-nadu-shops ${tamilNadu.size - failures.size}/${tamilNadu.size}")
+        assertTrue(failures.joinToString("\n\n"), failures.isEmpty())
+    }
+
+    @Test
+    fun payingIsNeverTakenAsAStockBundle() {
+        // "kattu" is a bundle ("Ilai 10 kattu vandhuchu") and also "pay" ("EB bill 500 kattu"): money words never become stock.
+        for (said in listOf("EB bill 500 kattu", "current bill kattu", "Selvam 500 kattu", "rent 5000 kattiten", "₹500 kattu")) {
+            val shop = Inventory()
+            val k = KaiAgent(KaiBusinessBrain(Books()), Books(), shop, { now })
+            val t = runBlocking { k.ask(said) }
+            assertTrue("$said → ${t.reply.text}", !t.reply.text.contains("bundle") && asked(t.reply.text) == null)
+            runBlocking { k.ask("aama") }
+            assertTrue("$said saved stock", shop.items.isEmpty() && shop.moves.isEmpty())
+        }
     }
 }

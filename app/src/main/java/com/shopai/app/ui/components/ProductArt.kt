@@ -122,6 +122,11 @@ private fun paletteOf(kind: ProductKind): ArtPalette = when (kind) {
     ProductKind.HARDWARE -> ArtPalette(Color(0xFFECEFF1), Color(0xFF90A4AE), Color(0xFF455A64), Color(0xFFCFD8DC), Color(0xFFFFB300))
     ProductKind.ELECTRONICS -> ArtPalette(Color(0xFFE8EAF6), Color(0xFF37474F), Color(0xFF212121), Color(0xFF90A4AE), Color(0xFF3F51B5))
     ProductKind.FMCG -> ArtPalette(Color(0xFFE8F5E9), Color(0xFF43A047), Color(0xFF1B5E20), Color(0xFFC8E6C9), Color(0xFFE53935))
+    ProductKind.VEGETABLE -> ArtPalette(Color(0xFFFFEBEE), Color(0xFFE53935), Color(0xFFB71C1C), Color(0xFFFFCDD2), Color(0xFF43A047))
+    ProductKind.MEAT -> ArtPalette(Color(0xFFE1F5FE), Color(0xFF4FC3F7), Color(0xFF0277BD), Color(0xFFB3E5FC), Color(0xFFFF7043))
+    ProductKind.SWEETS -> ArtPalette(Color(0xFFFFF3E0), Color(0xFFFFA726), Color(0xFFE65100), Color(0xFFFFE0B2), Color(0xFFD81B60))
+    ProductKind.POOJA -> ArtPalette(Color(0xFFFFF8E1), Color(0xFFD4A017), Color(0xFF8D6E00), Color(0xFFFFECB3), Color(0xFFFF6F00))
+    ProductKind.AGRI -> ArtPalette(Color(0xFFF1F8E9), Color(0xFFE8E2C8), Color(0xFF8D8150), Color(0xFFFFFFFF), Color(0xFF558B2F))
     ProductKind.GENERAL -> ArtPalette(Color(0xFFF5F0E6), Color(0xFFC8A472), Color(0xFF8D6E46), Color(0xFFE6D3B3), Color(0xFF6D4C41))
 }
 
@@ -135,6 +140,11 @@ private fun DrawScope.drawKind(kind: ProductKind, p: ArtPalette) {
         ProductKind.HARDWARE -> screw(p)
         ProductKind.ELECTRONICS -> charger(p)
         ProductKind.FMCG -> tube(p)
+        ProductKind.VEGETABLE -> tomato(p)
+        ProductKind.MEAT -> fish(p)
+        ProductKind.SWEETS -> laddus(p)
+        ProductKind.POOJA -> diya(p)
+        ProductKind.AGRI -> fertilizerSack(p)
         ProductKind.GENERAL -> carton(p)
     }
 }
@@ -337,4 +347,93 @@ private fun DrawScope.carton(p: ArtPalette) {
     drawRect(p.main, topLeft = Offset(w * 0.14f, h * 0.36f), size = Size(w * 0.52f, h * 0.54f))
     drawRect(p.accent.copy(alpha = 0.6f), topLeft = Offset(w * 0.36f, h * 0.36f), size = Size(w * 0.08f, h * 0.20f))
     drawRoundRect(Color.White, topLeft = Offset(w * 0.22f, h * 0.64f), size = Size(w * 0.24f, h * 0.14f), cornerRadius = CornerRadius(w * 0.02f))
+}
+
+/** A tomato with its green crown — vegetables and fruits. */
+private fun DrawScope.tomato(p: ArtPalette) {
+    val w = size.width
+    val h = size.height
+    drawOval(p.main, topLeft = Offset(w * 0.14f, h * 0.26f), size = Size(w * 0.72f, h * 0.64f))
+    drawOval(p.light.copy(alpha = 0.6f), topLeft = Offset(w * 0.26f, h * 0.36f), size = Size(w * 0.14f, h * 0.12f))
+    for (i in 0..4) {
+        val a = Math.toRadians(-90.0 + i * 72.0)
+        drawLine(p.accent, Offset(w * 0.5f, h * 0.28f), Offset(w * 0.5f + (w * 0.16f * Math.cos(a)).toFloat(), h * 0.28f + (h * 0.10f * Math.sin(a)).toFloat()),
+            strokeWidth = w * 0.05f, cap = StrokeCap.Round)
+    }
+    drawLine(p.accent, Offset(w * 0.5f, h * 0.26f), Offset(w * 0.54f, h * 0.12f), strokeWidth = w * 0.04f, cap = StrokeCap.Round)
+}
+
+/** A fish — meat and fish shops. */
+private fun DrawScope.fish(p: ArtPalette) {
+    val w = size.width
+    val h = size.height
+    val body = Path().apply {
+        moveTo(w * 0.12f, h * 0.50f)
+        cubicTo(w * 0.30f, h * 0.22f, w * 0.62f, h * 0.22f, w * 0.74f, h * 0.50f)
+        cubicTo(w * 0.62f, h * 0.78f, w * 0.30f, h * 0.78f, w * 0.12f, h * 0.50f)
+        close()
+    }
+    drawPath(body, p.main)
+    val tail = Path().apply {
+        moveTo(w * 0.72f, h * 0.50f)
+        lineTo(w * 0.92f, h * 0.32f)
+        lineTo(w * 0.92f, h * 0.68f)
+        close()
+    }
+    drawPath(tail, p.dark)
+    drawCircle(Color.White, radius = w * 0.05f, center = Offset(w * 0.26f, h * 0.45f))
+    drawCircle(p.dark, radius = w * 0.025f, center = Offset(w * 0.26f, h * 0.45f))
+    for (i in 0..2) drawArc(p.light, startAngle = -60f, sweepAngle = 120f, useCenter = false,
+        topLeft = Offset(w * (0.36f + i * 0.10f), h * 0.40f), size = Size(w * 0.10f, h * 0.20f), style = Stroke(width = w * 0.02f))
+}
+
+/** A plate of laddus — sweets and bakery. */
+private fun DrawScope.laddus(p: ArtPalette) {
+    val w = size.width
+    val h = size.height
+    drawOval(p.light, topLeft = Offset(w * 0.08f, h * 0.70f), size = Size(w * 0.84f, h * 0.16f))
+    val balls = listOf(0.30f to 0.62f, 0.50f to 0.62f, 0.70f to 0.62f, 0.40f to 0.44f, 0.60f to 0.44f, 0.50f to 0.27f)
+    balls.forEach { (x, y) ->
+        drawCircle(p.main, radius = w * 0.11f, center = Offset(w * x, h * y))
+        drawCircle(p.dark.copy(alpha = 0.35f), radius = w * 0.02f, center = Offset(w * (x - 0.04f), h * (y + 0.03f)))
+        drawCircle(p.light, radius = w * 0.02f, center = Offset(w * (x + 0.03f), h * (y - 0.04f)))
+    }
+    drawCircle(p.accent, radius = w * 0.025f, center = Offset(w * 0.5f, h * 0.18f))
+}
+
+/** A lit lamp (vilakku) — pooja items and flowers. */
+private fun DrawScope.diya(p: ArtPalette) {
+    val w = size.width
+    val h = size.height
+    val bowl = Path().apply {
+        moveTo(w * 0.14f, h * 0.56f)
+        cubicTo(w * 0.22f, h * 0.84f, w * 0.78f, h * 0.84f, w * 0.86f, h * 0.56f)
+        close()
+    }
+    drawPath(bowl, p.main)
+    drawRoundRect(p.dark, topLeft = Offset(w * 0.40f, h * 0.76f), size = Size(w * 0.20f, h * 0.10f), cornerRadius = CornerRadius(w * 0.02f))
+    val flame = Path().apply {
+        moveTo(w * 0.50f, h * 0.14f)
+        cubicTo(w * 0.62f, h * 0.32f, w * 0.60f, h * 0.50f, w * 0.50f, h * 0.54f)
+        cubicTo(w * 0.40f, h * 0.50f, w * 0.38f, h * 0.32f, w * 0.50f, h * 0.14f)
+        close()
+    }
+    drawPath(flame, p.accent)
+    drawOval(p.light, topLeft = Offset(w * 0.46f, h * 0.34f), size = Size(w * 0.08f, h * 0.16f))
+}
+
+/** A fertilizer sack with a leaf — agri shops. */
+private fun DrawScope.fertilizerSack(p: ArtPalette) {
+    val w = size.width
+    val h = size.height
+    drawRoundRect(p.main, topLeft = Offset(w * 0.20f, h * 0.14f), size = Size(w * 0.60f, h * 0.76f), cornerRadius = CornerRadius(w * 0.08f))
+    drawLine(p.dark, Offset(w * 0.22f, h * 0.20f), Offset(w * 0.78f, h * 0.20f), strokeWidth = w * 0.03f)
+    val leaf = Path().apply {
+        moveTo(w * 0.36f, h * 0.66f)
+        cubicTo(w * 0.36f, h * 0.40f, w * 0.56f, h * 0.34f, w * 0.66f, h * 0.36f)
+        cubicTo(w * 0.66f, h * 0.58f, w * 0.52f, h * 0.68f, w * 0.36f, h * 0.66f)
+        close()
+    }
+    drawPath(leaf, p.accent)
+    drawLine(p.light, Offset(w * 0.38f, h * 0.64f), Offset(w * 0.62f, h * 0.40f), strokeWidth = w * 0.02f)
 }

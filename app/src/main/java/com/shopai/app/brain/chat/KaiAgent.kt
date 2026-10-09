@@ -2524,7 +2524,10 @@ class KaiAgent(
         // asking (nothing is saved before Confirm). For a product the books have, in or out isn't said, so it is not taken here.
         // "Rice actual 255 kg" names Rice, which the books have — a count, not a new product called "Rice Actual".
         val namesKnown = products.any { p -> p.name.isNotBlank() && Regex("""(?i)(?<![\p{L}])${Regex.escape(p.name)}(?![\p{L}])""").containsMatchIn(text) }
-        val bareNewLine = product == null && !namesKnown && unit != null && bareStockLine.matches(text.trim())
+        // "500 kattu" at the end is "pay 500" (kattu = pay / bundle): with no stock word it is never taken as a bundle.
+        val endsWithPay = Regex("""(?i)(?:kattu|கட்டு)\s*[.!]?$""").containsMatchIn(text.trim())
+        val bareNewLine = product == null && !namesKnown && unit != null && !endsWithPay &&
+            !com.shopai.app.brain.tools.KaiStock.moneyOrQuestion(text) && bareStockLine.matches(text.trim())
         if (!asked && !bareNewLine && !com.shopai.app.brain.tools.KaiInventory.hasDetails(text, spec)) return null
         stockLineAskedTurn = -10L
         if (product != null) {

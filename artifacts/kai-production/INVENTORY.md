@@ -161,3 +161,30 @@ product called "Tray" in kg. Fixed:
 
 Tests: `muttaOneTrayIsEggsNeverASack` (dialogue, PCS, TRAY = 30, ₹5 / ₹6, one opening, then 2 trays in and 10 eggs sold),
 `eggWordsInEveryLanguageAndTheSackStaysASack`. Full JVM suite: **1210 tests, 0 failures.** `ProductArt.kt` (egg tray) not compiled here.
+
+## Tamil Nadu shops — every kind of kadai (`tamilNaduShops`, 62 dialogues)
+
+Owner asked to check every kind of Tamil Nadu shop the way "Mutta oru tray" was checked. A first probe of 60 real lines found:
+11 entries saved nothing (seepu, thaar, muzham, kattu, churul, bucket, crate, dabba … were not units — Kai asked "pieces-aa,
+boxes-aa?"), uram / Tamil "சிமெண்ட்" moota kept in kg with the bag rate taken as a kg rate, thengai moota asked "evlo kg?",
+and chicken / fish / sweets / steel vessels / kambi filed as "Grocery" with the rice-sack picture.
+
+Fixed (existing parsers, no new engine):
+- New kinds (category + their own questions + their own animated picture): **Vegetables & Fruits** (tomato), **Meat & Fish**
+  (fish), **Sweets & Bakery** (laddus), **Pooja & Flowers** (lamp), **Agri & Fertilizer** (sack with a leaf). Tanglish and Tamil
+  words for each (thakkali, vengayam, vazhaipazham, thengai, kozhi, meen, mysore pak, laddu, bun, karpooram, kungumam, malli poo,
+  uram, urea …). Hardware: kambi, சிமெண்ட், கம்பி. Vessels / plastic stay General even when weighed.
+- Units: kattu / கட்டு = bundle, crate = case, dabba / tin / டப்பா = can, seepu / சீப்பு and thaar / தார் (bananas: bought by the
+  seepu / thaar, sold by the piece), churul / coil / சுருள் (wire: "1 coil evlo meter?"), muzham / முழம் (flowers kept in muzham),
+  bucket (paint kept in buckets), கிலோ, பாக்கெட்.
+- A bag of fertilizer is the stock unit (like cement); coconuts in a sack are counted ("1 bag-la evlo pieces?").
+- Kind is chosen by a whole word first ("Coconut oil" → oil, "Muttaikose" → cabbage), then a long word inside a name.
+- "petti" is NOT made a global word: it stays the owner's own word Kai learns privately (existing personal-learning feature
+  and its tests are untouched) — for a new product Kai asks pieces or boxes.
+- Safety: "EB bill 500 kattu" (kattu = pay) is never a stock bundle (`payingIsNeverTakenAsAStockBundle`).
+
+Two earlier expectations changed to the more specific category (stock, unit and prices unchanged): Agarbatti → Pooja &
+Flowers, Bread → Sweets & Bakery.
+
+Result: **Tamil Nadu shops 62 / 62**, owners 100 / 100, combinations 150 + 120 + 80 all pass. Full JVM suite: **1212 tests, 0
+failures.** `ProductArt.kt` (5 new pictures) is not compiled here (Android build blocked); Pixel 8 blocked.

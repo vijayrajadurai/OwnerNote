@@ -87,7 +87,13 @@ object KaiStock {
         "box" to "BOX", "boxes" to "BOX", "packet" to "PACK", "packets" to "PACK", "pack" to "PACK", "packs" to "PACK",
         "litre" to "LITRE", "litres" to "LITRE", "liter" to "LITRE", "ltr" to "LITRE", "dozen" to "DOZEN", "bottle" to "BOTTLE", "bottles" to "BOTTLE",
         "carton" to "CARTON", "cartons" to "CARTON", "case" to "CASE", "cases" to "CASE", "bundle" to "BUNDLE", "bundles" to "BUNDLE",
-        "strip" to "STRIP", "strips" to "STRIP", "pair" to "PAIR", "pairs" to "PAIR", "jodi" to "PAIR", "tray" to "TRAY", "trays" to "TRAY", "ட்ரே" to "TRAY", "ஜோடி" to "PAIR", "can" to "CAN", "cans" to "CAN",
+        "strip" to "STRIP", "strips" to "STRIP", "pair" to "PAIR", "pairs" to "PAIR", "jodi" to "PAIR", "tray" to "TRAY", "trays" to "TRAY", "ட்ரே" to "TRAY",
+        // Tamil Nadu shop units: kattu = bundle, crate = case, dabba / tin = can; seepu / thaar (bananas), churul (wire),
+        // muzham (flowers), bucket (paint) are kept as their own units. ("petti" stays a word each owner teaches Kai — private memory.)
+        "kattu" to "BUNDLE", "கட்டு" to "BUNDLE", "crate" to "CASE", "crates" to "CASE",
+        "dabba" to "CAN", "tin" to "CAN", "tins" to "CAN", "டப்பா" to "CAN", "seepu" to "SEEPU", "சீப்பு" to "SEEPU", "thaar" to "THAAR", "தார்" to "THAAR",
+        "churul" to "COIL", "coil" to "COIL", "coils" to "COIL", "சுருள்" to "COIL", "muzham" to "MUZHAM", "mulam" to "MUZHAM", "முழம்" to "MUZHAM",
+        "bucket" to "BUCKET", "buckets" to "BUCKET", "பக்கெட்" to "BUCKET", "கிலோ" to "KG", "பாக்கெட்" to "PACK", "meter" to "METER", "metre" to "METER", "ஜோடி" to "PAIR", "can" to "CAN", "cans" to "CAN",
         "gram" to "GRAM", "grams" to "GRAM", "gm" to "GRAM", "gms" to "GRAM", "g" to "GRAM", "ml" to "ML", "dozens" to "DOZEN",
     )
 
@@ -130,6 +136,9 @@ object KaiStock {
         """(?i)(?<![\p{L}])(cash|panam|kaasu|rupees?|rs|money|amount|balance|salary|rent|upi|gpay|bank|payment|evlo|evvalavu|enna|how|what|which|why|""" +
             """eppo|remind|reminder|bill|loss|profit|low|reorder)(?![\p{L}])|₹|\?""",
     )
+    /** "EB bill 500 kattu", "rent 5000", "₹500" — money or a question, never a stock line. */
+    fun moneyOrQuestion(text: String): Boolean = notStock.containsMatchIn(lowerOf(text))
+
     private val stockContext = Regex("""(?i)(?<![\p{L}])(stock|inventory|iruppu|product)(?![\p{L}])""")
 
     private fun lowerOf(text: String) = " " + text.lowercase(Locale.ROOT).replace(Regex("""[!,;.]"""), " ").replace(Regex("""\s+"""), " ").trim() + " "
@@ -145,8 +154,12 @@ object KaiStock {
     private fun spokenName(rest: String): String {
         val words = rest.split(' ').filter { it.isNotEmpty() }
         return words.filterIndexed { i, w ->
-            // A one-letter unit ("g") is a unit only right after a number — "Parle G" keeps its G.
-            val unit = w in units && (w.length > 1 || words.getOrNull(i - 1)?.let { p -> p.any(Char::isDigit) || p in numberWords } == true)
+            fun isNumber(x: String?) = x != null && (x.any(Char::isDigit) || x in numberWords)
+            // A unit word is the unit right after a number, or right before one with no unit after it ("arisi moota 50");
+            // otherwise it is part of the name ("Bucket 10 piece", "Parle G 10 box"). A one-letter unit only after a number.
+            val afterNumber = isNumber(words.getOrNull(i - 1))
+            val beforeNumber = isNumber(words.getOrNull(i + 1)) && words.getOrNull(i + 2)?.let { it in units } != true
+            val unit = w in units && (afterNumber || (w.length > 1 && (beforeNumber || words.none(::isNumber))))
             w !in fillers && !unit && w !in numberWords && w.none(Char::isDigit) &&
                 (inWords + outWords).none { k -> k.split(' ').contains(w) }
         }.joinToString(" ").trim().trim('-')
@@ -277,6 +290,12 @@ object KaiStock {
             "PAIR" -> if (one) "pair" else "pairs"
             "CAN" -> if (one) "can" else "cans"
             "TRAY" -> if (one) "tray" else "trays"
+            "COIL" -> if (one) "coil" else "coils"
+            "BUCKET" -> if (one) "bucket" else "buckets"
+            "SEEPU" -> "seepu"
+            "THAAR" -> "thaar"
+            "MUZHAM" -> "muzham"
+            "METER" -> "meter"
             "LITRE" -> "litre"
             "KG" -> "kg"
             "GRAM" -> if (one) "gram" else "grams"
