@@ -135,7 +135,8 @@ object KaiChatUnderstanding {
         val paidAlready = has(" already ", " kuduthana", " kuduthaana", " kuduthaan", " kuduthaara", " koduthana", " kuduthiruk", " katti", " kattina",
             " vandhucha", " vanthucha", " paid ", " has paid", " pay pannana", " ஏற்கனவே ", " கொடுத்தான", " கொடுத்தார",
             " pannirukk", " koduthiruk", " kuduthen", " koduthen", " kuduthirukken", " கொடுத்திருக்")
-        val lastPayment = has(" last payment", " kadaisi", " kadaisiya", " recent payment", " latest payment", " கடைசி")
+        val lastPayment = has(" last payment", " kadaisi", " kadaisiya", " recent payment", " latest payment", " கடைசி") ||
+            (has(" last ", " last-a", " last-ah", " last ah ", " last a ", " last aa ", " last time") && has(" kuduth", " koduth", " pay ", " paid", " thandh", " anupp", " pannan", " pannaan"))
         val history = has(" history", " details", " statement", " transactions", " transaction ", " varalaaru", " kanakku ", " full kanakku", " விவரம்", " கணக்கு ",
             " vanginen", " vaanginen", " vangirukk", " vaangirukk", " வாங்கினேன்")
         val due = has(" eppo", " eppa ", " yeppa ", " yeppo ", " yepo ", " when ", " due ", " date ", " date-la", " date la", " thethi", " எப்போ", " எப்ப ", " தேதி")
@@ -244,7 +245,8 @@ object KaiChatUnderstanding {
     /** "late-aa", "correct date-la", "time-ku", "தாமதம்": paying after or on the due date. */
     private val lateTalk = Regex("""(?<![\p{L}])(late|delay|thaamadham|thamadham|thaamadhama|(?:correct|sariyana|sariyaana|right)\s*-?\s*(?:date|time|thethi)|on\s*time|time\s*-?\s*(?:ku|kku))(?![\p{L}])|தாமதம|லேட்|சரியான\s*(?:தேதி|நேரம்)""")
     /** A habit, not one payment: "pannuvaanga", "tharuvaara", "usually", "general-aa". */
-    private val habit = Regex("""(?<![\p{L}])(pannuv\p{L}*|tharuv\p{L}*|kudupp\p{L}*|kudupaa\p{L}*|koduppa\p{L}*|""" +
+    private val habit = Regex("""(?<![\p{L}])(pannuv\p{L}*|tharuv\p{L}*|kudupp\p{L}*|kudupaa\p{L}*|koduppa\p{L}*|tharanga|tharaanga|tharaanga|tharraanga|""" +
+        """kudukkuranga|kudukuranga|kudukkuraanga|kodukkuranga|pannuranga|pannraanga|pannranga|pannuraanga|""" +
         """usually|generally|general|generala|eppavum|eppavume|always|pays?|paying)(?![\p{L}])|பண்ணுவா|தருவா|கொடுப்பா""")
     /** More than one person: "avanga", "yaarlam", "general-aa", "ellaarum". */
     private val groupWords = Regex("""(?<![\p{L}])(avanga|ivanga|avangaloda|ellarum|ellaarum|yarlam|yaarlam|yaarellam|yarellam|yaar|yar|yaaru|yaru|general|generala|everyone|who|customers|suppliers)(?![\p{L}])|அவங்க|யார்|எல்லா""")
@@ -360,7 +362,8 @@ object KaiChatUnderstanding {
         "all", "list", "which", "whose", "show", "their", "payments", "collections", "pending", "dues",
         // "Nan yaruku…", "Yeppa tharanum?", "General-ah yaarlam…": the owner, when / how words — never a name.
         "nan", "na", "naa", "yeppa", "yeppo", "yepo", "epo", "yeppadi", "yepdi", "general", "generala", "yarlam", "yaarlam", "yaarellam",
-        "innai", "inni", "avnanga", "ivanga", "usually", "correct",
+        "innai", "inni", "avnanga", "ivanga", "usually", "correct", "naalaiku", "nalaiku", "nalaikku", "naalai", "nalai", "endha", "yentha", "entha",
+        "phone", "number", "mobile", "contact",
     )
 
     /**

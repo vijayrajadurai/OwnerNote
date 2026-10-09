@@ -414,6 +414,8 @@ class KaiAgent(
         val stated: Boolean = false,
         /** "Lokesh-ku 500 add pannu": a new entry on the side the person's record is on (customer → credit, supplier → debit). */
         val addEntry: Boolean = false,
+        /** "Kumar 500 gpay": no give / take verb — the record decides (a customer paid in, the owner paid a supplier out). */
+        val bySide: Boolean = false,
     )
     /** "Endha Lokesh Owner?" for a payment: the choices, so a typed / spoken "Chennai" picks one like its button. */
     private var planChoice: List<Pair<PartyMatch, KaiAction.ChoosePlan>>? = null
@@ -689,6 +691,32 @@ class KaiAgent(
                         mode = PaymentMode.CASH, said = text, addEntry = true), lang) }
             }
 
+        // "Kumar 1000 credit", "Ravi ku 2500 kadan", "Kumar 1000 ku saamaan credit la eduthutu ponaan": an entry on that person's record
+        // (credit for a customer, debit for a supplier, asked for a new name) — drafted, saved only on Confirm.
+        if (creditWord.containsMatchIn(text) && KaiCommands.route(text, at, people) !is KaiCommand.Payment && !questionLike.containsMatchIn(text))
+            KaiCommands.personIn(text, people)?.let { person ->
+                com.shopai.app.brain.KaiUnderstanding.amountsIn(text, at.toLocalDate()).filter { it > 0 }.singleOrNull()
+                    ?.takeUnless { Regex("""(?<![\p{L}\p{N}])-\s*\d""").containsMatchIn(text) }
+                    ?.let { a -> return payment(PaymentRequest(newKey(), person, BigDecimal.valueOf(a).setScale(2, java.math.RoundingMode.HALF_UP), outgoing = true,
+                        mode = PaymentMode.CASH, said = text, addEntry = true), lang) }
+            }
+        // "Kumar 500 gpay", "ABC Traders 2000 cash": a person, an amount and how it was paid, no verb — a payment whose way the
+        // record decides (customer → in, supplier → out); a new name is asked. Drafted only, saved on Confirm.
+        if (modeOnly.matches(text.trim()))
+            KaiCommands.personIn(text, people)?.let { person ->
+                com.shopai.app.brain.KaiUnderstanding.amountsIn(text, at.toLocalDate()).filter { it > 0 }.singleOrNull()?.let { a ->
+                    val mode = when {
+                        Regex("""(?i)gpay|g pay|upi|phonepe|paytm|online""").containsMatchIn(text) -> PaymentMode.UPI
+                        Regex("""(?i)bank|neft|imps""").containsMatchIn(text) -> PaymentMode.BANK_TRANSFER
+                        else -> PaymentMode.CASH
+                    }
+                    return payment(PaymentRequest(newKey(), person, BigDecimal.valueOf(a).setScale(2, java.math.RoundingMode.HALF_UP), outgoing = false,
+                        mode = mode, said = text, bySide = true), lang)
+                }
+            }
+        // "Kumar phone number": the number the books have for that person — never their balance.
+        phoneNumber(text, people, lang)?.let { return it }
+
         contextualReceivable(text, lang, people)?.let { return it }
         contextualProductFollowUp(text, lang)?.let { return it }
 
@@ -832,6 +860,8 @@ class KaiAgent(
     private fun productNamed(text: String, products: List<com.shopai.app.brain.tools.ProductRef>?): String? =
         products.orEmpty().filter { p -> Regex("""(?i)(?<![\p{L}\p{M}])${Regex.escape(p.name)}(?![\p{L}\p{M}])""").containsMatchIn(text) }
             .map { it.name }.distinct().singleOrNull()
+            // "Arisi stock evlo" with Rice in the shop, "Lux evlo irukku" with Lux Soap: the one product those words name.
+            ?: products?.let { com.shopai.app.brain.tools.KaiStock.productNamedIn(text, it)?.name }
 
     /**
      * Save a receivable / payable mentioned in conversation as session context only; it is not a ledger entry.
@@ -1775,6 +1805,10 @@ class KaiAgent(
         """(?i)(?<![\p{L}])(?:next|adutha|aduththa|indha|intha|this)\s*(?:month|maasam|masam)\s*\d{1,2}(?:\s*(?:st|nd|rd|th))?(?:\s*-?\s*(?:ku|kku|m|aam|am|thethi|date))?(?![\p{L}\d])|""" +
             """(?<![\p{L}\d])\d{1,2}(?:\s*(?:st|nd|rd|th))?\s*(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*(?![\p{L}])|""" +
             """(?<![\p{L}])(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\s*\d{1,2}(?:\s*(?:st|nd|rd|th))?(?![\p{L}\d])|""" +
+            // "naalaiku", "tomorrow", "next week", "Friday": a day said in words.
+            """(?<![\p{L}])(?:naalaiku|naalaikku|nalaiku|nalaikku|tomorrow|naalai|nalai|day\s+after\s+tomorrow|naalanniku|naalanaikku)(?![\p{L}])|""" +
+            // "15th", "15th-ku", "15-aam thethi": a day of this month (or the next, once it has passed).
+            """(?<![\p{L}\d₹.,])\d{1,2}\s*(?:st|nd|rd|th)(?:\s*-?\s*(?:ku|kku|thethi|date))?(?![\p{L}\d])|(?<![\p{L}\d₹.,])\d{1,2}\s*-?\s*(?:aam|am|m)?\s*thethi(?![\p{L}])|""" +
             """(?:அடுத்த|இந்த)\s*(?:மாதம்|மாசம்)\s*\d{1,2}""",
     )
 
@@ -2312,6 +2346,24 @@ class KaiAgent(
         conversationState.lastBusinessTopic = "PARTY_QUERY"
     }
 
+    private val modeOnly = Regex("""(?i)^[\p{L}][\p{L}\s.'-]{1,40}?\s+(?:₹|rs\.?\s*)?\d[\d,]*(?:\.\d+)?\s*(?:rs|rupees|ruba|rubai)?\s*(?:gpay|g\s*pay|upi|phonepe|phone\s*pe|paytm|cash|online|bank)\s*[.!]?$""")
+    private val creditWord = Regex("""(?i)(?<![\p{L}])(credit|kadan|kadana|kadanaa|udhaar|udhar)(?![\p{L}])|கடன்""")
+    private val questionLike = Regex("""(?i)(?<![\p{L}])(evlo|evvalavu|eppo|eppa|yaar|yaaru|enna|how|what|when|who|ah|aa)(?![\p{L}])|\?""")
+
+    /** "Kumar phone number", "Kumar number enna", "Ramesh mobile": the number on that record (or that the books have none). */
+    private suspend fun phoneNumber(text: String, people: List<String>, lang: KaiLang): KaiTurn? {
+        if (!Regex("""(?i)(?<![\p{L}])(phone\s*(?:number|no|num)|mobile|number|contact|cell\s*number)(?![\p{L}])|நம்பர்|போன் நம்பர்""").containsMatchIn(text)) return null
+        if (Regex("""(?i)(?<![\p{L}])(call|remind|reminder|save|add|maathu|change|update)(?![\p{L}])""").containsMatchIn(text)) return null
+        val person = com.shopai.app.brain.KaiUnderstanding.knownPerson(text, people) ?: return null
+        val matches = runCatching { tools.parties(person) }.getOrNull()?.let { KaiEntityResolver.sameName(person, it) }?.distinctBy { it.id } ?: return null
+        val p = matches.singleOrNull() ?: return null
+        val phone = p.phone?.takeIf { it.isNotBlank() }
+        return if (phone != null) say(lang, KaiMood.EXPLAINING, null,
+            ta = "ஓனர், ${p.name} நம்பர்: $phone.", tl = "Owner, ${p.name} number: $phone.", en = "Owner, ${p.name}'s number is $phone.")
+        else say(lang, KaiMood.CLARIFY, null,
+            ta = "ஓனர், ${p.name}-க்கு phone number records-ல இல்ல.", tl = "Owner, ${p.name}-ku phone number records-la illa.", en = "Owner, there's no phone number for ${p.name} in your records.")
+    }
+
     private fun isAmountAddRequest(text: String): Boolean {
         val n = text.lowercase(Locale.ROOT)
         return Regex("(?i)\\b(amount\\s+add|add\\s+(?:the\\s+)?amount|amount\\s+add\\s+pannu|add\\s+pannu|account[- ]?la\\s+podu|account[- ]?la\\s+add|record\\s+(?:this|it))\\b|தொகை.*சேர்|கணக்கில்.*போடு")
@@ -2548,6 +2600,8 @@ class KaiAgent(
         val kind = com.shopai.app.brain.tools.KaiInventory.kindOf(name, unit)
         val spec = com.shopai.app.brain.tools.ItemSpec(name, kind, qty, unit)
         val product = products.firstOrNull { KaiPrivateMemory.normalize(it.name) == KaiPrivateMemory.normalize(name) }
+            // "அரிசி 2 மூட்டை வந்தது" with Rice in the shop: the product by its Tamil name / sound / the one name it starts.
+            ?: com.shopai.app.brain.tools.KaiStock.productNamedIn(name, products)
         // "Moong dal 3 moota" — only a new product's name, a quantity and a unit: it can only be stock coming in, so Kai starts
         // asking (nothing is saved before Confirm). For a product the books have, in or out isn't said, so it is not taken here.
         // "Rice actual 255 kg" names Rice, which the books have — a count, not a new product called "Rice Actual".
@@ -3554,6 +3608,7 @@ class KaiAgent(
         // Who they are decides what the money means.
         fun kindFor(p: PartyMatch) = when {
             r.addEntry -> if (p.customer) PlanKind.CREDIT_GIVEN else PlanKind.DEBIT_TAKEN
+            r.bySide -> if (p.customer) PlanKind.PAYMENT_IN else PlanKind.PAYMENT_OUT
             r.outgoing && !p.customer -> PlanKind.PAYMENT_OUT
             r.outgoing && p.customer -> PlanKind.CREDIT_GIVEN
             !r.outgoing && p.customer -> PlanKind.PAYMENT_IN
@@ -3570,7 +3625,12 @@ class KaiAgent(
         }
         requests[r.key] = r
         val amount = KaiFormat.rupees(r.amount.toDouble())
+        if (candidates.isEmpty() && r.bySide) { requests.remove(r.key); return askPaymentDirection(lang, r.name) }
         if (candidates.isEmpty()) {
+            // "Muthu ku 1500 credit kuduthen" / "Muthu kitta kadan-la vaanginen": the owner already said what it is — a draft for a
+            // new person straight away (Confirm still saves it). Only a bare "kuduthen" / "vaanginen" is asked.
+            if (Regex("""(?i)(?<![\p{L}])(credit|kadan|kadanaa|kadana|udhaar|udhar)(?![\p{L}])|கடன்""").containsMatchIn(r.said))
+                return prepared(r, if (r.outgoing) PlanKind.CREDIT_GIVEN else PlanKind.DEBIT_TAKEN, r.name, null, lang)
             // Not in the books: never guessed — the owner says what it is.
             val buttons = if (r.outgoing) listOf(
                 KaiButton(pick(lang, ta = "Credit — ${r.name} எனக்கு தரணும்", tl = "Credit — ${r.name} enakku tharanum", en = "Credit — ${r.name} owes me"),

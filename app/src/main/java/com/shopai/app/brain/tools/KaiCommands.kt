@@ -93,7 +93,8 @@ object KaiCommands {
 
         // ---- stock, money, top products (from the books) ----
         val stockWords = has("stock", "inventory", "iruppu", "இருப்பு", "ஸ்டாக்")
-        if (has("reorder", "re-order", "re order", "out of stock") || (stockWords && has("low", "kammi", "kammiya", "kuraivu", "kuraivaa", "theerndhu", "theernthu", "mudinjiruchu", "finish", "kuranj", "குறைவு"))) {
+        val itemWords = stockWords || has("product", "products", "item", "items", "porul", "saamaan", "saman", "maal", "பொருள்")
+        if (has("reorder", "re-order", "re order", "out of stock") || (itemWords && has("low", "kammi", "kammiya", "kuraivu", "kuraivaa", "theerndhu", "theernthu", "mudinjiruchu", "finish", "kuranj", "குறைவு"))) {
             return KaiCommand.LowStock
         }
         if (has("highest selling", "top selling", "best selling", "most sold", "adhigama vithadhu", "athigama vithadhu", "adhigama vikkudhu", "top product", "best product", "adhigama vithathu",
@@ -143,12 +144,18 @@ object KaiCommands {
     private val personPaidVerb = Regex("""(?i)(?<![\p{L}])(pay|gpay|g\s*pay|upi|phonepe|paytm|transfer|payment|return|settle|send|online)\s*(?:-?\s*la\s+)?(pannan|pannaan|pannaar|pannar|pannaru|pannaaru|pannanga|pannaanga|pannitan|pannitaan|pannittan|pannittaan|pannitar|pannitaar|pannitaru|pannitaaru|pannittaru|pannittaaru|pannitanga|pannitaanga|pannunan|pannunaan|pannunaar|pannunaru|pannirukkaan|pannirukkan|pannirukaan|pannirukkaar|pannirukkaru|pannirukkaanga)(?![\p{L}])""")
     /** "Ramesh-ku 400 GPay pannen", "transfer pannitten": the owner paid. */
     private val ownerPaidVerb = Regex("""(?i)(?<![\p{L}])(pay|gpay|g\s*pay|upi|phonepe|paytm|transfer|payment|send|online)\s*(?:-?\s*la\s+)?(pannen|panninen|pannunen|panniten|pannitten|pannittaen|pannirukken|pannirken)(?![\p{L}])""")
+    /** "anuppinan", "anuppichan", "anupitaanga": they sent it (any spelling of the 3rd-person past of anuppu). */
+    private val personSent = Regex("""(?i)(?<![\p{L}])anupp?[iu](?:n|tt?|ch{1,2}|cch)?(?:aan|an|aar|ar|aru|aaru|aanga|anga)(?![\p{L}])""")
+    /** "kuduthaaru", "kuduthar", "koduthutaanga", "thandhaaru": they gave it (any spelling of the 3rd-person past of kudu / thaa). */
+    private val personGave = Regex("""(?i)(?<![\p{L}])(?:kuduth|koduth|thandh|thanth)(?:u?tt?|it?t?)?(?:aan|an|aar|ar|aaru|aru|aanga|anga)(?![\p{L}])""")
+    /** "anuppinen", "anuppichen", "anupiten": the owner sent it. */
+    private val ownerSent = Regex("""(?i)(?<![\p{L}])anupp?[iu](?:n|tt?|ch{1,2}|cch)?(?:en|een|aen)(?![\p{L}])""")
     private val goodsWords = Regex("""(?i)\b(kg|kgs|kilo|litre|ltr|bag|bags|pcs|pieces|packet|box|dozen|rice|arisi|sugar|oil|maavu|paal)\b""")
 
     private fun payment(text: String, t: String, has: (Array<out String>) -> Boolean, question: Boolean, known: List<String>): KaiCommand.Payment? {
         fun hasAny(list: List<String>) = has(list.toTypedArray())
-        val out = hasAny(outWords) || ownerPaidVerb.containsMatchIn(t)
-        val incoming = hasAny(inWords) || personPaidVerb.containsMatchIn(t)
+        val out = hasAny(outWords) || ownerPaidVerb.containsMatchIn(t) || ownerSent.containsMatchIn(t)
+        val incoming = hasAny(inWords) || personPaidVerb.containsMatchIn(t) || personSent.containsMatchIn(t) || personGave.containsMatchIn(t)
         if (out == incoming) return null
         // "Kuduthana?" (did he give?), "5000 pending", "tharanum" — questions or dues, not something that happened.
         // "full ah pay pannitaru", "cash ah kuduthaan": that "ah" says how it was paid — not a question.

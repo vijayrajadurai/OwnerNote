@@ -63,9 +63,10 @@ object KaiStock {
     private val outWords = listOf(
         "stock out", "stock remove", "remove pannu", "remove panniten", "sale panniten", "sale pannen", "sold", "out pannu", "out panniten",
         "out aachu", "out aagiduchu", "poiduchu", "poiduchchu", "pochu", "poachu", "pochi", "pochchu", "sale aachu", "sale achu", "sale aagiduchu",
-        "vithuduchu", "vithachu", "vithuten", "vitthuten", "eduthutanga", "eduthuttanga", "eduthaanga", "eduthanga", "eduthuttaanga", "outward",
+        "vithuduchu", "vithachu", "vithuten", "vitthuten", "vithuchu", "vithuchchu", "vitthuchu", "vithiruchu", "vithutten", "vithen", "vitten", "vikkapattadhu", "eduthutanga", "eduthuttanga", "eduthaanga", "eduthanga", "eduthuttaanga", "outward",
         "sell panniten", "sell pannen", "sell aachu", "sell achu", "sell panni", "sold out", "out",
         "ஸ்டாக் வெளியே", "விற்றுவிட்டேன்", "போயிடுச்சு", "போச்சு", "விற்றேன்", "வித்தேன்", "வித்துட்டேன்", "விற்றோம்", "விற்பனை ஆச்சு",
+        "வித்துச்சு", "வித்துடுச்சு", "விற்றுச்சு", "வித்தாச்சு", "விற்பனை", "vithuduchu",
         "sale", "sales", "sale ayiduchu", "sale aayiduchu", "sale aayidichu",
         // Lost from stock: damage, wastage, expiry, missing — and goods sent back to the supplier.
         "damage", "damaged", "damage aachu", "odanjiduchu", "udanjiduchu", "odanju pochu", "broken", "wastage", "waste", "waste aachu",
@@ -159,23 +160,67 @@ object KaiStock {
      */
     private fun productIn(lower: String, products: List<ProductRef>): ProductRef? {
         val named = products.filter { it.name.isNotBlank() }
-        named.sortedByDescending { it.name.length }
-            .firstOrNull { p -> Regex("""(?<![\p{L}\p{N}])${Regex.escape(p.name.lowercase(Locale.ROOT))}(?![\p{L}])""").containsMatchIn(lower) }
-            ?.let { return it }
+        fun exact(words: String) = named.sortedByDescending { it.name.length }
+            .firstOrNull { p -> Regex("""(?<![\p{L}\p{N}])${Regex.escape(p.name.lowercase(Locale.ROOT))}(?![\p{L}])""").containsMatchIn(words) }
+        exact(lower)?.let { return it }
+        // "Arisi 2 moota", "ennai 5 bottle": the Tamil name of a product the shop keeps in English (and back).
+        val aliased = lower.split(' ').joinToString(" ") { w -> tamilNames[w] ?: w }
+        if (aliased != lower) exact(aliased)?.let { return it }
         val words = lower.split(' ').filter { it.isNotEmpty() }
+        // Only a name said right before its quantity ("bhaniyan 20", "Lux 12 vandhuchu") — "collect in total" or "colgate paste 10"
+        // (a longer name Kai doesn't have) are never taken for a product by sound or by its first word.
+        fun beforeQty(end: Int) = words.getOrNull(end)?.let { n -> n.first().isDigit() || n in numberWords } == true
         val sounds = named.filter { p ->
             val pw = p.name.lowercase(Locale.ROOT).split(Regex("""\s+"""))
-            pw.size <= 3 && p.name.count(Char::isLetter) >= 5 && words.windowed(pw.size).any { w ->
-                w.none { it in units || it in fillers || it in numberWords || it.first().isDigit() } &&
+            pw.size <= 3 && p.name.count(Char::isLetter) >= 5 && words.windowed(pw.size).withIndex().any { (i, w) ->
+                beforeQty(i + pw.size) && w.none { it in units || it in fillers || it in numberWords || it.first().isDigit() } &&
                     w.zip(pw).all { (a, b) -> a == b || (a.length >= 4 && b.length >= 4 && soundsSame(a, b)) }
             }
         }
-        return sounds.singleOrNull()
+        sounds.singleOrNull()?.let { return it }
+        // "Lux 12 vandhuchu" with only "Lux Soap" in the shop: the one product whose name starts with the word said
+        // (three letters or more, not a unit / number / filler). Several such products: none — Kai asks as before.
+        val first = named.filter { p ->
+            val head = p.name.lowercase(Locale.ROOT).split(Regex("""\s+""")).first()
+            head.length >= 3 && head.first().isLetter() && head !in units && head !in fillers &&
+                words.withIndex().any { (i, w) -> w == head && beforeQty(i + 1) }
+        }
+        return first.singleOrNull()
     }
+
+    /** The common Tamil names of grocery goods, for a shop that keeps them in English ("arisi" = Rice). */
+    private val tamilNames = mapOf(
+        "arisi" to "rice", "ennai" to "oil", "ennei" to "oil", "sakkarai" to "sugar", "sarkarai" to "sugar", "seeni" to "sugar",
+        "uppu" to "salt", "paal" to "milk", "paruppu" to "dal", "maavu" to "atta", "godhumai" to "wheat", "muttai" to "egg",
+        "vengayam" to "onion", "thakkali" to "tomato", "urulai" to "potato", "pori" to "puffed rice", "kadalai" to "groundnut", "sopu" to "soap",
+        "theeppetti" to "matchbox", "agarbathi" to "agarbatti", "kalkandu" to "sugar candy", "vellam" to "jaggery", "puli" to "tamarind",
+        "milagai" to "chilli", "milagu" to "pepper", "manjal" to "turmeric", "kadugu" to "mustard", "seeragam" to "jeera",
+        "அரிசி" to "rice", "எண்ணெய்" to "oil", "எண்ணை" to "oil", "சர்க்கரை" to "sugar", "சீனி" to "sugar", "உப்பு" to "salt", "பால்" to "milk",
+        "பருப்பு" to "dal", "மாவு" to "atta", "முட்டை" to "egg", "வெங்காயம்" to "onion", "தக்காளி" to "tomato", "சோப்பு" to "soap",
+        "வெல்லம்" to "jaggery", "புளி" to "tamarind", "மிளகாய்" to "chilli", "மஞ்சள்" to "turmeric",
+    )
+
+    /** The product named in [text] — exactly, by its Tamil name, by sound, or by the one name it starts — or null. */
+    fun productNamedIn(text: String, products: List<ProductRef>): ProductRef? = productIn(lowerOf(KaiSpokenWords.normalize(text)), products)
 
     /** Two spellings of one word ("bhaniyan" / "baniyan", "kolgate" / "colgate"): the same consonant skeleton, three or more of them. */
     private fun soundsSame(a: String, b: String): Boolean =
-        com.shopai.app.util.NameSound.same(a, b) || com.shopai.app.util.NameSound.key(a).let { k -> k.length >= 3 && k == com.shopai.app.util.NameSound.key(b) }
+        com.shopai.app.util.NameSound.same(a, b) ||
+            com.shopai.app.util.NameSound.key(a).let { k -> k.length >= 3 && k == com.shopai.app.util.NameSound.key(b) } && editDistance(a, b) <= 2
+
+    private fun editDistance(a: String, b: String): Int {
+        val d = IntArray(b.length + 1) { it }
+        for (i in 1..a.length) {
+            var prev = d[0]
+            d[0] = i
+            for (j in 1..b.length) {
+                val t = d[j]
+                d[j] = minOf(d[j] + 1, d[j - 1] + 1, prev + if (a[i - 1] == b[j - 1]) 0 else 1)
+                prev = t
+            }
+        }
+        return d[b.length]
+    }
 
     /** The words left once stock words, numbers and units are taken out — the product's name as said. */
     private fun spokenName(rest: String): String {
@@ -290,6 +335,9 @@ object KaiStock {
      * Every quantity in [text] with its unit: "1 box 3 pieces" → [1 BOX, 3 PCS], "2kg" → [2 KG],
      * "rendu box" → [2 BOX], "12" → [12 (product unit)]. Empty when there is no number.
      */
+    /** Weights / volumes: the size of a pack ("25 kg moota"), not a pack. */
+    private val sizeUnits = setOf("KG", "GRAM", "LITRE", "ML")
+
     fun partsIn(text: String): List<QtyPart> {
         val lower = " " + text.lowercase(Locale.ROOT).replace(Regex("""[!,;+]"""), " ").replace(Regex("""(\d)([a-z]+)"""), "$1 $2").replace(Regex("""\s+"""), " ").trim() + " "
         val words = lower.split(' ').filter { it.isNotEmpty() }
@@ -300,6 +348,16 @@ object KaiStock {
             val w = words[i]
             val n = w.toBigDecimalOrNull()?.takeIf { w.first().isDigit() } ?: numberWords[w]?.toBigDecimal()
             if (n != null && n.signum() > 0) {
+                // "25 kg moota 2", "1 litre bottle 12": the pack's size, then the pack and how many — 2 bags, 12 bottles.
+                val packAfterSize = words.getOrNull(i + 1)?.let { units[it] }?.takeIf { it in sizeUnits }
+                    ?.let { words.getOrNull(i + 2)?.let { u -> units[u] }?.takeIf { it !in sizeUnits } }
+                val packCount = words.getOrNull(i + 3)?.let { c -> c.toBigDecimalOrNull()?.takeIf { c.first().isDigit() } ?: numberWords[c]?.toBigDecimal() }
+                if (packAfterSize != null && packCount != null && packCount.signum() > 0) {
+                    out += QtyPart(packCount, packAfterSize)
+                    usedUnitAt = i + 2
+                    i += 4
+                    continue
+                }
                 val after = words.getOrNull(i + 1)?.let { units[it] }
                 // "arisi moota 50", "Colgate box 5": the unit said just before the number (when none follows it).
                 val before = if (after == null && i - 1 > usedUnitAt) words.getOrNull(i - 1)?.let { units[it] } else null
