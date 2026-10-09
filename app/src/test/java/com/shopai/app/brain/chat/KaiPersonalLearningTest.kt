@@ -239,8 +239,10 @@ class KaiPersonalLearningTest {
         val t = kai.ask("maal na stock")
         assertEquals("Seri Owner 😄 `maal` = `stock` nu save pannava?", t.reply.text)
         kai.ask("aama")
+        // "maal vandhuruku" = "stock vandhuruku": Kai asks which product and how much (the camera is a button, not opened by itself).
         val d = kai.ask("maal vandhuruku")
-        assertTrue(d.reply.text, d.direct is KaiAction.OpenStockCamera)
+        assertTrue(d.reply.text, d.reply.text.contains("Enna product, evlo vandhirukku?"))
+        assertTrue(d.reply.text, d.card!!.buttons.any { it.action is KaiAction.OpenStockCamera })
         // Natural teaching: "naan 'maal' nu sonna stock meaning" is the same memory.
         assertEquals("stock", find("maal")!!.meaningValue)
         noCommittedWrites()
@@ -296,7 +298,8 @@ class KaiPersonalLearningTest {
     fun correctionReplacesMeaning() = runBlocking {
         kai.ask("pocha = sold")
         kai.ask("aama")
-        val sold = kai.ask("Colgate 2 pocha")
+        assertTrue(kai.ask("Colgate 2 pocha").reply.text.contains("2 pieces-aa"))
+        val sold = kai.ask("pieces")
         assertTrue(sold.reply.text, sold.reply.text.contains("stock-out"))
         val ask = kai.ask("pocha = damaged")
         assertTrue(ask.reply.text, ask.reply.text.contains("Ippo `pocha` = Stock Out") && ask.reply.text.contains("update pannava?"))
@@ -463,7 +466,8 @@ class KaiPersonalLearningTest {
     fun contextDecidesMeaning() = runBlocking {
         kai.ask("'aachu' na stock out")
         kai.ask("aama")
-        assertTrue(kai.ask("Colgate 2 aachu").reply.text.contains("stock-out"))
+        assertTrue(kai.ask("Colgate 2 aachu").reply.text.contains("2 pieces-aa"))
+        assertTrue(kai.ask("pieces").reply.text.contains("stock-out"))
         val time = kai.ask("2 mani aachu")
         assertFalse(time.reply.text, time.reply.text.contains("stock-out"))
         assertFalse(time.reply.text, time.reply.text.contains("Product"))

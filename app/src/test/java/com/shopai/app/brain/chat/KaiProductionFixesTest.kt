@@ -128,7 +128,9 @@ class KaiProductionFixesTest {
         for (s in listOf("Colgate add stock 5", "Colgate new stock 5", "Colgate 5 stock vandhiruku", "pudhu stock Colgate 5", "Colgate 5 pudhusa vandhuruku",
             "Colgate 5 inventory-ku podu", "Colgate 5 pieces stock add pannu")) {
             val a = KaiAgent(KaiBusinessBrain(Books()), Books(), tools, { now }, access)
-            val t = a.ask(s)
+            // "5" with no unit for Colgate (pieces and boxes) is asked first; "5 pieces …" is not.
+            val first = a.ask(s)
+            val t = if (s.contains("pieces")) first else first.also { assertTrue("$s → ${it.reply.text}", it.reply.text.contains("5 pieces")) }.let { a.ask("pieces") }
             assertTrue("$s → ${t.reply.text}", t.reply.text.startsWith("Colgate — 5 pieces stock-in draft ready"))
             assertTrue(t.actions().any { it is KaiAction.ConfirmStock } && t.actions().any { it is KaiAction.EditStock } && t.actions().any { it is KaiAction.CancelStock })
         }
@@ -136,14 +138,16 @@ class KaiProductionFixesTest {
     }
 
     @Test
-    fun newProductOpensTheCameraDirectly() = runBlocking {
+    fun newProductIsAskedInChatAndThePhotoFormStillWorks() = runBlocking {
+        // Owner's rule (9 Oct 2026): a new product is added in the chat — no camera by itself.
         val t = kai.ask("Pepsodent stock vandhiruku add pannu")
-        assertTrue(t.reply.text, t.reply.text.startsWith("Owner, Pepsodent new product madhiri theriyudhu.\nPhoto eduthu details auto-fill pannava? 📷"))
-        val camera = t.direct as KaiAction.OpenStockCamera
-        assertEquals("Pepsodent", camera.prefill.name)
-        assertTrue(t.actions().any { it is KaiAction.CreateProduct })
-        assertTrue(tools.logs.any { it.first == KaiIntents.STOCK_IN_CAMERA })
+        assertEquals("Seri Owner 👍 Pepsodent evlo vandhirukku? (eg: 5 box)", t.reply.text)
+        assertNull(t.direct)
         assertTrue(tools.created.isEmpty() && tools.stockChanges.isEmpty())
+        // Asking for a photo still opens the camera with the name filled in.
+        val camera = kai.ask("Pepsodent stock photo edu").direct as KaiAction.OpenStockCamera
+        assertEquals("Pepsodent", camera.prefill.name)
+        assertTrue(tools.logs.any { it.first == KaiIntents.SCAN_STOCK })
         // The owner checked the photo-filled form: product created, stock in through the inventory engine.
         val done = kai.addProduct(ProductForm("Pepsodent", "Personal Care", "Germicheck", "Pepsodent", "PCS", "150 g", BigDecimal("12")), KaiLang.TANGLISH)
         assertTrue(done.reply.text, done.reply.text.startsWith("Done Owner ✅ Pepsodent stock-la 12 pieces add panniten."))
@@ -167,7 +171,8 @@ class KaiProductionFixesTest {
     fun stockOutPhrasesShowWhatIsLeft() = runBlocking {
         for (s in listOf("Colgate 2 out pannu", "2 Colgate pochu", "Colgate rendu sale aachu", "Colgate 2 pieces sold", "Colgate 2 eduthutanga")) {
             val a = KaiAgent(KaiBusinessBrain(Books()), Books(), tools, { now }, access)
-            val t = a.ask(s)
+            val first = a.ask(s)
+            val t = if (s.contains("pieces")) first else first.also { assertTrue("$s → ${it.reply.text}", it.reply.text.contains("2 pieces-aa")) }.let { a.ask("pieces") }
             assertEquals(s, "Seri Owner. Colgate — 2 pieces stock-out. Remaining: 6 pieces.", t.reply.text)
             assertEquals(s, listOf("Colgate", "Stock Out: 2 pieces", "Remaining: 6 pieces"), t.card!!.lines)
         }

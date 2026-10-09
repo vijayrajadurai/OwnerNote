@@ -12,6 +12,12 @@ data class ProductRef(
     val stock: BigDecimal,
     /** This product's own conversions: unit → base units in 1 (e.g. BOX → 12 for 1 box = 12 pieces). */
     val conversions: Map<String, BigDecimal> = emptyMap(),
+    /** Per [unit], from the books; null = not set. Purchase and selling price are always kept apart. */
+    val purchasePrice: BigDecimal? = null,
+    val sellingPrice: BigDecimal? = null,
+    /** The minimum (low-stock) level in [unit]; null = not set. */
+    val minStock: BigDecimal? = null,
+    val category: String? = null,
 )
 
 /**
@@ -46,6 +52,9 @@ object KaiStock {
         "purchase panninen", "purchase pannen", "received", "in pannu", "inward", "restock", "restocked",
         "vandhuduchu", "vanthuduchu", "vandhachu", "vanthachu", "vandhurukku", "vandhudhu", "vanthudhu", "vanthuthu", "vandhadhu", "vanthathu",
         "ஸ்டாக் உள்ளே", "சேர்", "வந்திருக்கு", "புது ஸ்டாக்",
+        // A customer brought goods back: they come into stock again.
+        "customer return", "customer returned", "sales return", "sale return", "return vandhuchu", "return vanthuchu", "thirumbi vandhuchu",
+        "thiruppi kuduthaanga", "thiruppi kuduthaan", "thiruppi kuduthutaanga",
     )
     /** Stock going out: "Colgate 2 out pannu", "2 Colgate pochu", "rendu sale aachu", "2 pieces sold", "eduthutanga". */
     private val outWords = listOf(
@@ -54,6 +63,13 @@ object KaiStock {
         "vithuduchu", "vithachu", "vithuten", "vitthuten", "eduthutanga", "eduthuttanga", "eduthaanga", "eduthanga", "eduthuttaanga", "outward",
         "sell panniten", "sell pannen", "sell aachu", "sell achu", "sell panni", "sold out", "out",
         "ஸ்டாக் வெளியே", "விற்றுவிட்டேன்", "போயிடுச்சு", "போச்சு",
+        "sale", "sales", "sale ayiduchu", "sale aayiduchu", "sale aayidichu",
+        // Lost from stock: damage, wastage, expiry, missing — and goods sent back to the supplier.
+        "damage", "damaged", "damage aachu", "odanjiduchu", "udanjiduchu", "odanju pochu", "broken", "wastage", "waste", "waste aachu",
+        "kettupochu", "kettu pochu", "spoil", "spoiled", "rotten", "expiry", "expired", "expire aachu", "missing", "kaanom", "kanom",
+        "supplier return", "purchase return", "supplier ku return", "supplier-ku return", "return anuppitten", "thiruppi anuppitten",
+        "kurainjirukku", "kuranjirukku", "korainjirukku", "kammiyaa irukku",
+        "சேதம்", "உடைஞ்சு", "வீணா", "கெட்டுப்போச்சு", "குறைஞ்சிருக்கு",
     )
     /** "2 pieces Colgate kuduthuten": stock out only when a known product is named (otherwise it is money). */
     private val gaveWords = listOf("kuduthen", "kuduthuten", "kuduthutten", "koduthen", "koduthuten", "kuduthachu", "kuduthaachu", "gave", "given")
@@ -68,9 +84,22 @@ object KaiStock {
         "box" to "BOX", "boxes" to "BOX", "packet" to "PACK", "packets" to "PACK", "pack" to "PACK", "packs" to "PACK",
         "litre" to "LITRE", "litres" to "LITRE", "liter" to "LITRE", "ltr" to "LITRE", "dozen" to "DOZEN", "bottle" to "BOTTLE", "bottles" to "BOTTLE",
         "carton" to "CARTON", "cartons" to "CARTON", "case" to "CASE", "cases" to "CASE", "bundle" to "BUNDLE", "bundles" to "BUNDLE",
-        "strip" to "STRIP", "strips" to "STRIP",
+        "strip" to "STRIP", "strips" to "STRIP", "pair" to "PAIR", "pairs" to "PAIR", "can" to "CAN", "cans" to "CAN",
         "gram" to "GRAM", "grams" to "GRAM", "gm" to "GRAM", "gms" to "GRAM", "g" to "GRAM", "ml" to "ML", "dozens" to "DOZEN",
     )
+
+    private val reasons = listOf(
+        "Customer return" to Regex("""(?i)customer\s+return|sales?\s+return|return\s+vand|return\s+vanth|thirumbi\s+vand|thiruppi\s+kuduth"""),
+        "Supplier return" to Regex("""(?i)supplier\s*-?\s*(?:ku\s+)?return|purchase\s+return|return\s+anupp|thiruppi\s+anupp"""),
+        "Damage" to Regex("""(?i)damage|odanj|udanj|broken|சேதம்|உடைஞ்சு"""),
+        "Expired" to Regex("""(?i)expir"""),
+        "Wastage" to Regex("""(?i)wastage|waste|kettu\s*poch|spoil|rotten|வீணா|கெட்டுப்போச்சு"""),
+        "Missing" to Regex("""(?i)missing|kaanom|kanom"""),
+        "Free" to Regex("""(?i)^free\s·|(?<![\p{L}])(?:free|summa|ilavasam|sample)(?![\p{L}])"""),
+    )
+
+    /** Why the stock changed, when the owner said it ("Damage", "Wastage", "Customer return" …); null for a plain in / out. */
+    fun reasonOf(text: String): String? = reasons.firstOrNull { it.second.containsMatchIn(text) }?.first
 
     /** The unit words Kai knows ("box", "packet", …) — a shop's own word for one is taught as a unit. */
     fun unitOf(word: String): String? = units[word.trim().lowercase(Locale.ROOT)]
@@ -90,6 +119,8 @@ object KaiStock {
         "aagiduchu", "vandhachu", "vanthachu", "restock", "restocked", "the", "my", "of", "some", "konjam", "indha", "intha", "innaiku", "inniku", "today",
         "kadaiku", "kadaila", "shop", "irukku", "iruku", "vandhu", "vanthu", "mattum", "ellam", "items", "photo", "edu", "edunga", "camera", "open",
         "sell", "kuduthen", "kuduthuten", "kuduthutten", "koduthen", "koduthuten", "gave", "given", "vandhuduchu", "vanthuduchu",
+        "damage", "damaged", "wastage", "waste", "expiry", "expired", "missing", "customer", "supplier", "return", "returned", "sales",
+        "kuraivu", "kuraichu", "kuraichi", "kuraichudu", "kuraichiru",
     )
     /** Words that make it money or a question, not a stock change ("cash 500 pochu", "sale evlo aachu?"). */
     private val notStock = Regex(
@@ -224,6 +255,10 @@ object KaiStock {
             "CASE" -> if (one) "case" else "cases"
             "BUNDLE" -> if (one) "bundle" else "bundles"
             "STRIP" -> if (one) "strip" else "strips"
+            "PAIR" -> if (one) "pair" else "pairs"
+            "CAN" -> if (one) "can" else "cans"
+            "LITRE" -> "litre"
+            "KG" -> "kg"
             "GRAM" -> if (one) "gram" else "grams"
             "ML" -> "ml"
             else -> unitWord(unit)
@@ -244,6 +279,8 @@ object KaiStock {
         "CASE" -> "cases"
         "BUNDLE" -> "bundles"
         "STRIP" -> "strips"
+        "PAIR" -> "pairs"
+        "CAN" -> "cans"
         "GRAM" -> "grams"
         "ML" -> "ml"
         else -> unit.lowercase(Locale.ROOT)

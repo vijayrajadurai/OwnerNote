@@ -103,7 +103,29 @@ data class NewProduct(
     val weight: String? = null,
     val imageUri: String? = null,
     val packSize: String? = null,
+    /** Chat entry ("Colgate 5 box, boxku 48 pieces …"): the pack unit and how many [unit]s one holds (1 BOX = 48 PCS). */
+    val secondaryUnit: String? = null,
+    val perSecondary: BigDecimal? = null,
+    /** Per [unit] (the stock unit), as the owner gave them; null = not given. Purchase and selling are never mixed. */
+    val purchasePrice: BigDecimal? = null,
+    val sellingPrice: BigDecimal? = null,
+    /** Opening stock in [unit]s, saved with the product in ONE write (no product without its stock, no stock twice). */
+    val openingQty: BigDecimal? = null,
 )
+
+/** What the owner changes on a product; null = unchanged. Prices per stock unit, the minimum in stock units. */
+data class ProductChange(val purchasePrice: BigDecimal? = null, val sellingPrice: BigDecimal? = null, val minStock: BigDecimal? = null)
+
+/**
+ * One line of goods bought from a supplier ([purchase]) or sold to a customer: [qty] in the product's stock unit at
+ * [rate] per stock unit; [credit] = on account (payable / receivable), else paid now in [mode].
+ */
+data class StockBill(
+    val purchase: Boolean, val partyId: String, val partyName: String, val product: ProductRef, val qty: BigDecimal,
+    val rate: BigDecimal, val credit: Boolean, val mode: PaymentMode, val said: String,
+) {
+    val total: BigDecimal get() = qty.multiply(rate).setScale(2, java.math.RoundingMode.HALF_UP)
+}
 
 enum class ActionStatus { ANSWERED, DRAFT, CONFIRMED, CANCELLED, SCHEDULED, FAILED, OPENED }
 
@@ -176,6 +198,18 @@ interface KaiTools {
     /** The business's products with their stock (null = can't read). */
     suspend fun products(): List<ProductRef>? = null
     suspend fun changeStock(product: ProductRef, qty: BigDecimal, incoming: Boolean, said: String): ActionOutcome = ActionOutcome.Failed("unavailable")
+
+    /**
+     * The owner confirmed a change to a product's details: purchase / selling price per stock unit, or its minimum
+     * (low-stock) level in stock units. Only the fields given change. Stock is never touched here.
+     */
+    suspend fun updateProduct(productId: String, change: ProductChange): ActionOutcome = ActionOutcome.Failed("unavailable")
+
+    /**
+     * A purchase from a supplier / a sale to a customer with the goods in it: the bill and its stock movement in ONE
+     * write of the books (supplier payable + stock in; customer receivable + stock out). Only after the owner confirmed.
+     */
+    suspend fun stockBill(bill: StockBill): ActionOutcome = ActionOutcome.Failed("unavailable")
 
     /** A new product (from the owner's words / a photo the owner checked), created with no stock; null = can't. */
     suspend fun createProduct(product: NewProduct): ProductRef? = null

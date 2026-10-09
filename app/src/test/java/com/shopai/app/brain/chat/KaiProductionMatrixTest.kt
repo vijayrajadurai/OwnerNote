@@ -475,6 +475,8 @@ class KaiProductionMatrixTest {
             c.case(text) {
                 val s = Shop()
                 s.turn(text)
+                // Colgate is kept in pieces and boxes: a bare "6" is asked (owner's rule), then "pieces".
+                if (p == "Colgate") { has(s.last?.reply?.text, "6 pieces"); s.turn("pieces") }
                 check(s.tools.stockChanges.isEmpty()) { "stock changed before Confirm" }
                 s.tap("Confirm")
                 check(s.tools.stockChanges.singleOrNull() == Triple(id, BigDecimal("6"), true)) { "changes ${s.tools.stockChanges} / ${s.last?.reply?.text}" }
@@ -485,6 +487,7 @@ class KaiProductionMatrixTest {
             c.case(text) {
                 val s = Shop()
                 s.turn(text)
+                if (p == "Colgate") { has(s.last?.reply?.text, "3 pieces"); s.turn("pieces") }
                 check(s.tools.stockChanges.isEmpty()) { "stock changed before Confirm" }
                 s.tap("Confirm")
                 check(s.tools.stockChanges.singleOrNull() == Triple(id, BigDecimal("3"), false)) { "changes ${s.tools.stockChanges} / ${s.last?.reply?.text}" }

@@ -205,17 +205,23 @@ class KaiFinalFixesTest {
     fun newProductNeverSaysNotInInventory() = runBlocking {
         val t = kai.ask("Pepsodent stock vandhiruku add pannu")
         assertFalse(t.reply.text.contains("isn't in your inventory"))
-        assertEquals("Owner, Pepsodent new product madhiri theriyudhu.\nPhoto eduthu details auto-fill pannava? 📷", t.reply.text)
-        assertTrue(t.direct is KaiAction.OpenStockCamera)
+        // Owner's rule (9 Oct 2026): a new product is added right in the chat — Kai asks the next missing detail; no camera by itself.
+        assertEquals("Seri Owner 👍 Pepsodent evlo vandhirukku? (eg: 5 box)", t.reply.text)
+        assertNull(t.direct)
     }
 
     @Test
     fun cameraCommandsOpenTheCameraDirectly() = runBlocking {
-        for (s in listOf("Colgate photo edu", "stock photo edu", "new stock add pannu")) {
+        for (s in listOf("Colgate photo edu", "stock photo edu")) {
             val t = newKai().ask(s)
             assertTrue("$s → ${t.reply.text}", t.direct is KaiAction.OpenStockCamera)
             assertEquals(s, KaiIntentKind.SCAN_STOCK, KaiIntents.classify(s, now, emptyList(), tools.products))
         }
+        // "new stock add pannu" (no photo asked): Kai asks which product and how much — the camera is only a button.
+        val ask = newKai().ask("new stock add pannu")
+        assertEquals("Seri Owner 👍 Enna product, evlo vandhirukku? (eg: Colgate 5 box)", ask.reply.text)
+        assertNull(ask.direct)
+        assertTrue(ask.card!!.buttons.any { it.action is KaiAction.OpenStockCamera })
         assertEquals("Colgate", (newKai().ask("Colgate photo edu").direct as KaiAction.OpenStockCamera).prefill.name)
         for (s in listOf("bill scan pannu", "bill ah scan pannu", "invoice scan", "bill photo edu", "purchase bill add pannu", "indha bill add pannu", "bill camera open pannu")) {
             assertEquals(s, KaiAction.OpenScanner, newKai().ask(s).direct)

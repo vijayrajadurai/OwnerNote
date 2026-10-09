@@ -185,7 +185,9 @@ class KaiHumanUnderstandingTest {
         val k = kai()
         has(k.say("Colgate stock evlo?"), "Colgate", "20")
         has(k.say("adhu low-aa?"), "Colgate")
-        has(k.say("athula 5 pochu"), "Colgate", "5 pieces stock-out")
+        // "5" alone for a product kept in pieces and boxes is asked (never guessed), then "pieces".
+        has(k.say("athula 5 pochu"), "Colgate", "5 pieces-aa, 5 boxes-aa")
+        has(k.say("pieces"), "Colgate", "5 pieces stock-out")
         nothingWritten()
     }
 

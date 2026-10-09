@@ -233,7 +233,9 @@ class KaiChatChecklistTest {
         val k = kai()
         has(k.say("Colgate stock evlo?"), "Colgate stock 20 PCS")
         has(k.say("adhu low-aa?"), "Colgate", "keezha")
-        val t = k.say("athula 5 pochu")
+        // Colgate is kept in pieces and boxes: "5" alone is asked (owner's rule — never guessed), then "pieces".
+        has(k.say("athula 5 pochu"), "5 pieces-aa, 5 boxes-aa")
+        val t = k.say("pieces")
         has(t, "Colgate — 5 pieces stock-out")
         assertNotNull(t.card)
         nothingWritten()

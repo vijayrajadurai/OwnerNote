@@ -259,7 +259,9 @@ class KaiOwnerUnderstandingTest {
     fun testD_athulaAfterAStockInIsColgate() {
         val k = kai()
         k.say("Colgate 2 box vandhudhu")
-        val t = k.say("athula 5 pochu")
+        // After a box entry "5" alone is exactly the case that must be asked: pieces or boxes.
+        assertTrue(k.say("athula 5 pochu").text().contains("5 pieces-aa, 5 boxes-aa"))
+        val t = k.say("pieces")
         assertTrue(t.text(), t.text().contains("Colgate") && t.text().contains("5 pieces stock-out"))
         assertTrue("draft only", tools.stockChanges.isEmpty())
     }
@@ -269,7 +271,8 @@ class KaiOwnerUnderstandingTest {
         val k = kai()
         assertEquals("Owner, Colgate stock 20 PCS irukku.", k.say("Colgate stock evlo?").text())
         assertTrue(k.say("adhu low-aa?").text().contains("Colgate"))
-        assertTrue(k.say("athula 5 pochu").text().contains("Colgate — 5 pieces stock-out"))
+        assertTrue(k.say("athula 5 pochu").text().contains("Colgate — 5 pieces-aa, 5 boxes-aa"))
+        assertTrue(k.say("pieces").text().contains("Colgate — 5 pieces stock-out"))
     }
 
     @Test

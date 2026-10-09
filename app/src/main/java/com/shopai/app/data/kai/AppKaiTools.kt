@@ -1,5 +1,6 @@
 package com.shopai.app.data.kai
 
+import androidx.room.withTransaction
 import com.shopai.app.books.billing.BillDrafts
 import com.shopai.app.books.billing.DraftKind
 import com.shopai.app.books.billing.MoneyAccounts
@@ -122,7 +123,9 @@ class AppKaiTools(
             val secondary = e?.secondaryUnit
             val milli = e?.conversionMilli
             val conversions = if (secondary != null && milli != null && milli > 0) mapOf(secondary to BigDecimal.valueOf(milli).divide(BigDecimal(1000))) else emptyMap()
-            com.shopai.app.brain.tools.ProductRef(it.id, it.name, it.unit, BigDecimal.valueOf(it.currentStock), conversions)
+            com.shopai.app.brain.tools.ProductRef(it.id, it.name, it.unit, BigDecimal.valueOf(it.currentStock), conversions,
+                purchasePrice = e?.purchasePricePaise?.let(::rupees), sellingPrice = e?.sellingPricePaise?.let(::rupees),
+                minStock = e?.minStockMilli?.let(::qty), category = it.category)
         }
     }
 
@@ -147,6 +150,61 @@ class AppKaiTools(
         }.getOrDefault(none)
     }
 
+    /** Only called after the owner confirmed: new prices / minimum level on the product (stock untouched). */
+    override suspend fun updateProduct(productId: String, change: com.shopai.app.brain.tools.ProductChange): ActionOutcome {
+        val s = session() ?: return ActionOutcome.Failed("books unavailable")
+        return runCatching {
+            val p = s.dao.product(productId)?.takeIf { it.businessId == s.ctx.businessId } ?: return ActionOutcome.Failed("product not found")
+            val minMilli = change.minStock?.multiply(BigDecimal(1000))?.setScale(0, RoundingMode.HALF_UP)?.longValueExact()
+            val input = p.toInput().copy(
+                purchasePricePaise = change.purchasePrice?.let(::paise) ?: p.purchasePricePaise,
+                sellingPricePaise = change.sellingPrice?.let(::paise) ?: p.sellingPricePaise,
+                minStockMilli = minMilli ?: p.minStockMilli,
+            )
+            when (val r = s.masters.updateProduct(p.id, input)) {
+                is com.shopai.app.books.engine.MasterResult.Ok -> ActionOutcome.Done(p.name, null)
+                is com.shopai.app.books.engine.MasterResult.Rejected -> ActionOutcome.Failed(r.errors.firstOrNull()?.message ?: "not saved")
+            }
+        }.getOrElse { ActionOutcome.Failed(it.message ?: "not saved") }
+    }
+
+    /**
+     * Only called after the owner confirmed: a purchase from a supplier / a sale to a customer with its goods, posted by the
+     * engine as ONE document (party balance + stock movement + any payment together — all or nothing).
+     */
+    override suspend fun stockBill(bill: com.shopai.app.brain.tools.StockBill): ActionOutcome {
+        val s = session() ?: return ActionOutcome.Failed("books unavailable")
+        return runCatching {
+            MoneyAccounts.ensureDefaults(s)
+            val p = s.dao.product(bill.product.id)?.takeIf { it.businessId == s.ctx.businessId } ?: return ActionOutcome.Failed("product not found")
+            val item = com.shopai.app.books.engine.ItemInput(
+                productId = p.id, qtyMilli = bill.qty.multiply(BigDecimal(1000)).setScale(0, RoundingMode.HALF_UP).longValueExact(),
+                unit = p.primaryUnit, ratePaise = paise(bill.rate),
+            )
+            val meta = com.shopai.app.books.engine.PostMeta(java.util.UUID.randomUUID().toString(), TxnSource.VOICE, notes = "Kai: ${bill.said.take(80)}")
+            suspend fun paidNow(grandTotal: Long?): List<com.shopai.app.books.engine.PaymentPart> {
+                if (bill.credit || grandTotal == null || grandTotal <= 0) return emptyList()
+                val account = MoneyAccounts.accountFor(s, bill.mode) ?: return emptyList()
+                return listOf(com.shopai.app.books.engine.PaymentPart(account.id, bill.mode, grandTotal))
+            }
+            val result = if (bill.purchase) {
+                val base = com.shopai.app.books.engine.PurchaseInput(partyId = bill.partyId, billNumber = null, date = LocalDate.now(), items = listOf(item), meta = meta)
+                val quote = s.engine.quotePurchase(base)
+                if (!quote.ok) return ActionOutcome.Failed(quote.errors.firstOrNull()?.message ?: "not saved")
+                s.engine.postPurchase(base.copy(paid = paidNow(quote.totals?.grandTotalPaise)))
+            } else {
+                val base = com.shopai.app.books.engine.SaleInput(partyId = bill.partyId, date = LocalDate.now(), items = listOf(item), meta = meta)
+                val quote = s.engine.quoteSale(base)
+                if (!quote.ok) return ActionOutcome.Failed(quote.errors.firstOrNull()?.message ?: "not saved")
+                s.engine.postSale(base.copy(received = paidNow(quote.totals?.grandTotalPaise)))
+            }
+            when (result) {
+                is PostResult.Posted -> ActionOutcome.Done(result.txn.number, qty(s.ledger.stock(p.id)))
+                is PostResult.Rejected -> ActionOutcome.Failed(result.errors.firstOrNull()?.message ?: "not saved")
+            }
+        }.getOrElse { ActionOutcome.Failed(it.message ?: "not saved") }
+    }
+
     /** Only called after the owner confirmed the stock draft. */
     override suspend fun changeStock(product: com.shopai.app.brain.tools.ProductRef, qty: BigDecimal, incoming: Boolean, said: String): ActionOutcome {
         val inv = inventory ?: return ActionOutcome.Failed("inventory unavailable")
@@ -167,6 +225,11 @@ class AppKaiTools(
 
     /** Only called after the owner checked the product details (typed / read from a photo). Stock is added after, as a normal stock in. */
     override suspend fun createProduct(product: com.shopai.app.brain.tools.NewProduct): com.shopai.app.brain.tools.ProductRef? {
+        // A chat entry ("Colgate 5 box, boxku 48 pieces, purchase 28 …"): units, prices and opening stock in one write of the books.
+        if (product.secondaryUnit != null || product.purchasePrice != null || product.sellingPrice != null || (product.openingQty?.signum() ?: 0) > 0) {
+            val s = session() ?: return null
+            return runCatching { createWithOpening(s, product) }.getOrNull()
+        }
         val inv = inventory ?: return null
         val name = listOfNotNull(product.name.trim(), product.variant?.trim()?.takeIf { it.isNotEmpty() && !product.name.contains(it, true) })
             .joinToString(" ")
@@ -190,6 +253,53 @@ class AppKaiTools(
             )
             com.shopai.app.brain.tools.ProductRef(p.id, p.name, p.unit, BigDecimal.valueOf(p.currentStock))
         }.getOrNull()
+    }
+
+    /**
+     * The product (primary unit, its pack unit and conversion, purchase and selling price per primary unit) and its
+     * opening stock, in ONE transaction: if any part is rejected nothing is saved — never a product without its stock
+     * or stock posted twice. The engine values the opening stock at the purchase price.
+     */
+    private suspend fun createWithOpening(s: BooksSession, product: com.shopai.app.brain.tools.NewProduct): com.shopai.app.brain.tools.ProductRef {
+        var created: com.shopai.app.books.data.ProductEntity? = null
+        s.db.withTransaction {
+            val unit = s.masters.ensureUnit(product.unit.ifBlank { "PCS" }) ?: error("Check the unit")
+            val second = product.secondaryUnit?.let { s.masters.ensureUnit(it) ?: error("Check the unit") }?.takeIf { !it.equals(unit, ignoreCase = true) }
+            val perMilli = product.perSecondary?.takeIf { second != null && it.signum() > 0 }
+                ?.multiply(BigDecimal(1000))?.setScale(0, RoundingMode.HALF_UP)?.longValueExact()
+            val notes = listOfNotNull(
+                product.weight?.takeIf { it.isNotBlank() }?.let { "Size: $it" },
+                product.packSize?.takeIf { it.isNotBlank() }?.let { "Size: $it" },
+                "Added by Kai",
+            ).joinToString(" · ")
+            val result = s.masters.createProduct(
+                com.shopai.app.books.engine.ProductInput(
+                    name = product.name.trim(), primaryUnit = unit,
+                    secondaryUnit = if (perMilli != null) second else null, conversionMilli = perMilli,
+                    categoryId = s.masters.categoryId(product.category.ifBlank { "General" }),
+                    brandId = s.masters.brandId(product.brand?.takeIf { it.isNotBlank() }),
+                    purchasePricePaise = product.purchasePrice?.let(::paise), sellingPricePaise = product.sellingPrice?.let(::paise),
+                    imagePath = product.imageUri, description = notes,
+                ),
+            )
+            val row = (result as? com.shopai.app.books.engine.MasterResult.Ok)?.value ?: error("Product not saved")
+            created = row
+            val opening = product.openingQty?.takeIf { it.signum() > 0 }
+                ?.multiply(BigDecimal(1000))?.setScale(0, RoundingMode.HALF_UP)?.longValueExact() ?: 0L
+            if (opening > 0) {
+                val posted = s.engine.postOpeningStock(
+                    com.shopai.app.books.engine.OpeningStockInput(
+                        productId = row.id, date = LocalDate.now(), qtyMilli = opening,
+                        meta = com.shopai.app.books.engine.PostMeta(java.util.UUID.randomUUID().toString(), TxnSource.VOICE, notes = "Kai: opening stock"),
+                    ),
+                )
+                if (posted !is PostResult.Posted) error("Opening stock not saved")
+            }
+        }
+        val p = created ?: error("Product not saved")
+        val conversions = if (p.secondaryUnit != null && p.conversionMilli != null && p.conversionMilli > 0)
+            mapOf(p.secondaryUnit to BigDecimal.valueOf(p.conversionMilli).divide(BigDecimal(1000))) else emptyMap()
+        return com.shopai.app.brain.tools.ProductRef(p.id, p.name, p.primaryUnit, qty(s.ledger.stock(p.id)), conversions)
     }
 
     override suspend fun topProducts(from: LocalDate, to: LocalDate, limit: Int): List<ProductSalesFact>? {

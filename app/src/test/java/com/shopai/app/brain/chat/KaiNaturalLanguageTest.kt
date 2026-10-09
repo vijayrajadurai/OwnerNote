@@ -297,7 +297,10 @@ class KaiNaturalLanguageAgentTest {
         val first = kai.ask("Colgate stock 20 pieces vandhiruku")
         kai.act(first.card!!.buttons.first { it.action is KaiAction.ConfirmStock }.action, KaiLang.TANGLISH)
         assertEquals(Triple("p1", BigDecimal("20"), true), tools.stockChanges.single())
-        val t = kai.ask("athula 5 pochu")
+        // "5" alone for a product kept in pieces and boxes is asked (never guessed), then "pieces".
+        val unitAsked = kai.ask("athula 5 pochu")
+        assertTrue(unitAsked.reply.text, unitAsked.reply.text.contains("Colgate") && unitAsked.reply.text.contains("5 pieces-aa"))
+        val t = kai.ask("pieces")
         assertTrue(t.reply.text, t.reply.text.contains("Colgate") && t.reply.text.contains("5"))
         assertTrue(t.card!!.buttons.any { it.action is KaiAction.ConfirmStock })
         assertEquals("only the first, confirmed change is saved", 1, tools.stockChanges.size)
