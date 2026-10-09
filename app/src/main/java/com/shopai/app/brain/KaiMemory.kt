@@ -90,7 +90,13 @@ data class BusinessSnapshot(
     fun find(name: String): List<PartyFacts> {
         val n = name.trim().lowercase(Locale.ROOT)
         if (n.isEmpty()) return emptyList()
-        parties.filter { it.name.trim().lowercase(Locale.ROOT) == n }.takeIf { it.isNotEmpty() }?.let { return it }
+        // "Lokesh" with "Lokesh" and "Madurai Lokesh" in the books: both — two people the owner may mean, so Kai asks which.
+        parties.filter { it.name.trim().lowercase(Locale.ROOT) == n }.takeIf { it.isNotEmpty() }?.let { exact ->
+            val words = n.split(Regex("""\s+"""))
+            return exact + parties.filter { p ->
+                p !in exact && p.name.trim().lowercase(Locale.ROOT).split(Regex("""\s+""")).let { w -> w.size > words.size && w.windowed(words.size).any { it == words } }
+            }
+        }
         parties.filter { p -> p.name.lowercase(Locale.ROOT).split(' ').any { it == n } || p.name.lowercase(Locale.ROOT).startsWith("$n ") }
             .takeIf { it.isNotEmpty() }?.let { return it }
         parties.filter { editDistance(it.name.lowercase(Locale.ROOT), n) <= 1 && n.length >= 4 }.takeIf { it.isNotEmpty() }?.let { return it }

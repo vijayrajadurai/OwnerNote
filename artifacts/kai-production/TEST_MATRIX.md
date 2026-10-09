@@ -31,6 +31,12 @@ shop and reports every failing row (not just the first), then asserts the row co
 | mixed / STT | 30 | 30 | 30 | lower case, number words ("ainnooru", "five hundred"), "500 rs paid today", mixed script, English questions |
 | **total** | **650** | **667** | **667** | |
 
+Later categories in the same file: `m17` device reports, `m18` language combinations (75), `m19` random invariants (400), and
+**`m20` same name (105 / 105)** — 30 "<area> Lokesh" phrasings asked (area before / after, lower case, payment, English); 20 owner answers
+(pudhu / new / vera / "Madurai" / 2 / button → new record; adhey / same / 1 / "Lokesh dhaan" / button → the old record; supplier side) with the
+books checked after Confirm; 20 plain-name sentences that must NOT be asked; 16 "which Lokesh?" queries + picks + full-name answers;
+9 writes with both records; 10 reminders (asked, typed / tapped pick, stored for the picked person).
+
 ## Journeys (`KaiProductionMatrixTest.j1…j8`)
 
 | # | Journey | Result (JVM) | Not covered here |
@@ -56,5 +62,6 @@ context, ask-then-learn, correction, restart, business scope, memory reports onl
 |---|---|---|
 | Branch base e6ead81 (start of this work) | 1147 | 0 |
 | Final (this branch) | **1190** (+18 owner-reference, +16 matrix categories, +9 journey tests) | **0** |
+| `feature/kai-same-name` (9 Oct 2026) | **1195** (+ `m20` same name) | **0** |
 
 No existing test was deleted, skipped or weakened in this branch.

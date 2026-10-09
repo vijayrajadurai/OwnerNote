@@ -43,7 +43,7 @@ class KaiReminderAssistant(
     private val books: KaiBooks? = null,
     private val now: () -> LocalDateTime = { LocalDateTime.now() },
 ) {
-    private enum class Waiting { NOTHING, TASK, TIME, DAY_OF_MONTH, NUMBER, UPDATE_TIME, CONFIRM }
+    private enum class Waiting { NOTHING, TASK, TIME, DAY_OF_MONTH, NUMBER, UPDATE_TIME, CONFIRM, CONTACT }
 
     private data class Pending(
         val key: String,
@@ -67,6 +67,13 @@ class KaiReminderAssistant(
     private fun nowMillis(): Long = now().atZone(zone()).toInstant().toEpochMilli()
 
     // ------------------------------------------------------------ entry points
+
+    /** "confirm" / "venam" / "maathu" right after "…reminder set pannalama?" — the reminder's answer, not a payment's. */
+    fun answersConfirm(text: String): Boolean = waiting == Waiting.CONFIRM &&
+        text.trim().lowercase(Locale.ROOT).trim('.', '!', ' ').let { t -> confirmYes.matches(t) || confirmNo.matches(t) || confirmEdit.containsMatchIn(t) }
+
+    /** Kai asked which of several same-named contacts the reminder is for. */
+    fun awaitingContact(): Boolean = waiting == Waiting.CONTACT
 
     /** A reply to what Kai just asked (a time, a date, a phone number); null when it isn't one. */
     suspend fun continueWith(text: String, lang: KaiLang): KaiTurn? {
@@ -130,6 +137,13 @@ class KaiReminderAssistant(
                     confirmEdit.containsMatchIn(t) && KaiTime.parse(text, now()) == null -> editRequest(p, p.lang ?: lang)
                     else -> null
                 }
+            }
+            // "Endha Lokesh? Lokesh / Madurai Lokesh" → "Madurai" / "rendavadhu" / "Lokesh": the same as tapping that contact.
+            Waiting.CONTACT -> {
+                val p = key?.let { pending[it] } ?: return null
+                val asParties = p.contacts.mapIndexed { i, c -> com.shopai.app.brain.tools.PartyMatch("$i", c.name, true, c.phone, java.math.BigDecimal.ZERO) }
+                val i = KaiEntityResolver.pick(com.shopai.app.brain.tools.KaiSpokenWords.normalize(text), asParties)?.id?.toIntOrNull() ?: return null
+                act(KaiAction.PickContact(p.key, i), p.lang ?: lang)
             }
             Waiting.NOTHING -> null
         }
@@ -270,19 +284,27 @@ class KaiReminderAssistant(
         val person = p.draft.person
         if (person != null && p.contact == null && p.contacts.isEmpty() && p.updateId == null) {
             val found = runCatchingBlocking { tools.contacts(person, p.draft.role) }.orEmpty()
-            val exact = found.filter { it.name.equals(person, true) || com.shopai.app.util.NameSound.same(it.name, person) }
-            val candidates = exact.ifEmpty { found }
+            fun same(n: String) = n.equals(person, true) || com.shopai.app.util.NameSound.same(n, person)
+            val exact = found.filter { same(it.name) }
+            // "Lokesh" with "Lokesh" and "Madurai Lokesh" in the books: both are asked — never the plain one by itself.
+            val candidates = (if (exact.isEmpty()) exact else exact + found.filter { c -> c !in exact && c.name.split(Regex("""\s+""")).any(::same) })
+                .ifEmpty { found }
             when {
                 candidates.size == 1 -> p = p.copy(contact = candidates.single())
                 candidates.size > 1 -> {
                     p = p.copy(contacts = candidates.take(5))
                     pending[p.key] = p
                     val buttons = p.contacts.mapIndexed { i, c -> KaiButton("${c.name}${c.phone?.let { " · $it" } ?: ""} · ${sourceName(c, lang)}", KaiAction.PickContact(p.key, i)) }
+                    // The names are said too (a voice owner never sees the buttons); a typed / spoken pick answers it.
+                    waiting = Waiting.CONTACT
+                    waitingKey = p.key
+                    val names = p.contacts.map { it.name }.distinct()
+                    val said = if (names.size == p.contacts.size) names else p.contacts.mapIndexed { i, c -> "${i + 1}. ${c.name}" }
                     return KaiTurn(
                         ChatReply(pick(lang,
-                            ta = "$person-னு ${candidates.size} பேர் இருக்காங்க ஓனர். எந்த $person?",
-                            tl = "$person-nu ${candidates.size} contacts irukku Owner. Endha $person?",
-                            en = "There are ${candidates.size} people called $person, Owner. Which one?"), KaiMood.CLARIFY, ChatIntent.REMINDER_QUERY),
+                            ta = "$person-னு ${candidates.size} பேர் இருக்காங்க ஓனர். எந்த $person? " + said.joinToString("-ஆ, ") + "-ஆ?",
+                            tl = "$person-nu ${candidates.size} contacts irukku Owner. Endha $person? " + said.joinToString("-aa, ") + "-aa?",
+                            en = "There are ${candidates.size} people called $person, Owner. Which one? " + said.joinToString(" or ") + "?"), KaiMood.CLARIFY, ChatIntent.REMINDER_QUERY),
                         KaiCard(emptyList(), buttons + cancelButton(p.key, lang)),
                     )
                 }

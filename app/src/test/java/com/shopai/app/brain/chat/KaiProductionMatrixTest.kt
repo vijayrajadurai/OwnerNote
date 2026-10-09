@@ -138,9 +138,17 @@ class KaiProductionMatrixTest {
         override fun reminderStored(id: String): Boolean = reminders.any { it.id == id }
         override fun reminders() = reminders.filter { it.open }
         override fun zone() = "Asia/Kolkata"
-        override suspend fun contacts(name: String, role: PartyRole?) =
-            listOf(ContactMatch("phone:1", "Praba", "+919000000011", ContactSource.PHONE), ContactMatch("phone:2", "Ruthran", "+919000000012", ContactSource.PHONE))
+        /** Like AppKaiTools: the books' people with that name (exact name first), then the phone's contacts. */
+        override suspend fun contacts(name: String, role: PartyRole?): List<ContactMatch> {
+            val fromBooks = l.parties.filter { it.name.contains(name, true) && (role == null || it.customer == (role == PartyRole.CUSTOMER)) }
+                .map { ContactMatch(it.id, it.name, "+9190000" + it.id.filter(Char::isDigit).padStart(5, '0'), if (it.customer) ContactSource.CUSTOMER else ContactSource.SUPPLIER) }
+            val exact = fromBooks.filter { it.name.equals(name, true) }
+            // As AppKaiTools: "Lokesh" also brings "Madurai Lokesh" when a plain Lokesh exists.
+            if (exact.isNotEmpty()) return exact + fromBooks.filter { c -> c !in exact && c.name.split(' ').any { it.equals(name, true) } }
+            if (fromBooks.isNotEmpty()) return fromBooks
+            return listOf(ContactMatch("phone:1", "Praba", "+919000000011", ContactSource.PHONE), ContactMatch("phone:2", "Ruthran", "+919000000012", ContactSource.PHONE))
                 .filter { it.name.equals(name, true) }
+        }
         override fun log(intent: String, tool: String, result: String, status: ActionStatus, reference: String?, input: String?) = "K-1"
     }
 
@@ -218,7 +226,7 @@ class KaiProductionMatrixTest {
     private fun hasNot(text: String?, vararg parts: String) = parts.forEach { p -> check(text?.contains(p) != true) { "'$p' must not be in: $text" } }
     private val saveClaims = arrayOf("Save aagiduchu", "save pannitten", "add pannitten", "Saved, Owner", "சேமிச்சுட்டேன்")
 
-    private fun plan(p: ActionPlan?, kind: PlanKind, id: String, amount: String) {
+    private fun plan(p: ActionPlan?, kind: PlanKind, id: String?, amount: String) {
         check(p != null) { "no draft" }
         check(p!!.kind == kind) { "kind ${p.kind} ≠ $kind" }
         check(p.partyId == id) { "party ${p.partyId} ≠ $id" }
@@ -825,7 +833,14 @@ class KaiProductionMatrixTest {
             s.say("Praba")
             plan(s.draft(), PlanKind.PAYMENT_IN, "c9", "500")
         }
-        c.case("ten thousand is ₹10,000") { has(Shop(l = deviceLedger()).say("Chennai Lokesh ten thousand tharanum"), "₹10,000") }
+        c.case("ten thousand is ₹10,000") {
+            // One Lokesh in the books: "Chennai Lokesh" is asked (same or new — owner's rule), then ₹10,000 on the new one.
+            val s = Shop(l = deviceLedger())
+            has(s.say("Chennai Lokesh ten thousand tharanum"), "'Chennai Lokesh' — adhey Lokesh-aa, illa puthu customer-aa?")
+            s.say("pudhu")
+            plan(s.draft(), PlanKind.CREDIT_GIVEN, null, "10000")
+            check(s.draft()?.partyName == "Chennai Lokesh") { "draft ${s.draft()}" }
+        }
         c.case("new two-word name keeps both words") {
             val s = Shop(l = deviceLedger())
             has(s.say("Madurai Ravi enakku 10000 tharanum"), "Madurai Ravi kitta")
@@ -1004,5 +1019,245 @@ class KaiProductionMatrixTest {
         }
         println("MATRIX random-invariants: $drafted drafts, $savedCount saved after Confirm, ${400 - drafted} asked / answered without a draft")
         c.done(400)
+    }
+
+    // ================================================================== 20. same name: "Madurai Lokesh" next to "Lokesh"
+    // Owner's rule (9 Oct 2026): a new "Lokesh <area>" is asked — never merged into the Lokesh already in the books;
+    // "Lokesh evlo tharanum?" with both asks which one and then gives that one's figures; reminders ask the same way.
+
+    /** Lokesh ₹2,000 (no town) · Kumar ₹3,000 · supplier Ramesh ₹2,500 — and, when [both], Madurai Lokesh ₹500. */
+    private fun sameNameLedger(both: Boolean = false) = Ledger().apply {
+        add("c30", "Lokesh", true, "2000", d(9, 10), d(10, 20))
+        add("c1", "Kumar", true, "3000", d(9, 1), d(10, 8))
+        add("s1", "Ramesh", false, "2500", d(9, 20), d(10, 8))
+        if (both) add("c31", "Madurai Lokesh", true, "500", d(10, 1), d(10, 25))
+    }
+
+    @Test
+    fun m20_sameNameNewPersonQueriesAndReminders() {
+        val c = Category("same-name")
+        val asked = "— adhey Lokesh-aa, illa puthu customer-aa?"
+
+        // A. "<area> Lokesh" with one Lokesh in the books: asked, nothing drafted / saved (6 areas × 5 phrasings = 30)
+        for (a in listOf("Madurai", "Trichy", "Salem", "Erode", "Coimbatore", "Velachery")) {
+            val lower = a.lowercase()
+            listOf(
+                "$a Lokesh enakku 500 tharanum" to "'$a Lokesh' $asked",
+                "Lokesh $a enakku 500 tharanum" to "'Lokesh $a' $asked",
+                "$lower lokesh enakku 500 tharanum" to "'$a Lokesh' $asked",
+                "$a Lokesh 500 kuduthaan" to "'$a Lokesh' $asked",
+                "$a Lokesh owes me 500" to "'$a Lokesh' — the same Lokesh, or a new customer?",
+            ).forEach { (said, expect) ->
+                c.case("asks: $said") {
+                    val s = Shop(l = sameNameLedger())
+                    has(s.say(said), expect)
+                    check(s.tools.prepared.isEmpty()) { "drafted before the owner answered: ${s.draft()}" }
+                    check(s.balance("c30") == "2000") { "Lokesh changed: ${s.balance("c30")}" }
+                    hasNot(s.last?.reply?.text, *saveClaims)
+                }
+            }
+        }
+
+        // B. The owner's answer: new person / the same Lokesh — typed, spoken or tapped; books right after Confirm (20)
+        listOf("pudhu", "puthu customer", "new", "vera aal", "Madurai", "2", "tap:Madurai Lokesh — puthu customer").forEach { ans ->
+            c.case("new person by '$ans'") {
+                val s = Shop(l = sameNameLedger())
+                s.say("Madurai Lokesh enakku 500 tharanum")
+                if (ans.startsWith("tap:")) s.tap(ans.removePrefix("tap:")) else s.say(ans)
+                plan(s.draft(), PlanKind.CREDIT_GIVEN, null, "500")
+                check(s.draft()?.partyName == "Madurai Lokesh") { "draft ${s.draft()}" }
+                check(s.l.parties.size == 3) { "saved before Confirm" }
+                has(s.say("confirm"), "Save aagiduchu", "Madurai Lokesh")
+                val fresh = s.l.parties.single { it.name == "Madurai Lokesh" }
+                check(fresh.pending.compareTo(BigDecimal("500")) == 0 && s.balance("c30") == "2000") { "books: new ${fresh.pending}, Lokesh ${s.balance("c30")}" }
+            }
+        }
+        listOf("adhey", "adhey Lokesh", "pazhaya Lokesh", "same", "1", "Lokesh dhaan", "tap:Lokesh · ₹2,000").forEach { ans ->
+            c.case("same Lokesh by '$ans'") {
+                val s = Shop(l = sameNameLedger())
+                s.say("Madurai Lokesh enakku 500 tharanum")
+                if (ans.startsWith("tap:")) s.tap(ans.removePrefix("tap:")) else s.say(ans)
+                plan(s.draft(), PlanKind.CREDIT_GIVEN, "c30", "500")
+                check(s.balance("c30") == "2000") { "saved before Confirm" }
+                has(s.say("confirm"), "Save aagiduchu")
+                check(s.balance("c30") == "2500" && s.l.parties.size == 3) { "books: Lokesh ${s.balance("c30")}, parties ${s.l.parties.map { it.name }}" }
+            }
+        }
+        c.case("payment: adhey → Lokesh paid") {
+            val s = Shop(l = sameNameLedger())
+            has(s.say("Madurai Lokesh 500 kuduthaan"), asked)
+            s.say("adhey")
+            plan(s.draft(), PlanKind.PAYMENT_IN, "c30", "500")
+            s.say("confirm")
+            check(s.balance("c30") == "1500") { "Lokesh ${s.balance("c30")}" }
+        }
+        c.case("payment: pudhu → not Lokesh's record") {
+            val s = Shop(l = sameNameLedger())
+            s.say("Madurai Lokesh 500 kuduthaan")
+            s.say("pudhu")
+            check(s.draft()?.partyId == null && s.draft()?.partyName == "Madurai Lokesh") { "draft ${s.draft()}" }
+            check(s.balance("c30") == "2000") { "Lokesh changed" }
+        }
+        c.case("supplier side asks 'puthu supplier'") {
+            val s = Shop(l = sameNameLedger())
+            has(s.say("Madurai Ramesh-ku naan 500 kudukkanum"), "'Madurai Ramesh' — adhey Ramesh-aa, illa puthu supplier-aa?")
+            check(s.tools.prepared.isEmpty()) { "drafted" }
+        }
+        c.case("supplier: pudhu → new supplier") {
+            val s = Shop(l = sameNameLedger())
+            s.say("Madurai Ramesh-ku naan 500 kudukkanum")
+            s.say("pudhu")
+            plan(s.draft(), PlanKind.DEBIT_TAKEN, null, "500")
+            check(s.draft()?.partyName == "Madurai Ramesh") { "draft ${s.draft()}" }
+        }
+        c.case("supplier: adhey → Ramesh") {
+            val s = Shop(l = sameNameLedger())
+            s.say("Madurai Ramesh-ku naan 500 kudukkanum")
+            s.say("adhey")
+            plan(s.draft(), PlanKind.DEBIT_TAKEN, "s1", "500")
+        }
+        c.case("a question instead of an answer saves nothing") {
+            val s = Shop(l = sameNameLedger())
+            s.say("Madurai Lokesh enakku 500 tharanum")
+            has(s.say("Lokesh evlo tharanum?"), "₹2,000")
+            check(s.tools.prepared.isEmpty() && s.balance("c30") == "2000") { "drafted / saved" }
+        }
+
+        // C. Only the name (with fillers, verbs, amounts, days): never asked — Lokesh's own record (20)
+        listOf("Lokesh 500 kuduthaan", "lokesh 500 kuduthaan", "Lokesh inniku 500 kuduthaan", "Lokesh ippo 500 kuduthaan", "Today Lokesh 500 kuduthaan",
+            "Lokesh gpay la 500 pay pannan", "Lokesh UPI la 500 anuppitaan", "Lokesh cash 500 kuduthaan", "Lokesh paid 500", "Lokesh gave 500",
+            "Lokesh 500 return pannitaan", "Lokesh 500 kuduthutaru", "Lokesh five hundred kuduthaan", "Lokesh ainooru kuduthaan", "Lokesh 500 rooba kuduthaan",
+            "Lokesh kitta irundhu 500 vandhuchu").forEach { said ->
+            c.case("not asked: $said") {
+                val s = Shop(l = sameNameLedger())
+                hasNot(s.say(said), "puthu customer-aa?", "new customer?")
+                plan(s.draft(), PlanKind.PAYMENT_IN, "c30", "500")
+            }
+        }
+        listOf("Lokesh enakku 500 tharanum", "lokesh enakku 500 tharanum", "Lokesh ten thousand tharanum", "Lokesh kitta 500 vaanganum").forEach { said ->
+            c.case("not asked: $said") {
+                val s = Shop(l = sameNameLedger())
+                val r = s.say(said)
+                hasNot(r, "puthu customer-aa?")
+                has(r, "Lokesh kitta irundhu", "Due date eppa?")
+            }
+        }
+
+        // D. Both in the books: "Lokesh evlo?" asks which, then that one's figures (16)
+        listOf("Lokesh evlo tharanum?", "lokesh evlo tharanum", "Lokesh balance evlo?", "Lokesh kitta evlo vaanganum?", "Lokesh pending evlo?",
+            "Lokesh due eppa?", "How much does Lokesh owe?", "Lokesh evvalavu tharanum?").forEach { q ->
+            c.case("which: $q") {
+                val s = Shop(l = sameNameLedger(both = true))
+                val r = s.say(q)
+                check(r.contains("Lokesh-nu rendu per") || r.contains("there are 2 named Lokesh")) { "not asked which: $r" }
+                has(r, "Madurai Lokesh")
+            }
+        }
+        listOf("Madurai" to "₹500", "Madurai Lokesh" to "₹500", "2" to "₹500", "Lokesh" to "₹2,000", "1" to "₹2,000").forEach { (pick, amount) ->
+            c.case("which → '$pick' → $amount") {
+                val s = Shop(l = sameNameLedger(both = true))
+                s.say("Lokesh evlo tharanum?")
+                val r = s.say(pick)
+                has(r, amount)
+                hasNot(r, if (amount == "₹500") "₹2,000" else "₹500")
+            }
+        }
+        c.case("which → 'rendu perum' → both") {
+            val s = Shop(l = sameNameLedger(both = true))
+            s.say("Lokesh evlo tharanum?")
+            has(s.say("rendu perum"), "₹2,000", "₹500")
+        }
+        listOf("Madurai Lokesh evlo tharanum?", "madurai lokesh evlo tharanum").forEach { q ->
+            c.case("full name answers directly: $q") {
+                val s = Shop(l = sameNameLedger(both = true))
+                val r = s.say(q)
+                has(r, "₹500")
+                hasNot(r, "₹2,000", "rendu per")
+            }
+        }
+
+        // E. Both in the books: writes ask which and land on the picked record (10)
+        c.case("payment asks which") {
+            val s = Shop(l = sameNameLedger(both = true))
+            has(s.say("Lokesh 300 kuduthaan"), "Endha Lokesh", "Madurai Lokesh")
+            check(s.tools.prepared.isEmpty()) { "drafted without asking" }
+        }
+        listOf("Madurai" to "c31", "Madurai Lokesh" to "c31", "Lokesh" to "c30", "tap:Madurai Lokesh · Customer · ₹500" to "c31").forEach { (pick, id) ->
+            c.case("payment pick '$pick'") {
+                val s = Shop(l = sameNameLedger(both = true))
+                s.say("Lokesh 300 kuduthaan")
+                if (pick.startsWith("tap:")) s.tap(pick.removePrefix("tap:")) else s.say(pick)
+                plan(s.draft(), PlanKind.PAYMENT_IN, id, "300")
+                s.say("confirm")
+                check(s.balance(id) == if (id == "c31") "200" else "1700") { "books ${s.balance(id)}" }
+                check(s.balance(if (id == "c31") "c30" else "c31") == if (id == "c31") "2000" else "500") { "the other one changed" }
+            }
+        }
+        c.case("full name pays directly") {
+            val s = Shop(l = sameNameLedger(both = true))
+            s.say("Madurai Lokesh 300 kuduthaan")
+            plan(s.draft(), PlanKind.PAYMENT_IN, "c31", "300")
+        }
+        c.case("stated: Madurai → due → confirm → Madurai Lokesh") {
+            val s = Shop(l = sameNameLedger(both = true))
+            has(s.say("Lokesh enakku 100 tharanum"), "Lokesh-aa illa Madurai Lokesh-aa?")
+            s.say("Madurai")
+            s.say("naalaikku")
+            plan(s.draft(), PlanKind.CREDIT_GIVEN, "c31", "100")
+            has(s.say("confirm"), "Save aagiduchu")
+            check(s.balance("c31") == "600" && s.balance("c30") == "2000") { "books c31 ${s.balance("c31")} c30 ${s.balance("c30")}" }
+        }
+        c.case("stated: Lokesh dhaan → due → confirm → Lokesh") {
+            val s = Shop(l = sameNameLedger(both = true))
+            s.say("Lokesh enakku 100 tharanum")
+            s.say("Lokesh dhaan")
+            s.say("naalaikku")
+            has(s.say("confirm"), "Save aagiduchu")
+            check(s.balance("c30") == "2100" && s.balance("c31") == "500") { "books c30 ${s.balance("c30")} c31 ${s.balance("c31")}" }
+        }
+        c.case("third Lokesh offered as new") {
+            val s = Shop(l = sameNameLedger(both = true))
+            has(s.say("Trichy Lokesh enakku 100 tharanum"), "Illa puthu customer 'Trichy Lokesh'-aa?")
+            s.say("pudhu")
+            s.say("naalaikku")
+            check(s.draft()?.partyId == null && s.draft()?.partyName == "Trichy Lokesh") { "draft ${s.draft()}" }
+        }
+
+        // F. Reminders ask which Lokesh the same way (10)
+        val reminder = "Lokesh-ku 10 minutes la call panna remind pannu"
+        c.case("reminder asks which") {
+            val s = Shop(l = sameNameLedger(both = true))
+            has(s.say(reminder), "Endha Lokesh? Lokesh-aa, Madurai Lokesh-aa?")
+            check(s.tools.reminders.isEmpty()) { "stored before Confirm" }
+        }
+        listOf("Madurai" to "Madurai Lokesh", "Madurai Lokesh" to "Madurai Lokesh", "2" to "Madurai Lokesh", "Lokesh" to "Lokesh", "1" to "Lokesh",
+            "tap:Madurai Lokesh · +919000000031 · Customer" to "Madurai Lokesh").forEach { (pick, who) ->
+            c.case("reminder pick '$pick'") {
+                val s = Shop(l = sameNameLedger(both = true))
+                s.say(reminder)
+                val r = if (pick.startsWith("tap:")) s.tap(pick.removePrefix("tap:"))?.reply?.text else s.say(pick)
+                has(r, "$who-ku 10 minutes-la call reminder set pannalama?")
+                check(s.tools.reminders.isEmpty()) { "stored before Confirm" }
+                has(s.say("confirm"), "remind pannuren")
+                check(s.tools.reminders.single().person == who) { "stored for ${s.tools.reminders.map { it.person }}" }
+            }
+        }
+        c.case("reminder by full name: not asked") {
+            val s = Shop(l = sameNameLedger(both = true))
+            has(s.say("Madurai Lokesh-ku 10 minutes la call panna remind pannu"), "Madurai Lokesh-ku 10 minutes-la call reminder set pannalama?")
+        }
+        c.case("reminder with one Lokesh: not asked") {
+            val s = Shop(l = sameNameLedger())
+            has(s.say(reminder), "Lokesh-ku 10 minutes-la call reminder set pannalama?")
+        }
+        c.case("reminder: 'confirm' is the reminder's, not an older payment's") {
+            val s = Shop(l = sameNameLedger(both = true))
+            s.say("Madurai Lokesh 100 kuduthaan"); s.say("confirm")
+            s.say(reminder); s.say("Madurai")
+            has(s.say("confirm"), "remind pannuren")
+            check(s.tools.reminders.size == 1 && s.balance("c31") == "400") { "reminders ${s.tools.reminders.size}, c31 ${s.balance("c31")}" }
+        }
+
+        c.done(105)
     }
 }

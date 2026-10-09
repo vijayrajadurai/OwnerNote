@@ -1140,6 +1140,11 @@ class KaiBusinessBrain(
         options.filter { o ->
             hintLabels[o.id]?.split(Regex("""[^\p{L}\p{M}]+"""))?.any { w -> w.length >= 3 && !o.name.contains(w, ignoreCase = true) && lower.contains(w.lowercase(Locale.ROOT)) } == true
         }.singleOrNull()?.let { return it }
+        // "Madurai" / "Madurai Lokesh" to "Lokesh-aa, Madurai Lokesh-aa?": the name word only one of them has.
+        fun words(n: String) = n.lowercase(Locale.ROOT).split(Regex("""[^\p{L}\p{M}]+""")).filter { it.length >= 3 }.toSet()
+        val shared = options.map { words(it.name) }.reduce { a, b -> a intersect b }
+        val said = words(lower)
+        options.filter { o -> words(o.name).any { it !in shared && it in said } }.singleOrNull()?.let { return it }
         options.filter { lower.contains(it.name.lowercase(Locale.ROOT)) }.distinctBy { it.name.lowercase(Locale.ROOT) }.singleOrNull()
             ?.let { named -> options.filter { it.name.equals(named.name, ignoreCase = true) }.singleOrNull() }?.let { return it }
         // By phone digits said.

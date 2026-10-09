@@ -50,3 +50,13 @@
 | D8 | English reply to a Tanglish sentence with "pay" in it | one English word made the whole sentence English | Tanglish words win |
 | D9 | after a payable draft, the follow-up direction could flip | the draft path stored cash-flow direction, the stated path stored who-pays | one meaning: IN = owner receives, OUT = owner pays |
 | D10 | "add pannitiya?" with a draft open showed no Confirm | the reply had no card | the same draft card is shown again |
+
+## Same name — owner's report (9 Oct 2026) — fixed on `feature/kai-same-name`
+
+| # | Owner saw / asked | Root cause | Fix |
+|---|---|---|---|
+| S1 | "Madurai Lokesh enakku 500 tharanum" (also "Lokesh Madurai…", "madurai lokesh…", "Madurai Lokesh 500 kuduthaan") went to the Lokesh already in the books | only relation words ("thambi") were asked; an area / other word next to the name was dropped | one `qualifierIn` check (word right next to the name that is not grammar, money, a day, a verb or the record's own town): "Records-la 'Lokesh' (₹2,000) irukkaanga. 'Madurai Lokesh' — adhey Lokesh-aa, illa puthu customer-aa?" — typed / spoken / button answer (`KaiAgent.relationQuestion`, `relationAnswered`) |
+| S2 | "Lokesh evlo tharanum?" with Lokesh and Madurai Lokesh answered only Lokesh | `BusinessSnapshot.find` / `KaiEntityResolver.sameName` returned the exact name only | the longer names that carry the name as a whole word are returned too → Kai asks "Lokesh-nu rendu per… 1. Lokesh — ₹2,000; 2. Madurai Lokesh — ₹500"; "Madurai" / "2" / "Lokesh" picks; the full name answers directly. Same for writes ("Lokesh 300 kuduthaan" → "Endha Lokesh?") |
+| S3 | "Lokesh-ku 10 minutes la call … remind pannu" set the reminder for the old Lokesh | contacts took the exact name only; the pick was buttons only | contacts return both (`AppKaiTools.contacts`, `KaiReminderAssistant`), the names are said in the reply, a typed / spoken pick works |
+| S4 | "confirm" to a reminder right after a saved payment said "already save aagiduchu" | the stated-payment "save" check ran before the reminder's own answer | the reminder's yes / no / edit is read first (`KaiReminderAssistant.answersConfirm`) |
+| S5 | "Madurai Lokesh evlo?" listed both Lokeshes | `peopleIn` counted the "Lokesh" inside "Madurai Lokesh" as a second person | a name inside a longer name already found is not another person |

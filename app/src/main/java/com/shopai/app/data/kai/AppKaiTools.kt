@@ -318,13 +318,13 @@ class AppKaiTools(
     override suspend fun contacts(name: String, role: PartyRole?): List<ContactMatch>? {
         val key = nameKey(name)
         fun exactName(n: String) = nameKey(n) == key || com.shopai.app.util.NameSound.same(n, name)
-        val fromBooks = parties(name)?.filter { p -> role == null || p.customer == (role == PartyRole.CUSTOMER) }
+        val inBooks = parties(name)?.filter { p -> role == null || p.customer == (role == PartyRole.CUSTOMER) }
             ?.sortedByDescending { exactName(it.name) }
-            ?.map { ContactMatch(it.id, it.name, it.phone, if (it.customer) ContactSource.CUSTOMER else ContactSource.SUPPLIER) }
             .orEmpty()
-        val exact = fromBooks.filter { exactName(it.name) }
-        if (exact.isNotEmpty()) return exact
-        if (fromBooks.isNotEmpty()) return fromBooks
+        // "Lokesh": the Lokesh records — and "Madurai Lokesh" too when a plain Lokesh exists (two people: Kai asks which).
+        val exact = inBooks.filter { exactName(it.name) }
+        val chosen = if (exact.isEmpty()) inBooks else exact + (com.shopai.app.brain.chat.KaiEntityResolver.sameName(name, inBooks) - exact.toSet())
+        if (chosen.isNotEmpty()) return chosen.map { ContactMatch(it.id, it.name, it.phone, if (it.customer) ContactSource.CUSTOMER else ContactSource.SUPPLIER) }
         return phoneContacts(name)
     }
 

@@ -518,6 +518,8 @@ class KaiAgent(
         pendingDueDateAnswer(said, lang)?.let { return it }
 
         // "note panniko", "save pannu", "kanakkula podu" — the stated payment goes to a draft with Confirm (never saved by itself).
+        // "confirm" to "…reminder set pannalama?": the reminder — never an older payment's "already saved".
+        if (reminders.answersConfirm(said)) reminders.continueWith(said, lang)?.let { return it }
         if (openPayment == null) statedSave(said, lang)?.let { return it }
         // "venam" right after Kai talked about the stated payment (no draft yet): it is dropped — nothing was or will be saved.
         if (openPayment == null && conversationState.stated != null && KaiConversationSemantics.dropsStated(said) &&
@@ -607,6 +609,8 @@ class KaiAgent(
         if (named.size >= 2 && spoken.none(Char::isDigit) && peopleTogether.containsMatchIn(spoken)) return severalPeople(named, lang)
         val text = referenceResolved(spoken, named) ?: return askWhichPerson(spoken, lang)
 
+        // "Madurai" to the reminder's "Endha Lokesh? Lokesh-aa, Madurai Lokesh-aa?": that contact — not a new fragment.
+        if (reminders.awaitingContact()) reminders.continueWith(text, lang)?.let { return it }
         // Pieces said one message at a time: "Mahesh" … "3000" … "enakku tharanum".
         fragment(said, text, people, lang)?.let { return it }
         // "Nagapattinam Lokesh pathi pesuren": the exact record the next "avan" / "avanukku" means.
@@ -1210,9 +1214,12 @@ class KaiAgent(
         // The owner keeps these same-named records apart by their own references ("Kumar Anna" / "Kumar House"):
         // a bare "Kumar" then does not say which one — the last one talked about is not a reason to pick, Kai asks.
         // ("Avan innum 200" names no one: that still is the person being talked about.)
-        val referenced = KaiEntityResolver.sameName(name, candidates).count { it.id in refLabels }
+        val same = KaiEntityResolver.sameName(name, candidates)
+        val referenced = same.count { it.id in refLabels }
+        // "Lokesh" with "Lokesh" and "Madurai Lokesh": the bare name fits both — asked, even right after one was talked about.
+        val longer = same.any { !it.name.trim().equals(name.trim(), ignoreCase = true) && !com.shopai.app.util.NameSound.same(it.name, name) }
         val saidBare = Regex("""(?<![\p{L}\p{M}])""" + Regex.escape(name.trim()), RegexOption.IGNORE_CASE).containsMatchIn(ownerWords)
-        val context = contextId.takeIf { referenced < 2 || !saidBare }
+        val context = contextId.takeIf { referenced < 2 && !longer || !saidBare }
         return KaiEntityResolver.resolve(name, said, candidates, context, referenceId = pinned(name))
     }
 
@@ -1226,35 +1233,39 @@ class KaiAgent(
         "தம்பி", "அண்ணா", "அண்ணன்", "அக்கா", "அம்மா", "அப்பா", "மகன்", "மகள்", "மாமா", "மச்சான்", "தங்கச்சி", "மனைவி",
     )
     /** "Praba thambi …" asked: the answer picks the record or a new person (typed / spoken, or its button). */
-    private data class RelationChoice(val key: String, val record: PartyMatch, val phrase: String, val kind: PlanKind)
+    private data class RelationChoice(val key: String, val record: PartyMatch, val phrase: String, val kind: PlanKind, val word: String)
     private var relationChoice: RelationChoice? = null
 
     /**
-     * "Praba thambi enakku 6000 tharanum" with one Praba in the books and no owner reference "Praba thambi": Praba himself
-     * (an honorific) or Praba's brother (a different person)? Asked once — never merged, never guessed. The owner's
-     * reference ("Remember" after the pick) answers it from then on.
+     * "Praba thambi enakku 6000 tharanum" / "Madurai Lokesh enakku 500 tharanum" with one Praba / Lokesh in the books and no
+     * owner reference for those words: the same person, or someone else (Praba's brother, a Lokesh from Madurai)? Asked once —
+     * never merged, never guessed. A place / shop word the record itself carries ("Chennai" for Chennai Lokesh) is not asked.
      */
     private suspend fun relationQuestion(
         person: String, text: String, amount: BigDecimal, receivable: Boolean, due: LocalDate?, lang: KaiLang,
         kind: PlanKind = if (receivable) PlanKind.CREDIT_GIVEN else PlanKind.DEBIT_TAKEN, outgoing: Boolean = receivable, mode: PaymentMode = PaymentMode.CASH,
     ): KaiTurn? {
-        val m = Regex("""(?i)(?<![\p{L}\p{M}])${Regex.escape(person)}\s+([\p{L}\p{M}]+)""").find(text) ?: return null
-        val word = m.groupValues[1].lowercase(Locale.ROOT).replace(Regex("""(?i)(kitta|kita|ukku|kku|ku|oda|-)+$"""), "")
-        if (word !in relationWords) return null
-        val phrase = "$person ${word.replaceFirstChar { it.titlecase(Locale.ROOT) }}"
-        val record = runCatching { tools.parties(person) }.getOrNull()?.let { KaiEntityResolver.sameName(person, it) }
-            ?.filter { it.customer == receivable }?.distinctBy { it.id }?.singleOrNull() ?: return null
+        val all = runCatching { tools.parties(person) }.getOrNull() ?: return null
+        val record = KaiEntityResolver.sameName(person, all).filter { it.customer == receivable }.distinctBy { it.id }.singleOrNull() ?: return null
+        val relation = Regex("""(?i)(?<![\p{L}\p{M}])${Regex.escape(person)}\s+([\p{L}\p{M}]+)""").find(text)
+            ?.groupValues?.get(1)?.lowercase(Locale.ROOT)?.replace(Regex("""(?i)(kitta|kita|ukku|kku|ku|oda|-)+$"""), "")?.takeIf { it in relationWords }
+        val (word, phrase) = relation?.let { it to "$person ${it.replaceFirstChar { c -> c.titlecase(Locale.ROOT) }}" }
+            ?: qualifierIn(text, person, listOf(record))?.takeIf { (_, p) -> all.none { it.name.equals(p, ignoreCase = true) } } ?: return null
         val r = PaymentRequest(newKey(), person, amount, outgoing = outgoing, mode = mode, said = text, dueDate = due)
         requests[r.key] = r
-        relationChoice = RelationChoice(r.key, record, phrase, kind)
+        relationChoice = RelationChoice(r.key, record, phrase, kind, word.lowercase(Locale.ROOT))
         val role = if (receivable) pick(lang, ta = "customer", tl = "customer", en = "customer") else pick(lang, ta = "supplier", tl = "supplier", en = "supplier")
         val bal = KaiFormat.rupees(record.balance.toDouble())
+        val reply = if (relation != null) pick(lang,
+            ta = "ஓனர், '$phrase'-னு சொன்னீங்க — ${record.name} தானா (records-ல $bal), இல்ல ${record.name}-ஓட $word (வேற ஆள், புது $role)-ஆ?",
+            tl = "Owner, '$phrase'-nu sonneenga — ${record.name} dhaan-aa (records-la $bal), illa ${record.name}-oda $word (vera aal, puthu $role)-aa?",
+            en = "Owner, you said '$phrase' — is that ${record.name} ($bal in the records), or ${record.name}'s $word (someone else, a new $role)?")
+        else pick(lang,
+            ta = "ஓனர், records-ல '${record.name}' ($bal) இருக்காங்க. '$phrase' — அதே ${record.name}-ஆ, இல்ல புது $role-ஆ?",
+            tl = "Owner, records-la '${record.name}' ($bal) irukkaanga. '$phrase' — adhey ${record.name}-aa, illa puthu $role-aa?",
+            en = "Owner, '${record.name}' ($bal) is in your records. '$phrase' — the same ${record.name}, or a new $role?")
         return KaiTurn(
-            ChatReply(pick(lang,
-                ta = "ஓனர், '$phrase'-னு சொன்னீங்க — ${record.name} தானா (records-ல $bal), இல்ல ${record.name}-ஓட $word (வேற ஆள், புது $role)-ஆ?",
-                tl = "Owner, '$phrase'-nu sonneenga — ${record.name} dhaan-aa (records-la $bal), illa ${record.name}-oda $word (vera aal, puthu $role)-aa?",
-                en = "Owner, you said '$phrase' — is that ${record.name} ($bal in the records), or ${record.name}'s $word (someone else, a new $role)?"),
-                KaiMood.CLARIFY, ChatIntent.GENERAL_BUSINESS_QUERY),
+            ChatReply(reply, KaiMood.CLARIFY, ChatIntent.GENERAL_BUSINESS_QUERY),
             KaiCard(emptyList(), listOf(
                 KaiButton("${record.name} · $bal", KaiAction.ChoosePlan(r.key, kind, record.id, record.name)),
                 KaiButton(pick(lang, ta = "$phrase — புது $role", tl = "$phrase — puthu $role", en = "$phrase — new $role"), KaiAction.ChoosePlan(r.key, kind, null, phrase)),
@@ -1263,18 +1274,75 @@ class KaiAgent(
         )
     }
 
-    /** The typed / spoken answer to the relation question: "Praba" / "1" / "avare" → the record; "vera" / "2" / "thambi" → a new person. */
+    /** Words said next to a name that are never who it is: time, money ways, fillers, the owner, roles. */
+    private val notQualifiers = setOf(
+        "inniku", "innikku", "innaiku", "innaikku", "indru", "naalaikku", "nalaikku", "naalaiku", "nalaiku", "nethu", "nethiku", "today", "tomorrow",
+        "yesterday", "ippo", "ipo", "ippa", "ipa", "appo", "seri", "sari", "ok", "okay", "bro", "boss", "owner", "sir", "madam", "kanakku", "kanakkula",
+        "account", "entry", "credit", "debit", "gpay", "phonepe", "paytm", "upi", "online", "bank", "card", "cheque", "mattum", "dhaan", "than",
+        "thaan", "pudhu", "puthu", "new", "old", "pazhaya", "total", "full", "fulla", "motham", "amount", "rupa", "rupai", "rooba", "ruba", "roobai",
+        "advance", "bill", "kadan", "baaki", "bakki", "paakki", "settle", "clear", "reminder", "phone", "message", "whatsapp", "kai", "hello", "please",
+        "pls", "also", "innoru", "marupadi", "again", "ini", "inimel", "yen", "what", "who", "when", "where", "which", "endha", "entha", "andha",
+        "indha", "intha", "rendu", "moonu", "customer", "supplier", "oda", "ode", "kooda", "kitta", "irukku", "iruku", "gave", "given", "give",
+        "returned", "sent", "send", "transferred", "will", "should", "needs", "need", "must", "took", "bought", "borrowed", "lent", "received",
+        "collected", "settled", "cleared", "owed", "for", "with", "by", "at", "on", "in", "of", "this", "that", "money", "loan", "eduthaan",
+        "return", "refund", "ivlo", "ivvalavu", "evalo", "evvalo", "ewlo", "yevlo", "ethana", "evlavu", "full", "partial", "konjam", "mothama",
+        "எனக்கு", "நான்", "கிட்ட", "இருந்து", "இன்னைக்கு", "நாளைக்கு", "ரூபாய்", "பணம்", "பாக்கி", "கணக்கு", "புது", "பழைய",
+    )
+    private val verbEnding = Regex("""(aan|an|aaru|aru|aanga|anga|nga|inen|en|anum|num|chu|dhu|thu|tha|dha|ttu|tten|ten|rom|vom|kku|ணும்|ான்|ார்|ாங்க|ேன்|து|சு|க்கு)$""")
+
+    /**
+     * "Madurai Lokesh" / "lokesh madurai" / "Lokesh Madurai-ku": the word said right next to the name that is not grammar,
+     * money, a day, a verb or anything [records] already carry (their name / place / shop words). (word, the phrase in the
+     * order said, title-cased) — or null when only the name was said.
+     */
+    private fun qualifierIn(text: String, person: String, records: List<PartyMatch>): Pair<String, String>? {
+        if (person.contains(' ')) return null
+        val found = Regex("""[\p{L}\p{M}]+(?:-[\p{L}\p{M}]+)*""").findAll(text).toList()
+        val tokens = found.map { it.value }
+        val i = tokens.indexOfFirst { t -> t.substringBefore('-').let { it.equals(person, ignoreCase = true) || com.shopai.app.util.NameSound.same(it, person) } }
+        if (i < 0) return null
+        // Only a word right next to the name ("Kumar 500 return" — the 500 keeps "return" away from Kumar).
+        fun nextTo(a: Int, b: Int) = a in found.indices && b in found.indices && text.substring(found[a].range.last + 1, found[b].range.first).isBlank()
+        val known = records.flatMap { listOfNotNull(it.name, it.city, it.details) }
+            .flatMap { it.lowercase(Locale.ROOT).split(Regex("""[^\p{L}\p{M}]+""")) }.filter { it.isNotEmpty() }.toSet()
+        val today = now().toLocalDate()
+        fun usable(raw: String): String? {
+            val w = raw.substringBefore('-')
+            val k = w.lowercase(Locale.ROOT)
+            if (w.length < 3 || k in known || k in notQualifiers || k in relationWords || KaiEntityResolver.isFunctionWord(k)) return null
+            if (verbEnding.containsMatchIn(k) || samePerson(k, person) || com.shopai.app.brain.KaiUnderstanding.isNumberWord(k)) return null
+            if (com.shopai.app.brain.tools.KaiPaymentDirection.of(w) != null) return null
+            if (runCatching { com.shopai.app.brain.KaiUnderstanding.amountsIn(w, today) }.getOrDefault(emptyList()).isNotEmpty()) return null
+            if (runCatching { KaiTime.parse(w, now()) }.getOrNull() != null) return null
+            return w.replaceFirstChar { it.titlecase(Locale.ROOT) }
+        }
+        val name = tokens[i].substringBefore('-').let { if (it.equals(person, ignoreCase = true)) person else it }
+        tokens.getOrNull(i - 1)?.takeIf { !it.contains('-') && nextTo(i - 1, i) }?.let(::usable)?.let { return it to "$it $name" }
+        if (tokens[i].contains('-')) return null // "Lokesh-ku 500": the name alone
+        tokens.getOrNull(i + 1)?.takeIf { nextTo(i, i + 1) }?.let(::usable)?.let { return it to "$name $it" }
+        return null
+    }
+
+    private fun samePerson(word: String, person: String) = word.equals(person, ignoreCase = true) || com.shopai.app.util.NameSound.same(word, person)
+
+    /**
+     * The typed / spoken answer to that question: "Praba" / "1" / "adhey" / "avare" → the record; "pudhu" / "vera" / "2" /
+     * "thambi" / "Madurai" → a new person. A new question (amount, "evlo", "?") is not an answer.
+     */
     private suspend fun relationAnswered(said: String, lang: KaiLang): KaiTurn? {
-        val (key, record, phrase, kind) = relationChoice ?: return null
+        val (key, record, phrase, kind, word) = relationChoice ?: return null
         relationChoice = null
         if (requests[key] == null) return null
         val t = com.shopai.app.brain.tools.KaiSpokenWords.normalize(said).lowercase(Locale.ROOT).trim()
-        val relation = phrase.substringAfter(' ').lowercase(Locale.ROOT)
-        val other = Regex("""(?<![\p{L}])(2|rendu|rendavadhu|second|vera|veru|pudhu|puthu|new|illa|illai|no|${Regex.escape(relation)})(?![\p{L}])""").containsMatchIn(t)
-        val same = Regex("""(?<![\p{L}])(1|onnu|mudhal|first|avare|avar\s*dhaan|same|aama|ama|yes|${Regex.escape(record.name.lowercase(Locale.ROOT))})(?![\p{L}])""").containsMatchIn(t)
+        if (t.contains('?') || Regex("""\d{2,}""").containsMatchIn(t) || t.split(Regex("""\s+""")).size > 5) return null
+        fun has(words: String) = Regex("""(?<![\p{L}\p{M}])($words)(?![\p{L}\p{M}])""").containsMatchIn(t)
+        val newOne = has("2|rendu|rendavadhu|second|vera|veru|pudhu|pudhusu|puthu|new|different|${Regex.escape(word)}")
+        val sameOne = has("1|onnu|mudhal|first|adhey|adhe|athey|athe|ade|same|pazhaya|palaya|old|avare|avar\\s*dhaan|avan\\s*dhaan|aama|ama|yes|correct")
+        val no = has("illa|illai|no")
+        val saidName = has(Regex.escape(record.name.lowercase(Locale.ROOT)))
         return when {
-            other && !same || other && t.contains(relation) -> act(KaiAction.ChoosePlan(key, kind, null, phrase), lang)
-            same && !other -> act(KaiAction.ChoosePlan(key, kind, record.id, record.name), lang)
+            has(Regex.escape(word)) || newOne && !sameOne || no && !sameOne && !saidName -> act(KaiAction.ChoosePlan(key, kind, null, phrase), lang)
+            sameOne && !newOne || saidName && !no -> act(KaiAction.ChoosePlan(key, kind, record.id, record.name), lang)
             else -> null
         }
     }
@@ -1383,16 +1451,8 @@ class KaiAgent(
      * "Trichy Murugan" with Murugans in Chennai and Madurai only: a capitalised word next to the name that is none of
      * the records' place / shop words — maybe a new person. Null when nothing like that was said.
      */
-    private fun newPersonIn(text: String, person: String, candidates: List<PartyMatch>): String? {
-        val known = candidates.flatMap { listOfNotNull(it.city, it.details) }.flatMap { it.lowercase(Locale.ROOT).split(Regex("""[^\p{L}]+""")) }.toSet()
-        val e = Regex.escape(person)
-        val m = Regex("""(?<![\p{L}])(\p{Lu}[\p{L}]{2,})\s+$e(?![\p{L}])""").find(text)?.let { it.groupValues[1] to "${it.groupValues[1]} $person" }
-            ?: Regex("""(?<![\p{L}])$e\s+(\p{Lu}[\p{L}]{2,})(?![\p{L}])""").find(text)?.let { it.groupValues[1] to "$person ${it.groupValues[1]}" }
-            ?: return null
-        val word = m.first.lowercase(Locale.ROOT)
-        if (word in known || word in relationWords || word == "owner") return null
-        return m.second
-    }
+    private fun newPersonIn(text: String, person: String, candidates: List<PartyMatch>): String? =
+        qualifierIn(text, person, candidates)?.second
 
     /** "pudhu" / "Trichy" / "new" after "Chennai Murugan-aa, Madurai Murugan-aa, illa puthu customer 'Trichy Murugan'-aa?". */
     private suspend fun newPersonPicked(choice: KaiEntityChoice, said: String, lang: KaiLang): KaiTurn? {
@@ -2819,8 +2879,8 @@ class KaiAgent(
             ta = "உங்க கணக்கு புத்தகம் இன்னும் ரெடி ஆகல ஓனர் — இப்போ இதை சேமிக்க முடியாது.",
             tl = "Owner, books innum ready aagala — idha ippo save panna mudiyadhu.",
             en = "I couldn't reach your business records, Owner — I can't save this right now.")
-        val key = r.name.trim().lowercase(Locale.ROOT)
-        val exact = matches.filter { it.name.trim().lowercase(Locale.ROOT) == key || com.shopai.app.util.NameSound.same(it.name, r.name) }
+        // "Lokesh" with "Lokesh" and "Madurai Lokesh" in the books: both — the owner says which.
+        val exact = KaiEntityResolver.sameName(r.name, matches).distinctBy { it.id }
         val candidates = (exact.ifEmpty { matches }).take(6)
         // Who they are decides what the money means.
         fun kindFor(p: PartyMatch) = when {

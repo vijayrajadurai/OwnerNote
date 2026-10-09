@@ -50,9 +50,28 @@ object KaiEntityResolver {
 
     private fun says(text: String, word: String) = Regex("""$B${Regex.escape(word)}""", RegexOption.IGNORE_CASE).containsMatchIn(text)
 
-    /** The records with exactly this name (or the same name in the other script): never a longer or shorter name. */
-    fun sameName(name: String, candidates: List<PartyMatch>): List<PartyMatch> =
-        candidates.filter { it.name.trim().equals(name.trim(), ignoreCase = true) || com.shopai.app.util.NameSound.same(it.name, name) }
+    /**
+     * The records this name can mean: exactly this name (or the same name in the other script), and — when such a record
+     * exists — the longer names that carry it as a whole word ("Lokesh" → "Lokesh" and "Madurai Lokesh": two people the
+     * owner may mean, so Kai asks). Never a part of a word ("Kumar" is not "Kumaran"), never a shorter name.
+     */
+    fun sameName(name: String, candidates: List<PartyMatch>): List<PartyMatch> {
+        val exact = candidates.filter { it.name.trim().equals(name.trim(), ignoreCase = true) || com.shopai.app.util.NameSound.same(it.name, name) }
+        if (exact.isEmpty()) return exact
+        val n = name.trim().lowercase(Locale.ROOT).split(Regex("""\s+"""))
+        val longer = candidates.filter { c ->
+            val w = c.name.trim().lowercase(Locale.ROOT).split(Regex("""\s+"""))
+            c !in exact && w.size > n.size && w.windowed(n.size).any { win -> win == n || n.size == 1 && com.shopai.app.util.NameSound.same(win.single(), name) }
+        }
+        return exact + longer
+    }
+
+    /** The words of [p]'s name that not every one of [all] has ("Madurai" in "Madurai Lokesh" next to "Lokesh"). */
+    private fun nameMarks(p: PartyMatch, all: List<PartyMatch>): List<String> {
+        val shared = all.map { it.name.lowercase(Locale.ROOT).split(Regex("""[^\p{L}\p{M}]+""")).toSet() }
+            .reduceOrNull { a, b -> a intersect b }.orEmpty()
+        return p.name.lowercase(Locale.ROOT).split(Regex("""[^\p{L}\p{M}]+""")).filter { it.length >= 3 && it !in shared }
+    }
 
     /**
      * [name] as said, [said] the owner's words (place, shop, phone may be in them), [candidates] the books' records for
@@ -68,7 +87,7 @@ object KaiEntityResolver {
             exact.filter { digits(it.phone) == number }.singleOrNull()?.let { return Result.One(it, "phone") }
         }
         // 2. Name + place / shop words that only one record has.
-        val scored = exact.map { p -> p to marks(p).count { says(said, it) } }
+        val scored = exact.map { p -> p to (marks(p) + nameMarks(p, exact)).distinct().count { says(said, it) } }
         val best = scored.maxOf { it.second }
         if (best > 0) {
             val top = scored.filter { it.second == best }.map { it.first }
@@ -87,6 +106,9 @@ object KaiEntityResolver {
         digits(p.phone)?.length == 10 -> "${p.name} (…${digits(p.phone)!!.takeLast(4)})"
         else -> p.name
     }
+
+    /** Grammar / money / question words said next to a name — never a part of who it is. */
+    fun isFunctionWord(word: String) = word.lowercase(Locale.ROOT) in functionWords
 
     private val functionWords = setOf(
         "enakku", "enaku", "ennaku", "yenakku", "yenaku", "naan", "nan", "na", "ku", "kku", "ukku", "kitta", "kita", "kitte", "irundhu", "irunthu",
@@ -133,8 +155,12 @@ object KaiEntityResolver {
     /** The answer to "which Lokesh?": a place / shop word / phone that picks one of [candidates], or "first" / "rendavadhu". */
     fun pick(answer: String, candidates: List<PartyMatch>): PartyMatch? {
         phoneIn(answer)?.let { n -> candidates.singleOrNull { digits(it.phone) == n }?.let { return it } }
-        val byMark = candidates.filter { p -> marks(p).any { says(answer, it) } }
+        val byMark = candidates.filter { p -> (marks(p) + nameMarks(p, candidates)).any { says(answer, it) } }
         if (byMark.size == 1) return byMark.single()
+        // "Lokesh" to "Lokesh-aa illa Madurai Lokesh-aa?": the one whose whole name was said and is the only one that fits.
+        if (byMark.isEmpty()) candidates.filter { p -> p.name.split(Regex("""\s+""")).all { says(answer, it) } }
+            .distinctBy { it.name.lowercase(Locale.ROOT) }.singleOrNull()
+            ?.let { named -> candidates.filter { it.name.equals(named.name, ignoreCase = true) }.singleOrNull() }?.let { return it }
         val ordinals = listOf(
             Regex("""(?i)${B}(first|1st|onnu|mudhal|mudhalavadhu|modhal)$E|^\s*1\s*$"""),
             Regex("""(?i)${B}(second|2nd|rendavadhu|rendaavadhu|rendu)$E|^\s*2\s*$"""),
@@ -172,9 +198,12 @@ object KaiEntityResolver {
         return people.filter { it.isNotBlank() }.distinct().sortedByDescending { it.length }
             .mapNotNull { name ->
                 Regex("""(?<![\p{L}])${Regex.escape(name.lowercase(Locale.ROOT))}(?:u?k?ku|kitta|kita|oda|odu|idam|ai|um|ukkum|a|aa|ah|u|க்கு|கிட்ட)?(?![\p{L}\p{M}])""")
-                    .find(lower)?.let { name to it.range.first }
+                    .find(lower)?.let { name to it.range }
             }
-            .fold(emptyList<Pair<String, Int>>()) { acc, p -> if (acc.any { it.second == p.second }) acc else acc + p }
-            .sortedBy { it.second }.map { it.first }
+            // "Madurai Lokesh evlo?": one person — the "Lokesh" inside a longer name already found is not another.
+            .fold(emptyList<Pair<String, IntRange>>()) { acc, p ->
+                if (acc.any { p.second.first >= it.second.first && p.second.last <= it.second.last }) acc else acc + p
+            }
+            .sortedBy { it.second.first }.map { it.first }
     }
 }

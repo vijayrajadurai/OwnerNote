@@ -189,6 +189,16 @@ object KaiUnderstanding {
         "arunuru" to 600, "ezhunuru" to 700, "ennuru" to 800, "ஐந்நூறு" to 500,
         "நூறு" to 100, "இருநூறு" to 200, "முந்நூறு" to 300, "நானூறு" to 400, "ஐநூறு" to 500, "அஞ்சூறு" to 500,
     )
+    private val englishNumberWords = setOf(
+        "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "fifteen", "twenty", "thirty",
+        "forty", "fifty", "sixty", "seventy", "eighty", "ninety", "hundred", "thousand", "lakh", "lakhs",
+    )
+
+    /** "five", "ainnooru", "aayiram", "ஆயிரம்": a word that is (part of) a spoken amount. */
+    fun isNumberWord(word: String): Boolean = word.lowercase(java.util.Locale.ROOT).let {
+        it in tamilUnits || it in tamilHundreds || it in tamilScales || it in englishNumberWords
+    }
+
     private val tamilScales = mapOf(
         "ayiram" to 1_000, "aayiram" to 1_000, "ayirathu" to 1_000, "aayirathu" to 1_000, "ayram" to 1_000, "thousand" to 1_000,
         "latcham" to 100_000, "laksham" to 100_000, "lakh" to 100_000, "lakhs" to 100_000, "latsam" to 100_000,
