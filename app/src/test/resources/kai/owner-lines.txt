@@ -86,3 +86,9 @@ REMIND | நாளைக்கு 10 மணிக்கு குமாருக
 ASK    | enaku totel ah evlo pending iruku               | ₹13,500; ₹14,000
 ASK    | எனக்கு டோட்டலா எவ்வளவு பெண்டிங் இருக்கு           | ₹13,500; ₹14,000
 ASK    | ennaku totala evlo baaki iruku                  | ₹13,500
+
+# Goods the owner bought (owner's phone, 9 Oct 2026): "vaanginen / vaangi irukken" with no money and no one named is stock in.
+STOCK  | Colgate 1 box vaanginen                        | Colgate 288
+STOCK  | Baniyan 10 vaangi irukken                      | Baniyan 60
+STOCK  | கோல்கேட் 1 பாக்ஸ் வாங்கி இருக்கேன்                | Colgate 288
+ENTRY  | Kumar kitta 2000 vaanginen                     | IN Kumar 2000

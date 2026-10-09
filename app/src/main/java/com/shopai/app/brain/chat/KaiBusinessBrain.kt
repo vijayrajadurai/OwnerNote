@@ -87,6 +87,8 @@ class KaiBusinessBrain(
     }
     private enum class ListKind { DUE, OVERDUE, PENDING, NO_DUE, RANKED, PAID }
     private var lastList: LedgerList? = null
+    /** The people a list answer only counted ("… 12 பேரோட தேதி தாண்டிடுச்சு"): "andha 12 per details" is them. */
+    private var lastAside: LedgerList? = null
     /** The latest ledger answer was [lastList] (a person answer since then makes a bare "details sollu" about them). */
     private var listIsLatest = false
 
@@ -223,8 +225,10 @@ class KaiBusinessBrain(
      * about something else (a named person, no list yet, a bare "details" after a person answer).
      */
     suspend fun listFollowUp(text: String): ChatReply? {
-        val list = lastList ?: return null
         val lower = text.lowercase(Locale.ROOT)
+        val saidCount = Regex("""(\d+)\s*(?:per|peru|perudaya|peroda|perkal|people|names?|பேர)""").find(lower)?.groupValues?.get(1)?.toIntOrNull()
+        val list = lastAside?.takeIf { a -> saidCount == a.rows.size && saidCount != lastList?.rows?.size }
+            ?.also { lastList = it; lastAside = null } ?: lastList ?: return null
         val referenced = listReference.containsMatchIn(lower)
         val plural = referenced && !Regex("""(?i)(?<![\p{L}])(avanga|avangaloda|avangalukku|ivanga)(?![\p{L}])|அவங்க""").matches(lower.trim()) &&
             Regex("""(?i)(?<![\p{L}])(ellaa|ellaarum|ellarum|ellaaroda|ellaroda|ellaarudaya|everyone|andha\s+list)(?![\p{L}])|\d+\s*(?:per|peru|perudaya|peroda|people|names?)|எல்லா|\d+\s*பேர""").containsMatchIn(lower)
@@ -248,7 +252,7 @@ class KaiBusinessBrain(
         val lang = chatLanguage(text)
         // The same people, with what the ledger says now (a payment since the list shows).
         val fresh = if (list.kind == ListKind.PAID) list else list.copy(rows = list.rows.map { r ->
-            ledger.parties.firstOrNull { it.id == r.party.id && it.side == r.party.side }?.let { p -> LedgerList.Row(p, p.pending, if (r.date == null) null else p.nextDue) } ?: r
+            ledger.parties.firstOrNull { it.id == r.party.id && it.side == r.party.side }?.let { p -> LedgerList.Row(p, p.pending, r.date) } ?: r
         })
         lastList = fresh
         listIsLatest = true
@@ -279,16 +283,29 @@ class KaiBusinessBrain(
     }
 
     private suspend fun keepList(kind: ListKind, side: Direction, period: ChatPeriod?, parties: List<PartyFacts>): LedgerList =
-        LedgerList(kind, side, period, rowsOf(parties)).also { lastList = it; listIsLatest = true }
+        LedgerList(kind, side, period, rowsOf(parties)).also { lastList = it; listIsLatest = true; lastAside = null }
+
+    /**
+     * The date [p] really has to pay by: the earliest open entry's own due date (null: none has one). The summary dates an
+     * entry with no due date by its bill date; that date is never said as a due date. Without the entries: the summary's date.
+     */
+    private suspend fun dueOf(p: PartyFacts): LocalDate? {
+        val open = books.history(p)?.entries?.filter { it.amount - it.paid > 0.005 } ?: return p.nextDue
+        if (open.isEmpty()) return p.nextDue
+        return open.mapNotNull { it.dueDate }.minOrNull()
+    }
+
+    /** Who in [list] has no due date at all (listed by the bill date, but said as "due date illa" — never "today"). */
+    private suspend fun undatedOf(list: List<PartyFacts>): Set<String> = list.take(40).filter { it.nextDue != null && dueOf(it) == null }.map { it.id }.toSet()
+
+    private fun overdueOf(s: BusinessSnapshot, day: LocalDate): List<PartyFacts> = s.overdue(day)
 
     /**
      * One row per person with the date the ledger really has: the summary dates an entry with no due date by its bill
      * date, so the entries are read (bounded) and such a row says "Due date illa" instead of inventing one.
      */
     private suspend fun rowsOf(parties: List<PartyFacts>): List<LedgerList.Row> = parties.mapIndexed { i, p ->
-        val noDue = i < 40 && p.nextDue != null && books.history(p)?.entries
-            ?.filter { it.amount - it.paid > 0.005 }?.let { open -> open.isNotEmpty() && open.all { it.dueDate == null } } == true
-        LedgerList.Row(p, p.pending, if (noDue) null else p.nextDue)
+        LedgerList.Row(p, p.pending, if (i < 40 && p.nextDue != null) dueOf(p) else p.nextDue)
     }
 
     /** "Owner, innaikku 3 per tharanum — mothama ₹X:" then one numbered line per person: name — amount — due date / status. */
@@ -781,7 +798,7 @@ class KaiBusinessBrain(
             if (q.withOverdue) {
                 // Both sets, clearly apart: today's first, then the ones whose date has passed.
                 val today = LedgerList(ListKind.DUE, side, todayPeriod, rowsOf(todayList))
-                val od = keepList(ListKind.OVERDUE, side, null, s.overdue(day).filter { it.side == side }
+                val od = keepList(ListKind.OVERDUE, side, null, overdueOf(s, day).filter { it.side == side }
                     .sortedWith(compareBy<PartyFacts, LocalDate?>(nullsLast()) { it.nextDue }.thenByDescending { it.pending }.thenBy { it.name }))
                 val todayText = if (today.rows.isEmpty()) when (lang) {
                     KaiLang.TAMIL -> "ஓனர், இன்னைக்கு due எதுவும் இல்ல."
@@ -799,7 +816,10 @@ class KaiBusinessBrain(
             if (q.fullList && todayList.isNotEmpty()) reply(q.intent, KaiMood.CREDIT, lang, listText(kept, lang, day))
             else collections(todayList, ChatIntent.TODAY_COLLECTIONS, lang, day, when (lang) {
                 KaiLang.TAMIL -> "இன்னைக்கு"; KaiLang.TANGLISH -> "Innaikku"; KaiLang.ENGLISH -> "Today"
-            }, overdue = s.overdue(day).filter { it.side == Direction.RECEIVABLE })
+            }, undated = undatedOf(todayList), overdue = overdueOf(s, day).filter { it.side == Direction.RECEIVABLE }.also { od ->
+                lastAside = od.filter { o -> todayList.none { it.id == o.id } }.takeIf { it.isNotEmpty() }
+                    ?.let { LedgerList(ListKind.OVERDUE, Direction.RECEIVABLE, null, rowsOf(it)) }
+            })
         }
         ChatIntent.UPCOMING_COLLECTIONS -> {
             val period = q.period
@@ -812,11 +832,11 @@ class KaiBusinessBrain(
             }
             val kept = keepList(if (period == null) ListKind.PENDING else ListKind.DUE, Direction.RECEIVABLE, period, list)
             if ((q.fullList || period == null) && list.isNotEmpty()) reply(q.intent, KaiMood.CREDIT, lang, listText(kept, lang, day))
-            else collections(list, ChatIntent.UPCOMING_COLLECTIONS, lang, day, label, overdue = emptyList())
+            else collections(list, ChatIntent.UPCOMING_COLLECTIONS, lang, day, label, undated = undatedOf(list), overdue = emptyList())
         }
         ChatIntent.OVERDUE_COLLECTIONS -> {
             val side = q.side ?: Direction.RECEIVABLE
-            val list = s.overdue(day).filter { it.side == side }
+            val list = overdueOf(s, day).filter { it.side == side }
                 .sortedWith(compareBy<PartyFacts, LocalDate?>(nullsLast()) { it.nextDue }.thenByDescending { it.pending }.thenBy { it.name })
             val kept = keepList(ListKind.OVERDUE, side, null, list)
             if (side == Direction.PAYABLE && list.isEmpty()) reply(q.intent, KaiMood.HAPPY, lang, when (lang) {
@@ -840,7 +860,7 @@ class KaiBusinessBrain(
             val period = q.period
             val list = s.owesMe().filter { p -> p.nextDue?.let { it in period } == true }
             keepList(ListKind.DUE, Direction.RECEIVABLE, period, list)
-            collections(list, ChatIntent.TOTAL_RECEIVABLE, lang, day, periodLabel(period, lang, day), overdue = emptyList())
+            collections(list, ChatIntent.TOTAL_RECEIVABLE, lang, day, periodLabel(period, lang, day), undated = undatedOf(list), overdue = emptyList())
         } else {
             val r = KaiFormat.rupees(s.totalReceivable())
             val p = KaiFormat.rupees(s.totalPayable())
@@ -1120,7 +1140,8 @@ class KaiBusinessBrain(
         KaiLang.ENGLISH -> "Owner, this information isn't available in the Daily Cash Note."
     }
 
-    private fun collections(list: List<PartyFacts>, intent: ChatIntent, lang: KaiLang, day: LocalDate, label: String, overdue: List<PartyFacts>): ChatReply {
+    private fun collections(list: List<PartyFacts>, intent: ChatIntent, lang: KaiLang, day: LocalDate, label: String, overdue: List<PartyFacts>,
+                            undated: Set<String> = emptySet()): ChatReply {
         val od = overdue.filter { o -> list.none { it.id == o.id } }
         if (list.isEmpty()) {
             val base = when (lang) {
@@ -1131,7 +1152,7 @@ class KaiBusinessBrain(
             return reply(intent, if (od.isEmpty()) KaiMood.NEUTRAL else KaiMood.CONCERNED, lang, base + overdueNote(od, lang))
         }
         val total = KaiFormat.rupees(list.sumOf { it.pending })
-        val top = list.take(3).joinToString(", ") { "${label(it)} ${KaiFormat.rupees(it.pending)}${dueSuffix(it, lang, day)}" }
+        val top = list.take(3).joinToString(", ") { "${label(it)} ${KaiFormat.rupees(it.pending)}${dueSuffix(it, lang, day, it.id in undated)}" }
         val text = when (lang) {
             KaiLang.TAMIL -> "$label ${list.size} பேர் தரணும் (மொத்தம் $total): $top."
             KaiLang.TANGLISH -> pick(listOf(
@@ -1239,7 +1260,7 @@ class KaiBusinessBrain(
     private suspend fun summary(s: BusinessSnapshot, lang: KaiLang, day: LocalDate, intent: ChatIntent): ChatReply {
         val r = KaiFormat.rupees(s.totalReceivable())
         val p = KaiFormat.rupees(s.totalPayable())
-        val od = s.overdue(day).filter { it.side == Direction.RECEIVABLE }
+        val od = overdueOf(s, day).filter { it.side == Direction.RECEIVABLE }
         val todayDue = s.owesMe().filter { it.nextDue == day }
         val cash = books.cashBook(day, day)
         val text = when (lang) {
@@ -1261,8 +1282,9 @@ class KaiBusinessBrain(
 
     // ------------------------------------------------------------ helpers
 
-    private fun dueSuffix(p: PartyFacts, lang: KaiLang, day: LocalDate) =
-        p.nextDue?.let { if (lang == KaiLang.ENGLISH) " (due ${KaiFormat.date(it, lang, day)})" else " — ${KaiFormat.date(it, lang, day)}" }.orEmpty()
+    private fun dueSuffix(p: PartyFacts, lang: KaiLang, day: LocalDate, undated: Boolean = false) =
+        if (undated) when (lang) { KaiLang.TAMIL -> " — due date இல்ல"; KaiLang.TANGLISH -> " — due date illa"; KaiLang.ENGLISH -> " (no due date)" }
+        else p.nextDue?.let { if (lang == KaiLang.ENGLISH) " (due ${KaiFormat.date(it, lang, day)})" else " — ${KaiFormat.date(it, lang, day)}" }.orEmpty()
 
     /** The owner said an amount that differs from the records: the records win, and Kai says so. */
     private fun mismatch(said: Double?, recorded: Double, lang: KaiLang): String {

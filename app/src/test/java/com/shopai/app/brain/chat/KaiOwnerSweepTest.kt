@@ -107,7 +107,7 @@ class KaiOwnerSweepTest {
         ).take(limit)
     }
 
-    private inner class Shop {
+    private inner class Shop(more: Ledger.() -> Unit = {}) {
         val l = Ledger().apply {
             add("c1", "Kumar", true, "5000", d(9, 1), d(9, 15)).payments += BigDecimal("5000") to d(9, 25)
             add("c1", "Kumar", true, "3000", d(9, 20), d(9, 30)).payments += BigDecimal("3000") to d(10, 6)
@@ -119,6 +119,7 @@ class KaiOwnerSweepTest {
             add("c4", "Lakshmi", true, "1000", d(10, 2), d(10, 12))
             add("s1", "ABC Traders", false, "10000", d(9, 25), d(10, 8))
             add("s2", "Murugan Stores", false, "4000", d(10, 1), d(10, 15))
+            more()
         }
         val inv = Inventory().apply {
             items += Inventory.Item("p1", "Colgate", "PCS", BigDecimal("240"), mapOf("BOX" to BigDecimal("48")), BigDecimal("28"), BigDecimal("35"), "FMCG", "200 g", BigDecimal("50"))
@@ -434,9 +435,9 @@ class KaiOwnerSweepTest {
     }
 
     /** A short conversation: each line said in turn, then the books / stock / reminders checked. */
-    private fun talk(what: String, lines: List<String>, check: (Shop) -> String?) {
+    private fun talk(what: String, lines: List<String>, more: Ledger.() -> Unit = {}, check: (Shop) -> String?) {
         count++
-        val s = Shop()
+        val s = Shop(more)
         for (l in lines) {
             if (l == "TAP") {
                 val b = lastTurn?.card?.buttons?.firstOrNull { it.action is KaiAction.ConfirmPlan || it.action is KaiAction.ConfirmStock || it.action is KaiAction.ConfirmReminder }
@@ -449,6 +450,21 @@ class KaiOwnerSweepTest {
     private var lastTurn: KaiTurn? = null
 
     private fun conversationLines() {
+        // From the owner's phone (9 Oct 2026): a bill with no due date was said "— innaikku" in the summary while its details said
+        // "Due date illa", "andha 12 peroda details" showed the 2 due today instead of the 12 overdue, and "2 TV vaangi irukken"
+        // wasn't understood. (An entry with no due date is still listed by its bill date — only never given that date.)
+        val noDue: Ledger.() -> Unit = {
+            add("c5", "Madhan", true, "2000", d(10, 8), null)
+            add("c6", "Divya", true, "1500", d(9, 1), null)
+            add("c7", "Anbu", true, "700", d(8, 1), d(9, 2)); add("c8", "Bala", true, "900", d(8, 1), d(9, 3)); add("c9", "Priya", true, "300", d(8, 1), d(9, 4))
+        }
+        for ((ask, more) in listOf("innaiku yaar enakku payment tharanum" to "andha 5 peroda details sollu",
+                "இன்னைக்கு யார் எனக்கு பேமெண்ட் தரணும்" to "அந்த 5 பேரோட டீடைல் சொல்லு")) {
+            talk("no due date is never said as today: $ask", listOf(ask), noDue) { lastTurn?.reply?.text.orEmpty().let { t ->
+                if (Regex("""Madhan ₹2,000 — due date (illa|இல்ல)""").containsMatchIn(t) && Regex("""\b5\s*(per|பேர)""").containsMatchIn(t)) null else "said: $t" } }
+            talk("the people the answer counted: $more", listOf(ask, more), noDue) { lastTurn?.reply?.text.orEmpty().let { t ->
+                if (listOf("Selvam", "Divya", "Anbu", "Bala", "Priya").all(t::contains) && !t.contains("Kumar") && !t.contains("Madhan")) null else "said: $t" } }
+        }
         talk("amount corrected before Confirm", listOf("Kumar 2000 kuduthan", "illa 2500", "aama")) { s ->
             val p = s.tools.saved.singleOrNull()
             when { p == null -> "saved ${s.tools.saved.size}"; p.amount.compareTo(BigDecimal("2500")) != 0 -> "saved ${p.amount}"; else -> null } }
