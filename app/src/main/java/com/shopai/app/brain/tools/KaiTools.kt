@@ -111,6 +111,9 @@ data class NewProduct(
     val sellingPrice: BigDecimal? = null,
     /** Opening stock in [unit]s, saved with the product in ONE write (no product without its stock, no stock twice). */
     val openingQty: BigDecimal? = null,
+    /** Medicines / bakery: the batch and expiry the owner said (kept with the product; null = not said). */
+    val batchNo: String? = null,
+    val expiry: java.time.LocalDate? = null,
 )
 
 /** What the owner changes on a product; null = unchanged. Prices per stock unit, the minimum in stock units. */

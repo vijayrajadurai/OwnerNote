@@ -236,6 +236,8 @@ class AppKaiTools(
         val notes = listOfNotNull(
             product.weight?.takeIf { it.isNotBlank() }?.let { "Weight: $it" },
             product.packSize?.takeIf { it.isNotBlank() }?.let { "Pack: $it" },
+            product.batchNo?.takeIf { it.isNotBlank() }?.let { "Batch: $it" },
+            product.expiry?.let { "Expiry: ${com.shopai.app.brain.tools.KaiInventory.expiryShown(it)}" },
             "Added by Kai",
         ).joinToString(" · ")
         return runCatching {
@@ -269,9 +271,13 @@ class AppKaiTools(
             val second = product.secondaryUnit?.let { s.masters.ensureUnit(it) ?: error("Check the unit") }?.takeIf { !it.equals(unit, ignoreCase = true) }
             val perMilli = product.perSecondary?.takeIf { second != null && it.signum() > 0 }
                 ?.multiply(BigDecimal(1000))?.setScale(0, RoundingMode.HALF_UP)?.longValueExact()
+            // Batch and expiry are kept with the product. The product is not marked batch-tracked: Kai's own stock in / out
+            // (and the stock screen's) do not choose a batch yet, and the books would reject them for a batch-tracked product.
             val notes = listOfNotNull(
                 product.weight?.takeIf { it.isNotBlank() }?.let { "Size: $it" },
                 product.packSize?.takeIf { it.isNotBlank() }?.let { "Size: $it" },
+                product.batchNo?.takeIf { it.isNotBlank() }?.let { "Batch: $it" },
+                product.expiry?.let { "Expiry: ${com.shopai.app.brain.tools.KaiInventory.expiryShown(it)}" },
                 "Added by Kai",
             ).joinToString(" · ")
             val result = s.masters.createProduct(

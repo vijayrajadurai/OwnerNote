@@ -8,16 +8,21 @@ import java.time.LocalDate
 import java.util.Locale
 
 /** What kind of goods a product is — it decides which details Kai asks (never grams for a shirt). */
+/**
+ * What kind of goods a product is — the owner's 20 shop categories (plus meat & fish). It decides which details Kai asks
+ * (never grams for a shirt, batch and expiry for medicines) and the category the product is filed under.
+ */
 enum class ProductKind(val category: String) {
-    FMCG("FMCG"), GROCERY("Grocery"), BEVERAGE("Beverages"), LIQUID("Liquids"), GARMENT("Garments"),
-    FOOTWEAR("Footwear"), HARDWARE("Hardware"), ELECTRONICS("Electronics"),
-    // Tamil Nadu shops: kaaikari / pazham, kozhi / meen kadai, sweet stall / bakery, pooja store / poo kadai, uram kadai.
-    VEGETABLE("Vegetables & Fruits"), MEAT("Meat & Fish"), SWEETS("Sweets & Bakery"), POOJA("Pooja & Flowers"), AGRI("Agri & Fertilizer"),
-    GENERAL("General"),
+    GROCERY("Grocery & Staples"), FMCG("FMCG & Personal Care"), SNACKS("Snacks & Confectionery"), BEVERAGE("Beverages & Dairy"),
+    HOMECARE("Home Care & Cleaning"), GARMENT("Garments & Textiles"), HARDWARE("Hardware & Plumbing"), ELECTRICAL("Electricals & Lighting"),
+    ELECTRONICS("Mobile & Electronics"), STATIONERY("Stationery & Office Supplies"), FOOTWEAR("Footwear & Accessories"),
+    KITCHENWARE("Kitchenware & Household"), PHARMACY("Pharmacy & Medical"), VEGETABLE("Fruits & Vegetables"), POOJA("Pooja & Religious Items"),
+    AGRI("Agriculture & Gardening"), AUTO("Automobile Spare Parts"), BAKERY("Bakery & Fresh Foods"), TOYS("Toys, Gifts & Party"),
+    BABY("Baby Care & Hygiene"), MEAT("Meat & Fish"), GENERAL("General"),
 }
 
 /** The details of a new product Kai asks for, one at a time. */
-enum class ItemField { QTY, UNIT, PER_PACK, SIZE, PURCHASE, SELLING }
+enum class ItemField { QTY, UNIT, PER_PACK, SIZE, BATCH, EXPIRY, PURCHASE, SELLING }
 
 /**
  * A new product the owner is adding by chat, as far as it is known. [unit] is the unit the
@@ -40,6 +45,9 @@ data class ItemSpec(
     val selling: BigDecimal? = null,
     val sellingPer: String? = null,
     val skipped: Set<ItemField> = emptySet(),
+    /** Medicines: the batch number and expiry the owner said (bakery: expiry only). */
+    val batch: String? = null,
+    val expiry: LocalDate? = null,
 )
 
 /** The figures of a complete entry, all from what the owner said (nothing assumed). */
@@ -69,44 +77,100 @@ object KaiInventory {
     private val kindWords: List<Pair<ProductKind, List<String>>> = listOf(
         ProductKind.GROCERY to listOf("rice", "arisi", "dal", "dhal", "paruppu", "sugar", "sakkarai", "sarkarai", "wheat", "godhumai", "gothumai", "atta",
             "maida", "flour", "rava", "ravai", "sooji", "salt", "uppu", "ragi", "toor", "urad", "moong", "chana", "besan", "kadalai", "poha", "aval",
-            "jaggery", "vellam", "pulses", "millet", "corn", "maavu", "mutta", "muttai", "egg", "eggs", "முட்டை", "அரிசி",
-            "puli", "tamarind", "kadugu", "mustard", "seeragam", "jeera", "manjal", "turmeric", "thool", "podi", "masala", "pottukadalai", "புளி", "பருப்பு", "சர்க்கரை", "உப்பு", "மாவு", "ரவை"),
+            "jaggery", "vellam", "pulses", "millet", "millets", "kambu", "thinai", "samai", "varagu", "corn", "maavu", "mutta", "muttai", "egg", "eggs",
+            "puli", "tamarind", "kadugu", "mustard", "seeragam", "jeera", "manjal", "turmeric", "thool", "podi", "masala", "spices", "pottukadalai",
+            "oil", "ennai", "ennei", "nallennai", "gingelly", "sunflower", "groundnut", "ghee", "nei", "dates", "cashew", "mundhiri", "badam", "almond",
+            "raisin", "kismis", "pista", "dryfruits", "tea", "coffee", "bru", "horlicks", "boost", "bournvita", "maggi", "noodles", "vermicelli", "semiya",
+            "முட்டை", "அரிசி", "பருப்பு", "சர்க்கரை", "உப்பு", "மாவு", "ரவை", "புளி", "எண்ணெய்", "நெய்", "வெல்லம்", "டீ", "காபி"),
+        ProductKind.FMCG to listOf("colgate", "pepsodent", "closeup", "sensodyne", "paste", "toothpaste", "brush", "toothbrush", "soap", "lux", "lifebuoy",
+            "hamam", "dettol", "santoor", "medimix", "cinthol", "pears", "dove", "shampoo", "clinic", "chik", "sunsilk", "facewash", "fair", "cream", "powder",
+            "talc", "ponds", "deodorant", "deo", "perfume", "comb", "razor", "shaving", "kajal", "lipstick", "sopu", "சோப்பு", "ஷாம்பு"),
+        ProductKind.SNACKS to listOf("biscuit", "biscuits", "parle", "britannia", "marie", "goodday", "bourbon", "oreo", "chips", "lays", "kurkure", "bingo",
+            "chocolate", "chocolates", "dairymilk", "kitkat", "5star", "munch", "candy", "candies", "toffee", "eclairs", "lollipop", "wafer", "cookies",
+            "sweet", "sweets", "mysore", "mysorepak", "laddu", "ladoo", "lattu", "jalebi", "jangiri", "halwa", "badusha", "kesari", "murukku", "mixture",
+            "boondi", "pakoda", "sev", "seedai", "athirasam", "முறுக்கு", "லட்டு", "அல்வா", "மிக்சர்", "சாக்லேட்"),
         ProductKind.BEVERAGE to listOf("coke", "coca", "cola", "pepsi", "sprite", "fanta", "7up", "maaza", "frooti", "slice", "juice", "water", "bisleri",
-            "aquafina", "kinley", "soda", "thums", "mirinda", "limca", "redbull", "drink", "drinks", "beverage"),
-        ProductKind.LIQUID to listOf("oil", "ennai", "ennei", "nallennai", "milk", "paal", "thayir", "curd", "moru", "buttermilk", "தயிர்", "மோர்", "ghee", "nei", "phenyl", "phenol", "harpic", "lizol", "cleaner",
-            "cleaning", "vinegar", "kerosene", "எண்ணெய்", "பால்", "நெய்"),
-        ProductKind.GARMENT to listOf("shirt", "shirts", "pant", "pants", "saree", "sarees", "sari", "tshirt", "t-shirt", "chudi", "churidar", "nighty",
-            "dhoti", "veshti", "vesti", "lungi", "jeans", "kurta", "kurti", "banian", "inner", "leggings", "frock", "blouse", "towel", "thundu", "thuvalai",
-            "சட்டை", "புடவை", "வேட்டி", "துண்டு", "லுங்கி"),
-        ProductKind.FOOTWEAR to listOf("shoe", "shoes", "sandal", "sandals", "slipper", "slippers", "chappal", "chappals", "cheppal", "footwear", "செருப்பு"),
+            "aquafina", "kinley", "soda", "thums", "mirinda", "limca", "redbull", "drink", "drinks", "beverage", "milk", "paal", "curd", "thayir", "moru",
+            "buttermilk", "lassi", "paneer", "butter", "cheese", "aavin", "arokya", "heritage", "பால்", "தயிர்", "மோர்", "பனீர்", "ஜூஸ்"),
+        ProductKind.HOMECARE to listOf("detergent", "surf", "rin", "tide", "ariel", "wheel", "ghadi", "vim", "exo", "pril", "dishwash", "phenyl", "phenol",
+            "harpic", "lizol", "colin", "cleaner", "broom", "thudappam", "mop", "garbage", "scrubber", "naphthalene", "mosquito", "goodnight", "allout",
+            "hit", "odonil", "துடைப்பம்", "பினாயில்"),
+        ProductKind.GARMENT to listOf("shirt", "shirts", "pant", "pants", "saree", "sarees", "sari", "tshirt", "t-shirt", "t-shirts", "chudi", "churidar",
+            "nighty", "dhoti", "dhotis", "veshti", "vesti", "lungi", "lungis", "jeans", "kurta", "kurti", "banian", "inner", "innerwear", "leggings", "frock",
+            "blouse", "towel", "thundu", "thuvalai", "uniform", "uniforms", "fabric", "cloth", "suiting", "shirting", "salwar", "petticoat", "nightdress",
+            "சட்டை", "புடவை", "வேட்டி", "துண்டு", "லுங்கி", "சுடிதார்"),
         ProductKind.HARDWARE to listOf("screw", "screws", "nail", "nails", "aani", "bolt", "bolts", "nut", "nuts", "washer", "washers", "pipe", "pipes",
-            "wire", "switch", "switches", "plug", "hinge", "hinges", "paint", "tape", "cement", "kambi", "rod", "rods", "manal", "sand", "jalli",
-            "ஆணி", "சிமெண்ட்", "சிமென்ட்", "கம்பி", "பெயிண்ட்"),
-        ProductKind.ELECTRONICS to listOf("charger", "chargers", "cable", "cables", "earphone", "earphones", "headphone", "headphones", "adapter",
-            "adapters", "powerbank", "usb", "battery", "batteries", "bulb", "led", "speaker", "remote", "pendrive"),
-        ProductKind.FMCG to listOf("colgate", "pepsodent", "closeup", "sensodyne", "paste", "toothpaste", "brush", "soap", "lux", "lifebuoy", "hamam",
-            "dettol", "santoor", "medimix", "cinthol", "pears", "shampoo", "clinic", "biscuit", "biscuits", "parle", "britannia", "marie", "goodday",
-            "detergent", "surf", "rin", "tide", "ariel", "wheel", "vim", "maggi", "noodles", "chips", "lays", "chocolate", "dairymilk", "kitkat",
-            "tea", "coffee", "bru", "horlicks", "boost", "bournvita", "cream", "powder", "talc", "sopu", "சோப்பு"),
+            "tap", "taps", "fitting", "fittings", "elbow", "valve", "lock", "locks", "padlock", "hinge", "hinges", "tool", "tools", "hammer", "spanner",
+            "screwdriver", "plier", "drill", "fevicol", "adhesive", "glue", "araldite", "mseal", "paint", "primer", "putty", "thinner", "emery",
+            "tape", "cement", "kambi", "rod", "rods", "manal", "sand", "jalli", "ஆணி", "சிமெண்ட்", "சிமென்ட்", "கம்பி", "பெயிண்ட்", "பைப்"),
+        ProductKind.ELECTRICAL to listOf("led", "bulb", "bulbs", "tubelight", "switch", "switches", "socket", "sockets", "wire", "wires", "plug", "plugs",
+            "fan", "fans", "battery", "batteries", "cell", "holder", "mcb", "fuse", "extension", "regulator", "lamp", "torch", "பல்பு", "வயர்"),
+        ProductKind.ELECTRONICS to listOf("charger", "chargers", "cable", "cables", "earphone", "earphones", "headphone", "headphones", "earbuds", "adapter",
+            "adapters", "powerbank", "powerbanks", "usb", "type-c", "speaker", "speakers", "tempered", "screenguard", "pendrive",
+            "memory", "otg", "smartwatch", "remote", "mobile", "phone"),
+        ProductKind.STATIONERY to listOf("notebook", "notebooks", "note", "pen", "pens", "pencil", "pencils", "eraser", "erasers", "rubber", "sharpener",
+            "file", "files", "paper", "a4", "chart", "marker", "markers", "stapler", "staples", "scale", "geometry", "crayons", "sketch", "gum", "envelope",
+            "register", "diary", "நோட்டு", "பேனா", "பென்சில்"),
+        ProductKind.FOOTWEAR to listOf("shoe", "shoes", "sandal", "sandals", "slipper", "slippers", "chappal", "chappals", "cheppal", "cheruppu", "footwear",
+            "socks", "belt", "belts", "wallet", "wallets", "purse", "handbag", "bag", "bags", "backpack", "செருப்பு", "ஷூ"),
+        ProductKind.KITCHENWARE to listOf("paathiram", "pathiram", "vessel", "vessels", "kodam", "plate", "plates", "tumbler", "tumblers", "glass", "tawa", "dosa", "cooker", "pan", "kadhai", "steel", "plastic", "bucket", "buckets", "mug", "mugs", "container", "containers", "lunchbox",
+            "tiffin", "bottle", "dabba", "storage", "jar", "jars", "spoon", "ladle", "karandi", "பாத்திரம்", "குடம்", "தட்டு", "டம்ளர்", "கரண்டி"),
+        ProductKind.PHARMACY to listOf("tablet", "tablets", "medicine", "medicines", "marundhu", "maathirai", "paracetamol", "dolo", "crocin", "calpol",
+            "syrup", "tonic", "capsule", "capsules", "bandage", "bandaid", "cotton", "gauze", "ointment", "betadine", "savlon", "ors",
+            "electral", "vicks", "zandu", "amrutanjan", "inhaler", "glucose", "thermometer", "mask", "masks", "gloves", "syringe", "மாத்திரை", "மருந்து"),
         ProductKind.VEGETABLE to listOf("thakkali", "tomato", "tomatoes", "vengayam", "onion", "onions", "urulai", "kizhangu", "potato", "potatoes",
-            "kathirikai", "brinjal", "vendakkai", "carrot", "beans", "cabbage", "muttaikose", "kosu", "beetroot", "cauliflower", "keerai",
+            "kathirikai", "brinjal", "vendakkai", "carrot", "beans", "cabbage", "muttaikose", "kosu", "beetroot", "cauliflower", "keerai", "greens",
             "milagai", "chilli", "inji", "ginger", "poondu", "garlic", "elumichai", "lemon", "thengai", "coconut", "ilaneer", "pazham", "vazhaipazham",
             "banana", "apple", "orange", "mango", "mambazham", "grapes", "papaya", "fruit", "fruits", "vegetable", "vegetables", "kaaikari", "kaikari",
-            "தக்காளி", "வெங்காயம்", "உருளை", "கிழங்கு", "கத்தரிக்காய்", "வெண்டைக்காய்", "தேங்காய்", "வாழைப்பழம்", "பழம்", "இஞ்சி", "பூண்டு", "மிளகாய்"),
+            "தக்காளி", "வெங்காயம்", "உருளை", "கிழங்கு", "கத்தரிக்காய்", "வெண்டைக்காய்", "தேங்காய்", "வாழைப்பழம்", "பழம்", "இஞ்சி", "பூண்டு", "மிளகாய்", "கீரை"),
         ProductKind.MEAT to listOf("kozhi", "chicken", "meen", "fish", "mutton", "aattukari", "kari", "nandu", "crab", "eral", "prawn", "prawns", "beef",
             "கோழி", "மீன்", "மட்டன்", "கறி", "இறால்", "நண்டு"),
-        ProductKind.SWEETS to listOf("mysore", "mysorepak", "laddu", "ladoo", "jalebi", "jangiri", "halwa", "badusha", "kesari", "sweet", "sweets",
-            "murukku", "mixture", "boondi", "pakoda", "cake", "cakes", "bun", "buns", "rusk", "bread", "puff", "lattu", "லட்டு", "அல்வா", "முறுக்கு", "கேக்"),
         ProductKind.POOJA to listOf("agarbatti", "agarbathi", "karpooram", "camphor", "kungumam", "kumkum", "vibhuthi", "vibhuti", "sandanam", "sambrani",
-            "thiri", "vilakku", "malli", "mallipoo", "poo", "rose", "samanthi", "kanakambaram", "flower", "flowers", "maalai", "garland",
-            "கற்பூரம்", "குங்குமம்", "விபூதி", "சாம்பிராணி", "மல்லி", "மல்லிப்பூ", "பூ", "மாலை"),
-        ProductKind.AGRI to listOf("uram", "fertilizer", "fertiliser", "urea", "dap", "potash", "pesticide", "vithai", "seeds", "உரம்", "யூரியா"),
-        // Named here so a unit ("20 kg") never makes them grocery: vessels, plastic ware.
-        ProductKind.GENERAL to listOf("paathiram", "pathiram", "kodam", "vessel", "vessels", "steel", "plastic", "bucket", "mug", "பாத்திரம்", "குடம்"),
+            "thiri", "wick", "wicks", "vilakku", "deepam", "malli", "mallipoo", "poo", "rose", "samanthi", "kanakambaram", "flower", "flowers", "maalai",
+            "garland", "kalasam", "pooja", "puja", "கற்பூரம்", "குங்குமம்", "விபூதி", "சாம்பிராணி", "மல்லி", "மல்லிப்பூ", "பூ", "மாலை", "திரி", "விளக்கு"),
+        ProductKind.AGRI to listOf("uram", "fertilizer", "fertiliser", "urea", "dap", "potash", "pesticide", "vithai", "seed", "seeds", "pot", "pots",
+            "thotti", "soil", "manure", "compost", "cocopeat", "sprayer", "hose", "drip", "sprinkler", "spade", "மண்வெட்டி", "உரம்", "யூரியா", "விதை"),
+        ProductKind.AUTO to listOf("engine", "spark", "brake", "clutch", "filter", "filters", "chain", "sprocket", "tyre", "tyres",
+            "tube", "tubes", "helmet", "mirror", "indicator", "horn", "headlight", "silencer", "accelerator", "bike", "scooter", "splendor", "activa",
+            "pulsar", "apache", "servo", "castrol", "gulf", "coolant", "grease"),
+        ProductKind.BAKERY to listOf("bread", "bun", "buns", "rusk", "cake", "cakes", "puff", "puffs", "pastry", "pastries", "cupcake", "donut", "croissant",
+            "samosa", "cutlet", "sandwich", "kek", "ரொட்டி", "பன்", "கேக்", "பப்ஸ்"),
+        ProductKind.TOYS to listOf("toy", "toys", "doll", "dolls", "balloon", "balloons", "gift", "gifts", "teddy", "puzzle", "wrapping",
+            "decoration", "decorations", "birthday", "party", "ribbon", "pommai", "பொம்மை", "பலூன்"),
+        ProductKind.BABY to listOf("diaper", "diapers", "pampers", "huggies", "mamypoko", "wipes", "feeding", "nipple", "cerelac", "lactogen", "nan",
+            "johnson", "babyoil"),
+        ProductKind.GENERAL to listOf("candle", "candles", "matchbox", "valayal", "bangle", "bangles"),
+    )
+
+    /** Two words that decide together ("Engine oil" is a spare, "Vilakku ennai" pooja oil, "Baby soap" baby care, "Tea thool" grocery). */
+    private val phraseKinds: List<Pair<Regex, ProductKind>> = listOf(
+        Regex("""(?i)(?<![\p{L}])(?:engine|gear|brake|2t|two\s*wheeler)\s+oil""") to ProductKind.AUTO,
+        Regex("""(?i)(?<![\p{L}])(?:vilakku|deepam|pooja|puja)\s+(?:ennai|oil)|விளக்கு\s*எண்ணெய்""") to ProductKind.POOJA,
+        Regex("""(?i)(?<![\p{L}])baby\s+\p{L}+|(?<![\p{L}])feeding\s+bottles?""") to ProductKind.BABY,
+        Regex("""(?i)(?<![\p{L}])(?:hair|coconut\s+hair)\s+oil|(?<![\p{L}])face\s*wash""") to ProductKind.FMCG,
+        Regex("""(?i)(?<![\p{L}])(?:dish\s*wash|floor\s+cleaner|toilet\s+cleaner|garbage\s+bags?)""") to ProductKind.HOMECARE,
+        Regex("""(?i)(?<![\p{L}])tube\s*lights?|(?<![\p{L}])led\s+(?:bulb|tube)""") to ProductKind.ELECTRICAL,
+        Regex("""(?i)(?<![\p{L}])(?:phone|mobile)\s+(?:cover|case)s?|tempered\s+glass|power\s*banks?|(?<![\p{L}])data\s+cables?""") to ProductKind.ELECTRONICS,
+        Regex("""(?i)(?<![\p{L}])(?:lunch|storage|tiffin)\s+box(?:es)?|(?<![\p{L}])water\s+bottles?|(?<![\p{L}])steel\s+\p{L}+""") to ProductKind.KITCHENWARE,
+        Regex("""(?i)(?<![\p{L}])return\s+gifts?|gift\s+(?:box|items?|articles?)|wrapping\s+paper""") to ProductKind.TOYS,
+        Regex("""(?i)(?<![\p{L}])school\s+(?:uniform|dress)""") to ProductKind.GARMENT,
+        Regex("""(?i)(?<![\p{L}])school\s+bags?""") to ProductKind.FOOTWEAR,
+        Regex("""(?i)(?<![\p{L}])(?:malli|kothamalli|tea|coffee|milagai|manjal|sambar|rasam|garam)\s+(?:thool|podi|powder)""") to ProductKind.GROCERY,
+        Regex("""(?i)(?<![\p{L}])(?:butter|cream)\s+biscuits?""") to ProductKind.SNACKS,
+        Regex("""(?i)(?<![\p{L}])(?:spark\s+plug|brake\s+pads?|air\s+filter|oil\s+filter|bike\s+\p{L}+)""") to ProductKind.AUTO,
+        Regex("""(?i)(?<![\p{L}])(?:mosquito|naphthalene)\s+\p{L}+""") to ProductKind.HOMECARE,
+        Regex("""(?i)(?<![\p{L}])(?:cough|cold)\s+syrup|(?<![\p{L}])first[\s-]*aid""") to ProductKind.PHARMACY,
+        Regex("""(?i)(?<![\p{L}])paint\s+brush|(?<![\p{L}])extension\s+board""") to ProductKind.HARDWARE,
+        Regex("""(?i)(?<![\p{L}])(?:detergent|washing)\s+(?:powder|bar|cake|liquid)""") to ProductKind.HOMECARE,
+        Regex("""(?i)(?<![\p{L}])ice\s*creams?""") to ProductKind.BEVERAGE,
+        Regex("""(?i)(?<![\p{L}])(?:oil|brass|kuthu)\s+(?:lamps?|vilakku)|குத்துவிளக்கு""") to ProductKind.POOJA,
+        Regex("""(?i)(?<![\p{L}])paper\s+(?:plates?|cups?)""") to ProductKind.KITCHENWARE,
+        Regex("""(?i)(?<![\p{L}])(?:servo|castrol|gulf|motul|veedol)(?![\p{L}])""") to ProductKind.AUTO,
     )
 
     /** A product's kind from its name, else from the unit it was said in. */
     fun kindOf(name: String, unit: String?): ProductKind {
+        phraseKinds.firstOrNull { (r, _) -> r.containsMatchIn(name) }?.let { return it.second }
         val words = name.lowercase(Locale.ROOT).split(Regex("""[^\p{L}\p{M}\p{N}-]+""")).filter { it.isNotEmpty() }
         val joined = words.joinToString("")
         // A whole word first ("Coconut oil" → oil, "Muttaikose" → cabbage), then a long word inside a joined name ("Mallipoo").
@@ -114,18 +178,20 @@ object KaiInventory {
         kindWords.firstOrNull { (_, list) -> list.any { w -> w.length >= 6 && joined.contains(w) } }?.let { return it.first }
         return when (KaiUnits.canon(unit)) {
             "BAG", "KG", "GRAM" -> ProductKind.GROCERY
-            "CASE" -> ProductKind.BEVERAGE
-            "LITRE", "ML", "BOTTLE", "CAN" -> ProductKind.LIQUID
+            "CASE", "LITRE", "ML", "BOTTLE", "CAN" -> ProductKind.BEVERAGE
             "PAIR" -> ProductKind.FOOTWEAR
-            "SEEPU", "THAAR" -> ProductKind.VEGETABLE
+            "SEEPU", "THAAR", "BASKET" -> ProductKind.VEGETABLE
             "MUZHAM" -> ProductKind.POOJA
+            "STRIP", "TABLET" -> ProductKind.PHARMACY
+            "REAM" -> ProductKind.STATIONERY
+            "SET" -> ProductKind.KITCHENWARE
             else -> ProductKind.GENERAL
         }
     }
 
     /**
-     * The picture a product gets in the inventory list: Kai's own category ("Grocery"), else its name ("Arisi", "Coke"),
-     * else the owner's category word ("rice", "kids wear"), else its unit — a plain box when nothing fits.
+     * The picture a product gets in the inventory list: Kai's own category ("Grocery & Staples"), else its name ("Arisi", "Coke"),
+     * else the owner's category word ("rice", "kids wear") — also the category labels Kai used before — else its unit.
      */
     fun artKindOf(name: String, category: String?, unit: String?): ProductKind {
         val c = category?.trim().orEmpty()
@@ -135,24 +201,35 @@ object KaiInventory {
             val byCategory = kindOf(c, null)
             if (byCategory != ProductKind.GENERAL) return byCategory
             val lc = c.lowercase(Locale.ROOT)
-            when {
-                Regex("""grocer|provision|kirana|maligai|pulse|grain""").containsMatchIn(lc) -> return ProductKind.GROCERY
-                Regex("""beverage|drink|juice|cool""").containsMatchIn(lc) -> return ProductKind.BEVERAGE
-                Regex("""oil|liquid|dairy|milk""").containsMatchIn(lc) -> return ProductKind.LIQUID
-                Regex("""garment|textile|cloth|wear|dress|kids|apparel|fashion|saree""").containsMatchIn(lc) -> return ProductKind.GARMENT
-                Regex("""foot|shoe|chappal|slipper""").containsMatchIn(lc) -> return ProductKind.FOOTWEAR
-                Regex("""hardware|tool|electrical|paint|plumb""").containsMatchIn(lc) -> return ProductKind.HARDWARE
-                Regex("""electronic|mobile|accessor|gadget""").containsMatchIn(lc) -> return ProductKind.ELECTRONICS
-                Regex("""fmcg|personal|care|cosmetic|toiletr|snack|biscuit|soap""").containsMatchIn(lc) -> return ProductKind.FMCG
-                Regex("""vegetable|fruit|kaikari|kaaikari""").containsMatchIn(lc) -> return ProductKind.VEGETABLE
-                Regex("""meat|fish|chicken|poultry""").containsMatchIn(lc) -> return ProductKind.MEAT
-                Regex("""sweet|bakery|cake""").containsMatchIn(lc) -> return ProductKind.SWEETS
-                Regex("""pooja|puja|flower""").containsMatchIn(lc) -> return ProductKind.POOJA
-                Regex("""agri|fertili|seed""").containsMatchIn(lc) -> return ProductKind.AGRI
-            }
+            categoryWords.firstOrNull { (r, _) -> r.containsMatchIn(lc) }?.let { return it.second }
         }
         return kindOf(name, unit)
     }
+
+    private val categoryWords: List<Pair<Regex, ProductKind>> = listOf(
+        Regex("""grocer|provision|kirana|maligai|staple|pulse|grain|spice""") to ProductKind.GROCERY,
+        Regex("""fmcg|personal|cosmetic|toiletr""") to ProductKind.FMCG,
+        Regex("""snack|confection|sweet|chocolate""") to ProductKind.SNACKS,
+        Regex("""beverage|drink|juice|cool|dairy|milk|liquid""") to ProductKind.BEVERAGE,
+        Regex("""home\s*care|clean|detergent""") to ProductKind.HOMECARE,
+        Regex("""garment|textile|cloth|wear|dress|kids|apparel|fashion|saree""") to ProductKind.GARMENT,
+        Regex("""electrical|lighting""") to ProductKind.ELECTRICAL,
+        Regex("""hardware|tool|paint|plumb""") to ProductKind.HARDWARE,
+        Regex("""electronic|mobile|gadget""") to ProductKind.ELECTRONICS,
+        Regex("""stationer|office|school""") to ProductKind.STATIONERY,
+        Regex("""foot|shoe|chappal|slipper""") to ProductKind.FOOTWEAR,
+        Regex("""kitchen|household|vessel|utensil""") to ProductKind.KITCHENWARE,
+        Regex("""pharma|medic|chemist|drug""") to ProductKind.PHARMACY,
+        Regex("""vegetable|fruit|kaikari|kaaikari""") to ProductKind.VEGETABLE,
+        Regex("""meat|fish|chicken|poultry""") to ProductKind.MEAT,
+        Regex("""bakery|bread|cake""") to ProductKind.BAKERY,
+        Regex("""pooja|puja|flower|religio""") to ProductKind.POOJA,
+        Regex("""agri|fertili|seed|garden""") to ProductKind.AGRI,
+        Regex("""auto|spare|vehicle|bike""") to ProductKind.AUTO,
+        Regex("""toy|gift|party""") to ProductKind.TOYS,
+        Regex("""baby|infant""") to ProductKind.BABY,
+        Regex("""accessor""") to ProductKind.ELECTRONICS,
+    )
 
     private val eggWords = Regex("""(?i)(?<![\p{L}])(?:mutta|muttai|egg|eggs)(?![\p{L}])|முட்டை""")
 
@@ -160,32 +237,89 @@ object KaiInventory {
     fun isEgg(name: String): Boolean = eggWords.containsMatchIn(name)
 
     /** Units that hold other units ("1 box = 48 pieces") — their size is asked, never assumed. */
-    private val packUnits = setOf("BOX", "BAG", "CASE", "CARTON", "CAN", "BUNDLE", "STRIP", "TRAY", "SEEPU", "THAAR", "COIL")
+    private val packUnits = setOf("BOX", "BAG", "CASE", "CARTON", "CAN", "BUNDLE", "STRIP", "TRAY", "SEEPU", "THAAR", "COIL", "ROLL", "BASKET")
 
     /** Counted, not weighed, even in a sack: coconuts ("Thengai 2 moota" → pieces). */
     private val countedWords = Regex("""(?i)(?<![\p{L}])(?:thengai|coconut|coconuts|ilaneer)(?![\p{L}])|தேங்காய்|இளநீர்""")
+    /** Poured, not counted: asked in litre / ml, packed in bottles. */
+    private val liquidWords = Regex("""(?i)(?<![\p{L}])(?:oil|ennai|ennei|nallennai|milk|paal|ghee|nei|curd|thayir|moru|buttermilk|lassi|juice|water|""" +
+        """soda|phenyl|phenol|cleaner|liquid|harpic|lizol|colin|vinegar|kerosene|syrup|tonic|sanitizer|sanitiser|handwash|coolant|lotion)(?![\p{L}])|""" +
+        """எண்ணெய்|பால்|நெய்|தயிர்|மோர்""")
+    /** Dairy that is not poured. */
+    private val dairySolid = Regex("""(?i)(?<![\p{L}])(?:paneer|butter|cheese|khova|ice\s*creams?)(?![\p{L}])|பனீர்|வெண்ணெய்""")
+    /** Milk and curd come in packets, not bottles. */
+    private val packetDairy = Regex("""(?i)(?<![\p{L}])(?:milk|paal|curd|thayir|moru|buttermilk|aavin)(?![\p{L}])|பால்|தயிர்|மோர்""")
+    /** Packed snacks that carry a weight (a loose laddu does not). */
+    private val packedSnack = Regex("""(?i)(?<![\p{L}])(?:biscuits?|parle|britannia|marie|goodday|bourbon|oreo|chips|lays|kurkure|bingo|chocolates?|""" +
+        """dairymilk|kitkat|munch|wafer|cookies|candy|candies|toffee)(?![\p{L}])""")
+    /** Home care sold by weight (powder, bar). */
+    private val weighedHomeCare = Regex("""(?i)(?<![\p{L}])(?:detergent|surf|rin|tide|ariel|wheel|ghadi|powder|bar|cake|vim|exo)(?![\p{L}])""")
+    /** Medicines that come in strips. */
+    private val tabletWords = Regex("""(?i)(?<![\p{L}])(?:tablets?|capsules?|maathirai|mathirai|paracetamol|dolo|crocin|calpol|cetirizine|""" +
+        """azithromycin|amoxicillin|metformin|vitamin|b-?complex|medicine|medicines)(?![\p{L}])|மாத்திரை""")
+    /** Baby food, soap and powder carry a weight (diapers and wipes do not). */
+    private val weighedBaby = Regex("""(?i)(?<![\p{L}])(?:soap|powder|cream|cerelac|lactogen|nan|food|formula)(?![\p{L}])""")
+    /** Footwear-shop accessories that have no shoe size. */
+    private val noSizeAccessory = Regex("""(?i)(?<![\p{L}])(?:belts?|wallets?|purse|handbags?|bags?|backpacks?)(?![\p{L}])""")
+
+    /** Poured goods: oil, milk, juice, phenyl, syrup … (any drink except dairy that is not poured). */
+    fun isLiquid(spec: ItemSpec): Boolean =
+        (spec.kind == ProductKind.BEVERAGE && !dairySolid.containsMatchIn(spec.name)) || (liquidWords.containsMatchIn(spec.name) && !dairySolid.containsMatchIn(spec.name))
+
+    /** How the size of one piece is asked for this product. */
+    enum class SizeStyle { NONE, WEIGHT, VOLUME, CLOTHES, SHOE, SPEC, MODEL, VEHICLE }
+
+    fun styleOf(spec: ItemSpec): SizeStyle {
+        val base = baseUnit(spec)
+        val piece = base in setOf("PCS", "PACK")
+        if (isLiquid(spec)) return if (base in setOf("BOTTLE", "PCS", "PACK", "CAN")) SizeStyle.VOLUME else SizeStyle.NONE
+        return when (spec.kind) {
+            ProductKind.FMCG -> if (piece) SizeStyle.WEIGHT else SizeStyle.NONE
+            ProductKind.BABY -> if (piece && weighedBaby.containsMatchIn(spec.name)) SizeStyle.WEIGHT else SizeStyle.NONE
+            ProductKind.SNACKS -> if (piece && (base == "PACK" || packedSnack.containsMatchIn(spec.name))) SizeStyle.WEIGHT else SizeStyle.NONE
+            ProductKind.HOMECARE -> if (piece && weighedHomeCare.containsMatchIn(spec.name)) SizeStyle.WEIGHT else SizeStyle.NONE
+            ProductKind.GARMENT -> SizeStyle.CLOTHES
+            ProductKind.FOOTWEAR -> if (noSizeAccessory.containsMatchIn(spec.name)) SizeStyle.NONE else SizeStyle.SHOE
+            ProductKind.HARDWARE, ProductKind.ELECTRICAL -> SizeStyle.SPEC
+            ProductKind.ELECTRONICS -> SizeStyle.MODEL
+            ProductKind.AUTO -> SizeStyle.VEHICLE
+            else -> SizeStyle.NONE
+        }
+    }
 
     /** What one [pack] of this kind holds when the owner didn't say: pieces of soap, kg of rice, bottles of Coke. */
-    fun innerOf(kind: ProductKind, pack: String): String = when {
-        pack == "COIL" -> "METER"
-        else -> innerOfKind(kind, pack)
+    fun innerOf(kind: ProductKind, pack: String): String = innerFor(ItemSpec("", kind), pack)
+
+    /** What one [pack] of this product holds when the owner didn't say — coconuts in a sack are counted, oil comes in bottles. */
+    fun innerFor(spec: ItemSpec, pack: String): String {
+        val kind = spec.kind
+        return when {
+            pack == "COIL" -> "METER"
+            pack == "ROLL" -> if (kind in setOf(ProductKind.GARMENT, ProductKind.ELECTRICAL, ProductKind.HARDWARE, ProductKind.AGRI)) "METER" else "PCS"
+            pack in setOf("BAG", "CASE", "BASKET") && countedWords.containsMatchIn(spec.name) -> "PCS"
+            isLiquid(spec) -> when {
+                pack == "CAN" -> "LITRE"
+                packetDairy.containsMatchIn(spec.name) -> "PACK"
+                else -> "BOTTLE"
+            }
+            kind == ProductKind.GROCERY -> if (pack == "BAG") "KG" else "PCS"
+            kind == ProductKind.VEGETABLE -> if (pack in setOf("BAG", "CASE", "BASKET")) "KG" else "PCS"
+            kind == ProductKind.FOOTWEAR -> if (noSizeAccessory.containsMatchIn(spec.name)) "PCS" else "PAIR"
+            kind == ProductKind.PHARMACY -> when {
+                pack == "STRIP" -> "TABLET"
+                // A box of tablets holds strips; a box of masks / bandages holds pieces.
+                pack == "BOX" && tabletWords.containsMatchIn(spec.name) -> "STRIP"
+                else -> "PCS"
+            }
+            else -> "PCS"
+        }
     }
 
-    /** What one [pack] of this product holds when the owner didn't say — coconuts in a sack are counted. */
-    fun innerFor(spec: ItemSpec, pack: String): String =
-        if (pack == "BAG" && countedWords.containsMatchIn(spec.name)) "PCS" else innerOf(spec.kind, pack)
-
-    private fun innerOfKind(kind: ProductKind, pack: String): String = when (kind) {
-        ProductKind.GROCERY, ProductKind.VEGETABLE -> if (pack == "BAG") "KG" else "PCS"
-        ProductKind.BEVERAGE -> "BOTTLE"
-        ProductKind.LIQUID -> if (pack == "CAN") "LITRE" else "BOTTLE"
-        ProductKind.FOOTWEAR -> "PAIR"
-        else -> "PCS"
-    }
-
-    /** Whether [unit] holds other units for this kind — a hardware bag (cement, putty) is itself the unit stock is kept in. */
+    /** Whether [unit] holds other units for this kind — a hardware / fertilizer bag (cement, urea) is itself the unit stock is kept in. */
     private fun isPack(kind: ProductKind, unit: String?): Boolean =
-        unit in packUnits && !(unit == "BAG" && (kind == ProductKind.HARDWARE || kind == ProductKind.AGRI))
+        unit in packUnits && !(unit == "BAG" && (kind == ProductKind.HARDWARE || kind == ProductKind.AGRI)) &&
+            // Greens are sold by the kattu: the bundle itself is the stock unit.
+            !(unit == "BUNDLE" && kind == ProductKind.VEGETABLE)
 
     fun needsPerPack(spec: ItemSpec): Boolean = isPack(spec.kind, KaiUnits.canon(spec.unit))
 
@@ -196,29 +330,34 @@ object KaiInventory {
         return if (isPack(spec.kind, u)) KaiUnits.canon(spec.inner) ?: innerFor(spec, u) else u
     }
 
-    /** Whether a size (weight / volume / clothes size / spec) is asked for this kind and stock unit. */
-    private fun asksSize(spec: ItemSpec): Boolean {
-        val base = baseUnit(spec)
-        return when (spec.kind) {
-            ProductKind.FMCG -> base in setOf("PCS", "PACK")
-            ProductKind.BEVERAGE -> base in setOf("BOTTLE", "PCS", "CAN")
-            ProductKind.LIQUID -> base in setOf("BOTTLE", "PCS", "PACK")
-            ProductKind.GARMENT, ProductKind.FOOTWEAR, ProductKind.HARDWARE, ProductKind.ELECTRONICS -> true
-            ProductKind.GROCERY, ProductKind.GENERAL, ProductKind.VEGETABLE, ProductKind.MEAT, ProductKind.SWEETS, ProductKind.POOJA, ProductKind.AGRI -> false
-        }
-    }
+    /** Whether a size (weight / volume / clothes size / spec / model / vehicle) is asked for this product. */
+    private fun asksSize(spec: ItemSpec): Boolean = styleOf(spec) != SizeStyle.NONE
+
+    /** Medicines carry a batch number; medicines and bakery goods an expiry date (both can be skipped). */
+    fun asksBatch(spec: ItemSpec): Boolean = spec.kind == ProductKind.PHARMACY
+    fun asksExpiry(spec: ItemSpec): Boolean = spec.kind == ProductKind.PHARMACY || spec.kind == ProductKind.BAKERY
 
     /**
-     * The unit a price is said for: a bag of rice is bought by the bag and sold by the kg, a tray of eggs bought by the tray and
-     * sold by the egg; everything else by its stock unit.
+     * The unit a price is said for: a bag of rice / a crate of tomatoes is bought by the bag / crate and sold by the kg, a tray
+     * of eggs or a seepu of bananas bought by the pack and sold by the piece, a strip of tablets bought and sold by the strip;
+     * everything else by its stock unit.
      */
-    fun purchaseUnit(spec: ItemSpec): String = when {
-        (spec.kind == ProductKind.GROCERY || spec.kind == ProductKind.VEGETABLE) && KaiUnits.canon(spec.unit) == "BAG" && baseUnit(spec) != "BAG" -> "BAG"
-        // A tray of eggs / buns, a seepu or thaar of bananas: bought by the pack, sold by the piece.
-        KaiUnits.canon(spec.unit) in setOf("TRAY", "SEEPU", "THAAR") && baseUnit(spec) != KaiUnits.canon(spec.unit) -> KaiUnits.canon(spec.unit)!!
-        else -> baseUnit(spec)
+    fun purchaseUnit(spec: ItemSpec): String {
+        val u = KaiUnits.canon(spec.unit)
+        val base = baseUnit(spec)
+        return when {
+            u == null || u == base -> base
+            (spec.kind == ProductKind.GROCERY || spec.kind == ProductKind.VEGETABLE) && u == "BAG" -> "BAG"
+            spec.kind == ProductKind.VEGETABLE && u in setOf("CASE", "BASKET") -> u
+            u in setOf("TRAY", "SEEPU", "THAAR") -> u
+            spec.kind == ProductKind.PHARMACY && u in setOf("STRIP", "BOX") -> u
+            else -> base
+        }
     }
-    fun sellingUnit(spec: ItemSpec): String = baseUnit(spec)
+    fun sellingUnit(spec: ItemSpec): String {
+        val u = KaiUnits.canon(spec.unit)
+        return if (spec.kind == ProductKind.PHARMACY && u == "STRIP" && baseUnit(spec) != "STRIP") "STRIP" else baseUnit(spec)
+    }
 
     /** The next detail to ask, or null when the entry is complete. One at a time; a skipped detail is not asked again. */
     fun next(spec: ItemSpec): ItemField? = when {
@@ -226,9 +365,57 @@ object KaiInventory {
         spec.unit == null -> ItemField.UNIT
         needsPerPack(spec) && spec.perPack == null -> ItemField.PER_PACK
         asksSize(spec) && spec.size == null && ItemField.SIZE !in spec.skipped -> ItemField.SIZE
+        asksBatch(spec) && spec.batch == null && ItemField.BATCH !in spec.skipped -> ItemField.BATCH
+        asksExpiry(spec) && spec.expiry == null && ItemField.EXPIRY !in spec.skipped -> ItemField.EXPIRY
         spec.purchase == null && ItemField.PURCHASE !in spec.skipped -> ItemField.PURCHASE
         spec.selling == null && ItemField.SELLING !in spec.skipped -> ItemField.SELLING
         else -> null
+    }
+
+    // ------------------------------------------------------------------ batch / expiry / colour
+
+    private val months = mapOf("jan" to 1, "feb" to 2, "mar" to 3, "apr" to 4, "may" to 5, "jun" to 6, "jul" to 7, "aug" to 8, "sep" to 9, "oct" to 10,
+        "nov" to 11, "dec" to 12)
+
+    /** "Power bank" → "Powerbank": a product name that holds a money word ("bank") is one word, so it is never read as money. */
+    fun joinProductWords(text: String): String =
+        Regex("""(?i)(?<![\p{L}])(power)\s+(banks?)(?![\p{L}])""").replace(text) { m -> m.groupValues[1] + m.groupValues[2].lowercase(Locale.ROOT) }
+
+    /** "03/2027", "3-27", "12/05/2027", "March 2027", "mar 27" → the expiry day (a month alone = its last day). Null: not a date. */
+    fun expiryIn(text: String, today: LocalDate = LocalDate.now()): LocalDate? {
+        val t = text.lowercase(Locale.ROOT)
+        fun year(y: String) = y.toInt().let { if (it < 100) 2000 + it else it }
+        Regex("""(?<!\d)(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})(?!\d)""").find(t)?.let { m ->
+            return runCatching { LocalDate.of(year(m.groupValues[3]), m.groupValues[2].toInt(), m.groupValues[1].toInt()) }.getOrNull()
+        }
+        Regex("""(?<!\d)(\d{1,2})[/.-](\d{2,4})(?!\d)""").find(t)?.let { m ->
+            val mo = m.groupValues[1].toInt()
+            if (mo in 1..12) return runCatching { LocalDate.of(year(m.groupValues[2]), mo, 1).let { it.withDayOfMonth(it.lengthOfMonth()) } }.getOrNull()
+        }
+        Regex("""(?<![\p{L}])(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*,?\s*(\d{2,4})(?!\d)""").find(t)?.let { m ->
+            val d = LocalDate.of(year(m.groupValues[2]), months.getValue(m.groupValues[1]), 1)
+            return d.withDayOfMonth(d.lengthOfMonth())
+        }
+        return null
+    }
+
+    /** "batch B123", "batch no 45A" said with the stock. */
+    private fun batchIn(text: String): String? =
+        Regex("""(?i)(?<![\p{L}])batch\s*(?:no\.?|number|num)?\s*[:#-]?\s*([A-Za-z0-9][A-Za-z0-9/-]{0,19})""").find(text)?.groupValues?.get(1)
+
+    /** "expiry 03/2027", "exp 12/05/2027" said with the stock. */
+    private fun expirySaid(text: String, today: LocalDate): LocalDate? =
+        Regex("""(?i)(?<![\p{L}])(?:expiry|exp|expires?|best\s+before)\s*(?:date)?\s*[:-]?\s*(.{3,20})""").find(text)?.groupValues?.get(1)?.let { expiryIn(it, today) }
+
+    private val colourWords = Regex("""(?i)(?<![\p{L}])(red|blue|green|black|white|yellow|pink|grey|gray|brown|maroon|orange|purple|violet|cream|navy|""" +
+        """beige|golden|silver|sivappu|neelam|pachai|karuppu|vellai|manjal|rose|multi\s*colou?r)(?![\p{L}])""")
+
+    /** "M 8, L 7 · Blue" — sizes and colours said together, as the owner said them. */
+    private fun sizesWithColour(text: String): String? {
+        // Only when sizes were read ("M 10 L 10" + "white"); otherwise the owner's own words are kept as they are.
+        val sizes = clothesSizesIn(text) ?: return null
+        val colours = colourWords.findAll(text).map { it.value.replaceFirstChar { c -> c.titlecase(Locale.ROOT) } }.distinct().toList()
+        return if (colours.isNotEmpty()) "$sizes · ${colours.joinToString(", ")}" else sizes
     }
 
     // ------------------------------------------------------------------ words → numbers / units
@@ -342,17 +529,20 @@ object KaiInventory {
     }
 
     /** Every detail said in one message, added to [spec] (what was already known stays). */
-    fun withDetails(spec: ItemSpec, text: String): ItemSpec {
+    fun withDetails(spec: ItemSpec, text: String, today: LocalDate = LocalDate.now()): ItemSpec {
         val lower = lowerOf(text)
         var s = spec
         perPackIn(lower, s)?.let { (q, inner) -> if (s.perPack == null && q.signum() > 0) s = s.copy(perPack = q, inner = inner ?: s.inner) }
         val perPackText = Regex("""$n\s*($U)\s+(?:per|each|every|ovvoru)""").find(lower)?.let { "${it.groupValues[1]} ${it.groupValues[2]}" }
-        if (s.size == null) when (s.kind) {
-            ProductKind.GARMENT, ProductKind.FOOTWEAR -> clothesSizesIn(text)?.let { s = s.copy(size = it) }
-            ProductKind.HARDWARE, ProductKind.ELECTRONICS -> Regex("""(?i)(?<![\p{L}])(?:size|spec|model)\s+([\w\s."/-]{1,30})""").find(text)
-                ?.groupValues?.get(1)?.trim()?.trimEnd(',')?.let { s = s.copy(size = it) }
+        if (s.size == null) when (styleOf(s)) {
+            SizeStyle.CLOTHES, SizeStyle.SHOE -> sizesWithColour(text)?.let { s = s.copy(size = it) }
+            SizeStyle.SPEC, SizeStyle.MODEL, SizeStyle.VEHICLE ->
+                Regex("""(?i)(?<![\p{L}])(?:size|spec|model|for|vehicle)\s+([\w\s."/-]{1,30})""").find(text)
+                    ?.groupValues?.get(1)?.trim()?.trimEnd(',')?.let { s = s.copy(size = it) }
             else -> sizeIn(lower, s, perPackText)?.let { (q, u, shown) -> s = s.copy(size = shown, sizeQty = q, sizeUnit = u) }
         }
+        if (s.batch == null) batchIn(text)?.let { s = s.copy(batch = it) }
+        if (s.expiry == null) expirySaid(text, today)?.let { s = s.copy(expiry = it) }
         priceIn(lower, purchaseWord)?.let { (p, per) -> if (s.purchase == null) s = s.copy(purchase = p, purchasePer = per) }
         priceIn(lower, sellingWord)?.let { (p, per) -> if (s.selling == null) s = s.copy(selling = p, sellingPer = per) }
         return s
@@ -383,7 +573,8 @@ object KaiInventory {
     /** The owner's answer to [field]; null when it doesn't answer it (Kai asks again or the message goes elsewhere). */
     fun answer(spec: ItemSpec, field: ItemField, text: String, today: LocalDate = LocalDate.now()): ItemSpec? {
         val lower = lowerOf(text)
-        if (field in setOf(ItemField.SIZE, ItemField.PURCHASE, ItemField.SELLING) && skips(text)) return spec.copy(skipped = spec.skipped + field)
+        if (field in setOf(ItemField.SIZE, ItemField.BATCH, ItemField.EXPIRY, ItemField.PURCHASE, ItemField.SELLING) && skips(text))
+            return spec.copy(skipped = spec.skipped + field)
         return when (field) {
             ItemField.QTY -> {
                 val parts = KaiStock.partsIn(lower).ifEmpty { numberIn(text, today)?.let { listOf(QtyPart(it, null)) }.orEmpty() }
@@ -402,9 +593,15 @@ object KaiInventory {
                 val inner = lower.split(' ').firstNotNullOfOrNull(::unitOf)?.takeIf { it != KaiUnits.canon(spec.unit) }
                 spec.copy(perPack = q, inner = inner ?: spec.inner)
             }
-            ItemField.SIZE -> when (spec.kind) {
-                ProductKind.GARMENT, ProductKind.FOOTWEAR, ProductKind.HARDWARE, ProductKind.ELECTRONICS -> {
-                    val said = (clothesSizesIn(text) ?: text.trim().trim('.', ',')).takeIf { it.isNotBlank() && it.length <= 40 } ?: return null
+            ItemField.BATCH -> {
+                val said = (batchIn(text) ?: text.trim().trim('.', ',')).takeIf { it.isNotBlank() && it.length <= 20 && !it.contains(' ') } ?: return null
+                spec.copy(batch = said.uppercase(Locale.ROOT))
+            }
+            ItemField.EXPIRY -> spec.copy(expiry = expiryIn(text, today) ?: return null)
+            ItemField.SIZE -> when (styleOf(spec)) {
+                SizeStyle.CLOTHES, SizeStyle.SHOE, SizeStyle.SPEC, SizeStyle.MODEL, SizeStyle.VEHICLE -> {
+                    val clothes = if (styleOf(spec) == SizeStyle.CLOTHES || styleOf(spec) == SizeStyle.SHOE) sizesWithColour(text) else null
+                    val said = (clothes ?: text.trim().trim('.', ',')).takeIf { it.isNotBlank() && it.length <= 40 } ?: return null
                     spec.copy(size = said)
                 }
                 else -> {
@@ -426,11 +623,8 @@ object KaiInventory {
         }
     }
 
-    private fun defaultSizeUnit(spec: ItemSpec, q: BigDecimal): String = when (spec.kind) {
-        ProductKind.BEVERAGE -> if (q <= BigDecimal(5)) "LITRE" else "ML"
-        ProductKind.LIQUID -> if (q <= BigDecimal(5)) "LITRE" else "ML"
-        else -> "GRAM"
-    }
+    private fun defaultSizeUnit(spec: ItemSpec, q: BigDecimal): String =
+        if (styleOf(spec) == SizeStyle.VOLUME) (if (q <= BigDecimal(5)) "LITRE" else "ML") else "GRAM"
 
     // ------------------------------------------------------------------ totals
 
@@ -493,14 +687,17 @@ object KaiInventory {
                 en = "Sure Owner 👍 How much $name came in? (e.g. 5 boxes)")
             ItemField.UNIT -> {
                 val q = plain(spec.qty ?: BigDecimal.ONE)
-                val (a, b) = when (spec.kind) {
-                    ProductKind.GROCERY -> "BAG" to "KG"
-                    ProductKind.BEVERAGE -> "BOTTLE" to "CASE"
-                    ProductKind.LIQUID -> "BOTTLE" to "LITRE"
-                    ProductKind.FOOTWEAR -> "PAIR" to "BOX"
-                    ProductKind.VEGETABLE, ProductKind.MEAT, ProductKind.SWEETS -> "KG" to "PCS"
-                    ProductKind.AGRI -> "BAG" to "KG"
-                    ProductKind.POOJA -> "PACK" to "BOX"
+                val (a, b) = when {
+                    spec.kind == ProductKind.BEVERAGE && isLiquid(spec) -> "BOTTLE" to "CASE"
+                    isLiquid(spec) -> "BOTTLE" to "LITRE"
+                    spec.kind == ProductKind.GROCERY -> "BAG" to "KG"
+                    spec.kind == ProductKind.FOOTWEAR -> "PAIR" to "BOX"
+                    spec.kind in setOf(ProductKind.VEGETABLE, ProductKind.MEAT) -> "KG" to "PCS"
+                    spec.kind == ProductKind.AGRI -> "BAG" to "KG"
+                    spec.kind == ProductKind.POOJA -> "PACK" to "BOX"
+                    spec.kind == ProductKind.PHARMACY -> "STRIP" to "BOX"
+                    spec.kind == ProductKind.BAKERY -> "PCS" to "PACK"
+                    spec.kind in setOf(ProductKind.KITCHENWARE, ProductKind.TOYS, ProductKind.AUTO) -> "PCS" to "SET"
                     else -> "PCS" to "BOX"
                 }
                 val qa = KaiStock.shown(spec.qty ?: BigDecimal.ONE, a)
@@ -509,7 +706,7 @@ object KaiInventory {
             }
             ItemField.PER_PACK -> {
                 val pack = one(spec.unit)
-                val inner = innerFor(spec, KaiUnits.canon(spec.unit) ?: "BOX")
+                val inner = KaiUnits.canon(spec.inner) ?: innerFor(spec, KaiUnits.canon(spec.unit) ?: "BOX")
                 if (inner == "KG" || inner == "LITRE" || inner == "METER") pick(lang,
                     ta = "சரி Owner 👍 1 $pack எத்தனை ${many(inner)}?", tl = "Seri Owner 👍 1 $pack evlo ${many(inner)}?", en = "Sure Owner 👍 How many ${many(inner)} in 1 $pack?")
                 else pick(lang,
@@ -518,27 +715,44 @@ object KaiInventory {
             }
             ItemField.SIZE -> {
                 val piece = one(baseUnit(spec))
-                when (spec.kind) {
-                    ProductKind.GARMENT -> pick(lang,
-                        ta = "Size என்ன Owner? (உதா: M 8, L 7, XL 5) — தெரியலனா 'skip'", tl = "Size enna Owner? (eg: M 8, L 7, XL 5) — theriyalana 'skip'",
-                        en = "Which sizes, Owner? (e.g. M 8, L 7, XL 5) — or 'skip'")
-                    ProductKind.FOOTWEAR -> pick(lang,
-                        ta = "Size என்ன Owner? (உதா: 7, 8, 9) — தெரியலனா 'skip'", tl = "Size enna Owner? (eg: 7, 8, 9) — theriyalana 'skip'",
-                        en = "Which sizes, Owner? (e.g. 7, 8, 9) — or 'skip'")
-                    ProductKind.HARDWARE -> pick(lang,
+                when (styleOf(spec)) {
+                    SizeStyle.CLOTHES -> pick(lang,
+                        ta = "Size / colour என்ன Owner? (உதா: M 8, L 7, XL 5 · Blue) — தெரியலனா 'skip'",
+                        tl = "Size / colour enna Owner? (eg: M 8, L 7, XL 5 · Blue) — theriyalana 'skip'",
+                        en = "Which sizes / colours, Owner? (e.g. M 8, L 7, XL 5 · Blue) — or 'skip'")
+                    SizeStyle.SHOE -> pick(lang,
+                        ta = "Size / colour என்ன Owner? (உதா: 7, 8, 9 · Black) — தெரியலனா 'skip'",
+                        tl = "Size / colour enna Owner? (eg: 7, 8, 9 · Black) — theriyalana 'skip'",
+                        en = "Which sizes / colours, Owner? (e.g. 7, 8, 9 · Black) — or 'skip'")
+                    SizeStyle.SPEC -> if (spec.kind == ProductKind.ELECTRICAL) pick(lang,
+                        ta = "Watt / size / spec என்ன Owner? (உதா: 9W, 1.5 sqmm) — தெரியலனா 'skip'",
+                        tl = "Watt / size / spec enna Owner? (eg: 9W, 1.5 sqmm) — theriyalana 'skip'",
+                        en = "Watt / size / spec, Owner? (e.g. 9W, 1.5 sqmm) — or 'skip'")
+                    else pick(lang,
                         ta = "Size / spec என்ன Owner? (உதா: 2 inch) — தெரியலனா 'skip'", tl = "Size / spec enna Owner? (eg: 2 inch) — theriyalana 'skip'",
                         en = "Size / spec, Owner? (e.g. 2 inch) — or 'skip'")
-                    ProductKind.ELECTRONICS -> pick(lang,
-                        ta = "Model / spec என்ன Owner? — தெரியலனா 'skip'", tl = "Model / spec enna Owner? — theriyalana 'skip'", en = "Model / spec, Owner? — or 'skip'")
-                    ProductKind.BEVERAGE -> pick(lang,
+                    SizeStyle.MODEL -> pick(lang,
+                        ta = "Model / compatibility என்ன Owner? (உதா: Type-C, Samsung) — தெரியலனா 'skip'",
+                        tl = "Model / compatibility enna Owner? (eg: Type-C, Samsung) — theriyalana 'skip'",
+                        en = "Model / compatibility, Owner? (e.g. Type-C, Samsung) — or 'skip'")
+                    SizeStyle.VEHICLE -> pick(lang,
+                        ta = "எந்த vehicle / model-க்கு Owner? (உதா: Splendor, Activa) — தெரியலனா 'skip'",
+                        tl = "Endha vehicle / model-ku Owner? (eg: Splendor, Activa) — theriyalana 'skip'",
+                        en = "Which vehicle / model is it for, Owner? (e.g. Splendor, Activa) — or 'skip'")
+                    SizeStyle.VOLUME -> if (spec.kind == ProductKind.BEVERAGE && !packetDairy.containsMatchIn(spec.name)) pick(lang,
                         ta = "1 $piece எத்தனை ml? — தெரியலனா 'skip'", tl = "1 $piece evlo ml? — theriyalana 'skip'", en = "How many ml in 1 $piece? — or 'skip'")
-                    ProductKind.LIQUID -> pick(lang,
+                    else pick(lang,
                         ta = "1 $piece எத்தனை litre / ml? — தெரியலனா 'skip'", tl = "1 $piece evlo litre / ml? — theriyalana 'skip'",
                         en = "How many litres / ml in 1 $piece? — or 'skip'")
                     else -> pick(lang,
                         ta = "ஒரு $piece எத்தனை gram? — தெரியலனா 'skip'", tl = "Oru $piece evlo gram? — theriyalana 'skip'", en = "How many grams is 1 $piece? — or 'skip'")
                 }
             }
+            ItemField.BATCH -> pick(lang,
+                ta = "Batch number என்ன Owner? — தெரியலனா 'skip'", tl = "Batch number enna Owner? — theriyalana 'skip'", en = "Batch number, Owner? — or 'skip'")
+            ItemField.EXPIRY -> pick(lang,
+                ta = "Expiry date எப்போ Owner? (உதா: 03/2027) — தெரியலனா 'skip'", tl = "Expiry date eppo Owner? (eg: 03/2027) — theriyalana 'skip'",
+                en = "Expiry date, Owner? (e.g. 03/2027) — or 'skip'")
             ItemField.PURCHASE -> {
                 val per = one(purchaseUnit(spec))
                 pick(lang, ta = "ஒரு $per purchase rate எவ்வளவு?", tl = "Oru $per purchase rate evlo?", en = "Purchase rate for 1 $per?")
@@ -556,6 +770,8 @@ object KaiInventory {
         val said = shown(spec.qty!!, spec.unit)
         lines += if (KaiUnits.canon(spec.unit) == t.baseUnit) said else "$said = ${shown(t.baseQty, t.baseUnit)}"
         spec.size?.let { s -> lines += if (spec.sizeQty != null) pick(lang, ta = "ஒவ்வொன்றும் $s", tl = "Ovvonnum $s", en = "$s each") + (t.weight?.let { " ($it)" } ?: "") else "Size: $s" }
+        spec.batch?.let { lines += "Batch: $it" }
+        spec.expiry?.let { lines += "Expiry: ${expiryShown(it)}" }
         spec.purchase?.let { p ->
             lines += "Purchase ${rupees(p)}/${one(spec.purchasePer ?: purchaseUnit(spec))}" + (t.purchaseValue?.let { " → ${rupees(it)}" } ?: "")
         }
@@ -580,6 +796,10 @@ object KaiInventory {
             tl = "Seri Owner. $body Stock add pannattuma?",
             en = "Okay Owner. $body Shall I add it to stock?")
     }
+
+    /** "31/03/2027" (a whole month said shows as "03/2027"). */
+    fun expiryShown(d: LocalDate): String =
+        if (d.dayOfMonth == d.lengthOfMonth()) "%02d/%d".format(d.monthValue, d.year) else "%02d/%02d/%d".format(d.dayOfMonth, d.monthValue, d.year)
 
     fun plain(q: BigDecimal): String = q.stripTrailingZeros().let { if (it.scale() < 0) it.setScale(0) else it }.toPlainString()
 

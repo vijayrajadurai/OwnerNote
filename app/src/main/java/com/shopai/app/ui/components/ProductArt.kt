@@ -53,6 +53,8 @@ fun ProductArt(name: String, category: String?, unit: String?, modifier: Modifie
     val kind = remember(name, category, unit) { KaiInventory.artKindOf(name, category, unit) }
     // Eggs get their own tray picture (they are kept as grocery, but a rice sack would be the wrong picture).
     val egg = remember(name) { KaiInventory.isEgg(name) }
+    // Oil in the grocery shows an oil can, not the rice sack.
+    val liquid = remember(name, kind) { KaiInventory.isLiquid(com.shopai.app.brain.tools.ItemSpec(name, kind)) }
     val palette = if (egg) eggPalette else paletteOf(kind)
     // Pop in once when the card first shows (a product Kai just added appears with it).
     var shown by remember { mutableStateOf(false) }
@@ -88,7 +90,7 @@ fun ProductArt(name: String, category: String?, unit: String?, modifier: Modifie
             )
             translate(top = lift) {
                 rotate(degrees = (bob - 0.5f) * 6f, pivot = Offset(this.size.width / 2f, this.size.height * 0.9f)) {
-                    scale(scale = pop, pivot = center) { if (egg) eggTray(palette) else drawKind(kind, palette) }
+                    scale(scale = pop, pivot = center) { if (egg) eggTray(palette) else drawKind(kind, palette, liquid) }
                 }
             }
         }
@@ -115,36 +117,52 @@ private data class ArtPalette(val background: Color, val main: Color, val dark: 
 
 private fun paletteOf(kind: ProductKind): ArtPalette = when (kind) {
     ProductKind.GROCERY -> ArtPalette(Color(0xFFFFF4E0), Color(0xFFD9B77E), Color(0xFF9C7A45), Color(0xFFF2DDB5), Color(0xFF2E7D32))
-    ProductKind.BEVERAGE -> ArtPalette(Color(0xFFFFEBEE), Color(0xFF8D2C2C), Color(0xFF5D1A1A), Color(0xFFFFCDD2), Color(0xFFD32F2F))
-    ProductKind.LIQUID -> ArtPalette(Color(0xFFFFFDE7), Color(0xFFF9C74F), Color(0xFFB8860B), Color(0xFFFFF3B0), Color(0xFF2E7D32))
-    ProductKind.GARMENT -> ArtPalette(Color(0xFFE3F2FD), Color(0xFF42A5F5), Color(0xFF1565C0), Color(0xFFBBDEFB), Color(0xFFFFFFFF))
-    ProductKind.FOOTWEAR -> ArtPalette(Color(0xFFF3E5F5), Color(0xFF8D6E63), Color(0xFF4E342E), Color(0xFFD7CCC8), Color(0xFFFFFFFF))
-    ProductKind.HARDWARE -> ArtPalette(Color(0xFFECEFF1), Color(0xFF90A4AE), Color(0xFF455A64), Color(0xFFCFD8DC), Color(0xFFFFB300))
-    ProductKind.ELECTRONICS -> ArtPalette(Color(0xFFE8EAF6), Color(0xFF37474F), Color(0xFF212121), Color(0xFF90A4AE), Color(0xFF3F51B5))
     ProductKind.FMCG -> ArtPalette(Color(0xFFE8F5E9), Color(0xFF43A047), Color(0xFF1B5E20), Color(0xFFC8E6C9), Color(0xFFE53935))
+    ProductKind.SNACKS -> ArtPalette(Color(0xFFFFF3E0), Color(0xFFFFA726), Color(0xFFE65100), Color(0xFFFFE0B2), Color(0xFFD81B60))
+    ProductKind.BEVERAGE -> ArtPalette(Color(0xFFFFEBEE), Color(0xFF8D2C2C), Color(0xFF5D1A1A), Color(0xFFFFCDD2), Color(0xFFD32F2F))
+    ProductKind.HOMECARE -> ArtPalette(Color(0xFFE0F7FA), Color(0xFF26C6DA), Color(0xFF00838F), Color(0xFFB2EBF2), Color(0xFFFFFFFF))
+    ProductKind.GARMENT -> ArtPalette(Color(0xFFE3F2FD), Color(0xFF42A5F5), Color(0xFF1565C0), Color(0xFFBBDEFB), Color(0xFFFFFFFF))
+    ProductKind.HARDWARE -> ArtPalette(Color(0xFFECEFF1), Color(0xFF90A4AE), Color(0xFF455A64), Color(0xFFCFD8DC), Color(0xFFFFB300))
+    ProductKind.ELECTRICAL -> ArtPalette(Color(0xFFFFFDE7), Color(0xFFFFEE58), Color(0xFF9E9D24), Color(0xFFFFFFFF), Color(0xFF616161))
+    ProductKind.ELECTRONICS -> ArtPalette(Color(0xFFE8EAF6), Color(0xFF37474F), Color(0xFF212121), Color(0xFF90A4AE), Color(0xFF3F51B5))
+    ProductKind.STATIONERY -> ArtPalette(Color(0xFFFFF8E1), Color(0xFFFFC107), Color(0xFF6D4C41), Color(0xFFFFE0B2), Color(0xFFE91E63))
+    ProductKind.FOOTWEAR -> ArtPalette(Color(0xFFF3E5F5), Color(0xFF8D6E63), Color(0xFF4E342E), Color(0xFFD7CCC8), Color(0xFFFFFFFF))
+    ProductKind.KITCHENWARE -> ArtPalette(Color(0xFFF5F5F5), Color(0xFFB0BEC5), Color(0xFF546E7A), Color(0xFFECEFF1), Color(0xFF263238))
+    ProductKind.PHARMACY -> ArtPalette(Color(0xFFE8F5E9), Color(0xFFEF5350), Color(0xFFC62828), Color(0xFFFFFFFF), Color(0xFF2E7D32))
     ProductKind.VEGETABLE -> ArtPalette(Color(0xFFFFEBEE), Color(0xFFE53935), Color(0xFFB71C1C), Color(0xFFFFCDD2), Color(0xFF43A047))
-    ProductKind.MEAT -> ArtPalette(Color(0xFFE1F5FE), Color(0xFF4FC3F7), Color(0xFF0277BD), Color(0xFFB3E5FC), Color(0xFFFF7043))
-    ProductKind.SWEETS -> ArtPalette(Color(0xFFFFF3E0), Color(0xFFFFA726), Color(0xFFE65100), Color(0xFFFFE0B2), Color(0xFFD81B60))
     ProductKind.POOJA -> ArtPalette(Color(0xFFFFF8E1), Color(0xFFD4A017), Color(0xFF8D6E00), Color(0xFFFFECB3), Color(0xFFFF6F00))
     ProductKind.AGRI -> ArtPalette(Color(0xFFF1F8E9), Color(0xFFE8E2C8), Color(0xFF8D8150), Color(0xFFFFFFFF), Color(0xFF558B2F))
+    ProductKind.AUTO -> ArtPalette(Color(0xFFECEFF1), Color(0xFFB0BEC5), Color(0xFF37474F), Color(0xFFFFFFFF), Color(0xFFFF7043))
+    ProductKind.BAKERY -> ArtPalette(Color(0xFFFFF3E0), Color(0xFFD7A15A), Color(0xFF8D5524), Color(0xFFF6D7A7), Color(0xFFFFFFFF))
+    ProductKind.TOYS -> ArtPalette(Color(0xFFFCE4EC), Color(0xFFEC407A), Color(0xFFAD1457), Color(0xFFF8BBD0), Color(0xFF7E57C2))
+    ProductKind.BABY -> ArtPalette(Color(0xFFE1F5FE), Color(0xFFFFFFFF), Color(0xFF4FC3F7), Color(0xFFB3E5FC), Color(0xFFF48FB1))
+    ProductKind.MEAT -> ArtPalette(Color(0xFFE1F5FE), Color(0xFF4FC3F7), Color(0xFF0277BD), Color(0xFFB3E5FC), Color(0xFFFF7043))
     ProductKind.GENERAL -> ArtPalette(Color(0xFFF5F0E6), Color(0xFFC8A472), Color(0xFF8D6E46), Color(0xFFE6D3B3), Color(0xFF6D4C41))
 }
 
-private fun DrawScope.drawKind(kind: ProductKind, p: ArtPalette) {
+private fun DrawScope.drawKind(kind: ProductKind, p: ArtPalette, liquid: Boolean) {
     when (kind) {
-        ProductKind.GROCERY -> riceSack(p)
-        ProductKind.BEVERAGE -> bottle(p)
-        ProductKind.LIQUID -> oilCan(p)
-        ProductKind.GARMENT -> shirt(p)
-        ProductKind.FOOTWEAR -> shoe(p)
-        ProductKind.HARDWARE -> screw(p)
-        ProductKind.ELECTRONICS -> charger(p)
+        ProductKind.GROCERY -> if (liquid) oilCan(p) else riceSack(p)
         ProductKind.FMCG -> tube(p)
+        ProductKind.SNACKS -> laddus(p)
+        ProductKind.BEVERAGE -> bottle(p)
+        ProductKind.HOMECARE -> sprayBottle(p)
+        ProductKind.GARMENT -> shirt(p)
+        ProductKind.HARDWARE -> screw(p)
+        ProductKind.ELECTRICAL -> bulb(p)
+        ProductKind.ELECTRONICS -> charger(p)
+        ProductKind.STATIONERY -> pencil(p)
+        ProductKind.FOOTWEAR -> shoe(p)
+        ProductKind.KITCHENWARE -> pot(p)
+        ProductKind.PHARMACY -> capsule(p)
         ProductKind.VEGETABLE -> tomato(p)
-        ProductKind.MEAT -> fish(p)
-        ProductKind.SWEETS -> laddus(p)
         ProductKind.POOJA -> diya(p)
         ProductKind.AGRI -> fertilizerSack(p)
+        ProductKind.AUTO -> sparkPlug(p)
+        ProductKind.BAKERY -> bread(p)
+        ProductKind.TOYS -> balloon(p)
+        ProductKind.BABY -> feedingBottle(p)
+        ProductKind.MEAT -> fish(p)
         ProductKind.GENERAL -> carton(p)
     }
 }
@@ -436,4 +454,132 @@ private fun DrawScope.fertilizerSack(p: ArtPalette) {
     }
     drawPath(leaf, p.accent)
     drawLine(p.light, Offset(w * 0.38f, h * 0.64f), Offset(w * 0.62f, h * 0.40f), strokeWidth = w * 0.02f)
+}
+
+/** A spray bottle — home care and cleaning. */
+private fun DrawScope.sprayBottle(p: ArtPalette) {
+    val w = size.width
+    val h = size.height
+    drawRoundRect(p.main, topLeft = Offset(w * 0.30f, h * 0.36f), size = Size(w * 0.40f, h * 0.56f), cornerRadius = CornerRadius(w * 0.08f))
+    drawRoundRect(p.dark, topLeft = Offset(w * 0.40f, h * 0.22f), size = Size(w * 0.20f, h * 0.16f), cornerRadius = CornerRadius(w * 0.03f))
+    drawRoundRect(p.dark, topLeft = Offset(w * 0.26f, h * 0.14f), size = Size(w * 0.34f, h * 0.10f), cornerRadius = CornerRadius(w * 0.03f))
+    drawLine(p.dark, Offset(w * 0.58f, h * 0.24f), Offset(w * 0.66f, h * 0.34f), strokeWidth = w * 0.04f, cap = StrokeCap.Round)
+    drawRoundRect(p.accent, topLeft = Offset(w * 0.36f, h * 0.54f), size = Size(w * 0.28f, h * 0.22f), cornerRadius = CornerRadius(w * 0.03f))
+    listOf(0.20f to 0.12f, 0.14f to 0.20f, 0.18f to 0.28f).forEach { (x, y) -> drawCircle(p.light, radius = w * 0.025f, center = Offset(w * x, h * y)) }
+}
+
+/** A light bulb — electricals and lighting. */
+private fun DrawScope.bulb(p: ArtPalette) {
+    val w = size.width
+    val h = size.height
+    drawCircle(p.main, radius = w * 0.26f, center = Offset(w * 0.5f, h * 0.38f))
+    drawCircle(p.light.copy(alpha = 0.8f), radius = w * 0.07f, center = Offset(w * 0.40f, h * 0.30f))
+    drawRoundRect(p.accent, topLeft = Offset(w * 0.38f, h * 0.62f), size = Size(w * 0.24f, h * 0.20f), cornerRadius = CornerRadius(w * 0.03f))
+    for (i in 0..2) drawLine(p.dark, Offset(w * 0.38f, h * (0.66f + i * 0.05f)), Offset(w * 0.62f, h * (0.66f + i * 0.05f)), strokeWidth = w * 0.015f)
+    for (a in listOf(-150.0, -90.0, -30.0)) {
+        val r = Math.toRadians(a)
+        drawLine(p.dark.copy(alpha = 0.5f), Offset(w * 0.5f + (w * 0.32f * Math.cos(r)).toFloat(), h * 0.38f + (h * 0.32f * Math.sin(r)).toFloat()),
+            Offset(w * 0.5f + (w * 0.42f * Math.cos(r)).toFloat(), h * 0.38f + (h * 0.42f * Math.sin(r)).toFloat()), strokeWidth = w * 0.025f, cap = StrokeCap.Round)
+    }
+}
+
+/** A pencil — stationery. */
+private fun DrawScope.pencil(p: ArtPalette) {
+    val w = size.width
+    val h = size.height
+    rotate(degrees = -35f, pivot = Offset(w * 0.5f, h * 0.5f)) {
+        drawRect(p.main, topLeft = Offset(w * 0.18f, h * 0.42f), size = Size(w * 0.52f, h * 0.16f))
+        drawRect(p.accent, topLeft = Offset(w * 0.10f, h * 0.42f), size = Size(w * 0.08f, h * 0.16f))
+        val tip = Path().apply {
+            moveTo(w * 0.70f, h * 0.42f)
+            lineTo(w * 0.88f, h * 0.50f)
+            lineTo(w * 0.70f, h * 0.58f)
+            close()
+        }
+        drawPath(tip, p.light)
+        drawCircle(p.dark, radius = w * 0.025f, center = Offset(w * 0.86f, h * 0.50f))
+    }
+}
+
+/** A steel pot — kitchenware and household goods. */
+private fun DrawScope.pot(p: ArtPalette) {
+    val w = size.width
+    val h = size.height
+    drawRoundRect(p.main, topLeft = Offset(w * 0.18f, h * 0.36f), size = Size(w * 0.64f, h * 0.48f), cornerRadius = CornerRadius(w * 0.10f))
+    drawRoundRect(p.dark, topLeft = Offset(w * 0.14f, h * 0.30f), size = Size(w * 0.72f, h * 0.08f), cornerRadius = CornerRadius(w * 0.04f))
+    drawRoundRect(p.dark, topLeft = Offset(w * 0.04f, h * 0.44f), size = Size(w * 0.16f, h * 0.06f), cornerRadius = CornerRadius(w * 0.03f))
+    drawRoundRect(p.dark, topLeft = Offset(w * 0.80f, h * 0.44f), size = Size(w * 0.16f, h * 0.06f), cornerRadius = CornerRadius(w * 0.03f))
+    drawLine(p.light, Offset(w * 0.28f, h * 0.46f), Offset(w * 0.28f, h * 0.72f), strokeWidth = w * 0.03f, cap = StrokeCap.Round)
+}
+
+/** A capsule with a red cross — pharmacy. */
+private fun DrawScope.capsule(p: ArtPalette) {
+    val w = size.width
+    val h = size.height
+    rotate(degrees = -30f, pivot = Offset(w * 0.5f, h * 0.5f)) {
+        drawRoundRect(p.main, topLeft = Offset(w * 0.16f, h * 0.38f), size = Size(w * 0.36f, h * 0.24f), cornerRadius = CornerRadius(w * 0.12f))
+        drawRoundRect(p.light, topLeft = Offset(w * 0.44f, h * 0.38f), size = Size(w * 0.40f, h * 0.24f), cornerRadius = CornerRadius(w * 0.12f))
+        drawRect(p.light, topLeft = Offset(w * 0.44f, h * 0.38f), size = Size(w * 0.10f, h * 0.24f))
+    }
+    drawRect(p.accent, topLeft = Offset(w * 0.70f, h * 0.10f), size = Size(w * 0.06f, h * 0.18f))
+    drawRect(p.accent, topLeft = Offset(w * 0.64f, h * 0.16f), size = Size(w * 0.18f, h * 0.06f))
+}
+
+/** A spark plug — automobile spare parts. */
+private fun DrawScope.sparkPlug(p: ArtPalette) {
+    val w = size.width
+    val h = size.height
+    drawRoundRect(p.light, topLeft = Offset(w * 0.40f, h * 0.08f), size = Size(w * 0.20f, h * 0.34f), cornerRadius = CornerRadius(w * 0.06f))
+    drawRect(p.dark, topLeft = Offset(w * 0.32f, h * 0.42f), size = Size(w * 0.36f, h * 0.14f))
+    drawRect(p.main, topLeft = Offset(w * 0.40f, h * 0.56f), size = Size(w * 0.20f, h * 0.22f))
+    for (i in 0..3) drawLine(p.dark.copy(alpha = 0.5f), Offset(w * 0.40f, h * (0.59f + i * 0.05f)), Offset(w * 0.60f, h * (0.61f + i * 0.05f)), strokeWidth = w * 0.015f)
+    drawLine(p.dark, Offset(w * 0.5f, h * 0.78f), Offset(w * 0.5f, h * 0.88f), strokeWidth = w * 0.03f)
+    drawLine(p.accent, Offset(w * 0.5f, h * 0.88f), Offset(w * 0.60f, h * 0.88f), strokeWidth = w * 0.03f, cap = StrokeCap.Round)
+}
+
+/** A loaf of bread — bakery and fresh foods. */
+private fun DrawScope.bread(p: ArtPalette) {
+    val w = size.width
+    val h = size.height
+    val loaf = Path().apply {
+        moveTo(w * 0.14f, h * 0.80f)
+        lineTo(w * 0.14f, h * 0.46f)
+        cubicTo(w * 0.14f, h * 0.20f, w * 0.86f, h * 0.20f, w * 0.86f, h * 0.46f)
+        lineTo(w * 0.86f, h * 0.80f)
+        close()
+    }
+    drawPath(loaf, p.main)
+    drawRect(p.light, topLeft = Offset(w * 0.20f, h * 0.48f), size = Size(w * 0.60f, h * 0.28f))
+    for (i in 0..2) drawLine(p.dark, Offset(w * (0.30f + i * 0.18f), h * 0.28f), Offset(w * (0.38f + i * 0.18f), h * 0.36f), strokeWidth = w * 0.03f, cap = StrokeCap.Round)
+}
+
+/** A balloon with a string — toys, gifts and party supplies. */
+private fun DrawScope.balloon(p: ArtPalette) {
+    val w = size.width
+    val h = size.height
+    drawOval(p.main, topLeft = Offset(w * 0.26f, h * 0.08f), size = Size(w * 0.48f, h * 0.56f))
+    drawOval(p.light.copy(alpha = 0.7f), topLeft = Offset(w * 0.36f, h * 0.18f), size = Size(w * 0.10f, h * 0.14f))
+    val knot = Path().apply {
+        moveTo(w * 0.46f, h * 0.66f)
+        lineTo(w * 0.54f, h * 0.66f)
+        lineTo(w * 0.50f, h * 0.62f)
+        close()
+    }
+    drawPath(knot, p.dark)
+    val string = Path().apply {
+        moveTo(w * 0.50f, h * 0.66f)
+        cubicTo(w * 0.40f, h * 0.76f, w * 0.60f, h * 0.84f, w * 0.48f, h * 0.94f)
+    }
+    drawPath(string, p.accent, style = Stroke(width = w * 0.02f, cap = StrokeCap.Round))
+}
+
+/** A feeding bottle — baby care. */
+private fun DrawScope.feedingBottle(p: ArtPalette) {
+    val w = size.width
+    val h = size.height
+    drawOval(p.accent, topLeft = Offset(w * 0.42f, h * 0.06f), size = Size(w * 0.16f, h * 0.16f))
+    drawRoundRect(p.dark, topLeft = Offset(w * 0.34f, h * 0.20f), size = Size(w * 0.32f, h * 0.10f), cornerRadius = CornerRadius(w * 0.03f))
+    drawRoundRect(p.main, topLeft = Offset(w * 0.32f, h * 0.30f), size = Size(w * 0.36f, h * 0.60f), cornerRadius = CornerRadius(w * 0.10f))
+    drawRoundRect(p.light, topLeft = Offset(w * 0.32f, h * 0.58f), size = Size(w * 0.36f, h * 0.32f), cornerRadius = CornerRadius(w * 0.10f))
+    for (i in 0..2) drawLine(p.dark, Offset(w * 0.36f, h * (0.42f + i * 0.12f)), Offset(w * 0.44f, h * (0.42f + i * 0.12f)), strokeWidth = w * 0.02f)
 }

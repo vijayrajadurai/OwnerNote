@@ -188,3 +188,44 @@ Flowers, Bread → Sweets & Bakery.
 
 Result: **Tamil Nadu shops 62 / 62**, owners 100 / 100, combinations 150 + 120 + 80 all pass. Full JVM suite: **1212 tests, 0
 failures.** `ProductArt.kt` (5 new pictures) is not compiled here (Android build blocked); Pixel 8 blocked.
+
+## The owner's 20 shop categories — `feature/kai-shop-categories`
+
+Owner gave 20 categories with their products and units ("intha categories yellam shop owners enna solli stock pannuvanga atha
+add pannidu"). Kai's product kinds are now exactly those categories (+ Meat & Fish), with the owner's names as the category label:
+Grocery & Staples · FMCG & Personal Care · Snacks & Confectionery · Beverages & Dairy · Home Care & Cleaning · Garments & Textiles ·
+Hardware & Plumbing · Electricals & Lighting · Mobile & Electronics · Stationery & Office Supplies · Footwear & Accessories ·
+Kitchenware & Household · Pharmacy & Medical · Fruits & Vegetables · Pooja & Religious Items · Agriculture & Gardening ·
+Automobile Spare Parts · Bakery & Fresh Foods · Toys, Gifts & Party · Baby Care & Hygiene.
+
+What Kai asks now, per category (one question at a time, every extra detail skippable):
+- **Size of one piece** — grams (FMCG, packed snacks, detergent, baby food), litre / ml (anything poured: oil, milk, juice,
+  phenyl, syrup, engine oil, pooja oil), **size / colour** (garments, footwear: "M 10 L 10 XL 10 white" → "M 10, L 10, XL 10 · White"),
+  size / spec (hardware), watt / size / spec (electricals), **model / compatibility** (mobile), **vehicle / model** (auto spares).
+  Nothing for loose grocery, vegetables, stationery, kitchenware, toys, belts / wallets / bags.
+- **Pharmacy: batch number and expiry**; **bakery: expiry** ("03/2027", "15/08/2027", "March 2027").
+- **Units** the owner listed: tube (= piece), set, roll (fabric / wire / hose → metre), ream (paper kept in reams), basket, crate,
+  tablet / maathirai, strip (→ tablets), coil, dozen, tray, pkt. Bought by the pack, sold by the piece where shops do that
+  (rice bag / tomato crate / mango basket → kg; strip of tablets bought and sold by the strip, kept in tablets; box of medicine →
+  strips; box of masks / bandages → pieces). Greens are kept in kattu; fertilizer and cement in bags.
+- Words: Tanglish, Tamil and English for each category, and two-word names that decide together ("engine oil" = auto, "vilakku
+  ennai" = pooja, "baby soap" = baby care, "hair oil" = FMCG, "tube light" = electricals, "phone cover" / "tempered glass" = mobile,
+  "lunch box" = kitchenware, "return gift" = gifts, "paint brush" = hardware, "detergent powder" = home care).
+- Inventory pictures for every category (spray bottle, bulb, pencil, pot, capsule, spark plug, bread, balloon, feeding bottle …;
+  oil in the grocery shows an oil can).
+
+Bugs found by the new tests and fixed: "Power bank" was read as a bank (money) → joined to "Powerbank" before anything else;
+"A4 paper" lost "A4"; "Return gift" lost "Return"; "7, 8, 9 black" kept only the colour; a box of bandages was asked in strips.
+
+**Batch / expiry — honest limit:** Kai saves the batch and expiry with the product (product notes) and shows them in the summary.
+It does NOT mark the product batch-tracked in the books: Kai's stock in / out and the stock screen's buttons do not choose a batch
+yet, and the books reject a movement without a batch for a batch-tracked product. Batch-wise stock (first-expiry-first-out,
+expiry alerts) is the next step.
+
+Category labels changed (stock, unit and price expectations unchanged): tests updated to the owner's names. Products already saved
+under earlier labels ("Grocery", "Liquids", "Sweets & Bakery" …) keep their picture (`productsSavedUnderEarlierLabelsKeepTheirPicture`).
+
+Tests: `twentyShopCategories` — **133 / 133** owner dialogues across all 20 categories (each checked on the inventory: unit,
+quantity, pack, purchase / selling per stock unit, category, size / colour / model / vehicle, batch, expiry; some followed by a
+sale). All earlier checks still pass (owners 100, combinations 150 + 120 + 80, Tamil Nadu 62). Full JVM suite: **1215 tests,
+0 failures.** `ProductArt.kt`, `AppKaiTools.kt` not compiled here (Android build blocked); Pixel 8 blocked.

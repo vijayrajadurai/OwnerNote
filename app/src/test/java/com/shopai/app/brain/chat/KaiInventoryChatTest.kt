@@ -157,7 +157,7 @@ class KaiInventoryChatTest {
         assertTrue(near(c.stock, "240"))
         assertTrue(near(c.conversions["BOX"], "48"))
         assertTrue("purchase kept apart from selling", near(c.purchase, "28") && near(c.selling, "35"))
-        assertEquals("FMCG", c.category)
+        assertEquals("FMCG & Personal Care", c.category)
         assertEquals("200 g", c.size)
         assertEquals("exactly one movement", listOf(Inventory.Move(c.id, BigDecimal("240"), "OPENING", "")), inv.moves)
         // Saying yes again saves nothing more.
@@ -203,7 +203,7 @@ class KaiInventoryChatTest {
         assertEquals("KG", r.unit)
         assertTrue(near(r.stock, "250") && near(r.conversions["BAG"], "25"))
         assertTrue("₹1,400 a bag = ₹56 a kg", near(r.purchase, "56") && near(r.selling, "65"))
-        assertEquals("Grocery", r.category)
+        assertEquals("Grocery & Staples", r.category)
     }
 
     @Test
@@ -220,7 +220,7 @@ class KaiInventoryChatTest {
         assertTrue(s.card!!.lines.contains("Ovvonnum 1 litre (24 litre)"))
         say("aama")
         assertEquals("BOTTLE", inv.item("Oil").unit)
-        assertEquals("Liquids", inv.item("Oil").category)
+        assertEquals("Grocery & Staples", inv.item("Oil").category)
     }
 
     @Test
@@ -231,13 +231,13 @@ class KaiInventoryChatTest {
         assertTrue(s.card!!.lines.contains("Size: M 8, L 7, XL 5"))
         assertTrue(s.reply.text.contains("Shirt — 20 pieces."))
         say("aama")
-        assertEquals("Garments", inv.item("Shirt").category)
+        assertEquals("Garments & Textiles", inv.item("Shirt").category)
         assertEquals("M 8, L 7, XL 5", inv.item("Shirt").size)
     }
 
     @Test
     fun shirtSizeIsAskedAsSizesNotWeight() {
-        assertEquals("Size enna Owner? (eg: M 8, L 7, XL 5) — theriyalana 'skip'", say("Shirt 20 pieces add pannu").reply.text)
+        assertEquals("Size / colour enna Owner? (eg: M 8, L 7, XL 5 · Blue) — theriyalana 'skip'", say("Shirt 20 pieces add pannu").reply.text)
         assertEquals("Oru piece purchase rate evlo?", say("skip").reply.text)
     }
 
@@ -262,14 +262,14 @@ class KaiInventoryChatTest {
 
     @Test
     fun slippersArePairs() {
-        assertEquals("Size enna Owner? (eg: 7, 8, 9) — theriyalana 'skip'", say("Slippers 10 pairs add pannu").reply.text)
+        assertEquals("Size / colour enna Owner? (eg: 7, 8, 9 · Black) — theriyalana 'skip'", say("Slippers 10 pairs add pannu").reply.text)
         assertEquals("Oru pair purchase rate evlo?", say("7 8 9").reply.text)
     }
 
     @Test
     fun chargersAreAskedTheirModelNotWeight() {
         assertEquals("Seri Owner 👍 1 box-la evlo pieces irukku?", say("Charger 2 box add pannu").reply.text)
-        assertEquals("Model / spec enna Owner? — theriyalana 'skip'", say("10").reply.text)
+        assertEquals("Model / compatibility enna Owner? (eg: Type-C, Samsung) — theriyalana 'skip'", say("10").reply.text)
     }
 
     // ------------------------------------------------------------------ unit safety, corrections, cancel, failure
@@ -351,7 +351,7 @@ class KaiInventoryChatTest {
         assertEquals(ProductKind.FMCG, KaiInventory.kindOf("Colgate", "BOX"))
         assertEquals(ProductKind.GROCERY, KaiInventory.kindOf("Rice", "BAG"))
         assertEquals(ProductKind.BEVERAGE, KaiInventory.kindOf("Coke", "CASE"))
-        assertEquals(ProductKind.LIQUID, KaiInventory.kindOf("Sunflower Oil", "BOX"))
+        assertEquals(ProductKind.GROCERY, KaiInventory.kindOf("Sunflower Oil", "BOX"))
         assertEquals(ProductKind.GARMENT, KaiInventory.kindOf("Shirt", "PCS"))
         assertEquals(ProductKind.FOOTWEAR, KaiInventory.kindOf("Slippers", "PAIR"))
         assertEquals(ProductKind.HARDWARE, KaiInventory.kindOf("Screws", "BOX"))
@@ -619,7 +619,7 @@ class KaiInventoryChatTest {
         assertEquals("KG", r.unit)
         assertTrue(near(r.stock, "1250") && near(r.conversions["BAG"], "25"))
         assertTrue("₹1,400 a bag = ₹56 a kg", near(r.purchase, "56") && near(r.selling, "65"))
-        assertEquals("Grocery", r.category)
+        assertEquals("Grocery & Staples", r.category)
         assertEquals(listOf(Inventory.Move(r.id, BigDecimal("1250"), "OPENING", "")), inv.moves)
         // The saved reply offers the Inventory screen, and the product's picture there is the rice sack.
         assertTrue(done.card!!.buttons.any { it.action == KaiAction.OpenRecord("INVENTORY") })
@@ -640,7 +640,7 @@ class KaiInventoryChatTest {
             Triple("Arisi", "Grocery", "KG") to ProductKind.GROCERY,
             Triple("Ponni Rice", "General", "BAG") to ProductKind.GROCERY,
             Triple("Coke", "Beverages", "BOTTLE") to ProductKind.BEVERAGE,
-            Triple("Sunflower Oil", null, "LITRE") to ProductKind.LIQUID,
+            Triple("Sunflower Oil", null, "LITRE") to ProductKind.GROCERY,
             Triple("Shirt", "Garments", "PCS") to ProductKind.GARMENT,
             Triple("Kids frock", "Kids wear", "PCS") to ProductKind.GARMENT,
             Triple("Slippers", "Footwear", "PAIR") to ProductKind.FOOTWEAR,
@@ -687,5 +687,37 @@ class KaiInventoryChatTest {
         assertEquals("Seri Owner 👍 1 bag evlo kg?", say("Arisi 2 moota vandhuchu").reply.text)
         assertTrue(KaiInventory.isEgg("Mutta") && KaiInventory.isEgg("முட்டை") && KaiInventory.isEgg("Country eggs"))
         assertTrue(!KaiInventory.isEgg("மூட்டை") && !KaiInventory.isEgg("Arisi"))
+    }
+
+    @Test
+    fun productsSavedUnderEarlierLabelsKeepTheirPicture() {
+        // Labels Kai used before the owner's 20 categories (already in owners' books) still map to the right picture.
+        val cases = listOf(
+            Triple("Rice", "Grocery", "KG") to ProductKind.GROCERY,
+            Triple("Colgate", "FMCG", "PCS") to ProductKind.FMCG,
+            Triple("Item 1", "Liquids", "BOTTLE") to ProductKind.BEVERAGE,
+            Triple("Laddu", "Sweets & Bakery", "PCS") to ProductKind.SNACKS,
+            Triple("Item 2", "Sweets & Bakery", "PCS") to ProductKind.SNACKS,
+            Triple("Item 3", "Vegetables & Fruits", "KG") to ProductKind.VEGETABLE,
+            Triple("Item 4", "Pooja & Flowers", "PACK") to ProductKind.POOJA,
+            Triple("Item 5", "Agri & Fertilizer", "BAG") to ProductKind.AGRI,
+            Triple("Item 6", "Garments", "PCS") to ProductKind.GARMENT,
+            Triple("Item 7", "Electronics", "PCS") to ProductKind.ELECTRONICS,
+            Triple("Item 8", "Pharmacy & Medical", "STRIP") to ProductKind.PHARMACY,
+        )
+        for ((p, kind) in cases) assertEquals(p.toString(), kind, KaiInventory.artKindOf(p.first, p.second, p.third))
+    }
+
+    @Test
+    fun expiryDatesAsOwnersSayThem() {
+        val today = LocalDate.of(2026, 10, 9)
+        assertEquals(LocalDate.of(2027, 3, 31), KaiInventory.expiryIn("03/2027", today))
+        assertEquals(LocalDate.of(2027, 3, 31), KaiInventory.expiryIn("3-27", today))
+        assertEquals(LocalDate.of(2027, 8, 15), KaiInventory.expiryIn("15/08/2027", today))
+        assertEquals(LocalDate.of(2027, 3, 31), KaiInventory.expiryIn("March 2027", today))
+        assertEquals(LocalDate.of(2026, 12, 31), KaiInventory.expiryIn("dec 26", today))
+        assertNull(KaiInventory.expiryIn("theriyala", today))
+        assertEquals("03/2027", KaiInventory.expiryShown(LocalDate.of(2027, 3, 31)))
+        assertEquals("15/08/2027", KaiInventory.expiryShown(LocalDate.of(2027, 8, 15)))
     }
 }

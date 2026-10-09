@@ -93,7 +93,12 @@ object KaiStock {
         "kattu" to "BUNDLE", "கட்டு" to "BUNDLE", "crate" to "CASE", "crates" to "CASE",
         "dabba" to "CAN", "tin" to "CAN", "tins" to "CAN", "டப்பா" to "CAN", "seepu" to "SEEPU", "சீப்பு" to "SEEPU", "thaar" to "THAAR", "தார்" to "THAAR",
         "churul" to "COIL", "coil" to "COIL", "coils" to "COIL", "சுருள்" to "COIL", "muzham" to "MUZHAM", "mulam" to "MUZHAM", "முழம்" to "MUZHAM",
-        "bucket" to "BUCKET", "buckets" to "BUCKET", "பக்கெட்" to "BUCKET", "கிலோ" to "KG", "பாக்கெட்" to "PACK", "meter" to "METER", "metre" to "METER", "ஜோடி" to "PAIR", "can" to "CAN", "cans" to "CAN",
+        "bucket" to "BUCKET", "buckets" to "BUCKET", "பக்கெட்" to "BUCKET",
+        // The owner's 20 shop categories: tube (toothpaste) = piece; set, roll, ream, basket / koodai, tablet / maathirai.
+        "tube" to "PCS", "tubes" to "PCS", "pkt" to "PACK", "pkts" to "PACK", "set" to "SET", "sets" to "SET", "roll" to "ROLL", "rolls" to "ROLL",
+        "ream" to "REAM", "reams" to "REAM", "basket" to "BASKET", "baskets" to "BASKET", "koodai" to "BASKET", "kooda" to "BASKET", "கூடை" to "BASKET",
+        "tablet" to "TABLET", "tablets" to "TABLET", "tab" to "TABLET", "tabs" to "TABLET", "capsule" to "TABLET", "capsules" to "TABLET",
+        "maathirai" to "TABLET", "mathirai" to "TABLET", "மாத்திரை" to "TABLET", "கிலோ" to "KG", "பாக்கெட்" to "PACK", "meter" to "METER", "metre" to "METER", "ஜோடி" to "PAIR", "can" to "CAN", "cans" to "CAN",
         "gram" to "GRAM", "grams" to "GRAM", "gm" to "GRAM", "gms" to "GRAM", "g" to "GRAM", "ml" to "ML", "dozens" to "DOZEN",
     )
 
@@ -154,14 +159,17 @@ object KaiStock {
     private fun spokenName(rest: String): String {
         val words = rest.split(' ').filter { it.isNotEmpty() }
         return words.filterIndexed { i, w ->
-            fun isNumber(x: String?) = x != null && (x.any(Char::isDigit) || x in numberWords)
+            fun isNumber(x: String?) = x != null && (x.first().isDigit() || x in numberWords)
             // A unit word is the unit right after a number, or right before one with no unit after it ("arisi moota 50");
             // otherwise it is part of the name ("Bucket 10 piece", "Parle G 10 box"). A one-letter unit only after a number.
             val afterNumber = isNumber(words.getOrNull(i - 1))
             val beforeNumber = isNumber(words.getOrNull(i + 1)) && words.getOrNull(i + 2)?.let { it in units } != true
             val unit = w in units && (afterNumber || (w.length > 1 && (beforeNumber || words.none(::isNumber))))
-            w !in fillers && !unit && w !in numberWords && w.none(Char::isDigit) &&
-                (inWords + outWords).none { k -> k.split(' ').contains(w) }
+            // "Return gift" keeps its "return" (a gift, not goods coming back).
+            val returnGift = w == "return" && words.getOrNull(i + 1)?.startsWith("gift") == true
+            // A word that starts with a letter keeps its digits ("A4 paper"); a number or "200g" is not part of the name.
+            returnGift || (w !in fillers && !unit && w !in numberWords && !w.first().isDigit() &&
+                (inWords + outWords).none { k -> k.split(' ').contains(w) })
         }.joinToString(" ").trim().trim('-')
     }
 
@@ -291,6 +299,11 @@ object KaiStock {
             "CAN" -> if (one) "can" else "cans"
             "TRAY" -> if (one) "tray" else "trays"
             "COIL" -> if (one) "coil" else "coils"
+            "TABLET" -> if (one) "tablet" else "tablets"
+            "SET" -> if (one) "set" else "sets"
+            "ROLL" -> if (one) "roll" else "rolls"
+            "REAM" -> if (one) "ream" else "reams"
+            "BASKET" -> if (one) "basket" else "baskets"
             "BUCKET" -> if (one) "bucket" else "buckets"
             "SEEPU" -> "seepu"
             "THAAR" -> "thaar"
@@ -321,6 +334,11 @@ object KaiStock {
         "PAIR" -> "pairs"
         "CAN" -> "cans"
         "TRAY" -> "trays"
+        "TABLET" -> "tablets"
+        "SET" -> "sets"
+        "ROLL" -> "rolls"
+        "REAM" -> "reams"
+        "BASKET" -> "baskets"
         "GRAM" -> "grams"
         "ML" -> "ml"
         else -> unit.lowercase(Locale.ROOT)

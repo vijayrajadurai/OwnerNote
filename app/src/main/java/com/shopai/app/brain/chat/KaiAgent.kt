@@ -447,7 +447,8 @@ class KaiAgent(
     }
 
     private suspend fun answerOwner(raw: String): KaiTurn {
-        val said = raw.trim()
+        // "Power bank" is a product, not a bank: product names that hold a money word are joined first.
+        val said = com.shopai.app.brain.tools.KaiInventory.joinProductWords(raw.trim())
         ownerWords = said
         val lang = KaiLanguage.forChat(said)
         val scope = runCatching { memory?.current()?.let { "${it.businessId.orEmpty()}:${it.ownerId.orEmpty()}" } }.getOrNull()
@@ -2579,7 +2580,8 @@ class KaiAgent(
         val text = com.shopai.app.brain.tools.KaiSpokenWords.normalize(said)
         val l = item.lang
         // "cancel" ends it; "venam" / "illa" ends it too — except where it means "skip this detail" (size / rates are optional).
-        val optional = item.asked in setOf(com.shopai.app.brain.tools.ItemField.SIZE, com.shopai.app.brain.tools.ItemField.PURCHASE, com.shopai.app.brain.tools.ItemField.SELLING)
+        val optional = item.asked in setOf(com.shopai.app.brain.tools.ItemField.SIZE, com.shopai.app.brain.tools.ItemField.BATCH,
+            com.shopai.app.brain.tools.ItemField.EXPIRY, com.shopai.app.brain.tools.ItemField.PURCHASE, com.shopai.app.brain.tools.ItemField.SELLING)
         if (Regex("""(?i)(?<![\p{L}])cancel(?![\p{L}])|ரத்து""").containsMatchIn(said) || (KaiConversationSemantics.cancelsDraft(said) && !optional)) {
             return act(KaiAction.CancelStock(item.key), l)
         }
@@ -2641,6 +2643,7 @@ class KaiAgent(
             weight = spec.size?.takeIf { spec.sizeQty != null }, packSize = spec.size?.takeIf { spec.sizeQty == null },
             secondaryUnit = pack, perSecondary = pack?.let { spec.perPack },
             purchasePrice = t.purchasePerBase, sellingPrice = t.sellingPerBase, openingQty = t.baseQty,
+            batchNo = spec.batch, expiry = spec.expiry,
         )) ?: run {
             tools.log(com.shopai.app.brain.tools.KaiIntents.CREATE_PRODUCT, "inventory engine", "${spec.name} not created", ActionStatus.FAILED, null, item.said)
             return say(lang, KaiMood.ERROR, null,
