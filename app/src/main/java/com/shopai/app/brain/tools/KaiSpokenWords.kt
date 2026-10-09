@@ -57,6 +57,46 @@ object KaiSpokenWords {
         // "இருக்கு" is "is there", never a name with "-க்கு" ("இர்-ku"); "எவ்வளவு" is "evlo".
         "இருக்கு" to "irukku", "இருக்கா" to "irukka", "இருக்குதா" to "irukka", "இருக்குது" to "irukku",
         "எவ்வளவு" to "evlo", "எவ்ளோ" to "evlo", "எத்தனை" to "ethana",
+        "க்கு" to "ku", "கு" to "ku", "நீ" to "nee", "நீங்க" to "neenga", "நீங்கள்" to "neengal",
+        // ---- money: who gave, who paid, who owes (what typed Tanglish already says) ----
+        "குடுத்தான்" to "kuduthaan", "கொடுத்தான்" to "kuduthaan", "குடுத்தாரு" to "kuduthaaru", "கொடுத்தாரு" to "kuduthaaru",
+        "குடுத்தார்" to "kuduthar", "கொடுத்தார்" to "kuduthar", "குடுத்தாங்க" to "kuduthaanga", "கொடுத்தாங்க" to "kuduthaanga",
+        "குடுத்தா" to "kudutha", "கொடுத்தா" to "kudutha", "குடுத்துட்டான்" to "kuduthutaan", "கொடுத்துட்டான்" to "kuduthutaan",
+        "குடுத்துட்டாரு" to "kuduthutaru", "கொடுத்துட்டாரு" to "kuduthutaru", "குடுத்துட்டாங்க" to "kuduthutaanga", "கொடுத்துட்டாங்க" to "kuduthutaanga",
+        "தந்தான்" to "thandhaan", "தந்தாரு" to "thandhaaru", "தந்தார்" to "thandhaaru", "தந்துட்டான்" to "thandhutaan", "தந்தாங்க" to "thandhaanga",
+        "அனுப்பினான்" to "anuppinaan", "அனுப்பிட்டான்" to "anuppitaan", "அனுப்பினாரு" to "anuppinaar", "அனுப்பினார்" to "anuppinaar",
+        "அனுப்பிட்டாரு" to "anuppitaaru", "அனுப்பினாங்க" to "anuppinaanga", "அனுப்பிட்டாங்க" to "anuppitaanga",
+        "கட்டினான்" to "kattinaan", "கட்டிட்டான்" to "kattitaan", "கட்டினாரு" to "kattinaar", "கட்டினார்" to "kattinaar", "கட்டிட்டாரு" to "kattitaru",
+        "கட்டினாங்க" to "kattinaanga",
+        "குடுத்தேன்" to "kuduthen", "கொடுத்தேன்" to "kuduthen", "குடுத்துட்டேன்" to "kuduthuten", "கொடுத்துட்டேன்" to "kuduthuten",
+        "தந்தேன்" to "kuduthen", "அனுப்பினேன்" to "anuppinen", "அனுப்பிட்டேன்" to "anuppiten", "அனுப்பிச்சேன்" to "anuppichen",
+        "கட்டினேன்" to "kattinen", "கட்டிட்டேன்" to "kattiten", "வாங்கிட்டேன்" to "vangiten", "வாங்கினேன்" to "vaanginen",
+        "பண்ணிட்டான்" to "pannitaan", "பண்ணிட்டாரு" to "pannitaaru", "பண்ணிட்டார்" to "pannitaaru", "பண்ணிட்டாங்க" to "pannitaanga",
+        "பண்ணான்" to "pannaan", "பண்ணாரு" to "pannaaru", "பண்ணார்" to "pannaaru", "பண்ணாங்க" to "pannaanga",
+        "பண்ணேன்" to "pannen", "பண்ணிட்டேன்" to "panniten", "பண்ணினேன்" to "panninen", "பண்ணிருக்கான்" to "pannirukkaan",
+        "தரணும்" to "tharanum", "தரனும்" to "tharanum", "குடுக்கணும்" to "kudukkanum", "கொடுக்கணும்" to "kodukkanum", "குடுக்கனும்" to "kudukkanum",
+        "வரணும்" to "varanum", "வாங்கணும்" to "vaanganum", "வாங்க" to "vaanga", "தருவான்" to "tharuvaan", "தருவாரு" to "tharuvaaru", "தருவேன்" to "tharuven",
+        "கடன்" to "kadan", "கடனா" to "kadana", "கடனுக்கு" to "kadanuku", "பாக்கி" to "baaki", "பாக்கியா" to "baaki", "வெச்சிருக்கான்" to "vechirukkaan",
+        "எனக்கு" to "enakku", "நான்" to "naan", "நா" to "naa", "அவன்" to "avan", "அவரு" to "avaru", "அவர்" to "avar", "அவங்க" to "avanga",
+        "கிட்ட" to "kitta", "கிட்டே" to "kitta", "இருந்து" to "irundhu", "இருந்தது" to "irundhuchu",
+        "ஜிபே" to "gpay", "கூகுள்பே" to "gpay", "போன்பே" to "phonepe", "பேடிஎம்" to "paytm", "யுபிஐ" to "upi", "பே" to "pay", "ஜிபேல" to "gpay la",
+        "பேமெண்ட்" to "payment", "பேமென்ட்" to "payment", "பேமண்ட்" to "payment", "செட்டில்" to "settle", "கிளியர்" to "clear",
+        "கேஷ்" to "cash", "கேஷா" to "cash", "ஆன்லைன்" to "online", "ஆன்லைன்ல" to "online la", "டிரான்ஸ்பர்" to "transfer", "ட்ரான்ஸ்ஃபர்" to "transfer",
+        "கிரெடிட்" to "credit", "கிரெடிட்ல" to "credit la", "க்ரெடிட்" to "credit", "டெபிட்" to "debit", "உதார்" to "udhaar",
+        "பெண்டிங்" to "pending", "பேலன்ஸ்" to "balance", "லிஸ்ட்" to "list", "டோட்டல்" to "total", "மொத்தம்" to "motham", "மொத்தமா" to "mothama",
+        "டியூ" to "due", "டேட்" to "date", "தேதி" to "thethi", "வேண்டாம்" to "venam", "வேணாம்" to "venam", "வேணும்" to "venum",
+        "கஸ்டமர்" to "customer", "சப்ளையர்" to "supplier", "ஓனர்" to "owner", "அண்ணா" to "anna", "அண்ணே" to "anna", "சார்" to "sir",
+        "சரி" to "seri", "ஓகே" to "ok", "ஆமா" to "aama", "ஆமாம்" to "aama", "இல்ல" to "illa", "இல்லை" to "illa", "சேவ்" to "save",
+        "இப்போ" to "ippo", "இப்ப" to "ippa", "இப்பொழுது" to "ippo", "எப்போ" to "eppo", "எப்ப" to "eppa", "எப்படி" to "eppadi",
+        "யார்" to "yaar", "யாரு" to "yaaru", "யாருக்கு" to "yaarukku", "யாருகிட்ட" to "yaarukitta", "யாரெல்லாம்" to "yaarellam",
+        "கொஞ்சம்" to "konjam", "ஃபுல்" to "full", "ஃபுல்லா" to "fulla", "முழுசா" to "muzhusa", "ரூபாய்" to "rupees", "ரூபா" to "rupees",
+        // ---- stock (what typed Tanglish already says) ----
+        "வித்துச்சு" to "vithuchu", "வித்துடுச்சு" to "vithiruchu", "வித்துட்டேன்" to "vithutten", "வித்தேன்" to "vithen", "விக்கல" to "vikkala",
+        "ஆயிடுச்சு" to "aagiduchu", "ஆகிடுச்சு" to "aagiduchu", "ஆயிருச்சு" to "aagiduchu", "உடைஞ்சிடுச்சு" to "udanjiduchu", "உடைஞ்சுச்சு" to "udanjuchu",
+        "கெட்டுப்போச்சு" to "kettupochu", "போயிடுச்சு" to "poiduchu", "சேர்த்துக்கோ" to "add pannu", "சேர்த்துடு" to "add pannu", "ஸ்டாக்ல" to "stock la",
+        "டேமேஜ்" to "damage", "ரிட்டர்ன்" to "return", "எக்ஸ்பைரி" to "expiry", "லோ" to "low", "ஃபாஸ்ட்" to "fast", "ஸ்லோ" to "slow", "மூவ்" to "move",
+        "ஆகுது" to "aagudhu", "ஆகல" to "agala", "சேல்ஸ்" to "sales", "இருப்பு" to "iruppu", "கையில" to "kaila",
+        "மூட்டை" to "moota", "பாட்டில்" to "bottle", "லிட்டர்" to "litre", "டஜன்" to "dozen", "பீஸ்கள்" to "pieces",
     ).sortedByDescending { it.first.length }
 
     private val wordMap = words.toMap()
@@ -75,9 +115,26 @@ object KaiSpokenWords {
     fun hasTamil(text: String) = text.any { it in '஀'..'௿' }
 
     /** The sentence with its command words in Tanglish; names and other words stay as said. */
+    /** "ரெண்டாயிரம்" = 2000, "ஐநூறு" = 500; "ஆயிரத்து ஐநூறு" = 1500. */
+    private val thousands = listOf("ஒரு ஆயிரம்" to 1, "ஆயிரம்" to 1, "ரெண்டாயிரம்" to 2, "இரண்டாயிரம்" to 2, "மூவாயிரம்" to 3, "மூணாயிரம்" to 3,
+        "நாலாயிரம்" to 4, "நான்காயிரம்" to 4, "அஞ்சாயிரம்" to 5, "ஐயாயிரம்" to 5, "ஐந்தாயிரம்" to 5, "ஆறாயிரம்" to 6, "ஏழாயிரம்" to 7,
+        "எட்டாயிரம்" to 8, "ஒம்பதாயிரம்" to 9, "ஒன்பதாயிரம்" to 9, "பத்தாயிரம்" to 10)
+    private val hundreds = listOf("நூறு" to 100, "இருநூறு" to 200, "எரநூறு" to 200, "முன்னூறு" to 300, "நானூறு" to 400, "ஐநூறு" to 500,
+        "அஞ்சூறு" to 500, "அறநூறு" to 600, "எழுநூறு" to 700, "எண்ணூறு" to 800, "தொள்ளாயிரம்" to 900)
+    private val thousandsMap = thousands.toMap() + thousands.associate { (w, n) -> w.removeSuffix("ம்") + "த்து" to n }
+    private val hundredsMap = hundreds.toMap()
+    private val amountWords = Regex("""(?<![$TA])(${thousandsMap.keys.sortedByDescending { it.length }.joinToString("|")})(?:\s+(${hundreds.map { it.first }.sortedByDescending { it.length }.joinToString("|")}))?(?![$TA])|""" +
+        """(?<![$TA])(${hundreds.map { it.first }.sortedByDescending { it.length }.joinToString("|")})(?![$TA])""")
+
+    private fun amounts(text: String): String = amountWords.replace(text) { m ->
+        val (t, h, alone) = m.destructured
+        if (alone.isNotEmpty()) hundredsMap.getValue(alone).toString()
+        else (thousandsMap.getValue(t) * 1000 + (hundredsMap[h] ?: 0)).toString()
+    }
+
     fun normalize(text: String): String {
         if (!hasTamil(text)) return text
-        var s = text
+        var s = amounts(text)
         // Units first ("மணி நேரத்துல" before "மணி").
         for ((re, unit) in units) {
             s = re.replace(s) { m -> if (m.value.endsWith("ல") || m.value.endsWith("ல்") || m.value.endsWith("லே")) "$unit la" else unit }
@@ -85,6 +142,48 @@ object KaiSpokenWords {
         s = tamilWord.replace(s) { m -> wordMap[m.value] ?: dative(m.value) ?: m.value }
         return s.replace(Regex("""\s+"""), " ").trim()
     }
+
+    /**
+     * Tamil-script words that are a name the shop keeps in English letters: "குமார்" → Kumar, "ஸ்டோர்ஸ்-ku" → Stores-ku,
+     * "ஏபிசி" → ABC (letters said one by one). Only a word that sounds like exactly one of [names]' words; a new name
+     * ("சுஜித்") stays as said.
+     */
+    fun withNames(text: String, names: List<String>): String {
+        if (!hasTamil(text)) return text
+        val nameWords = names.flatMap { it.trim().split(Regex("""\s+""")) }.filter { it.length >= 2 && !hasTamil(it) && it.any(Char::isLetter) }
+            .distinctBy { it.lowercase() }
+        if (nameWords.isEmpty()) return text
+        val shopWords = names.map { it.trim() } + nameWords
+        val tamilKept = names.flatMap { it.trim().split(Regex("""\s+""")) }.filter(::hasTamil).toSet()
+        return Regex("""([$TA]+)(-ku|-kitta)?""").replace(text) { m ->
+            val w = m.groupValues[1]
+            // A name the shop keeps in Tamil stays; "அரிசி", "டீ தூள்": goods by their common name (KaiFeed), never a person.
+            if (w in tamilKept) return@replace m.value
+            KaiFeed.productNames[w]?.let { english -> if (shopWords.any { it.equals(english, ignoreCase = true) }) return@replace english + m.groupValues[2] }
+            nameWords.filter { n -> spelled(n) == w || startsAlike(w, n) && (sounds(w, n) || sounds(w, soft(n))) }.singleOrNull()
+                ?.let { it + m.groupValues[2] } ?: m.value
+        }
+    }
+
+    private fun sounds(tamilWord: String, name: String) = com.shopai.app.util.NameSound.same(tamilWord, name)
+
+    /** "Agencies" is said "ஏஜென்சீஸ்": c / g before e / i sound soft (s / j). */
+    private fun soft(name: String) = name.replace(Regex("""(?i)c(?=[eiy])"""), "s").replace(Regex("""(?i)g(?=[ei])"""), "j")
+
+    /** Both start with a vowel, or both with a consonant ("அரிசி" is not "Raja"). */
+    private fun startsAlike(tamilWord: String, name: String): Boolean {
+        val tamilVowel = tamilWord.first() in '\u0B85'..'\u0B94'
+        val latinVowel = name.first().lowercaseChar() in "aeiou"
+        return tamilVowel == latinVowel
+    }
+
+    private val letters = mapOf('A' to "ஏ", 'B' to "பி", 'C' to "சி", 'D' to "டி", 'E' to "ஈ", 'F' to "எஃப்", 'G' to "ஜி", 'H' to "எச்",
+        'I' to "ஐ", 'J' to "ஜே", 'K' to "கே", 'L' to "எல்", 'M' to "எம்", 'N' to "என்", 'O' to "ஓ", 'P' to "பி", 'Q' to "க்யூ", 'R' to "ஆர்",
+        'S' to "எஸ்", 'T' to "டி", 'U' to "யூ", 'V' to "வி", 'W' to "டபிள்யூ", 'X' to "எக்ஸ்", 'Y' to "ஒய்", 'Z' to "இசட்")
+
+    /** "ABC" said letter by letter, as Tamil speech-to-text writes it ("ஏபிசி"). */
+    private fun spelled(word: String): String? =
+        if (word.length in 2..5 && word.all { it in 'A'..'Z' }) word.map { letters.getValue(it) }.joinToString("") else null
 
     /**
      * "ருத்ரனுக்கு" (to Ruthran) → "ருத்ரன்-ku", "குமாருக்கு" → "குமார்-ku": the

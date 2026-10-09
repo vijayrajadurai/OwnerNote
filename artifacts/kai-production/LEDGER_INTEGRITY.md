@@ -116,3 +116,25 @@ Fixed: "ABC ku 2000 anuppiachu", "neft / imps / rtgs panniten" (paid) not unders
 not understood · "Suga 5", "Biscui 2", "Horlick 3" (a product name cut short) taken as a new product · "hmm Kumar 1500 kuduthan"
 asked "'Hmm Kumar' — adhey Kumar-aa?" · "naalaiku 10 manikku Kumar ku call panna" set "Call Mani" when a customer Mani exists
 (10 manikku is a time) · same with a Tamil-script name ("குமார் kitta … 9 manikku") — the reminder wasn't linked to Kumar.
+
+## Spoken Tamil = typed Tanglish (`fix/kai-voice-tamil`)
+
+Kai Chat's mic uses the phone's ta-IN speech-to-text, which writes Tamil script — Tamil words and English loan words alike
+("குமார் 2000 ஜிபே பண்ணிட்டான்", "ஏபிசி டிரேடர்ஸுக்கு 3000 குடுத்தேன்", "ரைஸ் 2 மூட்டை வந்துச்சு"). Kai's rules read Tanglish, and
+the spoken-word map only knew time / reminder / stock words, so every text fix stopped at the mic.
+
+Now every Tamil-script message is read the way typed Tanglish is: `KaiSpokenWords.normalize` maps the money, stock and
+question words and amounts said in words ("ஆயிரத்து ஐநூறு" = 1500); `KaiSpokenWords.withNames` turns a Tamil-script word that
+sounds like one of the shop's own names into that name ("குமார்" → Kumar, "ஸ்டோர்ஸுக்கு" → Stores-ku, "ஏபிசி" → ABC);
+a new name stays as said. Kai still answers in Tamil.
+
+`KaiVoiceOwnersTest` plays lines written the way speech-to-text writes them:
+
+| Run | Correct | Wrong | Not understood |
+|---|---|---|---|
+| Before (10,000 lines) | 46.0% | 60 | 5,336 |
+| After (1,00,000 lines) | **100%** (98,644 done + 1,356 right questions) | **0** | **0** |
+
+Also fixed on the way: "டியூ டேட் வேண்டாம்" (no due date) cancelled the whole entry.
+These lines are generated from patterns; the real phone's speech-to-text can still write words differently — those go into
+`owner-lines.txt`. Not yet checked on a device.

@@ -40,6 +40,12 @@ object NameSound {
             val c = s[i]
             val next = s.getOrNull(i + 1)
             when {
+                // A final "ய்" is a vowel sound ("விஜய்" = Vijay), as a final "y" is in English letters.
+                c == 'ய' && next == PULLI && i + 2 >= s.length -> { vowels.append('i'); i++ }
+                // English "u" / "ai" written with a gliding "ய" ("டிஸ்ட்ரிபியூட்டர்" = distributor, "பெயிண்ட்" = paint): no consonant of its own.
+                c == 'ய' && i > 0 && next != null && (s[i - 1] in "ிீ" && next in "ுூ" || s[i - 1] in "ெே" && next in "ிீ") -> {
+                    vowels.append(tamilVowelSigns.getValue(next)); i++
+                }
                 c in tamilConsonants -> {
                     cons.append(tamilConsonants.getValue(c))
                     when {

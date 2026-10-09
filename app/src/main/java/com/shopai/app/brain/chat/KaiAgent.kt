@@ -448,11 +448,23 @@ class KaiAgent(
             (t.reply.mood == KaiMood.CLARIFY || t.card?.buttons?.isNotEmpty() == true || t.reply.text.trimEnd().endsWith("?"))
     }
 
+    /** The people and products of this shop, by name (for reading spoken Tamil). */
+    private suspend fun knownNames(): List<String> =
+        runCatching { books.snapshot()?.people.orEmpty() }.getOrDefault(emptyList()) +
+            runCatching { tools.products()?.map { it.name } }.getOrNull().orEmpty()
+
     private suspend fun answerOwner(raw: String): KaiTurn {
+        // Tamil script (the phone's ta-IN speech-to-text, or typed): its words in the Tanglish Kai's rules read, the shop's own
+        // names in their letters ("குமார் 2000 குடுத்தான்" = "Kumar 2000 kuduthaan") — one brain for voice and text. Kai still
+        // answers in Tamil.
+        val tamil = com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(raw)
+        val read = if (!tamil) raw.trim() else com.shopai.app.brain.tools.KaiSpokenWords.withNames(
+            com.shopai.app.brain.tools.KaiSpokenWords.normalize(raw.trim()), knownNames())
         // "Power bank" is a product, not a bank: product names that hold a money word are joined first.
-        val said = com.shopai.app.brain.tools.KaiInventory.joinProductWords(raw.trim())
+        val said = com.shopai.app.brain.tools.KaiInventory.joinProductWords(read)
         ownerWords = said
-        val lang = KaiLanguage.forChat(said)
+        val lang = if (tamil) KaiLang.TAMIL else KaiLanguage.forChat(said)
+        brain.spokenLang = if (tamil) KaiLang.TAMIL else null
         val scope = runCatching { memory?.current()?.let { "${it.businessId.orEmpty()}:${it.ownerId.orEmpty()}" } }.getOrNull()
         if (scope != null && conversationScope != null && scope != conversationScope) {
             plans.values.toList().forEach { runCatching { tools.discard(it) } }

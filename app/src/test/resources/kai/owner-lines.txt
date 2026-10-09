@@ -67,3 +67,17 @@ ENTRY  | குமார் எனக்கு 2000 தரணும்          
 ENTRY  | Sujith 2000 kadan                              | CREDIT Sujith 2000
 ENTRY  | Sujithukku 2000 kadan koduthen                 | CREDIT Sujith 2000
 ASK    | சுஜித் எவ்வளவு தரணும்                          | சுஜித்
+
+# Said into Kai Chat's mic (ta-IN speech-to-text writes Tamil script; 9 Oct 2026): each was misread before, typed Tanglish was fine.
+ENTRY  | குமார் 2000 குடுத்தான்                         | IN Kumar 2000
+ENTRY  | ரமேஷ் கிட்ட இருந்து ரெண்டாயிரம் வந்துச்சு           | IN Ramesh 2000
+ENTRY  | செல்வம் 1500 ஜிபேல அனுப்பினாரு                   | IN Selvam 1500
+ENTRY  | ஏபிசி டிரேடர்ஸுக்கு 3000 குடுத்தேன்                | OUT ABC Traders 3000
+ENTRY  | முருகன் ஸ்டோர்ஸுக்கு 1000 பே பண்ணேன்              | OUT Murugan Stores 1000
+ENTRY  | லட்சுமிக்கு ஆயிரத்து ஐநூறு கடன் குடுத்தேன்          | CREDIT Lakshmi 1500
+ENTRY  | நான் ஏபிசி டிரேடர்ஸுக்கு 2000 தரணும்              | DEBIT ABC Traders 2000
+STOCK  | கோல்கேட் 1 பாக்ஸ் வந்துச்சு                       | Colgate 288
+STOCK  | ரைஸ் 10 கிலோ வித்துச்சு                          | Rice 240
+ASK    | குமார் எவ்வளவு தரணும்                           | ₹4,000
+ASK    | கோல்கேட் ஸ்டாக் எவ்வளவு                         | 240
+REMIND | நாளைக்கு 10 மணிக்கு குமாருக்கு கால் பண்ண ரிமைண்ட் பண்ணு | 2026-10-09 10:00 Kumar

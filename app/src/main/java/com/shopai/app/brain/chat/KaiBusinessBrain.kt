@@ -1370,7 +1370,11 @@ class KaiBusinessBrain(
     private fun reply(intent: ChatIntent, mood: KaiMood, lang: KaiLang, text: String) = ChatReply(text, mood, intent)
 
     /** English only when the owner clearly writes English; otherwise Kai's usual Tanglish (or Tamil). */
+    /** Set by Kai Chat for one turn when the owner spoke / wrote Tamil script (the words reach here in Tanglish). */
+    var spokenLang: KaiLang? = null
+
     private fun chatLanguage(text: String): KaiLang {
+        spokenLang?.let { return it }
         val detected = KaiLanguage.detect(text)
         if (detected != KaiLang.ENGLISH) return detected
         val words = text.lowercase(Locale.ROOT).split(Regex("[^a-z]+")).toSet()

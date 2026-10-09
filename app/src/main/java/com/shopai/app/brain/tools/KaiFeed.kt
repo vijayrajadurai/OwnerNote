@@ -151,6 +151,17 @@ object KaiFeed {
         புளி = tamarind
         மிளகாய் = chilli
         மஞ்சள் = turmeric
+        # English goods said in Tamil letters (speech-to-text)
+        ரைஸ் = rice
+        ஆயில் = oil
+        சுகர் = sugar
+        டீ = tea
+        தூள் = powder
+        பவுடர் = powder
+        பைப் = pipe
+        பெயிண்ட் = paint
+        சட்டை = shirt
+        டால் = dal
     """)
 
     /** A unit word = Kai's unit (PCS, BOX, BAG, KG, GRAM, LITRE, ML, PACKET, BOTTLE, DOZEN, BUNDLE, METER …). */
