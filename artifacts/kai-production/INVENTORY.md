@@ -148,3 +148,16 @@ Found and fixed (root cause, existing parsers):
 
 Result: **120 / 120 + 80 / 80**; the first check still **100 / 100 + 150 / 150** — **450 stock dialogues in all.**
 Full JVM suite: **1208 tests, 0 failures.**
+
+## Eggs by the tray — `feature/kai-egg-tray`
+
+Owner asked: "Mutta oru tray vandhuruku add pannu" — does it add?
+**Before this fix it saved the wrong thing:** "mutta" had been taken as moota (sack), so Kai asked "1 bag evlo kg?" and saved a
+product called "Tray" in kg. Fixed:
+- mutta / muttai / முட்டை / egg = eggs (grocery); moota / mootta / மூட்டை = bag (sack) as before. "mutta" is no longer a bag.
+- "tray" / "trays" / "ட்ரே" is a pack unit (the books create the TRAY unit when it is first used).
+- A tray is asked like a box: "1 tray-la evlo pieces irukku?" → bought by the tray, sold by the egg (₹150 a tray = ₹5 an egg).
+- Inventory picture: an egg tray (not the rice sack).
+
+Tests: `muttaOneTrayIsEggsNeverASack` (dialogue, PCS, TRAY = 30, ₹5 / ₹6, one opening, then 2 trays in and 10 eggs sold),
+`eggWordsInEveryLanguageAndTheSackStaysASack`. Full JVM suite: **1210 tests, 0 failures.** `ProductArt.kt` (egg tray) not compiled here.

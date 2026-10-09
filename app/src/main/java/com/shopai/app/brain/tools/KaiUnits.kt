@@ -38,6 +38,7 @@ object KaiUnits {
             "G", "GM", "GMS", "GRAMS", "GRAM" -> "GRAM"
             "L", "LTR", "LITER", "LITRES", "LITRE" -> "LITRE"
             "BOXES", "BOX" -> "BOX"
+            "TRAYS", "TRAY" -> "TRAY"
             else -> it
         }
     }

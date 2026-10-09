@@ -82,12 +82,12 @@ object KaiStock {
 
     private val units = mapOf(
         "pcs" to "PCS", "pc" to "PCS", "piece" to "PCS", "pieces" to "PCS", "peice" to "PCS", "peices" to "PCS", "nos" to "PCS",
-        "kg" to "KG", "kgs" to "KG", "kilo" to "KG", "bag" to "BAG", "bags" to "BAG", "mootai" to "BAG", "moottai" to "BAG", "moota" to "BAG", "mootta" to "BAG", "mutta" to "BAG",
+        "kg" to "KG", "kgs" to "KG", "kilo" to "KG", "bag" to "BAG", "bags" to "BAG", "mootai" to "BAG", "moottai" to "BAG", "moota" to "BAG", "mootta" to "BAG",
         "sack" to "BAG", "sacks" to "BAG", "மூட்டை" to "BAG",
         "box" to "BOX", "boxes" to "BOX", "packet" to "PACK", "packets" to "PACK", "pack" to "PACK", "packs" to "PACK",
         "litre" to "LITRE", "litres" to "LITRE", "liter" to "LITRE", "ltr" to "LITRE", "dozen" to "DOZEN", "bottle" to "BOTTLE", "bottles" to "BOTTLE",
         "carton" to "CARTON", "cartons" to "CARTON", "case" to "CASE", "cases" to "CASE", "bundle" to "BUNDLE", "bundles" to "BUNDLE",
-        "strip" to "STRIP", "strips" to "STRIP", "pair" to "PAIR", "pairs" to "PAIR", "jodi" to "PAIR", "ஜோடி" to "PAIR", "can" to "CAN", "cans" to "CAN",
+        "strip" to "STRIP", "strips" to "STRIP", "pair" to "PAIR", "pairs" to "PAIR", "jodi" to "PAIR", "tray" to "TRAY", "trays" to "TRAY", "ட்ரே" to "TRAY", "ஜோடி" to "PAIR", "can" to "CAN", "cans" to "CAN",
         "gram" to "GRAM", "grams" to "GRAM", "gm" to "GRAM", "gms" to "GRAM", "g" to "GRAM", "ml" to "ML", "dozens" to "DOZEN",
     )
 
@@ -276,6 +276,7 @@ object KaiStock {
             "STRIP" -> if (one) "strip" else "strips"
             "PAIR" -> if (one) "pair" else "pairs"
             "CAN" -> if (one) "can" else "cans"
+            "TRAY" -> if (one) "tray" else "trays"
             "LITRE" -> "litre"
             "KG" -> "kg"
             "GRAM" -> if (one) "gram" else "grams"
@@ -300,6 +301,7 @@ object KaiStock {
         "STRIP" -> "strips"
         "PAIR" -> "pairs"
         "CAN" -> "cans"
+        "TRAY" -> "trays"
         "GRAM" -> "grams"
         "ML" -> "ml"
         else -> unit.lowercase(Locale.ROOT)

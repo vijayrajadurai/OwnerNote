@@ -66,7 +66,7 @@ object KaiInventory {
     private val kindWords: List<Pair<ProductKind, List<String>>> = listOf(
         ProductKind.GROCERY to listOf("rice", "arisi", "dal", "dhal", "paruppu", "sugar", "sakkarai", "sarkarai", "wheat", "godhumai", "gothumai", "atta",
             "maida", "flour", "rava", "ravai", "sooji", "salt", "uppu", "ragi", "toor", "urad", "moong", "chana", "besan", "kadalai", "poha", "aval",
-            "jaggery", "vellam", "pulses", "millet", "corn", "maavu", "அரிசி", "பருப்பு", "சர்க்கரை", "உப்பு", "மாவு", "ரவை"),
+            "jaggery", "vellam", "pulses", "millet", "corn", "maavu", "mutta", "muttai", "egg", "eggs", "முட்டை", "அரிசி", "பருப்பு", "சர்க்கரை", "உப்பு", "மாவு", "ரவை"),
         ProductKind.BEVERAGE to listOf("coke", "coca", "cola", "pepsi", "sprite", "fanta", "7up", "maaza", "frooti", "slice", "juice", "water", "bisleri",
             "aquafina", "kinley", "soda", "thums", "mirinda", "limca", "redbull", "drink", "drinks", "beverage"),
         ProductKind.LIQUID to listOf("oil", "ennai", "ennei", "nallennai", "milk", "paal", "ghee", "nei", "phenyl", "phenol", "harpic", "lizol", "cleaner",
@@ -124,8 +124,13 @@ object KaiInventory {
         return kindOf(name, unit)
     }
 
+    private val eggWords = Regex("""(?i)(?<![\p{L}])(?:mutta|muttai|egg|eggs)(?![\p{L}])|முட்டை""")
+
+    /** Eggs ("Mutta", "Muttai", "முட்டை", "Egg") — the inventory shows them with an egg tray picture. Never "மூட்டை" (a sack). */
+    fun isEgg(name: String): Boolean = eggWords.containsMatchIn(name)
+
     /** Units that hold other units ("1 box = 48 pieces") — their size is asked, never assumed. */
-    private val packUnits = setOf("BOX", "BAG", "CASE", "CARTON", "CAN", "BUNDLE", "STRIP")
+    private val packUnits = setOf("BOX", "BAG", "CASE", "CARTON", "CAN", "BUNDLE", "STRIP", "TRAY")
 
     /** What one [pack] of this kind holds when the owner didn't say: pieces of soap, kg of rice, bottles of Coke. */
     fun innerOf(kind: ProductKind, pack: String): String = when (kind) {
@@ -160,9 +165,15 @@ object KaiInventory {
         }
     }
 
-    /** The unit a price is said for: a bag of rice is bought by the bag, sold by the kg; everything else by its stock unit. */
-    fun purchaseUnit(spec: ItemSpec): String =
-        if (spec.kind == ProductKind.GROCERY && KaiUnits.canon(spec.unit) == "BAG" && baseUnit(spec) == "KG") "BAG" else baseUnit(spec)
+    /**
+     * The unit a price is said for: a bag of rice is bought by the bag and sold by the kg, a tray of eggs bought by the tray and
+     * sold by the egg; everything else by its stock unit.
+     */
+    fun purchaseUnit(spec: ItemSpec): String = when {
+        spec.kind == ProductKind.GROCERY && KaiUnits.canon(spec.unit) == "BAG" && baseUnit(spec) == "KG" -> "BAG"
+        KaiUnits.canon(spec.unit) == "TRAY" && baseUnit(spec) != "TRAY" -> "TRAY"
+        else -> baseUnit(spec)
+    }
     fun sellingUnit(spec: ItemSpec): String = baseUnit(spec)
 
     /** The next detail to ask, or null when the entry is complete. One at a time; a skipped detail is not asked again. */

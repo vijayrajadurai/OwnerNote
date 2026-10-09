@@ -51,7 +51,9 @@ import com.shopai.app.brain.tools.ProductKind
 @Composable
 fun ProductArt(name: String, category: String?, unit: String?, modifier: Modifier = Modifier, artSize: Dp = 56.dp) {
     val kind = remember(name, category, unit) { KaiInventory.artKindOf(name, category, unit) }
-    val palette = paletteOf(kind)
+    // Eggs get their own tray picture (they are kept as grocery, but a rice sack would be the wrong picture).
+    val egg = remember(name) { KaiInventory.isEgg(name) }
+    val palette = if (egg) eggPalette else paletteOf(kind)
     // Pop in once when the card first shows (a product Kai just added appears with it).
     var shown by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { shown = true }
@@ -86,11 +88,27 @@ fun ProductArt(name: String, category: String?, unit: String?, modifier: Modifie
             )
             translate(top = lift) {
                 rotate(degrees = (bob - 0.5f) * 6f, pivot = Offset(this.size.width / 2f, this.size.height * 0.9f)) {
-                    scale(scale = pop, pivot = center) { drawKind(kind, palette) }
+                    scale(scale = pop, pivot = center) { if (egg) eggTray(palette) else drawKind(kind, palette) }
                 }
             }
         }
     }
+}
+
+private val eggPalette = ArtPalette(Color(0xFFFFF8E1), Color(0xFFF3E0C7), Color(0xFFB08968), Color(0xFFFFFFFF), Color(0xFFD7B98E))
+
+/** A tray of eggs. */
+private fun DrawScope.eggTray(p: ArtPalette) {
+    val w = size.width
+    val h = size.height
+    drawRoundRect(p.dark, topLeft = Offset(w * 0.08f, h * 0.62f), size = Size(w * 0.84f, h * 0.20f), cornerRadius = CornerRadius(w * 0.05f))
+    for (row in 0..1) for (col in 0..2) {
+        val cx = w * (0.26f + col * 0.24f)
+        val cy = h * (0.50f - row * 0.16f)
+        drawOval(p.main, topLeft = Offset(cx - w * 0.10f, cy - h * 0.13f), size = Size(w * 0.20f, h * 0.26f))
+        drawOval(p.light.copy(alpha = 0.7f), topLeft = Offset(cx - w * 0.05f, cy - h * 0.09f), size = Size(w * 0.05f, h * 0.08f))
+    }
+    for (i in 0..3) drawLine(p.accent, Offset(w * (0.14f + i * 0.24f), h * 0.64f), Offset(w * (0.14f + i * 0.24f), h * 0.80f), strokeWidth = w * 0.02f)
 }
 
 private data class ArtPalette(val background: Color, val main: Color, val dark: Color, val light: Color, val accent: Color)

@@ -651,4 +651,41 @@ class KaiInventoryChatTest {
         )
         for ((p, kind) in cases) assertEquals(p.toString(), kind, KaiInventory.artKindOf(p.first, p.second, p.third))
     }
+
+    // ------------------------------------------------------------------ eggs by the tray (owner: "Mutta oru tray vandhuruku add pannu")
+
+    @Test
+    fun muttaOneTrayIsEggsNeverASack() {
+        assertEquals("Seri Owner 👍 1 tray-la evlo pieces irukku?", say("Mutta oru tray vandhuruku add pannu").reply.text)
+        assertEquals("Oru tray purchase rate evlo?", say("30").reply.text)
+        assertEquals("Oru piece selling rate evlo?", say("150").reply.text)
+        assertEquals("Seri Owner. Mutta — 1 tray = 30 pieces. Purchase ₹150. Selling value ₹180. Stock add pannattuma?", say("6").reply.text)
+        assertTrue("nothing before Confirm", inv.items.isEmpty() && inv.moves.isEmpty())
+        say("aama")
+        val e = inv.item("Mutta")
+        assertEquals("PCS", e.unit)
+        assertTrue(near(e.stock, "30") && near(e.conversions["TRAY"], "30"))
+        assertTrue("₹150 a tray = ₹5 an egg", near(e.purchase, "5") && near(e.selling, "6"))
+        assertEquals(listOf(Inventory.Move(e.id, BigDecimal("30"), "OPENING", "")), inv.moves)
+        // Next day: 2 trays in, then 10 eggs sold.
+        tap(say("Mutta 2 tray vandhuchu"))
+        assertTrue(near(inv.item("Mutta").stock, "90"))
+        tap(say("Mutta 10 pieces sale"))
+        assertTrue(near(inv.item("Mutta").stock, "80"))
+        assertEquals(3, inv.moves.size)
+    }
+
+    @Test
+    fun eggWordsInEveryLanguageAndTheSackStaysASack() {
+        for (said in listOf("Muttai 2 tray vandhuchu", "முட்டை 5 tray வந்திருக்கு", "Egg 3 trays add pannu")) {
+            val shop = Inventory()
+            val k = KaiAgent(KaiBusinessBrain(Books()), Books(), shop, { now })
+            val t = runBlocking { k.ask(said) }
+            assertTrue("$said → ${t.reply.text}", t.reply.text.contains("1 tray"))
+        }
+        // மூட்டை (sack) is not முட்டை (egg).
+        assertEquals("Seri Owner 👍 1 bag evlo kg?", say("Arisi 2 moota vandhuchu").reply.text)
+        assertTrue(KaiInventory.isEgg("Mutta") && KaiInventory.isEgg("முட்டை") && KaiInventory.isEgg("Country eggs"))
+        assertTrue(!KaiInventory.isEgg("மூட்டை") && !KaiInventory.isEgg("Arisi"))
+    }
 }
