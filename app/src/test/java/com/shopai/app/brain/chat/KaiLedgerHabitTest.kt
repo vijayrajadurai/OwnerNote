@@ -212,8 +212,9 @@ class KaiLedgerHabitTest {
         val kumar = Shop().say("Kumar yeppadi pannuvan or pannuvar correct date pannuvara illa late ah payment pannuvara")
         assertEquals("Owner, Kumar usually late-aa dhaan tharuvaanga: 2 thadava-um due date thaandi kuduthaanga " +
             "(10, 6 naal late; sarasari 8 naal). Ippo ₹4,000 — due innaikku.", kumar)
+        // A Tanglish question is answered in Tanglish (it was English before, for its "pay").
         val ramesh = Shop().say("Ramesh yeppadi pay pannuvaar?")
-        assertTrue(ramesh, ramesh.contains("Ramesh") && ramesh.contains("on time") && ramesh.contains("2"))
+        assertTrue(ramesh, ramesh.contains("Ramesh correct date-la dhaan tharuvaanga") && ramesh.contains("2 thadava"))
         val lakshmi = Shop().say("Lakshmi correct date la tharuvangala")
         assertTrue(lakshmi, lakshmi.contains("Lakshmi correct date-la dhaan tharuvaanga") && lakshmi.contains("October 12th"))
         val selvam = Shop().say("Selvam late ah tharuvana")

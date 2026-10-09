@@ -248,9 +248,12 @@ object KaiChatUnderstanding {
     }
 
     /** "late-aa", "correct date-la", "time-ku", "தாமதம்": paying after or on the due date. */
-    private val lateTalk = Regex("""(?<![\p{L}])(late|delay|thaamadham|thamadham|thaamadhama|(?:correct|sariyana|sariyaana|right)\s*-?\s*(?:date|time|thethi)|on\s*time|time\s*-?\s*(?:ku|kku))(?![\p{L}])|தாமதம|லேட்|சரியான\s*(?:தேதி|நேரம்)""")
+    private val lateTalk = Regex("""(?<![\p{L}])(late|lateaa|latea|lateah|delay|thaamadham|thamadham|thaamadhama|(?:correct|sariyana|sariyaana|right)\s*-?\s*(?:date|time|thethi)|""" +
+        // "correct ah pay pannuvaanga", "sariya kudupaana", "time la tharuvaanga": on time, said plainly.
+        """correct\s*-?\s*(?:ah|aa|a)|correcta|correctaa|crct|sariya|sariyaa|sariyaa|on\s*time|time\s*-?\s*(?:ku|kku|la|le)|timela)(?![\p{L}])|""" +
+        """தாமதம|லேட்|சரியான\s*(?:தேதி|நேரம்)|கரெக்ட்|சரியா""")
     /** A habit, not one payment: "pannuvaanga", "tharuvaara", "usually", "general-aa". */
-    private val habit = Regex("""(?<![\p{L}])(pannuv\p{L}*|tharuv\p{L}*|kudupp\p{L}*|kudupaa\p{L}*|koduppa\p{L}*|tharanga|tharaanga|tharaanga|tharraanga|""" +
+    private val habit = Regex("""(?<![\p{L}])(pannuv\p{L}*|tharuv\p{L}*|kudupp\p{L}*|kudupa\p{L}*|kodupp\p{L}*|kodupa\p{L}*|tharanga|tharaanga|tharaanga|tharraanga|""" +
         """kudukkuranga|kudukuranga|kudukkuraanga|kodukkuranga|pannuranga|pannraanga|pannranga|pannuraanga|""" +
         """usually|generally|general|generala|eppavum|eppavume|always|pays?|paying)(?![\p{L}])|பண்ணுவா|தருவா|கொடுப்பா""")
     /** More than one person: "avanga", "yaarlam", "general-aa", "ellaarum". */

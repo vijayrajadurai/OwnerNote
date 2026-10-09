@@ -92,3 +92,9 @@ STOCK  | Colgate 1 box vaanginen                        | Colgate 288
 STOCK  | Baniyan 10 vaangi irukken                      | Baniyan 60
 STOCK  | கோல்கேட் 1 பாக்ஸ் வாங்கி இருக்கேன்                | Colgate 288
 ENTRY  | Kumar kitta 2000 vaanginen                     | IN Kumar 2000
+
+# Who pays on time (owner's question, 10 Oct 2026): "correct ah" listed everyone pending; "Kumar correct ah pay pannuvana" said his balance in English.
+ASK    | yaru correct ah payment pannuvanga              | Ramesh; Kumar; Selvam; late
+ASK    | யாரு கரெக்டா பேமெண்ட் பண்ணுவாங்க                 | Ramesh; Kumar; Selvam; late
+ASK    | yaaru correct time la payment kudupanga         | Ramesh; Kumar; Selvam; late
+ASK    | Kumar correct ah pay pannuvana                  | Kumar; late-aa; thadava

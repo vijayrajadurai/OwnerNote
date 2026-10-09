@@ -1397,12 +1397,8 @@ class KaiBusinessBrain(
 
     private fun chatLanguage(text: String): KaiLang {
         spokenLang?.let { return it }
-        val detected = KaiLanguage.detect(text)
-        if (detected != KaiLang.ENGLISH) return detected
-        val words = text.lowercase(Locale.ROOT).split(Regex("[^a-z]+")).toSet()
-        val english = setOf("what", "how", "who", "whom", "when", "which", "is", "are", "does", "do", "did", "the", "much", "owe", "owes",
-            "my", "me", "i", "today", "tomorrow", "show", "tell", "total", "pay", "paid", "will", "has", "have", "from", "this", "next", "last")
-        return if (words.any { it in english }) KaiLang.ENGLISH else KaiLang.TANGLISH
+        // The same reading as Kai Chat's ("Kumar correct ah pay pannuvana" is Tanglish, not English for its "pay").
+        return KaiLanguage.forChat(text)
     }
 
     /** Start a fresh conversation (context cleared). */
