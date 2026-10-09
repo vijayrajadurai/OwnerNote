@@ -42,6 +42,8 @@ enum class ChatIntent {
     PENDING_LIST,
     /** "last 7 days la yaar yaar payment pannanga?", "pona maasam collection evlo?": payments actually made in a past period. */
     RECEIVED_PAYMENTS,
+    /** "Kumar correct date-la tharuvaara, illa late-aa?", "yaarlam late-aa pay pannuvaanga?": how people paid against their due dates. */
+    PAYMENT_BEHAVIOUR,
     UNKNOWN,
 }
 
@@ -120,6 +122,15 @@ object KaiChatUnderstanding {
         // ---- the Daily Cash Note (read only) ----
         if (named == null) cashAsk(lower)?.let { return ChatQuery(ChatIntent.DAILY_CASH, PersonRef.None, amount, period, cashAsk = it) }
 
+        // ---- how someone pays: on the due date, or after it (read from their past entries) ----
+        if (amount == null && !has(" reminder", " remind", " ninaivu") && (lateTalk.containsMatchIn(lower) && habit.containsMatchIn(lower) ||
+                has(" eppadi pay", " yeppadi pay", " epdi pay", " payment habit", " paying habit"))) {
+            val group = groupWords.containsMatchIn(lower)
+            val side = if (has(" supplier", " suppliers", " naan yaarukku", " nan yaruku", " naan yaruku")) Direction.PAYABLE else null
+            val who = if (person == PersonRef.Pronoun && group && !has(" avan ", " aval ", " avar ", " avaru ", " he ", " she ")) PersonRef.Pronoun else person
+            return ChatQuery(ChatIntent.PAYMENT_BEHAVIOUR, who, null, period, side = side, fullList = group)
+        }
+
         // ---- about one person ----
         val paidAlready = has(" already ", " kuduthana", " kuduthaana", " kuduthaan", " kuduthaara", " koduthana", " kuduthiruk", " katti", " kattina",
             " vandhucha", " vanthucha", " paid ", " has paid", " pay pannana", " ஏற்கனவே ", " கொடுத்தான", " கொடுத்தார",
@@ -127,7 +138,7 @@ object KaiChatUnderstanding {
         val lastPayment = has(" last payment", " kadaisi", " kadaisiya", " recent payment", " latest payment", " கடைசி")
         val history = has(" history", " details", " statement", " transactions", " transaction ", " varalaaru", " kanakku ", " full kanakku", " விவரம்", " கணக்கு ",
             " vanginen", " vaanginen", " vangirukk", " vaangirukk", " வாங்கினேன்")
-        val due = has(" eppo", " eppa ", " when ", " due ", " date ", " date-la", " date la", " thethi", " எப்போ", " எப்ப ", " தேதி")
+        val due = has(" eppo", " eppa ", " yeppa ", " yeppo ", " yepo ", " when ", " due ", " date ", " date-la", " date la", " thethi", " எப்போ", " எப்ப ", " தேதி")
         val balance = has(" evlo", " evvalavu", " how much", " balance", " pending", " baaki", " bakki", " tharanum", " kudukkanum", " kodukkanum",
             " varanum", " owe", " outstanding", " எவ்வளவு", " பாக்கி", " தரணும்", " கொடுக்கணும்")
         val personWords = paidAlready || lastPayment || history || due
@@ -229,6 +240,14 @@ object KaiChatUnderstanding {
         }
         return ChatQuery(intent, PersonRef.None, amount, period, side = if (intent == ChatIntent.TOTAL_PAYABLE) Direction.PAYABLE else null, fullList = listWords)
     }
+
+    /** "late-aa", "correct date-la", "time-ku", "தாமதம்": paying after or on the due date. */
+    private val lateTalk = Regex("""(?<![\p{L}])(late|delay|thaamadham|thamadham|thaamadhama|(?:correct|sariyana|sariyaana|right)\s*-?\s*(?:date|time|thethi)|on\s*time|time\s*-?\s*(?:ku|kku))(?![\p{L}])|தாமதம|லேட்|சரியான\s*(?:தேதி|நேரம்)""")
+    /** A habit, not one payment: "pannuvaanga", "tharuvaara", "usually", "general-aa". */
+    private val habit = Regex("""(?<![\p{L}])(pannuv\p{L}*|tharuv\p{L}*|kudupp\p{L}*|kudupaa\p{L}*|koduppa\p{L}*|""" +
+        """usually|generally|general|generala|eppavum|eppavume|always|pays?|paying)(?![\p{L}])|பண்ணுவா|தருவா|கொடுப்பா""")
+    /** More than one person: "avanga", "yaarlam", "general-aa", "ellaarum". */
+    private val groupWords = Regex("""(?<![\p{L}])(avanga|ivanga|avangaloda|ellarum|ellaarum|yarlam|yaarlam|yaarellam|yarellam|yaar|yar|yaaru|yaru|general|generala|everyone|who|customers|suppliers)(?![\p{L}])|அவங்க|யார்|எல்லா""")
 
     /** "naan Kumar-ku kuduthen", "Kumar kitta naan vanginen": the owner paid / bought — the supplier side of the books. */
     private fun ownerDid(lower: String): Boolean =
@@ -339,6 +358,9 @@ object KaiChatUnderstanding {
         // List / ranking words said first ("Highest pending yaar kitta?", "Ellaa pending customers list pannu").
         "highest", "smallest", "lowest", "biggest", "maximum", "minimum", "ellaa", "ella", "ellarum", "ellaarum", "ellaaroda", "ellaroda",
         "all", "list", "which", "whose", "show", "their", "payments", "collections", "pending", "dues",
+        // "Nan yaruku…", "Yeppa tharanum?", "General-ah yaarlam…": the owner, when / how words — never a name.
+        "nan", "na", "naa", "yeppa", "yeppo", "yepo", "epo", "yeppadi", "yepdi", "general", "generala", "yarlam", "yaarlam", "yaarellam",
+        "innai", "inni", "avnanga", "ivanga", "usually", "correct",
     )
 
     /**

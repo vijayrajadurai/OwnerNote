@@ -285,6 +285,11 @@ object KaiUnderstanding {
         "wants", "my", "you", "your", "he", "she", "they", "them", "him", "her", "it", "this", "that", "please", "note", "save",
         "record", "yaar", "yaaru", "yaarukku", "yar", "yaru", "yarukku", "yaarum", "yarum", "enna", "evlo", "eppo", "epdi", "sollu", "history", "last", "next", "total",
         "who", "what", "how", "when", "show", "tell", "vaaram", "motham", "collection", "moola", "romba", "konjam",
+        // When / how / who words and the days of the week ("Yeppa tharanum?", "Innaiku yaruku…", "next friday tharuvaan") — never names.
+        "eppa", "yeppa", "yeppo", "yepo", "epo", "eppadi", "yeppadi", "yepdi", "innaiku", "innai", "inniku", "inni", "naalaiku", "nalaiku", "naalai",
+        "yaruku", "yaaruku", "yarlam", "yaarlam", "yaarellam", "yarellam", "yaarlaam", "general", "generala", "usually", "correct", "late", "time",
+        "avanga", "ellarum", "ellaarum", "nethu", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
+        "thingal", "sevvai", "budhan", "vyazhan", "viyazhan", "velli", "sani", "nyayiru", "gnayiru", "kizhamai",
     )
 
     /** The person named in a new entry: the first word that is not a keyword, number or date word. */

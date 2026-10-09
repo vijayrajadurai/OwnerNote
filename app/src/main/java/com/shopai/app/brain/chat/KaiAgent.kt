@@ -504,8 +504,12 @@ class KaiAgent(
                 return draftTurns[openPayment.key]?.let { withText(it.copy(plan = plans[openPayment.key]), notSavedYet(l).reply.text) } ?: notSavedYet(l)
             }
             // "next month 5", "July 6" while a stated payment's draft is open: the draft gets that due date (still waiting for Confirm).
-            if (openPayment.key == conversationState.statedDraftKey) KaiTime.parse(said, now())?.takeIf { it.daySpecified }?.let { t ->
-                return redraftStated(openPayment, openPayment.amount, t.at.toLocalDate(), conversationState.pendingLang ?: lang)
+            // "next friday tharuvaan" to a credit / debit draft: when it will be paid — that draft's due date too.
+            val owedDraft = openPayment.kind == PlanKind.CREDIT_GIVEN || openPayment.kind == PlanKind.DEBIT_TAKEN
+            if (openPayment.key == conversationState.statedDraftKey || owedDraft && promisesPayDate(said)) {
+                KaiTime.parse(said, now())?.takeIf { it.daySpecified }?.let { t ->
+                    return redraftStated(openPayment, openPayment.amount, t.at.toLocalDate(), conversationState.pendingLang ?: lang)
+                }
             }
         }
 
@@ -849,7 +853,7 @@ class KaiAgent(
         val amount = com.shopai.app.brain.KaiUnderstanding.amountsIn(amountText, now().toLocalDate())
             .filter { it > 0 }.singleOrNull()?.let { BigDecimal.valueOf(it).setScale(2, java.math.RoundingMode.HALF_UP) }
         // "Kumar 3000 eppo tharanum?", "Kumar evlo tharanum?" ask the records — they are questions, not statements.
-        val asking = Regex("(?i)(?<![\\p{L}])(evlo|evvalavu|eppo|eppa|epo|how much|when|yaar|yaaru|yar|yaru|who)(?![\\p{L}])|(?<![\\p{L}])enna(?!\\s*(?:₹|rs\\.?)?\\s*\\d)(?![\\p{L}])|\\?|எவ்வளவு|எப்போ|யார்")
+        val asking = Regex("(?i)(?<![\\p{L}])(evlo|evvalavu|eppo|eppa|epo|yeppa|yeppo|yepo|eppadi|yeppadi|epdi|how much|when|yaar|yaaru|yar|yaru|yaruku|yarukku|yaaruku|yaarukku|yarlam|yaarlam|yaarellam|who)(?![\\p{L}])|(?<![\\p{L}])enna(?!\\s*(?:₹|rs\\.?)?\\s*\\d)(?![\\p{L}])|\\?|எவ்வளவு|எப்போ|யார்")
             .containsMatchIn(text)
         // "Selvam enaku already 3000 tharanum, ippa oru 2000 tharanum": what is already owed, and a NEW amount on top.
         if (person != null && owed != null && !asking) existingAndNew(amountText)?.let { (said, new) ->
@@ -1330,6 +1334,7 @@ class KaiAgent(
 
     /** Words said next to a name that are never who it is: time, money ways, fillers, the owner, roles. */
     private val notQualifiers = setOf(
+        "late", "lateaa", "latea", "correct", "early", "seekiram", "sikkiram", "usually", "eppavum", "eppavume",
         "inniku", "innikku", "innaiku", "innaikku", "indru", "naalaikku", "nalaikku", "naalaiku", "nalaiku", "nethu", "nethiku", "today", "tomorrow",
         "yesterday", "ippo", "ipo", "ippa", "ipa", "appo", "seri", "sari", "ok", "okay", "bro", "boss", "owner", "sir", "madam", "kanakku", "kanakkula",
         "account", "entry", "credit", "debit", "gpay", "phonepe", "paytm", "upi", "online", "bank", "card", "cheque", "mattum", "dhaan", "than",
@@ -2203,6 +2208,14 @@ class KaiAgent(
         val fromBooks = people.flatMap { p -> runCatching { tools.parties(p) }.getOrNull().orEmpty() }
             .filter { it.customer == receivable && near(it.name) }
         return (fromSearch + fromBooks).distinctBy { it.id }.take(5)
+    }
+
+    /** "next friday tharuvaan", "15th kudukkuren", "naalaikku": a pay date for the open draft — not a reminder or a new entry. */
+    private fun promisesPayDate(said: String): Boolean {
+        val lower = said.lowercase(Locale.ROOT)
+        if (Regex("""(?<![\p{L}])(remind|reminder|ninaivu|nyabagam|call|phone|alarm)(?![\p{L}])|நினைவூட்ட""").containsMatchIn(lower)) return false
+        return Regex("""(?<![\p{L}])(tharuv\p{L}*|tharen|tharean|kudupp\p{L}*|kudukkuren|kodukkuren|kudukuren|tharanum|kudukkanum|kudukanum|due|varum|pay\s*pannuv\p{L}*|will\s+pay|pays?)(?![\p{L}])|தருவ|தரேன்|கொடுப்ப|கொடுக்குறேன்""")
+            .containsMatchIn(lower) || lower.trim().split(Regex("""\s+""")).size <= 3
     }
 
     /** The Kai draft for a stated payment, prepared again: a new amount, or the due date said while it is open. */

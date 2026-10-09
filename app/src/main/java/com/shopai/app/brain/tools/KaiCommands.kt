@@ -204,6 +204,11 @@ object KaiCommands {
         "home", "house", "veettu", "ration", "iruk", "irukk", "iruku",
         // "enaku" / "enakku" / "yenakku" read as "ena" + "-ku" — the owner, never a name.
         "ena", "enak", "enakk", "enna", "yena", "yenak", "yenakk", "yenna", "una", "unak", "yaar", "yaaru", "yar", "yaru",
+        // When / how words and the days of the week ("Yeppa-ku", "Friday kitta") — never names.
+        "eppa", "yeppa", "yeppo", "yepo", "epo", "eppadi", "yeppadi", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
+        "velli", "sani", "nyayiru", "thingal", "sevvai", "budhan", "vyazhan",
+        // A clock / day word right before "call" ("10 maniku call remind pannu") — never names.
+        "maniku", "manikku", "naalaiku", "naalaikku", "nalaiku", "innaiku", "innaikku", "inniku", "innikku", "saayangalam", "raathiri", "madhiyam",
     )
 
     /** A known party in the text, else the word before -ku / kitta ("Ramesh ku", "Kumar kitta"), or after "call / to / from". */

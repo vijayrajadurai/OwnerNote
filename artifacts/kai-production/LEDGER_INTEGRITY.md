@@ -31,6 +31,25 @@ owner words → meaning → direction → CONFIRMED entity → draft (nothing wr
 | "Lokesh-ku 500 add pannu" answered the balance, wrote nothing | add-request only handled with no amount | add-entry request → a draft on the side of the record (customer credit / supplier debit) |
 | Owner reference ignored; every "Kumar House" write asked "endha Kumar?" | `KaiPrivateMemory.apply` reported every saved alias as used | report an alias only after it was actually replaced in the words |
 
+## Owner questions: who pays, when, and on time or late (`fix/kai-ledger-questions`)
+
+`KaiLedgerHabitTest` (9 tests, JVM) — the owner's own words, against a ledger with real payment history:
+
+| Said | Before | Now |
+|---|---|---|
+| "Yeppa tharanum" (after "Innaiku yar payment tharanum") | "Yeppa kitta evlo vaanganum?" — `Yeppa` read as a person | the same list with each person's due date |
+| "Nan yaruku payment tharanum yeppa tharanum" | "Yeppa-ku evlo kudukkanum?" | payables with dates (ABC Traders ₹10,000 — innaikku, Murugan Stores ₹4,000 — 15 Oct) |
+| "Innaiku yaruku payment tharanum" | "Innai kitta evlo vaanganum?" | payables due today only |
+| "Avanga correct date la … late ah payment pannuvangala" | the overdue list (someone else) | habit of the people just listed: Kumar 2 of 2 late (avg 8 days), Ramesh on time |
+| "General ah yarlam late ah payment pannuvanga" | the overdue list | late payers from history (Selvam, Kumar) and on-time payers (Ramesh, Lakshmi); no-history parties are counted, not judged |
+| "Kumar … correct date pannuvara illa late ah payment pannuvara" | Kumar's balance | "Kumar usually late-aa dhaan tharuvaanga: 2 thadava-um … (10, 6 naal late; sarasari 8 naal)" |
+| "next friday tharuvaan" to an open credit draft | "Friday kitta evlo vaanganum?" — nothing saved | the draft gets that due date; Confirm saves it with the due date |
+| "naalaiku 10 maniku call remind pannu" | reminder for "Maniku" | no invented name |
+
+How the habit is counted (`KaiBusinessBrain.habitOf`, read from `KaiBooks.history`): a settled entry with a due date is on time when
+its last payment came on or before that date, late otherwise (days late = last payment − due date); an open entry whose due date has
+passed is late now. Entries without a due date say nothing. No history → Kai says it can't tell.
+
 ## What is NOT verified here
 
 The Collect / Pay / Transactions / Dashboard **screens** read the same `PartyRepository` summaries the fake books model, but the
