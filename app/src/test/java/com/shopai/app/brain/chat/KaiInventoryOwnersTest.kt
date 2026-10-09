@@ -59,6 +59,8 @@ class KaiInventoryOwnersTest {
         val shop: String, val first: String, val answers: Map<Q, String> = emptyMap(), val exp: Exp?,
         val pre: List<String> = emptyList(), val confirm: List<String> = listOf("aama"), val stocked: Boolean = false,
         val failCreate: Boolean = false, val then: List<St> = emptyList(),
+        /** On stock already there: tap Confirm (false = answer with [confirm] instead); tap it twice; how many movements in all. */
+        val tap: Boolean = true, val tapTwice: Boolean = false, val moves: Int? = null,
     )
 
     private fun stock(shop: Inventory) {
@@ -78,7 +80,7 @@ class KaiInventoryOwnersTest {
         val k = KaiAgent(KaiBusinessBrain(Books()), Books(), shop, { now })
         val log = StringBuilder()
         // The language the owner speaks in (Kai's buttons answer in it).
-        val lang = when (o.confirm.lastOrNull()) { "ஆமா", "சரி" -> KaiLang.TAMIL; "yes" -> KaiLang.ENGLISH; else -> KaiLang.TANGLISH }
+        val lang = when (o.confirm.lastOrNull()) { "ஆமா", "சரி", "வேண்டாம்" -> KaiLang.TAMIL; "yes", "ok" -> KaiLang.ENGLISH; else -> KaiLang.TANGLISH }
         fun say(t: String): KaiTurn = runBlocking { k.ask(t) }.also { log.append("\n   » $t\n     ${it.reply.text}") }
         fun fail(why: String) = "[${o.shop}] ${o.first} — $why$log"
 
@@ -98,7 +100,8 @@ class KaiInventoryOwnersTest {
         // A movement on stock already there is a draft with a Confirm button: the owner taps it (or says yes).
         if (o.stocked && confirms.isNotEmpty() && asked(t.reply.text) == null) {
             val b = t.card?.buttons?.firstOrNull { it.action is KaiAction.ConfirmStock || it.action is KaiAction.ConfirmPlan }
-            t = if (b != null) runBlocking { k.act(b.action, lang) }!!.also { log.append("\n   [Confirm] ${it.reply.text}") } else say(confirms.removeAt(0))
+            t = if (o.tap && b != null) runBlocking { k.act(b.action, lang) }!!.also { log.append("\n   [Confirm] ${it.reply.text}") } else say(confirms.removeAt(0))
+            if (o.tapTwice && b != null) runBlocking { k.act(b.action, lang) }.also { log.append("\n   [Confirm again] ${it?.reply?.text}") }
         }
         val done = t
         val added = shop.items.filter { it.name !in before }
@@ -121,9 +124,10 @@ class KaiInventoryOwnersTest {
             }
             // Saying yes again must not save twice.
             val moves = shop.moves.size
-            say(o.confirm.last())
+            o.confirm.lastOrNull()?.let(::say)
             if (shop.moves.size != moves || shop.items.count { it.name.equals(e.name, true) } != 1) return fail("a second yes saved again")
         }
+        if (o.moves != null && shop.moves.size != o.moves) return fail("movements ${shop.moves.size} ≠ ${o.moves}: ${shop.moves}")
         for (s in o.then) {
             var st = say(s.text)
             s.follow.forEach { st = say(it) }
@@ -340,6 +344,103 @@ class KaiInventoryOwnersTest {
         println("MATRIX inventory-combinations ${cases.size - failures.size}/${cases.size}")
         failures.forEach { println("FAIL $it") }
         assertTrue("${cases.size} combinations", cases.size == 150)
+        assertTrue(failures.joinToString("\n\n"), failures.isEmpty())
+    }
+
+    // ------------------------------------------------------------------ 200 more (owner's second check): 120 new products + 80 on stock already there
+
+    private val newGoods = listOf(
+        Good("Dove soap", "4 box", a(Q.PER_PACK to "36", Q.SIZE to "100 g", Q.PURCHASE to "45", Q.SELLING to "55"), Exp("Dove Soap", "PCS", "144", "BOX" to "36", "45", "55", F)),
+        Good("Basmati rice", "8 bag", a(Q.PER_PACK to "25", Q.PURCHASE to "2500", Q.SELLING to "120"), Exp("Basmati Rice", "KG", "200", "BAG" to "25", "100", "120", G)),
+        Good("Urad dal", "6 moota", a(Q.PER_PACK to "30", Q.PURCHASE to "3600", Q.SELLING to "140"), Exp("Urad Dal", "KG", "180", "BAG" to "30", "120", "140", G)),
+        Good("Fanta", "4 case", a(Q.PER_PACK to "24", Q.SIZE to "250 ml", Q.PURCHASE to "18", Q.SELLING to "20"), Exp("Fanta", "BOTTLE", "96", "CASE" to "24", "18", "20", B)),
+        Good("Kinley water", "6 case", a(Q.PER_PACK to "12", Q.SIZE to "1 litre", Q.PURCHASE to "15", Q.SELLING to "20"), Exp("Kinley Water", "BOTTLE", "72", "CASE" to "12", "15", "20", B)),
+        Good("Gold winner oil", "3 box", a(Q.PER_PACK to "12", Q.SIZE to "1 litre", Q.PURCHASE to "160", Q.SELLING to "185"), Exp("Gold Winner Oil", "BOTTLE", "36", "BOX" to "12", "160", "185", L)),
+        Good("Milk", "40 packet", a(Q.SIZE to "500 ml", Q.PURCHASE to "22", Q.SELLING to "25"), Exp("Milk", "PACK", "40", null, "22", "25", L)),
+        Good("Kurti", "15 pieces", a(Q.SIZE to "M 5 L 5 XL 5", Q.PURCHASE to "300", Q.SELLING to "499"), Exp("Kurti", "PCS", "15", null, "300", "499", W)),
+        Good("Saree", "3 bundle", a(Q.PER_PACK to "10", Q.PURCHASE to "700", Q.SELLING to "1100"), Exp("Saree", "PCS", "30", "BUNDLE" to "10", "700", "1100", W)),
+        Good("Sandals", "6 box", a(Q.PER_PACK to "10 pairs", Q.PURCHASE to "150", Q.SELLING to "249"), Exp("Sandals", "PAIR", "60", "BOX" to "10", "150", "249", FW)),
+        Good("Nails", "2 box", a(Q.PER_PACK to "1000", Q.SIZE to "1 inch", Q.PURCHASE to "0.2", Q.SELLING to "0.5"), Exp("Nails", "PCS", "2000", "BOX" to "1000", "0.2", "0.5", H)),
+        Good("Hinges", "3 box", a(Q.PER_PACK to "50", Q.SIZE to "4 inch", Q.PURCHASE to "12", Q.SELLING to "20"), Exp("Hinges", "PCS", "150", "BOX" to "50", "12", "20", H)),
+        Good("Earphone", "4 box", a(Q.PER_PACK to "25", Q.SIZE to "boAt", Q.PURCHASE to "120", Q.SELLING to "250"), Exp("Earphone", "PCS", "100", "BOX" to "25", "120", "250", E)),
+        Good("Bulb", "6 box", a(Q.PER_PACK to "10", Q.SIZE to "9W", Q.PURCHASE to "60", Q.SELLING to "100"), Exp("Bulb", "PCS", "60", "BOX" to "10", "60", "100", E)),
+        Good("Biscuit", "8 box", a(Q.PER_PACK to "48", Q.PURCHASE to "4", Q.SELLING to "5"), Exp("Biscuit", "PCS", "384", "BOX" to "48", "4", "5", F)),
+        Good("Lays chips", "10 box", a(Q.PER_PACK to "40", Q.SIZE to "50 g", Q.PURCHASE to "8", Q.SELLING to "10"), Exp("Lays Chips", "PCS", "400", "BOX" to "40", "8", "10", F)),
+        Good("Sugar", "4 moota", a(Q.PER_PACK to "50", Q.PURCHASE to "2000", Q.SELLING to "45"), Exp("Sugar", "KG", "200", "BAG" to "50", "40", "45", G)),
+        Good("Shampoo", "3 box", a(Q.PER_PACK to "60", Q.SIZE to "8", Q.PURCHASE to "1.5", Q.SELLING to "2"), Exp("Shampoo", "PCS", "180", "BOX" to "60", "1.5", "2", F)),
+        Good("Candle", "5 box", a(Q.PER_PACK to "20", Q.PURCHASE to "5", Q.SELLING to "7"), Exp("Candle", "PCS", "100", "BOX" to "20", "5", "7", GN)),
+        Good("Surf", "5 box", a(Q.PER_PACK to "24", Q.SIZE to "500 g", Q.PURCHASE to "55", Q.SELLING to "65"), Exp("Surf", "PCS", "120", "BOX" to "24", "55", "65", F)),
+    )
+
+    /** How each owner says it: opening, the way numbers are answered, the yes. */
+    private data class Style(val opening: String, val count: (String) -> String, val rate: (String) -> String, val yes: String)
+
+    private val styles = listOf(
+        Style("{p} {q} vandhiruku, add pannidu", { it }, { it }, "aama"),
+        Style("inniku {q} {p} vandhuchu", { "$it irukku" }, { "₹$it" }, "seri"),
+        Style("{p} {q} வந்திருக்கு", { it }, { it }, "ஆமா"),
+        Style("இன்னைக்கு {p} {q} சேர்த்துடு", { "$it இருக்கு" }, { "$it ரூபாய்" }, "சரி"),
+        Style("Please add {q} {p}", { it }, { "Rs $it" }, "yes"),
+        Style("Got {q} of {p} today", { it }, { "$it rupees" }, "ok"),
+    )
+
+    @Test
+    fun hundredTwentyNewProductsSaidSixWays() {
+        val cases = newGoods.flatMap { g -> styles.map { st ->
+            val answers = g.answers.mapValues { (q, v) -> when (q) { Q.PER_PACK -> st.count(v); Q.PURCHASE, Q.SELLING -> st.rate(v); else -> v } }
+            Owner("new", st.opening.replace("{p}", g.name).replace("{q}", g.qty), answers, g.exp, confirm = listOf(st.yes))
+        } }
+        val failures = cases.mapNotNull(::play)
+        println("MATRIX inventory-new-120 ${cases.size - failures.size}/${cases.size}")
+        assertTrue("${cases.size} cases", cases.size == 120)
+        assertTrue(failures.joinToString("\n\n"), failures.isEmpty())
+    }
+
+    @Test
+    fun eightyMovementsOnStockAlreadyThere() {
+        // (product, quantity said, base units it is, the stock unit, the product's pack)
+        val lines = listOf(
+            Triple("Colgate", "2 box", 96), Triple("Colgate", "10 pieces", 10), Triple("Colgate", "1 box 6 pieces", 54),
+            Triple("Rice", "2 moota", 50), Triple("Rice", "10 kg", 10), Triple("Rice", "1 bag 5 kg", 30),
+            Triple("Oil", "1 box", 12), Triple("Oil", "6 bottle", 6),
+        )
+        fun exp(p: String, stock: Int) = when (p) {
+            "Colgate" -> Exp("Colgate", "PCS", "$stock", "BOX" to "48", "28", "35", F)
+            "Rice" -> Exp("Rice", "KG", "$stock", "BAG" to "25", "56", "65", G)
+            else -> Exp("Oil", "BOTTLE", "$stock", "BOX" to "12", category = L)
+        }
+        // language → (stock in, sale, [damage, wastage, customer return, supplier return]) and the yes
+        val said = listOf(
+            Triple("aama", listOf("{p} {q} vandhuchu", "{p} {q} vithuten"),
+                listOf("{p} {q} damage aachu", "{p} {q} wastage", "{p} {q} customer return vandhuchu", "{p} {q} supplier-ku return anuppitten")),
+            Triple("ஆமா", listOf("{p} {q} வந்திருக்கு", "{p} {q} விற்றேன்"),
+                listOf("{p} {q} சேதம்", "{p} {q} வீணா போச்சு", "{p} {q} customer return", "{p} {q} supplier return")),
+            Triple("yes", listOf("Received {q} {p}", "Sold {q} {p}"),
+                listOf("{q} {p} damaged", "{q} {p} wasted", "Customer returned {q} {p}", "Returned {q} {p} to supplier")),
+        )
+        val start = mapOf("Colgate" to 240, "Rice" to 250, "Oil" to 240)
+        val cases = mutableListOf<Owner>()
+        for ((yes, inOut, reasons) in said) lines.forEachIndexed { i, (p, q, n) ->
+            val s0 = start.getValue(p)
+            fun o(t: String, stock: Int) = Owner("stocked", t.replace("{p}", p).replace("{q}", q), exp = exp(p, stock), confirm = listOf(yes), stocked = true, moves = 1)
+            cases += o(inOut[0], s0 + n)
+            cases += o(inOut[1], s0 - n)
+            val r = i % 4
+            cases += o(reasons[r], if (r == 2) s0 + n else s0 - n)
+        }
+        // Safety on stock already there.
+        cases += Owner("safety", "Colgate 2 box vandhuchu", exp = exp("Colgate", 240), confirm = listOf("venam"), stocked = true, tap = false, moves = 0)
+        cases += Owner("safety", "Colgate 2 box வந்திருக்கு", exp = exp("Colgate", 240), confirm = listOf("வேண்டாம்"), stocked = true, tap = false, moves = 0)
+        cases += Owner("safety", "Colgate 300 pieces sale", exp = exp("Colgate", 240), stocked = true, moves = 0)
+        cases += Owner("safety", "Colgate 2 box vandhuchu", exp = exp("Colgate", 384), pre = listOf("illa 3 box dhaan"), stocked = true, moves = 1)
+        // "petti" is not a unit Kai knows: it asks pieces or boxes (never guesses); the owner says box.
+        cases += Owner("safety", "Colgate 2 petti vandhuchu", a(Q.UNIT to "box"), exp("Colgate", 336), stocked = true, moves = 1)
+        cases += Owner("safety", "Colgate 5 vandhuchu", a(Q.UNIT to "box"), exp("Colgate", 480), stocked = true, moves = 1)
+        cases += Owner("safety", "Colgate actual 230 pieces dhaan", exp = exp("Colgate", 230), stocked = true, moves = 1)
+        cases += Owner("safety", "Rice 2 moota vandhuchu", exp = exp("Rice", 300), stocked = true, tapTwice = true, moves = 1)
+        val failures = cases.mapNotNull(::play)
+        println("MATRIX inventory-stocked-80 ${cases.size - failures.size}/${cases.size}")
+        assertTrue("${cases.size} cases", cases.size == 80)
         assertTrue(failures.joinToString("\n\n"), failures.isEmpty())
     }
 }

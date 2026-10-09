@@ -125,3 +125,26 @@ Bugs the owner check found (all fixed at the root, in the existing parsers):
 | "Bata shoe 6 jodi", "செருப்பு 10 ஜோடி" | asked "pairs-aa, boxes-aa?" | jodi / ஜோடி = pair |
 | "Moong dal 3 moota" (no verb) | "edha pathi sollureenga?" | a new product's bare "name + number + unit" starts the questions (never for a product the books have — in / out isn't said) |
 | "Cement 10 bag" | "1 bag-la evlo pieces?" and kept in kg | a hardware bag is itself the stock unit |
+
+## Second owner check — 200 more combinations
+
+- **120 new products** (`hundredTwentyNewProductsSaidSixWays`): 20 products not used before (Dove soap, Basmati rice, Urad dal,
+  Fanta, Kinley water, Gold winner oil, Milk, Kurti, Saree bundles, Sandals, Nails, Hinges, Earphone, Bulb, Biscuit, Lays chips,
+  Sugar moota, Shampoo, Candle, Surf) × 6 ways of saying it (2 Tanglish, 2 Tamil script, 2 English), with answers said
+  differently too ("48 irukku", "₹28", "28 ரூபாய்", "Rs 28", "28 rupees") and different yeses (aama / seri / ஆமா / சரி / yes / ok).
+- **80 on stock already there** (`eightyMovementsOnStockAlreadyThere`): stock in, sale, damage, wastage, customer return,
+  supplier return × box / pieces / "1 box 6 pieces" / moota / kg / "1 bag 5 kg" / bottles × 3 languages (72), plus 8 safety
+  cases: cancel (Tanglish, Tamil), selling more than in stock (nothing written), "illa 3 box dhaan" correction on the draft,
+  an unknown unit word (Kai asks pieces or boxes), a number with no unit, a shelf count, Confirm tapped twice (one movement).
+
+Found and fixed (root cause, existing parsers):
+
+| Owner said | Before | Fix |
+|---|---|---|
+| "Got 4 box of Dove soap today" | "what is this about?" / "Who did you receive it from?" | "got" + a stock unit after a number = goods in (without a unit it stays money) |
+| "Colgate 2 box விற்றேன்" | "எதைப் பத்தி சொல்றீங்க?" | Tamil sale words (விற்றேன், வித்தேன், வித்துட்டேன் …) |
+| "10 pieces Colgate wasted", "Returned 2 moota Rice to supplier" | not understood | "wasted", "… to supplier" (reason: Supplier return) |
+| "illa 3 box dhaan" right after a stock draft on a product the books have | "edha pathi sollureenga?" | the same draft is corrected (same key; never a second entry) |
+
+Result: **120 / 120 + 80 / 80**; the first check still **100 / 100 + 150 / 150** — **450 stock dialogues in all.**
+Full JVM suite: **1208 tests, 0 failures.**

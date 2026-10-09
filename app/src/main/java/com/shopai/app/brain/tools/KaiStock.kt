@@ -63,12 +63,13 @@ object KaiStock {
         "out aachu", "out aagiduchu", "poiduchu", "poiduchchu", "pochu", "poachu", "pochi", "pochchu", "sale aachu", "sale achu", "sale aagiduchu",
         "vithuduchu", "vithachu", "vithuten", "vitthuten", "eduthutanga", "eduthuttanga", "eduthaanga", "eduthanga", "eduthuttaanga", "outward",
         "sell panniten", "sell pannen", "sell aachu", "sell achu", "sell panni", "sold out", "out",
-        "ஸ்டாக் வெளியே", "விற்றுவிட்டேன்", "போயிடுச்சு", "போச்சு",
+        "ஸ்டாக் வெளியே", "விற்றுவிட்டேன்", "போயிடுச்சு", "போச்சு", "விற்றேன்", "வித்தேன்", "வித்துட்டேன்", "விற்றோம்", "விற்பனை ஆச்சு",
         "sale", "sales", "sale ayiduchu", "sale aayiduchu", "sale aayidichu",
         // Lost from stock: damage, wastage, expiry, missing — and goods sent back to the supplier.
         "damage", "damaged", "damage aachu", "odanjiduchu", "udanjiduchu", "odanju pochu", "broken", "wastage", "waste", "waste aachu",
-        "kettupochu", "kettu pochu", "spoil", "spoiled", "rotten", "expiry", "expired", "expire aachu", "missing", "kaanom", "kanom",
+        "kettupochu", "kettu pochu", "spoil", "spoiled", "rotten", "expiry", "expired", "expire aachu", "missing", "kaanom", "kanom", "wasted",
         "supplier return", "purchase return", "supplier ku return", "supplier-ku return", "return anuppitten", "thiruppi anuppitten",
+        "to supplier", "to the supplier", "back to supplier",
         "kurainjirukku", "kuranjirukku", "korainjirukku", "kammiyaa irukku",
         "சேதம்", "உடைஞ்சு", "வீணா", "கெட்டுப்போச்சு", "குறைஞ்சிருக்கு",
     )
@@ -92,7 +93,7 @@ object KaiStock {
 
     private val reasons = listOf(
         "Customer return" to Regex("""(?i)customer\s+return|sales?\s+return|return\s+vand|return\s+vanth|thirumbi\s+vand|thiruppi\s+kuduth"""),
-        "Supplier return" to Regex("""(?i)supplier\s*-?\s*(?:ku\s+)?return|purchase\s+return|return\s+anupp|thiruppi\s+anupp"""),
+        "Supplier return" to Regex("""(?i)supplier\s*-?\s*(?:ku\s+)?return|purchase\s+return|return\s+anupp|thiruppi\s+anupp|returned\b.*\bto\s+(?:the\s+)?supplier"""),
         "Damage" to Regex("""(?i)damage|odanj|udanj|broken|சேதம்|உடைஞ்சு"""),
         "Expired" to Regex("""(?i)expir"""),
         "Wastage" to Regex("""(?i)wastage|waste|kettu\s*poch|spoil|rotten|வீணா|கெட்டுப்போச்சு"""),
@@ -119,7 +120,7 @@ object KaiStock {
         "serthu", "sethu", "serthudu", "inward", "outward", "owner", "kai", "please", "pls", "ah", "aa", "la", "ku", "kku", "na", "new", "pudhu",
         "puthu", "pudhusa", "puthusa", "pudhusaa", "fresh", "inventory", "inventoryku", "inventory-ku", "podu", "stockla", "stock-la", "aachu", "achu",
         "aagiduchu", "vandhachu", "vanthachu", "restock", "restocked", "the", "my", "of", "some", "konjam", "indha", "intha", "innaiku", "inniku", "today",
-        "kadaiku", "kadaila", "shop", "to", "into", "irukku", "iruku", "vandhu", "vanthu", "mattum", "ellam", "items", "photo", "edu", "edunga", "camera", "open",
+        "kadaiku", "kadaila", "shop", "to", "into", "got", "irukku", "iruku", "vandhu", "vanthu", "mattum", "ellam", "items", "photo", "edu", "edunga", "camera", "open",
         "sell", "kuduthen", "kuduthuten", "kuduthutten", "koduthen", "koduthuten", "gave", "given", "vandhuduchu", "vanthuduchu",
         "damage", "damaged", "wastage", "waste", "expiry", "expired", "missing", "customer", "supplier", "return", "returned", "sales",
         "kuraivu", "kuraichu", "kuraichi", "kuraichudu", "kuraichiru",
@@ -152,13 +153,19 @@ object KaiStock {
     }
 
     private fun direction(lower: String, product: ProductRef?): Boolean? {
-        val isIn = has(lower, inWords) || (newWords.containsMatchIn(lower) && stockContext.containsMatchIn(lower))
+        val isIn = has(lower, inWords) || (newWords.containsMatchIn(lower) && stockContext.containsMatchIn(lower)) || gotGoods(lower)
         // "out of stock" is a question about stock, not stock going out.
         val outText = lower.replace(Regex("""(?<![\p{L}])out\s+of(?![\p{L}])"""), " ")
         // "kuduthen" is money unless a known product is named and nobody is given it ("Selvam-ku … kuduthen" is a payment).
         val toSomeone = Regex("""(?<![\p{L}])[\p{L}]+\s*-?\s*(?:ku|kku|kitta)(?![\p{L}])""", RegexOption.IGNORE_CASE).containsMatchIn(lower)
         val isOut = has(outText, outWords) || (product != null && !toSomeone && has(lower, gaveWords))
         return if (isIn == isOut) null else isIn
+    }
+
+    /** "Got 4 box of Dove soap": "got" is goods coming in only with a stock unit right after a number (else it may be money). */
+    private fun gotGoods(lower: String): Boolean {
+        if (!Regex("""(?<![\p{L}])got(?![\p{L}])""").containsMatchIn(lower)) return false
+        return Regex("""(?<![\p{L}\d])(?:\d+(?:\.\d+)?)\s*([\p{L}]+)""").findAll(lower).any { units.containsKey(it.groupValues[1]) }
     }
 
     /**

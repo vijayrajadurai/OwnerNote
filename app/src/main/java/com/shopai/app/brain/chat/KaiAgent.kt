@@ -529,6 +529,8 @@ class KaiAgent(
 
         // A new product by chat: "48" / "200 gram" / "28" / "skip" / "illa 3 box dhaan" / "aama" to Kai's one question.
         if (openPayment == null) newItemAnswer(said, lang)?.let { return it }
+        // "illa 3 box dhaan" right after a stock draft: the same draft, corrected.
+        if (openPayment == null) stockDraftCorrection(said, lang)?.let { return it }
         // "box" / "pieces" to "Colgate 5 — 5 pieces-aa, 5 boxes-aa?".
         if (openPayment == null) unitPicked(said, lang)?.let { return it }
         // "aama" / "venam" to a product change; "credit" / "28" / "box" to a bill with goods.
@@ -2594,6 +2596,22 @@ class KaiAgent(
         }
         val answered = inv.answer(item.spec, asked, text, now().toLocalDate()) ?: return null
         return itemStep(item.key, inv.withDetails(answered, text).let { if (asked == com.shopai.app.brain.tools.ItemField.PURCHASE || asked == com.shopai.app.brain.tools.ItemField.SELLING) answered else it }, item.said, l)
+    }
+
+    /**
+     * "illa 3 box dhaan" / "3 box dhaan" right after a stock draft on a product the books have: the quantity is corrected in the
+     * same draft (same key, nothing written) — never a second entry. The unit said first is kept when none is said now.
+     */
+    private fun stockDraftCorrection(said: String, lang: KaiLang): KaiTurn? {
+        val last = lastDraft?.takeIf { it.second == "STOCK" } ?: return null
+        val plan = stockPlans.values.lastOrNull { it.said == last.first } ?: return null
+        val text = com.shopai.app.brain.tools.KaiSpokenWords.normalize(said).trim()
+        val m = itemCorrection.find(text) ?: return null
+        val q = (m.groupValues[1].ifEmpty { m.groupValues[3] }).toBigDecimalOrNull()?.takeIf { it.signum() > 0 } ?: return null
+        val unit = (m.groupValues[2].ifEmpty { m.groupValues[4] }).takeIf { it.isNotEmpty() }?.let(com.shopai.app.brain.tools.KaiInventory::unitOf)
+            ?: plan.conv?.input?.singleOrNull()?.unit ?: plan.unit
+        stockPlans.remove(plan.key)
+        return draftParts(plan.product, listOf(com.shopai.app.brain.tools.QtyPart(q, unit)), plan.incoming, plan.said, lang, plan.key)
     }
 
     /**
