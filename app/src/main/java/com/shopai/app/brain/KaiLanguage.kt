@@ -41,7 +41,9 @@ object KaiLanguage {
         // "Suresh gpay la 5000 pay pannan": an English word ("pay") inside a Tanglish sentence — the reply stays Tanglish.
         val tanglish = setOf("pannan", "pannaan", "pannitaan", "pannittaan", "pannen", "pannitten", "panniten", "pannu", "pannunga", "pannanum",
             "kitta", "enakku", "enaku", "tharanum", "kudukkanum", "kuduthaan", "kuduthen", "kuduthutaan", "vandhuchu", "irukku", "evlo",
-            "naan", "avan", "avar", "sollu", "vaanganum", "anuppitaan", "anuppinen", "innaikku", "naalaikku", "nalaiku")
+            "naan", "avan", "avar", "sollu", "vaanganum", "anuppitaan", "anuppinen", "innaikku", "naalaikku", "nalaiku",
+            // "Yentha stock fast move aguthu?", "stock evlo iruku": Tanglish question words and endings.
+            "yentha", "endha", "entha", "aguthu", "agudhu", "aagudhu", "agala", "aagala", "iruku", "vikkala", "vikkudhu", "vikkuthu", "innaiku")
         // "pay pannitaru", "kuduthutaanga", "anuppinaar": a Tanglish verb form, whatever its ending.
         val tanglishVerb = Regex("""(?:pann|kudu|kodu|anupp|vaang|vang|vandh|thar)[a-z]*|[a-z]+(?:itaan|ittaan|itaar|itaru|ittaru|itaanga|inaan|inaar|itten|anum|kanum)""")
         if (words.any { it in tanglish || tanglishVerb.matches(it) }) return KaiLang.TANGLISH

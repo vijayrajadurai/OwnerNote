@@ -264,3 +264,19 @@ now logged (`Kai` tag) instead of a bare "not saved".
 
 Test: `BooksAccountingTest.kaiChatProductAndOpeningStockNeedTheReviewedDraft` (Robolectric — runs with `./gradlew test` where the
 Android SDK is present; not runnable here). JVM brain suite: 1216 tests, 0 failures. AppKaiTools still not compiled here.
+
+## Stock questions: how much, what moves, what doesn't (`fix/kai-stock-questions`)
+
+`KaiStockMovementTest` (6 tests, JVM).
+
+| Said | Before | Now |
+|---|---|---|
+| "Today stock evlo iruku" | "Today product inventory-la illa" — `Today` read as a product | every product with its stock |
+| "Yentha stock fast move aguthu" | "Yentha isn't in your inventory" | best sellers of the last 30 days, with quantity and value (`KaiTools.topProducts`) |
+| "Yentha stock move agala" / "vikkala" / "dead stock" / "slow moving" | "Yentha isn't in your inventory" | products with stock on hand and no sale in the last 30 days |
+| "Indha maasam enna adhigama vithuchu" | highest pending customer | this month's best seller |
+| "Innaiku yarukita payment vanganum" | asked "Eppa remind pannanum?" | today's collections |
+
+Not moving = `KaiTools.stock(null)` with qty > 0 minus the products in `topProducts(last 30 days)`. Both read the books: the
+sales side counts **sale bill lines** (`txn_items` SALE less SALE_RETURN). A stock-out done without a bill is not a sale there, so
+the reply says "sales bill padi". With no item sales at all in the period Kai says it can't tell (otherwise every product would look unsold).

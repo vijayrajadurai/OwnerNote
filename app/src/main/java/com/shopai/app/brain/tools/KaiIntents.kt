@@ -100,7 +100,7 @@ object KaiIntents {
             is KaiCommand.Calculate -> KaiIntentKind.CALCULATE
             is KaiCommand.Reminder -> reminderKind(cmd.request)
             is KaiCommand.ScanBill -> KaiIntentKind.SCAN_BILL
-            is KaiCommand.Stock, KaiCommand.LowStock, is KaiCommand.MoneyBalance, KaiCommand.TopProducts -> KaiIntentKind.BUSINESS_QUERY
+            is KaiCommand.Stock, KaiCommand.LowStock, is KaiCommand.MoneyBalance, KaiCommand.TopProducts, KaiCommand.SlowStock -> KaiIntentKind.BUSINESS_QUERY
             KaiCommand.Question -> when {
                 KaiSmallTalk.kindOf(text) != null -> KaiIntentKind.CHAT
                 else -> when (com.shopai.app.brain.chat.KaiChatUnderstanding.understand(raw, now.toLocalDate(), people).intent) {

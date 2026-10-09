@@ -38,8 +38,10 @@ sealed interface KaiCommand {
     data object LowStock : KaiCommand
     /** "Enakku evlo cash iruku?", "Bank la evlo iruku?" */
     data class MoneyBalance(val kind: MoneyKind) : KaiCommand
-    /** "Indha month highest selling product enna?" */
+    /** "Indha month highest selling product enna?", "Yentha stock fast move aguthu?" */
     data object TopProducts : KaiCommand
+    /** "Yentha stock move agala?", "Dead stock enna?": products in stock that did not sell lately. */
+    data object SlowStock : KaiCommand
 
     /** A question for the Business Brain. */
     data object Question : KaiCommand
@@ -80,6 +82,12 @@ object KaiCommands {
         // ---- calculation ----
         KaiCalculator.solve(text)?.let { return KaiCommand.Calculate(it) }
 
+        // ---- which stock moves, which doesn't (from the sales records) ----
+        // "vikkala", "pogala", "fast-a pogudhu" alone are everyday words: they mean stock only next to a stock / item / which word.
+        val aboutStock = stockThings.containsMatchIn(t)
+        if (slowMoving.containsMatchIn(t) || aboutStock && slowVerbs.containsMatchIn(t)) return KaiCommand.SlowStock
+        if (fastMoving.containsMatchIn(t) || aboutStock && fastVerbs.containsMatchIn(t)) return KaiCommand.TopProducts
+
         // ---- money given / received ----
         payment(text, t, ::has, questionWords, knownPeople)?.let { return it }
 
@@ -88,12 +96,15 @@ object KaiCommands {
         if (has("reorder", "re-order", "re order", "out of stock") || (stockWords && has("low", "kammi", "kammiya", "kuraivu", "kuraivaa", "theerndhu", "theernthu", "mudinjiruchu", "finish", "kuranj", "குறைவு"))) {
             return KaiCommand.LowStock
         }
-        if (has("highest selling", "top selling", "best selling", "most sold", "adhigama vithadhu", "athigama vithadhu", "adhigama vikkudhu", "top product", "best product", "adhigama vithathu")) {
+        if (has("highest selling", "top selling", "best selling", "most sold", "adhigama vithadhu", "athigama vithadhu", "adhigama vikkudhu", "top product", "best product", "adhigama vithathu",
+                "adhigama vithuchu", "athigama vithuchu", "adhigam vithuchu", "adhigama vikkuthu", "athigama vikkuthu")) {
             return KaiCommand.TopProducts
         }
         if (stockWords) {
+            // "Today stock evlo iruku", "ippo motham stock": every product — a time or "all" word is not a product name.
             val product = Regex("""^(.*?)\s*(?:stock|inventory|iruppu|இருப்பு|ஸ்டாக்)""", RegexOption.IGNORE_CASE).find(text)?.groupValues?.get(1)
-                ?.replace(Regex("""(?i)\b(enakku|ennaku|my|the|how much|what is|whats|what's|enna|evlo|kadaila|shop la|la|oda|ku)\b"""), " ")
+                ?.replace(Regex("""(?i)\b(enakku|ennaku|my|the|how much|what is|whats|what's|enna|evlo|kadaila|shop la|la|oda|ku|today|todays|today's|innaiku|innaikku|inniku|innikku|""" +
+                    """ippo|ippa|ipo|current|currently|now|total|motham|mothama|ella|ellaa|all|full|kadai|shop|yentha|endha|entha|which|ennoda|unga|namma)\b"""), " ")
                 ?.replace(Regex("""\s+"""), " ")?.trim()?.takeIf { it.length >= 2 && it.any(Char::isLetter) }
             return KaiCommand.Stock(product)
         }
@@ -209,6 +220,33 @@ object KaiCommands {
         "velli", "sani", "nyayiru", "thingal", "sevvai", "budhan", "vyazhan",
         // A clock / day word right before "call" ("10 maniku call remind pannu") — never names.
         "maniku", "manikku", "naalaiku", "naalaikku", "nalaiku", "innaiku", "innaikku", "inniku", "innikku", "saayangalam", "raathiri", "madhiyam",
+    )
+
+    /** "move agala", "dead stock", "slow moving", "unsold": stock that is not selling. */
+    private val slowMoving = Regex(
+        """(?<![\p{L}])(move\s*-?\s*(?:agala|aagala|aagalai|agalai|aaga\s*maattengudhu|aagudhu\s*illa|aguthu\s*illa|aagave\s*illa|agave\s*illa)|""" +
+            """not\s+moving|non\s*-?\s*moving|slow\s*-?\s*moving|dead\s*stock|unsold|not\s+selling|didn'?t\s+sell|not\s+sold)(?![\p{L}])|நகரல""",
+        RegexOption.IGNORE_CASE,
+    )
+    /** "vikkala", "pogala", "thengi irukku", "slow-aa": not selling — when said about stock / items. */
+    private val slowVerbs = Regex(
+        """(?<![\p{L}])(vikkala|vikkalai|vikkalaye|vikkave\s*illa|vikkavey\s*illa|vitkala|vikka\s*maattengudhu|pogala|pogave\s*illa|thengi|thaengi|""" +
+            """thangi\s*irukku|slow\s*-?\s*(?:aa|ah|a|move\p{L}*|pogu\p{L}*|vikk\p{L}*))(?![\p{L}])|விக்கல|தேங்கி""",
+        RegexOption.IGNORE_CASE,
+    )
+    /** "fast move aguthu", "fast-a vikkudhu", "fast moving": what sells most. */
+    private val fastMoving = Regex(
+        """(?<![\p{L}])(fast\s*-?\s*(?:a|ah|aa)?\s*(?:move\p{L}*|moving|vikk\p{L}*|vith\p{L}*|sell\p{L}*)|vegama\s*(?:vikk\p{L}*|vith\p{L}*|move\p{L}*)|""" +
+            """seekiram\s*(?:vikk\p{L}*|vith\p{L}*|theer\p{L}*)|sikkiram\s*(?:vikk\p{L}*|vith\p{L}*)|moving\s+(?:items?|products?|stock)|""" +
+            """sells?\s+(?:the\s+)?(?:most|fast)|selling\s+fast)(?![\p{L}])|வேகமா\s*விக்""",
+        RegexOption.IGNORE_CASE,
+    )
+    /** "fast-a pogudhu", "vegama theerudhu": selling fast — when said about stock / items. */
+    private val fastVerbs = Regex("""(?<![\p{L}])((?:fast|vegama|seekiram)\s*-?\s*(?:a|ah|aa)?\s*(?:pog\p{L}*|theer\p{L}*|kaali\p{L}*))(?![\p{L}])""", RegexOption.IGNORE_CASE)
+    /** Stock, items, products — or "which one" — the words that make a selling verb about the shelf. */
+    private val stockThings = Regex(
+        """(?<![\p{L}])(stock|stocks|item|items|product|products|maal|saamaan|saman|porul|porulgal|inventory|endha|yentha|entha|which|what)(?![\p{L}])|ஸ்டாக்|பொருள்|எந்த""",
+        RegexOption.IGNORE_CASE,
     )
 
     /** A known party in the text, else the word before -ku / kitta ("Ramesh ku", "Kumar kitta"), or after "call / to / from". */

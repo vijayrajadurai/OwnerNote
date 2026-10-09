@@ -784,6 +784,7 @@ class KaiAgent(
             KaiCommand.LowStock -> lowStock(lang)
             is KaiCommand.MoneyBalance -> money(cmd.kind, lang)
             KaiCommand.TopProducts -> topProducts(text, lang, at.toLocalDate(), people)
+            KaiCommand.SlowStock -> slowStock(text, lang, at.toLocalDate(), people)
             KaiCommand.Question -> {
                 // "Colgate evlo irukku?": a product of this shop and no person — its stock, never a customer lookup.
                 if (stockAsk.containsMatchIn(text) && KaiCommands.personIn(text, people) == null) productNamed(text, products)?.let { p ->
@@ -853,7 +854,7 @@ class KaiAgent(
         val amount = com.shopai.app.brain.KaiUnderstanding.amountsIn(amountText, now().toLocalDate())
             .filter { it > 0 }.singleOrNull()?.let { BigDecimal.valueOf(it).setScale(2, java.math.RoundingMode.HALF_UP) }
         // "Kumar 3000 eppo tharanum?", "Kumar evlo tharanum?" ask the records — they are questions, not statements.
-        val asking = Regex("(?i)(?<![\\p{L}])(evlo|evvalavu|eppo|eppa|epo|yeppa|yeppo|yepo|eppadi|yeppadi|epdi|how much|when|yaar|yaaru|yar|yaru|yaruku|yarukku|yaaruku|yaarukku|yarlam|yaarlam|yaarellam|who)(?![\\p{L}])|(?<![\\p{L}])enna(?!\\s*(?:₹|rs\\.?)?\\s*\\d)(?![\\p{L}])|\\?|எவ்வளவு|எப்போ|யார்")
+        val asking = Regex("(?i)(?<![\\p{L}])(evlo|evvalavu|eppo|eppa|epo|yeppa|yeppo|yepo|eppadi|yeppadi|epdi|how much|when|yaar|yaaru|yar|yaru|yaruku|yarukku|yaaruku|yaarukku|yarukita|yarukitta|yaarukitta|yaarukita|yarkitta|yaarkitta|yarlam|yaarlam|yaarellam|who)(?![\\p{L}])|(?<![\\p{L}])enna(?!\\s*(?:₹|rs\\.?)?\\s*\\d)(?![\\p{L}])|\\?|எவ்வளவு|எப்போ|யார்")
             .containsMatchIn(text)
         // "Selvam enaku already 3000 tharanum, ippa oru 2000 tharanum": what is already owed, and a NEW amount on top.
         if (person != null && owed != null && !asking) existingAndNew(amountText)?.let { (said, new) ->
@@ -3853,20 +3854,76 @@ class KaiAgent(
         )
     }
 
+    /** "fast move aguthu" / "not moving": how far back the sales are read — the period said, else the last 30 days. */
+    private fun movementPeriod(text: String, today: LocalDate, people: List<String>): ChatPeriod =
+        KaiChatUnderstanding.understand(text, today, people).period?.takeIf { !it.from.isAfter(today) }
+            ?: ChatPeriod(today.minusDays(29), today, ChatPeriod.Kind.LAST_DAYS)
+
+    private fun movementLabel(period: ChatPeriod, lang: KaiLang, today: LocalDate): String =
+        if (period.kind == ChatPeriod.Kind.LAST_DAYS) {
+            val n = java.time.temporal.ChronoUnit.DAYS.between(period.from, minOf(period.to, today)) + 1
+            pick(lang, ta = "கடந்த $n நாள்ல", tl = "kadandha $n naal-la", en = "in the last $n days")
+        } else periodName(period, lang, today)
+
     private suspend fun topProducts(text: String, lang: KaiLang, today: LocalDate, people: List<String>): KaiTurn {
         val q = KaiChatUnderstanding.understand(text, today, people)
-        val period = q.period ?: ChatPeriod(today.withDayOfMonth(1), today, ChatPeriod.Kind.THIS_MONTH)
+        // "Yentha stock fast move aguthu?": the last 30 days of sales; "indha maasam adhigama vithadhu": this month.
+        val moving = Regex("""(?i)(?<![\p{L}])(fast|vegama|seekiram|sikkiram|moving|move)(?![\p{L}])|வேகமா""").containsMatchIn(text)
+        val period = q.period ?: if (moving) movementPeriod(text, today, people) else ChatPeriod(today.withDayOfMonth(1), today, ChatPeriod.Kind.THIS_MONTH)
         val top = tools.topProducts(period.from, minOf(period.to, today), 5) ?: return unverified(lang, "top products")
         tools.log("top products", "sales ledger", top.joinToString { it.name }, ActionStatus.ANSWERED)
         if (top.isEmpty()) return say(lang, KaiMood.CLARIFY, null,
             ta = "இந்த காலத்துல item sales பதிவுல இல்ல ஓனர்.", tl = "Owner, indha period-la item sales record illa.", en = "There are no item sales recorded for that period, Owner.")
         val best = top.first()
+        val units = if (moving) runCatching { tools.stock(null) }.getOrNull().orEmpty().associate { it.name.lowercase(Locale.ROOT) to it.unit } else emptyMap()
+        fun sold(p: com.shopai.app.brain.tools.ProductSalesFact) = units[p.name.lowercase(Locale.ROOT)]?.let { u -> qty(p.qty, u) + " — " }.orEmpty()
+        val reply = if (moving) {
+            val w = movementLabel(period, lang, today)
+            pick(lang,
+                ta = "ஓனர், $w வேகமா move ஆனது ${best.name} — ${sold(best)}${KaiFormat.rupees(best.value.toDouble())}.",
+                tl = "Owner, $w fast-aa move aanadhu ${best.name} — ${sold(best)}${KaiFormat.rupees(best.value.toDouble())}.",
+                en = "Owner, your fastest mover $w is ${best.name} — ${sold(best)}${KaiFormat.rupees(best.value.toDouble())}.")
+        } else pick(lang,
+            ta = "அதிகம் விற்றது ${best.name} — ${KaiFormat.rupees(best.value.toDouble())} ஓனர்.",
+            tl = "Owner, adhigama vithadhu ${best.name} — ${KaiFormat.rupees(best.value.toDouble())}.",
+            en = "Your best seller is ${best.name} — ${KaiFormat.rupees(best.value.toDouble())}, Owner.")
+        return KaiTurn(
+            ChatReply(reply, KaiMood.HAPPY, ChatIntent.MONTHLY_SALES),
+            KaiCard(top.mapIndexed { i, p -> "${i + 1}. ${p.name} — ${sold(p)}${KaiFormat.rupees(p.value.toDouble())}" }, emptyList()),
+        )
+    }
+
+    /**
+     * "Yentha stock move agala?": products with stock on hand and no sale in the period (the last 30 days unless said) —
+     * read from the same item-sales records as the best sellers. With no item sales recorded at all, Kai says it can't tell
+     * (every product would otherwise look unsold).
+     */
+    private suspend fun slowStock(text: String, lang: KaiLang, today: LocalDate, people: List<String>): KaiTurn {
+        val period = movementPeriod(text, today, people)
+        val w = movementLabel(period, lang, today)
+        val stock = tools.stock(null) ?: return unverified(lang, "stock")
+        val sold = tools.topProducts(period.from, minOf(period.to, today), 10_000) ?: return unverified(lang, "item sales")
+        tools.log("slow stock", "inventory + sales ledger", "${stock.size} items, ${sold.size} sold", ActionStatus.ANSWERED)
+        if (sold.isEmpty()) return say(lang, KaiMood.CLARIFY, null,
+            ta = "ஓனர், $w item-wise sales பதிவு எதுவும் இல்ல — அதனால எந்த stock move ஆகல-னு சொல்ல முடியாது. Sales bill-ல item போட்டா சொல்லுவேன்.",
+            tl = "Owner, $w item-wise sales record edhuvum illa — adhanaala endha stock move aagala-nu solla mudiyadhu. Sales bill-la item pottaa solluven.",
+            en = "Owner, there are no item-wise sales recorded $w, so I can't tell which stock isn't moving. Record items on sales bills and I'll tell you.")
+        val soldNames = sold.map { it.name.lowercase(Locale.ROOT) }.toSet()
+        val idle = stock.filter { it.qty.signum() > 0 && it.name.lowercase(Locale.ROOT) !in soldNames }.sortedByDescending { it.qty }
+        if (idle.isEmpty()) {
+            val least = sold.last()
+            return say(lang, KaiMood.HAPPY, null,
+                ta = "ஓனர், $w stock-ல இருக்குற எல்லா product-உம் கொஞ்சமாவது வித்திருக்கு. கம்மியா வித்தது ${least.name} — ${KaiFormat.rupees(least.value.toDouble())}.",
+                tl = "Owner, $w stock-la irukura ellaa product-um konjamaavadhu vithirukku. Kammiya vithadhu ${least.name} — ${KaiFormat.rupees(least.value.toDouble())}.",
+                en = "Owner, every product in stock sold at least once $w. The slowest was ${least.name} — ${KaiFormat.rupees(least.value.toDouble())}.")
+        }
         return KaiTurn(
             ChatReply(pick(lang,
-                ta = "அதிகம் விற்றது ${best.name} — ${KaiFormat.rupees(best.value.toDouble())} ஓனர்.",
-                tl = "Owner, adhigama vithadhu ${best.name} — ${KaiFormat.rupees(best.value.toDouble())}.",
-                en = "Your best seller is ${best.name} — ${KaiFormat.rupees(best.value.toDouble())}, Owner."), KaiMood.HAPPY, ChatIntent.MONTHLY_SALES),
-            KaiCard(top.mapIndexed { i, p -> "${i + 1}. ${p.name} — ${KaiFormat.rupees(p.value.toDouble())}" }, emptyList()),
+                ta = "ஓனர், sales bill படி $w ${idle.size} product ஒண்ணு கூட விக்கல (stock-ல இருக்கு):",
+                tl = "Owner, sales bill padi $w ${idle.size} product onnu kooda vikkala (stock-la irukku):",
+                en = "Owner, by your sales bills, ${idle.size} product${if (idle.size == 1) "" else "s"} in stock didn't sell $w:"), KaiMood.CONCERNED, ChatIntent.GENERAL_BUSINESS_QUERY),
+            KaiCard(idle.take(10).map { "${it.name} — ${qty(it.qty, it.unit)}" } +
+                (if (idle.size > 10) listOf(pick(lang, ta = "+ இன்னும் ${idle.size - 10}", tl = "+ innum ${idle.size - 10}", en = "+ ${idle.size - 10} more")) else emptyList()), emptyList()),
         )
     }
 

@@ -287,7 +287,7 @@ object KaiUnderstanding {
         "who", "what", "how", "when", "show", "tell", "vaaram", "motham", "collection", "moola", "romba", "konjam",
         // When / how / who words and the days of the week ("Yeppa tharanum?", "Innaiku yaruku…", "next friday tharuvaan") — never names.
         "eppa", "yeppa", "yeppo", "yepo", "epo", "eppadi", "yeppadi", "yepdi", "innaiku", "innai", "inniku", "inni", "naalaiku", "nalaiku", "naalai",
-        "yaruku", "yaaruku", "yarlam", "yaarlam", "yaarellam", "yarellam", "yaarlaam", "general", "generala", "usually", "correct", "late", "time",
+        "yaruku", "yaaruku", "yarukita", "yarukitta", "yaarukitta", "yaarukita", "yarkitta", "yaarkitta", "yarlam", "yaarlam", "yaarellam", "yarellam", "yaarlaam", "general", "generala", "usually", "correct", "late", "time",
         "avanga", "ellarum", "ellaarum", "nethu", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
         "thingal", "sevvai", "budhan", "vyazhan", "viyazhan", "velli", "sani", "nyayiru", "gnayiru", "kizhamai",
     )

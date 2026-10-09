@@ -131,7 +131,7 @@ object KaiReminderUnderstanding {
     )
     /** Asking for information, not asking Kai to do something: "evlo", "yaar", "yaarukku", "who", "யார்". */
     private val questionWords = Regex(
-        """$B(evlo|evvalavu|how much|enna|what|yaar|yaaru|yar|yaru|yaarukku|yarukku|yaruku|yaroda|yaaroda|yaar\s*kitta|yar\s*kitta|who|whom|whose)$E|யார்|யாருக்கு|யாரோட""",
+        """$B(evlo|evvalavu|how much|enna|what|yaar|yaaru|yar|yaru|yaarukku|yarukku|yaruku|yaroda|yaaroda|yaar\s*kitta|yar\s*kitta|yaar\s*kita|yar\s*kita|yarukita|yarukitta|yaarukitta|yaarukita|yaarkitta|yarkitta|yarkita|endha|yentha|entha|who|whom|whose)$E|யார்|யாருக்கு|யாரோட""",
         RegexOption.IGNORE_CASE,
     )
     /** A report from the books asked for with "sollu": a list, details, dues, balances. */
