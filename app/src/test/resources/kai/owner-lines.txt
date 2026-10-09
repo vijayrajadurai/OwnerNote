@@ -1,0 +1,38 @@
+# Owner lines Kai must understand — KAI's own feed. One line each:   KIND | what the owner says | what must happen
+#
+#   ENTRY  | Kumar 2000 kuduthan              | IN Kumar 2000          (IN / OUT / CREDIT / DEBIT, person, amount)
+#   STOCK  | Colgate 2 box vandhuchu          | Colgate 336            (product, its stock after Confirm)
+#   REMIND | naalaiku 10 manikku Kumar call   | 2026-10-09 10:00 Kumar (date time, a word the reminder must carry)
+#   ASK    | Kumar evlo tharanum              | ₹4,000                 (words the answer must have, separated by ;)
+#
+# The shop (KaiOwnerSweepTest): today Thursday 8 Oct 2026, 11 AM.
+#   Customers: Kumar ₹4,000 due today · Ramesh ₹2,500 due today · Selvam ₹6,000 overdue (due 20 Sep) · Lakshmi ₹1,000 due 12 Oct
+#   Suppliers: ABC Traders ₹10,000 due today · Murugan Stores ₹4,000 due 15 Oct
+#   Stock: Colgate 240 PCS (box = 48) · Rice 250 KG (bag = 25) · Oil 240 BOTTLE (box = 12) · Baniyan 50 · Lux Soap 60 · Maggi 0
+#
+# A new line that fails is a bug to fix in Kai (or a word to add to KaiFeed.kt) — never a line to delete.
+
+ENTRY  | Kumar settle pannitaan 4000                    | IN Kumar 4000
+ENTRY  | Ramesh 2500 clear pannitaan                    | IN Ramesh 2500
+ENTRY  | Kumar 1000 anuppichan                          | IN Kumar 1000
+ENTRY  | ABC Traders ku 3000 kattinen                   | OUT ABC Traders 3000
+ENTRY  | Murugan Stores ku 2000 anuppichen              | OUT Murugan Stores 2000
+ENTRY  | Selvam 1000 kuduthaaru                         | IN Selvam 1000
+ENTRY  | Lakshmi 300 thandhutaanga                      | IN Lakshmi 300
+ENTRY  | Kumar ku 500 credit                            | CREDIT Kumar 500
+
+STOCK  | Rice 2 moota irakkinen                         | Rice 300
+STOCK  | Colgate 1 box maal vandhuchu                   | Colgate 288
+STOCK  | Oil 2 bottle udanjiduchu                       | Oil 238
+STOCK  | Lux soap 5 kettupochu                          | Lux Soap 55
+STOCK  | Baniyan 10 vithuchu                            | Baniyan 40
+STOCK  | ennai 1 box vandhuchu                          | Oil 252
+STOCK  | Maggi 10 pottalam vandhuchu                    | Maggi 120    # Kai asks pieces per packet; the test answers 12
+
+REMIND | naalaiku kaalaila 11 manikku Selvam kitta panam vaanga remind pannu | 2026-10-09 11:00 Selvam
+REMIND | innaiku 4 manikku ABC Traders ku call panna remind pannu            | 2026-10-08 16:00 ABC Traders
+
+ASK    | Kumar evlo baaki                               | ₹4,000
+ASK    | Ennai stock evlo                               | 240
+ASK    | Innaiku yaaru yaaru kudukkanum                 | Kumar; Ramesh
+ASK    | Selvam eppo tharuvan                           | Selvam

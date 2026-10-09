@@ -290,7 +290,7 @@ object KaiUnderstanding {
         "yaruku", "yaaruku", "yarukita", "yarukitta", "yaarukitta", "yaarukita", "yarkitta", "yaarkitta", "yarlam", "yaarlam", "yaarellam", "yarellam", "yaarlaam", "general", "generala", "usually", "correct", "late", "time",
         "avanga", "ellarum", "ellaarum", "nethu", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
         "thingal", "sevvai", "budhan", "vyazhan", "viyazhan", "velli", "sani", "nyayiru", "gnayiru", "kizhamai",
-    )
+    ) + com.shopai.app.brain.tools.KaiFeed.notNames
 
     /** The person named in a new entry: the first word that is not a keyword, number or date word. */
     fun personIn(text: String): String? {

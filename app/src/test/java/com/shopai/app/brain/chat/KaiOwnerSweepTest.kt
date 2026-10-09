@@ -471,8 +471,32 @@ class KaiOwnerSweepTest {
             if (s.tools.saved.singleOrNull()?.partyName == "Kumar") null else "draft lost: ${s.tools.saved.map { it.partyName }}" }
     }
 
+    /** KAI's own feed of owner lines (src/test/resources/kai/owner-lines.txt): each played like the lines above. */
+    private fun feedLines() {
+        val text = javaClass.getResourceAsStream("/kai/owner-lines.txt")?.bufferedReader()?.readText()
+            ?: return run { failures += "[owner-lines.txt] not found on the test classpath" }
+        for (raw in text.lines()) {
+            val line = raw.substringBefore('#').trim().takeIf { it.isNotEmpty() } ?: continue
+            val (kind, said, want) = line.split('|').map { it.trim() }.takeIf { it.size == 3 } ?: run { failures += "[owner-lines.txt] bad line: $raw"; null } ?: continue
+            when (kind.uppercase()) {
+                "ENTRY" -> {
+                    val w = want.split(Regex("""\s+"""))
+                    val plan = when (w.first().uppercase()) { "IN" -> PlanKind.PAYMENT_IN; "OUT" -> PlanKind.PAYMENT_OUT; "CREDIT" -> PlanKind.CREDIT_GIVEN; else -> PlanKind.DEBIT_TAKEN }
+                    entry(said, plan, w.drop(1).dropLast(1).joinToString(" "), w.last())
+                }
+                "STOCK" -> stock(said, want.substringBeforeLast(' ').trim(), want.substringAfterLast(' ').trim())
+                "REMIND" -> {
+                    val w = want.split(Regex("""\s+"""), limit = 3)
+                    reminder(said, LocalDateTime.parse("${w[0]}T${w[1]}"), w.getOrNull(2))
+                }
+                "ASK" -> ask(said, want.split(';').map { it.trim() }.filter { it.isNotEmpty() })
+                else -> failures += "[owner-lines.txt] unknown kind '$kind': $raw"
+            }
+        }
+    }
+
     @Test fun ownersDay() {
-        moneyLines(); reminderLines(); stockLines(); questionLines(); conversationLines()
+        moneyLines(); reminderLines(); stockLines(); questionLines(); conversationLines(); feedLines()
         System.getProperty("sweep.out")?.let { java.io.File(it).writeText("$count lines, ${failures.size} failed\n\n" + failures.joinToString("\n\n")) }
         assertTrue("${failures.size} of $count owner lines failed:\n\n" + failures.joinToString("\n\n"), failures.isEmpty())
     }

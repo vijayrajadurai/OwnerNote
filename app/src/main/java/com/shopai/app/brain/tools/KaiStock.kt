@@ -58,7 +58,7 @@ object KaiStock {
         // A customer brought goods back: they come into stock again.
         "customer return", "customer returned", "sales return", "sale return", "return vandhuchu", "return vanthuchu", "thirumbi vandhuchu",
         "thiruppi kuduthaanga", "thiruppi kuduthaan", "thiruppi kuduthutaanga",
-    )
+    ) + KaiFeed.stockInWords
     /** Stock going out: "Colgate 2 out pannu", "2 Colgate pochu", "rendu sale aachu", "2 pieces sold", "eduthutanga". */
     private val outWords = listOf(
         "stock out", "stock remove", "remove pannu", "remove panniten", "sale panniten", "sale pannen", "sold", "out pannu", "out panniten",
@@ -75,7 +75,7 @@ object KaiStock {
         "to supplier", "to the supplier", "back to supplier",
         "kurainjirukku", "kuranjirukku", "korainjirukku", "kammiyaa irukku",
         "சேதம்", "உடைஞ்சு", "வீணா", "கெட்டுப்போச்சு", "குறைஞ்சிருக்கு",
-    )
+    ) + KaiFeed.stockOutWords
     /** "2 pieces Colgate kuduthuten": stock out only when a known product is named (otherwise it is money). */
     private val gaveWords = listOf("kuduthen", "kuduthuten", "kuduthutten", "koduthen", "koduthuten", "kuduthachu", "kuduthaachu", "gave", "given")
     /** "New Colgate stock", "Colgate pudhu stock": new / fresh with a stock word is stock coming in. */
@@ -103,7 +103,7 @@ object KaiStock {
         "tablet" to "TABLET", "tablets" to "TABLET", "tab" to "TABLET", "tabs" to "TABLET", "capsule" to "TABLET", "capsules" to "TABLET",
         "maathirai" to "TABLET", "mathirai" to "TABLET", "மாத்திரை" to "TABLET", "கிலோ" to "KG", "பாக்கெட்" to "PACK", "meter" to "METER", "metre" to "METER", "ஜோடி" to "PAIR", "can" to "CAN", "cans" to "CAN",
         "gram" to "GRAM", "grams" to "GRAM", "gm" to "GRAM", "gms" to "GRAM", "g" to "GRAM", "ml" to "ML", "dozens" to "DOZEN",
-    )
+    ) + KaiFeed.units
 
     private val reasons = listOf(
         "Customer return" to Regex("""(?i)customer\s+return|sales?\s+return|return\s+vand|return\s+vanth|thirumbi\s+vand|thiruppi\s+kuduth"""),
@@ -189,16 +189,7 @@ object KaiStock {
     }
 
     /** The common Tamil names of grocery goods, for a shop that keeps them in English ("arisi" = Rice). */
-    private val tamilNames = mapOf(
-        "arisi" to "rice", "ennai" to "oil", "ennei" to "oil", "sakkarai" to "sugar", "sarkarai" to "sugar", "seeni" to "sugar",
-        "uppu" to "salt", "paal" to "milk", "paruppu" to "dal", "maavu" to "atta", "godhumai" to "wheat", "muttai" to "egg",
-        "vengayam" to "onion", "thakkali" to "tomato", "urulai" to "potato", "pori" to "puffed rice", "kadalai" to "groundnut", "sopu" to "soap",
-        "theeppetti" to "matchbox", "agarbathi" to "agarbatti", "kalkandu" to "sugar candy", "vellam" to "jaggery", "puli" to "tamarind",
-        "milagai" to "chilli", "milagu" to "pepper", "manjal" to "turmeric", "kadugu" to "mustard", "seeragam" to "jeera",
-        "அரிசி" to "rice", "எண்ணெய்" to "oil", "எண்ணை" to "oil", "சர்க்கரை" to "sugar", "சீனி" to "sugar", "உப்பு" to "salt", "பால்" to "milk",
-        "பருப்பு" to "dal", "மாவு" to "atta", "முட்டை" to "egg", "வெங்காயம்" to "onion", "தக்காளி" to "tomato", "சோப்பு" to "soap",
-        "வெல்லம்" to "jaggery", "புளி" to "tamarind", "மிளகாய்" to "chilli", "மஞ்சள்" to "turmeric",
-    )
+    private val tamilNames get() = KaiFeed.productNames
 
     /** The product named in [text] — exactly, by its Tamil name, by sound, or by the one name it starts — or null. */
     fun productNamedIn(text: String, products: List<ProductRef>): ProductRef? = productIn(lowerOf(KaiSpokenWords.normalize(text)), products)

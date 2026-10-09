@@ -31,5 +31,5 @@ object KaiLexicon {
         நான் நீ நீங்க நீங்கள் உன் உங்க உங்கள் என் எனக்கு
     """.trim().split(Regex("""\s+""")).toSet()
 
-    fun knows(word: String): Boolean = word.lowercase() in words
+    fun knows(word: String): Boolean = word.lowercase().let { it in words || it in com.shopai.app.brain.tools.KaiFeed.everydayWords }
 }

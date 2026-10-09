@@ -127,7 +127,7 @@ object KaiCommands {
         "gave", "given", "paid", "pay panniten", "payment panniten", "pay pannen", "anuppinen", "anupinen", "anuppiten", "anupiten", "sent",
         // The owner paid by UPI / GPay ("Ramesh-ku 400 GPay pannen", "pay pannitten").
         "pay pannitten", "payment pannitten", "gpay pannen", "gpay panniten", "gpay pannitten", "upi pannen", "upi pannitten", "transfer pannen", "transfer pannitten",
-        "கொடுத்தேன்", "கொடுத்துட்டேன்", "அனுப்பினேன்", "கொடுத்தாச்சு", "குடுத்தேன்", "குடுத்துட்டேன்")
+        "கொடுத்தேன்", "கொடுத்துட்டேன்", "அனுப்பினேன்", "கொடுத்தாச்சு", "குடுத்தேன்", "குடுத்துட்டேன்") + KaiFeed.paidWords
     private val inWords = listOf("vanginen", "vaanginen", "vangunen", "vaangunen", "vangiten", "vaangiten", "vanginaen", "vangitten", "received", "got",
         "vandhuchu", "vanthuchu", "vandhudhu", "thandhan", "thandhaan", "thandhaar", "thanthan", "kuduthan", "kuduthaan", "kuduthaar", "koduthan", "koduthaan", "koduthaar",
         // "Kumar 2000 kuduthutaan": he gave (and it's done) — the owner received it.
@@ -139,7 +139,7 @@ object KaiCommands {
         "gpay pannitaan", "gpay pannaan", "gpay pannitaar", "upi pannitaan", "upi pannaan", "transfer pannitaan", "return pannitaan", "return pannaan",
         "return pannitaar", "collect pannitten", "collect panniten", "collect pannen", "vasool pannitten", "vasool panniten",
         "குடுத்தான்", "குடுத்தாங்க", "குடுத்தார்", "குடுத்துட்டான்", "கொடுத்தார்", "கொடுத்துட்டாங்க", "அனுப்பினான்", "அனுப்பிட்டான்",
-        "வாங்கினேன்", "வந்துச்சு", "தந்தான்", "தந்தார்", "கொடுத்தான்")
+        "வாங்கினேன்", "வந்துச்சு", "தந்தான்", "தந்தார்", "கொடுத்தான்") + KaiFeed.receivedWords
     /** "Suresh gpay la 5000 pay pannan", "5000 transfer pannittaan": the person paid (any spelling of the 3rd-person past). */
     private val personPaidVerb = Regex("""(?i)(?<![\p{L}])(pay|gpay|g\s*pay|upi|phonepe|paytm|transfer|payment|return|settle|send|online)\s*(?:-?\s*la\s+)?(pannan|pannaan|pannaar|pannar|pannaru|pannaaru|pannanga|pannaanga|pannitan|pannitaan|pannittan|pannittaan|pannitar|pannitaar|pannitaru|pannitaaru|pannittaru|pannittaaru|pannitanga|pannitaanga|pannunan|pannunaan|pannunaar|pannunaru|pannirukkaan|pannirukkan|pannirukaan|pannirukkaar|pannirukkaru|pannirukkaanga)(?![\p{L}])""")
     /** "Ramesh-ku 400 GPay pannen", "transfer pannitten": the owner paid. */
@@ -227,7 +227,7 @@ object KaiCommands {
         "velli", "sani", "nyayiru", "thingal", "sevvai", "budhan", "vyazhan",
         // A clock / day word right before "call" ("10 maniku call remind pannu") — never names.
         "maniku", "manikku", "naalaiku", "naalaikku", "nalaiku", "innaiku", "innaikku", "inniku", "innikku", "saayangalam", "raathiri", "madhiyam",
-    )
+    ) + KaiFeed.notNames
 
     /** "move agala", "dead stock", "slow moving", "unsold": stock that is not selling. */
     private val slowMoving = Regex(

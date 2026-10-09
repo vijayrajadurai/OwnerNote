@@ -172,7 +172,9 @@ object KaiChatUnderstanding {
 
         // ---- about the business ----
         // "Who has to pay me?" is money coming in, not the owner paying.
-        val paysMe = has(" pay me", " pays me", " paying me", " pay us")
+        // "Yaaru kudukkanum?" (who has to give — me): the person asked about gives; "yaarukku kudukkanum?" (to whom) is the owner paying.
+        val whoGives = has(" yaar ", " yaaru ", " yar ", " yaru ") && !toWhom && !has(" naan ", " nan ", " neenga ")
+        val paysMe = has(" pay me", " pays me", " paying me", " pay us") || whoGives && has(" kudukkanum", " kodukkanum", " kudukanum", " kodukanum")
         val payWords = !paysMe && has(" kudukkanum", " kodukkanum", " kudukanum", " kodukanum", " kudukanu", " kudukka ", " pay ", " payable", " supplier", " i owe", " do i owe", " கொடுக்க", " குடுக்க")
         val collectWords = paysMe || has(" collect", " vasool", " tharanum", " varanum", " vanganum", " vaanganum", " receive", " receivable", " owes me",
             " owe me", " payment", " cash tharanum", " vanganu", " vaanganu", " வசூல்", " தரணும்", " வரணும்", " வாங்கணும்")
@@ -364,7 +366,7 @@ object KaiChatUnderstanding {
         "nan", "na", "naa", "yeppa", "yeppo", "yepo", "epo", "yeppadi", "yepdi", "general", "generala", "yarlam", "yaarlam", "yaarellam",
         "innai", "inni", "avnanga", "ivanga", "usually", "correct", "naalaiku", "nalaiku", "nalaikku", "naalai", "nalai", "endha", "yentha", "entha",
         "phone", "number", "mobile", "contact",
-    )
+    ) + com.shopai.app.brain.tools.KaiFeed.notNames
 
     /**
      * A name the owner said that isn't in the records ("Muthu evlo tharanum?"),
