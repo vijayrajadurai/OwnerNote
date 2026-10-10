@@ -415,6 +415,31 @@ class KaiContextPaymentDateTest {
     }
 
     @Test
+    fun aMonthNameAnswersWhichMonth() {
+        // Owner's phone (10 Oct 2026): "7" → "indha maasam 7-aa, illa adutha maasam 7-aa?" → "november" wasn't understood.
+        for (month in listOf("november", "நவம்பர்", "nov")) {
+            val k = kai()
+            k.say("arivu ku 7000 tharanum"); k.say("7")
+            val t = k.say(month)
+            assertTrue("$month → ${t.reply.text}", t.reply.text.contains("Arivu") && t.reply.text.contains("₹7,000") && Regex("""adutha maasam 7|அடுத்த மாதம் 7""").containsMatchIn(t.reply.text))
+        }
+        val k = kai()
+        k.say("Kumar enaku 3000 tharanum"); k.say("15")
+        val t = k.say("december")
+        assertTrue(t.reply.text, t.reply.text.contains("December 15"))
+        // A month already gone is next year's, as "July 6" is read (today: 3 October 2026).
+        val gone = kai()
+        gone.say("Kumar enaku 3000 tharanum"); gone.say("5")
+        val g = gone.say("september")
+        assertTrue(g.reply.text, g.reply.text.contains("2027"))
+        // Spoken: அறிவு is a new person, never Ravi from the books.
+        val spoken = kai().say("அறிவுக்கு 7000 தரணும்")
+        assertTrue(spoken.reply.text, spoken.reply.text.contains("அறிவு") && !spoken.reply.text.contains("Ravi"))
+        // Drafts only — nothing saved before Confirm.
+        assertFalse(tools.writes.toString(), tools.writes.contains("confirm"))
+    }
+
+    @Test
     fun anyPlaceNearbyGetsTheSameAnswer() {
         // Hardware was answered and spa wasn't: a place Kai has no name for is still a place.
         for ((q, place) in listOf("Spa near by la iruka paru" to "Spa", "pakkathula salon irukka?" to "salon", "near by la gym iruka paru" to "gym",

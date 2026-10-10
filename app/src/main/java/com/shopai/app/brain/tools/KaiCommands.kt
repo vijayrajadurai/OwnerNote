@@ -105,7 +105,10 @@ object KaiCommands {
             // "Today stock evlo iruku", "ippo motham stock": every product — a time or "all" word is not a product name.
             val product = Regex("""^(.*?)\s*(?:stock|inventory|iruppu|இருப்பு|ஸ்டாக்)""", RegexOption.IGNORE_CASE).find(text)?.groupValues?.get(1)
                 ?.replace(Regex("""(?i)\b(enakku|ennaku|my|the|how much|what is|whats|what's|enna|evlo|kadaila|shop la|la|oda|ku|today|todays|today's|innaiku|innaikku|inniku|innikku|""" +
-                    """ippo|ippa|ipo|current|currently|now|total|motham|mothama|ella|ellaa|all|full|kadai|shop|yentha|endha|entha|which|ennoda|unga|namma)\b"""), " ")
+                    """ippo|ippa|ipo|current|currently|now|total|motham|mothama|ella|ellaa|all|full|kadai|shop|yentha|endha|entha|which|ennoda|unga|namma|""" +
+                    """namba|nammakitta|nambakitta|kitta|kita|ennenna|irukku|iruku|enkitta|ennkitta)\b"""), " ")
+                // "இப்ப நம்ம கிட்ட என்ன என்ன ஸ்டாக்": the same words said in Tamil — not a product.
+                ?.replace(Regex("""(?<![\p{L}\p{M}])(இப்ப|இப்போ|நம்ம|நம்ப|நம்மகிட்ட|கிட்ட|என்ன|எல்லா|மொத்த|இன்னைக்கு|என்கிட்ட)(?![\p{L}\p{M}])"""), " ")
                 ?.replace(Regex("""\s+"""), " ")?.trim()?.takeIf { it.length >= 2 && it.any(Char::isLetter) }
             return KaiCommand.Stock(product)
         }

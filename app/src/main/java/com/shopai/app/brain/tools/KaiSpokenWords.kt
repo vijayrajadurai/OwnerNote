@@ -95,7 +95,7 @@ object KaiSpokenWords {
         "கோல்டு" to "gold", "தங்கம்" to "thangam", "பெட்ரோல்" to "petrol", "டீசல்" to "diesel", "டாலர்" to "dollar", "ரேட்" to "rate", "விலை" to "vilai",
         "ட்ரெயின்" to "train", "டிரெயின்" to "train", "ராசி" to "raasi", "பலன்" to "palan", "ரெசிபி" to "recipe",
         "ம்ம்" to "hmm", "ம்ம்ம்" to "hmm", "ஹ்ம்" to "hmm", "அய்யோ" to "ayyo", "ஐயோ" to "ayyo",
-        "வாங்குனேன்" to "vangunen", "வாங்குனது" to "vangunadhu", "அனுப்பிச்சான்" to "anuppichan", "அனுப்பிச்சாரு" to "anuppichaaru",
+        "வாங்குனேன்" to "vangunen", "வாங்குனான்" to "vangunan", "வாங்குனது" to "vangunadhu", "அனுப்பிச்சான்" to "anuppichan", "அனுப்பிச்சாரு" to "anuppichaaru",
         "அனுப்பிச்சேன்" to "anuppichen", "தந்துட்டாங்க" to "thandhutaanga", "தந்துட்டாரு" to "thandhutaaru", "தராங்க" to "tharanga", "தர்றாங்க" to "tharraanga",
         "இறக்கினேன்" to "irakkinen", "இறக்கிட்டேன்" to "irakkitten", "பொட்டலம்" to "pottalam", "பொட்டலங்கள்" to "pottalangal", "பேக்" to "bag",
         "பேக்ஸ்" to "bags", "ஓவர்டியூ" to "overdue", "கஸ்டமர்ஸ்" to "customers", "சப்ளையர்ஸ்" to "suppliers", "எல்லா" to "ellaa", "எல்லாம்" to "ellam",
@@ -246,8 +246,13 @@ object KaiSpokenWords {
             else -> return null
         }
         if (stem.length < 2) return null
-        // Consonant + "ு" (the -உக்கு ending) → the consonant with its pulli: ருத்ரனு → ருத்ரன்.
-        val fixed = if (stem.endsWith("ு") && stem.length >= 2) stem.dropLast(1) + "்" else stem
+        // Consonant + "ு" (the -உக்கு ending) → the consonant with its pulli: ருத்ரனு → ருத்ரன். A name that itself ends in "-u"
+        // after a single hard consonant or வ/ஜ keeps it: அறிவுக்கு → அறிவு (Arivu), பாபுக்கு → பாபு — a name ending in that
+        // consonant doubles it instead (சுஜித்துக்கு, திலீப்புக்கு).
+        val c = stem.getOrNull(stem.length - 2)
+        val doubled = stem.length >= 4 && stem[stem.length - 3] == '்' && stem[stem.length - 4] == c
+        val endsInU = stem.endsWith("ு") && c != null && c in "வபஜகசடதற" && !doubled
+        val fixed = if (stem.endsWith("ு") && stem.length >= 2 && !endsInU) stem.dropLast(1) + "்" else stem
         return "$fixed-ku"
     }
 }

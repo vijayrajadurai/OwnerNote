@@ -48,6 +48,7 @@ object KaiStock {
     /** Stock coming in: "add stock", "new stock", "stock vandhiruku", "pudhu stock", "pudhusa vandhuruku", "inventory-ku podu". */
     private val inWords = listOf(
         "stock in", "stock add", "add stock", "add pannu", "add panniten", "add pannunga", "add panni", "add", "serthu", "sethu", "serthudu",
+        "serthuko", "serthukko", "serthukoo", "sethuko", "sethukko", "seathuko", "seathukko", "saethuko", "serthuka", "sethuka",
         "vandhirukku", "vanthirukku", "vandhiruku", "vanthiruku", "vandhurukku", "vandhuruku", "vanthuruku", "vandhuchu", "vanthuchu",
         "new stock", "pudhu stock", "puthu stock", "pudhusa", "puthusa", "pudhusaa", "fresh stock", "stock vandhachu", "stock vanthachu",
         "inventory ku podu", "inventory-ku podu", "inventoryku podu", "stock la podu", "stock-la podu", "stockla podu", "inventory la podu",
@@ -131,7 +132,7 @@ object KaiStock {
     )
     private val fillers = setOf(
         "stock", "in", "out", "add", "remove", "pannu", "panniten", "pannunga", "pannen", "panninen", "panni", "purchase", "sale", "sold", "received",
-        "serthu", "sethu", "serthudu", "inward", "outward", "owner", "kai", "please", "pls", "ah", "aa", "la", "ku", "kku", "na", "new", "pudhu",
+        "serthu", "sethu", "serthudu", "serthuko", "serthukko", "sethuko", "seathuko", "seathukko", "saethuko", "inward", "outward", "owner", "kai", "please", "pls", "ah", "aa", "la", "ku", "kku", "na", "new", "pudhu",
         "puthu", "pudhusa", "puthusa", "pudhusaa", "fresh", "inventory", "inventoryku", "inventory-ku", "podu", "stockla", "stock-la", "aachu", "achu",
         "aagiduchu", "vandhachu", "vanthachu", "restock", "restocked", "the", "my", "of", "some", "konjam", "indha", "intha", "innaiku", "inniku", "innaikku", "innikku", "ippo", "ipo", "ippa", "today",
         "kadaiku", "kadaila", "shop", "to", "into", "got", "irukku", "iruku", "vandhu", "vanthu", "mattum", "ellam", "items", "photo", "edu", "edunga", "camera", "open",

@@ -2154,6 +2154,18 @@ class KaiAgent(
     /** "innaikku yaar tharanum?", "Murugan evlo?" while a due date is awaited: a new question, not the date. */
     private val newQuestion = Regex("""(?i)(?<![\p{L}])(yaar|yaaru|yar|yaru|who|evlo|evvalavu|ewlo|how\s+much|enna|list|details)(?![\p{L}])|\?\s*$|யார்|எவ்வளவு""")
 
+    private val monthNames = listOf(
+        listOf("january", "jan", "ஜனவரி"), listOf("february", "feb", "பிப்ரவரி"), listOf("march", "mar", "மார்ச்"), listOf("april", "apr", "ஏப்ரல்"),
+        listOf("may", "மே"), listOf("june", "jun", "ஜூன்"), listOf("july", "jul", "ஜூலை"), listOf("august", "aug", "ஆகஸ்ட்"),
+        listOf("september", "sep", "sept", "செப்டம்பர்"), listOf("october", "oct", "அக்டோபர்"), listOf("november", "nov", "நவம்பர்"), listOf("december", "dec", "டிசம்பர்"),
+    )
+    /** The month a short reply names ("november", "nov", "நவம்பர்"), 1–12 — or null. */
+    private fun monthNamed(text: String): Int? {
+        val words = text.lowercase(Locale.ROOT).split(Regex("""[^\p{L}\p{M}]+""")).filter { it.isNotBlank() }
+        if (words.isEmpty() || words.size > 4) return null
+        return monthNames.indexOfFirst { names -> words.any { w -> w in names || names.any { n -> n.length > 3 && w.startsWith(n) } } }.takeIf { it >= 0 }?.plus(1)
+    }
+
     private suspend fun pendingDueDateAnswer(text: String, chatLang: KaiLang): KaiTurn? {
         if (newQuestion.containsMatchIn(text) && !Regex("""(?i)\b(eppa|eppo|when)\b""").containsMatchIn(text)) return null
         val pending = conversationState.pendingQuestion ?: return null
@@ -2202,6 +2214,20 @@ class KaiAgent(
                 ta = "இந்த மாதம் $day-ஆ Owner, அடுத்த மாதம் $day-ஆ?",
                 tl = "Owner, indha maasam $day-aa, illa adutha maasam $day-aa?",
                 en = "The ${day}${ordinalSuffix(day)} of this month or next month, Owner?")
+        }
+        // "november" / "நவம்பர்" to "indha maasam 7-aa, illa adutha maasam 7-aa?": that month's 7th (owner's phone, 10 Oct 2026).
+        conversationState.pendingDay?.takeIf { justAsked || conversationState.conversationTurn - conversationState.pendingAskedTurn in 1..4 }?.let { day ->
+            // Only the month: "July 6" is a whole date, read below.
+            monthNamed(text)?.takeIf { text.none(Char::isDigit) }?.let { month ->
+                val first = java.time.LocalDate.of(today.year, month, 1)
+                val date = first.withDayOfMonth(minOf(day, first.lengthOfMonth()))
+                justPassed(date, text, today, amount)?.let { past ->
+                    conversationState.pendingAskedTurn = conversationState.conversationTurn
+                    return askWhichYear(past, lang)
+                }
+                // A month already gone ("september" in October) is next year's, as "September 5" is read.
+                return dueDateResolved(if (date.isBefore(today)) date.plusYears(1) else date, entity, amount, direction, lang, text)
+            }
         }
         // "ama" / "seri" alone to "indha maasam 5-aa, illa adutha maasam 5-aa?" says yes to neither: the two choices again, short.
         if (justAsked && conversationState.pendingDay != null && text.none(Char::isDigit) && !monthWord.containsMatchIn(text) &&
@@ -2680,7 +2706,7 @@ class KaiAgent(
     private val stockSaid = Regex("""(?i)(?<![\p{L}])(stock|inventory|iruppu|saamaan|saman|maal|items?|pieces?|pcs|kg|kilo|box|packet)(?![\p{L}])|இருப்பு|ஸ்டாக்""")
 
     /** "2 TV vaanginen", "frog 5 vaangi irukken": goods the owner bought — stock in (with no money said and no one named). */
-    private val boughtGoods = Regex("""(?i)(?<![\p{L}])(?:vaang|vang)(?:inen|ineen|itten|iten|itaen|i\s*irukk?en|i\s*irukk?een|irukk?en|iyachu|iyaachu)(?![\p{L}])""")
+    private val boughtGoods = Regex("""(?i)(?<![\p{L}])(?:vaang|vang)(?:inen|ineen|itten|iten|itaen|i\s*irukk?en|i\s*irukk?een|irukk?en|iyachu|iyaachu|unen|unaen|unan|inan|anen)(?![\p{L}])""")
     private val moneySaid = Regex("""(?i)₹|(?<![\p{L}])(rs|rupees?|rupa|ruba|rubai|roobai|amount|panam|kaasu|cash|gpay|upi|aayiram|payment|kadan|credit)(?![\p{L}])""")
 
     private suspend fun stockChange(raw: String, said: String, lang: KaiLang, products: List<com.shopai.app.brain.tools.ProductRef>, people: List<String>): KaiTurn? {

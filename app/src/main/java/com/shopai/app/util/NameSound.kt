@@ -92,6 +92,11 @@ object NameSound {
     fun key(name: String): String = sound(name).first
 
     /** Same name in Tamil and English letters (or two spellings of it). Different scripts only — or an exact match. */
+    private fun startsWithVowel(name: String): Boolean {
+        val c = name.first()
+        return if (isTamil(c)) c in '\u0B85'..'\u0B94' else c.lowercaseChar() in "aeiou"
+    }
+
     fun same(a: String, b: String): Boolean {
         val x = a.trim()
         val y = b.trim()
@@ -99,6 +104,8 @@ object NameSound {
         if (x.equals(y, ignoreCase = true)) return true
         // Two English spellings ("Kumar" / "Kamar") are different people: only across scripts.
         if (x.any(::isTamil) == y.any(::isTamil)) return false
+        // "அறிவு" (Arivu) is not "Ravi": one starts with a vowel, the other doesn't.
+        if (startsWithVowel(x) != startsWithVowel(y)) return false
         val (kx, vx) = sound(x)
         val (ky, vy) = sound(y)
         if (kx.isEmpty() || kx != ky) return false

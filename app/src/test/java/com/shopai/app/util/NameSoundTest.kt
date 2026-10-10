@@ -50,4 +50,15 @@ class NameSoundTest {
         assertEquals("Mani", KaiUnderstanding.knownPerson("naalaiku 10 manikku Mani ku call panna remind pannu", known))
         assertEquals("Mani", KaiUnderstanding.knownPerson("Mani 500 kuduthan", known))
     }
+
+    // Owner's phone (10 Oct 2026): spoken "அறிவுக்கு 7000 தரணும்" became Ravi's entry. A name starting with a vowel sound is
+    // never one that doesn't.
+    @Test
+    fun arivuIsNotRavi() {
+        assertFalse(NameSound.same("அறிவு", "Ravi"))
+        assertFalse(NameSound.same("Arivu", "ரவி"))
+        assertTrue(NameSound.same("அறிவு", "Arivu"))
+        assertTrue(NameSound.same("ரவி", "Ravi"))
+        assertTrue(NameSound.same("அபி", "Abi"))
+    }
 }

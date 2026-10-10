@@ -547,6 +547,10 @@ class KaiOwnerSweepTest {
         talk("no due date is said apart", listOf("enaku yar innaiku tharanum"), noDue) { lastTurn?.reply?.text.orEmpty().let { t ->
             val today = t.substringBefore("Due date").substringBefore("due date போடாத")
             if (!today.contains("Madhan") && Regex("""(?i)due date (podaadha|போடாத)[^.]*Madhan""").containsMatchIn(t)) null else "said: $t" } }
+        // A new product bought ("vengayam 100 kg vangunan stock la seathuko"): its details are asked — never "inventory-la illa".
+        talk("new product bought, added to stock", listOf("vengayam 100 kg vangunan stock la seathuko")) { s ->
+            val t = lastTurn?.reply?.text.orEmpty()
+            if (Regex("""(?i)rate|evlo|எவ்வளவு""").containsMatchIn(t) && !t.contains("inventory-la illa") && s.nothingWritten()) null else "said: $t" }
         talk("amount corrected before Confirm", listOf("Kumar 2000 kuduthan", "illa 2500", "aama")) { s ->
             val p = s.tools.saved.singleOrNull()
             when { p == null -> "saved ${s.tools.saved.size}"; p.amount.compareTo(BigDecimal("2500")) != 0 -> "saved ${p.amount}"; else -> null } }

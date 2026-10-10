@@ -51,7 +51,7 @@ object KaiMicForm {
         sonna=சொன்ன sonnadhu=சொன்னது tamil=தமிழ் tharnum=தரணும் thappa=தப்பா thappu=தப்பு varuma=வருமா varusham=வருஷம் venum=வேணும்
         whatsapp=வாட்ஸ்அப் near=நியர் nearby=நியர்பை by=பை iruka=இருக்கா paru=பாரு paaru=பாரு hardware=ஹார்டுவேர் shops=ஷாப்ஸ் spa=ஸ்பா
         salon=சலூன் gym=ஜிம் pakkathula=பக்கத்துல
-        avanga=அவங்க peru=பேரு
+        avanga=அவங்க peru=பேரு namba=நம்ம namma=நம்ம vangunan=வாங்குனான் seathuko=சேர்த்துக்கோ serthuko=சேர்த்துக்கோ vengayam=வெங்காயம்
         pottan=போட்டான் potten=போட்டேன் adachitan=அடைச்சிட்டான் transfer=டிரான்ஸ்ஃபர் pannan=பண்ணான் gram=கிராம் ratri=ராத்திரி poota=பூட்ட
         friday=வெள்ளிக்கிழமை account=அக்கவுண்ட் gold=கோல்டு rate=ரேட் petrol=பெட்ரோல் price=விலை train=ட்ரெயின் varum=வரும் rasi=ராசி
         palan=பலன் inniku=இன்னிக்கு biryani=பிரியாணி recipe=ரெசிபி gst=ஜிஎஸ்டி kooda=கூட bore=போர் adikkudhu=அடிக்குது cheque=செக் card=கார்டு
