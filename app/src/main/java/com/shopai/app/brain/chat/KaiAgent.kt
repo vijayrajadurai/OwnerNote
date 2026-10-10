@@ -1070,6 +1070,8 @@ class KaiAgent(
             is KaiCommand.Call -> call(cmd.name, lang, said)
             is KaiCommand.ScanBill -> scan(cmd.classifyOnly, lang, said)
             is KaiCommand.Stock -> {
+                // "cigarette stock evlo", "pipe stock": every product with that word — not "product illa".
+                if (cmd.product != null && productNamed(text, products) == null && KaiCommands.personIn(text, people) == null) stockByWords(text, lang)?.let { return it }
                 // "How much Colgate in stock?": the product the books know by that name, not the words around it.
                 val product = cmd.product?.let { p -> productNamed(text, products) ?: p }
                 product?.let { rememberProduct(it) }
@@ -1080,6 +1082,8 @@ class KaiAgent(
             KaiCommand.TopProducts -> topProducts(text, lang, at.toLocalDate(), people)
             KaiCommand.SlowStock -> slowStock(text, lang, at.toLocalDate(), people)
             KaiCommand.Question -> {
+                // "Cigarette evlo irukku?", "pipe evlo iruku": every product with that word, each with its stock (owner, 10 Oct 2026).
+                if (stockAsk.containsMatchIn(text) && KaiCommands.personIn(text, people) == null && productNamed(text, products) == null) stockByWords(text, lang)?.let { return it }
                 // "Colgate evlo irukku?": a product of this shop and no person — its stock, never a customer lookup.
                 if (stockAsk.containsMatchIn(text) && KaiCommands.personIn(text, people) == null) productNamed(text, products)?.let { p ->
                     rememberProduct(p)
@@ -4212,6 +4216,56 @@ class KaiAgent(
             ChatReply(pick(lang, ta = "Stock விவரம் ஓனர்:", tl = "Owner, stock details:", en = "Stock, Owner:"), KaiMood.EXPLAINING, ChatIntent.GENERAL_BUSINESS_QUERY),
             KaiCard(facts.take(10).map { "${it.name} — ${qty(it.qty, it.unit)}" }, emptyList()),
         )
+    }
+
+    /** Words around a product name in a stock question — never part of the name. */
+    private val stockFiller = setOf("stock", "evlo", "evvalavu", "ewlo", "yevlo", "irukku", "iruku", "irukka", "irukkaa", "iruka", "irukunu", "irukkunu",
+        "irukanu", "irukkanu", "irukaa", "enna", "ennenna", "ippo", "ippa", "ipo", "namma", "namba", "kitta", "la", "ah", "aa", "nu", "sollu", "sollunga",
+        "kelu", "how", "much", "many", "left", "in", "the", "of", "is", "what", "total", "motham", "mothama", "ellaa", "ella", "all", "inventory", "kadaila",
+        "shop", "kai", "owner", "current", "now", "count", "available", "quantity", "qty", "irukkunu", "theriyuma", "paaru", "paru",
+        "எவ்வளவு", "இருக்கு", "இருக்கா", "ஸ்டாக்", "என்ன", "இப்ப", "இப்போ", "நம்ம", "கிட்ட", "மொத்தம்", "சொல்லு")
+
+    /** A word of the question names a word of the product: same, a spelling short of it ("flak"/"flake"), one letter off, or said in Tamil. */
+    private fun wordFits(q: String, p: String): Boolean {
+        if (q.equals(p, ignoreCase = true)) return true
+        if (q.any(Char::isDigit) || p.any(Char::isDigit)) return false
+        val a = q.lowercase(Locale.ROOT); val b = p.lowercase(Locale.ROOT)
+        if (minOf(a.length, b.length) >= 3 && (a.startsWith(b) || b.startsWith(a)) && kotlin.math.abs(a.length - b.length) <= 2) return true
+        if (minOf(a.length, b.length) >= 4 && editDistance(a, b) <= 1) return true
+        // "லைட்ஸ்" is "Lights": the "gh" of "-ght" isn't said.
+        return com.shopai.app.util.NameSound.same(q, p) || com.shopai.app.util.NameSound.same(q, p.replace(Regex("""(?i)gh(?=t|$)"""), ""))
+    }
+
+    private fun editDistance(a: String, b: String): Int {
+        val d = IntArray(b.length + 1) { it }
+        for (i in 1..a.length) {
+            var prev = d[0]; d[0] = i
+            for (j in 1..b.length) { val t = d[j]; d[j] = minOf(d[j] + 1, d[j - 1] + 1, prev + if (a[i - 1] == b[j - 1]) 0 else 1); prev = t }
+        }
+        return d[b.length]
+    }
+
+    /**
+     * "pipe evlo iruku" with "5 inch pipe" and "10 inch pipe": each one and the total — the products whose names hold every word
+     * asked (one product: its stock as usual). Null when the words name no product.
+     */
+    private suspend fun stockByWords(text: String, lang: KaiLang): KaiTurn? {
+        val words = text.split(Regex("""[^\p{L}\p{M}\d]+""")).filter { it.isNotBlank() && it.lowercase(Locale.ROOT) !in stockFiller }
+        if (words.isEmpty() || words.none { w -> w.any(Char::isLetter) } || words.size > 4) return null
+        val all = tools.stock(null) ?: return null
+        val found = all.filter { f -> val names = f.name.split(Regex("""[^\p{L}\p{M}\d]+""")).filter { it.isNotBlank() }
+            words.all { w -> names.any { n -> wordFits(w, n) } } }
+        if (found.isEmpty()) return null
+        if (found.size == 1) return stock(found.single().name, lang)
+        tools.log("stock by word ${words.joinToString(" ")}", "inventory", "${found.size} items", ActionStatus.ANSWERED)
+        val asked = words.joinToString(" ")
+        val lines = found.take(15).joinToString("\n") { "${it.name} — ${qty(it.qty, it.unit)}" }
+        val unit = found.map { it.unit.uppercase(Locale.ROOT) }.distinct().singleOrNull()
+        val total = unit?.let { qty(found.fold(BigDecimal.ZERO) { s, f -> s + f.qty }, found.first().unit) }
+        return say(lang, KaiMood.EXPLAINING, "stock by word",
+            ta = "ஓனர், $asked — ${found.size} பொருள்:\n$lines" + (total?.let { "\nமொத்தம் $it." } ?: ""),
+            tl = "Owner, $asked — ${found.size} product:\n$lines" + (total?.let { "\nMothama $it." } ?: ""),
+            en = "Owner, $asked — ${found.size} products:\n$lines" + (total?.let { "\nIn all: $it." } ?: ""))
     }
 
     private suspend fun lowStock(lang: KaiLang): KaiTurn {

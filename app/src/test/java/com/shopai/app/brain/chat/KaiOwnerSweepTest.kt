@@ -551,6 +551,19 @@ class KaiOwnerSweepTest {
         talk("new product bought, added to stock", listOf("vengayam 100 kg vangunan stock la seathuko")) { s ->
             val t = lastTurn?.reply?.text.orEmpty()
             if (Regex("""(?i)rate|evlo|எவ்வளவு""").containsMatchIn(t) && !t.contains("inventory-la illa") && s.nothingWritten()) null else "said: $t" }
+        // Stock asked by a word of the name (owner, 10 Oct 2026: "Cigarette evlo irukunu" → "product illa" with two cigarettes in
+        // stock): every product with that word, each with its stock, and the total.
+        for ((ask, want) in listOf("Cigarette evlo irukunu" to listOf("Lights Cigarette — 50", "Gold Flak Cigarette — 100", "150"),
+                "pipe evlo iruku" to listOf("5 inch Pipe — 10", "10 inch Pipe — 25", "35"), "pipe stock evlo" to listOf("35"),
+                "gold flake evlo irukku" to listOf("Gold Flak Cigarette", "100"), "Lights evlo irukku" to listOf("Lights Cigarette", "50"),
+                "5 inch pipe evlo irukku" to listOf("5 inch Pipe", "10"), "சிகரெட் எவ்வளவு இருக்கு" to listOf("150"))) {
+            count++
+            val s = Shop()
+            listOf(Triple("p7", "Lights Cigarette", "50"), Triple("p8", "Gold Flak Cigarette", "100"), Triple("p9", "5 inch Pipe", "10"), Triple("p10", "10 inch Pipe", "25"))
+                .forEach { (id, name, n) -> s.inv.items += Inventory.Item(id, name, "PCS", BigDecimal(n), emptyMap(), BigDecimal("8"), BigDecimal("10"), "General", null) }
+            lastTurn = s.say(answer(ask))
+            said(*want.toTypedArray())(s)?.let { fail("stock by word: $ask", s, it) } ?: if (!s.nothingWritten()) fail("stock by word: $ask", s, "wrote something") else Unit
+        }
         talk("amount corrected before Confirm", listOf("Kumar 2000 kuduthan", "illa 2500", "aama")) { s ->
             val p = s.tools.saved.singleOrNull()
             when { p == null -> "saved ${s.tools.saved.size}"; p.amount.compareTo(BigDecimal("2500")) != 0 -> "saved ${p.amount}"; else -> null } }
