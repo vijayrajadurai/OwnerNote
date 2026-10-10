@@ -103,7 +103,7 @@ object KaiSpokenWords {
         "டெய்லி" to "daily", "தினமும்" to "daily", "ஸ்கிப்" to "skip", "எந்த" to "endha", "ஹிஸ்டரி" to "history", "லாஸ்ட்" to "last",
         "குடுத்தேன்" to "kuduthen", "கொடுத்தேன்" to "kuduthen", "குடுத்துட்டேன்" to "kuduthuten", "கொடுத்துட்டேன்" to "kuduthuten",
         "தந்தேன்" to "kuduthen", "அனுப்பினேன்" to "anuppinen", "அனுப்பிட்டேன்" to "anuppiten", "அனுப்பிச்சேன்" to "anuppichen",
-        "கட்டினேன்" to "kattinen", "கட்டிட்டேன்" to "kattiten", "வாங்கிட்டேன்" to "vangiten", "வாங்கினேன்" to "vaanginen", "வாங்கி" to "vaangi", "இருக்கேன்" to "irukken", "வாங்கியிருக்கேன்" to "vaangi irukken", "வாங்கிருக்கேன்" to "vaangi irukken",
+        "கட்டினேன்" to "kattinen", "கட்டிட்டேன்" to "kattiten", "வாங்கிட்டேன்" to "vangiten", "வாங்கினேன்" to "vaanginen", "வாங்கி" to "vaangi", "இருக்கேன்" to "irukken", "இருக்கான்" to "irukkaan", "வாங்கியிருக்கேன்" to "vaangi irukken", "வாங்கிருக்கேன்" to "vaangi irukken", "வாங்கியிருக்கான்" to "vaangi irukkaan", "வாங்கிருக்கான்" to "vaangi irukkaan",
         "கரெக்டா" to "correcta", "கரெக்ட்" to "correct", "கரெக்டான" to "correct", "லேட்டா" to "lateaa", "லேட்" to "late", "டைம்" to "time",
         "டைம்ல" to "time la", "டைமுக்கு" to "time ku", "சரியா" to "sariya", "சரியான" to "sariyaana", "பண்ணுவாங்க" to "pannuvaanga", "பண்ணுவான்" to "pannuvaan",
         "பண்ணுவாரு" to "pannuvaaru", "பண்ணுவானா" to "pannuvaana", "தருவாங்க" to "tharuvaanga", "குடுப்பாங்க" to "kuduppaanga", "கொடுப்பாங்க" to "kuduppaanga",
@@ -132,7 +132,7 @@ object KaiSpokenWords {
         // ---- stock (what typed Tanglish already says) ----
         "வித்துச்சு" to "vithuchu", "வித்துடுச்சு" to "vithiruchu", "வித்துட்டேன்" to "vithutten", "வித்தேன்" to "vithen", "விக்கல" to "vikkala",
         "ஆயிடுச்சு" to "aagiduchu", "ஆகிடுச்சு" to "aagiduchu", "ஆயிருச்சு" to "aagiduchu", "உடைஞ்சிடுச்சு" to "udanjiduchu", "உடைஞ்சுச்சு" to "udanjuchu",
-        "கெட்டுப்போச்சு" to "kettupochu", "போயிடுச்சு" to "poiduchu", "சேர்த்துக்கோ" to "add pannu", "சேர்த்துடு" to "add pannu", "ஸ்டாக்ல" to "stock la",
+        "கெட்டுப்போச்சு" to "kettupochu", "போயிடுச்சு" to "poiduchu", "போயிருச்சு" to "poiruchu", "போயிருச்சி" to "poiruchu", "போயிடுச்சி" to "poiduchu", "சேர்த்துக்கோ" to "add pannu", "சேர்த்துடு" to "add pannu", "ஸ்டாக்ல" to "stock la",
         "டேமேஜ்" to "damage", "ரிட்டர்ன்" to "return", "எக்ஸ்பைரி" to "expiry", "லோ" to "low", "ஃபாஸ்ட்" to "fast", "ஸ்லோ" to "slow", "மூவ்" to "move",
         "ஆகுது" to "aagudhu", "ஆகல" to "agala", "சேல்ஸ்" to "sales", "இருப்பு" to "iruppu", "கையில" to "kaila",
         "மூட்டை" to "moota", "பாட்டில்" to "bottle", "லிட்டர்" to "litre", "டஜன்" to "dozen", "பீஸ்கள்" to "pieces",

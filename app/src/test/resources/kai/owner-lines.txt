@@ -159,3 +159,8 @@ ASK    | namma kitta enna stock irukku                   | Colgate; Rice
 ASK    | இப்ப நம்ம கிட்ட என்ன என்ன ஸ்டாக் இருக்கு           | Colgate; Rice
 STOCK  | Rice 100 kg vangunan stock la seathuko          | Rice 350
 STOCK  | Rice 100 kg vangunen stock la serthuko          | Rice 350
+
+# Owner's phone (10 Oct 2026): "poiruchi" went out (was asked "stock add?"); "vangiirukan" came in.
+STOCK  | Rice 30 kg poiruchi                             | Rice 220
+STOCK  | Rice 30kg vangiirukan                           | Rice 280
+STOCK  | Rice 30 kg vangi irukan                         | Rice 280

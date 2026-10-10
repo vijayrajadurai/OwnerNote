@@ -120,6 +120,26 @@ class KaiOwnerUnderstandingTest {
     private fun noClearAh(t: KaiTurn) = assertFalse(t.text(), t.text().contains("clear-ah", ignoreCase = true))
     private fun nothingSaved() = assertTrue("nothing saved: ${db.saved}", db.saved.isEmpty())
 
+    // ================================================================ stock words (owner's phone, 10 Oct 2026)
+
+    @Test
+    fun poiruchiIsStockOutAndVangiirukanStockIn() {
+        // "mambalam 30kg poiruchi" was asked "stock add pannradha?" — it went out.
+        val out = kai(access = true).say("Rice 30 kg poiruchi")
+        assertTrue(out.text(), out.text().contains("stock-out", true) || out.text().contains("Stock Out", true))
+        assertFalse(out.text(), out.text().contains("stock add pannradha"))
+        for (line in listOf("Rice 30kg vangiirukan", "Rice 30 kg vangi irukan", "ரைஸ் 30 கிலோ வாங்கியிருக்கான்")) {
+            val t = kai(access = true).say(line)
+            assertTrue("$line → ${t.text()}", t.text().contains("stock-in", true) && !t.text().contains("pannradha"))
+        }
+        // A word Kai doesn't know that sounds like "went" is asked as stock OUT first — never add.
+        val unknown = kai(access = true).say("Rice 30 kg pochaanga")
+        assertTrue(unknown.text(), unknown.text().contains("stock out pannradha"))
+        // "podu" (put) stays a stock-in guess.
+        assertFalse(kai(access = true).say("Rice 30 kg podunga sir").text().contains("stock out pannradha"))
+        nothingSaved()
+    }
+
     // ================================================================ context continuation (A, B, F)
 
     @Test

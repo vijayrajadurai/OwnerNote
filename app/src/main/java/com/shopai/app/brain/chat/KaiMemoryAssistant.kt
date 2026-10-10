@@ -192,6 +192,9 @@ class KaiMemoryAssistant(private val access: KaiMemoryAccess) {
      * product and a quantity) with words Kai doesn't know: Kai ASKS — it never
      * guesses a meaning and never acts on it. Null: nothing to ask.
      */
+    // Never "podu" / "pottu" (put — stock in).
+    private val goneWord = Regex("""(?i)^(po(?![dt])|vith|vitt|kett|udanj|damage|out|sold|kammi|kurai)|^போ(?!ட)|^வித்|^கெட்|^உடைஞ்""")
+
     suspend fun unknown(text: String, original: String, lang: KaiLang, people: List<String>, products: List<String>): KaiTurn? {
         val mem = access.current() ?: return null
         val phrase = KaiTeaching.unknownPhrase(text, people, products) ?: return null
@@ -199,6 +202,8 @@ class KaiMemoryAssistant(private val access: KaiMemoryAccess) {
         val product = products.firstOrNull { KaiPrivateMemory.contains(text, KaiPrivateMemory.normalize(it)) }
         val amount = KaiTeaching.hasAmount(text)
         val options = when {
+            // "Mambalam 30kg poiruchi": a word like "po-" (went), "vith-" (sold), "kett-" (spoilt) is stock going out — asked first.
+            product != null && amount && goneWord.containsMatchIn(phrase) -> listOf(KaiMeaning.STOCK_OUT, KaiMeaning.STOCK_IN)
             product != null && amount -> listOf(KaiMeaning.STOCK_IN, KaiMeaning.STOCK_OUT)
             person != null && amount -> listOf(KaiMeaning.PAYMENT_OUT, KaiMeaning.PAYMENT_IN)
             else -> {
