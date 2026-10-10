@@ -498,6 +498,8 @@ class KaiAgent(
                 tl = "$note Ungalukku call / message panna reminder venumna sollunga.", en = "$note If you want, I can remind you to call or message them.")
         }
         if (named == null) KaiConversationCare.beyondBooks(said)?.let { return beyond(it, lang) }
+        // "4773.13 yar tharanum": who has that balance — the exact one, or the nearest said as nearest; never a guess.
+        if (named == null) KaiConversationCare.amountWho(said)?.let { amount -> whoHasAmount(amount, lang)?.let { return it } }
         // "2500 ku gst evlo": the rate isn't said — each common rate worked out, never one guessed.
         KaiConversationCare.gstWithoutRate(said)?.let { amount ->
             val rows = listOf(5, 12, 18, 28).joinToString(" / ") { r -> "$r% = ${KaiFormat.rupees(amount * r / 100)}" }
@@ -514,6 +516,29 @@ class KaiAgent(
         // "ippo evlo irukku" after talking about Colgate: Colgate's stock again.
         if (KaiConversationCare.asksSameProductAgain(said)) lastProduct?.let { p -> return stock(p.name, lang) }
         return null
+    }
+
+    private suspend fun whoHasAmount(amount: Double, lang: KaiLang): KaiTurn? {
+        val parties = runCatching { books.snapshot()?.parties }.getOrNull()?.filter { it.pending > 0.004 } ?: return null
+        val a = KaiFormat.rupees(amount)
+        fun line(p: com.shopai.app.brain.PartyFacts, ta: Boolean) = if (p.side == com.shopai.app.brain.Direction.PAYABLE)
+            (if (ta) "${p.name}-க்கு ${KaiFormat.rupees(p.pending)} குடுக்கணும்" else "${p.name}-ku ${KaiFormat.rupees(p.pending)} kudukkanum")
+            else (if (ta) "${p.name} ${KaiFormat.rupees(p.pending)} தரணும்" else "${p.name} ${KaiFormat.rupees(p.pending)} tharanum")
+        val exact = parties.filter { kotlin.math.abs(it.pending - amount) < 0.005 }
+        tools.log("amount lookup", "ledger", "$a: ${exact.size} exact", ActionStatus.ANSWERED)
+        if (exact.isNotEmpty()) return say(lang, KaiMood.EXPLAINING, "who has an amount",
+            ta = "ஓனர், $a: " + exact.joinToString(", ") { line(it, true) } + ".",
+            tl = "Owner, $a: " + exact.joinToString(", ") { line(it, false) } + ".",
+            en = "Owner, $a: " + exact.joinToString(", ") { line(it, false) } + ".")
+        val near = parties.filter { kotlin.math.abs(it.pending - amount) <= maxOf(10.0, amount * 0.01) }.sortedBy { kotlin.math.abs(it.pending - amount) }.take(3)
+        if (near.isNotEmpty()) return say(lang, KaiMood.EXPLAINING, "who has an amount: nearest",
+            ta = "ஓனர், சரியா $a யாருக்கும் இல்ல. பக்கத்துல: " + near.joinToString(", ") { line(it, true) } + ".",
+            tl = "Owner, correct-aa $a yaarukkum illa. Pakkathula: " + near.joinToString(", ") { line(it, false) } + ".",
+            en = "Owner, no one has exactly $a. Closest: " + near.joinToString(", ") { line(it, false) } + ".")
+        return say(lang, KaiMood.NEUTRAL, "who has an amount: none",
+            ta = "ஓனர், $a பாக்கி யாருக்கும் இல்ல. எல்லாரோட list-க்கு “யார் யார் தரணும்”-னு கேளுங்க.",
+            tl = "Owner, $a baaki yaarukkum illa. Ellaaroda list-ku “yaar yaar tharanum”-nu kelunga.",
+            en = "Owner, no one has a balance of $a. Ask “who owes me” for the full list.")
     }
 
     /** "TXN-1 — Kumar ₹2,000 save aagi irukku": saved entries are never deleted from chat — the owner cancels it on its page. */

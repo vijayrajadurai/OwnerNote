@@ -538,6 +538,15 @@ class KaiOwnerSweepTest {
             talk("the people the answer counted: $more", listOf(ask, more), noDue) { lastTurn?.reply?.text.orEmpty().let { t ->
                 if (listOf("Selvam", "Divya", "Anbu", "Bala", "Priya").all(t::contains) && !t.contains("Kumar") && !t.contains("Madhan")) null else "said: $t" } }
         }
+        // "avanga peru enna" after the day's list: those people's names (owner's phone, 10 Oct 2026: "yaar pathi?").
+        talk("the list's names", listOf("enaku yar innaiku tharanum", "avanga peru enna"), noDue) { lastTurn?.reply?.text.orEmpty().let { t ->
+            if (t.contains("Kumar") && t.contains("Ramesh") && !t.contains("Madhan")) null else "said: $t" } }
+        talk("the list's names, Tamil", listOf("இன்னைக்கு யார் எனக்கு தரணும்", "அவங்க பேர் என்ன"), noDue) { lastTurn?.reply?.text.orEmpty().let { t ->
+            if (t.contains("Kumar") && t.contains("Ramesh")) null else "said: $t" } }
+        // A bill with no due date is not money due today: said apart from "Innaikku … tharanum".
+        talk("no due date is said apart", listOf("enaku yar innaiku tharanum"), noDue) { lastTurn?.reply?.text.orEmpty().let { t ->
+            val today = t.substringBefore("Due date").substringBefore("due date போடாத")
+            if (!today.contains("Madhan") && Regex("""(?i)due date (podaadha|போடாத)[^.]*Madhan""").containsMatchIn(t)) null else "said: $t" } }
         talk("amount corrected before Confirm", listOf("Kumar 2000 kuduthan", "illa 2500", "aama")) { s ->
             val p = s.tools.saved.singleOrNull()
             when { p == null -> "saved ${s.tools.saved.size}"; p.amount.compareTo(BigDecimal("2500")) != 0 -> "saved ${p.amount}"; else -> null } }

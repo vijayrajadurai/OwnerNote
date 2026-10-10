@@ -230,7 +230,7 @@ class KaiBusinessBrain(
     )
     /** Without a reference word, only these short asks follow a list ("details sollu", "yaar yaar?", "due date-um sollu"). */
     private val listAsk = Regex(
-        """(?i)(?<![\p{L}])(details?|list|yaar\s*yaar|yaaru|names?|due\s*date|thethi|amount|total|motham|mothama|eppa|yeppa|eppo|yeppo|epo|when)(?![\p{L}])|விவரம்|யார்\s*யார்|தேதி|மொத்தம்|லிஸ்ட்|எப்போ|எப்ப""",
+        """(?i)(?<![\p{L}])(details?|list|yaar\s*yaar|yaaru|names?|peru|pere|perunga|peyar|due\s*date|thethi|amount|total|motham|mothama|eppa|yeppa|eppo|yeppo|epo|when)(?![\p{L}])|விவரம்|யார்\s*யார்|தேதி|மொத்தம்|லிஸ்ட்|எப்போ|எப்ப|பேர்|பேரு|பெயர்""",
     )
     /** "Yeppa tharanum?" just after a list: when each of those people pays — the list's own dates, not a new question. */
     private val whenOnly = Regex("""(?i)^\s*(eppa|yeppa|eppo|yeppo|epo|when|எப்போ|எப்ப)\s*(tharanum|tharuvaanga|tharuvanga|kudukkanum|kudukanum|varum|due)?\s*\??\s*$""")
@@ -240,7 +240,7 @@ class KaiBusinessBrain(
             """week|month|maasam|vaaram|highest|lowest|smallest|biggest|illama|illaama|kudukkanum|tharanum|collection)(?![\p{L}])|இன்னைக்கு|தாண்டி|பாக்கி|தரணும்""",
     )
     private val totalAsk = Regex("""(?i)(?<![\p{L}])(total|motham|mothama|evlo)(?![\p{L}])|மொத்தம்|எவ்வளவு""")
-    private val detailAsk = Regex("""(?i)(?<![\p{L}])(details?|list|yaar|yaaru|names?|due|date|thethi|sollu|kaattu|show)(?![\p{L}])|விவரம்|யார்|தேதி|சொல்லு""")
+    private val detailAsk = Regex("""(?i)(?<![\p{L}])(details?|list|yaar|yaaru|names?|peru|pere|perunga|peyar|due|date|thethi|sollu|kaattu|show)(?![\p{L}])|விவரம்|யார்|தேதி|சொல்லு|பேர்|பேரு|பெயர்""")
 
     /**
      * A follow-up to the last list answer — the same people, re-read from the ledger now — or null when the words are
@@ -834,11 +834,13 @@ class KaiBusinessBrain(
                 } else listText(od, lang, day).removePrefix("Owner, ").removePrefix("ஓனர், ").replaceFirstChar { it.titlecase(Locale.ROOT) }
                 return reply(q.intent, if (od.rows.isEmpty()) KaiMood.CREDIT else KaiMood.CONCERNED, lang, todayText + "\n\n" + odText)
             }
-            val kept = keepList(ListKind.DUE, side, todayPeriod, todayList)
+            // "avanga peru enna" after "Innaikku 2 per tharanum": the 2 — a bill with no due date was said apart, not as due today.
+            val undatedToday = undatedOf(todayList)
+            val kept = keepList(ListKind.DUE, side, todayPeriod, if (q.fullList) todayList else todayList.filter { it.id !in undatedToday })
             if (q.fullList && todayList.isNotEmpty()) reply(q.intent, KaiMood.CREDIT, lang, listText(kept, lang, day))
             else collections(todayList, ChatIntent.TODAY_COLLECTIONS, lang, day, when (lang) {
                 KaiLang.TAMIL -> "இன்னைக்கு"; KaiLang.TANGLISH -> "Innaikku"; KaiLang.ENGLISH -> "Today"
-            }, undated = undatedOf(todayList), overdue = overdueOf(s, day).filter { it.side == Direction.RECEIVABLE }.also { od ->
+            }, undated = undatedToday, overdue = overdueOf(s, day).filter { it.side == Direction.RECEIVABLE }.also { od ->
                 lastAside = od.filter { o -> todayList.none { it.id == o.id } }.takeIf { it.isNotEmpty() }
                     ?.let { LedgerList(ListKind.OVERDUE, Direction.RECEIVABLE, null, rowsOf(it)) }
             })
@@ -1165,6 +1167,19 @@ class KaiBusinessBrain(
     private fun collections(list: List<PartyFacts>, intent: ChatIntent, lang: KaiLang, day: LocalDate, label: String, overdue: List<PartyFacts>,
                             undated: Set<String> = emptySet()): ChatReply {
         val od = overdue.filter { o -> list.none { it.id == o.id } }
+        // A bill with no due date is listed by its bill date, but it isn't "due" then: said apart, never in "Innaikku … varanum".
+        val noDue = list.filter { it.id in undated }
+        if (noDue.isNotEmpty()) {
+            val dated = collections(list.filter { it.id !in undated }, intent, lang, day, label, overdue = emptyList())
+            val names = noDue.take(3).joinToString(", ") { "${label(it)} ${KaiFormat.rupees(it.pending)}${dueSuffix(it, lang, day, true)}" }
+            val more = if (noDue.size > 3) " (+${noDue.size - 3})" else ""
+            val note = when (lang) {
+                KaiLang.TAMIL -> " Due date போடாத bill: $names$more."
+                KaiLang.TANGLISH -> " Due date podaadha bill: $names$more."
+                KaiLang.ENGLISH -> " Bills with no due date: $names$more."
+            }
+            return dated.copy(text = dated.text + note + overdueNote(od, lang))
+        }
         if (list.isEmpty()) {
             val base = when (lang) {
                 KaiLang.TAMIL -> "$label யாரும் தர வேண்டியது இல்ல ஓனர்."

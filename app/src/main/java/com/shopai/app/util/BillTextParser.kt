@@ -382,8 +382,12 @@ object BillTextParser {
         RegexOption.IGNORE_CASE,
     )
 
+    /** "Customer Details      Payment Details": a heading, its first word a heading word — never a name. */
+    private val headingWord = Regex("""^(?:details?|information|info|address|contact)(?![\p{L}])""", RegexOption.IGNORE_CASE)
+
     private fun cleanCustomer(value: String): String? {
         val lower = value.lowercase()
+        if (headingWord.containsMatchIn(value.trim())) return null
         if (notAName.any { lower.startsWith(it) && (lower.length == it.length || !lower[it.length].isLetter()) }) return null
         // Never a name: another field from the next column.
         if (sideColumnStart.containsMatchIn(value.trim())) return null
@@ -399,14 +403,14 @@ object BillTextParser {
     // GST (Tally-style) invoices: "Buyer (Bill to)" / "Consignee (Ship to)" /
     // "Billed To" on its own line, the party's name on the line below.
     private val buyerHeading = Regex(
-        """^(?:buyer|consignee|billed\s*to|bill\s*to|sold\s*to|customer)\b(?!')\s*(?:\((?:bill|ship)\s*to\))?\s*[:\-.]?\s*""",
+        """^(?:buyer|consignee|billed\s*to|bill\s*to|sold\s*to|customer)\b(?!')\s*(?:\((?:bill|ship)\s*to\))?\s*(?:details?|information|info)?\s*[:\-.]?\s*""",
         RegexOption.IGNORE_CASE,
     )
 
     // The right-hand header column OCR merges into the same line
     // ("SAMPATHI CREDITS PRIVATE LIMITED Dispatch Doc No.").
     private val sideColumnFields = Regex(
-        """\s+(?:dispatch|delivery\s*note|inv(?:oice)?\.?\s*(?:no|number|#|date)|bill\s*no|dated|date\s*[:\-]|place\s*of\s*supply|buyer'?s\s*order|reference|other\s*references|mode\s*/?\s*terms|terms\s*of|destination|e-?way).*$""",
+        """\s+(?:(?:payment|bank|shipping|shipment|transport|invoice|order|other)\s*details?|mode\s*[:\-]|dispatch|delivery\s*note|inv(?:oice)?\.?\s*(?:no|number|#|date)|bill\s*no|dated|date\s*[:\-]|place\s*of\s*supply|buyer'?s\s*order|reference|other\s*references|mode\s*/?\s*terms|terms\s*of|destination|e-?way).*$""",
         RegexOption.IGNORE_CASE,
     )
 

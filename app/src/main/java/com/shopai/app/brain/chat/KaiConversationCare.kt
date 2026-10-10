@@ -126,6 +126,16 @@ internal object KaiConversationCare {
         return hit.takeIf { !amount || it in setOf(Beyond.WEATHER, Beyond.SPORTS, Beyond.NEWS, Beyond.FUN, Beyond.ONLINE_ORDER, Beyond.ASTROLOGY, Beyond.RECIPE) }
     }
 
+    /** "4773.13 yar tharanum", "4000 yaarukku kudukkanum": who owes (or is owed) that amount — the amount, or null. */
+    fun amountWho(text: String): Double? {
+        if (!Regex("""(?i)(?<![\p{L}])(yaar|yaaru|yar|yaru|yaarukku|yaaruku|yaruku|yarukku|who|whom)(?![\p{L}])|யார்|யாரு|யாருக்கு""").containsMatchIn(text)) return null
+        if (!Regex("""(?i)(?<![\p{L}])(tharanum|tharanu|thara\s*venum|kudukkanum|kudukanum|kodukkanum|baaki|bakki|balance|pending|owes?|varanum)(?![\p{L}])|தரணும்|குடுக்கணும்|கொடுக்கணும்|பாக்கி""").containsMatchIn(text)) return null
+        // One amount, and no day / count beside it ("innaikku", "5 per", "10 manikku").
+        if (Regex("""(?i)(?<![\p{L}])(innaikku|innaiku|inniku|today|naalaikku|naalaiku|tomorrow|week|month|maasam|vaaram|per|peru|people|manikku|maniku|days?|naal)(?![\p{L}])|இன்னைக்கு|நாளைக்கு|பேர்""").containsMatchIn(text)) return null
+        val numbers = Regex("""\d[\d,]*(?:\.\d{1,2})?""").findAll(text).map { it.value.replace(",", "") }.toList()
+        return numbers.singleOrNull()?.toDoubleOrNull()?.takeIf { it >= 1 }
+    }
+
     /** "2500 ku gst evlo": one amount and GST, no rate — the amount, or null. */
     fun gstWithoutRate(text: String): Double? {
         if (!Regex("""(?i)(?<![\p{L}])gst(?![\p{L}])""").containsMatchIn(text) || Regex("""(?i)%|percent|sathaveedham""").containsMatchIn(text)) return null

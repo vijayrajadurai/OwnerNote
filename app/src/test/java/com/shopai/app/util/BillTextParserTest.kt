@@ -229,4 +229,18 @@ class BillTextParserTest {
             BillNotesFormatter.format(items, BigDecimal("70.00"), "Other"),
         )
     }
+
+    // Owner's phone (10 Oct 2026): a scanned bill saved a customer named "Details Payment Details" — the headings
+    // "Customer Details | Payment Details" read as one line. A heading is never the name; the name under it is.
+    @Test
+    fun aHeadingIsNeverTheCustomerName() {
+        val merged = BillTextParser.parse("TAX INVOICE\nCustomer Details   Payment Details\nRavi Kumar   Mode: UPI\nTotal 4773.10")
+        assertEquals("Ravi Kumar", merged.customerName)
+        val apart = BillTextParser.parse("TAX INVOICE\nCustomer Details\nRavi Kumar\nPayment Details\nUPI\nTotal 4773.10")
+        assertEquals("Ravi Kumar", apart.customerName)
+        assertNull(BillTextParser.parse("Bill To\nDetails Payment Details\nTotal 4773.10").customerName)
+        assertNull(BillTextParser.parse("Name Details\nTotal 100").customerName)
+        // A real name stays.
+        assertEquals("Ravi Traders", BillTextParser.parse("Customer: Ravi Traders\nTotal 500").customerName)
+    }
 }

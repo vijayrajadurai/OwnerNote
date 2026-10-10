@@ -146,3 +146,9 @@ ASK    | 500 பெருக்கல் 12 எவ்வளவு               
 ASK    | 25000 ல 18 பர்சன்ட் ஜிஎஸ்டி எவ்வளவு                 | ₹4,500; ₹29,500
 ASK    | நல்லா இருக்கியா                                  | நல்லா இருக்கேன்
 ASK    | bore adikkudhu                                  | rest
+
+# Who has an amount (owner's phone, 10 Oct 2026: "4773.13 yar tharanum" got the whole list).
+ASK    | 4000 yaar tharanum                              | Kumar; ₹4,000
+ASK    | 4003 yar tharanum                               | Kumar; ₹4,000
+ASK    | 10000 yaarukku kudukkanum                       | ABC Traders; ₹10,000
+ASK    | 77777 yaar tharanum                             | ₹77,777
