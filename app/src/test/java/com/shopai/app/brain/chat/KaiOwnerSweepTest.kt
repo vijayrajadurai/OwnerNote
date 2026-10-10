@@ -500,6 +500,14 @@ class KaiOwnerSweepTest {
                 "enakku loan venum" to "loan", "employee salary kanakku podu" to "salary", "amazon la 10 kg rice order pannu" to "Amazon", "நாளைக்கு மழை வருமா" to "வானிலை"))
             talk("not Kai's work: $ask", listOf(ask), check = nothingWritten(word))
         talk("a date", listOf("1 varusham kalichi enna date"), check = said("October 8, 2027"))
+        // Paid more than owed (owner's conversation, 10 Oct 2026): the extra is said before Confirm and after, and
+        // "ippa evlo tharanum" is about the person just talked about.
+        val akash: Ledger.() -> Unit = { add("c8", "Akash", true, "5000", d(9, 25), d(10, 5)) }
+        talk("paid more than owed", listOf("Akash evlo tharnum Kai", "Avan 6000 kuduthutan"), akash, said("₹5,000", "₹6,000", "₹1,000", "advance"))
+        talk("paid more than owed, saved", listOf("Akash evlo tharnum Kai", "Avan 6000 kuduthutan", "TAP", "Ippa evlo tharanum"), akash) { s ->
+            said("Akash", "₹1,000 advance")(s) ?: if (s.tools.saved.singleOrNull()?.amount?.compareTo(BigDecimal("6000")) == 0) null else "saved ${s.tools.saved.map { it.amount }}" }
+        talk("paid part, then 'ippa evlo'", listOf("Akash evlo tharanum", "avan 2000 kuduthutan", "TAP", "ippa evlo tharanum"), akash, said("Akash", "₹3,000"))
+        talk("paid more than owed, spoken", listOf("ஆகாஷ் எவ்வளவு தரணும்", "அவன் 6000 குடுத்துட்டான்", "TAP", "இப்ப எவ்வளவு தரணும்"), akash, said("Akash", "₹1,000 advance"))
         talk("a reminder at 5 pm is still a reminder", listOf("remind me tomorrow 5 pm to call Kumar", "TAP")) { s -> if (s.tools.rems.size == 1) null else "no reminder" }
         // From the owner's phone (9 Oct 2026): a bill with no due date was said "— innaikku" in the summary while its details said
         // "Due date illa", "andha 12 peroda details" showed the 2 due today instead of the 12 overdue, and "2 TV vaangi irukken"

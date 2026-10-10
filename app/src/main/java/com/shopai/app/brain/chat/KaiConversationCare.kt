@@ -74,6 +74,12 @@ internal object KaiConversationCare {
         return null
     }
 
+    /** "ippa evlo tharanum", "ippo balance enna", "innum evlo baaki": the same person's balance, asked again with no name. */
+    private val balanceAgain = Regex("""(?i)^\s*(ippa|ippo|ipo|ipa|innum|now|ippodhu|ippavum|appo)\s+(evlo|evvalavu|ethana|how\s*much|balance|baaki|bakki|pending)\s*""" +
+        """(evlo|enna)?\s*(tharanum|tharanu|baaki|bakki|balance|pending|kudukkanum|varanum|irukku|iruku)?\s*(owner|kai|sir)?\s*[?!.]*\s*$""")
+    private val owedWord = Regex("""(?i)(tharanum|tharanu|baaki|bakki|balance|pending|kudukkanum|varanum)""")
+    fun asksBalanceAgain(text: String) = balanceAgain.containsMatchIn(text.trim()) && owedWord.containsMatchIn(text)
+
     /** "ippo evlo irukku", "innum evlo irukku": the same product, asked again with no name. */
     private val sameThingAgain = Regex("""(?i)^\s*(ippo|ipo|ippa|innum|now|ippodhu|ippavum|meedhi|balance)\s*(stock\s*)?(evlo|evvalavu|ethana|how\s*much|enna)\s*(irukku|iruku|irukka|left|irundhuchu|aachu)?\s*[?!.]*\s*$""")
     fun asksSameProductAgain(text: String) = sameThingAgain.containsMatchIn(text.trim())

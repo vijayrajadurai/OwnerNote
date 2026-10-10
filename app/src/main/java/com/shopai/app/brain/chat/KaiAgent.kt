@@ -444,7 +444,13 @@ class KaiAgent(
      */
     private var kaiAskedAfterDraft = false
 
-    suspend fun ask(raw: String): KaiTurn = answerOwner(raw).also { t ->
+    suspend fun ask(raw: String): KaiTurn = answerOwner(raw).let { t ->
+        // "Akash account clear" right after Akash paid ₹1,000 more than he owed: the advance is said too.
+        val adv = advanceTold?.takeIf { (p, _) -> p == personOnTopic?.first && t.card == null && t.reply.text.contains(p) &&
+            Regex("""(?i)clear|pending\s*illa|baaki\s*illa|பாக்கி எதுவும் இல்ல|nothing\s*(is\s*)?(due|pending)|no\s*balance""").containsMatchIn(t.reply.text) }
+        if (adv == null) t else t.copy(reply = t.reply.copy(text = t.reply.text + pick(turnLang, ta = " ${adv.second} advance-ஆ இருக்கு.",
+            tl = " ${adv.second} advance-aa irukku.", en = " ${adv.second} is kept as advance.")))
+    }.also { t ->
         kaiAskedAfterDraft = conversationState.draftShownTurn != conversationState.conversationTurn &&
             (t.reply.mood == KaiMood.CLARIFY || t.card?.buttons?.isNotEmpty() == true || t.reply.text.trimEnd().endsWith("?"))
         // An answer with nothing to confirm: "puriyala" after it gets the same answer again, in Tamil.
@@ -624,6 +630,17 @@ class KaiAgent(
             en = en + (if (tail) can.third else ""))
     }
 
+    /** What [partyId] owes / is owed in the books now (null: unknown). */
+    private suspend fun pendingOf(partyId: String?): BigDecimal? = partyId?.let { id ->
+        runCatching { books.snapshot()?.parties?.firstOrNull { it.id == id }?.pending }.getOrNull()?.let { BigDecimal.valueOf(it).setScale(2, java.math.RoundingMode.HALF_UP) }
+    }
+
+    /** The advance the last save left (person, amount) — said again when their balance is asked in this conversation. */
+    private var advanceTold: Pair<String, String>? = null
+
+    /** The person this conversation is on, and the turn they came up ("Akash evlo" → "avan 6000 kuduthutan" → "ippa evlo tharanum"). */
+    private var personOnTopic: Pair<String, Long>? = null
+
     /** The people and products of this shop, by name (for reading spoken Tamil). */
     private suspend fun knownNames(): List<String> =
         runCatching { books.snapshot()?.people.orEmpty() }.getOrDefault(emptyList()) +
@@ -637,7 +654,13 @@ class KaiAgent(
         val heard = if (!tamil) raw.trim() else com.shopai.app.brain.tools.KaiSpokenWords.withNames(
             com.shopai.app.brain.tools.KaiSpokenWords.normalize(raw.trim()), knownNames())
         // "first ketta aal evlo tharanum", "munnadi ketta aal": the person this conversation was about, by name.
-        val read = KaiConversationCare.namedFromEarlier(heard, brain.peopleTalkedAbout()) ?: heard
+        val earlier = KaiConversationCare.namedFromEarlier(heard, brain.peopleTalkedAbout()) ?: heard
+        // "ippa evlo tharanum" right after talking about Akash: Akash's balance now — not everyone's list.
+        val people0 = runCatching { books.snapshot()?.people.orEmpty() }.getOrDefault(emptyList())
+        val onTopic = personOnTopic?.takeIf { conversationState.conversationTurn - it.second <= 3 }?.first
+        val read = if (onTopic != null && KaiConversationCare.asksBalanceAgain(earlier) && com.shopai.app.brain.KaiUnderstanding.knownPerson(earlier, people0) == null)
+            "$onTopic $earlier" else earlier
+        com.shopai.app.brain.KaiUnderstanding.knownPerson(read, people0)?.let { personOnTopic = it to conversationState.conversationTurn + 1 }
         // "Power bank" is a product, not a bank: product names that hold a money word are joined first. "totel" = total (KaiFeed).
         val said = com.shopai.app.brain.tools.KaiInventory.joinProductWords(spelled(read))
         ownerWords = said
@@ -3905,6 +3928,9 @@ class KaiAgent(
             PlanKind.CREDIT_GIVEN -> pick(lang, ta = "Credit — அவர் உங்களுக்கு தரணும்", tl = "Credit — avar ungalukku tharanum", en = "Credit — they owe you")
             PlanKind.DEBIT_TAKEN -> pick(lang, ta = "Debit — நீங்க அவருக்கு தரணும்", tl = "Debit — neenga avarukku tharanum", en = "Debit — you owe them")
         }
+        // "Akash 6000 kuduthutan" with ₹5,000 owed: the ₹1,000 more is said before Confirm — never lost in silence.
+        val owed = if (kind == PlanKind.PAYMENT_IN || kind == PlanKind.PAYMENT_OUT) plan.balanceBefore ?: pendingOf(partyId) else null
+        val extra = owed?.let { plan.amount - it }?.takeIf { it.signum() > 0 && owed.signum() > 0 }
         val lines = buildList {
             // "Nagapattinam Lokesh — ₹500": which of the same-named records this is.
             add("${conversationState.stated?.takeIf { r.stated && it.partyId != null && it.partyId == partyId }?.label ?: ownerName(plan.partyId, plan.partyName)} — $a")
@@ -3929,6 +3955,8 @@ class KaiAgent(
             }
             if (plan.settles.isNotEmpty()) add(pick(lang, ta = "சரி செய்வது: ", tl = "Settles: ", en = "Settles: ") +
                 plan.settles.joinToString(", ") { (n, v) -> "$n ${KaiFormat.rupees(v.toDouble())}" })
+            if (plan.advance.signum() == 0 && extra != null) add(pick(lang, ta = "${KaiFormat.rupees(extra.toDouble())} advance-ஆ சேமிக்கப்படும்",
+                tl = "${KaiFormat.rupees(extra.toDouble())} advance-ah save aagum", en = "${KaiFormat.rupees(extra.toDouble())} will be kept as advance"))
             if (plan.advance.signum() > 0) add(pick(lang, ta = "${KaiFormat.rupees(plan.advance.toDouble())} advance-ஆ சேமிக்கப்படும்",
                 tl = "${KaiFormat.rupees(plan.advance.toDouble())} advance-ah save aagum", en = "${KaiFormat.rupees(plan.advance.toDouble())} will be kept as advance"))
             if (plan.balanceBefore != null && plan.balanceAfter != null) add(pick(lang, ta = "பாக்கி: ", tl = "Balance: ", en = "Balance: ") +
@@ -3936,7 +3964,18 @@ class KaiAgent(
             add(pick(lang, ta = "குறிப்பு எண்: $ref", tl = "Ref: $ref", en = "Ref: $ref"))
         }
         val blocked = plan.problems.isNotEmpty()
-        val intro = pick(lang,
+        val intro = if (extra != null && owed != null) {
+            val o = KaiFormat.rupees(owed.toDouble()); val a2 = KaiFormat.rupees(plan.amount.toDouble()); val e = KaiFormat.rupees(extra.toDouble())
+            val who = ownerName(plan.partyId, plan.partyName)
+            if (kind == PlanKind.PAYMENT_IN) pick(lang,
+                ta = "ஓனர், $who $o தான் தரணும்; $a2 வந்தா $e கூடுதல் — advance-ஆ சேமிக்கப்படும். சேர்க்கட்டுமா?",
+                tl = "Owner, $who $o dhaan tharanum; $a2 vandha $e extra — advance-ah save aagum. Add pannalama?",
+                en = "Owner, $who owes only $o; $a2 received is $e more — it will be kept as advance. Add this?")
+            else pick(lang,
+                ta = "ஓனர், $who-க்கு $o தான் கொடுக்கணும்; $a2 கொடுத்தா $e கூடுதல் — advance-ஆ சேமிக்கப்படும். சேர்க்கட்டுமா?",
+                tl = "Owner, $who-ku $o dhaan kudukkanum; $a2 kuduthaa $e extra — advance-ah save aagum. Add pannalama?",
+                en = "Owner, you owe $who only $o; paying $a2 is $e more — it will be kept as advance. Add this?")
+        } else pick(lang,
             ta = "நான் புரிஞ்சுகிட்டது இது ஓனர். சேர்க்கட்டுமா?",
             tl = "Owner, naan purinjukittadhu idhu. Add pannalama?",
             en = "Here's what I understood, Owner. Add this transaction?")
@@ -3960,6 +3999,10 @@ class KaiAgent(
 
     private suspend fun confirm(key: String, lang: KaiLang): KaiTurn? {
         val plan = plans.remove(key) ?: return null
+        // What was owed before this payment: more than that is an advance, said with the save.
+        val owedBefore = if (plan.kind == PlanKind.PAYMENT_IN || plan.kind == PlanKind.PAYMENT_OUT) plan.balanceBefore ?: pendingOf(plan.partyId) else null
+        val advance = owedBefore?.let { plan.amount - it }?.takeIf { it.signum() > 0 && owedBefore.signum() > 0 }
+        val adv = advance?.let { KaiFormat.rupees(it.toDouble()) }
         conversationState.pendingDraft = null
         conversationState.pendingConfirmation = false
         return when (val outcome = tools.confirm(plan)) {
@@ -3980,6 +4023,8 @@ class KaiAgent(
                         en = "Owner, I sent the entry (${outcome.reference}) but couldn't read it back from the books to verify. Please check the Collect / Pay screen — don't save it again.")
                 }
                 // Only the engine's Done, read back from the books, makes "add pannitten" true.
+                personOnTopic = plan.partyName to conversationState.conversationTurn
+                advanceTold = adv?.let { plan.partyName to it }
                 conversationState.lastSaved = KaiSavedPayment(plan.partyName, plan.amount, outcome.reference, plan.dueDate,
                     receivable = plan.kind == PlanKind.CREDIT_GIVEN || plan.kind == PlanKind.PAYMENT_IN,
                     partyId = plan.partyId, kind = plan.kind, turn = conversationState.conversationTurn)
@@ -3987,9 +4032,12 @@ class KaiAgent(
                 val after = outcome.balanceAfter?.let { KaiFormat.rupees(it.toDouble()) }
                 val due = plan.dueDate?.let { KaiFormat.date(it, lang, now().toLocalDate()) }
                 say(lang, KaiMood.SUCCESS, null,
-                    ta = "சேமிச்சுட்டேன் ஓனர். ${ownerName(plan.partyId, plan.partyName)} — $a (${outcome.reference})." + (due?.let { " Due: $it." } ?: "") + (after?.let { " இப்போ பாக்கி $it." } ?: ""),
-                    tl = "Save aagiduchu Owner. ${ownerName(plan.partyId, plan.partyName)} — $a (${outcome.reference})." + (due?.let { " Due: $it." } ?: "") + (after?.let { " Ippo balance $it." } ?: ""),
-                    en = "Saved, Owner. ${ownerName(plan.partyId, plan.partyName)} — $a (${outcome.reference})." + (due?.let { " Due: $it." } ?: "") + (after?.let { " Balance now $it." } ?: ""))
+                    ta = "சேமிச்சுட்டேன் ஓனர். ${ownerName(plan.partyId, plan.partyName)} — $a (${outcome.reference})." + (due?.let { " Due: $it." } ?: "") + (after?.let { " இப்போ பாக்கி $it." } ?: "") +
+                        (adv?.let { " $it advance-ஆ இருக்கு." } ?: ""),
+                    tl = "Save aagiduchu Owner. ${ownerName(plan.partyId, plan.partyName)} — $a (${outcome.reference})." + (due?.let { " Due: $it." } ?: "") + (after?.let { " Ippo balance $it." } ?: "") +
+                        (adv?.let { " $it advance-aa irukku." } ?: ""),
+                    en = "Saved, Owner. ${ownerName(plan.partyId, plan.partyName)} — $a (${outcome.reference})." + (due?.let { " Due: $it." } ?: "") + (after?.let { " Balance now $it." } ?: "") +
+                        (adv?.let { " $it is kept as advance." } ?: ""))
             }
             is ActionOutcome.Failed -> {
                 tools.log("${plan.kind.name.lowercase()} ${plan.partyName}", "transaction engine", outcome.reason, ActionStatus.FAILED, plan.reference ?: plan.key)
