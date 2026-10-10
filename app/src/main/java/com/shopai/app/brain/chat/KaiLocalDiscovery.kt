@@ -46,10 +46,46 @@ object KaiLocalDiscovery {
     /** "kadai-la enga irukku?" — where inside the owner's own shop, not a shop nearby. */
     private val insideShop = Regex("""(?i)kadai\s*-?\s*(la|le|kulla)(?![\p{L}])|கடையில|கடைல|கடைக்குள்ள""")
 
-    /** The kind of place the owner is looking for, or null when this isn't a "where is / near" question. */
-    fun request(text: String): Place? {
+    /** "irukka?", "paaru", "thedu", "enga": the owner is looking for it (not "pakkathula … irukku", a statement). */
+    private val lookFor = Regex(
+        """$B(irukka|irukkaa|iruka|irukaa|irukkanu|irukkaanu|paaru|paru|paar|thedu|thedi|thedunga|kandupidi|kandupudi|find|search|show|enga|engey|where)$E|இருக்கா|பாரு|தேடு|எங்க|எங்கே""",
+        RegexOption.IGNORE_CASE,
+    )
+
+    /** Words said around a place that are not the place ("Spa near by la iruka paru" → "Spa"). */
+    private val notPlace = setOf(
+        "near", "nearby", "by", "close", "around", "here", "inga", "ingey", "inge", "pakkam", "pakkathula", "pakkathil", "pakathula", "pakkathule",
+        "arugil", "arugula", "arugala", "la", "le", "lae", "ah", "aa", "a", "an", "the", "any", "some", "is", "are", "there", "me", "my", "us", "oru",
+        "edhavadhu", "edhaavadhu", "ethavathu", "ethachum", "edhachum", "enakku", "enaku", "ennaku", "kai", "owner", "sir", "anna", "please", "pls",
+        "konjam", "idhu", "ithu", "irukka", "irukkaa", "iruka", "irukaa", "irukkanu", "irukkaanu", "irukku", "iruku", "irukkum", "paaru", "paru", "paar",
+        "thedu", "thedi", "thedunga", "kandupidi", "kandupudi", "find", "search", "show", "enga", "engey", "where", "nu", "nnu", "sollu", "ennanu",
+        "ஒரு", "ஏதாவது", "ல", "லே", "பை", "பக்கத்துல", "பக்கத்தில்", "அருகில்", "அருகே", "இருக்கா", "இருக்கு", "பாரு", "தேடு", "எங்க", "எங்கே",
+    )
+    private val generalShop = setOf("kadai", "kada", "shop", "shops", "store", "stores", "kadaigal", "கடை")
+
+    /**
+     * The kind of place the owner is looking for, or null when this isn't a "where is / near" question. A place Kai has no
+     * name for ("Spa near by la iruka paru", "pakkathula salon irukka?") gets the same answer as the listed ones — never
+     * a person or product of the shop's ([known]).
+     */
+    fun request(text: String, known: Collection<String> = emptyList()): Place? {
         if (!near.containsMatchIn(text) && !where.containsMatchIn(text)) return null
         if (books.containsMatchIn(text) || insideShop.containsMatchIn(text)) return null
-        return places.firstOrNull { it.first.containsMatchIn(text) }?.second
+        val listed = places.firstOrNull { it.first.containsMatchIn(text) }?.second
+        if (listed != null && listed.english != "shops") return listed
+        if (near.containsMatchIn(text) && lookFor.containsMatchIn(text)) said(text, known)?.let { return it }
+        return listed
+    }
+
+    /** The words left once the near / looking-for words are taken out: the place, as the owner said it. */
+    private fun said(text: String, known: Collection<String>): Place? {
+        val rest = near.replace(text, " ").let { lookFor.replace(it, " ") }.split(Regex("""[^\p{L}\p{M}\d]+"""))
+            .filter { it.isNotBlank() && it.lowercase() !in notPlace }
+        if (rest.isEmpty() || rest.size > 3 || rest.any { w -> w.any(Char::isDigit) }) return null
+        if (rest.all { it.lowercase() in generalShop }) return null
+        val names = known.flatMap { it.lowercase().split(Regex("""\s+""")) }.toSet()
+        if (rest.any { it.lowercase() in names }) return null
+        val place = rest.joinToString(" ")
+        return Place(place, place, place)
     }
 }

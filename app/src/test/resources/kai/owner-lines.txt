@@ -105,3 +105,14 @@ ENTRY  | குமார் 1500 குட்தான்                       
 ENTRY  | ம்ம் குமார் 1500 குடுத்தான்                        | IN Kumar 1500
 ENTRY  | ABC டிரேடர்ஸுக்கு 3000 நெஃப்ட் பண்ணிட்டேன்          | OUT ABC Traders 3000
 ASK    | குமார் கரெக்டா பேமெண்ட் பண்ணுவானா                  | Kumar; late
+
+# Any place nearby gets the same answer — not only the kinds Kai has a name for (owner, 10 Oct 2026: hardware was
+# answered, spa wasn't, and neither was understood from the mic). Never a shop name made up, never the books.
+ASK    | hardware shops near by la iruka paru            | hardware; Maps
+ASK    | Spa near by la iruka paru                       | spa; Maps
+ASK    | pakkathula spa irukka                           | spa; Maps
+ASK    | salon near by la irukka paaru                   | salon; Maps
+ASK    | gym nearby iruka paru                           | gym; Maps
+ASK    | ஸ்பா நியர் பை ல இருக்கா பாரு                      | spa; Maps
+ASK    | ஹார்டுவேர் ஷாப்ஸ் நியர் பை ல இருக்கா பாரு           | hardware; Maps
+ASK    | பக்கத்துல ஹார்டுவேர் கடை இருக்கா                   | hardware; Maps

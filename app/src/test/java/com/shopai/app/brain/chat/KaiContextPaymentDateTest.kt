@@ -415,6 +415,22 @@ class KaiContextPaymentDateTest {
     }
 
     @Test
+    fun anyPlaceNearbyGetsTheSameAnswer() {
+        // Hardware was answered and spa wasn't: a place Kai has no name for is still a place.
+        for ((q, place) in listOf("Spa near by la iruka paru" to "Spa", "pakkathula salon irukka?" to "salon", "near by la gym iruka paru" to "gym",
+                "ஸ்பா நியர் பை ல இருக்கா பாரு" to "spa", "பக்கத்துல ஹார்டுவேர் கடை இருக்கா" to "hardware")) {
+            val t = kai().say(q)
+            assertTrue("$q → ${t.reply.text}", t.reply.text.contains(place) && t.reply.text.contains("Maps") && !t.reply.text.contains("₹"))
+        }
+        // The shop's own people and goods are never a place to look for.
+        assertNull(KaiLocalDiscovery.request("Kumar near by la irukka paaru", listOf("Kumar", "Ramesh")))
+        assertNull(KaiLocalDiscovery.request("pakkathula Rice irukka", listOf("Rice")))
+        // "pakkathula … irukku" says something; it doesn't look for anything.
+        assertNull(KaiLocalDiscovery.request("pakkathula kalyanam irukku"))
+        noWrites()
+    }
+
+    @Test
     fun notEveryWhereIsLocalDiscovery() {
         assertNull(KaiLocalDiscovery.request("Rice stock enga irukku?"))
         assertNull(KaiLocalDiscovery.request("Kumar evlo tharanum?"))

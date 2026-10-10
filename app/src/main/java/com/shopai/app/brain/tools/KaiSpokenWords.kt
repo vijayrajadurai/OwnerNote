@@ -80,6 +80,9 @@ object KaiSpokenWords {
         "ஸ்டாஃப்" to "staff", "சிஎம்" to "cm", "பிஎம்" to "pm", "அமேசான்" to "amazon", "ஃப்ளிப்கார்ட்" to "flipkart", "பிளிப்கார்ட்" to "flipkart",
         "ஸ்விக்கி" to "swiggy", "ஆன்லைன்" to "online", "ஆர்டர்" to "order", "ஐபிஎல்" to "ipl", "கிரிக்கெட்" to "cricket", "ஸ்கோர்" to "score",
         "நியூஸ்" to "news", "ஜோக்" to "joke", "லோன்" to "loan",
+        // ---- places nearby ("ஸ்பா நியர் பை ல இருக்கா பாரு") ----
+        "நியர்" to "near", "நியர்பை" to "nearby", "ஹார்டுவேர்" to "hardware", "ஹார்ட்வேர்" to "hardware", "ஹார்டுவேர்ஸ்" to "hardware",
+        "ஷாப்" to "shop", "ஷாப்ஸ்" to "shops", "ஸ்பா" to "spa", "சலூன்" to "salon", "பார்லர்" to "parlour", "ஜிம்" to "gym", "பாரு" to "paaru",
         "ம்ம்" to "hmm", "ம்ம்ம்" to "hmm", "ஹ்ம்" to "hmm", "அய்யோ" to "ayyo", "ஐயோ" to "ayyo",
         "வாங்குனேன்" to "vangunen", "வாங்குனது" to "vangunadhu", "அனுப்பிச்சான்" to "anuppichan", "அனுப்பிச்சாரு" to "anuppichaaru",
         "அனுப்பிச்சேன்" to "anuppichen", "தந்துட்டாங்க" to "thandhutaanga", "தந்துட்டாரு" to "thandhutaaru", "தராங்க" to "tharanga", "தர்றாங்க" to "tharraanga",
