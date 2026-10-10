@@ -463,7 +463,7 @@ class KaiOwnerSweepTest {
                 val b = lastTurn?.card?.buttons?.firstOrNull { it.action is KaiAction.ConfirmPlan || it.action is KaiAction.ConfirmStock || it.action is KaiAction.ConfirmReminder }
                     ?: return fail(what, s, "nothing to tap")
                 s.act(b.action)
-            } else lastTurn = s.say(l)
+            } else lastTurn = s.say(answer(l))
         }
         check(s)?.let { fail(what, s, it) }
     }
@@ -472,7 +472,10 @@ class KaiOwnerSweepTest {
     private fun conversationLines() {
         // The owner's conversation (10 Oct 2026): what was said before, push-back, and what Kai can't do — nothing invented,
         // nothing written by itself.
-        fun said(vararg words: String): (Shop) -> String? = { _ -> lastTurn?.reply?.text.orEmpty().let { t -> if (words.all(t::contains)) null else "said: $t" } }
+        fun said(vararg words: String): (Shop) -> String? = { _ ->
+            val want = if (mic) words.filter(KaiMicForm::keepsInTamil).map(KaiMicForm::inTamil) else words.toList()
+            // A phrase Kai repeats back ("Ramesh 1000 kuduthan") comes back as the owner said it: "Ramesh 1000 குடுத்தான்" from the mic.
+            lastTurn?.reply?.text.orEmpty().let { t -> if (want.all { w -> t.contains(w) || mic && t.contains(KaiMicForm.repeated(w)) }) null else "said: $t" } }
         fun nothingWritten(vararg words: String): (Shop) -> String? = { s -> said(*words)(s) ?: if (s.nothingWritten()) null else "wrote something" }
         fun button(kind: String): (Shop) -> String? = { _ -> if (lastTurn?.card?.buttons?.any { (it.action as? KaiAction.OpenRecord)?.kind == kind } == true) null else "no $kind button" }
         talk("both of them", listOf("Selvam evlo tharanum", "Ramesh?", "rendu perum total evlo"), check = said("Selvam ₹6,000", "Ramesh ₹2,500", "₹8,500"))
@@ -491,14 +494,17 @@ class KaiOwnerSweepTest {
         talk("change a saved entry", listOf("Ramesh 1500 kuduthan", "TAP", "1500 illa 1000 dhaan, maathu"), check = { s ->
             said("TXN-1", "Ramesh 1000 kuduthan")(s) ?: if (s.tools.saved.size == 1) null else "saved ${s.tools.saved.size}" })
         talk("take back, spoken", listOf("குமார் 2000 குடுத்தான்", "TAP", "தப்பா போட்டுட்ட, கேன்சல் பண்ணு"), check = said("TXN-1", "Cancel"))
-        talk("Kai got it wrong", listOf("Selvam evlo tharanum", "nee sonnadhu thappu"), check = nothingWritten("Mannichikonga"))
+        talk("Kai got it wrong", listOf("Selvam evlo tharanum", "nee sonnadhu thappu"), check = nothingWritten(if (mic) "மன்னிச்சுக்கோங்க" else "Mannichikonga"))
         talk("puriyala: again, in Tamil", listOf("Selvam evlo tharanum", "puriyala"), check = said("தமிழ்ல", "₹6,000"))
         talk("GST bill: the billing screen, not the scanner", listOf("GST bill podu Kumar ku 5000"), check = { s ->
             nothingWritten("Billing")(s) ?: button("SALE_BILL")(s) ?: if (lastTurn?.card?.buttons?.any { it.action == KaiAction.OpenScanner } == true) "opened the scanner" else null })
         talk("WhatsApp: can't send, can remind", listOf("Kumar ku whatsapp la payment reminder anuppu"), check = said("WhatsApp", "mudiyaadhu", "remind"))
+        // Kai's Tamil reply keeps these words as they are (cricket, news, joke …) — checked as they are, typed and spoken.
         for ((ask, word) in listOf("naalaiku mazhai varuma" to "weather", "ipl score enna" to "cricket", "tamil nadu cm yaaru" to "news", "oru joke sollu" to "joke",
                 "enakku loan venum" to "loan", "employee salary kanakku podu" to "salary", "amazon la 10 kg rice order pannu" to "Amazon", "நாளைக்கு மழை வருமா" to "வானிலை"))
-            talk("not Kai's work: $ask", listOf(ask), check = nothingWritten(word))
+            talk("not Kai's work: $ask", listOf(ask), check = { s ->
+                val w = if (mic && word == "weather") "வானிலை" else word
+                lastTurn?.reply?.text.orEmpty().let { t -> if (t.contains(w)) null else "said: $t" } ?: if (s.nothingWritten()) null else "wrote something" })
         talk("a date", listOf("1 varusham kalichi enna date"), check = said("October 8, 2027"))
         // Paid more than owed (owner's conversation, 10 Oct 2026): the extra is said before Confirm and after, and
         // "ippa evlo tharanum" is about the person just talked about.
@@ -532,7 +538,7 @@ class KaiOwnerSweepTest {
         talk("asked if saved before Confirm", listOf("Kumar 2000 kuduthan", "save pannitiya")) { s ->
             if (s.nothingWritten() && !s.log.contains("Save aagiduchu")) null else "claimed / saved without Confirm" }
         talk("balance read back after a payment", listOf("Kumar 2000 kuduthan", "aama", "Kumar evlo tharanum")) { s ->
-            if (s.log.contains("₹2,000 tharanum")) null else "balance not read back as ₹2,000" }
+            if (s.log.contains("₹2,000 tharanum") || mic && s.log.contains("₹2,000 தரணும்")) null else "balance not read back as ₹2,000" }
         talk("follow-up 'avan' after a person", listOf("Kumar evlo tharanum", "avan eppo tharuvan")) { s ->
             if (s.log.lines().last { it.isNotBlank() }.contains("Kumar")) null else "follow-up lost Kumar" }
         talk("stock draft cancelled", listOf("Colgate 2 box vandhuchu", "venam")) { s -> if (s.inv.moves.isEmpty()) null else "stock changed after venam" }
@@ -574,7 +580,7 @@ class KaiOwnerSweepTest {
         moneyLines(); reminderLines(); stockLines(); questionLines(); conversationLines(); feedLines()
         // The same lines said into the mic.
         mic = true
-        moneyLines(); reminderLines(); stockLines(); questionLines(); feedLines()
+        moneyLines(); reminderLines(); stockLines(); questionLines(); conversationLines(); feedLines()
         mic = false
         System.getProperty("sweep.out")?.let { java.io.File(it).writeText("$count lines, ${failures.size} failed\n\n" + failures.joinToString("\n\n")) }
         assertTrue("${failures.size} of $count owner lines failed:\n\n" + failures.joinToString("\n\n"), failures.isEmpty())

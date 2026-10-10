@@ -12,7 +12,8 @@ When you change what Kai understands:
    to `KaiSpokenWords` (`"குடுத்தான்" to "kuduthaan"`), and the typed → spoken pair to the test helper `KaiMicForm`.
 2. **Add the owner's line to `app/src/test/resources/kai/owner-lines.txt`.** `KaiOwnerSweepTest` plays every line twice —
    typed, and as the mic writes it (`KaiMicForm`) — and both must give the same books / stock / reminder result.
-   A fix that works only typed fails that test.
+   A fix that works only typed fails that test. Multi-turn conversations (`talk(...)` in `conversationLines`) are
+   played both ways too — a reply check that looks for a Tanglish word must also accept Kai's Tamil reply to the mic.
 3. If the line is something only said aloud, add it in Tamil script as well (`KaiVoiceOwnersTest` and owner-lines).
 
 Kai never says "Save aagiduchu" before the database confirms the save; nothing is written before Confirm.

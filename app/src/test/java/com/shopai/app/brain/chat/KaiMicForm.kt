@@ -44,6 +44,12 @@ object KaiMicForm {
         varanum=வரணும் vendiyadhu=வேண்டியது vikkala=விக்கல vithadhu=வித்தது vithuchu=வித்துச்சு vithuten=வித்துட்டேன் yaar=யார்
         yaaru=யாரு yar=யார் yaru=யாரு yarukita=யாருகிட்ட yaruku=யாருக்கு yentha=எந்த
         venam=வேணாம் pudhu=புது pieces=பீஸ் skip=ஸ்கிப் aama=ஆமா ennakku=எனக்கு
+        aal=ஆள் adha=அத akash=ஆகாஷ் amazon=அமேசான் anuppu=அனுப்பு aprom=அப்புறம் avan=அவன் bill=பில் cancel=கேன்சல் cm=சிஎம்
+        dhaan=தான் employee=எம்ப்ளாயி first=ஃபர்ஸ்ட் gst=ஜிஎஸ்டி illa=இல்ல ipl=ஐபிஎல் ippa=இப்ப joke=ஜோக் kai=கை
+        kalichi=கழிச்சு kanakku=கணக்கு ketta=கேட்ட loan=லோன் maathu=மாத்து mazhai=மழை nadu=நாடு nee=நீ nu=னு order=ஆர்டர்
+        paakalam=பாக்கலாம் perum=பேரும் podu=போடு pottutta=போட்டுட்ட puriyala=புரியல reminder=ரிமைண்டர் salary=சேலரி score=ஸ்கோர்
+        sonna=சொன்ன sonnadhu=சொன்னது tamil=தமிழ் tharnum=தரணும் thappa=தப்பா thappu=தப்பு varuma=வருமா varusham=வருஷம் venum=வேணும்
+        whatsapp=வாட்ஸ்அப்
     """.trim().split(Regex("""\s+""")).associate { it.substringBefore('=') to it.substringAfter('=') }
 
     /** Said as one word ("katti tan" is "கட்டிட்டான்"). */
@@ -66,6 +72,9 @@ object KaiMicForm {
         s = Regex("""[A-Za-z]+""").replace(s) { m -> words[m.value.lowercase(Locale.ROOT)] ?: m.value }
         return s.takeIf { it != typed }
     }
+
+    /** A phrase Kai repeats back to a spoken line: the owner's words as the mic wrote them, names as the shop has them. */
+    fun repeated(typed: String): String = Regex("""(?<![\p{L}])[a-z]+(?![\p{L}])""").replace(typed) { m -> words[m.value] ?: m.value }
 
     private val months = listOf("January" to "ஜனவரி", "February" to "பிப்ரவரி", "March" to "மார்ச்", "April" to "ஏப்ரல்", "May" to "மே", "June" to "ஜூன்",
         "July" to "ஜூலை", "August" to "ஆகஸ்ட்", "September" to "செப்டம்பர்", "October" to "அக்டோபர்", "November" to "நவம்பர்", "December" to "டிசம்பர்")

@@ -75,6 +75,11 @@ object KaiSpokenWords {
         "புரியல" to "puriyala", "புரிஞ்சுக்கல" to "purinjukala", "ஜிஎஸ்டி" to "gst", "பில்லு" to "bill", "இன்வாய்ஸ்" to "invoice", "வாட்ஸ்அப்" to "whatsapp",
         "வாட்ஸ்அப்ல" to "whatsapp la", "ரெண்டு பேரும்" to "rendu perum", "பேரும்" to "perum", "ஃபர்ஸ்ட்" to "first", "முதல்ல" to "mudhalla",
         "கேட்ட" to "ketta", "ஆளு" to "aalu", "ஆள்" to "aal", "தேதி" to "thethi", "கிழமை" to "kizhamai", "வருஷம்" to "varusham",
+        // ---- what Kai doesn't do (weather, news, orders, staff) — said in Tamil script, heard as typed ----
+        "கணக்கு" to "kanakku", "கணக்க" to "kanakka", "சேலரி" to "salary", "சம்பளம்" to "sambalam", "எம்ப்ளாயி" to "employee", "எம்ப்ளாயீ" to "employee",
+        "ஸ்டாஃப்" to "staff", "சிஎம்" to "cm", "பிஎம்" to "pm", "அமேசான்" to "amazon", "ஃப்ளிப்கார்ட்" to "flipkart", "பிளிப்கார்ட்" to "flipkart",
+        "ஸ்விக்கி" to "swiggy", "ஆன்லைன்" to "online", "ஆர்டர்" to "order", "ஐபிஎல்" to "ipl", "கிரிக்கெட்" to "cricket", "ஸ்கோர்" to "score",
+        "நியூஸ்" to "news", "ஜோக்" to "joke", "லோன்" to "loan",
         "ம்ம்" to "hmm", "ம்ம்ம்" to "hmm", "ஹ்ம்" to "hmm", "அய்யோ" to "ayyo", "ஐயோ" to "ayyo",
         "வாங்குனேன்" to "vangunen", "வாங்குனது" to "vangunadhu", "அனுப்பிச்சான்" to "anuppichan", "அனுப்பிச்சாரு" to "anuppichaaru",
         "அனுப்பிச்சேன்" to "anuppichen", "தந்துட்டாங்க" to "thandhutaanga", "தந்துட்டாரு" to "thandhutaaru", "தராங்க" to "tharanga", "தர்றாங்க" to "tharraanga",

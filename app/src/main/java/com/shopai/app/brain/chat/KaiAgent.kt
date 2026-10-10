@@ -550,17 +550,17 @@ class KaiAgent(
             en = "Sorry, Owner 🙏 Tell me what's wrong — the name, the amount, or something else? E.g. “not Kumar, Ramesh” / “not 2000, 1500”." + (last?.third ?: ""))
     }
 
-    /** "puriyala" after a plain answer: the same answer again, in Tamil. */
+    /** "puriyala" after a plain answer: the same answer again, in Tamil (said again when it already was — the mic's case). */
     private suspend fun explainAgain(lang: KaiLang): KaiTurn? {
         val (question, answeredIn) = lastPlainAnswer ?: return say(lang, KaiMood.CLARIFY, "owner: not clear",
             ta = "மன்னிச்சுக்கோங்க ஓனர் 🙏 எதை மறுபடி சொல்லணும்? பேர், தொகை, தேதி — எது புரியல?",
             tl = "Mannichikonga Owner 🙏 Edhai marubadi sollanum? Peru, amount, date — edhu puriyala?",
             en = "Sorry, Owner 🙏 What should I say again — the name, the amount, or the date?")
-        if (answeredIn == KaiLang.TAMIL) return say(KaiLang.TAMIL, KaiMood.CLARIFY, "owner: not clear",
-            ta = "மன்னிச்சுக்கோங்க ஓனர் 🙏 எந்த பகுதி புரியல — பேரா, தொகையா, தேதியா? அதை மட்டும் சுலபமா சொல்றேன்.", tl = "", en = "")
         forcedLang = KaiLang.TAMIL
         val again = try { answerOwner(question) } finally { forcedLang = null }
-        return withPrefix("சரி ஓனர், தமிழ்ல சொல்றேன்:", again)
+        if (answeredIn != KaiLang.TAMIL) return withPrefix("சரி ஓனர், தமிழ்ல சொல்றேன்:", again)
+        return withPrefix("சரி ஓனர், மறுபடி சொல்றேன்:", again).let { t ->
+            t.copy(reply = t.reply.copy(text = t.reply.text + "\n\nஎந்த பகுதி புரியல-னு சொன்னா (பேரா, தொகையா, தேதியா) அதை மட்டும் சுலபமா சொல்றேன்.")) }
     }
 
     /** "illa avan 3000 dhaan tharanum": the records say otherwise — said plainly, never changed by itself. */
