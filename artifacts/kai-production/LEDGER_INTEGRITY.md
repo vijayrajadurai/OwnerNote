@@ -147,3 +147,26 @@ First run: 31 of the ~233 spoken lines did something different from the typed li
 "ரெண்டு ஆயிரம்" (a number then thousand), "சப்ளையருக்கு" (a loan word with -க்கு), and product names cut short in Tamil
 ("கோல்கா 1 பாக்ஸ்" = Colgate, "பனியா 10" = Baniyan). All fixed: 473 lines, typed and spoken, 0 failures.
 
+
+## Conversation: what was said before, push-back, and what Kai can't do (`fix/kai-conversation`)
+
+`KaiConversationCare` (rules only) and the Brain's memory of who was talked about:
+
+| The owner said | Before | Now |
+|---|---|---|
+| "rendu perum total evlo" after two people | "Rendu-nu customer record kidaikala" | the two, and their total |
+| "first ketta aal evlo tharanum" | "First-nu record kidaikala" | the first person of the conversation |
+| "ippo evlo irukku" after a product | "Ippo-nu product illa" | that product's stock |
+| draft open, "illa thappu, Ramesh dhaan kuduthan" | asked Ramesh's amount | the same amount drafted for Ramesh (Confirm) |
+| draft open, "ippo venam aprom paakalam" | "idhu Kumar pathiyaa?" | draft cancelled, nothing saved |
+| "illa avan 3000 dhaan tharanum" | "'Illa Kumar' — puthu customer-aa?" | records vs the owner's figure, the difference, what to say to record it; never changed by itself |
+| after a save: "adha cancel pannu" / "1500 illa 1000, maathu" | "appadi oru reminder illa" / "idhu Ramesh pathiyaa?" | the entry and where to cancel it (View button) — chat never deletes a saved entry |
+| "nee sonnadhu thappu", "nee onnum purinjukala" | "idhu Selvam pathiyaa?" | sorry + what to say to put it right |
+| "puriyala" after an answer | — | the same answer again, in Tamil |
+| "GST bill podu Kumar ku 5000" | opened the bill **scanner** | Billing screen button (bill editor) or a credit entry |
+| "WhatsApp la … anuppu" | reminder flow, nothing said | "can't send WhatsApp / SMS" + the reminder |
+| weather, cricket, CM, joke, loan, salary, Amazon | "Payment-aa, stock-aa, reminder-aa?" | said plainly: not Kai's work, and what Kai does |
+| "1 varusham kalichi enna date" | "Payment-aa, stock-aa?" | the date |
+
+All in `KaiOwnerSweepTest` (conversations, Tanglish and Tamil). The "SALE_BILL" button opens the bill editor from
+`ShopAiApp.kt` — Android UI, not compiled in this environment.

@@ -470,6 +470,37 @@ class KaiOwnerSweepTest {
     private var lastTurn: KaiTurn? = null
 
     private fun conversationLines() {
+        // The owner's conversation (10 Oct 2026): what was said before, push-back, and what Kai can't do — nothing invented,
+        // nothing written by itself.
+        fun said(vararg words: String): (Shop) -> String? = { _ -> lastTurn?.reply?.text.orEmpty().let { t -> if (words.all(t::contains)) null else "said: $t" } }
+        fun nothingWritten(vararg words: String): (Shop) -> String? = { s -> said(*words)(s) ?: if (s.nothingWritten()) null else "wrote something" }
+        fun button(kind: String): (Shop) -> String? = { _ -> if (lastTurn?.card?.buttons?.any { (it.action as? KaiAction.OpenRecord)?.kind == kind } == true) null else "no $kind button" }
+        talk("both of them", listOf("Selvam evlo tharanum", "Ramesh?", "rendu perum total evlo"), check = said("Selvam ₹6,000", "Ramesh ₹2,500", "₹8,500"))
+        talk("both of them, spoken", listOf("செல்வம் எவ்வளவு தரணும்", "ரமேஷ் எவ்வளவு தரணும்", "ரெண்டு பேரும் மொத்தம் எவ்வளவு"), check = said("₹8,500"))
+        talk("the first person asked", listOf("Kumar evlo tharanum", "Colgate stock evlo", "Lakshmi due date eppo", "first ketta aal evlo tharanum nu sonna"),
+            check = said("Kumar", "₹4,000"))
+        talk("the same product again", listOf("Colgate stock evlo", "Lux soap evlo irukku", "ippo evlo irukku"), check = said("Lux Soap", "60"))
+        talk("not Kumar — Ramesh", listOf("Kumar 2000 kuduthan", "illa thappu, Ramesh dhaan kuduthan", "TAP")) { s ->
+            if (s.tools.saved.singleOrNull()?.let { it.partyName == "Ramesh" && it.amount.compareTo(BigDecimal("2000")) == 0 } == true) null
+            else "saved ${s.tools.saved.map { "${it.partyName} ${it.amount}" }}" }
+        talk("not now", listOf("Kumar 2000 kuduthan", "ippo venam aprom paakalam"), check = nothingWritten())
+        talk("the owner disputes a balance", listOf("Kumar evlo tharanum", "illa avan 3000 dhaan tharanum"), check = { s ->
+            nothingWritten("₹4,000", "₹3,000", "₹1,000")(s) ?: button("CUSTOMER")(s) })
+        talk("take back a saved entry", listOf("Kumar 2000 kuduthan", "TAP", "thappa pottutta, adha cancel pannu"), check = { s ->
+            said("TXN-1", "Cancel")(s) ?: button("CUSTOMER")(s) ?: if (s.tools.saved.size == 1) null else "saved ${s.tools.saved.size}" })
+        talk("change a saved entry", listOf("Ramesh 1500 kuduthan", "TAP", "1500 illa 1000 dhaan, maathu"), check = { s ->
+            said("TXN-1", "Ramesh 1000 kuduthan")(s) ?: if (s.tools.saved.size == 1) null else "saved ${s.tools.saved.size}" })
+        talk("take back, spoken", listOf("குமார் 2000 குடுத்தான்", "TAP", "தப்பா போட்டுட்ட, கேன்சல் பண்ணு"), check = said("TXN-1", "Cancel"))
+        talk("Kai got it wrong", listOf("Selvam evlo tharanum", "nee sonnadhu thappu"), check = nothingWritten("Mannichikonga"))
+        talk("puriyala: again, in Tamil", listOf("Selvam evlo tharanum", "puriyala"), check = said("தமிழ்ல", "₹6,000"))
+        talk("GST bill: the billing screen, not the scanner", listOf("GST bill podu Kumar ku 5000"), check = { s ->
+            nothingWritten("Billing")(s) ?: button("SALE_BILL")(s) ?: if (lastTurn?.card?.buttons?.any { it.action == KaiAction.OpenScanner } == true) "opened the scanner" else null })
+        talk("WhatsApp: can't send, can remind", listOf("Kumar ku whatsapp la payment reminder anuppu"), check = said("WhatsApp", "mudiyaadhu", "remind"))
+        for ((ask, word) in listOf("naalaiku mazhai varuma" to "weather", "ipl score enna" to "cricket", "tamil nadu cm yaaru" to "news", "oru joke sollu" to "joke",
+                "enakku loan venum" to "loan", "employee salary kanakku podu" to "salary", "amazon la 10 kg rice order pannu" to "Amazon", "நாளைக்கு மழை வருமா" to "வானிலை"))
+            talk("not Kai's work: $ask", listOf(ask), check = nothingWritten(word))
+        talk("a date", listOf("1 varusham kalichi enna date"), check = said("October 8, 2027"))
+        talk("a reminder at 5 pm is still a reminder", listOf("remind me tomorrow 5 pm to call Kumar", "TAP")) { s -> if (s.tools.rems.size == 1) null else "no reminder" }
         // From the owner's phone (9 Oct 2026): a bill with no due date was said "— innaikku" in the summary while its details said
         // "Due date illa", "andha 12 peroda details" showed the 2 due today instead of the 12 overdue, and "2 TV vaangi irukken"
         // wasn't understood. (An entry with no due date is still listed by its bill date — only never given that date.)

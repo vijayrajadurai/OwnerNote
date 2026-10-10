@@ -60,7 +60,7 @@ object KaiSmallTalk {
                 r("""(?:ni|ne|nenga|ningal) yaru?|yaru? (?:ni|ne|nenga)|who (?:are|r) (?:you|u)"""),
                 ta("""(?:நீ|நீங்க|நீங்கள்)\s*(?:யாரு|யார்)|(?:யாரு|யார்)\s*(?:நீ|நீங்க)"""),
             )),
-        Rule(Kind.PRAISE, r("""super|semma|nice|great|awesome|good\s*job|well\s*done|sema""")),
+        Rule(Kind.PRAISE, r("""super|semma|nice|great|awesome|good\s*job|well\s*done|sema|(i\s*)?love\s*(you|u)|luv\s*(you|u)|unna\s*pidikkum|romba\s*pidikkum""")),
         Rule(Kind.HELLO, r("""hi|hii|hello|helo|hey|vanakkam|vanakam|kai"""), family = r("""hi|helo|hey|vanakam""")),
         Rule(Kind.OK, r("""ok|okay|okk|seri|sari|good"""), family = r("""ok|okay|hm""")),
     )

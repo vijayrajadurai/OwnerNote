@@ -625,6 +625,8 @@ fun ShopAiApp(container: AppContainer) {
                         "PRODUCT" -> navController.navigate(if (id.isNotBlank()) Routes.productDetail(id) else Routes.Inventory)
                         "INVENTORY" -> navController.navigate(Routes.Inventory)
                         "REMINDERS" -> navController.navigate(Routes.Reminders)
+                        // "GST bill podu": Kai chat doesn't make bills — the bill editor does (for that customer when Kai knew who).
+                        "SALE_BILL" -> navController.navigate(Routes.billEditor("SALE", id.ifBlank { null }))
                     }
                 },
             )

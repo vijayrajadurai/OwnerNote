@@ -73,6 +73,24 @@ class KaiBusinessBrain(
 ) {
     /** Short conversation memory. */
     private var lastParty: PartyFacts? = null
+        set(value) {
+            field = value
+            // Who this conversation has been about, in the order last asked ("rendu perum" = the last two; "first ketta aal" = the first).
+            if (value != null) {
+                if (firstTalkedAbout.none { it.id == value.id && it.side == value.side } && firstTalkedAbout.size < 8) firstTalkedAbout.add(value)
+                talkedAbout.removeAll { it.id == value.id && it.side == value.side }
+                talkedAbout += value
+                if (talkedAbout.size > 8) talkedAbout.removeAt(0)
+            }
+        }
+    private val talkedAbout = mutableListOf<PartyFacts>()
+    private val firstTalkedAbout = mutableListOf<PartyFacts>()
+
+    /** The people this conversation was about, in the order they first came up. */
+    fun peopleTalkedAbout(): List<String> = firstTalkedAbout.map { it.name }
+
+    /** The person asked about last (for "avan 3000 dhaan tharanum"). */
+    fun lastPerson(): String? = talkedAbout.lastOrNull()?.name
     /** Parties the owner must choose between ("Kumar-nu rendu customer irukku"). */
     private var choices: List<PartyFacts> = emptyList()
     private var choiceQuery: ChatQuery? = null
@@ -181,6 +199,10 @@ class KaiBusinessBrain(
             choices = emptyList()
             choiceQuery = null
         }
+
+        // "rendu perum total evlo" after asking about two people: those two, from the ledger now.
+        if (ledger != null && talkedAbout.size >= 2 && KaiConversationCare.asksBoth(text) &&
+            KaiUnderstanding.knownPerson(text, ledger.people) == null) bothAnswer(talkedAbout.takeLast(2), ledger, lang)?.let { return it }
 
         val query = KaiChatUnderstanding.understand(text, day, ledger?.people.orEmpty())
         // The Daily Cash Note is on the phone: it answers even when the ledger can't be reached.
@@ -1401,9 +1423,26 @@ class KaiBusinessBrain(
         return KaiLanguage.forChat(text)
     }
 
+    /** "Owner, Selvam ₹6,000 + Ramesh ₹2,500 — rendu perum mothama ₹8,500 tharanum." */
+    private fun bothAnswer(two: List<PartyFacts>, ledger: BusinessSnapshot, lang: KaiLang): ChatReply? {
+        val now = two.map { p -> ledger.parties.firstOrNull { it.id == p.id && it.side == p.side } ?: p }
+        if (now.map { it.side }.distinct().size != 1) return null
+        val pay = now.first().side == Direction.PAYABLE
+        val parts = now.joinToString(" + ") { "${label(it)} ${KaiFormat.rupees(it.pending)}" }
+        val total = KaiFormat.rupees(now.sumOf { it.pending })
+        val intent = if (pay) ChatIntent.TOTAL_PAYABLE else ChatIntent.TOTAL_RECEIVABLE
+        return reply(intent, KaiMood.EXPLAINING, lang, when (lang) {
+            KaiLang.TAMIL -> "ஓனர், $parts — ரெண்டு பேரும் மொத்தம் $total ${if (pay) "கொடுக்கணும்" else "தரணும்"}."
+            KaiLang.TANGLISH -> "Owner, $parts — rendu perum mothama $total ${if (pay) "kudukkanum" else "tharanum"}."
+            KaiLang.ENGLISH -> "Owner, $parts — $total in all ${if (pay) "to pay" else "to collect"} from both."
+        })
+    }
+
     /** Start a fresh conversation (context cleared). */
     fun reset() {
         lastParty = null
+        talkedAbout.clear()
+        firstTalkedAbout.clear()
         choices = emptyList()
         choiceQuery = null
         lastList = null
