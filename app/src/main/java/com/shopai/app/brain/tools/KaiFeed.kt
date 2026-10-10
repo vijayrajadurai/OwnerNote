@@ -49,6 +49,23 @@ object KaiFeed {
         kodthan
         kodthaan
         kodhuthan
+        pottan
+        pottaan
+        pottutan
+        pottutaan
+        pottaanga
+        pottanga
+        pottaaru
+        adachitan
+        adachitaan
+        adaichitan
+        adaichitaan
+        adachaan
+        adachan
+        transfer pannan
+        transfer pannaan
+        transfer pannitan
+        transfer pannitaan
     """)
 
     /** Money the owner PAID — "ABC Traders-ku 500 ____". */
@@ -76,6 +93,13 @@ object KaiFeed {
         kudhuthen
         kodthen
         kodhuthen
+            potten
+        pottuten
+        adachiten
+        adaichiten
+        adachen
+        transfer panniten
+        transfer pannen
     """)
 
     /** Stock that CAME IN — "Colgate 2 box ____". */

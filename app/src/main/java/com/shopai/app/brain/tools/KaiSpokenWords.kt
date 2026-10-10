@@ -83,6 +83,17 @@ object KaiSpokenWords {
         // ---- places nearby ("ஸ்பா நியர் பை ல இருக்கா பாரு") ----
         "நியர்" to "near", "நியர்பை" to "nearby", "ஹார்டுவேர்" to "hardware", "ஹார்ட்வேர்" to "hardware", "ஹார்டுவேர்ஸ்" to "hardware",
         "ஷாப்" to "shop", "ஷாப்ஸ்" to "shops", "ஸ்பா" to "spa", "சலூன்" to "salon", "பார்லர்" to "parlour", "ஜிம்" to "gym", "பாரு" to "paaru",
+        // ---- units, payment modes, money words, sums and small talk said in Tamil script (typed versions already understood) ----
+        "கிராம்" to "gram", "கிராமு" to "gram", "கிராம்ஸ்" to "grams", "மில்லி" to "ml", "ஸ்ட்ரிப்" to "strip", "ரோல்" to "roll",
+        "செக்" to "cheque", "செக்ல" to "cheque la", "செக்கு" to "cheque", "கார்டு" to "card", "கார்ட்" to "card", "கார்டுல" to "card la", "கார்ட்ல" to "card la",
+        "டிரான்ஸ்ஃபர்" to "transfer", "ட்ரான்ஸ்ஃபர்" to "transfer", "டிரான்ஸ்பர்" to "transfer", "ட்ரான்ஸ்பர்" to "transfer",
+        "போட்டான்" to "pottaan", "போட்டுட்டான்" to "pottutaan", "போட்டாங்க" to "pottaanga", "போட்டாரு" to "pottaaru", "போட்டேன்" to "potten", "போட்டுட்டேன்" to "pottuten",
+        "அடைச்சிட்டான்" to "adachitaan", "அடைச்சுட்டான்" to "adachitaan", "அடைச்சான்" to "adachaan", "அடைச்சிட்டேன்" to "adachiten", "அடைச்சேன்" to "adachen",
+        "பெருக்கல்" to "perukkal", "கூட்டல்" to "koottal", "கழித்தல்" to "kazhithal", "வகுத்தல்" to "vaguthal",
+        "பர்சன்ட்" to "percent", "பெர்சன்ட்" to "percent", "பர்சென்ட்" to "percent", "பெர்சென்ட்" to "percent", "பர்செண்ட்" to "percent",
+        "நல்லா" to "nalla", "நல்லாருக்கியா" to "nalla irukkiya", "இருக்கியா" to "irukkiya", "இருக்கீங்களா" to "irukkeengala", "போரடிக்குது" to "bore adikkudhu",
+        "கோல்டு" to "gold", "தங்கம்" to "thangam", "பெட்ரோல்" to "petrol", "டீசல்" to "diesel", "டாலர்" to "dollar", "ரேட்" to "rate", "விலை" to "vilai",
+        "ட்ரெயின்" to "train", "டிரெயின்" to "train", "ராசி" to "raasi", "பலன்" to "palan", "ரெசிபி" to "recipe",
         "ம்ம்" to "hmm", "ம்ம்ம்" to "hmm", "ஹ்ம்" to "hmm", "அய்யோ" to "ayyo", "ஐயோ" to "ayyo",
         "வாங்குனேன்" to "vangunen", "வாங்குனது" to "vangunadhu", "அனுப்பிச்சான்" to "anuppichan", "அனுப்பிச்சாரு" to "anuppichaaru",
         "அனுப்பிச்சேன்" to "anuppichen", "தந்துட்டாங்க" to "thandhutaanga", "தந்துட்டாரு" to "thandhutaaru", "தராங்க" to "tharanga", "தர்றாங்க" to "tharraanga",

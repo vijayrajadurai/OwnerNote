@@ -138,6 +138,10 @@ object KaiCalculator {
         // "50 kg × ₹82", "50 x 82", "10x3": x between numbers (a unit may follow the first).
         s = Regex("""(\d)\s*(?:(?:$unitWords)\s*)?[x×]\s*₹?\s*(?=\d)""").replace(s) { "${it.groupValues[1]} * " }
         s = s.replace('×', '*').replace('÷', '/')
+            .replace(Regex("""(?<=\d)\s*(perukkal|perukki|perukka)\s*(?=\d)"""), " * ")
+            .replace(Regex("""(?<=\d)\s*(kooda|koodu|koottal|kootal|kootti|serthu|கூட|கூட்டல்)\s*(?=\d)"""), " + ")
+            .replace(Regex("""(?<=\d)\s*(kazhithal|kalithal)\s*(?=\d)"""), " - ")
+            .replace(Regex("""(?<=\d)\s*(vaguthal|vakuthal)\s*(?=\d)"""), " / ")
             .replace(Regex("""\b(into|times|multiplied by|perukku)\b"""), " * ")
             .replace(Regex("""\b(divided by|divide by)\b"""), " / ")
             .replace(Regex("""\bplus\b"""), " + ")

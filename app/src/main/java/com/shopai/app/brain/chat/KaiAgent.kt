@@ -498,6 +498,14 @@ class KaiAgent(
                 tl = "$note Ungalukku call / message panna reminder venumna sollunga.", en = "$note If you want, I can remind you to call or message them.")
         }
         if (named == null) KaiConversationCare.beyondBooks(said)?.let { return beyond(it, lang) }
+        // "2500 ku gst evlo": the rate isn't said — each common rate worked out, never one guessed.
+        KaiConversationCare.gstWithoutRate(said)?.let { amount ->
+            val rows = listOf(5, 12, 18, 28).joinToString(" / ") { r -> "$r% = ${KaiFormat.rupees(amount * r / 100)}" }
+            val a = KaiFormat.rupees(amount)
+            return say(lang, KaiMood.EXPLAINING, "gst without a rate", ta = "ஓனர், $a-க்கு GST எத்தனை % -னு சொல்லலை. $rows. Rate சொன்னா total-உம் சொல்றேன் (உதா: “$a la 18% GST”).",
+                tl = "Owner, $a-ku GST evlo %-nu sollala. $rows. Rate sonna total-um solren (eg: “${amount.toLong()} la 18% GST”).",
+                en = "Owner, the GST rate wasn't said. On $a: $rows. Tell me the rate for the total (e.g. “18% GST on ${amount.toLong()}”).")
+        }
         if (named == null) KaiConversationCare.dateAsked(said, now().toLocalDate())?.let { d ->
             val ta = KaiConversationCare.dateText(d, tamil = true)
             val en = KaiConversationCare.dateText(d, tamil = false)
@@ -622,6 +630,11 @@ class KaiAgent(
                 "Owner, Amazon / online-la order panna ennaala mudiyaadhu. Maal vandhadhum “Rice 10 kg vandhuchu”-nu sollunga, stock-la serkkuren.",
                 "Owner, I can't place Amazon / online orders. When the goods come, say “Rice 10 kg came” and I'll add them to stock.")
             KaiConversationCare.Beyond.LOAN -> Triple("ஓனர், loan apply பண்ற வசதி Kai-ல இல்ல.", "Owner, loan apply panra vasadhi Kai-la illa.", "Owner, Kai can't apply for loans.")
+            KaiConversationCare.Beyond.MARKET_PRICE -> Triple("ஓனர், gold / petrol / dollar மாதிரி வெளி விலை எனக்கு தெரியாது.", "Owner, gold / petrol / dollar maadhiri veliya irukka vilai enakku theriyaadhu.",
+                "Owner, I don't know outside prices like gold, petrol or the dollar.")
+            KaiConversationCare.Beyond.TRAVEL -> Triple("ஓனர், train / bus / ticket பத்தி எனக்கு தெரியாது.", "Owner, train / bus / ticket pathi enakku theriyaadhu.", "Owner, I don't know train, bus or ticket details.")
+            KaiConversationCare.Beyond.ASTROLOGY -> Triple("ஓனர், ராசி பலன் / நல்ல நேரம் பத்தி எனக்கு தெரியாது.", "Owner, rasi palan / nalla neram pathi enakku theriyaadhu.", "Owner, I don't know horoscopes or auspicious times.")
+            KaiConversationCare.Beyond.RECIPE -> Triple("ஓனர், சமையல் recipe எனக்கு தெரியாது 😄", "Owner, samayal recipe enakku theriyaadhu 😄", "Owner, I don't know recipes 😄")
             KaiConversationCare.Beyond.STAFF -> Triple("ஓனர், staff salary / attendance கணக்கு Kai-ல இன்னும் இல்ல.", "Owner, staff salary / attendance kanakku Kai-la innum illa.",
                 "Owner, staff salary / attendance isn't in Kai yet.")
         }

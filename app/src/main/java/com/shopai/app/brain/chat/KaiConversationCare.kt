@@ -99,7 +99,7 @@ internal object KaiConversationCare {
     fun withoutMessageApp(text: String) = Regex("""(?i)(?<![\p{L}])(whatsapp|whats\s*app|watsapp|sms|text\s*message)\s*(-?\s*(la|le|il|lla|via|on|through))?(?![\p{L}])""")
         .replace(text, " ").replace(Regex("""\s+"""), " ").trim()
 
-    enum class Beyond { WEATHER, SPORTS, NEWS, FUN, ONLINE_ORDER, LOAN, STAFF }
+    enum class Beyond { WEATHER, SPORTS, NEWS, FUN, ONLINE_ORDER, LOAN, STAFF, MARKET_PRICE, TRAVEL, ASTROLOGY, RECIPE }
 
     private val beyond = listOf(
         Beyond.WEATHER to Regex("""(?i)(?<![\p{L}])(mazhai|mazha|weather|veyil|kulir|rain|climate|temperature|puyal)(?![\p{L}])|மழை|வெயில்|புயல்"""),
@@ -110,6 +110,12 @@ internal object KaiConversationCare {
         Beyond.FUN to Regex("""(?i)(?<![\p{L}])(joke|jokes|kadhai|story|paatu|paattu|song|movie|cinema|riddle|vidukadhai)(?![\p{L}])|ஜோக்|கதை|பாட்டு"""),
         Beyond.ONLINE_ORDER to Regex("""(?i)(?<![\p{L}])(amazon|flipkart|swiggy|zomato|meesho|jiomart|blinkit|zepto|online\s*(la|le)?\s*order)(?![\p{L}])"""),
         Beyond.LOAN to Regex("""(?i)(?<![\p{L}])(loan|emi\s*venum|finance\s*venum)(?![\p{L}])|லோன்"""),
+        // Prices outside the shop ("gold rate", "petrol vilai", "dollar rate") — never a product of the shop's ("Rice rate enna").
+        // A price word must be said too: "pakkathula petrol bunk irukka" is a place, "Thangam evlo tharanum" a customer.
+        Beyond.MARKET_PRICE to Regex("""(?i)(?=.*(?<![\p{L}])(rate|price|vilai|value)(?![\p{L}]))(?<![\p{L}])(gold|thangam|silver|petrol|diesel|dollar|euro|sensex|nifty|bitcoin|share\s*market)(?![\p{L}])"""),
+        Beyond.TRAVEL to Regex("""(?i)(?<![\p{L}])(train|flight|ticket|irctc|bus\s*(timing|time|eppo|ticket))(?![\p{L}])"""),
+        Beyond.ASTROLOGY to Regex("""(?i)(?<![\p{L}])(raasi|rasi|horoscope|jathagam|jaathagam|rahu\s*kalam|nalla\s*neram|panchangam)(?![\p{L}])"""),
+        Beyond.RECIPE to Regex("""(?i)(?<![\p{L}])(recipe|samayal\s*kurippu|eppadi\s*samaikk?\p{L}*)(?![\p{L}])"""),
         Beyond.STAFF to Regex("""(?i)(?<![\p{L}])(salary|sambalam|employee|employees|staff|worker|velai\s*aal|attendance)(?![\p{L}])|சம்பளம்"""),
     )
 
@@ -117,7 +123,17 @@ internal object KaiConversationCare {
     fun beyondBooks(text: String): Beyond? {
         val hit = beyond.firstOrNull { it.second.containsMatchIn(text) }?.first ?: return null
         val amount = Regex("""\d""").containsMatchIn(text)
-        return hit.takeIf { !amount || it in setOf(Beyond.WEATHER, Beyond.SPORTS, Beyond.NEWS, Beyond.FUN, Beyond.ONLINE_ORDER) }
+        return hit.takeIf { !amount || it in setOf(Beyond.WEATHER, Beyond.SPORTS, Beyond.NEWS, Beyond.FUN, Beyond.ONLINE_ORDER, Beyond.ASTROLOGY, Beyond.RECIPE) }
+    }
+
+    /** "2500 ku gst evlo": one amount and GST, no rate — the amount, or null. */
+    fun gstWithoutRate(text: String): Double? {
+        if (!Regex("""(?i)(?<![\p{L}])gst(?![\p{L}])""").containsMatchIn(text) || Regex("""(?i)%|percent|sathaveedham""").containsMatchIn(text)) return null
+        // Asked as a sum ("evlo", "how much"), not "2 manikku GST file panna remind pannu".
+        if (!Regex("""(?i)(?<![\p{L}])(evlo|evvalavu|yevlo|how\s*much|enna\s*varum|calculate)(?![\p{L}])|எவ்வளவு""").containsMatchIn(text) ||
+            Regex("""(?i)remind|reminder|manikku|maniku|file|ரிமைண்ட்""").containsMatchIn(text)) return null
+        val numbers = Regex("""\d[\d,]*(?:\.\d+)?""").findAll(text).map { it.value.replace(",", "") }.toList()
+        return numbers.singleOrNull()?.toDoubleOrNull()?.takeIf { it > 0 }
     }
 
     // ------------------------------------------------------------ dates
@@ -150,9 +166,16 @@ internal object KaiConversationCare {
             Regex("""(?i)(naalanniku|naalanaiku|day\s*after\s*tomorrow)""").containsMatchIn(t) -> today.plusDays(2)
             Regex("""(?i)(naalai|nalai|tomorrow)""").containsMatchIn(t) -> today.plusDays(1)
             Regex("""(?i)(nethu|neththu|yesterday)""").containsMatchIn(t) -> today.minusDays(1)
-            else -> today
+            // "next friday", "வெள்ளிக்கிழமை", "15/10": the same day a reminder would take.
+            else -> com.shopai.app.brain.tools.KaiTime.dayOf(t, today)
+                // "enna date?", "innaiku enna kizhamai?": today. A day Kai can't read ("pongal enna date") is never said as today.
+                ?: today.takeIf { onlyAsks(t) }
         }
     }
+
+    private val askFillers = setOf("kai", "owner", "sir", "anna", "ippo", "ippa", "ah", "aa", "sollu", "sollunga", "la", "inniku", "innaiku", "innaikku",
+        "today", "indru", "is", "it", "the", "what", "date", "day", "enna", "yenna", "endha", "which", "thethi", "thedhi", "naal", "kizhamai", "kilamai", "இன்னைக்கு", "இன்று")
+    private fun onlyAsks(t: String) = t.lowercase(Locale.ROOT).split(Regex("""[^\p{L}\p{M}\d]+""")).filter { it.isNotBlank() }.all { it in askFillers || it.endsWith("கிழமை") }
 
     private val weekdayTa = mapOf(DayOfWeek.MONDAY to "திங்கள்", DayOfWeek.TUESDAY to "செவ்வாய்", DayOfWeek.WEDNESDAY to "புதன்", DayOfWeek.THURSDAY to "வியாழன்",
         DayOfWeek.FRIDAY to "வெள்ளி", DayOfWeek.SATURDAY to "சனி", DayOfWeek.SUNDAY to "ஞாயிறு")

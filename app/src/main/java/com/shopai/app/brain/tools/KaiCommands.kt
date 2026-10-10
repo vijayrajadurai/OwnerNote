@@ -113,7 +113,8 @@ object KaiCommands {
         val flowWords = has("vandh", "vanth", "pona", "ponadhu", "poch", "today", "inniku", "innaikku", "in", "out", "came", "spent", "sent")
         if (balanceWords && !flowWords) {
             when {
-                has("bank", "account la", "பேங்க்") -> return KaiCommand.MoneyBalance(MoneyKind.BANK)
+                // "Kumar account la evlo irukku" is Kumar's balance; "account la evlo irukku" alone is the bank's.
+                has("bank", "பேங்க்") || has("account la") && personIn(raw, knownPeople) == null -> return KaiCommand.MoneyBalance(MoneyKind.BANK)
                 has("upi", "gpay", "phonepe", "paytm") -> return KaiCommand.MoneyBalance(MoneyKind.UPI)
                 has("cash", "kaasu", "panam", "rokkam", "ரொக்கம்", "பணம்") -> return KaiCommand.MoneyBalance(MoneyKind.CASH)
             }

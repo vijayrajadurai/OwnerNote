@@ -116,3 +116,33 @@ ASK    | gym nearby iruka paru                           | gym; Maps
 ASK    | ஸ்பா நியர் பை ல இருக்கா பாரு                      | spa; Maps
 ASK    | ஹார்டுவேர் ஷாப்ஸ் நியர் பை ல இருக்கா பாரு           | hardware; Maps
 ASK    | பக்கத்துல ஹார்டுவேர் கடை இருக்கா                   | hardware; Maps
+
+# A word Kai had no rule for (owner, 10 Oct 2026: "check all features for the spa kind of bug"). Typed and spoken alike.
+ENTRY  | Kumar 2000 pottan                               | IN Kumar 2000
+ENTRY  | Kumar 2000 adachitan                            | IN Kumar 2000
+ENTRY  | Kumar 2000 transfer pannan                      | IN Kumar 2000
+ENTRY  | குமார் 2000 போட்டான்                              | IN Kumar 2000
+ENTRY  | குமார் 2000 டிரான்ஸ்ஃபர் பண்ணான்                   | IN Kumar 2000
+ENTRY  | ABC Traders ku 3000 potten                      | OUT ABC Traders 3000
+STOCK  | Rice 500 gram vithuchu                          | Rice 249.5
+STOCK  | ரைஸ் 500 கிராம் வித்துச்சு                         | Rice 249.5
+REMIND | ratri 9 manikku kadai poota remind pannu        | 2026-10-08 21:00 poota
+REMIND | ராத்திரி 9 மணிக்கு கடை பூட்ட ரிமைண்ட் பண்ணு          | 2026-10-08 21:00 பூட்ட
+REMIND | next friday 10 manikku Kumar ku call panna remind pannu | 2026-10-09 10:00 Kumar
+ASK    | next friday enna date                           | October 9
+ASK    | friday enna date                                | October 9
+ASK    | அடுத்த வெள்ளிக்கிழமை என்ன தேதி                   | அக்டோபர் 9; வெள்ளி
+ASK    | Kumar account la evlo irukku                    | Kumar; ₹4,000
+ASK    | gold rate enna                                  | gold; theriyaadhu
+ASK    | தங்கம் விலை என்ன                                 | gold; தெரியாது
+ASK    | petrol price evlo                               | petrol; theriyaadhu
+ASK    | train eppo varum                                | train; theriyaadhu
+ASK    | inniku rasi palan sollu                         | rasi palan; theriyaadhu
+ASK    | biryani recipe sollu                            | recipe; theriyaadhu
+ASK    | 2500 ku gst evlo                                | 18% = ₹450; 5% = ₹125
+ASK    | 100 kooda 250 evlo                              | 350
+ASK    | 100 கூட 250 எவ்வளவு                              | 350
+ASK    | 500 பெருக்கல் 12 எவ்வளவு                           | 6,000
+ASK    | 25000 ல 18 பர்சன்ட் ஜிஎஸ்டி எவ்வளவு                 | ₹4,500; ₹29,500
+ASK    | நல்லா இருக்கியா                                  | நல்லா இருக்கேன்
+ASK    | bore adikkudhu                                  | rest

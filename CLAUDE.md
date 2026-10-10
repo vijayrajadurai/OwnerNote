@@ -16,4 +16,8 @@ When you change what Kai understands:
    played both ways too — a reply check that looks for a Tanglish word must also accept Kai's Tamil reply to the mic.
 3. If the line is something only said aloud, add it in Tamil script as well (`KaiVoiceOwnersTest` and owner-lines).
 
+When a rule works from a list (places, off-topic subjects, units, payment modes, money words, weekdays), test a word that is
+NOT in the list too (owner, 10 Oct 2026: "hardware" was answered, "spa" wasn't). A word Kai can't read is asked about or
+said plainly — never turned into a different answer (an unknown day is never "today", an unknown unit never the default unit).
+
 Kai never says "Save aagiduchu" before the database confirms the save; nothing is written before Confirm.

@@ -41,7 +41,7 @@ object KaiSmallTalk {
         Rule(Kind.STATUS, r("""are you (?:tired|busy|free|ok|okay)|r u (?:tired|busy|free)"""),
             family = r("""(?:tired|busy|bijy|kalaipa|sorva)(?: ah?)? iru(?:ka|kiya|kinga|kingala|kengala)""")),
         Rule(Kind.BUSY, r("""busy|bijy|velai\s*adhigam|romba\s*velai|neraya\s*velai|time\s*illa""")),
-        Rule(Kind.TIRED, r("""tired|kalaippa|kalaipa|tiredah|tired-ah|soarvaa|sorva|mudiyala|thookam\s*varudhu|thookama""")),
+        Rule(Kind.TIRED, r("""tired|kalaippa|kalaipa|tiredah|tired-ah|soarvaa|sorva|mudiyala|thookam\s*varudhu|thookama|bore\s*adikk?u(dhu|thu|du)|boring|bore\s*ah\s*irukku""")),
         Rule(Kind.GREETING_MORNING, r("""good\s*morning|gud\s*morning|gm""")),
         Rule(Kind.GREETING_AFTERNOON, r("""good\s*afternoon""")),
         Rule(Kind.GREETING_EVENING, r("""good\s*evening""")),

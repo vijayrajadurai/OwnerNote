@@ -118,17 +118,17 @@ object KaiTime {
     private val monthlyWords = Regex("""$B(monthly|every\s*month|ovvoru\s*maasamum|ovvoru\s*masamum|maasa\s*maasam|masa\s*masam|month\s*thorum)$E|ஒவ்வொரு\s*மாதமும்|மாசா\s*மாசம்""", RegexOption.IGNORE_CASE)
 
     private val weekdays: List<Pair<DayOfWeek, List<String>>> = listOf(
-        DayOfWeek.MONDAY to listOf("monday", "mon", "thingal", "thingakizhamai", "thingal kizhamai", "திங்கள்"),
-        DayOfWeek.TUESDAY to listOf("tuesday", "tue", "tues", "sevvai", "sevvaai", "sevvai kizhamai", "செவ்வாய்"),
-        DayOfWeek.WEDNESDAY to listOf("wednesday", "wed", "budhan", "buthan", "budhan kizhamai", "புதன்"),
-        DayOfWeek.THURSDAY to listOf("thursday", "thu", "thurs", "vyazhan", "viyazhan", "viyalan", "வியாழன்"),
-        DayOfWeek.FRIDAY to listOf("friday", "fri", "velli", "vellikizhamai", "velli kizhamai", "வெள்ளி"),
-        DayOfWeek.SATURDAY to listOf("saturday", "sat", "sani", "sanikizhamai", "sani kizhamai", "சனி"),
-        DayOfWeek.SUNDAY to listOf("sunday", "sun", "nyayiru", "gnayiru", "nyaayiru", "ஞாயிறு"),
+        DayOfWeek.MONDAY to listOf("monday", "mon", "thingal", "thingakizhamai", "thingal kizhamai", "திங்கள்", "திங்கக்கிழமை", "திங்கட்கிழமை", "திங்கள்கிழமை"),
+        DayOfWeek.TUESDAY to listOf("tuesday", "tue", "tues", "sevvai", "sevvaai", "sevvai kizhamai", "செவ்வாய்", "செவ்வாய்க்கிழமை", "செவ்வாக்கிழமை"),
+        DayOfWeek.WEDNESDAY to listOf("wednesday", "wed", "budhan", "buthan", "budhan kizhamai", "புதன்", "புதன்கிழமை"),
+        DayOfWeek.THURSDAY to listOf("thursday", "thu", "thurs", "vyazhan", "viyazhan", "viyalan", "வியாழன்", "வியாழக்கிழமை"),
+        DayOfWeek.FRIDAY to listOf("friday", "fri", "velli", "vellikizhamai", "velli kizhamai", "வெள்ளி", "வெள்ளிக்கிழமை"),
+        DayOfWeek.SATURDAY to listOf("saturday", "sat", "sani", "sanikizhamai", "sani kizhamai", "சனி", "சனிக்கிழமை"),
+        DayOfWeek.SUNDAY to listOf("sunday", "sun", "nyayiru", "gnayiru", "nyaayiru", "ஞாயிறு", "ஞாயிற்றுக்கிழமை", "ஞாயித்துக்கிழமை"),
     )
 
     private val partWords: List<Pair<DayPart, Regex>> = listOf(
-        DayPart.NIGHT to Regex("""$B(tonight|night|iravu|raathiri|rathiri|raatri|nite)$E|இரவு|ராத்திரி""", RegexOption.IGNORE_CASE),
+        DayPart.NIGHT to Regex("""$B(tonight|night|iravu|raathiri|rathiri|raatri|ratri|rathri|raathri|ratiri|nite)$E|இரவு|ராத்திரி""", RegexOption.IGNORE_CASE),
         DayPart.EVENING to Regex("""$B(evening|saayangalam|sayangalam|saayangaalam|saayandhiram|maalai|maalaila|malaila|eve)$E|சாயங்காலம்|மாலை""", RegexOption.IGNORE_CASE),
         DayPart.AFTERNOON to Regex("""$B(afternoon|madhiyam|mathiyam|madhiyanam|after\s*lunch|lunch\s*kalichu)$E|மதியம்""", RegexOption.IGNORE_CASE),
         DayPart.MORNING to Regex("""$B(morning|kaalaila|kalaila|kaalaiyil|kaalai|kalai|kaathaala)$E|காலை""", RegexOption.IGNORE_CASE),
@@ -208,7 +208,7 @@ object KaiTime {
             Regex("""(?i)$B(tonight|today|tomorrow|day after tomorrow|after lunch|lunch kalichu|morning|afternoon|evening|night|""" +
                 """inniku|innaikku|innaiku|innikku|indru|naalaikku|naalaiku|nalaiku|naalai|naalanniku|nalanniku|marunaal|""" +
                 """kaalaila|kalaila|kaalaiyil|kaalai|kalai|madhiyam|mathiyam|madhiyanam|saayangalam|sayangalam|saayangaalam|saayandhiram|maalaila|maalai|""" +
-                """iravu|raathiri|rathiri|raatri|nite)$E"""),
+                """iravu|raathiri|rathiri|raatri|ratri|rathri|raathri|ratiri|nite)$E"""),
             Regex("""(?i)$B(at\s+|@\s*)?\d{1,2}([:.]\d{2})?\s*(am|pm|a\.m\.?|p\.m\.?|mani(kku|ku|kki|ki)?|manikku|o'?\s*clock)(\s*-\s*(ku|kku))?$E"""),
             // "Weekdays 8:30-ku office" — a clock time with minutes, with or without "-ku".
             Regex("""(?i)$B(at\s+|@\s*)?\d{1,2}:\d{2}(\s*-?\s*(ku|kku))?(?![\d\p{L}])"""),
@@ -308,10 +308,14 @@ object KaiTime {
 
     private enum class DaySource { WORD, WEEKDAY, DATE }
 
+    /** The day [raw] says ("naalaiku", "next friday", "10/12"), as reminders read it — null when no day is said. */
+    fun dayOf(raw: String, today: LocalDate): LocalDate? =
+        dayIn(" " + KaiSpokenWords.normalize(raw).lowercase(Locale.ROOT).replace(Regex("""[?!,]"""), " ").replace(Regex("""\s+"""), " ").trim() + " ", today)?.first
+
     /** The day said, and how it was said. */
     private fun dayIn(t: String, today: LocalDate): Pair<LocalDate, DaySource>? {
         fun has(vararg w: String) = w.any { Regex("""$B${Regex.escape(it)}$E""").containsMatchIn(t) }
-        val nextWord = has("next", "adutha", "aduththa", "varra", "vara")
+        val nextWord = has("next", "adutha", "aduththa", "varra", "vara", "அடுத்த")
 
         // "next month 10th" / "adutha maasam 10 thethi".
         if (has("next month", "adutha maasam", "aduththa maasam", "adutha month", "next maasam", "அடுத்த மாதம்", "அடுத்த மாசம்")) {

@@ -514,6 +514,14 @@ class KaiOwnerSweepTest {
             said("Akash", "₹1,000 advance")(s) ?: if (s.tools.saved.singleOrNull()?.amount?.compareTo(BigDecimal("6000")) == 0) null else "saved ${s.tools.saved.map { it.amount }}" }
         talk("paid part, then 'ippa evlo'", listOf("Akash evlo tharanum", "avan 2000 kuduthutan", "TAP", "ippa evlo tharanum"), akash, said("Akash", "₹3,000"))
         talk("paid more than owed, spoken", listOf("ஆகாஷ் எவ்வளவு தரணும்", "அவன் 6000 குடுத்துட்டான்", "TAP", "இப்ப எவ்வளவு தரணும்"), akash, said("Akash", "₹1,000 advance"))
+        // The way money came is kept as said — typed or spoken (a spoken "செக்" was saved as cash).
+        for ((line, mode) in listOf("Kumar 2000 cheque la kuduthan" to PaymentMode.CHEQUE,
+                "Kumar 2000 card la kuduthan" to PaymentMode.CARD,
+                "Kumar 2000 bank transfer pannan" to PaymentMode.BANK_TRANSFER,
+                "குமார் 2000 செக் குடுத்தான்" to PaymentMode.CHEQUE))
+            talk("paid by ${mode.name.lowercase()}: $line", listOf(line, "TAP")) { s ->
+                val p = s.tools.saved.singleOrNull()
+                if (p == null) "saved ${s.tools.saved.size}" else if (p.mode == mode) null else "saved as ${p.mode}" }
         talk("a reminder at 5 pm is still a reminder", listOf("remind me tomorrow 5 pm to call Kumar", "TAP")) { s -> if (s.tools.rems.size == 1) null else "no reminder" }
         // From the owner's phone (9 Oct 2026): a bill with no due date was said "— innaikku" in the summary while its details said
         // "Due date illa", "andha 12 peroda details" showed the 2 due today instead of the 12 overdue, and "2 TV vaangi irukken"
