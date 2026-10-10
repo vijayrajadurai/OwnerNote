@@ -444,7 +444,15 @@ class KaiAgent(
      */
     private var kaiAskedAfterDraft = false
 
-    suspend fun ask(raw: String): KaiTurn = answerOwner(raw).let { t ->
+    /** The owner's last questions, as asked ("naan munnadi enna ketten?"). */
+    private val recentAsks = ArrayDeque<String>()
+    private var askDepth = 0
+
+    suspend fun ask(raw: String): KaiTurn = run {
+        if (askDepth == 0 && !KaiConversationCare.asksWhatWasAsked(raw)) { recentAsks.addLast(raw.trim()); while (recentAsks.size > 6) recentAsks.removeFirst() }
+        askDepth++
+        try { answerOwner(raw) } finally { askDepth-- }
+    }.let { t ->
         // "Akash account clear" right after Akash paid ₹1,000 more than he owed: the advance is said too.
         val adv = advanceTold?.takeIf { (p, _) -> p == personOnTopic?.first && t.card == null && t.reply.text.contains(p) &&
             Regex("""(?i)clear|pending\s*illa|baaki\s*illa|பாக்கி எதுவும் இல்ல|nothing\s*(is\s*)?(due|pending)|no\s*balance""").containsMatchIn(t.reply.text) }
@@ -474,7 +482,8 @@ class KaiAgent(
         val people = runCatching { books.snapshot()?.people.orEmpty() }.getOrDefault(emptyList())
         val named = com.shopai.app.brain.KaiUnderstanding.knownPerson(said, people)
         // Right after an entry was saved: "adha cancel pannu", "1500 illa 1000, maathu", "nee thappa pottutta".
-        conversationState.lastSaved?.takeIf { conversationState.conversationTurn - it.turn <= 2 && (named == null || samePerson(named, it.person)) }?.let { saved ->
+        // A reminder set since then is what "adha" means — not the entry.
+        conversationState.lastSaved?.takeIf { conversationState.conversationTurn - it.turn <= 2 && lastReminderTurn < it.turn && (named == null || samePerson(named, it.person)) }?.let { saved ->
             val amount = saved.amount.stripTrailingZeros().toPlainString()
             when (KaiConversationCare.takeback(said)) {
                 KaiConversationCare.Takeback.UNDO -> return takeBack(saved, null, lang)
@@ -483,6 +492,48 @@ class KaiAgent(
                 null -> Unit
             }
             if (KaiConversationCare.kaiGotItWrong(said)) return gotItWrong(saved, lang)
+        }
+        // "adha cancel pannu" a few turns after the save (a stock or small-talk question in between): still that entry,
+        // when it is pointed at and no reminder was set since.
+        conversationState.lastSaved?.takeIf { s -> conversationState.conversationTurn - s.turn in 3..12 && lastReminderTurn < s.turn &&
+            KaiConversationCare.pointsAtEntry(said) && (named == null || samePerson(named, s.person)) }?.let { saved ->
+            val amount = saved.amount.stripTrailingZeros().toPlainString()
+            when (KaiConversationCare.takeback(said)) {
+                KaiConversationCare.Takeback.UNDO -> return takeBack(saved, null, lang)
+                KaiConversationCare.Takeback.CHANGE -> if (Regex("""(?i)(maath|change|edit|thiruth|correct)""").containsMatchIn(said))
+                    return takeBack(saved, Regex("""\d[\d,]*""").findAll(said).map { it.value.replace(",", "") }.firstOrNull { it != amount }, lang)
+                null -> Unit
+            }
+        }
+        // "innoru 500 kuduthan" after Kumar's ₹2,000: Kumar again — a new draft, Confirm first.
+        if (named == null && KaiConversationCare.anotherPayment(said)) {
+            val who = conversationState.lastSaved?.takeIf { conversationState.conversationTurn - it.turn <= 12 }?.person ?: personOnTopic?.first ?: brain.lastPerson()
+            if (who != null) return askAs(lang, "$who " + Regex("""(?i)(?<![\p{L}])(innoru|innum\s+oru|innonu|innum|marupadi|thirumba|again|another|also)(?![\p{L}])|இன்னொரு|இன்னும்|மறுபடி""").replace(said, " ").trim())
+        }
+        // "Ramesh um adhe amount kuduthan": the amount just said.
+        (conversationState.lastSaved?.takeIf { conversationState.conversationTurn - it.turn <= 12 }?.amount ?: conversationState.lastAmount)?.let { last ->
+            KaiConversationCare.withSameAmount(said, last.stripTrailingZeros().toPlainString())?.let { return askAs(lang, it) }
+        }
+        // "avan paadhi kuduthan": half of what that person owes — said, then drafted (Confirm first).
+        if (KaiConversationCare.paysHalf(said)) {
+            val who = named ?: personOnTopic?.first ?: brain.lastPerson()
+            val party = who?.let { w -> runCatching { books.snapshot()?.parties?.filter { it.name.equals(w, ignoreCase = true) } }.getOrNull()?.singleOrNull() }
+            if (who != null && party != null && party.pending > 0.5) {
+                val halfAmount = BigDecimal.valueOf(party.pending / 2).setScale(2, java.math.RoundingMode.HALF_UP).stripTrailingZeros()
+                val whole = KaiFormat.rupees(party.pending); val h = KaiFormat.rupees(halfAmount.toDouble())
+                val text = KaiConversationCare.withoutHalf(said, halfAmount.toPlainString()).let { if (named == null) "$who $it" else it }
+                return withPrefix(pick(lang, ta = "$who $whole-ல பாதி = $h.", tl = "$who $whole-la paadhi = $h.", en = "Half of $who's $whole is $h."), askAs(lang, text))
+            }
+        }
+        // "naan munnadi enna ketten": the last questions, as asked.
+        if (KaiConversationCare.asksWhatWasAsked(said)) {
+            val asked = recentAsks.toList().takeLast(3)
+            return if (asked.isEmpty()) say(lang, KaiMood.NEUTRAL, null, ta = "ஓனர், இந்த பேச்சுல இன்னும் எதுவும் கேக்கல.", tl = "Owner, indha pechula innum edhuvum kekkala.",
+                en = "Owner, you haven't asked anything yet in this chat.")
+            else say(lang, KaiMood.EXPLAINING, "what was asked",
+                ta = "ஓனர், நீங்க கடைசியா கேட்டது:\n" + asked.mapIndexed { i, q -> "${i + 1}. $q" }.joinToString("\n"),
+                tl = "Owner, neenga kadaisiya kettadhu:\n" + asked.mapIndexed { i, q -> "${i + 1}. $q" }.joinToString("\n"),
+                en = "Owner, you last asked:\n" + asked.mapIndexed { i, q -> "${i + 1}. $q" }.joinToString("\n"))
         }
         if (KaiConversationCare.kaiGotItWrong(said)) return gotItWrong(null, lang)
         if (KaiConversationCare.ownerDidNotFollow(said)) explainAgain(lang)?.let { return it }
@@ -539,6 +590,13 @@ class KaiAgent(
             ta = "ஓனர், $a பாக்கி யாருக்கும் இல்ல. எல்லாரோட list-க்கு “யார் யார் தரணும்”-னு கேளுங்க.",
             tl = "Owner, $a baaki yaarukkum illa. Ellaaroda list-ku “yaar yaar tharanum”-nu kelunga.",
             en = "Owner, no one has a balance of $a. Ask “who owes me” for the full list.")
+    }
+
+    /** The owner's words with a name / amount filled in, answered in the language the owner used (spoken Tamil gets Tamil). */
+    private suspend fun askAs(lang: KaiLang, text: String): KaiTurn {
+        val before = forcedLang
+        forcedLang = lang
+        return try { ask(text) } finally { forcedLang = before }
     }
 
     /** "TXN-1 — Kumar ₹2,000 save aagi irukku": saved entries are never deleted from chat — the owner cancels it on its page. */
@@ -3704,7 +3762,15 @@ class KaiAgent(
     }
 
     /** A button was tapped. */
-    suspend fun act(action: KaiAction, lang: KaiLang): KaiTurn? = when (action) {
+    /** The turn a reminder was last set: "adha cancel pannu" after it means the reminder, not an earlier entry. */
+    private var lastReminderTurn = -1L
+
+    suspend fun act(action: KaiAction, lang: KaiLang): KaiTurn? {
+        if (action is KaiAction.ConfirmReminder) lastReminderTurn = conversationState.conversationTurn
+        return actOn(action, lang)
+    }
+
+    private suspend fun actOn(action: KaiAction, lang: KaiLang): KaiTurn? = when (action) {
         is KaiAction.LearnMeaning, is KaiAction.LearnEntity, is KaiAction.NotThis, is KaiAction.OnlyNow, is KaiAction.LearnAlias, is KaiAction.LearnWord,
         is KaiAction.PickUnit, is KaiAction.ManageMemory ->
             when (val step = learner?.act(action, lang)) {
@@ -3790,6 +3856,8 @@ class KaiAgent(
     }
 
     fun reset() {
+        recentAsks.clear()
+        lastReminderTurn = -1L
         kaiAskedAfterDraft = false
         plans.clear()
         requests.clear()

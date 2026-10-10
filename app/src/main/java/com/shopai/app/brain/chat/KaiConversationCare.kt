@@ -82,7 +82,35 @@ internal object KaiConversationCare {
 
     /** "ippo evlo irukku", "innum evlo irukku": the same product, asked again with no name. */
     private val sameThingAgain = Regex("""(?i)^\s*(ippo|ipo|ippa|innum|now|ippodhu|ippavum|meedhi|balance)\s*(stock\s*)?(evlo|evvalavu|ethana|how\s*much|enna)\s*(irukku|iruku|irukka|left|irundhuchu|aachu)?\s*[?!.]*\s*$""")
-    fun asksSameProductAgain(text: String) = sameThingAgain.containsMatchIn(text.trim())
+    /** "athu evlo irukku", "adhu stock evlo", "அது எவ்வளவு இருக்கு": the product talked about — even after a question about someone. */
+    private val thatProductAgain = Regex("""(?i)^\s*(athu|adhu|athula|adhula|antha|andha\s+product|அது|அதுல|அந்த)\s*(ippo|ippa|innum)?\s*(stock\s*)?(evlo|evvalavu|ethana|how\s*much|enna|எவ்வளவு)?\s*(irukku|iruku|irukka|left|stock|இருக்கு|இருக்கா)\s*[?!.]*\s*$""")
+    fun asksSameProductAgain(text: String) = sameThingAgain.containsMatchIn(text.trim()) || thatProductAgain.containsMatchIn(text.trim())
+
+    // ------------------------------------------------------------ what was said before
+
+    /** "adha cancel pannu", "andha entry-ai azhi": the entry itself is pointed at — so it can be meant a few turns later too. */
+    private val pointsAtIt = Regex("""(?i)(?<![\p{L}])(adha|adhai|atha|athai|adhu|athu|andha|antha|kadaisi\p{L}*|last|ippo\s*potta|munnadi\s*potta)(?![\p{L}])|அத|அதை|அந்த""")
+    fun pointsAtEntry(text: String) = pointsAtIt.containsMatchIn(text)
+
+    /** "innoru 500 kuduthan", "innum 500 kuduthaan": more money from the same person. */
+    private val anotherOne = Regex("""(?i)(?<![\p{L}])(innoru|innum\s+oru|innonu|innum|marupadi|thirumba|again|another|also)(?![\p{L}])|இன்னொரு|இன்னும்|மறுபடி""")
+    // Money given (said in the past): "kuduthan", "anuppinan", "kattinaan" — never "kudukkanum" (still owed).
+    private val moneyVerb = Regex("""(?i)(?<![\p{L}])(kuduth\p{L}*|kudhuth\p{L}*|koduth\p{L}*|kudth\p{L}*|anupp(?:in|ich|iy)\p{L}*|kattin\p{L}*|katti\s*t\p{L}*|thandh\p{L}*|pottaa?n\p{L}*|vandhuchu|vanthuchu|paid|sent|gave)(?![\p{L}])""")
+    fun anotherPayment(text: String) = anotherOne.containsMatchIn(text) && moneyVerb.containsMatchIn(text) && Regex("""\d""").containsMatchIn(text)
+
+    /** "Ramesh um adhe amount kuduthan", "same amount": the amount said just before. */
+    private val sameAmount = Regex("""(?i)(?<![\p{L}])(adhe|athe|adhey|athey|same|ade)\s*(amount|alavu|panam|thogai|kaasu)(?![\p{L}])|அதே\s*(amount|அமௌண்ட்|தொகை|அளவு)""")
+    fun withSameAmount(text: String, amount: String): String? =
+        if (sameAmount.containsMatchIn(text) && text.none(Char::isDigit)) sameAmount.replace(text, amount) else null
+
+    /** "avan paadhi kuduthan", "half kuduthan": half of what that person owes. */
+    private val half = Regex("""(?i)(?<![\p{L}])(paadhi|half|arai\s*(panam|amount))(?![\p{L}])|பாதி""")
+    fun paysHalf(text: String) = half.containsMatchIn(text) && moneyVerb.containsMatchIn(text) && text.none(Char::isDigit)
+    fun withoutHalf(text: String, amount: String) = half.replace(text, amount)
+
+    /** "naan munnadi enna ketten", "enna kettom": what the owner asked a moment ago. */
+    private val whatDidIAsk = Regex("""(?i)(munnadi|mudhalla|last|kadaisiya|previous|before|ippo)?\s*(naan|nan|na|naanga)?\s*(enna|edhu|ethu|what)\s*(kett\p{L}*|sonnen|sonnom|pesinom|asked|did\s+i\s+ask)(?![\p{L}])|என்ன\s*கேட்டேன்""")
+    fun asksWhatWasAsked(text: String) = whatDidIAsk.containsMatchIn(text.trim())
 
     // ------------------------------------------------------------ what Kai can't do
 

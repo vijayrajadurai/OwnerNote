@@ -84,7 +84,7 @@ object KaiSpokenWords {
         "நியர்" to "near", "நியர்பை" to "nearby", "ஹார்டுவேர்" to "hardware", "ஹார்ட்வேர்" to "hardware", "ஹார்டுவேர்ஸ்" to "hardware",
         "ஷாப்" to "shop", "ஷாப்ஸ்" to "shops", "ஸ்பா" to "spa", "சலூன்" to "salon", "பார்லர்" to "parlour", "ஜிம்" to "gym", "பாரு" to "paaru",
         // ---- units, payment modes, money words, sums and small talk said in Tamil script (typed versions already understood) ----
-        "கிராம்" to "gram", "இன்ச்" to "inch", "இஞ்ச்" to "inch", "கிராமு" to "gram", "கிராம்ஸ்" to "grams", "மில்லி" to "ml", "ஸ்ட்ரிப்" to "strip", "ரோல்" to "roll",
+        "கிராம்" to "gram", "இன்ச்" to "inch", "கேட்டேன்" to "ketten", "கேட்டோம்" to "kettom", "இஞ்ச்" to "inch", "கிராமு" to "gram", "கிராம்ஸ்" to "grams", "மில்லி" to "ml", "ஸ்ட்ரிப்" to "strip", "ரோல்" to "roll",
         "செக்" to "cheque", "செக்ல" to "cheque la", "செக்கு" to "cheque", "கார்டு" to "card", "கார்ட்" to "card", "கார்டுல" to "card la", "கார்ட்ல" to "card la",
         "டிரான்ஸ்ஃபர்" to "transfer", "ட்ரான்ஸ்ஃபர்" to "transfer", "டிரான்ஸ்பர்" to "transfer", "ட்ரான்ஸ்பர்" to "transfer",
         "போட்டான்" to "pottaan", "போட்டுட்டான்" to "pottutaan", "போட்டாங்க" to "pottaanga", "போட்டாரு" to "pottaaru", "போட்டேன்" to "potten", "போட்டுட்டேன்" to "pottuten",
@@ -206,6 +206,11 @@ object KaiSpokenWords {
             KaiFeed.productNames[w]?.let { english -> if (shopWords.any { it.equals(english, ignoreCase = true) }) return@replace english + m.groupValues[2] }
             nameWords.filter { n -> spelled(n) == w || startsAlike(w, n) && (sounds(w, n) || sounds(w, soft(n))) }.singleOrNull()
                 ?.let { return@replace it + m.groupValues[2] }
+            // "ரமேஷும்" (Ramesh too): the name, then "um".
+            if (w.endsWith("ும்") && w.length > 4) {
+                val stem = w.dropLast(3) + "்"
+                nameWords.filter { n -> startsAlike(stem, n) && (sounds(stem, n) || sounds(stem, soft(n))) }.singleOrNull()?.let { return@replace "$it um" + m.groupValues[2] }
+            }
             // A name cut short, said right before its quantity ("கோல்கா 1 பாக்ஸ்" = Colgate): the one name it is the start of.
             val beforeQty = Regex("""^\s*\d""").containsMatchIn(text.substring(m.range.last + 1))
             val key = com.shopai.app.util.NameSound.key(w)

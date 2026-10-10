@@ -564,6 +564,20 @@ class KaiOwnerSweepTest {
             lastTurn = s.say(answer(ask))
             said(*want.toTypedArray())(s)?.let { fail("stock by word: $ask", s, it) } ?: if (!s.nothingWritten()) fail("stock by word: $ask", s, "wrote something") else Unit
         }
+        // What was said before (owner, 10 Oct 2026 — context memory): the product, the saved entry, the person, the amount.
+        talk("athu: the product, after a question about someone", listOf("Colgate stock evlo", "Kumar evlo tharanum", "athu evlo irukku"), check = said("Colgate", "240"))
+        talk("adha cancel pannu, three turns after the save", listOf("Kumar 2000 kuduthan", "TAP", "Rice evlo irukku", "saptiya", "adha cancel pannu")) { s ->
+            said("TXN-1", "Cancel")(s) ?: if (s.tools.saved.size == 1) null else "saved ${s.tools.saved.size}" }
+        talk("adha cancel pannu after a reminder: the reminder", listOf("Kumar 2000 kuduthan", "TAP", "naalaiku 10 manikku Ramesh ku call panna remind pannu", "TAP", "adha cancel pannu")) {
+            lastTurn?.reply?.text.orEmpty().let { t -> if (!t.contains("TXN-1")) null else "said: $t" } }
+        talk("innoru 500: the same person", listOf("Kumar 2000 kuduthan", "TAP", "innoru 500 kuduthan", "TAP")) { s ->
+            if (s.tools.saved.map { "${it.partyName} ${it.amount.toPlainString()}" } == listOf("Kumar 2000.00", "Kumar 500.00")) null else "saved ${s.tools.saved.map { "${it.partyName} ${it.amount}" }}" }
+        talk("adhe amount: the amount just said", listOf("Kumar 2000 kuduthan", "TAP", "Ramesh um adhe amount kuduthan", "TAP")) { s ->
+            if (s.tools.saved.lastOrNull()?.let { it.partyName == "Ramesh" && it.amount.compareTo(BigDecimal("2000")) == 0 } == true) null else "saved ${s.tools.saved.map { "${it.partyName} ${it.amount}" }}" }
+        talk("paadhi: half the balance", listOf("Kumar evlo tharanum", "avan paadhi kuduthan", "TAP")) { s ->
+            said("₹2,000")(s) ?: if (s.tools.saved.singleOrNull()?.let { it.partyName == "Kumar" && it.amount.compareTo(BigDecimal("2000")) == 0 } == true) null else "saved ${s.tools.saved.map { "${it.partyName} ${it.amount}" }}" }
+        talk("munnadi enna ketten: the last questions", listOf("Kumar evlo tharanum", "Colgate stock evlo", "naan munnadi enna ketten")) {
+            lastTurn?.reply?.text.orEmpty().let { t -> if (t.contains("1.") && t.contains("2.") && !t.contains("pathiyaa")) null else "said: $t" } }
         talk("amount corrected before Confirm", listOf("Kumar 2000 kuduthan", "illa 2500", "aama")) { s ->
             val p = s.tools.saved.singleOrNull()
             when { p == null -> "saved ${s.tools.saved.size}"; p.amount.compareTo(BigDecimal("2500")) != 0 -> "saved ${p.amount}"; else -> null } }
