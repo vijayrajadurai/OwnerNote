@@ -54,6 +54,7 @@ object KaiMicForm {
         poiruchi=போயிருச்சு vangiirukan=வாங்கியிருக்கான் irukan=இருக்கான் vangi=வாங்கி
         cigarette=சிகரெட் pipe=பைப் flake=ஃப்ளேக் lights=லைட்ஸ் inch=இன்ச்
         athu=அது innoru=இன்னொரு adhe=அதே paadhi=பாதி munnadi=முன்னாடி ketten=கேட்டேன்
+        kadaiku=கடைக்கு saman=சாமான் saraku=சரக்கு vandhuruku=வந்திருக்கு pannalama=பண்ணலாமா avlo=அவ்ளோ
         avanga=அவங்க peru=பேரு namba=நம்ம namma=நம்ம vangunan=வாங்குனான் seathuko=சேர்த்துக்கோ serthuko=சேர்த்துக்கோ vengayam=வெங்காயம்
         pottan=போட்டான் potten=போட்டேன் adachitan=அடைச்சிட்டான் transfer=டிரான்ஸ்ஃபர் pannan=பண்ணான் gram=கிராம் ratri=ராத்திரி poota=பூட்ட
         friday=வெள்ளிக்கிழமை account=அக்கவுண்ட் gold=கோல்டு rate=ரேட் petrol=பெட்ரோல் price=விலை train=ட்ரெயின் varum=வரும் rasi=ராசி

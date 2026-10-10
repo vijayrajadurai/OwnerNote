@@ -459,10 +459,15 @@ class KaiOwnerSweepTest {
         count++
         val s = Shop(more)
         for (l in lines) {
-            if (l == "TAP") {
+            if (l == "TAP" || l == "TAP+") {
                 val b = lastTurn?.card?.buttons?.firstOrNull { it.action is KaiAction.ConfirmPlan || it.action is KaiAction.ConfirmStock || it.action is KaiAction.ConfirmReminder }
                     ?: return fail(what, s, "nothing to tap")
-                s.act(b.action)
+                // "TAP+": what Kai says after the tap (the next goods draft) is what the next tap answers.
+                s.act(b.action)?.let { if (l == "TAP+") lastTurn = it }
+            } else if (l == "CANCEL+") {
+                val b = lastTurn?.card?.buttons?.firstOrNull { it.action is KaiAction.CancelStock || it.action is KaiAction.CancelPlan }
+                    ?: return fail(what, s, "nothing to cancel")
+                s.act(b.action)?.let { lastTurn = it }
             } else lastTurn = s.say(answer(l))
         }
         check(s)?.let { fail(what, s, it) }
@@ -592,6 +597,35 @@ class KaiOwnerSweepTest {
         talk("stock draft cancelled", listOf("Colgate 2 box vandhuchu", "venam")) { s -> if (s.inv.moves.isEmpty()) null else "stock changed after venam" }
         talk("stock quantity corrected", listOf("Rice 3 bag vandhuchu", "illa 4 bag dhaan", "TAP")) { s ->
             if (s.inv.item("Rice").stock.compareTo(BigDecimal("350")) == 0) null else "Rice ${s.inv.item("Rice").stock}" }
+        // "Kadaiku saman vandhuruku": goods came, none named — Kai asks which; the next lines are stock-in drafts, Confirm first,
+        // one at a time, until "avlo dhaan" (owner, 10 Oct 2026).
+        fun stock(vararg want: Pair<String, String>): (Shop) -> String? = { s ->
+            want.firstOrNull { (p, q) -> s.inv.item(p).stock.compareTo(BigDecimal(q)) != 0 }?.let { (p, _) -> "$p ${s.inv.item(p).stock}" } }
+        val askedWhich = { s: Shop -> if ((s.log.contains("Enna enna saaman vandhuruku") || s.log.contains("என்ன என்ன சாமான் வந்திருக்கு")) && s.nothingWritten()) null
+            else "goods not asked" }
+        talk("goods came: Kai asks which", listOf("Kadaiku saman vandhuruku"), check = askedWhich)
+        talk("saraku came: asked, not a person", listOf("Kadaiku Saraku vandhuruku"), check = askedWhich)
+        talk("stock add pannalama: asked", listOf("Kadaiku stock add pannalama"), check = askedWhich)
+        talk("maal came: asked", listOf("maal vandhuruku"), check = askedWhich)
+        talk("goods: the item after the question", listOf("Kadaiku Saraku vandhuruku", "Rice 3 moota", "TAP"), check = stock("Rice" to "325"))
+        talk("goods: stock add pannalama then Oil", listOf("Kadaiku stock add pannalama", "Oil 1 box", "TAP"), check = stock("Oil" to "252"))
+        talk("goods: two items, nothing written before Confirm", listOf("Kadaiku saman vandhuruku", "Colgate 2 box, Rice 3 moota")) { s ->
+            if (s.nothingWritten()) null else "wrote before Confirm" }
+        talk("goods: two items, one draft after the other", listOf("Kadaiku saman vandhuruku", "Colgate 2 box, Rice 3 moota", "TAP+", "TAP+"),
+            check = stock("Colgate" to "336", "Rice" to "325"))
+        talk("goods: first cancelled, next still drafted", listOf("saman vandhuruku", "Colgate 2 box, Rice 3 moota", "CANCEL+", "TAP+"),
+            check = stock("Colgate" to "240", "Rice" to "325"))
+        talk("goods: three items", listOf("saman vandhuruku", "Colgate 2 box, Rice 3 moota, Lux soap 20", "TAP+", "TAP+", "TAP+"),
+            check = stock("Colgate" to "336", "Rice" to "325", "Lux Soap" to "80"))
+        talk("goods: said together without the question", listOf("Colgate 2 box, Rice 3 moota vandhuchu", "TAP+", "TAP+"),
+            check = stock("Colgate" to "336", "Rice" to "325"))
+        talk("goods: avlo dhaan ends it", listOf("Kadaiku saman vandhuruku", "Colgate 2 box", "TAP", "avlo dhaan")) { s ->
+            stock("Colgate" to "336")(s) ?: if (s.log.lines().last { it.isNotBlank() }.let { it.contains("Vera saaman vandha") || it.contains("வேற சாமான் வந்தா") }) null else "not ended" }
+        talk("goods: venam — nothing", listOf("Kadaiku saman vandhuruku", "venam")) { s -> if (s.nothingWritten()) null else "wrote after venam" }
+        talk("goods: a balance question in between", listOf("Kadaiku saman vandhuruku", "Kumar evlo tharanum")) { s ->
+            if (s.log.contains("₹4,000") && s.nothingWritten()) null else "balance not answered" }
+        talk("goods: a payment in between is a payment draft", listOf("Kadaiku saman vandhuruku", "Kumar 500 kuduthan", "TAP")) { s ->
+            if (s.tools.saved.singleOrNull()?.partyName == "Kumar" && s.inv.moves.isEmpty()) null else "saved ${s.tools.saved.map { it.partyName }} moves ${s.inv.moves.size}" }
         talk("reminder cancelled before Confirm", listOf("naalaiku 10 manikku Kumar ku call panna remind pannu", "venam")) { s -> if (s.tools.rems.isEmpty()) null else "reminder set after venam" }
         talk("list then details", listOf("Innaiku yar tharanum", "details sollu")) { s ->
             if (s.log.contains("1. Kumar") && s.log.contains("2. Ramesh")) null else "no numbered list" }
