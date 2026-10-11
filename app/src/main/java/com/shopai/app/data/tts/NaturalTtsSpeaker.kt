@@ -290,7 +290,9 @@ class NaturalTtsSpeaker(context: Context) {
         // A line fetched ahead of time plays at once; one still being fetched is awaited, not asked twice.
         val key = cacheKey(trimmed, languageCode)
         val kept = cachedFile(trimmed, languageCode) ?: inflight[key]?.let { runCatching { it.await() }.getOrNull() }
-        val proxyAudio = kept ?: fetchProxyAudio(trimmed, languageCode)
+        // The proxy refuses more than 500 characters: a long answer (a list) is asked for piece by piece and played as ONE
+        // clip in Kai's voice — never handed whole to the device's other voice (owner, 11 Oct 2026).
+        val proxyAudio = kept ?: if (trimmed.length > SpeechChunks.MAX_CHARS) fetchLongAudio(trimmed, languageCode) else fetchProxyAudio(trimmed, languageCode)
         if (asked != generation) {
             // Stopped while the audio was being fetched: it never plays.
             if (kept == null) proxyAudio?.delete()
@@ -327,6 +329,32 @@ class NaturalTtsSpeaker(context: Context) {
             logDebug("Device TTS also failed.")
         }
         onDone?.invoke()
+    }
+
+    /** A long answer's natural voice: each piece ([SpeechChunks]) fetched, joined with a short breath between them. */
+    private suspend fun fetchLongAudio(text: String, languageCode: String): File? {
+        if (ttsApi == null) return null
+        val pieces = SpeechChunks.split(text)
+        val clips = kotlinx.coroutines.coroutineScope {
+            pieces.map { async { fetchProxyAudio(it, languageCode) } }.map { it.await() }
+        }
+        try {
+            if (clips.any { it == null }) {
+                lastFetchError = "long answer: ${clips.count { it == null }} of ${pieces.size} pieces not voiced"
+                return null
+            }
+            return withContext(Dispatchers.IO) {
+                val joined = runCatching { WavJoin.join(clips.map { it!!.readBytes() }, List(pieces.size - 1) { LONG_ANSWER_GAP_MS }) }.getOrNull()
+                if (joined == null) {
+                    lastFetchError = "long answer: pieces could not be joined"
+                    return@withContext null
+                }
+                Log.i(TAG, "long answer: ${text.length} chars in ${pieces.size} pieces, one clip")
+                File.createTempFile("tts_long_", ".wav", appContext.cacheDir).apply { writeBytes(joined) }
+            }
+        } finally {
+            clips.forEach { it?.delete() }
+        }
     }
 
     private suspend fun fetchProxyAudio(text: String, languageCode: String): File? {
@@ -496,6 +524,8 @@ class NaturalTtsSpeaker(context: Context) {
     companion object {
         /** Kept natural-voice lines (oldest go first). */
         private const val MAX_KEPT_LINES = 120
+        /** The breath between two pieces of a long answer — a sentence pause, not a restart. */
+        private const val LONG_ANSWER_GAP_MS = 280L
         private const val TAG = "NaturalTtsSpeaker"
     }
 }

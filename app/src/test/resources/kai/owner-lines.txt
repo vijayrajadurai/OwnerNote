@@ -99,6 +99,7 @@ ASK    | yaru correct ah payment pannuvanga              | Ramesh; Kumar; Selvam
 ASK    | யாரு கரெக்டா பேமெண்ட் பண்ணுவாங்க                 | Ramesh; Kumar; Selvam; late
 ASK    | yaaru correct time la payment kudupanga         | Ramesh; Kumar; Selvam; late
 ASK    | Kumar correct ah pay pannuvana                  | Kumar; late-aa; thadava
+ASK    | யாரு கரெக்ட் ஆ பேமெண்ட் பண்ணுவாங்க              | Ramesh; Kumar; Selvam; late   # the mic writes "ஆ" apart (11 Oct 2026)
 
 # The same words said into the mic (voice writes Tamil script): text worked, voice didn't (10 Oct 2026).
 ENTRY  | ABC டிரேடர்ஸுக்கு 2000 அனுப்பியாச்சு             | OUT ABC Traders 2000

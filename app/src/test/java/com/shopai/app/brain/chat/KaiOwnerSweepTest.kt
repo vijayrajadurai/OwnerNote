@@ -660,6 +660,18 @@ class KaiOwnerSweepTest {
         talk("pack size in grams for a kg product", listOf("Rice 2 packet, packetku 500 gram", "TAP")) { s -> stock("Rice" to "251")(s) }
         talk("pack size in pieces for a kg product is asked", listOf("Rice 2 box, boxku 10 pieces")) { s ->
             if (s.nothingWritten() && lastTurn?.card?.buttons?.none { it.action is KaiAction.ConfirmStock } != false) null else "a box of Rice taken as 10 kg" }
+        // "Yaaru correct-aa pay pannuvaanga" got the same late list as "yaaru late-aa" (owner, 11 Oct 2026): on time first, late after.
+        fun first(head: List<String>, before: String): (Shop) -> String? = { _ ->
+            val t = lastTurn?.reply?.text.orEmpty()
+            val h = head.map { t.indexOf(it) }.filter { it >= 0 }.minOrNull()
+            val b = listOf(before, KaiMicForm.repeated(before)).map { t.indexOf(it) }.filter { it >= 0 }.minOrNull()
+            if (h != null && (b == null || h < b)) null else "said: $t" }
+        talk("who pays on time: on-time list first", listOf("yaru correct ah payment pannuvanga"),
+            check = first(listOf("Correct date-la tharuvaanga", "சரியான தேதியில தருவாங்க"), "Late"))
+        talk("who pays on time, spoken", listOf("யாரு கரெக்டா பேமெண்ட் பண்ணுவாங்க"),
+            check = first(listOf("Correct date-la tharuvaanga", "சரியான தேதியில தருவாங்க"), "Late"))
+        talk("who pays late: late list first", listOf("yaru late ah payment pannuvanga"),
+            check = first(listOf("Late-aa tharuvaanga", "Late-ஆ தருவாங்க"), "Correct date"))
         talk("goods: venam — nothing", listOf("Kadaiku saman vandhuruku", "venam")) { s -> if (s.nothingWritten()) null else "wrote after venam" }
         talk("goods: a balance question in between", listOf("Kadaiku saman vandhuruku", "Kumar evlo tharanum")) { s ->
             if (s.log.contains("₹4,000") && s.nothingWritten()) null else "balance not answered" }

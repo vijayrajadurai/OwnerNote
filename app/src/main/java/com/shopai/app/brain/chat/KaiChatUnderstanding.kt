@@ -87,6 +87,8 @@ data class ChatQuery(
     val fullList: Boolean = false,
     /** "today due + overdue rendu list-um": both sets, kept apart. */
     val withOverdue: Boolean = false,
+    /** For [ChatIntent.PAYMENT_BEHAVIOUR]: "yaaru correct-aa pay pannuvaanga" — the ones who pay on time first, not the late ones. */
+    val onTime: Boolean = false,
 )
 
 /** Which pending people a list question means. */
@@ -128,7 +130,9 @@ object KaiChatUnderstanding {
             val group = groupWords.containsMatchIn(lower)
             val side = if (has(" supplier", " suppliers", " naan yaarukku", " nan yaruku", " naan yaruku")) Direction.PAYABLE else null
             val who = if (person == PersonRef.Pronoun && group && !has(" avan ", " aval ", " avar ", " avaru ", " he ", " she ")) PersonRef.Pronoun else person
-            return ChatQuery(ChatIntent.PAYMENT_BEHAVIOUR, who, null, period, side = side, fullList = group)
+            // "yaaru correct-aa / sariyaa / time-ku pay pannuvaanga": asked about paying on time (owner, 11 Oct 2026).
+            val onTime = onTimeTalk.containsMatchIn(lower) && !lateWord.containsMatchIn(lower)
+            return ChatQuery(ChatIntent.PAYMENT_BEHAVIOUR, who, null, period, side = side, fullList = group, onTime = onTime)
         }
 
         // ---- about one person ----
@@ -250,8 +254,13 @@ object KaiChatUnderstanding {
     /** "late-aa", "correct date-la", "time-ku", "தாமதம்": paying after or on the due date. */
     private val lateTalk = Regex("""(?<![\p{L}])(late|lateaa|latea|lateah|delay|thaamadham|thamadham|thaamadhama|(?:correct|sariyana|sariyaana|right)\s*-?\s*(?:date|time|thethi)|""" +
         // "correct ah pay pannuvaanga", "sariya kudupaana", "time la tharuvaanga": on time, said plainly.
-        """correct\s*-?\s*(?:ah|aa|a)|correcta|correctaa|crct|sariya|sariyaa|sariyaa|on\s*time|time\s*-?\s*(?:ku|kku|la|le)|timela)(?![\p{L}])|""" +
+        """correct(?:\s*-?\s*(?:ah|aa|a|ஆ))?|correcta|correctaa|crct|sariya|sariyaa|sariyaa|on\s*time|time\s*-?\s*(?:ku|kku|la|le)|timela)(?![\p{L}])|""" +
         """தாமதம|லேட்|சரியான\s*(?:தேதி|நேரம்)|கரெக்ட்|சரியா""")
+    /** Late, said as such: "late-aa", "delay", "தாமதம்" (an on-time question has none of these). */
+    private val lateWord = Regex("""(?<![\p{L}])(late|lateaa|latea|lateah|delay|thaamadham|thamadham|thaamadhama)(?![\p{L}])|தாமதம|லேட்""")
+    /** On time: "correct date-la", "correct-aa", "sariyaa", "time-ku", "on time", "சரியா", "கரெக்ட்". */
+    private val onTimeTalk = Regex("""(?<![\p{L}])((?:correct|sariyana|sariyaana|right)\s*-?\s*(?:date|time|thethi)|correct(?:\s*-?\s*(?:ah|aa|a|ஆ))?|correcta|correctaa|crct|""" +
+        """sariya|sariyaa|on\s*time|time\s*-?\s*(?:ku|kku|la|le)|timela)(?![\p{L}])|சரியான\s*(?:தேதி|நேரம்)|கரெக்ட்|சரியா""")
     /** A habit, not one payment: "pannuvaanga", "tharuvaara", "usually", "general-aa". */
     private val habit = Regex("""(?<![\p{L}])(pannuv\p{L}*|tharuv\p{L}*|kudupp\p{L}*|kudupa\p{L}*|kodupp\p{L}*|kodupa\p{L}*|tharanga|tharaanga|tharaanga|tharraanga|""" +
         """kudukkuranga|kudukuranga|kudukkuraanga|kodukkuranga|pannuranga|pannraanga|pannranga|pannuraanga|""" +

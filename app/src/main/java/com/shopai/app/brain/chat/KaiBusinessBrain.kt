@@ -793,6 +793,28 @@ class KaiBusinessBrain(
             KaiLang.TANGLISH -> if (fromList) "Owner, andha ${people.size} per-oda history:" else "Owner, records-la history paartha:"
             KaiLang.ENGLISH -> if (fromList) "Owner, the history of those ${people.size}:" else "Owner, from the history in your records:"
         })
+        // "Yaaru correct-aa pay pannuvaanga": the ones who pay on time, as the list; the late ones in one line after (owner, 11 Oct 2026).
+        if (q.onTime) {
+            if (onTime.isNotEmpty()) {
+                sb.append("\n").append(when (lang) {
+                    KaiLang.TAMIL -> "சரியான தேதியில தருவாங்க (${onTime.size}):"; KaiLang.TANGLISH -> "Correct date-la tharuvaanga (${onTime.size}):"
+                    KaiLang.ENGLISH -> "Pay on time (${onTime.size}):"
+                })
+                onTime.sortedWith(compareByDescending<Habit> { it.onTime }.thenBy { it.party.name })
+                    .forEachIndexed { i, h -> sb.append("\n${i + 1}. ${label(h.party)} — ${habitLine(h, lang)}") }
+            } else sb.append(" ").append(when (lang) {
+                KaiLang.TAMIL -> "எல்லாரும் ஒரு தடவையாவது late-ஆ தந்திருக்காங்க — எப்பவும் சரியான தேதியில தர்றவங்க யாரும் இல்ல."
+                KaiLang.TANGLISH -> "ellaarum oru thadavaiyaavadhu late-aa thandhirukkaanga — eppavum correct date-la tharavanga yaarum illa."
+                KaiLang.ENGLISH -> "everyone has paid late at least once — no one always pays on time."
+            })
+            if (late.isNotEmpty()) sb.append("\n").append(when (lang) {
+                KaiLang.TAMIL -> "Late-ஆ தருவாங்க: "; KaiLang.TANGLISH -> "Late-aa tharuvaanga: "; KaiLang.ENGLISH -> "Pay late: "
+            }).append(late.joinToString(", ") { label(it.party) }).append(".")
+            if (unknown > 0) sb.append("\n").append(when (lang) {
+                KaiLang.TAMIL -> "$unknown பேருக்கு இன்னும் history இல்ல."; KaiLang.TANGLISH -> "$unknown per-ukku innum history illa."; KaiLang.ENGLISH -> "$unknown have no history yet."
+            })
+            return reply(intent, if (onTime.isNotEmpty()) KaiMood.HAPPY else KaiMood.CONCERNED, lang, sb.toString())
+        }
         if (late.isNotEmpty()) {
             sb.append("\n").append(when (lang) {
                 KaiLang.TAMIL -> "Late-ஆ தருவாங்க (${late.size}):"; KaiLang.TANGLISH -> "Late-aa tharuvaanga (${late.size}):"; KaiLang.ENGLISH -> "Pay late (${late.size}):"
