@@ -43,7 +43,7 @@ object KaiMicForm {
         vaaram=வாரம் vandhirukku=வந்திருக்கு vandhuchu=வந்துச்சு vanganum=வாங்கணும் vangunen=வாங்குனேன் vanthuchu=வந்துச்சு
         varanum=வரணும் vendiyadhu=வேண்டியது vikkala=விக்கல vithadhu=வித்தது vithuchu=வித்துச்சு vithuten=வித்துட்டேன் yaar=யார்
         yaaru=யாரு yar=யார் yaru=யாரு yarukita=யாருகிட்ட yaruku=யாருக்கு yentha=எந்த
-        mudhal=முதல் aal=ஆள் rendavadhu=ரெண்டாவது kadaisi=கடைசி eduthudu=எடுத்துடு arakilo=அரைக்கிலோ packetu=பாக்கெட்டு ashirvad=ஆசிர்வாத் venam=வேணாம் pudhu=புது pieces=பீஸ் skip=ஸ்கிப் aama=ஆமா ennakku=எனக்கு
+        adhe=அதே munnadi=முன்னாடி ivan=இவன் adhoda=அதோட mudhal=முதல் aal=ஆள் rendavadhu=ரெண்டாவது kadaisi=கடைசி eduthudu=எடுத்துடு arakilo=அரைக்கிலோ packetu=பாக்கெட்டு ashirvad=ஆசிர்வாத் venam=வேணாம் pudhu=புது pieces=பீஸ் skip=ஸ்கிப் aama=ஆமா ennakku=எனக்கு
         aal=ஆள் adha=அத akash=ஆகாஷ் amazon=அமேசான் anuppu=அனுப்பு aprom=அப்புறம் avan=அவன் bill=பில் cancel=கேன்சல் cm=சிஎம்
         dhaan=தான் employee=எம்ப்ளாயி first=ஃபர்ஸ்ட் gst=ஜிஎஸ்டி illa=இல்ல ipl=ஐபிஎல் ippa=இப்ப joke=ஜோக் kai=கை
         kalichi=கழிச்சு kanakku=கணக்கு ketta=கேட்ட loan=லோன் maathu=மாத்து mazhai=மழை nadu=நாடு nee=நீ nu=னு order=ஆர்டர்
@@ -58,6 +58,9 @@ object KaiMicForm {
         avanga=அவங்க peru=பேரு namba=நம்ம namma=நம்ம vangunan=வாங்குனான் seathuko=சேர்த்துக்கோ serthuko=சேர்த்துக்கோ vengayam=வெங்காயம்
         pottan=போட்டான் potten=போட்டேன் adachitan=அடைச்சிட்டான் transfer=டிரான்ஸ்ஃபர் pannan=பண்ணான் gram=கிராம் ratri=ராத்திரி poota=பூட்ட
         friday=வெள்ளிக்கிழமை account=அக்கவுண்ட் gold=கோல்டு rate=ரேட் petrol=பெட்ரோல் price=விலை train=ட்ரெயின் varum=வரும் rasi=ராசி
+        purchase=பர்சேஸ் selling=செல்லிங் labam=லாபம் profit=ப்ராஃபிட் margin=மார்ஜின் business=பிசினஸ் pogudhu=போகுது value=வேல்யூ selavu=செலவு
+        vyabaram=வியாபாரம் summary=சம்மரி irukkanga=இருக்காங்க vasool=வசூல் bills=பில்ஸ் transactions=டிரான்ஸாக்ஷன்ஸ் advance=அட்வான்ஸ் discount=டிஸ்கவுண்ட்
+        theerapoguthu=தீரப்போகுது sales=சேல்ஸ் vilai=விலை vara=வர
         palan=பலன் inniku=இன்னிக்கு biryani=பிரியாணி recipe=ரெசிபி gst=ஜிஎஸ்டி kooda=கூட bore=போர் adikkudhu=அடிக்குது cheque=செக் card=கார்டு
     """.trim().split(Regex("""\s+""")).associate { it.substringBefore('=') to it.substringAfter('=') }
 

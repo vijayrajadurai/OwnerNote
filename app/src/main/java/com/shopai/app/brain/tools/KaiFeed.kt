@@ -209,8 +209,13 @@ object KaiFeed {
         ippo ipo ippa ipa ippodhu ippothu ipodhu indru inru
         hmm hm hmmm umm um mm ahh aah haan han oh ohh ayyo ayyoo seri sari ok okay
         enaku yenaku yenakku ennaku enakku
+        ivan ivar ivaru ivanga ival adhe athe adhey endha entha yentha kadaisiya kadaisi munnadi munnaadi ellam ellaam aal aalu
         innum innoru innonu marupadi thirumba paadhi half
         saraku sarakku saman saaman saamaan samaan maal kadaiku kadaikku porul
+        # An accountant's words (owner, 11 Oct 2026: "pona maasam sales", "GST evlo", "advance evlo" were taken as a person's name).
+        trial veliya veliye pona ponna pudhu pudhiya puthu puthiya market advance return returns discount kadan vasool gst tax labam laabam profit loss
+        bill bills sales purchase purchases expense expenses selavu stock value vyabaram viyabaram business summary report
+        லாபம் ஜிஎஸ்டி போன புது பில் வியாபாரம் பிசினஸ்
         # Tamil-script "me / you / him / who / today …" — and what is left of them once -க்கு is read as the dative ("என|க்கு").
         நான் நா என் என எனக் எனக்கு எனக்கும் நீ நீங்க உன் உன உனக் உனக்கு உங்க உங்களுக்கு நம்ம நமக்கு
         அவன் அவன அவனுக்கு அவள் அவள அவளுக்கு அவர் அவர அவருக்கு அவங்க அவங்களுக்கு
@@ -242,6 +247,19 @@ object KaiFeed {
     /** How owners actually type a word = the word Kai's rules read ("totel" = total). Whole words only. */
     val spellings: Map<String, String> = pairs("""
         totel = total
+        yevlo = evlo
+        yewlo = evlo
+        ewlo = evlo
+        evalo = evlo
+        evvlo = evlo
+        yevvalavu = evvalavu
+        vyabaram = viyabaram
+        vyaparam = viyabaram
+        viyaparam = viyabaram
+        vyabharam = viyabaram
+        laabam = labam
+        laabham = labam
+        laabamm = labam
         totol = total
         totaal = total
         tottal = total

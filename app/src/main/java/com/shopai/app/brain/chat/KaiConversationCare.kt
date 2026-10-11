@@ -59,7 +59,7 @@ internal object KaiConversationCare {
     // ------------------------------------------------------------ the people talked about
 
     /** "rendu perum total evlo", "both of them": the last two people Kai answered about. */
-    private val both = Regex("""(?i)(?<![\p{L}])((rendu|2)\s*(perum|peroda|perukum|perukkum|பேரும்|பேரோட)|renduperum|iruvarum|both)(?![\p{L}])|இருவரும்""")
+    private val both = Regex("""(?i)(?<![\p{L}])((rendu|2)\s*(perum|peroda|perukum|perukkum|பேரும்|பேரோட)|renduperum|iruvarum|both|ellam\s+serthu|ellaam\s+serthu|serthu\s+evlo)(?![\p{L}])|இருவரும்|எல்லாம்\s+சேர்த்து""")
     fun asksBoth(text: String) = both.containsMatchIn(text)
 
     /** "first ketta aal", "mudhalla sonna aalu": the first person of this conversation; "munnadi ketta aal": the one before. */

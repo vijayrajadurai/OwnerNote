@@ -179,8 +179,23 @@ class KaiBusinessBrain(
 
     /** "mudhal aal", "rendavadhu per", "last person", "முதல் ஆள்": a place in the last list. */
     private val ordinalPhrase = Regex("""(?i)(?<![\p{L}])(mudhal|modhal|mudhala|first|1st|onnavadhu|onnaavadhu|rendavadhu|randavadhu|rendaavadhu|second|2nd|""" +
-        """moonavadhu|munavadhu|moonaavadhu|third|3rd|naalavadhu|naalaavadhu|fourth|4th|anjavadhu|fifth|5th|kadaisi|last)\s*(?:aal|aalu|per|peru|person|customer|supplier|name)(?![\p{L}])|""" +
+        """moonavadhu|munavadhu|moonaavadhu|third|3rd|naalavadhu|naalaavadhu|fourth|4th|anjavadhu|fifth|5th|kadaisi|last)\s*(?:aal|aalu|per|peru|person|customer|supplier|name|one)(?![\p{L}])|""" +
         """(முதல்|ரெண்டாவது|இரண்டாவது|மூணாவது|மூன்றாவது|நாலாவது|கடைசி)\s*(?:ஆள்|ஆளு|பேர்|நபர்)""")
+
+    /**
+     * "mudhal aal ku call pannu", "rendavadhu aal 2000 kuduthan": the place in the list just shown, written as that person's name —
+     * so a call, a reminder or a payment reads one sentence, as a question does (owner's test, 11 Oct 2026). Null: no list / no place.
+     */
+    fun withListPerson(text: String): String? {
+        val list = lastList ?: return null
+        val m = ordinalPhrase.find(text) ?: return null
+        val row = list.rows.getOrNull(ordinalIndex(m.groupValues[1].ifEmpty { m.groupValues[2] }, list.rows.size)) ?: return null
+        val tail = text.substring(m.range.last + 1)
+        // "mudhal aal-ku" / "mudhal aalukku": the case ending stays with the name.
+        val ending = Regex("""^\s*-?\s*(ukku|uku|kku|ku|oda|kitta)(?![\p{L}])""", RegexOption.IGNORE_CASE).find(tail)
+        val name = row.party.name + (ending?.let { "-" + it.groupValues[1].removePrefix("u").let { e -> if (e == "kku") "ku" else e } } ?: "")
+        return (text.substring(0, m.range.first) + " $name " + tail.substring(ending?.range?.last?.plus(1) ?: 0)).replace(Regex("""\s+"""), " ").trim()
+    }
 
     private fun ordinalIndex(word: String, size: Int): Int = when (word.lowercase()) {
         "mudhal", "modhal", "mudhala", "first", "1st", "onnavadhu", "onnaavadhu", "முதல்" -> 0
@@ -216,7 +231,7 @@ class KaiBusinessBrain(
 
         // "mudhal aal eppo kudupaan", "rendavadhu per evlo", "kadaisi aal": the person at that place in the list just shown (owner, 11 Oct 2026).
         if (ledger != null) lastList?.let { list -> ordinalPhrase.find(text)?.let { m ->
-            val index = ordinalIndex(m.groupValues[1].ifEmpty { m.value }, list.rows.size)
+            val index = ordinalIndex(m.groupValues[1].ifEmpty { m.groupValues[2] }, list.rows.size)
             list.rows.getOrNull(index)?.let { row ->
                 val p = ledger.parties.firstOrNull { it.id == row.party.id && it.side == row.party.side } ?: row.party
                 return ask(text.replaceRange(m.range, " ${p.name} ").replace(Regex("""\s+"""), " ").trim())

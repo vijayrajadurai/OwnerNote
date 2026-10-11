@@ -820,7 +820,11 @@ object KaiInventory {
         data class Minimum(val qty: BigDecimal, val unit: String?) : ProductAsk
         /** "Colgate details kaattu". */
         data object Details : ProductAsk
+        /** "Rice purchase rate enna?", "Oil selling price?", "Colgate evlo labam?": a price read back — no number said, nothing changed. */
+        data class Rate(val kind: RateKind) : ProductAsk
     }
+
+    enum class RateKind { PURCHASE, SELLING, BOTH, MARGIN }
 
     private val sellingPrice = Regex("""(?i)(?<![\p{L}])(?:selling|sell|sale|sales|vikkura|vikka|virpanai|mrp|செல்லிங்|விற்பனை)\s*(?:price|rate|vilai|vela|விலை)?\s*(?:-?\s*(?:a|ah|aa|ai|ஐ|அ))?\s*(?:=|:)?\s*(?:₹|rs\.?)?\s*(\d+(?:\.\d+)?)\s*(?:rs|rupees?|ரூபாய்)?\s*(?:(?:per|/|oru)\s*([\p{L}]+))?""")
     private val purchasePrice = Regex("""(?i)(?<![\p{L}])(?:purchase|buying|buy|cost|vaangura|vaangum|kolmudhal|பர்சேஸ்)\s*(?:price|rate|vilai|vela|விலை)?\s*(?:-?\s*(?:a|ah|aa|ai))?\s*(?:=|:)?\s*(?:₹|rs\.?)?\s*(\d+(?:\.\d+)?)\s*(?:rs|rupees?|ரூபாய்)?\s*(?:(?:per|/|oru)\s*([\p{L}]+))?""")
@@ -837,8 +841,21 @@ object KaiInventory {
         sellingPrice.find(lower)?.let { m -> return ProductAsk.Price(true, m.groupValues[1].toBigDecimal(), m.groupValues[2].takeIf { it.isNotEmpty() }?.let(::unitOf)) }
         purchasePrice.find(lower)?.let { m -> return ProductAsk.Price(false, m.groupValues[1].toBigDecimal(), m.groupValues[2].takeIf { it.isNotEmpty() }?.let(::unitOf)) }
         if (detailsWord.containsMatchIn(lower)) return ProductAsk.Details
+        // Only a question: a number in it is a change ("Colgate selling price 38"), or another line altogether.
+        if (lower.replace(Regex("""(?<![\d.])1(?![\d.])"""), "").none(Char::isDigit) && rateWord.containsMatchIn(lower)) return ProductAsk.Rate(when {
+            marginWord.containsMatchIn(lower) -> RateKind.MARGIN
+            sellingSide.containsMatchIn(lower) -> RateKind.SELLING
+            buyingSide.containsMatchIn(lower) -> RateKind.PURCHASE
+            else -> RateKind.BOTH
+        })
         return null
     }
+
+    // "rate enna", "vilai evlo", "labam evlo", "margin": owner, 11 Oct 2026 — "Rice purchase rate enna" was answered with the month's purchases.
+    private val rateWord = Regex("""(?i)(?<![\p{L}])(?:rate|price|prize|vilai|vela|mrp|labam|laabam|margin|profit)(?![\p{L}])|விலை|ரேட்|லாபம்""")
+    private val marginWord = Regex("""(?i)(?<![\p{L}])(?:labam|laabam|margin|profit)(?![\p{L}])|லாபம்""")
+    private val sellingSide = Regex("""(?i)(?<![\p{L}])(?:selling|sale|sales|sell|vikkura|vikkum|virkum|vikka|mrp|customer)(?![\p{L}])|விக்கிற""")
+    private val buyingSide = Regex("""(?i)(?<![\p{L}])(?:purchase|purchasing|buying|buy|cost|vaangura|vaangum|vaangina|vaangunadhu|kolmudhal|supplier)(?![\p{L}])|பர்சேஸ்|கொள்முதல்""")
 
     private val summaryWords = Regex("""(?i)(?<![\p{L}])(?:inventory|stock)\s*(?:summary|value|report|motham|total)(?![\p{L}])|(?<![\p{L}])(?:summary|value)\s+(?:of\s+)?(?:inventory|stock)(?![\p{L}])""")
     private val listWords = Regex("""(?i)(?<![\p{L}])(?:ella|ellaa|ellam|ellaam|all|full)\s+(?:inventory|stock|products?)\s*(?:items?|list)?(?![\p{L}])|(?<![\p{L}])inventory\s+(?:items|list)(?![\p{L}])""")
