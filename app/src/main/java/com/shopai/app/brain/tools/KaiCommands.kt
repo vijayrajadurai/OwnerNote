@@ -94,7 +94,9 @@ object KaiCommands {
         // ---- stock, money, top products (from the books) ----
         val stockWords = has("stock", "inventory", "iruppu", "இருப்பு", "ஸ்டாக்")
         val itemWords = stockWords || has("product", "products", "item", "items", "porul", "saamaan", "saman", "maal", "பொருள்")
-        if (has("reorder", "re-order", "re order", "out of stock") || (itemWords && has("low", "kammi", "kammiya", "kuraivu", "kuraivaa", "theerndhu", "theernthu", "mudinjiruchu", "finish", "kuranj", "குறைவு"))) {
+        // "enna saaman theerapoguthu", "edhu theera pogudhu", "order panna vendiyadhu enna": running out (owner, 11 Oct 2026).
+        if (has("reorder", "re-order", "re order", "out of stock", "order pannanum", "order panna vendiyadhu", "order podanum") || runningOut.containsMatchIn(t) ||
+            (itemWords && has("low", "kammi", "kammiya", "kuraivu", "kuraivaa", "theerndhu", "theernthu", "theera", "mudinjiruchu", "finish", "kuranj", "குறைவு"))) {
             return KaiCommand.LowStock
         }
         if (has("highest selling", "top selling", "best selling", "most sold", "adhigama vithadhu", "athigama vithadhu", "adhigama vikkudhu", "top product", "best product", "adhigama vithathu",
@@ -239,6 +241,9 @@ object KaiCommands {
         "center", "brothers", "bros", "and sons", "company", "co", "industries", "ஸ்டோர்", "ஸ்டோர்ஸ்", "டிரேடர்ஸ்", "ட்ரேடர்ஸ்", "ஏஜென்சீஸ்", "ஏஜென்சி", "மார்ட்",
         "என்டர்பிரைசஸ்", "டிஸ்ட்ரிபியூட்டர்ஸ்", "சூப்பர்மார்க்கெட்", "ஹார்டுவேர்ஸ்", "டெக்ஸ்டைல்ஸ்", "மெடிக்கல்ஸ்", "பேக்கரி", "ஸ்வீட்ஸ்", "பிரதர்ஸ்")
 
+    /** "theerapoguthu", "theera pogudhu", "mudiya pogudhu": stock running out ("thira" is "open" — never this). */
+    private val runningOut = Regex("""(?i)(?<![\p{L}])(?:theera|theeru|mudiya)\s*-?\s*po\p{L}*|தீரப்போ\p{L}*|தீர\s+போ\p{L}*""")
+
     /** "move agala", "dead stock", "slow moving", "unsold": stock that is not selling. */
     private val slowMoving = Regex(
         """(?<![\p{L}])(move\s*-?\s*(?:agala|aagala|aagalai|agalai|aaga\s*maattengudhu|aagudhu\s*illa|aguthu\s*illa|aagave\s*illa|agave\s*illa)|""" +
@@ -262,7 +267,7 @@ object KaiCommands {
     private val fastVerbs = Regex("""(?<![\p{L}])((?:fast|vegama|seekiram)\s*-?\s*(?:a|ah|aa)?\s*(?:pog\p{L}*|theer\p{L}*|kaali\p{L}*))(?![\p{L}])""", RegexOption.IGNORE_CASE)
     /** Stock, items, products — or "which one" — the words that make a selling verb about the shelf. */
     private val stockThings = Regex(
-        """(?<![\p{L}])(stock|stocks|item|items|product|products|maal|saamaan|saman|porul|porulgal|inventory|endha|yentha|entha|which|what)(?![\p{L}])|ஸ்டாக்|பொருள்|எந்த""",
+        """(?<![\p{L}])(stock|stocks|item|items|product|products|maal|saamaan|saman|porul|porulgal|inventory|endha|yentha|entha|edhu|ethu|yedhu|which|what)(?![\p{L}])|ஸ்டாக்|பொருள்|எந்த|எது""",
         RegexOption.IGNORE_CASE,
     )
 

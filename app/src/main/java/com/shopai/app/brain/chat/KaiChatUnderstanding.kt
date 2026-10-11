@@ -140,8 +140,11 @@ object KaiChatUnderstanding {
             " vandhucha", " vanthucha", " paid ", " has paid", " pay pannana", " ஏற்கனவே ", " கொடுத்தான", " கொடுத்தார",
             " pannirukk", " koduthiruk", " kuduthen", " koduthen", " kuduthirukken", " கொடுத்திருக்")
         val lastPayment = has(" last payment", " kadaisi", " kadaisiya", " recent payment", " latest payment", " கடைசி") ||
-            (has(" last ", " last-a", " last-ah", " last ah ", " last a ", " last aa ", " last time") && has(" kuduth", " koduth", " pay ", " paid", " thandh", " anupp", " pannan", " pannaan"))
-        val history = has(" history", " details", " statement", " transactions", " transaction ", " varalaaru", " kanakku ", " full kanakku", " விவரம்", " கணக்கு ",
+            (has(" last ", " last-a", " last-ah", " last ah ", " last a ", " last aa ", " last time", " munnadi", " munnaadi", " previous", " mundhi") &&
+                has(" kuduth", " koduth", " pay ", " paid", " thandh", " anupp", " pannan", " pannaan"))
+        // "innaiku enna transactions?", "pona maasam evlo saaman vaanginen": the shop's period, not one person's history (owner, 11 Oct 2026).
+        val ledgerDay = person == PersonRef.None && period != null
+        val history = !ledgerDay && has(" history", " details", " statement", " transactions", " transaction ", " varalaaru", " kanakku ", " full kanakku", " விவரம்", " கணக்கு ",
             " vanginen", " vaanginen", " vangirukk", " vaangirukk", " வாங்கினேன்")
         val due = has(" eppo", " eppa ", " yeppa ", " yeppo ", " yepo ", " when ", " due ", " date ", " date-la", " date la", " thethi", " எப்போ", " எப்ப ", " தேதி")
         val balance = has(" evlo", " evvalavu", " how much", " balance", " pending", " baaki", " bakki", " tharanum", " kudukkanum", " kodukkanum",
@@ -185,10 +188,10 @@ object KaiChatUnderstanding {
         // "yaar kitta irundhu pay varanum": money to come FROM them — never the owner paying, even with "pay" in it (owner, 11 Oct 2026).
         val comesIn = has(" varanum", " vara vendiyadhu", " vara vendiyathu", " kitta irundhu", " kitta irunthu", " kittendhu", " from ", " வரணும்", " கிட்ட இருந்து")
         val payWords = !paysMe && !comesIn && has(" kudukkanum", " kodukkanum", " kudukanum", " kodukanum", " kudukanu", " kudukka ", " pay ", " payable", " supplier", " i owe", " do i owe", " கொடுக்க", " குடுக்க")
-        val collectWords = paysMe || has(" collect", " vasool", " tharanum", " varanum", " vanganum", " vaanganum", " receive", " receivable", " owes me",
+        val collectWords = paysMe || has(" vara vendiyadhu", " vara vendiyathu", " vara vendiyadu", " collect", " vasool", " tharanum", " varanum", " vanganum", " vaanganum", " receive", " receivable", " owes me",
             " owe me", " payment", " cash tharanum", " vanganu", " vaanganu", " வசூல்", " தரணும்", " வரணும்", " வாங்கணும்")
         // ---- one ledger question class each: which people, which side, which dates ----
-        val listWords = has(" list", " details", " detail ", " ellaa", " ella ", " ellarum", " ellaarum", " ellaroda", " ellaaroda", " all ", " full ",
+        val listWords = has(" list", " bills", " details", " detail ", " ellaa", " ella ", " ellarum", " ellaarum", " ellaroda", " ellaaroda", " all ", " full ",
             " விவரம்", " எல்லா", " லிஸ்ட்")
         val dueWords = has(" due", " date", " thethi", " தேதி")
         val passed = has(" poiduchu", " poyiduchu", " pochu", " ponadhu", " mudinjiduchu", " mudinjudhu", " kadandhiduchu", " passed", " crossed",
@@ -201,6 +204,7 @@ object KaiChatUnderstanding {
         val pastPeriod = period?.kind in setOf(ChatPeriod.Kind.YESTERDAY, ChatPeriod.Kind.LAST_DAYS, ChatPeriod.Kind.LAST_WEEK, ChatPeriod.Kind.LAST_MONTH)
         val paidWords = has(" pannanga", " pannaanga", " pannaga", " kuduthaanga", " kuduthanga", " kuduthaan", " kuduthaar", " vandhadhu", " vandhuchu",
             " vanthathu", " received", " collection", " vasool", " paid", " payment", " pannen", " kuduthen", " koduthen", " வந்தது", " கொடுத்தாங்க")
+        val collectedAsk = has(" vasool", " collection", " collect") && has(" aachu", " achu", " aagiduchu", " aayiduchu", " aagirukku", " vandhuchu", " vandhirukku", " pannen", " panniten")
         val listScope = when {
             dueWords && has(" illama", " illaama", " illamal", " without", " no due", " இல்லாம") -> ListScope.NO_DUE
             has(" highest", " adhigama", " athigama", " adhigam ", " biggest", " maximum", " max ", " most ", " periya", " அதிகம்") -> ListScope.HIGHEST
@@ -214,7 +218,8 @@ object KaiChatUnderstanding {
             overdueAsk && period?.kind == ChatPeriod.Kind.TODAY && has(" rendu", " both", " + ", " and ", " um ", "-um ", " ரெண்டு") ->
                 ChatQuery(ChatIntent.TODAY_COLLECTIONS, PersonRef.None, amount, period, side = side, fullList = true, withOverdue = true)
             overdueAsk -> ChatQuery(ChatIntent.OVERDUE_COLLECTIONS, PersonRef.None, amount, period, side = side, fullList = listWords)
-            pastPeriod && paidWords && !has(" sales", " vikkal", " selavu", " expense") ->
+            // "kadan vasool evlo aachu", "innaiku collection evlo aachu": money already collected — not the dues still to come.
+            (pastPeriod || collectedAsk) && paidWords && !has(" sales", " vikkal", " selavu", " expense") ->
                 ChatQuery(ChatIntent.RECEIVED_PAYMENTS, PersonRef.None, amount, period,
                     side = if (ownerDid(lower) || has(" naan ", " nan ")) Direction.PAYABLE else Direction.RECEIVABLE, fullList = true)
             listScope != null && (pendingTalk || asksWho || listScope != ListScope.ALL) ->
@@ -228,8 +233,12 @@ object KaiChatUnderstanding {
             overdueAsk -> ChatIntent.OVERDUE_COLLECTIONS
             has(" total", " motham", " mothama", " overall", " மொத்தம்") && payWords && !collectWords -> ChatIntent.TOTAL_PAYABLE
             has(" total", " motham", " mothama", " overall", " மொத்தம்") && (collectWords || has(" pending", " baaki", " bakki", " பாக்கி", " outstanding")) -> ChatIntent.TOTAL_RECEIVABLE
-            has(" sales", " sale ", " vikkal", " viyabaram", " vitradhu", " vithadhu", " vitrathu", " வியாபாரம்", " விற்பனை") -> ChatIntent.MONTHLY_SALES
-            has(" purchase", " vaangunadhu", " vaanginadhu", " kolmudhal", " stock vaang", " கொள்முதல்") -> ChatIntent.MONTHLY_PURCHASES
+            // "market la evlo kadan irukku": the credit out with customers.
+            has(" market", " veliya", " veliye") && has(" kadan", " baaki", " bakki", " pending", " கடன்", " பாக்கி") -> ChatIntent.TOTAL_RECEIVABLE
+            // "indha maasam evlo kadan kuduthen": credit given in the period.
+            has(" kadan", " kadanaa", " udhaar", " கடன்") && has(" kuduthen", " koduthen", " kuduthom", " kuduthirukken", " kuduthiruken", " கொடுத்தேன்") -> ChatIntent.CREDIT_SUMMARY
+            has(" sales", " sale ", " bill pott", " bill potta", " vikkal", " viyabaram", " vitradhu", " vithadhu", " vitrathu", " வியாபாரம்", " விற்பனை") -> ChatIntent.MONTHLY_SALES
+            has(" purchase", " saaman vaang", " saamaan vaang", " saman vaang", " sarakku vaang", " vaanginen", " vanginen", " vaangunen", " vaangunadhu", " vaanginadhu", " kolmudhal", " stock vaang", " கொள்முதல்") -> ChatIntent.MONTHLY_PURCHASES
             has(" expense", " selavu", " spent", " spend", " செலவு") -> ChatIntent.EXPENSE_SUMMARY
             has(" credit") && !payWords -> ChatIntent.CREDIT_SUMMARY
             has(" debit") -> ChatIntent.DEBIT_SUMMARY

@@ -166,3 +166,30 @@ STOCK  | Rice 100 kg vangunen stock la serthuko          | Rice 350
 STOCK  | Rice 30 kg poiruchi                             | Rice 220
 STOCK  | Rice 30kg vangiirukan                           | Rice 280
 STOCK  | Rice 30 kg vangi irukan                         | Rice 280
+
+# Owner (11 Oct 2026): what a shop owner asks the accountant. A product's own prices; "pona maasam", "market", "GST" are never a name;
+# profit / GST / balance sheet aren't in the books — said plainly, with what the books do have.
+ASK    | Rice purchase rate enna                         | ₹56
+ASK    | Rice vaangura vilai enna                        | ₹56
+ASK    | Oil selling price enna                          | ₹170
+ASK    | Colgate evlo labam                              | ₹7; 25%
+ASK    | Colgate margin evlo                             | ₹7
+ASK    | Maggi vilai enna                                | ₹14
+ASK    | total evlo vara vendiyadhu                      | ₹13,500
+ASK    | market la evlo kadan irukku                     | ₹13,500
+ASK    | மொத்தம் எவ்வளவு வர வேண்டியது                     | ₹13,500
+ASK    | enna saaman theerapoguthu                       | Maggi
+ASK    | edhu theera pogudhu                             | Maggi
+ASK    | kadan vasool evlo aachu                         | Kumar; ₹3,000
+ASK    | pending bills enna                              | Selvam; ₹6,000
+ASK    | indha maasam evlo kadan kuduthen                | ₹5,000
+ASK    | pona maasam evlo saaman vaanginen               | ₹10,000
+ASK    | evlo customers irukkanga                        | 4 customer; 2 supplier
+ASK    | எத்தனை கஸ்டமர்ஸ் இருக்காங்க                      | 4 customer
+ASK    | indha maasam profit evlo                        | profit & loss
+ASK    | இந்த மாசம் லாபம் எவ்வளவு                          | profit & loss
+ASK    | GST evlo kattanum                               | GST
+ASK    | ஜிஎஸ்டி எவ்வளவு கட்டணும்                          | GST
+ASK    | balance sheet kudu                              | balance sheet
+ASK    | Kumar yevlo tharanum                            | ₹4,000
+ASK    | innaiku enna transactions                       | Daily Cash Note
