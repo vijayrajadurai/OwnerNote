@@ -429,6 +429,11 @@ class KaiAgent(
     private val requests = LinkedHashMap<String, PaymentRequest>()
     /** A payment still missing its amount or person; the next message can complete it. */
     private var incompletePayment: PaymentRequest? = null
+    /** "enakku", "naan", "ippo", "seri": words that are never a person's name (KaiFeed.notNames) — an answer made only of them names no one. */
+    private fun notAName(text: String): Boolean = text.trim().split(Regex("""[\s,.!?]+""")).filter { it.isNotEmpty() }
+        .let { ws -> ws.isNotEmpty() && ws.all { it.lowercase(Locale.ROOT) in com.shopai.app.brain.tools.KaiFeed.notNames || it in com.shopai.app.brain.tools.KaiFeed.notNames } }
+    /** "enakku" / "எனக்கு": to the owner. */
+    private val toOwner = Regex("""(?i)(?<![\p{L}])(enaku|enakku|ennaku|yenaku|yenakku|naan|nan|me)(?![\p{L}])|எனக்கு|நான்""")
     internal val conversationState = KaiConversationState()
     private var conversationScope: String? = null
     /** Reminders: the one reminder conversation (also used by the Speak screen). */
@@ -1091,8 +1096,15 @@ class KaiAgent(
                     mode = if (cmd.modeSaid) cmd.mode else p.mode, directionKnown = true), lang)
             }
             if (cmd == KaiCommand.Question || cmd is KaiCommand.Calculate) {
+                // "எனக்கு" / "enakku" to "Yaar kitta?": the money came to the owner — still not who gave it; never a person called
+                // "enakku" (owner, 11 Oct 2026). Kai asks for the name.
+                if (p.name == null && notAName(text)) {
+                    if (toOwner.containsMatchIn(text)) incompletePayment = p.copy(outgoing = false, directionKnown = true)
+                    return say(lang, KaiMood.CLARIFY, "payment: person missing",
+                        ta = "சரி ஓனர், யார் கொடுத்தாங்க? பேர் சொல்லுங்க.", tl = "Seri Owner, yaar kuduthaanga? Peru sollunga.", en = "Okay Owner, who gave it? Tell me the name.")
+                }
                 val amount = p.amount ?: com.shopai.app.brain.KaiUnderstanding.amountsIn(text, at.toLocalDate()).singleOrNull()?.let { BigDecimal.valueOf(it) }
-                val name = p.name ?: KaiCommands.personIn(text, people) ?: text.takeIf { it.split(' ').size <= 3 && it.none(Char::isDigit) }
+                val name = p.name ?: KaiCommands.personIn(text, people) ?: text.takeIf { it.split(' ').size <= 3 && it.none(Char::isDigit) && !notAName(it) }
                 if (amount != p.amount || name != p.name) {
                     if (!p.directionKnown && amount != null) {
                         incompletePayment = p.copy(amount = amount, name = name)
@@ -4226,7 +4238,8 @@ class KaiAgent(
             incompletePayment = r
             conversationState.pendingCorrection = true
             return say(lang, KaiMood.CLARIFY, "payment: person missing",
-                ta = "யாருக்கு / யார்கிட்ட ஓனர்?", tl = if (r.outgoing) "Yaarukku kuduthinga Owner?" else "Yaar kitta vaanguninga Owner?",
+                ta = if (!r.directionKnown) "யாருக்கு / யார்கிட்ட ஓனர்?" else if (r.outgoing) "யாருக்கு கொடுத்தீங்க ஓனர்?" else "யார் கொடுத்தாங்க ஓனர்?",
+                tl = if (r.outgoing) "Yaarukku kuduthinga Owner?" else "Yaar kitta vaanguninga Owner?",
                 en = if (r.outgoing) "Who did you give it to, Owner?" else "Who did you receive it from, Owner?")
         }
         if (!r.addEntry && !r.stated && pinned(r.name) == null) {

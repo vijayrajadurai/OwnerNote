@@ -204,6 +204,9 @@ object KaiSpokenWords {
             val w = m.groupValues[1]
             // A name the shop keeps in Tamil stays; "அரிசி", "டீ தூள்": goods by their common name (KaiFeed), never a person.
             if (w in tamilKept) return@replace m.value
+            // "கமலி" / "கமலு" for "கமல்" kept in Tamil: the mic adds a vowel to a name ending in a consonant (owner, 11 Oct 2026).
+            tamilKept.filter { t -> t.length >= 3 && t.endsWith("்") && t !in KaiFeed.notNames && w.length == t.length &&
+                w.startsWith(t.dropLast(1)) && w.last() in "ாிீுூெேைொோ" }.singleOrNull()?.let { return@replace it + m.groupValues[2] }
             KaiFeed.productNames[w]?.let { english -> if (shopWords.any { it.equals(english, ignoreCase = true) }) return@replace english + m.groupValues[2] }
             nameWords.filter { n -> spelled(n) == w || startsAlike(w, n) && (sounds(w, n) || sounds(w, soft(n))) }.singleOrNull()
                 ?.let { return@replace it + m.groupValues[2] }

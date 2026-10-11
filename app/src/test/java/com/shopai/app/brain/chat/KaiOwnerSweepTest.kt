@@ -672,6 +672,21 @@ class KaiOwnerSweepTest {
             check = first(listOf("Correct date-la tharuvaanga", "சரியான தேதியில தருவாங்க"), "Late"))
         talk("who pays late: late list first", listOf("yaru late ah payment pannuvanga"),
             check = first(listOf("Late-aa tharuvaanga", "Late-ஆ தருவாங்க"), "Correct date"))
+        // Owner's phone, 11 Oct 2026: "கமல்" saved by voice (a Tamil-script name); the mic then wrote "கமலி" — Kai asked "யாருக்கு?",
+        // and took the answer "எனக்கு" as a person called "enakku".
+        val kamal: Ledger.() -> Unit = { add("s3", "கமல்", false, "5000", d(10, 9), d(12, 31)) }
+        talk("a Tamil name with the mic's vowel is the same person", listOf("கமலி இப்ப 2000 கொடுத்துட்டான்"), kamal) { s ->
+            val t = lastTurn?.reply?.text.orEmpty() + " " + lastTurn?.card?.lines.orEmpty().joinToString(" ")
+            if (t.contains("யாருக்கு") || t.contains("Yaar")) "asked who: $t" else if (!t.contains("கமல்")) "Kamal not found: $t"
+            else if (s.nothingWritten()) null else "saved before Confirm" }
+        talk("enakku is never a person", listOf("2000 kuduthan", "enakku")) { s ->
+            val t = lastTurn?.reply?.text.orEmpty()
+            if (t.contains("enakku", true) && (t.contains("records") || t.contains("பதிவுல"))) "took enakku as a name: $t"
+            else if (!(t.contains("yaar kuduthaanga", true) || t.contains("யார் கொடுத்தாங்க"))) "did not ask who gave: $t"
+            else if (s.nothingWritten()) null else "saved" }
+        talk("enakku, then the name", listOf("2000 kuduthan", "enakku", "Kumar", "TAP")) { s ->
+            if (s.tools.saved.singleOrNull()?.let { it.partyName == "Kumar" && it.amount.compareTo(BigDecimal("2000")) == 0 } == true) null
+            else "saved ${s.tools.saved.map { "${it.partyName} ${it.amount}" }}" }
         talk("goods: venam — nothing", listOf("Kadaiku saman vandhuruku", "venam")) { s -> if (s.nothingWritten()) null else "wrote after venam" }
         talk("goods: a balance question in between", listOf("Kadaiku saman vandhuruku", "Kumar evlo tharanum")) { s ->
             if (s.log.contains("₹4,000") && s.nothingWritten()) null else "balance not answered" }
