@@ -253,6 +253,9 @@ object KaiFeed {
         evalo = evlo
         evvlo = evlo
         yevvalavu = evvalavu
+        nalaiku = naalaiku
+        nalaikku = naalaiku
+        naalaikku = naalaiku
         vyabaram = viyabaram
         vyaparam = viyabaram
         viyaparam = viyabaram

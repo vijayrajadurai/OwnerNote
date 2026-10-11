@@ -112,7 +112,7 @@ object KaiReminderUnderstanding {
     private const val E = """(?![\p{L}])"""
 
     private val remindWords = Regex(
-        """$B(remind|reminder|reminders|remainder|nyabagam|nyabaga|gnabagam|gnyabagam|nyaabagam|niyabagam|ninaivu|ninaivupaduthu|marakkama|marakkaama|""" +
+        """$B(remind|reminde|reminda|remaind|rimind|reminder|reminders|remainder|nyabagam|nyabaga|gnabagam|gnyabagam|nyaabagam|niyabagam|ninaivu|ninaivupaduthu|marakkama|marakkaama|""" +
             """marakkadha|alert|alarm)$E|நினைவூட்டு|நினைவூட்டல்|ஞாபகம்|மறக்காம|ரிமைண்டர்""",
         RegexOption.IGNORE_CASE,
     )
@@ -183,7 +183,7 @@ object KaiReminderUnderstanding {
         }
 
         // "En reminders enna?", "Today's reminders?", "Pending reminders sollu".
-        val createVerb = Regex("""$B(remind\s*(pannu|pannunga|me|panni|pannidu)|reminder\s*(vai|vechudu|set|podu|poodu|pottu)|nyabagam\s*paduthu|ninaivu\s*paduthu)$E""", RegexOption.IGNORE_CASE)
+        val createVerb = Regex("""$B((?:remind|reminde|reminda|remaind|rimind)\s*(pannu|pannunga|me|panni|pannidu)|reminder\s*(vai|vechudu|set|podu|poodu|pottu)|nyabagam\s*paduthu|ninaivu\s*paduthu)$E""", RegexOption.IGNORE_CASE)
         if (mentionsReminder && time?.relative == null && !createVerb.containsMatchIn(text) && !doVerbs.containsMatchIn(text) && listWords.containsMatchIn(text)) {
             return ReminderRequest.ListAll(todayOnly = Regex("""$B(today'?s?|innaiku|innikku|inniku|innaikku)$E|இன்னைக்கு""", RegexOption.IGNORE_CASE).containsMatchIn(text))
         }
@@ -253,7 +253,8 @@ object KaiReminderUnderstanding {
 
     /** The owner's words without "remind pannu" and fillers. */
     fun cleanTask(text: String): String = (" $text ")
-        .replace(Regex("""(?i)$B(remind\s*(pannu|pannunga|me\s*to|me|panni|pannidu)?|reminder\s*(vai|vechudu|set\s*pannu|set|podu|poodu|pottu)?|reminder|""" +
+        // "reminde pannu", "remaind pannu": the word however it's typed.
+        .replace(Regex("""(?i)$B((?:remind|reminde|reminda|remaind|rimind)\s*(pannu|pannunga|me\s*to|me|panni|pannidu)?|reminder\s*(vai|vechudu|set\s*pannu|set|podu|poodu|pottu)?|reminder|""" +
             """nyabagam\s*(paduthu|padutthu|paduthunga|padutha|paduthanum)?|gnabagam\s*(paduthu)?|niyabagam\s*(paduthu)?|ninaivu\s*(paduthu|paduthunga)?|ninaivupaduthu|""" +
             """please|pls|enakku|ennaku|kai|bro|set|pannu|pannunga|sollu|sollunga|appo|later|me\s*to)$E"""), " ")
         // "school-la", "pickup-nu": a case ending stays on its word; only a loose "la" / "nu" / "aagumbodhu" is filler.

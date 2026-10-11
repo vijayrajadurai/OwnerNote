@@ -432,6 +432,85 @@ class KaiAgent(
     private var planChoice: List<Pair<PartyMatch, KaiAction.ChoosePlan>>? = null
 
     private val plans = LinkedHashMap<String, ActionPlan>()
+
+    /**
+     * A line the mic cut off half way — a name and "pay" / "kitta" / "ku" and nothing else (owner, 11 Oct 2026: "Dinesh pay").
+     * Kai asks who pays whom ([incoming] null), then how much and when; the full line then goes through as if said at once
+     * (a draft for Confirm — nothing is written here).
+     */
+    private data class HalfSaid(val name: String, val said: String, val turn: Long, val lang: KaiLang, val incoming: Boolean? = null)
+    private var halfSaid: HalfSaid? = null
+    private val halfSaidLine = Regex("""(?i)^\s*([\p{L}\p{M}][\p{L}\p{M}\s.]*?)(?:\s*-\s*|\s+)(pay|payment|panam|paisa|kaasu|kitta|ku|kku|ukku|oda|kitte)\s*[?.!]*\s*$""")
+    private val halfSaidAsks = Regex("""(?i)(?<![\p{L}])(yaar\p{L}*|yar\p{L}*|evlo|enna|eppo|eppa|who|how|what|avan|aval|avar|avanga|ivan|ivar)(?![\p{L}])|யார்|எவ்வளவு""")
+    /** "enakku pay pannum", "enakku": to the owner. "naan pay pannanum", "naan", "avanukku": the owner pays. The person first, then the verb. */
+    private val toOwnerWho = Regex("""(?i)(?<![\p{L}])(enakku|enaku|ennaku|yenakku|yenaku|me|us|engalukku)(?![\p{L}])|எனக்கு""")
+    private val fromOwnerWho = Regex("""(?i)(?<![\p{L}])(naan|nan|naa|i|we|naanga|avanukku|avarukku|avangalukku)(?![\p{L}])|நான்""")
+    private val toOwnerVerb = Regex("""(?i)(?<![\p{L}])(vaanganum|vanganum|varanum|collect|tharanum|tharuvan|tharuvaan|tharuvaanga|tharuvanga|tharuvaar|kudupan|kudupaan|kuduppaan|kudupaanga|kudupaaru)(?![\p{L}])""")
+    private val fromOwnerVerb = Regex("""(?i)(?<![\p{L}])(kudukkanum|kodukkanum|kudukanum|kattanum)(?![\p{L}])""")
+    private val payVerbs = Regex("""(?i)(?<![\p{L}])(pay|panni|pannum|pannanum|pannuvan|pannuvaan|pannuvaanga|tharanum|tharuvan|tharuvaan|tharuvaanga|kudukkanum|kodukkanum|kudupan|kudupaan|enakku|enaku|naan|nan|ku)(?![\p{L}])""")
+
+    private suspend fun halfSaidStep(said: String, raw: String, lang0: KaiLang, people: List<String>): KaiTurn? {
+        // "dinesh pay", "10000 nalaiku": too few words to read as English — the owner's Tanglish (or the Tamil already being spoken).
+        val lang = if (lang0 == KaiLang.ENGLISH && !Regex("""(?i)(?<![\p{L}])(has|have|to|me|i|you|will|the|owes?)(?![\p{L}])""").containsMatchIn(said))
+            halfSaid?.lang ?: KaiLang.TANGLISH else lang0
+        halfSaid?.let { h ->
+            halfSaid = null
+            if (conversationState.conversationTurn - h.turn > 2) return@let
+            if (KaiConversationSemantics.cancelsDraft(said) || KaiConversationCare.notNow(said)) return say(lang, KaiMood.NEUTRAL, "half said: dropped",
+                ta = "சரி ஓனர், விட்டுடறேன்.", tl = "Seri Owner, vittudren.", en = "Okay Owner, I'll leave it.")
+            val amount = com.shopai.app.brain.KaiUnderstanding.amountsIn(said, now().toLocalDate()).singleOrNull()
+            val incoming = h.incoming ?: when {
+                toOwnerWho.containsMatchIn(said) -> true
+                fromOwnerWho.containsMatchIn(said) -> false
+                toOwnerVerb.containsMatchIn(said) -> true
+                fromOwnerVerb.containsMatchIn(said) -> false
+                else -> null
+            }
+            if (incoming == null) {
+                // Neither side said: "hmm", "enna?" asks again; anything else is a new line and goes its own way.
+                if (said.trim().split(Regex("""\s+""")).size > 2 || amount != null || !notAName(said)) return@let
+                halfSaid = h.copy(turn = conversationState.conversationTurn)
+                return askHalfSide(h, lang)
+            }
+            if (amount == null) {
+                if (h.incoming != null) return@let
+                halfSaid = h.copy(turn = conversationState.conversationTurn, incoming = incoming)
+                return say(lang, KaiMood.CLARIFY, "half said: amount",
+                    ta = if (incoming) "சரி ஓனர், ${h.name} உங்களுக்கு பே பண்ணணும். எவ்வளவு, எப்போ பண்ணணும்?" else "சரி ஓனர், நீங்க ${h.name}-க்கு பே பண்ணணும். எவ்வளவு, எப்போ கொடுக்கணும்?",
+                    tl = if (incoming) "Seri Owner, ${h.name} ungalukku pay pannanum. Evlo, eppa pannanum?" else "Seri Owner, neenga ${h.name}-ku pay pannanum. Evlo, eppa kudukkanum?",
+                    en = if (incoming) "Okay Owner, ${h.name} has to pay you. How much, and when?" else "Okay Owner, you have to pay ${h.name}. How much, and when?")
+            }
+            // The whole line, as if the owner had said it at once: "Dinesh enakku 10000 naalaiku tharanum".
+            val rest = payVerbs.replace(said, " ").replace(Regex("""\s+"""), " ").trim()
+            val full = if (incoming) "${h.name} enakku $rest tharanum" else "naan ${h.name}-ku $rest tharanum"
+            tools.log("half said", "kai", full, ActionStatus.ANSWERED)
+            // Answered in the language the owner is speaking, whatever the rebuilt line looks like.
+            val keep = forcedLang
+            forcedLang = lang
+            return try { answerOwner(full) } finally { forcedLang = keep }
+        }
+        // An answer to what Kai just asked ("full amount" to "Full ₹1,000-aa?") is never a new cut-off line.
+        if (said.any(Char::isDigit) || kaiAskedAfterDraft || incompletePayment != null || stockQuestion != null || unitQuestion != null || newItem != null ||
+            planChoice != null || relationChoice != null || conversationState.entityChoice != null) return null
+        val m = halfSaidLine.matchEntire(said.trim()) ?: return null
+        val name0 = m.groupValues[1].trim().trimEnd('-', '.').trim()
+        val words = name0.split(Regex("""\s+"""))
+        if (words.size > 3 || name0.length < 3 || notAName(name0) || productReference.containsMatchIn(name0) || halfSaidAsks.containsMatchIn(name0) ||
+            words.any { it.lowercase(Locale.ROOT) in com.shopai.app.brain.tools.KaiFeed.notNames || it in com.shopai.app.brain.tools.KaiFeed.notNames }) return null
+        // "Ramesh kitta?" right after a person's balance: the same question for Ramesh (a follow-up, not a cut-off line).
+        if (conversationState.conversationTurn - conversationState.mentionedTurn <= 1 && conversationState.lastPerson != null) return null
+        if (runCatching { tools.products() }.getOrNull().orEmpty().any { it.name.equals(name0, ignoreCase = true) }) return null
+        val name = com.shopai.app.brain.KaiUnderstanding.knownPerson(name0, people)
+            ?: name0.split(' ').joinToString(" ") { w -> w.replaceFirstChar { it.titlecase(Locale.ROOT) } }
+        val h = HalfSaid(name, raw.trim().trimEnd('.', '?', '!'), conversationState.conversationTurn, lang)
+        halfSaid = h
+        return askHalfSide(h, lang)
+    }
+
+    private fun askHalfSide(h: HalfSaid, lang: KaiLang) = say(lang, KaiMood.CLARIFY, "half said: which side",
+        ta = "ஓனர், \"${h.said}\"-னு சொன்னீங்க. ${h.name} உங்களுக்கு பே பண்ணணுமா, இல்ல நீங்க ${h.name}-க்கு பே பண்ணணுமா?",
+        tl = "Owner, \"${h.said}\"-nu sonneenga. ${h.name} ungalukku pay pannanuma, illa neenga ${h.name}-ku pay pannanuma?",
+        en = "Owner, you said \"${h.said}\". Does ${h.name} have to pay you, or do you have to pay ${h.name}?")
     private val requests = LinkedHashMap<String, PaymentRequest>()
     /** A payment still missing its amount or person; the next message can complete it. */
     private var incompletePayment: PaymentRequest? = null
@@ -877,6 +956,9 @@ class KaiAgent(
         // "add pannitiya?": answered from what the books confirmed — never "saved" unless the engine said Done.
         if (openPayment == null && KaiConversationSemantics.asksIfSaved(said)) return savedAnswer(KaiConversationSemantics.phraseLang(said, lang))
 
+        // "Dinesh pay" / "Dinesh kitta" — the mic cut the owner off: who pays whom, then how much and when.
+        if (openPayment == null) halfSaidStep(said, raw, lang, people0)?.let { return it }
+
         // Push-back ("adha cancel pannu", "avan 3000 dhaan tharanum", "nee sonnadhu thappu", "puriyala") and what Kai can't do
         // (GST bill, WhatsApp, weather …): answered plainly — nothing is written here.
         if (openPayment == null) care(said, lang)?.let { return it }
@@ -1154,7 +1236,14 @@ class KaiAgent(
         if (!com.shopai.app.brain.tools.KaiReminderUnderstanding.mentionsReminder(text)) KaiLocalDiscovery.request(text, people + products?.map { it.name }.orEmpty())?.let { return localDiscovery(it, lang, said) }
 
         // Priority: pending action/context → reminder → stock → bill scan → call → money → calculator → questions → memory → conversation.
-        com.shopai.app.brain.tools.KaiReminderUnderstanding.understand(text, at, people)?.let { return reminders.handle(it, lang) }
+        com.shopai.app.brain.tools.KaiReminderUnderstanding.understand(text, at, people)?.let { req ->
+            // Said aloud: the reminder keeps the owner's own Tamil words, not Kai's Tanglish reading of them (owner, 11 Oct 2026).
+            val kept = if (req is com.shopai.app.brain.tools.ReminderRequest.Create && com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(raw)) req.draft.let { d ->
+                val task = com.shopai.app.brain.tools.KaiSpokenWords.asSaid(d.task, raw)
+                req.copy(draft = d.copy(task = task, title = if (d.title.equals(d.task, ignoreCase = true)) task.replaceFirstChar { it.titlecase(Locale.ROOT) } else d.title))
+            } else req
+            return reminders.handle(kept, lang)
+        }
         if (products != null) {
             // "Colgate 2 petti vandhiruku" with a unit word Kai doesn't know: ask (box? packet?) — never guess the quantity's unit.
             learner?.unknownUnit(text, said, lang, products)?.let { return it }
@@ -2195,6 +2284,9 @@ class KaiAgent(
             """(?<![\p{L}])(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\s*\d{1,2}(?:\s*(?:st|nd|rd|th))?(?![\p{L}\d])|""" +
             // "naalaiku", "tomorrow", "next week", "Friday": a day said in words.
             """(?<![\p{L}])(?:naalaiku|naalaikku|nalaiku|nalaikku|tomorrow|naalai|nalai|day\s+after\s+tomorrow|naalanniku|naalanaikku)(?![\p{L}])|""" +
+            // "next monday", "friday", "adutha vaaram" (owner, 11 Oct 2026: "2000 next monday" asked for the due date again).
+            """(?<![\p{L}])(?:(?:next|this|indha|intha|adutha|aduththa|varra|vara|varum)\s+)?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)(?![\p{L}])|""" +
+            """(?<![\p{L}])(?:next|adutha|aduththa|varra|vara)\s+(?:week|vaaram)(?![\p{L}])|அடுத்த\s+வாரம்|""" +
             // "15th", "15th-ku", "15-aam thethi": a day of this month (or the next, once it has passed).
             """(?<![\p{L}\d₹.,])\d{1,2}\s*(?:st|nd|rd|th)(?:\s*-?\s*(?:ku|kku|thethi|date))?(?![\p{L}\d])|(?<![\p{L}\d₹.,])\d{1,2}\s*-?\s*(?:aam|am|m)?\s*thethi(?![\p{L}])|""" +
             """(?:அடுத்த|இந்த)\s*(?:மாதம்|மாசம்)\s*\d{1,2}""",
@@ -4224,6 +4316,7 @@ class KaiAgent(
 
     fun reset() {
         goodsClear()
+        halfSaid = null
         recentAsks.clear()
         lastReminderTurn = -1L
         kaiAskedAfterDraft = false

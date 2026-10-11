@@ -193,3 +193,7 @@ ASK    | ஜிஎஸ்டி எவ்வளவு கட்டணும்   
 ASK    | balance sheet kudu                              | balance sheet
 ASK    | Kumar yevlo tharanum                            | ₹4,000
 ASK    | innaiku enna transactions                       | Daily Cash Note
+
+# Owner (11 Oct 2026): "reminde pannu" is "remind pannu" — and never left in the reminder's words.
+REMIND | December 3 morning 10 sabari ku birthday ku wish pannanum reminde pannu | 2026-12-03 10:00 birthday
+REMIND | டிசம்பர் 3 காலைல 10 மணிக்கு சபரிக்கு பர்த்டே விஷ் பண்ணணும் ரிமைண்ட் பண்ணு | 2026-12-03 10:00 சபரிக்கு
