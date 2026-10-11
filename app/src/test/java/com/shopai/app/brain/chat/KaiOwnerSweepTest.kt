@@ -627,6 +627,18 @@ class KaiOwnerSweepTest {
         talk("goods: venam — nothing", listOf("Kadaiku saman vandhuruku", "venam")) { s -> if (s.nothingWritten()) null else "wrote after venam" }
         talk("goods: a balance question in between", listOf("Kadaiku saman vandhuruku", "Kumar evlo tharanum")) { s ->
             if (s.log.contains("₹4,000") && s.nothingWritten()) null else "balance not answered" }
+        // The old stock flow stays as it is (owner, 11 Oct 2026): one product said → its own draft, never the goods question;
+        // "new stock add pannu" keeps its one-product question; "venam" to a stock draft drops that draft.
+        val notGoods = { s: Shop -> if (s.log.contains("Enna enna saaman vandhuruku") || s.log.contains("என்ன என்ன சாமான் வந்திருக்கு")) "goods asked" else null }
+        talk("old flow: one product added", listOf("Colgate 2 box stock add pannu", "TAP")) { s -> notGoods(s) ?: stock("Colgate" to "336")(s) }
+        talk("old flow: a new product said alone", listOf("Ashirvad rava 2 kg vangi irukken")) { s -> notGoods(s) ?: if (s.nothingWritten()) null else "wrote before Confirm" }
+        talk("old flow: new stock add pannu, then venam drops the draft", listOf("new stock add pannu", "Colgate 2 box", "venam")) { s ->
+            notGoods(s) ?: if (s.log.contains("Vera saaman vandha") || s.log.contains("வேற சாமான் வந்தா")) "goods ended instead of the draft dropped"
+            else if (s.nothingWritten() && lastTurn?.card?.buttons?.none { it.action is KaiAction.ConfirmStock } != false) null else "draft still open" }
+        talk("goods: venam drops this draft, the next one comes", listOf("Kadaiku saman vandhuruku", "Colgate 2 box, Rice 3 moota", "venam", "TAP"),
+            check = stock("Colgate" to "240", "Rice" to "325"))
+        talk("goods: one product with its details is one line", listOf("Kadaiku saman vandhuruku", "Colgate 2 box, purchase 28, selling 35")) { s ->
+            if (s.log.contains("Idhu aanadhum adutha") || s.log.contains("இது ஆனதும் அடுத்து")) "split into items" else if (s.nothingWritten()) null else "wrote before Confirm" }
         talk("goods: a payment in between is a payment draft", listOf("Kadaiku saman vandhuruku", "Kumar 500 kuduthan", "TAP")) { s ->
             if (s.tools.saved.singleOrNull()?.partyName == "Kumar" && s.inv.moves.isEmpty()) null else "saved ${s.tools.saved.map { it.partyName }} moves ${s.inv.moves.size}" }
         talk("reminder cancelled before Confirm", listOf("naalaiku 10 manikku Kumar ku call panna remind pannu", "venam")) { s -> if (s.tools.rems.isEmpty()) null else "reminder set after venam" }

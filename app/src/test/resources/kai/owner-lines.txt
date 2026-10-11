@@ -28,6 +28,7 @@ STOCK  | Lux soap 5 kettupochu                          | Lux Soap 55
 STOCK  | Baniyan 10 vithuchu                            | Baniyan 40
 STOCK  | ennai 1 box vandhuchu                          | Oil 252
 STOCK  | Maggi 10 pottalam vandhuchu                    | Maggi 120    # Kai asks pieces per packet; the test answers 12
+STOCK  | Colgate 2 box stock add pannu                  | Colgate 336  # one product: the old stock flow, not the goods question
 
 REMIND | naalaiku kaalaila 11 manikku Selvam kitta panam vaanga remind pannu | 2026-10-09 11:00 Selvam
 REMIND | innaiku 4 manikku ABC Traders ku call panna remind pannu            | 2026-10-08 16:00 ABC Traders

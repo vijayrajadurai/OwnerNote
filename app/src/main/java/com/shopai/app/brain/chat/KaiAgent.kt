@@ -2946,9 +2946,6 @@ class KaiAgent(
     /** "new stock add pannu": which product and how much? (a photo is a button, never opened by itself). */
     private fun askStockLine(said: String, lang: KaiLang): KaiTurn {
         stockLineAskedTurn = conversationState.conversationTurn
-        // "Colgate 2 box, Rice 3 moota" after this: each one drafted in turn, as after "Kadaiku saman vandhuruku".
-        goodsTurn = conversationState.conversationTurn
-        goodsQueue.clear()
         tools.log(com.shopai.app.brain.tools.KaiIntents.STOCK_IN, "kai", "which product asked", ActionStatus.ANSWERED, null, said)
         return KaiTurn(
             ChatReply(pick(lang,
@@ -3779,6 +3776,9 @@ class KaiAgent(
 
     private fun goodsOpen() = goodsTurn >= 0 && conversationState.conversationTurn - goodsTurn <= 6
 
+    /** A stock draft is on screen, waiting for Confirm. */
+    private fun stockDraftOpen() = lastDraft?.takeIf { it.second == "STOCK" }?.let { last -> stockPlans.values.any { it.said == last.first } } == true
+
     /** Only the question — no buttons: Photo / Cancel are not shown here; the drafts carry Confirm / Edit / Cancel (owner, 11 Oct 2026). */
     private suspend fun goodsAnnounced(said: String, lang: KaiLang): KaiTurn? {
         if (newItem != null || unitQuestion != null || stockQuestion != null) return null
@@ -3803,12 +3803,20 @@ class KaiAgent(
     /** A line after "enna saaman vandhuruku?": "Colgate 2 box, Rice 3 moota" — each a stock-in draft; "avlo dhaan" ends it. */
     private suspend fun goods(text: String, lang: KaiLang): KaiTurn? {
         if (goodsOpen() && KaiGoodsArrival.ends(text)) {
+            // Kai's own question (a new product's price, a unit) is answered first; "venam" to an open stock draft drops that
+            // draft as before — then the next item said together comes (owner, 11 Oct 2026: the old stock flow stays as it is).
+            if (newItem != null || unitQuestion != null || stockQuestion != null) return null
+            if (stockDraftOpen() && KaiConversationSemantics.cancelsDraft(text)) return null
             goodsTurn = -1; goodsQueue.clear()
             return say(lang, KaiMood.HAPPY, "goods: done", ta = "சரி ஓனர் ✅ வேற சாமான் வந்தா சொல்லுங்க.", tl = "Seri Owner ✅ Vera saaman vandha sollunga.",
                 en = "Done, Owner ✅ Tell me when more comes in.")
         }
         val items = KaiGoodsArrival.items(text).map { it.replaceFirstChar(Char::uppercaseChar) }
         if (items.isEmpty() || !goodsOpen() && items.size < 2) return null
+        // "Colgate 5 box, boxக்கு 48 pieces, purchase 28, selling 35": one product with its details — the old stock line, not a list.
+        val inv = com.shopai.app.brain.tools.KaiInventory
+        inv.stockLine(text)?.let { (name, qty, unit) ->
+            if (inv.hasDetails(text, com.shopai.app.brain.tools.ItemSpec(name, inv.kindOf(name, unit), qty, unit))) return null }
         // Kai is asking a product's details, or a person / money is said: not a goods line.
         if (newItem != null || unitQuestion != null || stockQuestion != null || planChoice != null || relationChoice != null ||
             conversationState.entityChoice != null) return null
