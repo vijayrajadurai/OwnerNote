@@ -751,8 +751,14 @@ class KaiAgent(
         // names in their letters ("குமார் 2000 குடுத்தான்" = "Kumar 2000 kuduthaan") — one brain for voice and text. Kai still
         // answers in Tamil.
         val tamil = com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(raw)
-        val heard = if (!tamil) raw.trim() else com.shopai.app.brain.tools.KaiSpokenWords.withNames(
-            com.shopai.app.brain.tools.KaiSpokenWords.normalize(raw.trim()), knownNames())
+        // A product named in Tamil letters ("பிரிட்டானியா பிஸ்கட்", "டூர் தால்") is the shop's product it sounds like, as a whole
+        // phrase — any product name, no list per name (KaiProductSound).
+        val heard = if (!tamil) raw.trim() else {
+            val people = runCatching { books.snapshot()?.people.orEmpty() }.getOrDefault(emptyList())
+            val productNames = runCatching { tools.products()?.map { it.name } }.getOrNull().orEmpty()
+            com.shopai.app.brain.tools.KaiSpokenWords.withNames(com.shopai.app.brain.tools.KaiSpokenWords.normalize(
+                com.shopai.app.brain.tools.KaiProductSound.withProducts(raw.trim(), productNames, people)), people + productNames)
+        }
         // "first ketta aal evlo tharanum", "munnadi ketta aal": the person this conversation was about, by name.
         val earlier = KaiConversationCare.namedFromEarlier(heard, brain.peopleTalkedAbout()) ?: heard
         // "ippa evlo tharanum" right after talking about Akash: Akash's balance now — not everyone's list.
@@ -2991,8 +2997,10 @@ class KaiAgent(
         if (product != null) {
             // A product the books have: its own units and prices — nothing asked again. A box size said now is used for this draft.
             val detailed = com.shopai.app.brain.tools.KaiInventory.withDetails(spec, text)
-            if (unit != null && detailed.perPack != null && com.shopai.app.brain.tools.KaiUnits.factor(product, unit) == null)
-                sessionUnits.getOrPut(product.id) { HashMap() }[unit] = detailed.perPack
+            // "packetku 500 gram" for Rava kept in kg: 0.5 kg a packet — the pack size in the product's own unit, never 500 kg.
+            val perPack = detailed.perPack?.let { com.shopai.app.brain.tools.KaiUnits.inProductUnit(product, it, detailed.inner) }
+            if (unit != null && perPack != null && com.shopai.app.brain.tools.KaiUnits.factor(product, unit) == null)
+                sessionUnits.getOrPut(product.id) { HashMap() }[unit] = perPack
             lastProduct = product
             return draftParts(product, listOf(com.shopai.app.brain.tools.QtyPart(qty, unit)), true, said, lang)
         }
@@ -3099,8 +3107,9 @@ class KaiAgent(
         val existing = runCatching { tools.products() }.getOrNull()?.firstOrNull { KaiPrivateMemory.normalize(it.name) == KaiPrivateMemory.normalize(spec.name) }
         if (existing != null) {
             val u = spec.unit
-            if (u != null && spec.perPack != null && com.shopai.app.brain.tools.KaiUnits.factor(existing, u) == null)
-                sessionUnits.getOrPut(existing.id) { HashMap() }[u] = spec.perPack
+            val perPack = spec.perPack?.let { com.shopai.app.brain.tools.KaiUnits.inProductUnit(existing, it, spec.inner) }
+            if (u != null && perPack != null && com.shopai.app.brain.tools.KaiUnits.factor(existing, u) == null)
+                sessionUnits.getOrPut(existing.id) { HashMap() }[u] = perPack
             return draftParts(existing, listOf(com.shopai.app.brain.tools.QtyPart(spec.qty!!, u)), true, item.said, lang)
         }
         val pack = com.shopai.app.brain.tools.KaiUnits.canon(spec.unit)?.takeIf { it != t.baseUnit && spec.perPack != null }

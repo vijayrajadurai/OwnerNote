@@ -656,6 +656,10 @@ class KaiOwnerSweepTest {
             else if (s.log.contains("0.5 kg") && s.log.contains("1. ")) null else "packet size not read" }
         talk("goods: a packet size line saved with the list", listOf("Kadaiku saman vandhuruku", "Ashirvad rava 500 gram 50 packet", "45", "55", "TAP+", "avlo dhaan", "TAP+")) { s ->
             if (s.inv.items.any { it.id !in setOf("p1", "p2", "p3", "p4", "p5", "p6") && it.stock.signum() > 0 }) null else "not created" }
+        // A pack size said in grams for a product kept in kg is turned into kg — never "1 packet = 500 kg" (owner, 11 Oct 2026).
+        talk("pack size in grams for a kg product", listOf("Rice 2 packet, packetku 500 gram", "TAP")) { s -> stock("Rice" to "251")(s) }
+        talk("pack size in pieces for a kg product is asked", listOf("Rice 2 box, boxku 10 pieces")) { s ->
+            if (s.nothingWritten() && lastTurn?.card?.buttons?.none { it.action is KaiAction.ConfirmStock } != false) null else "a box of Rice taken as 10 kg" }
         talk("goods: venam — nothing", listOf("Kadaiku saman vandhuruku", "venam")) { s -> if (s.nothingWritten()) null else "wrote after venam" }
         talk("goods: a balance question in between", listOf("Kadaiku saman vandhuruku", "Kumar evlo tharanum")) { s ->
             if (s.log.contains("₹4,000") && s.nothingWritten()) null else "balance not answered" }

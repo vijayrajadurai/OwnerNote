@@ -15,6 +15,9 @@ When you change what Kai understands:
    A fix that works only typed fails that test. Multi-turn conversations (`talk(...)` in `conversationLines`) are
    played both ways too — a reply check that looks for a Tanglish word must also accept Kai's Tamil reply to the mic.
 3. If the line is something only said aloud, add it in Tamil script as well (`KaiVoiceOwnersTest` and owner-lines).
+4. **Product names are never listed one by one.** The mic writes an English product name in Tamil letters
+   ("பிரிட்டானியா பிஸ்கட்"); `KaiProductSound` matches it to the shop's own product by sound, as a whole phrase, before
+   `normalize`. A name it misses is fixed in that matcher's rules (with a line in `KaiProductSoundTest`), not with a word pair.
 
 When a rule works from a list (places, off-topic subjects, units, payment modes, money words, weekdays), test a word that is
 NOT in the list too (owner, 10 Oct 2026: "hardware" was answered, "spa" wasn't). A word Kai can't read is asked about or

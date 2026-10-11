@@ -66,6 +66,17 @@ object KaiUnits {
         return standard(u, base)
     }
 
+    /**
+     * A pack size said in its own unit, in [product]'s unit: "packetku 500 gram" for Rava kept in kg → 0.5. No unit said → as said
+     * (the product's unit). A unit that can't be turned into the product's (pieces for a product kept in kg) → null: Kai asks.
+     */
+    fun inProductUnit(product: ProductRef, qty: BigDecimal, unit: String?): BigDecimal? {
+        val u = canon(unit) ?: return qty
+        val base = canon(product.unit) ?: "PCS"
+        if (u == base) return qty
+        return standard(u, base)?.let { qty.multiply(it).stripTrailingZeros() }
+    }
+
     fun resolve(product: ProductRef, parts: List<QtyPart>, extra: Map<String, BigDecimal> = emptyMap()): UnitResolution {
         val base = canon(product.unit) ?: "PCS"
         var total = BigDecimal.ZERO
