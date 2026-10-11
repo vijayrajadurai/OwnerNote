@@ -755,6 +755,15 @@ class KaiOwnerSweepTest {
         talk("the product's rate, then its margin", listOf("Colgate rate enna", "labam evlo"), check = nothingWritten("₹7"))
         talk("adhoda rate after its stock", listOf("Colgate stock evlo", "adhoda rate enna"), check = nothingWritten("₹35"))
         talk("athoda selling price after details", listOf("Oil details", "athoda selling price"), check = nothingWritten("₹170"))
+        // The mic cut the owner off (owner, 11 Oct 2026): "Dinesh pay" → Kai asks who pays whom, then how much and when → one draft.
+        talk("cut off: Kai asks who pays whom", listOf("Dinesh pay"), check = nothingWritten("Dinesh"))
+        talk("cut off: Dinesh pays me", listOf("Dinesh pay", "enaku pay pannum", "10000 nalaiku", "TAP"), check = saved("Dinesh", "10000", PlanKind.CREDIT_GIVEN))
+        talk("cut off: I pay Dinesh", listOf("Dinesh kitta", "naan pay pannanum", "5000 naalaiku", "TAP"), check = saved("Dinesh", "5000", PlanKind.DEBIT_TAKEN))
+        talk("cut off: everything in the answer", listOf("Dinesh pay", "enakku 10000 naalaiku tharanum", "TAP"), check = saved("Dinesh", "10000", PlanKind.CREDIT_GIVEN))
+        talk("cut off: venam drops it", listOf("Dinesh pay", "venam"), check = nothingWritten())
+        talk("a follow-up is not a cut-off line", listOf("Kumar evlo tharanum", "Ramesh kitta?"), check = nothingWritten("₹2,500"))
+        talk("next monday is the due date", listOf("Kumar enakku 2000 next monday tharanum")) { _ ->
+            if (lastTurn?.card?.lines?.any { it.contains("October 12") || it.contains("அக்டோபர் 12") } == true) null else "no due date: ${lastTurn?.card?.lines}" }
         // A reminder said aloud keeps the owner's own Tamil words; "reminde" (typed so) is not part of what to do.
         talk("a spoken reminder keeps its Tamil", listOf("டிசம்பர் 3 காலைல 10 மணிக்கு சபரிக்கு பர்த்டே விஷ் பண்ணணும் ரிமைண்ட் பண்ணு", "TAP")) { s ->
             when (val t = s.tools.rems.singleOrNull()?.title) { null -> "no reminder"; "சபரிக்கு பர்த்டே விஷ் பண்ணணும்" -> null; else -> "title: $t" } }
