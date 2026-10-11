@@ -219,6 +219,26 @@ object KaiFeed {
         பாக்கி பேலன்ஸ் கடன் பணம் காசு ரூபாய் ஸ்டாக் சரக்கு பொருள் வாரம் மாசம் இன்று நேற்று நேத்து
     """)
 
+    private val giveStem = Regex("""^k[uo](?:t|d)h?u?(?:t|d)h?""")
+    private val giveEnding = Regex("""^u?t{0,2}(?:aanga|anga|aan|an|aar|ar|aaru|aru|en|achu|aachu|itaan|ittaan|iten|itten)$""")
+    private val cameWord = Regex("""^van(?:d|t)h?[iu]\p{L}*?(?:chu|chi|cha)$""")
+
+    /**
+     * A verb however it is typed or heard (owner, 11 Oct 2026: "kututhutanga", "vandhuruchi" were not understood):
+     * "kututhutanga" / "kudthan" / "koduthaan" → "kuduthutaanga" / "kuduthan" / "kuduthaan" (give), "vandhuchi" / "vandhuruchi" /
+     * "vanthuruchu" → "vandhuchu" (came). Only whole verb forms — "Kuttappan" or "kudukkanum" stay as they are. Null: not one.
+     */
+    fun verbSpelling(word: String): String? {
+        val w = word.lowercase(java.util.Locale.ROOT)
+        if (w.length >= 6) giveStem.find(w)?.let { m ->
+            val rest = w.substring(m.range.last + 1)
+            if (giveEnding.matches(rest)) return ("kuduth" + rest).let { if (it.endsWith("anga") && !it.endsWith("aanga")) it.dropLast(4) + "aanga" else it }
+                .takeIf { it != w }
+        }
+        if (cameWord.matches(w) && w != "vandhuchu") return "vandhuchu"
+        return null
+    }
+
     /** How owners actually type a word = the word Kai's rules read ("totel" = total). Whole words only. */
     val spellings: Map<String, String> = pairs("""
         totel = total

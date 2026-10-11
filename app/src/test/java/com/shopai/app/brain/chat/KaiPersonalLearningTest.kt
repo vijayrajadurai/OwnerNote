@@ -239,10 +239,10 @@ class KaiPersonalLearningTest {
         val t = kai.ask("maal na stock")
         assertEquals("Seri Owner 😄 `maal` = `stock` nu save pannava?", t.reply.text)
         kai.ask("aama")
-        // "maal vandhuruku" = "stock vandhuruku": Kai asks which product and how much (the camera is a button, not opened by itself).
+        // "maal vandhuruku" = "stock vandhuruku": goods came — Kai asks which, one by one (owner, 11 Oct 2026); no camera, no buttons.
         val d = kai.ask("maal vandhuruku")
-        assertTrue(d.reply.text, d.reply.text.contains("Enna product, evlo vandhirukku?"))
-        assertTrue(d.reply.text, d.card!!.buttons.any { it.action is KaiAction.OpenStockCamera })
+        assertTrue(d.reply.text, d.reply.text.contains("Enna enna saaman vandhuruku?"))
+        assertTrue(d.reply.text, d.card?.buttons.orEmpty().none { it.action is KaiAction.OpenStockCamera } && d.direct == null)
         // Natural teaching: "naan 'maal' nu sonna stock meaning" is the same memory.
         assertEquals("stock", find("maal")!!.meaningValue)
         noCommittedWrites()

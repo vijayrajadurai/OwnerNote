@@ -14,7 +14,7 @@ object KaiGoodsArrival {
     )
     private val arrived = Regex(
         """(?i)$B(vandhuruku|vandhurukku|vandhiruku|vandhirukku|vanthuruku|vanthurukku|vanthiruku|vanthirukku|vandhuchu|vanthuchu|vandhachu|vanthachu|""" +
-            """vandhudhu|vanthuthu|vandhadhu|vandhuduchu|irakkinom|irakkunom|irakkinen|irakkanum|eranguchu|iranguchu|came|arrived|received|""" +
+            """vandhudhu|vanthuthu|vandhadhu|vandhuduchu|vandhuchi|vanthuchi|vandhuruchu|vandhuruchi|vanthuruchu|vanthuruchi|vandhiruchu|irakkinom|irakkunom|irakkinen|irakkanum|eranguchu|iranguchu|came|arrived|received|""" +
             """add\s*pannalama|add\s*pannanum|add\s*pannu|add\s*pannunga|podanum|podalama|podunga|serkkanum|serkkalama|serthudu|update\s*pannanum)$E|""" +
             """வந்திருக்கு|வந்துருக்கு|வந்துச்சு|வந்தாச்சு|இறக்கினோம்|சேர்க்கலாமா|சேர்க்கணும்""",
     )

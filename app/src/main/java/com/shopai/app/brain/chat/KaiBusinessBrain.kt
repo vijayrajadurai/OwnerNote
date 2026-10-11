@@ -528,7 +528,12 @@ class KaiBusinessBrain(
         val verbTl = if (p.side == Direction.RECEIVABLE) "tharanum" else "kudukkanum"
         val verbTa = if (p.side == Direction.RECEIVABLE) "தரணும்" else "கொடுக்கணும்"
         val overdue = lines.any { it.second.isBefore(day) }
-        val text = when (lang) {
+        // Owner, 11 Oct 2026: "Kamal ₹5,000 January 5 kudukkanum" for a supplier sounded as if Kamal had to pay — said whose money it is.
+        val text = if (p.side == Direction.PAYABLE) when (lang) {
+            KaiLang.TAMIL -> "நீங்க $n-க்கு " + lines.joinToString(", ") { (a, d) -> "$a ${KaiFormat.date(d, lang, day)}" } + " கொடுக்கணும் ஓனர்."
+            KaiLang.TANGLISH -> "Neenga $n-ku " + lines.joinToString(", ") { (a, d) -> "$a ${KaiFormat.date(d, lang, day)}-kulla" } + " kudukkanum owner."
+            KaiLang.ENGLISH -> "You owe $n " + lines.joinToString(", ") { (a, d) -> "$a by ${KaiFormat.date(d, lang, day)}" } + ", Owner."
+        } else when (lang) {
             KaiLang.TAMIL -> "$n " + lines.joinToString(", ") { (a, d) -> "$a ${KaiFormat.date(d, lang, day)}" } + " $verbTa ஓனர்."
             KaiLang.TANGLISH -> pick(listOf(
                 "$n " + lines.joinToString(", ") { (a, d) -> "$a ${KaiFormat.date(d, lang, day)}" } + " $verbTl owner.",

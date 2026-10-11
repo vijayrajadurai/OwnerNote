@@ -43,7 +43,11 @@ object KaiSpokenWords {
         "சொல்லு" to "sollu", "சொல்லுங்க" to "sollunga",
         // ---- stock ----
         "ஸ்டாக்" to "stock", "ஸ்டாக்கு" to "stock", "இன்வென்டரி" to "inventory", "ஆட்" to "add", "சேர்" to "serthu", "சேர்த்து" to "serthu",
-        "வந்திருக்கு" to "vandhiruku", "வந்துருக்கு" to "vandhuruku", "வந்துச்சு" to "vandhuchu", "புது" to "pudhu", "புதுசா" to "pudhusa",
+        "வந்திருக்கு" to "vandhiruku", "வந்துருக்கு" to "vandhuruku", "வந்துச்சு" to "vandhuchu", "வந்துருச்சு" to "vandhuchu", "வந்துடுச்சு" to "vandhuchu", "வந்திருச்சு" to "vandhuchu", "வந்துட்டு" to "vandhuchu",
+        // Months said aloud ("மே 5 தரணும்" was read as "5th of next month" — owner, 11 Oct 2026).
+        "ஜனவரி" to "january", "சனவரி" to "january", "பிப்ரவரி" to "february", "பெப்ரவரி" to "february", "மார்ச்" to "march", "ஏப்ரல்" to "april",
+        "மே" to "may", "ஜூன்" to "june", "ஜுன்" to "june", "ஜூலை" to "july", "ஜுலை" to "july", "ஆகஸ்ட்" to "august", "ஆகஸ்டு" to "august",
+        "செப்டம்பர்" to "september", "செப்டெம்பர்" to "september", "அக்டோபர்" to "october", "நவம்பர்" to "november", "டிசம்பர்" to "december", "புது" to "pudhu", "புதுசா" to "pudhusa",
         "அவுட்" to "out", "போச்சு" to "pochu", "சேல்" to "sale", "ஆச்சு" to "aachu", "எடுத்துட்டாங்க" to "eduthutanga",
         "பீஸ்" to "pieces", "பீசஸ்" to "pieces", "பாக்ஸ்" to "box", "பாக்கெட்" to "packet", "பாக்கெட்டு" to "packet", "அரைக்கிலோ" to "arakilo", "அரைகிலோ" to "arakilo", "கால்கிலோ" to "kaalkilo", "முக்கால்கிலோ" to "mukkaalkilo", "கிலோ" to "kg",
         // ---- bills / camera ----

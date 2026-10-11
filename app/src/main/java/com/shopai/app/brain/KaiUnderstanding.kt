@@ -275,7 +275,37 @@ object KaiUnderstanding {
         val words = Regex("""[\p{L}\p{M}]+""").findAll(text).map { w ->
             w.value.replace(Regex("""(?i)(kitta|kita|kitte|ukku|kku|ku|oda|idam)$"""), "").replace(Regex("""(க்கு|கிட்ட|கிட்டே|உக்கு)$"""), "")
         }.filter { it.length >= 2 }.toList()
-        return names.firstOrNull { name -> !name.contains(' ') && words.any { com.shopai.app.util.NameSound.same(it, name) } }
+        names.firstOrNull { name -> !name.contains(' ') && words.any { com.shopai.app.util.NameSound.same(it, name) } }?.let { return it }
+        // A long name typed with one letter off ("Vijaylakshmi store" for "Vijayalakshmi Store" — owner, 11 Oct 2026): the one
+        // name it can be. Short names never ("Kamar" may be another person than "Kumar").
+        val typed = words.map { it.lowercase(Locale.ROOT) }
+        return names.filter { !it.any { c -> c in '஀'..'௿' } }.mapNotNull { name ->
+            val parts = name.lowercase(Locale.ROOT).split(Regex("""\s+"""))
+            val target = parts.joinToString("")
+            if (target.length < 8) return@mapNotNull null
+            val hit = (0..typed.size - parts.size).any { i ->
+                val said = typed.subList(i, i + parts.size).joinToString("")
+                said.first() == target.first() && oneEditApart(said, target)
+            }
+            if (hit) name else null
+        }.distinct().singleOrNull()
+    }
+
+    /** Equal, or one letter added, dropped or changed. */
+    private fun oneEditApart(a: String, b: String): Boolean {
+        if (a == b) return true
+        if (kotlin.math.abs(a.length - b.length) > 1) return false
+        var i = 0; var j = 0; var edits = 0
+        while (i < a.length && j < b.length) {
+            if (a[i] == b[j]) { i++; j++; continue }
+            if (++edits > 1) return false
+            when {
+                a.length > b.length -> i++
+                a.length < b.length -> j++
+                else -> { i++; j++ }
+            }
+        }
+        return edits + (a.length - i) + (b.length - j) <= 1
     }
 
     private val notNames = setOf(

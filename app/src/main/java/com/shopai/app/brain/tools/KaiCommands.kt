@@ -233,6 +233,12 @@ object KaiCommands {
         "maniku", "manikku", "naalaiku", "naalaikku", "nalaiku", "innaiku", "innaikku", "inniku", "innikku", "saayangalam", "raathiri", "madhiyam",
     ) + KaiFeed.notNames
 
+    /** The last word of a shop's name ("Vijayalakshmi Store", "Sri Balaji Agencies"), in English or as the mic writes it. */
+    private val shopWords = setOf("store", "stores", "traders", "trader", "agencies", "agency", "mart", "enterprises", "enterprise", "distributors",
+        "distributor", "agency", "supermarket", "hardwares", "hardware", "textiles", "medicals", "medical", "bakery", "sweets", "provisions", "centre",
+        "center", "brothers", "bros", "and sons", "company", "co", "industries", "ஸ்டோர்", "ஸ்டோர்ஸ்", "டிரேடர்ஸ்", "ட்ரேடர்ஸ்", "ஏஜென்சீஸ்", "ஏஜென்சி", "மார்ட்",
+        "என்டர்பிரைசஸ்", "டிஸ்ட்ரிபியூட்டர்ஸ்", "சூப்பர்மார்க்கெட்", "ஹார்டுவேர்ஸ்", "டெக்ஸ்டைல்ஸ்", "மெடிக்கல்ஸ்", "பேக்கரி", "ஸ்வீட்ஸ்", "பிரதர்ஸ்")
+
     /** "move agala", "dead stock", "slow moving", "unsold": stock that is not selling. */
     private val slowMoving = Regex(
         """(?<![\p{L}])(move\s*-?\s*(?:agala|aagala|aagalai|agalai|aaga\s*maattengudhu|aagudhu\s*illa|aguthu\s*illa|aagave\s*illa|agave\s*illa)|""" +
@@ -279,6 +285,12 @@ object KaiCommands {
                 if (key in notNames || key.length < 2 || key.any(Char::isDigit)) continue
                 // "Sujithukku" read as "Sujithuk" + "ku": the name is "Sujith" (+ "ukku").
                 val name = if (p === patterns[0] && key.endsWith("uk") && key.length >= 6) word.dropLast(2) else word
+                // "Vijayalakshmi Store-ku", "Sri Balaji Agencies kitta": a shop's last word — its name is the words before it too.
+                if (p !== patterns[1] && (key in shopWords || word in shopWords)) {
+                    val before = text.substring(0, m.range.first).trimEnd().split(Regex("""\s+""")).filter { it.isNotEmpty() }
+                        .takeLastWhile { w -> w.lowercase(Locale.ROOT) !in notNames && w.none(Char::isDigit) && w.any(Char::isLetter) }.takeLast(2)
+                    if (before.isNotEmpty()) return (before + name).joinToString(" ") { it.replaceFirstChar { c -> c.titlecase(Locale.ROOT) } }
+                }
                 return name.replaceFirstChar { it.titlecase(Locale.ROOT) }
             }
         }

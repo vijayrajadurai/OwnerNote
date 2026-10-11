@@ -482,7 +482,7 @@ class KaiAgent(
 
     /** The owner's spellings of Kai's words, as the feed knows them ("totel ah" = "total ah"). */
     private fun spelled(text: String): String = Regex("""[\p{L}]+""").replace(text) { m ->
-        com.shopai.app.brain.tools.KaiFeed.spellings[m.value.lowercase(Locale.ROOT)] ?: m.value
+        com.shopai.app.brain.tools.KaiFeed.spellings[m.value.lowercase(Locale.ROOT)] ?: com.shopai.app.brain.tools.KaiFeed.verbSpelling(m.value) ?: m.value
     }
 
     // ------------------------------------------------------------ push-back and what Kai can't do
@@ -3920,13 +3920,18 @@ class KaiAgent(
     /** A stock draft is on screen, waiting for Confirm. */
     private fun stockDraftOpen() = lastDraft?.takeIf { it.second == "STOCK" }?.let { last -> stockPlans.values.any { it.said == last.first } } == true
 
+    /** "vandhuruku", "vandhuchu", "irakkinom", "came": goods arrived (said, not asked for). */
+    private val cameIn = Regex("""(?i)(?<![\p{L}])(van[dt]h?[iu]\p{L}*|irakk\p{L}*|eranguchu|iranguchu|came|arrived|received)(?![\p{L}])|வந்""")
+
     /** Only the question — no buttons: Photo / Cancel are not shown here; the drafts carry Confirm / Edit / Cancel (owner, 11 Oct 2026). */
     private suspend fun goodsAnnounced(said: String, lang: KaiLang): KaiTurn? {
         if (newItem != null || unitQuestion != null || stockQuestion != null) return null
         val products = runCatching { tools.products() }.getOrNull() ?: return null
         val people = runCatching { books.snapshot()?.people.orEmpty() }.getOrDefault(emptyList())
         // "new stock add pannu", "Colgate photo edu": the stock line's own question (with its Photo button) — goods mode opens there too.
-        if (com.shopai.app.brain.tools.KaiStock.scanRequest(said, products) != null) return null
+        // "Kadaiku stock vandhuruku" says goods came — the goods question, as "saman / saraku vandhuruku" (owner, 11 Oct 2026);
+        // "new stock add pannu" (a command, nothing came) keeps the one-product question, and a photo asked opens the camera.
+        if (com.shopai.app.brain.tools.KaiStock.scanRequest(said, products) != null && (photoAsked.containsMatchIn(said) || !cameIn.containsMatchIn(said))) return null
         if (!KaiGoodsArrival.announces(said, products.map { it.name }) ||
             KaiCommands.personIn(KaiGoodsArrival.withoutGoodsWords(said), people) != null) return null
         goodsClear()

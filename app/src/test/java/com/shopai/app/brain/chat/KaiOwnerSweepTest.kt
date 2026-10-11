@@ -687,6 +687,25 @@ class KaiOwnerSweepTest {
         talk("enakku, then the name", listOf("2000 kuduthan", "enakku", "Kumar", "TAP")) { s ->
             if (s.tools.saved.singleOrNull()?.let { it.partyName == "Kumar" && it.amount.compareTo(BigDecimal("2000")) == 0 } == true) null
             else "saved ${s.tools.saved.map { "${it.partyName} ${it.amount}" }}" }
+        // Owner's flow, 11 Oct 2026: a shop's whole name, a month said aloud, a typo in the name, "vandhuchi", "stock vandhuruku",
+        // and a supplier's due date said as the owner's money.
+        val vij = listOf("Vijayalakshmi store ku nan 2000 tharanum", "May 5 tharanum", "TAP")
+        talk("a shop's whole name before -ku", vij) { s ->
+            val p = s.tools.saved.singleOrNull()
+            if (p != null && (p.partyName.contains("Vijayalakshmi") || p.partyName.contains("விஜயலட்சுமி")) && p.dueDate == LocalDate.of(2027, 5, 5)) null
+            else "saved ${s.tools.saved.map { "${it.partyName} due ${it.dueDate}" }}" }
+        talk("a shop's name and May, spoken", listOf("விஜயலட்சுமி ஸ்டோருக்கு நான் 2000 தரணும்", "மே 5 தரணும்", "TAP")) { s ->
+            val p = s.tools.saved.singleOrNull()
+            if (p != null && p.partyName.contains("விஜயலட்சுமி") && p.dueDate == LocalDate.of(2027, 5, 5)) null
+            else "saved ${s.tools.saved.map { "${it.partyName} due ${it.dueDate}" }}" }
+        talk("a long name typed one letter off is the same shop", vij + listOf("Vijaylakshmi store ippa 2500 kututhutanga", "TAP")) { s ->
+            if (s.tools.saved.size == 2 && s.tools.saved.map { it.partyName }.distinct().size == 1) null else "saved ${s.tools.saved.map { it.partyName }}" }
+        talk("goods came, said vandhuchi", listOf("Kadaiku saman vandhuchi"), check = askedWhich)
+        talk("stock came is the goods question", listOf("Kadaiku stock vandhuruku"), check = askedWhich)
+        talk("a supplier's due date is the owner's to pay", listOf("Kamal yeanuku evlo pay pannum yeppa pannanum"),
+            { add("s3", "கமல்", false, "5000", d(10, 9), LocalDate.of(2027, 1, 5)) }) { _ ->
+            val t = lastTurn?.reply?.text.orEmpty()
+            if ((t.contains("Neenga") || t.contains("நீங்க")) && t.contains("5,000")) null else "said: $t" }
         talk("goods: venam — nothing", listOf("Kadaiku saman vandhuruku", "venam")) { s -> if (s.nothingWritten()) null else "wrote after venam" }
         talk("goods: a balance question in between", listOf("Kadaiku saman vandhuruku", "Kumar evlo tharanum")) { s ->
             if (s.log.contains("₹4,000") && s.nothingWritten()) null else "balance not answered" }
