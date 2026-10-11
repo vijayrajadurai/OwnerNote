@@ -3779,6 +3779,7 @@ class KaiAgent(
 
     private fun goodsOpen() = goodsTurn >= 0 && conversationState.conversationTurn - goodsTurn <= 6
 
+    /** Only the question — no buttons: Photo / Cancel are not shown here; the drafts carry Confirm / Edit / Cancel (owner, 11 Oct 2026). */
     private suspend fun goodsAnnounced(said: String, lang: KaiLang): KaiTurn? {
         if (newItem != null || unitQuestion != null || stockQuestion != null) return null
         val products = runCatching { tools.products() }.getOrNull() ?: return null
@@ -3796,10 +3797,6 @@ class KaiAgent(
                 ta = "சரி ஓனர் 👍 என்ன என்ன சாமான் வந்திருக்கு? சொல்லுங்க, add பண்ணிடலாம். (உதா: Colgate 2 box, Rice 3 மூட்டை)",
                 tl = "Seri Owner 👍 Enna enna saaman vandhuruku? Sollunga, add panniruvom. (eg: Colgate 2 box, Rice 3 moota)",
                 en = "Sure, Owner 👍 What came in? Tell me and I'll add it. (e.g. Colgate 2 box, Rice 3 bags)"), KaiMood.HAPPY, ChatIntent.GENERAL_BUSINESS_QUERY),
-            KaiCard(emptyList(), listOf(
-                KaiButton(pick(lang, ta = "📷 போட்டோ", tl = "📷 Photo", en = "📷 Photo"), KaiAction.OpenStockCamera(StockPrefill("", null, null, said))),
-                KaiButton(cancelLabel(lang), KaiAction.CancelStock("ask")),
-            )),
         )
     }
 
@@ -3857,8 +3854,6 @@ class KaiAgent(
 
     suspend fun act(action: KaiAction, lang: KaiLang): KaiTurn? {
         if (action is KaiAction.ConfirmReminder) lastReminderTurn = conversationState.conversationTurn
-        // Cancel on "enna saaman vandhuruku?": nothing is waiting any more.
-        if (action == KaiAction.CancelStock("ask") && newItem == null && unitQuestion == null) { goodsTurn = -1L; goodsQueue.clear() }
         val done = actOn(action, lang)
         // "Colgate 2 box, Rice 3 moota": Colgate confirmed (or dropped) → Rice's draft next.
         return if (action is KaiAction.ConfirmStock || action is KaiAction.CancelStock) nextGoods(done, lang) else done

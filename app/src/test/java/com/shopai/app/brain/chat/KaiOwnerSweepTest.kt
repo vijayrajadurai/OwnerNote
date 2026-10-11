@@ -604,6 +604,9 @@ class KaiOwnerSweepTest {
         val askedWhich = { s: Shop -> if ((s.log.contains("Enna enna saaman vandhuruku") || s.log.contains("என்ன என்ன சாமான் வந்திருக்கு")) && s.nothingWritten()) null
             else "goods not asked" }
         talk("goods came: Kai asks which", listOf("Kadaiku saman vandhuruku"), check = askedWhich)
+        // Only the question: no Photo / Cancel buttons and no camera by itself — Confirm / Edit / Cancel come on the draft.
+        talk("goods question: no buttons, no camera", listOf("Kadaiku saman vandhuruku")) { _ ->
+            if (lastTurn?.card == null && lastTurn?.direct == null) null else "buttons ${lastTurn?.card?.buttons?.map { it.label }} direct ${lastTurn?.direct}" }
         talk("saraku came: asked, not a person", listOf("Kadaiku Saraku vandhuruku"), check = askedWhich)
         talk("stock add pannalama: asked", listOf("Kadaiku stock add pannalama"), check = askedWhich)
         talk("maal came: asked", listOf("maal vandhuruku"), check = askedWhich)
