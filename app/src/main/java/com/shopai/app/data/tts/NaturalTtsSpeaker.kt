@@ -459,6 +459,7 @@ class NaturalTtsSpeaker(context: Context) {
             if (langResult == TextToSpeech.LANG_MISSING_DATA || langResult == TextToSpeech.LANG_NOT_SUPPORTED) {
                 engine.setLanguage(Locale.getDefault())
             }
+            useMaleVoice(engine, locale)
 
             engine.setOnUtteranceProgressListener(
                 object : UtteranceProgressListener() {
@@ -497,6 +498,31 @@ class NaturalTtsSpeaker(context: Context) {
             if (result == TextToSpeech.ERROR) {
                 finish(false)
             }
+        }
+    }
+
+    @Volatile private var voicesLogged = false
+
+    /**
+     * Kai is a man: the phone's voice for him is a male one when the phone has one marked male ([DeviceVoicePick]),
+     * else the default voice with a deeper pitch — never the plain female default (owner, 11 Oct 2026).
+     */
+    private fun useMaleVoice(engine: TextToSpeech, locale: Locale) {
+        val voices = runCatching { engine.voices }.getOrNull().orEmpty()
+        if (!voicesLogged && voices.isNotEmpty()) {
+            voicesLogged = true
+            // Which voices this phone has, so the right male one can be named if none is marked.
+            Log.i(TAG, "device voices (${locale.language}): " + voices.filter { it.locale.language == locale.language }
+                .joinToString { "${it.name}${it.features.orEmpty().sorted()}${if (it.isNetworkConnectionRequired) " net" else ""}" })
+        }
+        val options = voices.map { DeviceVoicePick.Option(it.name, it.locale.language, it.locale.country, it.features.orEmpty(), it.isNetworkConnectionRequired) }
+        val voice = DeviceVoicePick.male(options, locale.language, locale.country)?.let { name -> voices.firstOrNull { it.name == name } }
+        if (voice != null && runCatching { engine.setVoice(voice) }.getOrNull() == TextToSpeech.SUCCESS) {
+            engine.setPitch(1f)
+            Log.i(TAG, "device voice: ${voice.name} (male)")
+        } else {
+            engine.setPitch(DeviceVoicePick.DEEPER_PITCH)
+            Log.i(TAG, "device voice: no male voice for ${locale.language} — default voice, deeper pitch")
         }
     }
 
