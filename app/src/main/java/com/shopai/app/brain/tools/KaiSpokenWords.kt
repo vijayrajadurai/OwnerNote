@@ -45,7 +45,7 @@ object KaiSpokenWords {
         "ஸ்டாக்" to "stock", "ஸ்டாக்கு" to "stock", "இன்வென்டரி" to "inventory", "ஆட்" to "add", "சேர்" to "serthu", "சேர்த்து" to "serthu",
         "வந்திருக்கு" to "vandhiruku", "வந்துருக்கு" to "vandhuruku", "வந்துச்சு" to "vandhuchu", "புது" to "pudhu", "புதுசா" to "pudhusa",
         "அவுட்" to "out", "போச்சு" to "pochu", "சேல்" to "sale", "ஆச்சு" to "aachu", "எடுத்துட்டாங்க" to "eduthutanga",
-        "பீஸ்" to "pieces", "பீசஸ்" to "pieces", "பாக்ஸ்" to "box", "பாக்கெட்" to "packet", "கிலோ" to "kg",
+        "பீஸ்" to "pieces", "பீசஸ்" to "pieces", "பாக்ஸ்" to "box", "பாக்கெட்" to "packet", "பாக்கெட்டு" to "packet", "அரைக்கிலோ" to "arakilo", "அரைகிலோ" to "arakilo", "கால்கிலோ" to "kaalkilo", "முக்கால்கிலோ" to "mukkaalkilo", "கிலோ" to "kg",
         // ---- bills / camera ----
         "பில்" to "bill", "பில்லு" to "bill", "ஸ்கேன்" to "scan", "போட்டோ" to "photo", "கேமரா" to "camera", "ஓபன்" to "open",
         "எடு" to "edu", "எடுங்க" to "edunga", "இந்த" to "indha", "பர்ச்சேஸ்" to "purchase",
@@ -124,7 +124,7 @@ object KaiSpokenWords {
         "கேஷ்" to "cash", "கேஷா" to "cash", "ஆன்லைன்" to "online", "ஆன்லைன்ல" to "online la", "டிரான்ஸ்பர்" to "transfer", "ட்ரான்ஸ்ஃபர்" to "transfer",
         "கிரெடிட்" to "credit", "கிரெடிட்ல" to "credit la", "க்ரெடிட்" to "credit", "டெபிட்" to "debit", "உதார்" to "udhaar",
         "பெண்டிங்" to "pending", "பேலன்ஸ்" to "balance", "லிஸ்ட்" to "list", "டோட்டல்" to "total", "டோட்டலா" to "total", "டோட்டல்ல" to "total la", "மொத்தத்துல" to "mothathula", "மொத்தம்" to "motham", "மொத்தமா" to "mothama",
-        "டியூ" to "due", "டேட்" to "date", "தேதி" to "thethi", "வேண்டாம்" to "venam", "வேணாம்" to "venam", "வேணும்" to "venum",
+        "டியூ" to "due", "டேட்" to "date", "தேதி" to "thethi", "வேண்டாம்" to "venam", "வேணாம்" to "venam", "எடுத்துடு" to "eduthudu", "எடுத்துடுங்க" to "eduthudunga", "வேணும்" to "venum",
         "கஸ்டமர்" to "customer", "சப்ளையர்" to "supplier", "ஓனர்" to "owner", "அண்ணா" to "anna", "அண்ணே" to "anna", "சார்" to "sir",
         "சரி" to "seri", "ஓகே" to "ok", "ஆமா" to "aama", "ஆமாம்" to "aama", "இல்ல" to "illa", "இல்லை" to "illa", "சேவ்" to "save",
         "இப்போ" to "ippo", "இப்ப" to "ippa", "இப்பொழுது" to "ippo", "எப்போ" to "eppo", "எப்ப" to "eppa", "எப்படி" to "eppadi",

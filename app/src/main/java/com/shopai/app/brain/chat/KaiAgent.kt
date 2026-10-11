@@ -76,6 +76,10 @@ sealed interface KaiAction {
     data class CancelStock(val key: String) : KaiAction
     /** Change the draft's quantity / unit before confirming (the screen's edit form). */
     data class EditStock(val key: String) : KaiAction
+    /** "Kadaiku saman vandhuruku": the list of goods the owner checked one by one — saved together, changed, or dropped. */
+    data object ConfirmGoods : KaiAction
+    data object EditGoods : KaiAction
+    data object CancelGoods : KaiAction
     /** A product that isn't in the inventory yet: the camera opens, the photo fills an editable form (STOCK_IN_CAMERA). */
     data class OpenStockCamera(val prefill: StockPrefill) : KaiAction
     /** The same form, typed (no photo). */
@@ -3773,8 +3777,124 @@ class KaiAgent(
     private var goodsTurn = -1L
     /** Goods said together, drafted one at a time ("Rice 3 moota" after Colgate's Confirm). */
     private val goodsQueue = ArrayDeque<String>()
+    /** Each goods draft the owner confirmed — not saved yet: the whole list is shown and saved on one Confirm (owner, 11 Oct 2026). */
+    private sealed interface GoodsEntry { val name: String }
+    private data class GoodsStock(val plan: StockPlan) : GoodsEntry { override val name get() = plan.product.name }
+    private data class GoodsNew(val item: NewItem) : GoodsEntry { override val name get() = item.spec.name }
+    private val goodsList = mutableListOf<GoodsEntry>()
+    /** "Edit" on the list: the owner's next line changes or drops one item. */
+    private var goodsEditing = false
 
-    private fun goodsOpen() = goodsTurn >= 0 && conversationState.conversationTurn - goodsTurn <= 6
+    /** Waiting for the owner's goods; with a list started it waits longer (it is never lost by a few other questions). */
+    private fun goodsOpen() = goodsTurn >= 0 && conversationState.conversationTurn - goodsTurn <= if (goodsList.isEmpty()) 6 else 20
+
+    private fun goodsClear() { goodsTurn = -1L; goodsQueue.clear(); goodsList.clear(); goodsEditing = false }
+
+    /** One list line: "Colgate — 2 boxes = 96 pieces (240 pieces → 336 pieces)". */
+    private fun goodsLine(e: GoodsEntry, lang: KaiLang): String = when (e) {
+        is GoodsStock -> {
+            val p = e.plan
+            val input = p.conv?.let { com.shopai.app.brain.tools.KaiUnits.describe(it.input, p.product.unit) }
+            val total = com.shopai.app.brain.tools.KaiStock.shown(p.qty, p.product.unit)
+            "${p.product.name} — ${input?.let { "$it = " }.orEmpty()}$total (${com.shopai.app.brain.tools.KaiStock.shown(p.product.stock, p.product.unit)} → " +
+                "${com.shopai.app.brain.tools.KaiStock.shown(p.product.stock + p.qty, p.product.unit)})"
+        }
+        is GoodsNew -> {
+            val spec = e.item.spec
+            "${spec.name} — ${spec.qty?.let { com.shopai.app.brain.tools.KaiInventory.shown(it, spec.unit) }.orEmpty()} (" +
+                pick(lang, ta = "புது product", tl = "pudhu product", en = "new product") + ")"
+        }
+    }
+
+    /** A goods draft confirmed: kept in the list (nothing saved yet), then "aduthu sollunga". */
+    private fun goodsKeep(key: String, lang: KaiLang): KaiTurn? {
+        val entry: GoodsEntry = stockPlans[key]?.takeIf { it.incoming }?.let { stockPlans.remove(key); GoodsStock(it) }
+            ?: newItem?.takeIf { it.key == key && it.asked == null }?.let { newItem = null; GoodsNew(it) }
+            ?: return null
+        lastDraft = null
+        // "Edit" on the list, then "Rice 4 moota": that item is replaced, and the list comes again.
+        if (goodsEditing) {
+            goodsList.indexOfFirst { KaiPrivateMemory.normalize(it.name) == KaiPrivateMemory.normalize(entry.name) }
+                .let { i -> if (i >= 0) goodsList[i] = entry else goodsList += entry }
+            goodsEditing = false
+            goodsTurn = conversationState.conversationTurn
+            return goodsListTurn(lang)
+        }
+        goodsList += entry
+        goodsTurn = conversationState.conversationTurn
+        tools.log("goods arrived", "inventory", "${entry.name}: in the list (not saved)", ActionStatus.ANSWERED)
+        val line = goodsLine(entry, lang)
+        // Items said together still waiting: the next draft follows (nextGoods), so "aduthu sollunga" only after the last one.
+        val next = goodsQueue.isEmpty()
+        return say(lang, KaiMood.HAPPY, null,
+            ta = "சரி ஓனர் 👍 $line — list-ல சேர்த்துட்டேன் (இன்னும் சேமிக்கல)." + if (next) " அடுத்து சொல்லுங்க ஓனர். முடிஞ்சா 'அவ்ளோ தான்' சொல்லுங்க." else "",
+            tl = "Seri Owner 👍 $line — list-la serthutten (innum save pannala)." + if (next) " Aduthu sollunga Owner. Mudinjaa 'avlo dhaan' nu sollunga." else "",
+            en = "Okay Owner 👍 $line — added to the list (not saved yet)." + if (next) " Tell me the next one. Say 'that's all' when you're done." else "")
+    }
+
+    /** "Avlo dhaan": every item in one list, to check once — Confirm saves them all, Edit changes one, Cancel drops the list. */
+    private fun goodsListTurn(lang: KaiLang, note: String? = null): KaiTurn {
+        goodsTurn = conversationState.conversationTurn
+        val lines = goodsList.mapIndexed { i, e -> "${i + 1}. ${goodsLine(e, lang)}" }
+        val head = pick(lang,
+            ta = "சரி ஓனர் 👍 நாம add பண்ண stock list இதோ. ஒரு தடவை பார்த்து உறுதி செய்யுங்க ஓனர்.",
+            tl = "Seri Owner 👍 Namma add panna stock list idho. Oru thadava paathu confirm pannunga Owner.",
+            en = "Okay Owner 👍 Here's the stock list we made. Please check it once and confirm.")
+        return KaiTurn(
+            ChatReply(listOfNotNull(note, head).joinToString("\n"), KaiMood.EXPLAINING, ChatIntent.GENERAL_BUSINESS_QUERY),
+            KaiCard(lines, listOf(
+                KaiButton(pick(lang, ta = "உறுதி செய்", tl = "Confirm", en = "Confirm"), KaiAction.ConfirmGoods, primary = true),
+                KaiButton(pick(lang, ta = "மாற்று", tl = "Edit", en = "Edit"), KaiAction.EditGoods),
+                KaiButton(cancelLabel(lang), KaiAction.CancelGoods),
+            )),
+        )
+    }
+
+    /** Confirm on the list: each item saved by the same engine as before (one stock-in each, a new product with its opening stock). */
+    private suspend fun confirmGoods(lang: KaiLang): KaiTurn {
+        val entries = goodsList.toList()
+        goodsClear()
+        if (entries.isEmpty()) return say(lang, KaiMood.NEUTRAL, null, ta = "List காலியா இருக்கு ஓனர் — எதுவும் சேமிக்கல.",
+            tl = "Owner, list kaaliyaa irukku — edhuvum save pannala.", en = "The list is empty, Owner — nothing was saved.")
+        var saved = 0
+        val results = entries.map { e ->
+            val t = when (e) {
+                is GoodsStock -> { stockPlans[e.plan.key] = e.plan; confirmStockOnly(e.plan.key, lang) }
+                is GoodsNew -> { newItem = e.item; confirmNewItem(e.item.key, lang) }
+            }
+            if (t?.reply?.mood == KaiMood.SUCCESS) saved++
+            t?.reply?.text ?: pick(lang, ta = "${e.name}: சேமிக்க முடியல.", tl = "${e.name}: save aagala.", en = "${e.name}: not saved.")
+        }
+        lowStockNote = null
+        val head = if (saved == entries.size) pick(lang,
+            ta = "முடிஞ்சது ஓனர் ✅ ${entries.size} item stock-ல சேர்ந்துச்சு:", tl = "Mudinjudhu Owner ✅ ${entries.size} item${if (entries.size == 1) "" else "s"} stock-la add aagiduchu:",
+            en = "Done Owner ✅ ${entries.size} item${if (entries.size == 1) "" else "s"} added to stock:")
+        else pick(lang,
+            ta = "ஓனர், ${entries.size}-ல $saved தான் சேமிச்சேன் — கீழ பாருங்க:", tl = "Owner, ${entries.size}-la $saved dhaan save aachu — keezha paarunga:",
+            en = "Owner, only $saved of ${entries.size} were saved — see below:")
+        return KaiTurn(ChatReply(head + "\n" + results.joinToString("\n") { "• $it" }, if (saved == entries.size) KaiMood.SUCCESS else KaiMood.CONCERNED,
+            ChatIntent.GENERAL_BUSINESS_QUERY), KaiCard(emptyList(), listOf(
+            KaiButton(pick(lang, ta = "📦 Inventory-ல பாருங்க", tl = "📦 Inventory-la paarunga", en = "📦 See it in Inventory"), KaiAction.OpenRecord("INVENTORY")))))
+    }
+
+    /** After "Edit" on the list: "Rice 4 moota" changes Rice (a draft to confirm); "Rice venam" takes it out of the list. */
+    private suspend fun goodsEdit(text: String, lang: KaiLang): KaiTurn? {
+        if (!goodsEditing) return null
+        val hit = goodsList.filter { e -> KaiPrivateMemory.normalize(text).contains(KaiPrivateMemory.normalize(e.name)) }.maxByOrNull { it.name.length }
+        if (hit != null && goodsDrop.containsMatchIn(text) && !text.any(Char::isDigit)) {
+            goodsList.remove(hit)
+            goodsEditing = false
+            if (goodsList.isEmpty()) {
+                goodsClear()
+                return say(lang, KaiMood.NEUTRAL, null, ta = "சரி ஓனர், ${hit.name} எடுத்துட்டேன். List காலி — எதுவும் சேமிக்கல.",
+                    tl = "Seri Owner, ${hit.name} eduthutten. List kaali — edhuvum save pannala.", en = "Okay Owner, removed ${hit.name}. The list is empty — nothing was saved.")
+            }
+            return goodsListTurn(lang, pick(lang, ta = "சரி ஓனர், ${hit.name} list-ல இருந்து எடுத்துட்டேன்.", tl = "Seri Owner, ${hit.name} list-la irundhu eduthutten.",
+                en = "Okay Owner, ${hit.name} is out of the list."))
+        }
+        return null
+    }
+    private val goodsDrop = Regex("""(?i)(?<![\p{L}])(venam|vendam|vendaam|venaam|eduthudu|eduthuru|eduthudunga|remove|delete|cancel|vidu|vidunga)(?![\p{L}])|வேண்டாம்|வேணாம்|எடுத்துடு""")
 
     /** A stock draft is on screen, waiting for Confirm. */
     private fun stockDraftOpen() = lastDraft?.takeIf { it.second == "STOCK" }?.let { last -> stockPlans.values.any { it.said == last.first } } == true
@@ -3788,34 +3908,45 @@ class KaiAgent(
         if (com.shopai.app.brain.tools.KaiStock.scanRequest(said, products) != null) return null
         if (!KaiGoodsArrival.announces(said, products.map { it.name }) ||
             KaiCommands.personIn(KaiGoodsArrival.withoutGoodsWords(said), people) != null) return null
+        goodsClear()
         goodsTurn = conversationState.conversationTurn
-        goodsQueue.clear()
         personOnTopic = null
         tools.log("goods arrived", "inventory", "asked which", ActionStatus.ANSWERED)
         return KaiTurn(
             ChatReply(pick(lang,
-                ta = "சரி ஓனர் 👍 என்ன என்ன சாமான் வந்திருக்கு? சொல்லுங்க, add பண்ணிடலாம். (உதா: Colgate 2 box, Rice 3 மூட்டை)",
-                tl = "Seri Owner 👍 Enna enna saaman vandhuruku? Sollunga, add panniruvom. (eg: Colgate 2 box, Rice 3 moota)",
-                en = "Sure, Owner 👍 What came in? Tell me and I'll add it. (e.g. Colgate 2 box, Rice 3 bags)"), KaiMood.HAPPY, ChatIntent.GENERAL_BUSINESS_QUERY),
+                ta = "சரி ஓனர் 👍 என்ன என்ன சாமான் வந்திருக்கு? சொல்லுங்க, add பண்ணிடலாம் — ஒண்ணு ஒண்ணா சொல்லுங்க. (உதா: ஆசிர்வாத் ரவா அரைக்கிலோ 50 பாக்கெட்)",
+                tl = "Seri Owner 👍 Enna enna saaman vandhuruku? Sollunga, add panniruvom — onnu onna sollunga. (eg: Ashirvad rava arakilo 50 packet)",
+                en = "Sure, Owner 👍 What came in? Tell me one by one and I'll add it. (e.g. Ashirvad rava half kilo 50 packets)"), KaiMood.HAPPY, ChatIntent.GENERAL_BUSINESS_QUERY),
         )
     }
 
     /** A line after "enna saaman vandhuruku?": "Colgate 2 box, Rice 3 moota" — each a stock-in draft; "avlo dhaan" ends it. */
     private suspend fun goods(text: String, lang: KaiLang): KaiTurn? {
+        goodsEdit(text, lang)?.let { return it }
         if (goodsOpen() && KaiGoodsArrival.ends(text)) {
             // Kai's own question (a new product's price, a unit) is answered first; "venam" to an open stock draft drops that
             // draft as before — then the next item said together comes (owner, 11 Oct 2026: the old stock flow stays as it is).
             if (newItem != null || unitQuestion != null || stockQuestion != null) return null
             if (stockDraftOpen() && KaiConversationSemantics.cancelsDraft(text)) return null
+            // "Avlo dhaan" with items kept: the whole list, to check once (a draft not confirmed is left out of it).
+            if (goodsList.isNotEmpty()) {
+                val open = lastDraft?.takeIf { it.second == "STOCK" }?.let { last -> stockPlans.values.firstOrNull { it.said == last.first } }
+                open?.let { stockPlans.remove(it.key); lastDraft = null }
+                goodsQueue.clear(); goodsEditing = false
+                return goodsListTurn(lang, open?.let { pick(lang, ta = "(${it.product.name} உறுதி செய்யல — list-ல இல்ல.)",
+                    tl = "(${it.product.name} confirm pannala — list-la illa.)", en = "(${it.product.name} wasn't confirmed — it's not in the list.)") })
+            }
             goodsTurn = -1; goodsQueue.clear()
             return say(lang, KaiMood.HAPPY, "goods: done", ta = "சரி ஓனர் ✅ வேற சாமான் வந்தா சொல்லுங்க.", tl = "Seri Owner ✅ Vera saaman vandha sollunga.",
                 en = "Done, Owner ✅ Tell me when more comes in.")
         }
-        val items = KaiGoodsArrival.items(text).map { it.replaceFirstChar(Char::uppercaseChar) }
+        // "Ashirvad rava arakilo 50 packet": one product, its packet size and how many — never two items (owner, 11 Oct 2026).
+        val sized = if (goodsOpen()) KaiGoodsArrival.sized(text) else null
+        val items = if (sized != null) listOf(sized) else KaiGoodsArrival.items(text).map { it.replaceFirstChar(Char::uppercaseChar) }
         if (items.isEmpty() || !goodsOpen() && items.size < 2) return null
         // "Colgate 5 box, boxக்கு 48 pieces, purchase 28, selling 35": one product with its details — the old stock line, not a list.
         val inv = com.shopai.app.brain.tools.KaiInventory
-        inv.stockLine(text)?.let { (name, qty, unit) ->
+        if (sized == null) inv.stockLine(text)?.let { (name, qty, unit) ->
             if (inv.hasDetails(text, com.shopai.app.brain.tools.ItemSpec(name, inv.kindOf(name, unit), qty, unit))) return null }
         // Kai is asking a product's details, or a person / money is said: not a goods line.
         if (newItem != null || unitQuestion != null || stockQuestion != null || planChoice != null || relationChoice != null ||
@@ -3831,6 +3962,8 @@ class KaiAgent(
         }
         goodsTurn = conversationState.conversationTurn
         goodsQueue.clear()
+        // "Ashirvad Rava 50 packet, oru packet 0.5 kg": the stock line with its packet size (a new product, or packets of a known one).
+        if (sized != null) return newStockLine(sized, sized, lang, products, people)
         goodsQueue.addAll(items.drop(1))
         val first = goodsDraft(items.first(), lang, products, people) ?: return null
         return if (goodsQueue.isEmpty()) first else withText(first, first.reply.text + "\n\n" + pick(lang,
@@ -3846,7 +3979,8 @@ class KaiAgent(
 
     /** After a goods draft is confirmed or dropped: the next one said together, if any. */
     private suspend fun nextGoods(done: KaiTurn?, lang: KaiLang): KaiTurn? {
-        if (!goodsOpen() || goodsQueue.isEmpty() || newItem != null) return done
+        if (!goodsOpen() || newItem != null) return done
+        if (goodsQueue.isEmpty()) return done
         val next = goodsQueue.removeFirst()
         goodsTurn = conversationState.conversationTurn
         val products = runCatching { tools.products() }.getOrNull() ?: return done
@@ -3862,9 +3996,36 @@ class KaiAgent(
 
     suspend fun act(action: KaiAction, lang: KaiLang): KaiTurn? {
         if (action is KaiAction.ConfirmReminder) lastReminderTurn = conversationState.conversationTurn
+        // In goods mode a confirmed draft goes into the list (saved only on the list's Confirm), then the next one.
+        if (action is KaiAction.ConfirmStock && goodsOpen()) goodsKeep(action.key, lang)?.let { return nextGoods(it, lang) }
+        when (action) {
+            KaiAction.ConfirmGoods -> return confirmGoods(lang)
+            KaiAction.EditGoods -> {
+                if (goodsList.isEmpty()) return null
+                goodsEditing = true
+                goodsTurn = conversationState.conversationTurn
+                return say(lang, KaiMood.CLARIFY, null,
+                    ta = "எந்த item மாத்தணும் ஓனர்? சொல்லுங்க — உதா: 'Rice 4 மூட்டை' (மாத்தும்), 'Rice வேணாம்' (list-ல இருந்து எடுக்கும்).",
+                    tl = "Endha item maathanum Owner? Sollunga — eg: 'Rice 4 moota' (maathum), 'Rice venam' (list-la irundhu edukkum).",
+                    en = "Which item should I change, Owner? e.g. 'Rice 4 bags' (changes it), 'remove Rice' (takes it out of the list).")
+            }
+            KaiAction.CancelGoods -> {
+                val n = goodsList.size
+                goodsClear()
+                tools.log("goods arrived", "inventory", "list of $n cancelled", ActionStatus.CANCELLED)
+                return say(lang, KaiMood.NEUTRAL, null, ta = "சரி ஓனர், list ரத்து பண்ணிட்டேன். எதுவும் சேமிக்கல.",
+                    tl = "Seri Owner, list cancel pannitten. Edhuvum save aagala.", en = "Okay Owner, the list is cancelled. Nothing was saved.")
+            }
+            else -> Unit
+        }
         val done = actOn(action, lang)
-        // "Colgate 2 box, Rice 3 moota": Colgate confirmed (or dropped) → Rice's draft next.
-        return if (action is KaiAction.ConfirmStock || action is KaiAction.CancelStock) nextGoods(done, lang) else done
+        // "Colgate 2 box, Rice 3 moota": Colgate dropped → Rice's draft next; the last one dropped → "aduthu sollunga".
+        if (action is KaiAction.CancelStock && goodsOpen()) {
+            if (goodsQueue.isNotEmpty() && newItem == null) return nextGoods(done, lang)
+            if (goodsList.isNotEmpty() || goodsTurn >= 0) return done?.let { withText(it, it.reply.text + " " + pick(lang,
+                ta = "அடுத்து சொல்லுங்க ஓனர்.", tl = "Aduthu sollunga Owner.", en = "Tell me the next one, Owner.")) }
+        }
+        return done
     }
 
     private suspend fun actOn(action: KaiAction, lang: KaiLang): KaiTurn? = when (action) {
@@ -3953,8 +4114,7 @@ class KaiAgent(
     }
 
     fun reset() {
-        goodsTurn = -1L
-        goodsQueue.clear()
+        goodsClear()
         recentAsks.clear()
         lastReminderTurn = -1L
         kaiAskedAfterDraft = false

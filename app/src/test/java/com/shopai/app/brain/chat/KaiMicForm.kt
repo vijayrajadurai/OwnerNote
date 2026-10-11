@@ -43,7 +43,7 @@ object KaiMicForm {
         vaaram=வாரம் vandhirukku=வந்திருக்கு vandhuchu=வந்துச்சு vanganum=வாங்கணும் vangunen=வாங்குனேன் vanthuchu=வந்துச்சு
         varanum=வரணும் vendiyadhu=வேண்டியது vikkala=விக்கல vithadhu=வித்தது vithuchu=வித்துச்சு vithuten=வித்துட்டேன் yaar=யார்
         yaaru=யாரு yar=யார் yaru=யாரு yarukita=யாருகிட்ட yaruku=யாருக்கு yentha=எந்த
-        venam=வேணாம் pudhu=புது pieces=பீஸ் skip=ஸ்கிப் aama=ஆமா ennakku=எனக்கு
+        eduthudu=எடுத்துடு arakilo=அரைக்கிலோ packetu=பாக்கெட்டு ashirvad=ஆசிர்வாத் venam=வேணாம் pudhu=புது pieces=பீஸ் skip=ஸ்கிப் aama=ஆமா ennakku=எனக்கு
         aal=ஆள் adha=அத akash=ஆகாஷ் amazon=அமேசான் anuppu=அனுப்பு aprom=அப்புறம் avan=அவன் bill=பில் cancel=கேன்சல் cm=சிஎம்
         dhaan=தான் employee=எம்ப்ளாயி first=ஃபர்ஸ்ட் gst=ஜிஎஸ்டி illa=இல்ல ipl=ஐபிஎல் ippa=இப்ப joke=ஜோக் kai=கை
         kalichi=கழிச்சு kanakku=கணக்கு ketta=கேட்ட loan=லோன் maathu=மாத்து mazhai=மழை nadu=நாடு nee=நீ nu=னு order=ஆர்டர்

@@ -460,13 +460,16 @@ class KaiOwnerSweepTest {
         val s = Shop(more)
         for (l in lines) {
             if (l == "TAP" || l == "TAP+") {
-                val b = lastTurn?.card?.buttons?.firstOrNull { it.action is KaiAction.ConfirmPlan || it.action is KaiAction.ConfirmStock || it.action is KaiAction.ConfirmReminder }
-                    ?: return fail(what, s, "nothing to tap")
+                val b = lastTurn?.card?.buttons?.firstOrNull { it.action is KaiAction.ConfirmPlan || it.action is KaiAction.ConfirmStock || it.action is KaiAction.ConfirmReminder ||
+                    it.action == KaiAction.ConfirmGoods } ?: return fail(what, s, "nothing to tap")
                 // "TAP+": what Kai says after the tap (the next goods draft) is what the next tap answers.
                 s.act(b.action)?.let { if (l == "TAP+") lastTurn = it }
             } else if (l == "CANCEL+") {
-                val b = lastTurn?.card?.buttons?.firstOrNull { it.action is KaiAction.CancelStock || it.action is KaiAction.CancelPlan }
+                val b = lastTurn?.card?.buttons?.firstOrNull { it.action is KaiAction.CancelStock || it.action is KaiAction.CancelPlan || it.action == KaiAction.CancelGoods }
                     ?: return fail(what, s, "nothing to cancel")
+                s.act(b.action)?.let { lastTurn = it }
+            } else if (l == "EDIT+") {
+                val b = lastTurn?.card?.buttons?.firstOrNull { it.action == KaiAction.EditGoods } ?: return fail(what, s, "no list Edit")
                 s.act(b.action)?.let { lastTurn = it }
             } else lastTurn = s.say(answer(l))
         }
@@ -610,20 +613,49 @@ class KaiOwnerSweepTest {
         talk("saraku came: asked, not a person", listOf("Kadaiku Saraku vandhuruku"), check = askedWhich)
         talk("stock add pannalama: asked", listOf("Kadaiku stock add pannalama"), check = askedWhich)
         talk("maal came: asked", listOf("maal vandhuruku"), check = askedWhich)
-        talk("goods: the item after the question", listOf("Kadaiku Saraku vandhuruku", "Rice 3 moota", "TAP"), check = stock("Rice" to "325"))
-        talk("goods: stock add pannalama then Oil", listOf("Kadaiku stock add pannalama", "Oil 1 box", "TAP"), check = stock("Oil" to "252"))
+        talk("goods: the item after the question", listOf("Kadaiku Saraku vandhuruku", "Rice 3 moota", "TAP+", "avlo dhaan", "TAP+"), check = stock("Rice" to "325"))
+        talk("goods: stock add pannalama then Oil", listOf("Kadaiku stock add pannalama", "Oil 1 box", "TAP+", "avlo dhaan", "TAP+"), check = stock("Oil" to "252"))
         talk("goods: two items, nothing written before Confirm", listOf("Kadaiku saman vandhuruku", "Colgate 2 box, Rice 3 moota")) { s ->
             if (s.nothingWritten()) null else "wrote before Confirm" }
-        talk("goods: two items, one draft after the other", listOf("Kadaiku saman vandhuruku", "Colgate 2 box, Rice 3 moota", "TAP+", "TAP+"),
+        talk("goods: two items, one draft after the other", listOf("Kadaiku saman vandhuruku", "Colgate 2 box, Rice 3 moota", "TAP+", "TAP+", "avlo dhaan", "TAP+"),
             check = stock("Colgate" to "336", "Rice" to "325"))
-        talk("goods: first cancelled, next still drafted", listOf("saman vandhuruku", "Colgate 2 box, Rice 3 moota", "CANCEL+", "TAP+"),
+        talk("goods: first cancelled, next still drafted", listOf("saman vandhuruku", "Colgate 2 box, Rice 3 moota", "CANCEL+", "TAP+", "avlo dhaan", "TAP+"),
             check = stock("Colgate" to "240", "Rice" to "325"))
-        talk("goods: three items", listOf("saman vandhuruku", "Colgate 2 box, Rice 3 moota, Lux soap 20", "TAP+", "TAP+", "TAP+"),
+        talk("goods: three items", listOf("saman vandhuruku", "Colgate 2 box, Rice 3 moota, Lux soap 20", "TAP+", "TAP+", "TAP+", "avlo dhaan", "TAP+"),
             check = stock("Colgate" to "336", "Rice" to "325", "Lux Soap" to "80"))
-        talk("goods: said together without the question", listOf("Colgate 2 box, Rice 3 moota vandhuchu", "TAP+", "TAP+"),
+        talk("goods: said together without the question", listOf("Colgate 2 box, Rice 3 moota vandhuchu", "TAP+", "TAP+", "avlo dhaan", "TAP+"),
             check = stock("Colgate" to "336", "Rice" to "325"))
-        talk("goods: avlo dhaan ends it", listOf("Kadaiku saman vandhuruku", "Colgate 2 box", "TAP", "avlo dhaan")) { s ->
-            stock("Colgate" to "336")(s) ?: if (s.log.lines().last { it.isNotBlank() }.let { it.contains("Vera saaman vandha") || it.contains("வேற சாமான் வந்தா") }) null else "not ended" }
+        talk("goods: said together, no comma, without the question", listOf("Colgate 2 box Rice 3 moota vandhuchu", "TAP+", "TAP+", "avlo dhaan", "TAP+"),
+            check = stock("Colgate" to "336", "Rice" to "325"))
+        talk("goods: avlo dhaan with nothing kept ends it", listOf("Kadaiku saman vandhuruku", "avlo dhaan")) { s ->
+            if (s.nothingWritten() && s.log.lines().last { it.isNotBlank() }.let { it.contains("Vera saaman vandha") || it.contains("வேற சாமான் வந்தா") }) null else "not ended" }
+        // Owner, 11 Oct 2026: one by one — each draft's Confirm only keeps it in the list ("aduthu sollunga"); "avlo dhaan" shows the
+        // whole list with Confirm / Edit / Cancel; only that Confirm adds the stock.
+        talk("goods: one by one, nothing saved until the list is confirmed", listOf("Kadaiku saman vandhuruku", "Colgate 2 box", "TAP+", "Rice 3 moota", "TAP+", "avlo dhaan")) { s ->
+            if (!s.nothingWritten()) "saved before the list's Confirm"
+            else if (!(s.log.contains("Aduthu sollunga") || s.log.contains("அடுத்து சொல்லுங்க"))) "no 'aduthu sollunga'"
+            else if (!(s.log.contains("1. Colgate") && s.log.contains("2. Rice"))) "no list"
+            else if (lastTurn?.card?.buttons?.map { it.action } != listOf(KaiAction.ConfirmGoods, KaiAction.EditGoods, KaiAction.CancelGoods)) "list buttons ${lastTurn?.card?.buttons?.map { it.label }}"
+            else null }
+        talk("goods: the list's Confirm adds them all", listOf("Kadaiku saman vandhuruku", "Colgate 2 box", "TAP+", "Rice 3 moota", "TAP+", "avlo dhaan", "TAP+"),
+            check = stock("Colgate" to "336", "Rice" to "325"))
+        talk("goods: the list cancelled — nothing", listOf("Kadaiku saman vandhuruku", "Colgate 2 box", "TAP+", "Rice 3 moota", "TAP+", "avlo dhaan", "CANCEL+")) { s ->
+            if (s.nothingWritten()) null else "saved after the list's Cancel" }
+        talk("goods: list Edit changes one item", listOf("Kadaiku saman vandhuruku", "Colgate 2 box", "TAP+", "Rice 3 moota", "TAP+", "avlo dhaan", "EDIT+",
+            "Rice 4 moota", "TAP+", "TAP+"), check = stock("Colgate" to "336", "Rice" to "350"))
+        talk("goods: list Edit takes one out", listOf("Kadaiku saman vandhuruku", "Colgate 2 box", "TAP+", "Rice 3 moota", "TAP+", "avlo dhaan", "EDIT+",
+            "Rice venam", "TAP+"), check = stock("Colgate" to "336", "Rice" to "250"))
+        talk("goods: a new product joins the list", listOf("Kadaiku saman vandhuruku", "Vengayam 50 kg", "40", "50", "TAP+", "Colgate 2 box", "TAP+", "avlo dhaan")) { s ->
+            if (!s.nothingWritten()) "saved before the list's Confirm" else if (s.log.contains("2. Colgate")) null else "new product not in the list" }
+        talk("goods: a new product saved with the list", listOf("Kadaiku saman vandhuruku", "Vengayam 50 kg", "40", "50", "TAP+", "Colgate 2 box", "TAP+", "avlo dhaan", "TAP+")) { s ->
+            stock("Colgate" to "336")(s) ?: if (s.inv.items.any { it.stock.compareTo(BigDecimal("50")) == 0 && it.id !in setOf("p1", "p2", "p3", "p4", "p5", "p6") }) null else "Vengayam not created" }
+        // "Ashirvad rava arakilo 50 packetu" (owner's own example, 11 Oct 2026): one product — its packet size and how many — never two items.
+        talk("goods: a packet size line is one product", listOf("Kadaiku saman vandhuruku", "Ashirvad rava arakilo 50 packetu", "45", "55", "TAP+", "avlo dhaan")) { s ->
+            if (!s.nothingWritten()) "saved before the list's Confirm"
+            else if (s.log.contains("Idhu aanadhum adutha") || s.log.contains("இது ஆனதும் அடுத்து")) "split into items"
+            else if (s.log.contains("0.5 kg") && s.log.contains("1. ")) null else "packet size not read" }
+        talk("goods: a packet size line saved with the list", listOf("Kadaiku saman vandhuruku", "Ashirvad rava 500 gram 50 packet", "45", "55", "TAP+", "avlo dhaan", "TAP+")) { s ->
+            if (s.inv.items.any { it.id !in setOf("p1", "p2", "p3", "p4", "p5", "p6") && it.stock.signum() > 0 }) null else "not created" }
         talk("goods: venam — nothing", listOf("Kadaiku saman vandhuruku", "venam")) { s -> if (s.nothingWritten()) null else "wrote after venam" }
         talk("goods: a balance question in between", listOf("Kadaiku saman vandhuruku", "Kumar evlo tharanum")) { s ->
             if (s.log.contains("₹4,000") && s.nothingWritten()) null else "balance not answered" }
@@ -635,7 +667,7 @@ class KaiOwnerSweepTest {
         talk("old flow: new stock add pannu, then venam drops the draft", listOf("new stock add pannu", "Colgate 2 box", "venam")) { s ->
             notGoods(s) ?: if (s.log.contains("Vera saaman vandha") || s.log.contains("வேற சாமான் வந்தா")) "goods ended instead of the draft dropped"
             else if (s.nothingWritten() && lastTurn?.card?.buttons?.none { it.action is KaiAction.ConfirmStock } != false) null else "draft still open" }
-        talk("goods: venam drops this draft, the next one comes", listOf("Kadaiku saman vandhuruku", "Colgate 2 box, Rice 3 moota", "venam", "TAP"),
+        talk("goods: venam drops this draft, the next one comes", listOf("Kadaiku saman vandhuruku", "Colgate 2 box, Rice 3 moota", "venam", "TAP+", "avlo dhaan", "TAP+"),
             check = stock("Colgate" to "240", "Rice" to "325"))
         talk("goods: one product with its details is one line", listOf("Kadaiku saman vandhuruku", "Colgate 2 box, purchase 28, selling 35")) { s ->
             if (s.log.contains("Idhu aanadhum adutha") || s.log.contains("இது ஆனதும் அடுத்து")) "split into items" else if (s.nothingWritten()) null else "wrote before Confirm" }
