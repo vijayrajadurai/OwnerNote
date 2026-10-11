@@ -1154,7 +1154,14 @@ class KaiAgent(
         if (!com.shopai.app.brain.tools.KaiReminderUnderstanding.mentionsReminder(text)) KaiLocalDiscovery.request(text, people + products?.map { it.name }.orEmpty())?.let { return localDiscovery(it, lang, said) }
 
         // Priority: pending action/context → reminder → stock → bill scan → call → money → calculator → questions → memory → conversation.
-        com.shopai.app.brain.tools.KaiReminderUnderstanding.understand(text, at, people)?.let { return reminders.handle(it, lang) }
+        com.shopai.app.brain.tools.KaiReminderUnderstanding.understand(text, at, people)?.let { req ->
+            // Said aloud: the reminder keeps the owner's own Tamil words, not Kai's Tanglish reading of them (owner, 11 Oct 2026).
+            val kept = if (req is com.shopai.app.brain.tools.ReminderRequest.Create && com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(raw)) req.draft.let { d ->
+                val task = com.shopai.app.brain.tools.KaiSpokenWords.asSaid(d.task, raw)
+                req.copy(draft = d.copy(task = task, title = if (d.title.equals(d.task, ignoreCase = true)) task.replaceFirstChar { it.titlecase(Locale.ROOT) } else d.title))
+            } else req
+            return reminders.handle(kept, lang)
+        }
         if (products != null) {
             // "Colgate 2 petti vandhiruku" with a unit word Kai doesn't know: ask (box? packet?) — never guess the quantity's unit.
             learner?.unknownUnit(text, said, lang, products)?.let { return it }

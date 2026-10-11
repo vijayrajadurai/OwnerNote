@@ -194,8 +194,20 @@ object KaiSpokenWords {
         for ((re, unit) in units) {
             s = re.replace(s) { m -> if (m.value.endsWith("ல") || m.value.endsWith("ல்") || m.value.endsWith("லே")) "$unit la" else unit }
         }
-        s = tamilWord.replace(s) { m -> wordMap[m.value] ?: dative(m.value)?.let { d -> wordMap[d.substringBefore('-')]?.let { "$it-${d.substringAfter('-')}" } ?: d } ?: m.value }
+        s = tamilWord.replace(s) { m -> wordOf(m.value) }
         return s.replace(Regex("""\s+"""), " ").trim()
+    }
+
+    private fun wordOf(w: String): String = wordMap[w] ?: dative(w)?.let { d -> wordMap[d.substringBefore('-')]?.let { "$it-${d.substringAfter('-')}" } ?: d } ?: w
+
+    /**
+     * A phrase Kai keeps (a reminder's task) back in the owner's own words: each word [normalize] turned into Tanglish goes back to
+     * the Tamil the mic wrote ("சபரி-ku பர்த்டே விஷ் pannanum" → "சபரிக்கு பர்த்டே விஷ் பண்ணணும்"). Other words stay as they are.
+     */
+    fun asSaid(phrase: String, said: String): String {
+        if (!hasTamil(said)) return phrase
+        val back = tamilWord.findAll(said).map { it.value }.mapNotNull { w -> wordOf(w).takeIf { it != w && !it.contains(' ') }?.let { it.lowercase() to w } }.toMap()
+        return phrase.split(' ').joinToString(" ") { t -> back[t.lowercase()] ?: t }
     }
 
     /**

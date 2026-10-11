@@ -204,7 +204,7 @@ class KaiOwnerSweepTest {
         val time = LocalDateTime.ofInstant(Instant.ofEpochMilli(r.triggerAt), zone)
         if (at != null && time != at) return fail(said, s, "at $time ≠ $at")
         val words = r.title + " " + r.task + " " + (r.person ?: "")
-        if (has != null && !words.contains(has, true) && !(mic && KaiMicForm.of(has)?.let { words.contains(it) } == true)) return fail(said, s, "'${r.title}' / '${r.task}' lacks '$has'")
+        if (has != null && !words.contains(has, true) && !(mic && listOfNotNull(KaiMicForm.of(has), KaiMicForm.repeated(has)).any { words.contains(it) })) return fail(said, s, "'${r.title}' / '${r.task}' lacks '$has'")
         if (repeat && r.recurrence.repeat == com.shopai.app.brain.tools.Repeat.ONCE) return fail(said, s, "not repeating")
         if (s.tools.saved.isNotEmpty() || s.inv.moves.isNotEmpty()) return fail(said, s, "a reminder wrote money / stock")
     }
@@ -755,6 +755,11 @@ class KaiOwnerSweepTest {
         talk("the product's rate, then its margin", listOf("Colgate rate enna", "labam evlo"), check = nothingWritten("₹7"))
         talk("adhoda rate after its stock", listOf("Colgate stock evlo", "adhoda rate enna"), check = nothingWritten("₹35"))
         talk("athoda selling price after details", listOf("Oil details", "athoda selling price"), check = nothingWritten("₹170"))
+        // A reminder said aloud keeps the owner's own Tamil words; "reminde" (typed so) is not part of what to do.
+        talk("a spoken reminder keeps its Tamil", listOf("டிசம்பர் 3 காலைல 10 மணிக்கு சபரிக்கு பர்த்டே விஷ் பண்ணணும் ரிமைண்ட் பண்ணு", "TAP")) { s ->
+            when (val t = s.tools.rems.singleOrNull()?.title) { null -> "no reminder"; "சபரிக்கு பர்த்டே விஷ் பண்ணணும்" -> null; else -> "title: $t" } }
+        talk("reminde pannu", listOf("December 3 morning 10 sabari ku birthday ku wish pannanum reminde pannu", "TAP")) { s ->
+            when (val t = s.tools.rems.singleOrNull()?.title) { null -> "no reminder"; else -> if (t.contains("remind", true) || t.contains("ரிமைண்ட்")) "title: $t" else null } }
     }
 
     /** KAI's own feed of owner lines (src/test/resources/kai/owner-lines.txt): each played like the lines above. */
