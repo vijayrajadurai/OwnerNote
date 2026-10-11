@@ -706,6 +706,19 @@ class KaiOwnerSweepTest {
             { add("s3", "கமல்", false, "5000", d(10, 9), LocalDate.of(2027, 1, 5)) }) { _ ->
             val t = lastTurn?.reply?.text.orEmpty()
             if ((t.contains("Neenga") || t.contains("நீங்க")) && t.contains("5,000")) null else "said: $t" }
+        // Owner, 11 Oct 2026: "yaar kitta irundhu pay varanum" got the suppliers (the owner paying); "mudhal aal" re-showed the list.
+        talk("money to come from: the customers, not the suppliers", listOf("innaiku yar kitta irunthu pay varanum")) { _ ->
+            val t = lastTurn?.reply?.text.orEmpty()
+            if (t.contains("Kumar") && t.contains("Ramesh") && !t.contains("ABC")) null else "said: $t" }
+        talk("the owner pays today: the suppliers", listOf("Innaiku na yaruku payment tharanum")) { _ ->
+            val t = lastTurn?.reply?.text.orEmpty()
+            if (t.contains("ABC") && !t.contains("Kumar")) null else "said: $t" }
+        talk("the first one of the list just shown", listOf("innaiku yaar tharanum", "mudhal aal eppo kudupaan")) { _ ->
+            val t = lastTurn?.reply?.text.orEmpty()
+            if (t.contains("Kumar") && !t.contains("Ramesh")) null else "said: $t" }
+        talk("the last one of the list just shown", listOf("ellaa pending customers list pannu", "kadaisi aal evlo tharanum")) { _ ->
+            val t = lastTurn?.reply?.text.orEmpty()
+            if (t.contains("Lakshmi") && t.contains("1,000") && !t.contains("Selvam")) null else "said: $t" }
         talk("goods: venam — nothing", listOf("Kadaiku saman vandhuruku", "venam")) { s -> if (s.nothingWritten()) null else "wrote after venam" }
         talk("goods: a balance question in between", listOf("Kadaiku saman vandhuruku", "Kumar evlo tharanum")) { s ->
             if (s.log.contains("₹4,000") && s.nothingWritten()) null else "balance not answered" }

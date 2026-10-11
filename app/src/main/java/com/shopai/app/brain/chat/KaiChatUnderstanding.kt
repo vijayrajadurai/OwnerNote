@@ -182,7 +182,9 @@ object KaiChatUnderstanding {
             // "Today who has to pay?", "who owes": the person asked about pays — unless the owner is the one paying ("who do I have to pay?").
             has(" who has to pay", " who have to pay", " who needs to pay", " who should pay", " who must pay", " who will pay", " who is paying", " who pays") &&
             !has(" do i ", " i have", " should i", " i need", " i must", " i owe")
-        val payWords = !paysMe && has(" kudukkanum", " kodukkanum", " kudukanum", " kodukanum", " kudukanu", " kudukka ", " pay ", " payable", " supplier", " i owe", " do i owe", " கொடுக்க", " குடுக்க")
+        // "yaar kitta irundhu pay varanum": money to come FROM them — never the owner paying, even with "pay" in it (owner, 11 Oct 2026).
+        val comesIn = has(" varanum", " vara vendiyadhu", " vara vendiyathu", " kitta irundhu", " kitta irunthu", " kittendhu", " from ", " வரணும்", " கிட்ட இருந்து")
+        val payWords = !paysMe && !comesIn && has(" kudukkanum", " kodukkanum", " kudukanum", " kodukanum", " kudukanu", " kudukka ", " pay ", " payable", " supplier", " i owe", " do i owe", " கொடுக்க", " குடுக்க")
         val collectWords = paysMe || has(" collect", " vasool", " tharanum", " varanum", " vanganum", " vaanganum", " receive", " receivable", " owes me",
             " owe me", " payment", " cash tharanum", " vanganu", " vaanganu", " வசூல்", " தரணும்", " வரணும்", " வாங்கணும்")
         // ---- one ledger question class each: which people, which side, which dates ----

@@ -77,7 +77,7 @@ object KaiSpokenWords {
         "பாக்கலாம்" to "paakalam", "பார்க்கலாம்" to "paakalam", "மாத்து" to "maathu", "மாத்துங்க" to "maathunga", "கேன்சல்" to "cancel",
         "டெலீட்" to "delete", "தப்பா" to "thappa", "தப்பு" to "thappu", "சொன்னது" to "sonnadhu", "போட்டுட்ட" to "pottutta", "போட்டுட்டேன்" to "pottuten",
         "புரியல" to "puriyala", "புரிஞ்சுக்கல" to "purinjukala", "ஜிஎஸ்டி" to "gst", "பில்லு" to "bill", "இன்வாய்ஸ்" to "invoice", "வாட்ஸ்அப்" to "whatsapp",
-        "வாட்ஸ்அப்ல" to "whatsapp la", "ரெண்டு பேரும்" to "rendu perum", "பேரும்" to "perum", "ஃபர்ஸ்ட்" to "first", "முதல்ல" to "mudhalla",
+        "வாட்ஸ்அப்ல" to "whatsapp la", "ரெண்டு பேரும்" to "rendu perum", "பேரும்" to "perum", "ஃபர்ஸ்ட்" to "first", "முதல்ல" to "mudhalla", "முதல்" to "mudhal", "ரெண்டாவது" to "rendavadhu", "இரண்டாவது" to "rendavadhu", "மூணாவது" to "moonavadhu", "மூன்றாவது" to "moonavadhu", "நாலாவது" to "naalavadhu", "கடைசி" to "kadaisi",
         "கேட்ட" to "ketta", "ஆளு" to "aalu", "ஆள்" to "aal", "தேதி" to "thethi", "கிழமை" to "kizhamai", "வருஷம்" to "varusham",
         // ---- what Kai doesn't do (weather, news, orders, staff) — said in Tamil script, heard as typed ----
         "கணக்கு" to "kanakku", "கணக்க" to "kanakka", "சேலரி" to "salary", "சம்பளம்" to "sambalam", "எம்ப்ளாயி" to "employee", "எம்ப்ளாயீ" to "employee",

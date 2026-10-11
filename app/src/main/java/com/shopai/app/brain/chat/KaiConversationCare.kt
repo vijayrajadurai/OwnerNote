@@ -63,7 +63,9 @@ internal object KaiConversationCare {
     fun asksBoth(text: String) = both.containsMatchIn(text)
 
     /** "first ketta aal", "mudhalla sonna aalu": the first person of this conversation; "munnadi ketta aal": the one before. */
-    private val first = Regex("""(?i)(?<![\p{L}])(first|mudhal|modhal|mudhalla|modhalla|starting\s*la)\s*(-?\s*la|-?\s*a)?\s*(ketta|kettadhu|kettan|sonna|pesuna|pesina|paatha)?\s*(aal|aalu|person|per|customer|aaloda|aaludaya)(?![\p{L}])""")
+    // "mudhal aal" with no "ketta / sonna" is the first one of the list just shown (KaiBusinessBrain), not of this conversation.
+    private val first = Regex("""(?i)(?<![\p{L}])(?:(?:first|mudhal|modhal)\s*(?:-?\s*la|-?\s*a)?\s*(?:ketta|kettadhu|kettan|sonna|pesuna|pesina|paatha)|""" +
+        """(?:mudhalla|modhalla|starting\s*la|first\s*-?\s*la)\s*(?:ketta|kettadhu|kettan|sonna|pesuna|pesina|paatha)?)\s*(aal|aalu|person|per|customer|aaloda|aaludaya)(?![\p{L}])""")
     private val before = Regex("""(?i)(?<![\p{L}])(munnadi|previous|mundhi|munna)\s*(ketta|kettadhu|sonna|pesuna|pesina|paatha)\s*(aal|aalu|person|per|customer|aaloda)(?![\p{L}])""")
 
     /** The words with "first ketta aal" / "munnadi ketta aal" put as the name they mean, or null. */

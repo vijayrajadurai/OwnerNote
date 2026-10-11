@@ -177,6 +177,20 @@ class KaiBusinessBrain(
         return answerAbout(named(chosen), q, chatLanguage(text), today())
     }
 
+    /** "mudhal aal", "rendavadhu per", "last person", "முதல் ஆள்": a place in the last list. */
+    private val ordinalPhrase = Regex("""(?i)(?<![\p{L}])(mudhal|modhal|mudhala|first|1st|onnavadhu|onnaavadhu|rendavadhu|randavadhu|rendaavadhu|second|2nd|""" +
+        """moonavadhu|munavadhu|moonaavadhu|third|3rd|naalavadhu|naalaavadhu|fourth|4th|anjavadhu|fifth|5th|kadaisi|last)\s*(?:aal|aalu|per|peru|person|customer|supplier|name)(?![\p{L}])|""" +
+        """(முதல்|ரெண்டாவது|இரண்டாவது|மூணாவது|மூன்றாவது|நாலாவது|கடைசி)\s*(?:ஆள்|ஆளு|பேர்|நபர்)""")
+
+    private fun ordinalIndex(word: String, size: Int): Int = when (word.lowercase()) {
+        "mudhal", "modhal", "mudhala", "first", "1st", "onnavadhu", "onnaavadhu", "முதல்" -> 0
+        "rendavadhu", "randavadhu", "rendaavadhu", "second", "2nd", "ரெண்டாவது", "இரண்டாவது" -> 1
+        "moonavadhu", "munavadhu", "moonaavadhu", "third", "3rd", "மூணாவது", "மூன்றாவது" -> 2
+        "naalavadhu", "naalaavadhu", "fourth", "4th", "நாலாவது" -> 3
+        "anjavadhu", "fifth", "5th" -> 4
+        else -> size - 1
+    }
+
     /** The words of the question being answered (for "rendu perum" / "total" checks). */
     private var rawText = ""
 
@@ -199,6 +213,15 @@ class KaiBusinessBrain(
             choices = emptyList()
             choiceQuery = null
         }
+
+        // "mudhal aal eppo kudupaan", "rendavadhu per evlo", "kadaisi aal": the person at that place in the list just shown (owner, 11 Oct 2026).
+        if (ledger != null) lastList?.let { list -> ordinalPhrase.find(text)?.let { m ->
+            val index = ordinalIndex(m.groupValues[1].ifEmpty { m.value }, list.rows.size)
+            list.rows.getOrNull(index)?.let { row ->
+                val p = ledger.parties.firstOrNull { it.id == row.party.id && it.side == row.party.side } ?: row.party
+                return ask(text.replaceRange(m.range, " ${p.name} ").replace(Regex("""\s+"""), " ").trim())
+            }
+        } }
 
         // "rendu perum total evlo" after asking about two people: those two, from the ledger now.
         if (ledger != null && talkedAbout.size >= 2 && KaiConversationCare.asksBoth(text) &&
@@ -247,6 +270,8 @@ class KaiBusinessBrain(
      * about something else (a named person, no list yet, a bare "details" after a person answer).
      */
     suspend fun listFollowUp(text: String): ChatReply? {
+        // "mudhal aal eppo kudupaan": one person of the list (answered in [ask]), not the whole list again.
+        if (ordinalPhrase.containsMatchIn(text)) return null
         val lower = text.lowercase(Locale.ROOT)
         val saidCount = Regex("""(\d+)\s*(?:per|peru|perudaya|peroda|perkal|people|names?|பேர)""").find(lower)?.groupValues?.get(1)?.toIntOrNull()
         val list = lastAside?.takeIf { a -> saidCount == a.rows.size && saidCount != lastList?.rows?.size }
