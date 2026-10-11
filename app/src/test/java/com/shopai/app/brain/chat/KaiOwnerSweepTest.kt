@@ -742,6 +742,19 @@ class KaiOwnerSweepTest {
         talk("list then total", listOf("Overdue list sollu", "avanga total evlo")) { s -> if (s.log.contains("₹6,000")) null else "no total" }
         talk("topic switch keeps the draft open", listOf("Kumar 2000 kuduthan", "Colgate stock evlo", "aama")) { s ->
             if (s.tools.saved.singleOrNull()?.partyName == "Kumar") null else "draft lost: ${s.tools.saved.map { it.partyName }}" }
+        // Context memory, said the many ways owners say it (owner, 11 Oct 2026): "ivan", "adhe aal", "rendavadhu aal", an amount alone
+        // right after a person, "2000 illa 1500", and a product's price asked after the product.
+        fun saved(name: String, amount: String, kind: PlanKind): (Shop) -> String? = { s ->
+            if (s.tools.saved.singleOrNull()?.let { it.partyName == name && it.amount.compareTo(BigDecimal(amount)) == 0 && it.kind == kind } == true) null
+            else "saved ${s.tools.saved.map { "${it.partyName} ${it.amount} ${it.kind}" }}" }
+        talk("ivan is the person just asked", listOf("Kumar evlo tharanum", "ivan balance enna"), check = nothingWritten("₹4,000"))
+        talk("adhe aal after a stock question", listOf("Ramesh evlo tharanum", "Colgate stock evlo", "adhe aal evlo tharanum"), check = nothingWritten("₹2,500"))
+        talk("the list's second person", listOf("Innaiku yar tharanum", "rendavadhu aal evlo tharanum"), check = nothingWritten("₹2,500"))
+        talk("an amount alone after a person", listOf("Kumar evlo tharanum", "2000 kuduthan", "TAP"), check = saved("Kumar", "2000", PlanKind.PAYMENT_IN))
+        talk("2000 illa 1500", listOf("Kumar 2000 kuduthan", "2000 illa 1500", "TAP"), check = saved("Kumar", "1500", PlanKind.PAYMENT_IN))
+        talk("the product's rate, then its margin", listOf("Colgate rate enna", "labam evlo"), check = nothingWritten("₹7"))
+        talk("adhoda rate after its stock", listOf("Colgate stock evlo", "adhoda rate enna"), check = nothingWritten("₹35"))
+        talk("athoda selling price after details", listOf("Oil details", "athoda selling price"), check = nothingWritten("₹170"))
     }
 
     /** KAI's own feed of owner lines (src/test/resources/kai/owner-lines.txt): each played like the lines above. */
