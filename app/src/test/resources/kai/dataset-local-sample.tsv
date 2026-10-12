@@ -1,0 +1,859 @@
+# The owner's dataset Kai_Local_Tamil_Thanglish_100000 (12 Oct 2026), a sample: intent\ttyped Tanglish\tthe mic's Tamil\tperson\tamount
+ADD_RECEIVABLE	Kumar enaku 200 kudukanum	குமார் எனக்கு 200 குடுக்கணும்	Kumar	200
+CHECK_RECEIVABLE	Kumar enaku evlo tharanum?	குமார் எனக்கு எவ்வளவு தரணும்?	Kumar	
+CHECK_PAYABLE	Naan Kumaruku evlo tharanum?	நான் குமாருக்கு எவ்வளவு தரணும்?	Kumar	
+CHECK_ALL_RECEIVABLES	Yaar yaar kitta panam varanum?	யார் யார் கிட்ட பணம் வரணும்?		
+CHECK_ALL_PAYABLES	Naan yaar yaaruku panam tharanum?	நான் யார் யாருக்கு பணம் தரணும்?		
+CHECK_ALL_PENDING	Mothama evlo baaki iruku?	மொத்தம் எவ்வளவு பாக்கி இருக்கு?		
+CHECK_TODAY_COLLECTION	Innaiku evlo vasool aachu?	இன்னைக்கு எவ்வளவு வசூல் ஆச்சு?		
+CHECK_EXPENSES	Innaiku enna enna selavu aachu?	இன்னைக்கு என்னென்ன செலவு ஆச்சு?		
+CHECK_PROFIT	Indha maasam laabam evlo?	இந்த மாசம் லாபம் எவ்வளவு?		
+CHECK_LOSS	Indha maasam nashtam vandhirukka?	இந்த மாசம் நஷ்டம் வந்திருக்கா?		
+CHECK_STOCK	Endha endha porul stock kammiya iruku?	எந்தெந்த பொருள் ஸ்டாக் கம்மியா இருக்கு?		
+CHECK_CASH_BALANCE	Kadaiyila ippo kaiyila evlo kaasu iruku?	கடைல இப்போ கையில எவ்வளவு காசு இருக்கு?		
+CHECK_HISTORY	Kumaroda pazhaya kanakku kaatu	குமாரோட பழைய கணக்கு காட்டு	Kumar	
+ADD_CUSTOMER	Pudhusa oru customer-ai sethuko	புதுசா ஒரு கஸ்டமரை சேத்துக்கோ		
+ADD_SUPPLIER	Indha supplier-ai list-la sethuko	இந்த சப்ளையரை லிஸ்ட்ல சேத்துக்கோ		
+EDIT_ENTRY	Naan sonna kanakkula thappu iruku, maathu	நான் சொன்ன கணக்குல தப்பு இருக்கு, மாத்து		
+DELETE_ENTRY	Andha entry-ai eduthudu	அந்த என்ட்ரியை எடுத்துடு		
+CLARIFY_DIRECTION	Indha 500 enakku vara vendiyadha, naan thara vendiyadha?	இந்த 500 எனக்கு வர வேண்டியதா, நான் தர வேண்டியதா?		500
+CLARIFY_AMOUNT	Evlo roobaanu sollave illaye?	எவ்வளவு ரூபானு சொல்லவே இல்லையே?		
+CLARIFY_CUSTOMER	Yaaru kanakkula idha podanum?	யாரு கணக்குல இதை போடணும்?		
+ADD_RECEIVABLE	Kumar kitta 300 rooba varanum	குமார் கிட்ட 300 ரூபா வரணும்	Kumar	300
+ADD_RECEIVABLE	Ravikitta irundhu 10000 rooba vaanganum	ரவிகிட்ட இருந்து 10000 ரூபா வாங்கணும்	Ravi	10000
+ADD_RECEIVABLE	Saravanan thara vendiya 1800 roobaya kanakkula podu	சரவணன் தர வேண்டிய 1800 ரூபாயை கணக்குல போடு	Saravanan	1800
+ADD_RECEIVABLE	Karthik enaku 650 rooba kudukanum	கார்த்திக் எனக்கு 650 ரூபா குடுக்கணும்	Karthik	650
+ADD_RECEIVABLE	Arun innum 180 rooba tharala	அருண் இன்னும் 180 ரூபா தரல	Arun	180
+ADD_RECEIVABLE	Mani kitta 5000 rooba varanum	மணி கிட்ட 5000 ரூபா வரணும்	Mani	5000
+ADD_RECEIVABLE	Rajakitta irundhu 1000 rooba vaanganum	ராஜாகிட்ட இருந்து 1000 ரூபா வாங்கணும்	Raja	1000
+ADD_RECEIVABLE	Latha thara vendiya 450 roobaya kanakkula podu	லதா தர வேண்டிய 450 ரூபாயை கணக்குல போடு	Latha	450
+ADD_RECEIVABLE	Bala enaku 120 rooba kudukanum	பாலா எனக்கு 120 ரூபா குடுக்கணும்	Bala	120
+ADD_RECEIVABLE	Kannan innum 3000 rooba tharala	கண்ணன் இன்னும் 3000 ரூபா தரல	Kannan	3000
+ADD_RECEIVABLE	Dinesh kitta 800 rooba varanum	தினேஷ் கிட்ட 800 ரூபா வரணும்	Dinesh	800
+ADD_RECEIVABLE	Prakashkitta irundhu 300 rooba vaanganum	பிரகாஷ்கிட்ட இருந்து 300 ரூபா வாங்கணும்	Prakash	300
+ADD_PAYABLE	Raviku kudukka vendiya 50 roobaya kanakkula podu	ரவிக்கு கொடுக்க வேண்டிய 50 ரூபாயை கணக்குல போடு	Ravi	50
+ADD_PAYABLE	Naan Muruganku 2000 rooba kudukanum	நான் முருகன்க்கு 2000 ரூபா குடுக்கணும்	Murugan	2000
+ADD_PAYABLE	Prabhuku innum 650 rooba kudukala	பிரபுக்கு இன்னும் 650 ரூபா கொடுக்கல	Prabhu	650
+ADD_PAYABLE	Vijayku 200 rooba baaki iruku	விஜய்க்கு 200 ரூபா பாக்கி இருக்கு	Vijay	200
+ADD_PAYABLE	Arunku 5000 rooba settle pannanum	அருண்க்கு 5000 ரூபா செட்டில் பண்ணணும்	Arun	5000
+ADD_PAYABLE	Selvamku kudukka vendiya 1200 roobaya kanakkula podu	செல்வம்க்கு கொடுக்க வேண்டிய 1200 ரூபாயை கணக்குல போடு	Selvam	1200
+ADD_PAYABLE	Naan Meenaku 500 rooba kudukanum	நான் மீனாக்கு 500 ரூபா குடுக்கணும்	Meena	500
+ADD_PAYABLE	Sureshku innum 120 rooba kudukala	சுரேஷ்க்கு இன்னும் 120 ரூபா கொடுக்கல	Suresh	120
+ADD_PAYABLE	Balaku 3500 rooba baaki iruku	பாலாக்கு 3500 ரூபா பாக்கி இருக்கு	Bala	3500
+ADD_PAYABLE	Satheeshku 800 rooba settle pannanum	சதீஷ்க்கு 800 ரூபா செட்டில் பண்ணணும்	Satheesh	800
+ADD_PAYABLE	Yuvarajku kudukka vendiya 350 roobaya kanakkula podu	யுவராஜ்க்கு கொடுக்க வேண்டிய 350 ரூபாயை கணக்குல போடு	Yuvaraj	350
+ADD_ADDITIONAL_RECEIVABLE	Kumar kitta vara vendiya thogaiya 80 rooba adhigapaduthu	குமார் கிட்ட வர வேண்டிய தொகையை 80 ரூபா அதிகப்படுத்து	Kumar	80
+ADD_ADDITIONAL_RECEIVABLE	Murugan enaku thara vendiya kanakkula innum 7500 rooba seru	முருகன் எனக்கு தர வேண்டிய கணக்குல இன்னும் 7500 ரூபா சேர்	Murugan	7500
+ADD_ADDITIONAL_RECEIVABLE	Karthik baakiyoda kooduthalaa 3000 rooba varavu vai	கார்த்திக் பாக்கியோட கூடுதலா 3000 ரூபா வரவு வை	Karthik	3000
+ADD_ADDITIONAL_RECEIVABLE	Mani kitta vara vendiya thogaiya 1500 rooba adhigapaduthu	மணி கிட்ட வர வேண்டிய தொகையை 1500 ரூபா அதிகப்படுத்து	Mani	1500
+ADD_ADDITIONAL_RECEIVABLE	Meena enaku thara vendiya kanakkula innum 900 rooba seru	மீனா எனக்கு தர வேண்டிய கணக்குல இன்னும் 900 ரூபா சேர்	Meena	900
+ADD_ADDITIONAL_RECEIVABLE	Bala baakiyoda kooduthalaa 650 rooba varavu vai	பாலா பாக்கியோட கூடுதலா 650 ரூபா வரவு வை	Bala	650
+ADD_ADDITIONAL_RECEIVABLE	Dinesh kitta vara vendiya thogaiya 400 rooba adhigapaduthu	தினேஷ் கிட்ட வர வேண்டிய தொகையை 400 ரூபா அதிகப்படுத்து	Dinesh	400
+ADD_ADDITIONAL_PAYABLE	Kumarku naan thara vendiya kanakkula innum 250 rooba seru	குமார்க்கு நான் தர வேண்டிய கணக்குல இன்னும் 250 ரூபா சேர்	Kumar	250
+ADD_ADDITIONAL_PAYABLE	Saravananku kudukka vendiya baakiya 120 rooba kootti podu	சரவணன்க்கு கொடுக்க வேண்டிய பாக்கிய 120 ரூபா கூட்டி போடு	Saravanan	120
+ADD_ADDITIONAL_PAYABLE	Karthikku thara vendiya thogaiyoda 10000 rooba kooda seru	கார்த்திக்க்கு தர வேண்டிய தொகையோட 10000 ரூபா கூட சேர்	Karthik	10000
+ADD_ADDITIONAL_PAYABLE	Maniku naan thara vendiya kanakkula innum 4000 rooba seru	மணிக்கு நான் தர வேண்டிய கணக்குல இன்னும் 4000 ரூபா சேர்	Mani	4000
+ADD_ADDITIONAL_PAYABLE	Meenaku kudukka vendiya baakiya 2000 rooba kootti podu	மீனாக்கு கொடுக்க வேண்டிய பாக்கிய 2000 ரூபா கூட்டி போடு	Meena	2000
+ADD_ADDITIONAL_PAYABLE	Balaku thara vendiya thogaiyoda 1000 rooba kooda seru	பாலாக்கு தர வேண்டிய தொகையோட 1000 ரூபா கூட சேர்	Bala	1000
+ADD_ADDITIONAL_PAYABLE	Dineshku naan thara vendiya kanakkula innum 750 rooba seru	தினேஷ்க்கு நான் தர வேண்டிய கணக்குல இன்னும் 750 ரூபா சேர்	Dinesh	750
+RECEIVE_PAYMENT	Kumarkitta irundhu 350 rooba vandhuchu	குமார்கிட்ட இருந்து 350 ரூபா வந்துச்சு	Kumar	350
+RECEIVE_PAYMENT	Kumar 3500 rooba kuduthuttaaru	குமார் 3500 ரூபா குடுத்துட்டாரு	Kumar	3500
+RECEIVE_PAYMENT	Ravi baakila 450 rooba kattittaaru	ரவி பாக்கில 450 ரூபா கட்டிட்டாரு	Ravi	450
+RECEIVE_PAYMENT	Ravi kudutha 5000 roobaya varavula podu	ரவி கொடுத்த 5000 ரூபாயை வரவுல போடு	Ravi	5000
+RECEIVE_PAYMENT	Murugankitta irundhu 650 rooba vandhuchu	முருகன்கிட்ட இருந்து 650 ரூபா வந்துச்சு	Murugan	650
+RECEIVE_PAYMENT	Saravanan 50 rooba kuduthuttaaru	சரவணன் 50 ரூபா குடுத்துட்டாரு	Saravanan	50
+RECEIVE_PAYMENT	Saravanan baakila 750 rooba kattittaaru	சரவணன் பாக்கில 750 ரூபா கட்டிட்டாரு	Saravanan	750
+RECEIVE_PAYMENT	Prabhu kudutha 100 roobaya varavula podu	பிரபு கொடுத்த 100 ரூபாயை வரவுல போடு	Prabhu	100
+RECEIVE_PAYMENT	Prabhukitta irundhu 1000 rooba vandhuchu	பிரபுகிட்ட இருந்து 1000 ரூபா வந்துச்சு	Prabhu	1000
+RECEIVE_PAYMENT	Karthik 180 rooba kuduthuttaaru	கார்த்திக் 180 ரூபா குடுத்துட்டாரு	Karthik	180
+RECEIVE_PAYMENT	Karthik baakila 1500 rooba kattittaaru	கார்த்திக் பாக்கில 1500 ரூபா கட்டிட்டாரு	Karthik	1500
+RECEIVE_PAYMENT	Vijay kudutha 250 roobaya varavula podu	விஜய் கொடுத்த 250 ரூபாயை வரவுல போடு	Vijay	250
+RECEIVE_PAYMENT	Vijaykitta irundhu 2500 rooba vandhuchu	விஜய்கிட்ட இருந்து 2500 ரூபா வந்துச்சு	Vijay	2500
+RECEIVE_PAYMENT	Arun 400 rooba kuduthuttaaru	அருண் 400 ரூபா குடுத்துட்டாரு	Arun	400
+RECEIVE_PAYMENT	Arun baakila 3500 rooba kattittaaru	அருண் பாக்கில 3500 ரூபா கட்டிட்டாரு	Arun	3500
+RECEIVE_PAYMENT	Mani kudutha 500 roobaya varavula podu	மணி கொடுத்த 500 ரூபாயை வரவுல போடு	Mani	500
+RECEIVE_PAYMENT	Manikitta irundhu 7500 rooba vandhuchu	மணிகிட்ட இருந்து 7500 ரூபா வந்துச்சு	Mani	7500
+RECEIVE_PAYMENT	Selvam 700 rooba kuduthuttaaru	செல்வம் 700 ரூபா குடுத்துட்டாரு	Selvam	700
+RECEIVE_PAYMENT	Raja baakila 50 rooba kattittaaru	ராஜா பாக்கில 50 ரூபா கட்டிட்டாரு	Raja	50
+RECEIVE_PAYMENT	Raja kudutha 800 roobaya varavula podu	ராஜா கொடுத்த 800 ரூபாயை வரவுல போடு	Raja	800
+RECEIVE_PAYMENT	Meenakitta irundhu 120 rooba vandhuchu	மீனாகிட்ட இருந்து 120 ரூபா வந்துச்சு	Meena	120
+RECEIVE_PAYMENT	Meena 1200 rooba kuduthuttaaru	மீனா 1200 ரூபா குடுத்துட்டாரு	Meena	1200
+RECEIVE_PAYMENT	Latha baakila 180 rooba kattittaaru	லதா பாக்கில 180 ரூபா கட்டிட்டாரு	Latha	180
+RECEIVE_PAYMENT	Latha kudutha 1800 roobaya varavula podu	லதா கொடுத்த 1800 ரூபாயை வரவுல போடு	Latha	1800
+RECEIVE_PAYMENT	Sureshkitta irundhu 300 rooba vandhuchu	சுரேஷ்கிட்ட இருந்து 300 ரூபா வந்துச்சு	Suresh	300
+RECEIVE_PAYMENT	Suresh 3000 rooba kuduthuttaaru	சுரேஷ் 3000 ரூபா குடுத்துட்டாரு	Suresh	3000
+RECEIVE_PAYMENT	Bala baakila 400 rooba kattittaaru	பாலா பாக்கில 400 ரூபா கட்டிட்டாரு	Bala	400
+RECEIVE_PAYMENT	Bala kudutha 4000 roobaya varavula podu	பாலா கொடுத்த 4000 ரூபாயை வரவுல போடு	Bala	4000
+RECEIVE_PAYMENT	Kannankitta irundhu 600 rooba vandhuchu	கண்ணன்கிட்ட இருந்து 600 ரூபா வந்துச்சு	Kannan	600
+RECEIVE_PAYMENT	Kannan 10000 rooba kuduthuttaaru	கண்ணன் 10000 ரூபா குடுத்துட்டாரு	Kannan	10000
+RECEIVE_PAYMENT	Satheesh baakila 700 rooba kattittaaru	சதீஷ் பாக்கில 700 ரூபா கட்டிட்டாரு	Satheesh	700
+RECEIVE_PAYMENT	Dinesh kudutha 80 roobaya varavula podu	தினேஷ் கொடுத்த 80 ரூபாயை வரவுல போடு	Dinesh	80
+RECEIVE_PAYMENT	Dineshkitta irundhu 900 rooba vandhuchu	தினேஷ்கிட்ட இருந்து 900 ரூபா வந்துச்சு	Dinesh	900
+RECEIVE_PAYMENT	Yuvaraj 150 rooba kuduthuttaaru	யுவராஜ் 150 ரூபா குடுத்துட்டாரு	Yuvaraj	150
+RECEIVE_PAYMENT	Yuvaraj baakila 1200 rooba kattittaaru	யுவராஜ் பாக்கில 1200 ரூபா கட்டிட்டாரு	Yuvaraj	1200
+RECEIVE_PAYMENT	Prakash kudutha 200 roobaya varavula podu	பிரகாஷ் கொடுத்த 200 ரூபாயை வரவுல போடு	Prakash	200
+RECEIVE_PAYMENT	Prakashkitta irundhu 2000 rooba vandhuchu	பிரகாஷ்கிட்ட இருந்து 2000 ரூபா வந்துச்சு	Prakash	2000
+PAY_PAYMENT	Naan Kumarku 350 rooba kuduthuten	நான் குமார்க்கு 350 ரூபா குடுத்துட்டேன்	Kumar	350
+PAY_PAYMENT	Kumarku 3000 rooba settle pannitten	குமார்க்கு 3000 ரூபா செட்டில் பண்ணிட்டேன்	Kumar	3000
+PAY_PAYMENT	Raviku kudutha 450 roobaya selavula record pannu	ரவிக்கு கொடுத்த 450 ரூபாயை செலவுல பதிவு பண்ணு	Ravi	450
+PAY_PAYMENT	Raviku 5000 rooba anuppitten	ரவிக்கு 5000 ரூபா அனுப்பிட்டேன்	Ravi	5000
+PAY_PAYMENT	Naan Muruganku 650 rooba kuduthuten	நான் முருகன்க்கு 650 ரூபா குடுத்துட்டேன்	Murugan	650
+PAY_PAYMENT	Muruganku 10000 rooba settle pannitten	முருகன்க்கு 10000 ரூபா செட்டில் பண்ணிட்டேன்	Murugan	10000
+PAY_PAYMENT	Saravananku kudutha 750 roobaya selavula record pannu	சரவணன்க்கு கொடுத்த 750 ரூபாயை செலவுல பதிவு பண்ணு	Saravanan	750
+PAY_PAYMENT	Prabhuku 100 rooba anuppitten	பிரபுக்கு 100 ரூபா அனுப்பிட்டேன்	Prabhu	100
+PAY_PAYMENT	Naan Prabhuku 1000 rooba kuduthuten	நான் பிரபுக்கு 1000 ரூபா குடுத்துட்டேன்	Prabhu	1000
+PAY_PAYMENT	Karthikku 150 rooba settle pannitten	கார்த்திக்க்கு 150 ரூபா செட்டில் பண்ணிட்டேன்	Karthik	150
+PAY_PAYMENT	Karthikku kudutha 1500 roobaya selavula record pannu	கார்த்திக்க்கு கொடுத்த 1500 ரூபாயை செலவுல பதிவு பண்ணு	Karthik	1500
+PAY_PAYMENT	Vijayku 250 rooba anuppitten	விஜய்க்கு 250 ரூபா அனுப்பிட்டேன்	Vijay	250
+PAY_PAYMENT	Naan Vijayku 2500 rooba kuduthuten	நான் விஜய்க்கு 2500 ரூபா குடுத்துட்டேன்	Vijay	2500
+PAY_PAYMENT	Arunku 350 rooba settle pannitten	அருண்க்கு 350 ரூபா செட்டில் பண்ணிட்டேன்	Arun	350
+PAY_PAYMENT	Arunku kudutha 3500 roobaya selavula record pannu	அருண்க்கு கொடுத்த 3500 ரூபாயை செலவுல பதிவு பண்ணு	Arun	3500
+PAY_PAYMENT	Maniku 500 rooba anuppitten	மணிக்கு 500 ரூபா அனுப்பிட்டேன்	Mani	500
+PAY_PAYMENT	Naan Maniku 7500 rooba kuduthuten	நான் மணிக்கு 7500 ரூபா குடுத்துட்டேன்	Mani	7500
+PAY_PAYMENT	Selvamku 650 rooba settle pannitten	செல்வம்க்கு 650 ரூபா செட்டில் பண்ணிட்டேன்	Selvam	650
+PAY_PAYMENT	Rajaku kudutha 50 roobaya selavula record pannu	ராஜாக்கு கொடுத்த 50 ரூபாயை செலவுல பதிவு பண்ணு	Raja	50
+PAY_PAYMENT	Rajaku 800 rooba anuppitten	ராஜாக்கு 800 ரூபா அனுப்பிட்டேன்	Raja	800
+PAY_PAYMENT	Naan Meenaku 120 rooba kuduthuten	நான் மீனாக்கு 120 ரூபா குடுத்துட்டேன்	Meena	120
+PAY_PAYMENT	Meenaku 1000 rooba settle pannitten	மீனாக்கு 1000 ரூபா செட்டில் பண்ணிட்டேன்	Meena	1000
+PAY_PAYMENT	Lathaku kudutha 180 roobaya selavula record pannu	லதாக்கு கொடுத்த 180 ரூபாயை செலவுல பதிவு பண்ணு	Latha	180
+PAY_PAYMENT	Lathaku 1800 rooba anuppitten	லதாக்கு 1800 ரூபா அனுப்பிட்டேன்	Latha	1800
+PAY_PAYMENT	Naan Sureshku 300 rooba kuduthuten	நான் சுரேஷ்க்கு 300 ரூபா குடுத்துட்டேன்	Suresh	300
+PAY_PAYMENT	Sureshku 2500 rooba settle pannitten	சுரேஷ்க்கு 2500 ரூபா செட்டில் பண்ணிட்டேன்	Suresh	2500
+PAY_PAYMENT	Balaku kudutha 400 roobaya selavula record pannu	பாலாக்கு கொடுத்த 400 ரூபாயை செலவுல பதிவு பண்ணு	Bala	400
+PAY_PAYMENT	Balaku 4000 rooba anuppitten	பாலாக்கு 4000 ரூபா அனுப்பிட்டேன்	Bala	4000
+PAY_PAYMENT	Naan Kannanku 600 rooba kuduthuten	நான் கண்ணன்க்கு 600 ரூபா குடுத்துட்டேன்	Kannan	600
+PAY_PAYMENT	Kannanku 7500 rooba settle pannitten	கண்ணன்க்கு 7500 ரூபா செட்டில் பண்ணிட்டேன்	Kannan	7500
+PAY_PAYMENT	Satheeshku kudutha 700 roobaya selavula record pannu	சதீஷ்க்கு கொடுத்த 700 ரூபாயை செலவுல பதிவு பண்ணு	Satheesh	700
+PAY_PAYMENT	Dineshku 80 rooba anuppitten	தினேஷ்க்கு 80 ரூபா அனுப்பிட்டேன்	Dinesh	80
+PAY_PAYMENT	Naan Dineshku 900 rooba kuduthuten	நான் தினேஷ்க்கு 900 ரூபா குடுத்துட்டேன்	Dinesh	900
+PAY_PAYMENT	Yuvarajku 120 rooba settle pannitten	யுவராஜ்க்கு 120 ரூபா செட்டில் பண்ணிட்டேன்	Yuvaraj	120
+PAY_PAYMENT	Yuvarajku kudutha 1200 roobaya selavula record pannu	யுவராஜ்க்கு கொடுத்த 1200 ரூபாயை செலவுல பதிவு பண்ணு	Yuvaraj	1200
+PAY_PAYMENT	Prakashku 200 rooba anuppitten	பிரகாஷ்க்கு 200 ரூபா அனுப்பிட்டேன்	Prakash	200
+PAY_PAYMENT	Naan Prakashku 2000 rooba kuduthuten	நான் பிரகாஷ்க்கு 2000 ரூபா குடுத்துட்டேன்	Prakash	2000
+CHECK_RECEIVABLE	Ravi enaku evlo tharanum?	ரவி எனக்கு எவ்வளவு தரணும்?	Ravi	
+CHECK_RECEIVABLE	Murugan enaku evlo tharanum?	முருகன் எனக்கு எவ்வளவு தரணும்?	Murugan	
+CHECK_RECEIVABLE	Saravanan enaku evlo tharanum?	சரவணன் எனக்கு எவ்வளவு தரணும்?	Saravanan	
+CHECK_RECEIVABLE	Prabhu enaku evlo tharanum?	பிரபு எனக்கு எவ்வளவு தரணும்?	Prabhu	
+CHECK_RECEIVABLE	Karthik enaku evlo tharanum?	கார்த்திக் எனக்கு எவ்வளவு தரணும்?	Karthik	
+CHECK_RECEIVABLE	Vijay enaku evlo tharanum?	விஜய் எனக்கு எவ்வளவு தரணும்?	Vijay	
+CHECK_RECEIVABLE	Arun enaku evlo tharanum?	அருண் எனக்கு எவ்வளவு தரணும்?	Arun	
+CHECK_RECEIVABLE	Mani enaku evlo tharanum?	மணி எனக்கு எவ்வளவு தரணும்?	Mani	
+CHECK_RECEIVABLE	Selvam enaku evlo tharanum?	செல்வம் எனக்கு எவ்வளவு தரணும்?	Selvam	
+CHECK_RECEIVABLE	Raja enaku evlo tharanum?	ராஜா எனக்கு எவ்வளவு தரணும்?	Raja	
+CHECK_RECEIVABLE	Meena enaku evlo tharanum?	மீனா எனக்கு எவ்வளவு தரணும்?	Meena	
+CHECK_RECEIVABLE	Latha enaku evlo tharanum?	லதா எனக்கு எவ்வளவு தரணும்?	Latha	
+CHECK_RECEIVABLE	Suresh enaku evlo tharanum?	சுரேஷ் எனக்கு எவ்வளவு தரணும்?	Suresh	
+CHECK_RECEIVABLE	Bala enaku evlo tharanum?	பாலா எனக்கு எவ்வளவு தரணும்?	Bala	
+CHECK_RECEIVABLE	Kannan enaku evlo tharanum?	கண்ணன் எனக்கு எவ்வளவு தரணும்?	Kannan	
+CHECK_RECEIVABLE	Satheesh enaku evlo tharanum?	சதீஷ் எனக்கு எவ்வளவு தரணும்?	Satheesh	
+CHECK_RECEIVABLE	Dinesh enaku evlo tharanum?	தினேஷ் எனக்கு எவ்வளவு தரணும்?	Dinesh	
+CHECK_RECEIVABLE	Yuvaraj enaku evlo tharanum?	யுவராஜ் எனக்கு எவ்வளவு தரணும்?	Yuvaraj	
+CHECK_RECEIVABLE	Prakash enaku evlo tharanum?	பிரகாஷ் எனக்கு எவ்வளவு தரணும்?	Prakash	
+CHECK_RECEIVABLE	Kumarkitta innum evlo varanum?	குமார்கிட்ட இன்னும் எவ்வளவு வரணும்?	Kumar	
+CHECK_RECEIVABLE	Ravikitta innum evlo varanum?	ரவிகிட்ட இன்னும் எவ்வளவு வரணும்?	Ravi	
+CHECK_RECEIVABLE	Murugankitta innum evlo varanum?	முருகன்கிட்ட இன்னும் எவ்வளவு வரணும்?	Murugan	
+CHECK_RECEIVABLE	Saravanankitta innum evlo varanum?	சரவணன்கிட்ட இன்னும் எவ்வளவு வரணும்?	Saravanan	
+CHECK_RECEIVABLE	Prabhukitta innum evlo varanum?	பிரபுகிட்ட இன்னும் எவ்வளவு வரணும்?	Prabhu	
+CHECK_RECEIVABLE	Karthikkitta innum evlo varanum?	கார்த்திக்கிட்ட இன்னும் எவ்வளவு வரணும்?	Karthik	
+CHECK_RECEIVABLE	Vijaykitta innum evlo varanum?	விஜய்கிட்ட இன்னும் எவ்வளவு வரணும்?	Vijay	
+CHECK_RECEIVABLE	Arunkitta innum evlo varanum?	அருண்கிட்ட இன்னும் எவ்வளவு வரணும்?	Arun	
+CHECK_RECEIVABLE	Manikitta innum evlo varanum?	மணிகிட்ட இன்னும் எவ்வளவு வரணும்?	Mani	
+CHECK_RECEIVABLE	Selvamkitta innum evlo varanum?	செல்வம்கிட்ட இன்னும் எவ்வளவு வரணும்?	Selvam	
+CHECK_RECEIVABLE	Rajakitta innum evlo varanum?	ராஜாகிட்ட இன்னும் எவ்வளவு வரணும்?	Raja	
+CHECK_RECEIVABLE	Meenakitta innum evlo varanum?	மீனாகிட்ட இன்னும் எவ்வளவு வரணும்?	Meena	
+CHECK_RECEIVABLE	Lathakitta innum evlo varanum?	லதாகிட்ட இன்னும் எவ்வளவு வரணும்?	Latha	
+CHECK_RECEIVABLE	Sureshkitta innum evlo varanum?	சுரேஷ்கிட்ட இன்னும் எவ்வளவு வரணும்?	Suresh	
+CHECK_RECEIVABLE	Balakitta innum evlo varanum?	பாலாகிட்ட இன்னும் எவ்வளவு வரணும்?	Bala	
+CHECK_RECEIVABLE	Kannankitta innum evlo varanum?	கண்ணன்கிட்ட இன்னும் எவ்வளவு வரணும்?	Kannan	
+CHECK_RECEIVABLE	Satheeshkitta innum evlo varanum?	சதீஷ்கிட்ட இன்னும் எவ்வளவு வரணும்?	Satheesh	
+CHECK_RECEIVABLE	Dineshkitta innum evlo varanum?	தினேஷ்கிட்ட இன்னும் எவ்வளவு வரணும்?	Dinesh	
+CHECK_RECEIVABLE	Yuvarajkitta innum evlo varanum?	யுவராஜ்கிட்ட இன்னும் எவ்வளவு வரணும்?	Yuvaraj	
+CHECK_RECEIVABLE	Prakashkitta innum evlo varanum?	பிரகாஷ்கிட்ட இன்னும் எவ்வளவு வரணும்?	Prakash	
+CHECK_PAYABLE	Naan Kumarku evlo tharanum?	நான் குமார்க்கு எவ்வளவு தரணும்?	Kumar	
+CHECK_PAYABLE	Naan Raviku evlo tharanum?	நான் ரவிக்கு எவ்வளவு தரணும்?	Ravi	
+CHECK_PAYABLE	Naan Muruganku evlo tharanum?	நான் முருகன்க்கு எவ்வளவு தரணும்?	Murugan	
+CHECK_PAYABLE	Naan Saravananku evlo tharanum?	நான் சரவணன்க்கு எவ்வளவு தரணும்?	Saravanan	
+CHECK_PAYABLE	Naan Prabhuku evlo tharanum?	நான் பிரபுக்கு எவ்வளவு தரணும்?	Prabhu	
+CHECK_PAYABLE	Naan Karthikku evlo tharanum?	நான் கார்த்திக்க்கு எவ்வளவு தரணும்?	Karthik	
+CHECK_PAYABLE	Naan Vijayku evlo tharanum?	நான் விஜய்க்கு எவ்வளவு தரணும்?	Vijay	
+CHECK_PAYABLE	Naan Arunku evlo tharanum?	நான் அருண்க்கு எவ்வளவு தரணும்?	Arun	
+CHECK_PAYABLE	Naan Maniku evlo tharanum?	நான் மணிக்கு எவ்வளவு தரணும்?	Mani	
+CHECK_PAYABLE	Naan Selvamku evlo tharanum?	நான் செல்வம்க்கு எவ்வளவு தரணும்?	Selvam	
+CHECK_PAYABLE	Naan Rajaku evlo tharanum?	நான் ராஜாக்கு எவ்வளவு தரணும்?	Raja	
+CHECK_PAYABLE	Naan Meenaku evlo tharanum?	நான் மீனாக்கு எவ்வளவு தரணும்?	Meena	
+CHECK_PAYABLE	Naan Lathaku evlo tharanum?	நான் லதாக்கு எவ்வளவு தரணும்?	Latha	
+CHECK_PAYABLE	Naan Sureshku evlo tharanum?	நான் சுரேஷ்க்கு எவ்வளவு தரணும்?	Suresh	
+CHECK_PAYABLE	Naan Balaku evlo tharanum?	நான் பாலாக்கு எவ்வளவு தரணும்?	Bala	
+CHECK_PAYABLE	Naan Kannanku evlo tharanum?	நான் கண்ணன்க்கு எவ்வளவு தரணும்?	Kannan	
+CHECK_PAYABLE	Naan Satheeshku evlo tharanum?	நான் சதீஷ்க்கு எவ்வளவு தரணும்?	Satheesh	
+CHECK_PAYABLE	Naan Dineshku evlo tharanum?	நான் தினேஷ்க்கு எவ்வளவு தரணும்?	Dinesh	
+CHECK_PAYABLE	Naan Yuvarajku evlo tharanum?	நான் யுவராஜ்க்கு எவ்வளவு தரணும்?	Yuvaraj	
+CHECK_PAYABLE	Naan Prakashku evlo tharanum?	நான் பிரகாஷ்க்கு எவ்வளவு தரணும்?	Prakash	
+CHECK_PAYABLE	Kumarku innum evlo baaki?	குமார்க்கு இன்னும் எவ்வளவு பாக்கி?	Kumar	
+CHECK_PAYABLE	Raviku innum evlo baaki?	ரவிக்கு இன்னும் எவ்வளவு பாக்கி?	Ravi	
+CHECK_PAYABLE	Muruganku innum evlo baaki?	முருகன்க்கு இன்னும் எவ்வளவு பாக்கி?	Murugan	
+CHECK_PAYABLE	Saravananku innum evlo baaki?	சரவணன்க்கு இன்னும் எவ்வளவு பாக்கி?	Saravanan	
+CHECK_PAYABLE	Prabhuku innum evlo baaki?	பிரபுக்கு இன்னும் எவ்வளவு பாக்கி?	Prabhu	
+CHECK_PAYABLE	Karthikku innum evlo baaki?	கார்த்திக்க்கு இன்னும் எவ்வளவு பாக்கி?	Karthik	
+CHECK_PAYABLE	Vijayku innum evlo baaki?	விஜய்க்கு இன்னும் எவ்வளவு பாக்கி?	Vijay	
+CHECK_PAYABLE	Arunku innum evlo baaki?	அருண்க்கு இன்னும் எவ்வளவு பாக்கி?	Arun	
+CHECK_PAYABLE	Maniku innum evlo baaki?	மணிக்கு இன்னும் எவ்வளவு பாக்கி?	Mani	
+CHECK_PAYABLE	Selvamku innum evlo baaki?	செல்வம்க்கு இன்னும் எவ்வளவு பாக்கி?	Selvam	
+CHECK_PAYABLE	Rajaku innum evlo baaki?	ராஜாக்கு இன்னும் எவ்வளவு பாக்கி?	Raja	
+CHECK_PAYABLE	Meenaku innum evlo baaki?	மீனாக்கு இன்னும் எவ்வளவு பாக்கி?	Meena	
+CHECK_PAYABLE	Lathaku innum evlo baaki?	லதாக்கு இன்னும் எவ்வளவு பாக்கி?	Latha	
+CHECK_PAYABLE	Sureshku innum evlo baaki?	சுரேஷ்க்கு இன்னும் எவ்வளவு பாக்கி?	Suresh	
+CHECK_PAYABLE	Balaku innum evlo baaki?	பாலாக்கு இன்னும் எவ்வளவு பாக்கி?	Bala	
+CHECK_PAYABLE	Kannanku innum evlo baaki?	கண்ணன்க்கு இன்னும் எவ்வளவு பாக்கி?	Kannan	
+CHECK_PAYABLE	Satheeshku innum evlo baaki?	சதீஷ்க்கு இன்னும் எவ்வளவு பாக்கி?	Satheesh	
+CHECK_PAYABLE	Dineshku innum evlo baaki?	தினேஷ்க்கு இன்னும் எவ்வளவு பாக்கி?	Dinesh	
+CHECK_PAYABLE	Yuvarajku innum evlo baaki?	யுவராஜ்க்கு இன்னும் எவ்வளவு பாக்கி?	Yuvaraj	
+CHECK_PAYABLE	Prakashku innum evlo baaki?	பிரகாஷ்க்கு இன்னும் எவ்வளவு பாக்கி?	Prakash	
+CHECK_ALL_RECEIVABLES	Enaku panam thara vendiyavanga yaar ellam?	எனக்கு பணம் தர வேண்டியவங்க யாரெல்லாம்?		
+CHECK_ALL_RECEIVABLES	Yaar yaar kitta vasool pannanum?	யார் யார் கிட்ட வசூல் பண்ணணும்?		
+CHECK_ALL_PAYABLES	Endha endha kadaiku baaki kudukkanum?	எந்தெந்த கடைக்கு பாக்கி கொடுக்கணும்?		
+CHECK_ALL_PENDING	Moththa baaki evlo iruku?	மொத்த பாக்கி எவ்வளவு இருக்கு?		
+CHECK_ALL_PENDING	Ella niluvaiyum onna kaatu	எல்லா நிலுவையும் ஒண்ணா காட்டு		
+CHECK_TODAY_COLLECTION	Innaiku vandha panam moththam evlo?	இன்னைக்கு வந்த பணம் மொத்தம் எவ்வளவு?		
+CHECK_EXPENSES	Indha maasam selavu evlo?	இந்த மாசம் செலவு எவ்வளவு?		
+ADD_EXPENSE	innaikku irumbu kambi 50 rooba selavaachu	இன்னைக்கு இரும்பு கம்பி 50 ரூபா செலவாச்சு		50
+ADD_EXPENSE	indha vaaram mobile 80 rooba selavaachu	இந்த வாரம் மொபைல் 80 ரூபா செலவாச்சு		80
+ADD_EXPENSE	naalaikku kaaykari 100 rooba selavaachu	நாளைக்கு காய்கறி 100 ரூபா செலவாச்சு		100
+ADD_EXPENSE	nethu soap 120 rooba selavaachu	நேத்து சோப்பு 120 ரூபா செலவாச்சு		120
+ADD_EXPENSE	innaikku maligai saamaan 150 rooba selavaachu	இன்னைக்கு மளிகை சாமான் 150 ரூபா செலவாச்சு		150
+ADD_EXPENSE	indha vaaram spare parts 180 rooba selavaachu	இந்த வாரம் ஸ்பேர் பார்ட்ஸ் 180 ரூபா செலவாச்சு		180
+ADD_EXPENSE	naalaikku notebook 200 rooba selavaachu	நாளைக்கு நோட்டு புத்தகம் 200 ரூபா செலவாச்சு		200
+ADD_EXPENSE	nethu ennai 300 rooba selavaachu	நேத்து எண்ணெய் 300 ரூபா செலவாச்சு		300
+ADD_EXPENSE	innaikku cement 350 rooba selavaachu	இன்னைக்கு சிமெண்ட் 350 ரூபா செலவாச்சு		350
+ADD_EXPENSE	indha vaaram irumbu kambi 400 rooba selavaachu	இந்த வாரம் இரும்பு கம்பி 400 ரூபா செலவாச்சு		400
+ADD_EXPENSE	naalaikku paal 450 rooba selavaachu	நாளைக்கு பால் 450 ரூபா செலவாச்சு		450
+ADD_EXPENSE	nethu tea thool 500 rooba selavaachu	நேத்து டீ தூள் 500 ரூபா செலவாச்சு		500
+ADD_EXPENSE	innaikku biscuit 600 rooba selavaachu	இன்னைக்கு பிஸ்கட் 600 ரூபா செலவாச்சு		600
+ADD_EXPENSE	indha vaaram maligai saamaan 650 rooba selavaachu	இந்த வாரம் மளிகை சாமான் 650 ரூபா செலவாச்சு		650
+ADD_EXPENSE	naalaikku cool drinks 700 rooba selavaachu	நாளைக்கு குளிர்பானம் 700 ரூபா செலவாச்சு		700
+ADD_EXPENSE	nethu arisi 800 rooba selavaachu	நேத்து அரிசி 800 ரூபா செலவாச்சு		800
+ADD_EXPENSE	innaikku sarkkarai 900 rooba selavaachu	இன்னைக்கு சர்க்கரை 900 ரூபா செலவாச்சு		900
+ADD_EXPENSE	indha vaaram cement 1000 rooba selavaachu	இந்த வாரம் சிமெண்ட் 1000 ரூபா செலவாச்சு		1000
+ADD_EXPENSE	naalaikku mobile 1200 rooba selavaachu	நாளைக்கு மொபைல் 1200 ரூபா செலவாச்சு		1200
+ADD_EXPENSE	nethu kaaykari 1500 rooba selavaachu	நேத்து காய்கறி 1500 ரூபா செலவாச்சு		1500
+ADD_EXPENSE	innaikku soap 1800 rooba selavaachu	இன்னைக்கு சோப்பு 1800 ரூபா செலவாச்சு		1800
+ADD_EXPENSE	indha vaaram biscuit 2000 rooba selavaachu	இந்த வாரம் பிஸ்கட் 2000 ரூபா செலவாச்சு		2000
+ADD_EXPENSE	naalaikku spare parts 2500 rooba selavaachu	நாளைக்கு ஸ்பேர் பார்ட்ஸ் 2500 ரூபா செலவாச்சு		2500
+ADD_EXPENSE	nethu notebook 3000 rooba selavaachu	நேத்து நோட்டு புத்தகம் 3000 ரூபா செலவாச்சு		3000
+ADD_EXPENSE	innaikku ennai 4000 rooba selavaachu	இன்னைக்கு எண்ணெய் 4000 ரூபா செலவாச்சு		4000
+ADD_EXPENSE	indha vaaram sarkkarai 5000 rooba selavaachu	இந்த வாரம் சர்க்கரை 5000 ரூபா செலவாச்சு		5000
+ADD_EXPENSE	naalaikku irumbu kambi 7500 rooba selavaachu	நாளைக்கு இரும்பு கம்பி 7500 ரூபா செலவாச்சு		7500
+ADD_EXPENSE	nethu paal 10000 rooba selavaachu	நேத்து பால் 10000 ரூபா செலவாச்சு		10000
+ADD_EXPENSE	innaikku tea thoolku 50 rooba kuduthen	இன்னைக்கு டீ தூள்க்கு 50 ரூபா கொடுத்தேன்		50
+ADD_EXPENSE	indha vaaram soapku 80 rooba kuduthen	இந்த வாரம் சோப்புக்கு 80 ரூபா கொடுத்தேன்		80
+ADD_EXPENSE	naalaikku maligai saamaanku 100 rooba kuduthen	நாளைக்கு மளிகை சாமான்க்கு 100 ரூபா கொடுத்தேன்		100
+ADD_EXPENSE	nethu cool drinksku 120 rooba kuduthen	நேத்து குளிர்பானம்க்கு 120 ரூபா கொடுத்தேன்		120
+ADD_EXPENSE	innaikku arisiku 180 rooba kuduthen	இன்னைக்கு அரிசிக்கு 180 ரூபா கொடுத்தேன்		180
+ADD_EXPENSE	indha vaaram ennaiku 200 rooba kuduthen	இந்த வாரம் எண்ணெய்க்கு 200 ரூபா கொடுத்தேன்		200
+ADD_EXPENSE	naalaikku cementku 250 rooba kuduthen	நாளைக்கு சிமெண்ட்க்கு 250 ரூபா கொடுத்தேன்		250
+ADD_EXPENSE	nethu mobileku 300 rooba kuduthen	நேத்து மொபைல்க்கு 300 ரூபா கொடுத்தேன்		300
+ADD_EXPENSE	innaikku kaaykariku 350 rooba kuduthen	இன்னைக்கு காய்கறிக்கு 350 ரூபா கொடுத்தேன்		350
+ADD_EXPENSE	indha vaaram tea thoolku 400 rooba kuduthen	இந்த வாரம் டீ தூள்க்கு 400 ரூபா கொடுத்தேன்		400
+ADD_EXPENSE	naalaikku biscuitku 450 rooba kuduthen	நாளைக்கு பிஸ்கட்க்கு 450 ரூபா கொடுத்தேன்		450
+ADD_EXPENSE	nethu spare partsku 500 rooba kuduthen	நேத்து ஸ்பேர் பார்ட்ஸ்க்கு 500 ரூபா கொடுத்தேன்		500
+ADD_EXPENSE	innaikku notebookku 600 rooba kuduthen	இன்னைக்கு நோட்டு புத்தகம்க்கு 600 ரூபா கொடுத்தேன்		600
+ADD_EXPENSE	indha vaaram arisiku 700 rooba kuduthen	இந்த வாரம் அரிசிக்கு 700 ரூபா கொடுத்தேன்		700
+ADD_EXPENSE	naalaikku sarkkaraiku 750 rooba kuduthen	நாளைக்கு சர்க்கரைக்கு 750 ரூபா கொடுத்தேன்		750
+ADD_EXPENSE	nethu irumbu kambiku 800 rooba kuduthen	நேத்து இரும்பு கம்பிக்கு 800 ரூபா கொடுத்தேன்		800
+ADD_EXPENSE	innaikku paalku 900 rooba kuduthen	இன்னைக்கு பால்க்கு 900 ரூபா கொடுத்தேன்		900
+ADD_EXPENSE	indha vaaram kaaykariku 1000 rooba kuduthen	இந்த வாரம் காய்கறிக்கு 1000 ரூபா கொடுத்தேன்		1000
+ADD_EXPENSE	naalaikku soapku 1200 rooba kuduthen	நாளைக்கு சோப்புக்கு 1200 ரூபா கொடுத்தேன்		1200
+ADD_EXPENSE	nethu maligai saamaanku 1500 rooba kuduthen	நேத்து மளிகை சாமான்க்கு 1500 ரூபா கொடுத்தேன்		1500
+ADD_EXPENSE	innaikku cool drinksku 1800 rooba kuduthen	இன்னைக்கு குளிர்பானம்க்கு 1800 ரூபா கொடுத்தேன்		1800
+ADD_EXPENSE	indha vaaram notebookku 2000 rooba kuduthen	இந்த வாரம் நோட்டு புத்தகம்க்கு 2000 ரூபா கொடுத்தேன்		2000
+ADD_EXPENSE	naalaikku ennaiku 3000 rooba kuduthen	நாளைக்கு எண்ணெய்க்கு 3000 ரூபா கொடுத்தேன்		3000
+ADD_EXPENSE	nethu cementku 3500 rooba kuduthen	நேத்து சிமெண்ட்க்கு 3500 ரூபா கொடுத்தேன்		3500
+ADD_EXPENSE	innaikku mobileku 4000 rooba kuduthen	இன்னைக்கு மொபைல்க்கு 4000 ரூபா கொடுத்தேன்		4000
+ADD_EXPENSE	indha vaaram paalku 5000 rooba kuduthen	இந்த வாரம் பால்க்கு 5000 ரூபா கொடுத்தேன்		5000
+ADD_EXPENSE	naalaikku tea thoolku 7500 rooba kuduthen	நாளைக்கு டீ தூள்க்கு 7500 ரூபா கொடுத்தேன்		7500
+ADD_EXPENSE	nethu biscuitku 10000 rooba kuduthen	நேத்து பிஸ்கட்க்கு 10000 ரூபா கொடுத்தேன்		10000
+ADD_SALE	innaikku spare parts 50 roobaikku vithen	இன்னைக்கு ஸ்பேர் பார்ட்ஸ் 50 ரூபாய்க்கு வித்தேன்		50
+ADD_SALE	indha vaaram cool drinks 80 roobaikku vithen	இந்த வாரம் குளிர்பானம் 80 ரூபாய்க்கு வித்தேன்		80
+ADD_SALE	naalaikku arisi 120 roobaikku vithen	நாளைக்கு அரிசி 120 ரூபாய்க்கு வித்தேன்		120
+ADD_SALE	nethu sarkkarai 150 roobaikku vithen	நேத்து சர்க்கரை 150 ரூபாய்க்கு வித்தேன்		150
+ADD_SALE	innaikku irumbu kambi 180 roobaikku vithen	இன்னைக்கு இரும்பு கம்பி 180 ரூபாய்க்கு வித்தேன்		180
+ADD_SALE	indha vaaram mobile 200 roobaikku vithen	இந்த வாரம் மொபைல் 200 ரூபாய்க்கு வித்தேன்		200
+ADD_SALE	naalaikku kaaykari 250 roobaikku vithen	நாளைக்கு காய்கறி 250 ரூபாய்க்கு வித்தேன்		250
+ADD_SALE	nethu soap 300 roobaikku vithen	நேத்து சோப்பு 300 ரூபாய்க்கு வித்தேன்		300
+ADD_SALE	innaikku maligai saamaan 350 roobaikku vithen	இன்னைக்கு மளிகை சாமான் 350 ரூபாய்க்கு வித்தேன்		350
+ADD_SALE	indha vaaram spare parts 400 roobaikku vithen	இந்த வாரம் ஸ்பேர் பார்ட்ஸ் 400 ரூபாய்க்கு வித்தேன்		400
+ADD_SALE	naalaikku notebook 450 roobaikku vithen	நாளைக்கு நோட்டு புத்தகம் 450 ரூபாய்க்கு வித்தேன்		450
+ADD_SALE	nethu ennai 600 roobaikku vithen	நேத்து எண்ணெய் 600 ரூபாய்க்கு வித்தேன்		600
+ADD_SALE	innaikku cement 650 roobaikku vithen	இன்னைக்கு சிமெண்ட் 650 ரூபாய்க்கு வித்தேன்		650
+ADD_SALE	indha vaaram irumbu kambi 700 roobaikku vithen	இந்த வாரம் இரும்பு கம்பி 700 ரூபாய்க்கு வித்தேன்		700
+ADD_SALE	naalaikku paal 750 roobaikku vithen	நாளைக்கு பால் 750 ரூபாய்க்கு வித்தேன்		750
+ADD_SALE	nethu tea thool 800 roobaikku vithen	நேத்து டீ தூள் 800 ரூபாய்க்கு வித்தேன்		800
+ADD_SALE	innaikku biscuit 900 roobaikku vithen	இன்னைக்கு பிஸ்கட் 900 ரூபாய்க்கு வித்தேன்		900
+ADD_SALE	indha vaaram maligai saamaan 1000 roobaikku vithen	இந்த வாரம் மளிகை சாமான் 1000 ரூபாய்க்கு வித்தேன்		1000
+ADD_SALE	naalaikku cool drinks 1200 roobaikku vithen	நாளைக்கு குளிர்பானம் 1200 ரூபாய்க்கு வித்தேன்		1200
+ADD_SALE	nethu arisi 1800 roobaikku vithen	நேத்து அரிசி 1800 ரூபாய்க்கு வித்தேன்		1800
+ADD_SALE	innaikku sarkkarai 2000 roobaikku vithen	இன்னைக்கு சர்க்கரை 2000 ரூபாய்க்கு வித்தேன்		2000
+ADD_SALE	indha vaaram cement 2500 roobaikku vithen	இந்த வாரம் சிமெண்ட் 2500 ரூபாய்க்கு வித்தேன்		2500
+ADD_SALE	naalaikku mobile 3000 roobaikku vithen	நாளைக்கு மொபைல் 3000 ரூபாய்க்கு வித்தேன்		3000
+ADD_SALE	nethu kaaykari 3500 roobaikku vithen	நேத்து காய்கறி 3500 ரூபாய்க்கு வித்தேன்		3500
+ADD_SALE	innaikku soap 4000 roobaikku vithen	இன்னைக்கு சோப்பு 4000 ரூபாய்க்கு வித்தேன்		4000
+ADD_SALE	indha vaaram biscuit 5000 roobaikku vithen	இந்த வாரம் பிஸ்கட் 5000 ரூபாய்க்கு வித்தேன்		5000
+ADD_SALE	naalaikku spare parts 7500 roobaikku vithen	நாளைக்கு ஸ்பேர் பார்ட்ஸ் 7500 ரூபாய்க்கு வித்தேன்		7500
+ADD_SALE	nethu notebook 10000 roobaikku vithen	நேத்து நோட்டு புத்தகம் 10000 ரூபாய்க்கு வித்தேன்		10000
+ADD_SALE	innaikku ennai vithadhula 80 rooba vandhuchu	இன்னைக்கு எண்ணெய் வித்ததுல 80 ரூபா வந்துச்சு		80
+ADD_SALE	indha vaaram sarkkarai vithadhula 100 rooba vandhuchu	இந்த வாரம் சர்க்கரை வித்ததுல 100 ரூபா வந்துச்சு		100
+ADD_SALE	naalaikku irumbu kambi vithadhula 120 rooba vandhuchu	நாளைக்கு இரும்பு கம்பி வித்ததுல 120 ரூபா வந்துச்சு		120
+ADD_SALE	nethu paal vithadhula 150 rooba vandhuchu	நேத்து பால் வித்ததுல 150 ரூபா வந்துச்சு		150
+ADD_SALE	innaikku tea thool vithadhula 180 rooba vandhuchu	இன்னைக்கு டீ தூள் வித்ததுல 180 ரூபா வந்துச்சு		180
+ADD_SALE	indha vaaram soap vithadhula 200 rooba vandhuchu	இந்த வாரம் சோப்பு வித்ததுல 200 ரூபா வந்துச்சு		200
+ADD_SALE	naalaikku maligai saamaan vithadhula 250 rooba vandhuchu	நாளைக்கு மளிகை சாமான் வித்ததுல 250 ரூபா வந்துச்சு		250
+ADD_SALE	nethu cool drinks vithadhula 300 rooba vandhuchu	நேத்து குளிர்பானம் வித்ததுல 300 ரூபா வந்துச்சு		300
+ADD_SALE	innaikku arisi vithadhula 400 rooba vandhuchu	இன்னைக்கு அரிசி வித்ததுல 400 ரூபா வந்துச்சு		400
+ADD_SALE	indha vaaram ennai vithadhula 450 rooba vandhuchu	இந்த வாரம் எண்ணெய் வித்ததுல 450 ரூபா வந்துச்சு		450
+ADD_SALE	naalaikku cement vithadhula 500 rooba vandhuchu	நாளைக்கு சிமெண்ட் வித்ததுல 500 ரூபா வந்துச்சு		500
+ADD_SALE	nethu mobile vithadhula 600 rooba vandhuchu	நேத்து மொபைல் வித்ததுல 600 ரூபா வந்துச்சு		600
+ADD_SALE	innaikku kaaykari vithadhula 650 rooba vandhuchu	இன்னைக்கு காய்கறி வித்ததுல 650 ரூபா வந்துச்சு		650
+ADD_SALE	indha vaaram tea thool vithadhula 700 rooba vandhuchu	இந்த வாரம் டீ தூள் வித்ததுல 700 ரூபா வந்துச்சு		700
+ADD_SALE	naalaikku biscuit vithadhula 750 rooba vandhuchu	நாளைக்கு பிஸ்கட் வித்ததுல 750 ரூபா வந்துச்சு		750
+ADD_SALE	nethu spare parts vithadhula 800 rooba vandhuchu	நேத்து ஸ்பேர் பார்ட்ஸ் வித்ததுல 800 ரூபா வந்துச்சு		800
+ADD_SALE	innaikku notebook vithadhula 900 rooba vandhuchu	இன்னைக்கு நோட்டு புத்தகம் வித்ததுல 900 ரூபா வந்துச்சு		900
+ADD_SALE	indha vaaram arisi vithadhula 1200 rooba vandhuchu	இந்த வாரம் அரிசி வித்ததுல 1200 ரூபா வந்துச்சு		1200
+ADD_SALE	naalaikku sarkkarai vithadhula 1500 rooba vandhuchu	நாளைக்கு சர்க்கரை வித்ததுல 1500 ரூபா வந்துச்சு		1500
+ADD_SALE	nethu irumbu kambi vithadhula 1800 rooba vandhuchu	நேத்து இரும்பு கம்பி வித்ததுல 1800 ரூபா வந்துச்சு		1800
+ADD_SALE	innaikku paal vithadhula 2000 rooba vandhuchu	இன்னைக்கு பால் வித்ததுல 2000 ரூபா வந்துச்சு		2000
+ADD_SALE	indha vaaram kaaykari vithadhula 2500 rooba vandhuchu	இந்த வாரம் காய்கறி வித்ததுல 2500 ரூபா வந்துச்சு		2500
+ADD_SALE	naalaikku soap vithadhula 3000 rooba vandhuchu	நாளைக்கு சோப்பு வித்ததுல 3000 ரூபா வந்துச்சு		3000
+ADD_SALE	nethu maligai saamaan vithadhula 3500 rooba vandhuchu	நேத்து மளிகை சாமான் வித்ததுல 3500 ரூபா வந்துச்சு		3500
+ADD_SALE	innaikku cool drinks vithadhula 4000 rooba vandhuchu	இன்னைக்கு குளிர்பானம் வித்ததுல 4000 ரூபா வந்துச்சு		4000
+ADD_SALE	indha vaaram notebook vithadhula 5000 rooba vandhuchu	இந்த வாரம் நோட்டு புத்தகம் வித்ததுல 5000 ரூபா வந்துச்சு		5000
+ADD_SALE	naalaikku ennai vithadhula 10000 rooba vandhuchu	நாளைக்கு எண்ணெய் வித்ததுல 10000 ரூபா வந்துச்சு		10000
+ADD_PURCHASE	nethu cement 50 roobaikku vaanginen	நேத்து சிமெண்ட் 50 ரூபாய்க்கு வாங்கினேன்		50
+ADD_PURCHASE	innaikku mobile 80 roobaikku vaanginen	இன்னைக்கு மொபைல் 80 ரூபாய்க்கு வாங்கினேன்		80
+ADD_PURCHASE	indha vaaram paal 100 roobaikku vaanginen	இந்த வாரம் பால் 100 ரூபாய்க்கு வாங்கினேன்		100
+ADD_PURCHASE	naalaikku tea thool 120 roobaikku vaanginen	நாளைக்கு டீ தூள் 120 ரூபாய்க்கு வாங்கினேன்		120
+ADD_PURCHASE	nethu biscuit 150 roobaikku vaanginen	நேத்து பிஸ்கட் 150 ரூபாய்க்கு வாங்கினேன்		150
+ADD_PURCHASE	innaikku spare parts 180 roobaikku vaanginen	இன்னைக்கு ஸ்பேர் பார்ட்ஸ் 180 ரூபாய்க்கு வாங்கினேன்		180
+ADD_PURCHASE	indha vaaram cool drinks 200 roobaikku vaanginen	இந்த வாரம் குளிர்பானம் 200 ரூபாய்க்கு வாங்கினேன்		200
+ADD_PURCHASE	naalaikku arisi 300 roobaikku vaanginen	நாளைக்கு அரிசி 300 ரூபாய்க்கு வாங்கினேன்		300
+ADD_PURCHASE	nethu sarkkarai 350 roobaikku vaanginen	நேத்து சர்க்கரை 350 ரூபாய்க்கு வாங்கினேன்		350
+ADD_PURCHASE	innaikku irumbu kambi 400 roobaikku vaanginen	இன்னைக்கு இரும்பு கம்பி 400 ரூபாய்க்கு வாங்கினேன்		400
+ADD_PURCHASE	indha vaaram mobile 450 roobaikku vaanginen	இந்த வாரம் மொபைல் 450 ரூபாய்க்கு வாங்கினேன்		450
+ADD_PURCHASE	naalaikku kaaykari 500 roobaikku vaanginen	நாளைக்கு காய்கறி 500 ரூபாய்க்கு வாங்கினேன்		500
+ADD_PURCHASE	nethu soap 600 roobaikku vaanginen	நேத்து சோப்பு 600 ரூபாய்க்கு வாங்கினேன்		600
+ADD_PURCHASE	innaikku maligai saamaan 650 roobaikku vaanginen	இன்னைக்கு மளிகை சாமான் 650 ரூபாய்க்கு வாங்கினேன்		650
+ADD_PURCHASE	indha vaaram spare parts 700 roobaikku vaanginen	இந்த வாரம் ஸ்பேர் பார்ட்ஸ் 700 ரூபாய்க்கு வாங்கினேன்		700
+ADD_PURCHASE	naalaikku notebook 750 roobaikku vaanginen	நாளைக்கு நோட்டு புத்தகம் 750 ரூபாய்க்கு வாங்கினேன்		750
+ADD_PURCHASE	nethu ennai 900 roobaikku vaanginen	நேத்து எண்ணெய் 900 ரூபாய்க்கு வாங்கினேன்		900
+ADD_PURCHASE	innaikku cement 1000 roobaikku vaanginen	இன்னைக்கு சிமெண்ட் 1000 ரூபாய்க்கு வாங்கினேன்		1000
+ADD_PURCHASE	indha vaaram irumbu kambi 1200 roobaikku vaanginen	இந்த வாரம் இரும்பு கம்பி 1200 ரூபாய்க்கு வாங்கினேன்		1200
+ADD_PURCHASE	naalaikku paal 1500 roobaikku vaanginen	நாளைக்கு பால் 1500 ரூபாய்க்கு வாங்கினேன்		1500
+ADD_PURCHASE	nethu tea thool 1800 roobaikku vaanginen	நேத்து டீ தூள் 1800 ரூபாய்க்கு வாங்கினேன்		1800
+ADD_PURCHASE	innaikku biscuit 2000 roobaikku vaanginen	இன்னைக்கு பிஸ்கட் 2000 ரூபாய்க்கு வாங்கினேன்		2000
+ADD_PURCHASE	indha vaaram maligai saamaan 2500 roobaikku vaanginen	இந்த வாரம் மளிகை சாமான் 2500 ரூபாய்க்கு வாங்கினேன்		2500
+ADD_PURCHASE	naalaikku cool drinks 3000 roobaikku vaanginen	நாளைக்கு குளிர்பானம் 3000 ரூபாய்க்கு வாங்கினேன்		3000
+ADD_PURCHASE	nethu arisi 4000 roobaikku vaanginen	நேத்து அரிசி 4000 ரூபாய்க்கு வாங்கினேன்		4000
+ADD_PURCHASE	innaikku sarkkarai 5000 roobaikku vaanginen	இன்னைக்கு சர்க்கரை 5000 ரூபாய்க்கு வாங்கினேன்		5000
+ADD_PURCHASE	indha vaaram cement 7500 roobaikku vaanginen	இந்த வாரம் சிமெண்ட் 7500 ரூபாய்க்கு வாங்கினேன்		7500
+ADD_PURCHASE	naalaikku mobile 10000 roobaikku vaanginen	நாளைக்கு மொபைல் 10000 ரூபாய்க்கு வாங்கினேன்		10000
+ADD_PURCHASE	nethu kaaykari vaanga 50 rooba aachu	நேத்து காய்கறி வாங்க 50 ரூபா ஆச்சு		50
+ADD_PURCHASE	innaikku soap vaanga 80 rooba aachu	இன்னைக்கு சோப்பு வாங்க 80 ரூபா ஆச்சு		80
+ADD_PURCHASE	indha vaaram biscuit vaanga 100 rooba aachu	இந்த வாரம் பிஸ்கட் வாங்க 100 ரூபா ஆச்சு		100
+ADD_PURCHASE	naalaikku spare parts vaanga 120 rooba aachu	நாளைக்கு ஸ்பேர் பார்ட்ஸ் வாங்க 120 ரூபா ஆச்சு		120
+ADD_PURCHASE	nethu notebook vaanga 150 rooba aachu	நேத்து நோட்டு புத்தகம் வாங்க 150 ரூபா ஆச்சு		150
+ADD_PURCHASE	innaikku ennai vaanga 200 rooba aachu	இன்னைக்கு எண்ணெய் வாங்க 200 ரூபா ஆச்சு		200
+ADD_PURCHASE	indha vaaram sarkkarai vaanga 250 rooba aachu	இந்த வாரம் சர்க்கரை வாங்க 250 ரூபா ஆச்சு		250
+ADD_PURCHASE	naalaikku irumbu kambi vaanga 300 rooba aachu	நாளைக்கு இரும்பு கம்பி வாங்க 300 ரூபா ஆச்சு		300
+ADD_PURCHASE	nethu paal vaanga 350 rooba aachu	நேத்து பால் வாங்க 350 ரூபா ஆச்சு		350
+ADD_PURCHASE	innaikku tea thool vaanga 400 rooba aachu	இன்னைக்கு டீ தூள் வாங்க 400 ரூபா ஆச்சு		400
+ADD_PURCHASE	indha vaaram soap vaanga 450 rooba aachu	இந்த வாரம் சோப்பு வாங்க 450 ரூபா ஆச்சு		450
+ADD_PURCHASE	naalaikku maligai saamaan vaanga 500 rooba aachu	நாளைக்கு மளிகை சாமான் வாங்க 500 ரூபா ஆச்சு		500
+ADD_PURCHASE	nethu cool drinks vaanga 600 rooba aachu	நேத்து குளிர்பானம் வாங்க 600 ரூபா ஆச்சு		600
+ADD_PURCHASE	innaikku arisi vaanga 700 rooba aachu	இன்னைக்கு அரிசி வாங்க 700 ரூபா ஆச்சு		700
+ADD_PURCHASE	indha vaaram ennai vaanga 750 rooba aachu	இந்த வாரம் எண்ணெய் வாங்க 750 ரூபா ஆச்சு		750
+ADD_PURCHASE	naalaikku cement vaanga 800 rooba aachu	நாளைக்கு சிமெண்ட் வாங்க 800 ரூபா ஆச்சு		800
+ADD_PURCHASE	nethu mobile vaanga 900 rooba aachu	நேத்து மொபைல் வாங்க 900 ரூபா ஆச்சு		900
+ADD_PURCHASE	innaikku kaaykari vaanga 1000 rooba aachu	இன்னைக்கு காய்கறி வாங்க 1000 ரூபா ஆச்சு		1000
+ADD_PURCHASE	indha vaaram tea thool vaanga 1200 rooba aachu	இந்த வாரம் டீ தூள் வாங்க 1200 ரூபா ஆச்சு		1200
+ADD_PURCHASE	naalaikku biscuit vaanga 1500 rooba aachu	நாளைக்கு பிஸ்கட் வாங்க 1500 ரூபா ஆச்சு		1500
+ADD_PURCHASE	nethu spare parts vaanga 1800 rooba aachu	நேத்து ஸ்பேர் பார்ட்ஸ் வாங்க 1800 ரூபா ஆச்சு		1800
+ADD_PURCHASE	innaikku notebook vaanga 2000 rooba aachu	இன்னைக்கு நோட்டு புத்தகம் வாங்க 2000 ரூபா ஆச்சு		2000
+ADD_PURCHASE	indha vaaram arisi vaanga 3000 rooba aachu	இந்த வாரம் அரிசி வாங்க 3000 ரூபா ஆச்சு		3000
+ADD_PURCHASE	naalaikku sarkkarai vaanga 3500 rooba aachu	நாளைக்கு சர்க்கரை வாங்க 3500 ரூபா ஆச்சு		3500
+ADD_PURCHASE	nethu irumbu kambi vaanga 4000 rooba aachu	நேத்து இரும்பு கம்பி வாங்க 4000 ரூபா ஆச்சு		4000
+ADD_PURCHASE	innaikku paal vaanga 5000 rooba aachu	இன்னைக்கு பால் வாங்க 5000 ரூபா ஆச்சு		5000
+ADD_PURCHASE	indha vaaram kaaykari vaanga 7500 rooba aachu	இந்த வாரம் காய்கறி வாங்க 7500 ரூபா ஆச்சு		7500
+ADD_PURCHASE	naalaikku soap vaanga 10000 rooba aachu	நாளைக்கு சோப்பு வாங்க 10000 ரூபா ஆச்சு		10000
+CHECK_PROFIT	Laabam evlo vandhiruku?	லாபம் எவ்வளவு வந்திருக்கு?		
+CHECK_LOSS	Nashtam irundha sollu	நஷ்டம் இருந்தா சொல்லு		
+CHECK_STOCK	innaikku arisi stock evlo iruku?	இன்னைக்கு அரிசி ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	nethu arisi stock evlo iruku?	நேத்து அரிசி ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	naalaikku arisi stock evlo iruku?	நாளைக்கு அரிசி ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	indha vaaram arisi stock evlo iruku?	இந்த வாரம் அரிசி ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	innaikku ennai stock evlo iruku?	இன்னைக்கு எண்ணெய் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	nethu ennai stock evlo iruku?	நேத்து எண்ணெய் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	naalaikku ennai stock evlo iruku?	நாளைக்கு எண்ணெய் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	indha vaaram ennai stock evlo iruku?	இந்த வாரம் எண்ணெய் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	innaikku sarkkarai stock evlo iruku?	இன்னைக்கு சர்க்கரை ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	nethu sarkkarai stock evlo iruku?	நேத்து சர்க்கரை ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	naalaikku sarkkarai stock evlo iruku?	நாளைக்கு சர்க்கரை ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	indha vaaram sarkkarai stock evlo iruku?	இந்த வாரம் சர்க்கரை ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	innaikku cement stock evlo iruku?	இன்னைக்கு சிமெண்ட் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	nethu cement stock evlo iruku?	நேத்து சிமெண்ட் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	naalaikku cement stock evlo iruku?	நாளைக்கு சிமெண்ட் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	indha vaaram cement stock evlo iruku?	இந்த வாரம் சிமெண்ட் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	innaikku irumbu kambi stock evlo iruku?	இன்னைக்கு இரும்பு கம்பி ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	nethu irumbu kambi stock evlo iruku?	நேத்து இரும்பு கம்பி ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	naalaikku irumbu kambi stock evlo iruku?	நாளைக்கு இரும்பு கம்பி ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	indha vaaram irumbu kambi stock evlo iruku?	இந்த வாரம் இரும்பு கம்பி ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	innaikku mobile stock evlo iruku?	இன்னைக்கு மொபைல் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	nethu mobile stock evlo iruku?	நேத்து மொபைல் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	naalaikku mobile stock evlo iruku?	நாளைக்கு மொபைல் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	indha vaaram mobile stock evlo iruku?	இந்த வாரம் மொபைல் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	innaikku paal stock evlo iruku?	இன்னைக்கு பால் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	nethu paal stock evlo iruku?	நேத்து பால் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	naalaikku paal stock evlo iruku?	நாளைக்கு பால் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	indha vaaram paal stock evlo iruku?	இந்த வாரம் பால் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	innaikku kaaykari stock evlo iruku?	இன்னைக்கு காய்கறி ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	nethu kaaykari stock evlo iruku?	நேத்து காய்கறி ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	naalaikku kaaykari stock evlo iruku?	நாளைக்கு காய்கறி ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	indha vaaram kaaykari stock evlo iruku?	இந்த வாரம் காய்கறி ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	innaikku tea thool stock evlo iruku?	இன்னைக்கு டீ தூள் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	nethu tea thool stock evlo iruku?	நேத்து டீ தூள் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	naalaikku tea thool stock evlo iruku?	நாளைக்கு டீ தூள் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	indha vaaram tea thool stock evlo iruku?	இந்த வாரம் டீ தூள் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	innaikku soap stock evlo iruku?	இன்னைக்கு சோப்பு ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	nethu soap stock evlo iruku?	நேத்து சோப்பு ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	naalaikku soap stock evlo iruku?	நாளைக்கு சோப்பு ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	indha vaaram soap stock evlo iruku?	இந்த வாரம் சோப்பு ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	innaikku biscuit stock evlo iruku?	இன்னைக்கு பிஸ்கட் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	nethu biscuit stock evlo iruku?	நேத்து பிஸ்கட் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	naalaikku biscuit stock evlo iruku?	நாளைக்கு பிஸ்கட் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	indha vaaram biscuit stock evlo iruku?	இந்த வாரம் பிஸ்கட் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	innaikku maligai saamaan stock evlo iruku?	இன்னைக்கு மளிகை சாமான் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	nethu maligai saamaan stock evlo iruku?	நேத்து மளிகை சாமான் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	naalaikku maligai saamaan stock evlo iruku?	நாளைக்கு மளிகை சாமான் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	indha vaaram maligai saamaan stock evlo iruku?	இந்த வாரம் மளிகை சாமான் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	innaikku spare parts stock evlo iruku?	இன்னைக்கு ஸ்பேர் பார்ட்ஸ் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	nethu spare parts stock evlo iruku?	நேத்து ஸ்பேர் பார்ட்ஸ் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	naalaikku spare parts stock evlo iruku?	நாளைக்கு ஸ்பேர் பார்ட்ஸ் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	indha vaaram spare parts stock evlo iruku?	இந்த வாரம் ஸ்பேர் பார்ட்ஸ் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	innaikku cool drinks stock evlo iruku?	இன்னைக்கு குளிர்பானம் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	nethu cool drinks stock evlo iruku?	நேத்து குளிர்பானம் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	naalaikku cool drinks stock evlo iruku?	நாளைக்கு குளிர்பானம் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	indha vaaram cool drinks stock evlo iruku?	இந்த வாரம் குளிர்பானம் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	innaikku notebook stock evlo iruku?	இன்னைக்கு நோட்டு புத்தகம் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	nethu notebook stock evlo iruku?	நேத்து நோட்டு புத்தகம் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	naalaikku notebook stock evlo iruku?	நாளைக்கு நோட்டு புத்தகம் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_STOCK	indha vaaram notebook stock evlo iruku?	இந்த வாரம் நோட்டு புத்தகம் ஸ்டாக் எவ்வளவு இருக்கு?		
+CHECK_CASH_BALANCE	Cash balance kaatu	கேஷ் பேலன்ஸ் காட்டு		
+CHECK_HISTORY	Kumar kanakku pazhayadha kaatu	குமார் கணக்கு பழையதை காட்டு	Kumar	
+CHECK_HISTORY	Ravi kanakku pazhayadha kaatu	ரவி கணக்கு பழையதை காட்டு	Ravi	
+CHECK_HISTORY	Murugan kanakku pazhayadha kaatu	முருகன் கணக்கு பழையதை காட்டு	Murugan	
+CHECK_HISTORY	Saravanan kanakku pazhayadha kaatu	சரவணன் கணக்கு பழையதை காட்டு	Saravanan	
+CHECK_HISTORY	Prabhu kanakku pazhayadha kaatu	பிரபு கணக்கு பழையதை காட்டு	Prabhu	
+CHECK_HISTORY	Karthik kanakku pazhayadha kaatu	கார்த்திக் கணக்கு பழையதை காட்டு	Karthik	
+CHECK_HISTORY	Vijay kanakku pazhayadha kaatu	விஜய் கணக்கு பழையதை காட்டு	Vijay	
+CHECK_HISTORY	Arun kanakku pazhayadha kaatu	அருண் கணக்கு பழையதை காட்டு	Arun	
+CHECK_HISTORY	Mani kanakku pazhayadha kaatu	மணி கணக்கு பழையதை காட்டு	Mani	
+CHECK_HISTORY	Selvam kanakku pazhayadha kaatu	செல்வம் கணக்கு பழையதை காட்டு	Selvam	
+CHECK_HISTORY	Raja kanakku pazhayadha kaatu	ராஜா கணக்கு பழையதை காட்டு	Raja	
+CHECK_HISTORY	Meena kanakku pazhayadha kaatu	மீனா கணக்கு பழையதை காட்டு	Meena	
+CHECK_HISTORY	Latha kanakku pazhayadha kaatu	லதா கணக்கு பழையதை காட்டு	Latha	
+CHECK_HISTORY	Suresh kanakku pazhayadha kaatu	சுரேஷ் கணக்கு பழையதை காட்டு	Suresh	
+CHECK_HISTORY	Bala kanakku pazhayadha kaatu	பாலா கணக்கு பழையதை காட்டு	Bala	
+CHECK_HISTORY	Kannan kanakku pazhayadha kaatu	கண்ணன் கணக்கு பழையதை காட்டு	Kannan	
+CHECK_HISTORY	Satheesh kanakku pazhayadha kaatu	சதீஷ் கணக்கு பழையதை காட்டு	Satheesh	
+CHECK_HISTORY	Dinesh kanakku pazhayadha kaatu	தினேஷ் கணக்கு பழையதை காட்டு	Dinesh	
+CHECK_HISTORY	Yuvaraj kanakku pazhayadha kaatu	யுவராஜ் கணக்கு பழையதை காட்டு	Yuvaraj	
+CHECK_HISTORY	Prakash kanakku pazhayadha kaatu	பிரகாஷ் கணக்கு பழையதை காட்டு	Prakash	
+CHECK_HISTORY	Indha kanakkula munnadi enna record panniruken?	இந்த கணக்குல முன்னாடி என்ன பதிவு பண்ணியிருக்கேன்?		
+ADD_CUSTOMER	Kumar-ai customer list-la seru	குமார்-ஐ கஸ்டமர் லிஸ்ட்ல சேர்	Kumar	
+ADD_CUSTOMER	Ravi-ai customer list-la seru	ரவி-ஐ கஸ்டமர் லிஸ்ட்ல சேர்	Ravi	
+ADD_CUSTOMER	Murugan-ai customer list-la seru	முருகன்-ஐ கஸ்டமர் லிஸ்ட்ல சேர்	Murugan	
+ADD_CUSTOMER	Saravanan-ai customer list-la seru	சரவணன்-ஐ கஸ்டமர் லிஸ்ட்ல சேர்	Saravanan	
+ADD_CUSTOMER	Prabhu-ai customer list-la seru	பிரபு-ஐ கஸ்டமர் லிஸ்ட்ல சேர்	Prabhu	
+ADD_CUSTOMER	Karthik-ai customer list-la seru	கார்த்திக்-ஐ கஸ்டமர் லிஸ்ட்ல சேர்	Karthik	
+ADD_CUSTOMER	Vijay-ai customer list-la seru	விஜய்-ஐ கஸ்டமர் லிஸ்ட்ல சேர்	Vijay	
+ADD_CUSTOMER	Arun-ai customer list-la seru	அருண்-ஐ கஸ்டமர் லிஸ்ட்ல சேர்	Arun	
+ADD_CUSTOMER	Mani-ai customer list-la seru	மணி-ஐ கஸ்டமர் லிஸ்ட்ல சேர்	Mani	
+ADD_CUSTOMER	Selvam-ai customer list-la seru	செல்வம்-ஐ கஸ்டமர் லிஸ்ட்ல சேர்	Selvam	
+ADD_CUSTOMER	Raja-ai customer list-la seru	ராஜா-ஐ கஸ்டமர் லிஸ்ட்ல சேர்	Raja	
+ADD_CUSTOMER	Meena-ai customer list-la seru	மீனா-ஐ கஸ்டமர் லிஸ்ட்ல சேர்	Meena	
+ADD_CUSTOMER	Latha-ai customer list-la seru	லதா-ஐ கஸ்டமர் லிஸ்ட்ல சேர்	Latha	
+ADD_CUSTOMER	Suresh-ai customer list-la seru	சுரேஷ்-ஐ கஸ்டமர் லிஸ்ட்ல சேர்	Suresh	
+ADD_CUSTOMER	Bala-ai customer list-la seru	பாலா-ஐ கஸ்டமர் லிஸ்ட்ல சேர்	Bala	
+ADD_CUSTOMER	Kannan-ai customer list-la seru	கண்ணன்-ஐ கஸ்டமர் லிஸ்ட்ல சேர்	Kannan	
+ADD_CUSTOMER	Satheesh-ai customer list-la seru	சதீஷ்-ஐ கஸ்டமர் லிஸ்ட்ல சேர்	Satheesh	
+ADD_CUSTOMER	Dinesh-ai customer list-la seru	தினேஷ்-ஐ கஸ்டமர் லிஸ்ட்ல சேர்	Dinesh	
+ADD_CUSTOMER	Yuvaraj-ai customer list-la seru	யுவராஜ்-ஐ கஸ்டமர் லிஸ்ட்ல சேர்	Yuvaraj	
+ADD_CUSTOMER	Prakash-ai customer list-la seru	பிரகாஷ்-ஐ கஸ்டமர் லிஸ்ட்ல சேர்	Prakash	
+ADD_SUPPLIER	Pudhu supplier-ai list-la sethuko	புது சப்ளையரை லிஸ்ட்ல சேத்துக்கோ		
+ADD_SUPPLIER	Kumar-ai supplier list-la seru	குமார்-ஐ சப்ளையர் லிஸ்ட்ல சேர்	Kumar	
+ADD_SUPPLIER	Ravi-ai supplier list-la seru	ரவி-ஐ சப்ளையர் லிஸ்ட்ல சேர்	Ravi	
+ADD_SUPPLIER	Murugan-ai supplier list-la seru	முருகன்-ஐ சப்ளையர் லிஸ்ட்ல சேர்	Murugan	
+ADD_SUPPLIER	Saravanan-ai supplier list-la seru	சரவணன்-ஐ சப்ளையர் லிஸ்ட்ல சேர்	Saravanan	
+ADD_SUPPLIER	Prabhu-ai supplier list-la seru	பிரபு-ஐ சப்ளையர் லிஸ்ட்ல சேர்	Prabhu	
+ADD_SUPPLIER	Karthik-ai supplier list-la seru	கார்த்திக்-ஐ சப்ளையர் லிஸ்ட்ல சேர்	Karthik	
+ADD_SUPPLIER	Vijay-ai supplier list-la seru	விஜய்-ஐ சப்ளையர் லிஸ்ட்ல சேர்	Vijay	
+ADD_SUPPLIER	Arun-ai supplier list-la seru	அருண்-ஐ சப்ளையர் லிஸ்ட்ல சேர்	Arun	
+ADD_SUPPLIER	Mani-ai supplier list-la seru	மணி-ஐ சப்ளையர் லிஸ்ட்ல சேர்	Mani	
+ADD_SUPPLIER	Selvam-ai supplier list-la seru	செல்வம்-ஐ சப்ளையர் லிஸ்ட்ல சேர்	Selvam	
+ADD_SUPPLIER	Raja-ai supplier list-la seru	ராஜா-ஐ சப்ளையர் லிஸ்ட்ல சேர்	Raja	
+ADD_SUPPLIER	Meena-ai supplier list-la seru	மீனா-ஐ சப்ளையர் லிஸ்ட்ல சேர்	Meena	
+ADD_SUPPLIER	Latha-ai supplier list-la seru	லதா-ஐ சப்ளையர் லிஸ்ட்ல சேர்	Latha	
+ADD_SUPPLIER	Suresh-ai supplier list-la seru	சுரேஷ்-ஐ சப்ளையர் லிஸ்ட்ல சேர்	Suresh	
+ADD_SUPPLIER	Bala-ai supplier list-la seru	பாலா-ஐ சப்ளையர் லிஸ்ட்ல சேர்	Bala	
+ADD_SUPPLIER	Kannan-ai supplier list-la seru	கண்ணன்-ஐ சப்ளையர் லிஸ்ட்ல சேர்	Kannan	
+ADD_SUPPLIER	Satheesh-ai supplier list-la seru	சதீஷ்-ஐ சப்ளையர் லிஸ்ட்ல சேர்	Satheesh	
+ADD_SUPPLIER	Dinesh-ai supplier list-la seru	தினேஷ்-ஐ சப்ளையர் லிஸ்ட்ல சேர்	Dinesh	
+ADD_SUPPLIER	Yuvaraj-ai supplier list-la seru	யுவராஜ்-ஐ சப்ளையர் லிஸ்ட்ல சேர்	Yuvaraj	
+ADD_SUPPLIER	Prakash-ai supplier list-la seru	பிரகாஷ்-ஐ சப்ளையர் லிஸ்ட்ல சேர்	Prakash	
+EDIT_ENTRY	Kumar kanakkula potta thogaiya maathu	குமார் கணக்குல போட்ட தொகையை மாத்து	Kumar	
+EDIT_ENTRY	Ravi kanakkula potta thogaiya maathu	ரவி கணக்குல போட்ட தொகையை மாத்து	Ravi	
+EDIT_ENTRY	Murugan kanakkula potta thogaiya maathu	முருகன் கணக்குல போட்ட தொகையை மாத்து	Murugan	
+EDIT_ENTRY	Saravanan kanakkula potta thogaiya maathu	சரவணன் கணக்குல போட்ட தொகையை மாத்து	Saravanan	
+EDIT_ENTRY	Prabhu kanakkula potta thogaiya maathu	பிரபு கணக்குல போட்ட தொகையை மாத்து	Prabhu	
+EDIT_ENTRY	Karthik kanakkula potta thogaiya maathu	கார்த்திக் கணக்குல போட்ட தொகையை மாத்து	Karthik	
+EDIT_ENTRY	Vijay kanakkula potta thogaiya maathu	விஜய் கணக்குல போட்ட தொகையை மாத்து	Vijay	
+EDIT_ENTRY	Arun kanakkula potta thogaiya maathu	அருண் கணக்குல போட்ட தொகையை மாத்து	Arun	
+EDIT_ENTRY	Mani kanakkula potta thogaiya maathu	மணி கணக்குல போட்ட தொகையை மாத்து	Mani	
+EDIT_ENTRY	Selvam kanakkula potta thogaiya maathu	செல்வம் கணக்குல போட்ட தொகையை மாத்து	Selvam	
+EDIT_ENTRY	Raja kanakkula potta thogaiya maathu	ராஜா கணக்குல போட்ட தொகையை மாத்து	Raja	
+EDIT_ENTRY	Meena kanakkula potta thogaiya maathu	மீனா கணக்குல போட்ட தொகையை மாத்து	Meena	
+EDIT_ENTRY	Latha kanakkula potta thogaiya maathu	லதா கணக்குல போட்ட தொகையை மாத்து	Latha	
+EDIT_ENTRY	Suresh kanakkula potta thogaiya maathu	சுரேஷ் கணக்குல போட்ட தொகையை மாத்து	Suresh	
+EDIT_ENTRY	Bala kanakkula potta thogaiya maathu	பாலா கணக்குல போட்ட தொகையை மாத்து	Bala	
+EDIT_ENTRY	Kannan kanakkula potta thogaiya maathu	கண்ணன் கணக்குல போட்ட தொகையை மாத்து	Kannan	
+EDIT_ENTRY	Satheesh kanakkula potta thogaiya maathu	சதீஷ் கணக்குல போட்ட தொகையை மாத்து	Satheesh	
+EDIT_ENTRY	Dinesh kanakkula potta thogaiya maathu	தினேஷ் கணக்குல போட்ட தொகையை மாத்து	Dinesh	
+EDIT_ENTRY	Yuvaraj kanakkula potta thogaiya maathu	யுவராஜ் கணக்குல போட்ட தொகையை மாத்து	Yuvaraj	
+EDIT_ENTRY	Prakash kanakkula potta thogaiya maathu	பிரகாஷ் கணக்குல போட்ட தொகையை மாத்து	Prakash	
+DELETE_ENTRY	Kumar kanakkula potta padhivai azhichidu	குமார் கணக்குல போட்ட பதிவை அழிச்சிடு	Kumar	
+DELETE_ENTRY	Ravi kanakkula potta padhivai azhichidu	ரவி கணக்குல போட்ட பதிவை அழிச்சிடு	Ravi	
+DELETE_ENTRY	Murugan kanakkula potta padhivai azhichidu	முருகன் கணக்குல போட்ட பதிவை அழிச்சிடு	Murugan	
+DELETE_ENTRY	Saravanan kanakkula potta padhivai azhichidu	சரவணன் கணக்குல போட்ட பதிவை அழிச்சிடு	Saravanan	
+DELETE_ENTRY	Prabhu kanakkula potta padhivai azhichidu	பிரபு கணக்குல போட்ட பதிவை அழிச்சிடு	Prabhu	
+DELETE_ENTRY	Karthik kanakkula potta padhivai azhichidu	கார்த்திக் கணக்குல போட்ட பதிவை அழிச்சிடு	Karthik	
+DELETE_ENTRY	Vijay kanakkula potta padhivai azhichidu	விஜய் கணக்குல போட்ட பதிவை அழிச்சிடு	Vijay	
+DELETE_ENTRY	Arun kanakkula potta padhivai azhichidu	அருண் கணக்குல போட்ட பதிவை அழிச்சிடு	Arun	
+DELETE_ENTRY	Mani kanakkula potta padhivai azhichidu	மணி கணக்குல போட்ட பதிவை அழிச்சிடு	Mani	
+DELETE_ENTRY	Selvam kanakkula potta padhivai azhichidu	செல்வம் கணக்குல போட்ட பதிவை அழிச்சிடு	Selvam	
+DELETE_ENTRY	Raja kanakkula potta padhivai azhichidu	ராஜா கணக்குல போட்ட பதிவை அழிச்சிடு	Raja	
+DELETE_ENTRY	Meena kanakkula potta padhivai azhichidu	மீனா கணக்குல போட்ட பதிவை அழிச்சிடு	Meena	
+DELETE_ENTRY	Latha kanakkula potta padhivai azhichidu	லதா கணக்குல போட்ட பதிவை அழிச்சிடு	Latha	
+DELETE_ENTRY	Suresh kanakkula potta padhivai azhichidu	சுரேஷ் கணக்குல போட்ட பதிவை அழிச்சிடு	Suresh	
+DELETE_ENTRY	Bala kanakkula potta padhivai azhichidu	பாலா கணக்குல போட்ட பதிவை அழிச்சிடு	Bala	
+DELETE_ENTRY	Kannan kanakkula potta padhivai azhichidu	கண்ணன் கணக்குல போட்ட பதிவை அழிச்சிடு	Kannan	
+DELETE_ENTRY	Satheesh kanakkula potta padhivai azhichidu	சதீஷ் கணக்குல போட்ட பதிவை அழிச்சிடு	Satheesh	
+DELETE_ENTRY	Dinesh kanakkula potta padhivai azhichidu	தினேஷ் கணக்குல போட்ட பதிவை அழிச்சிடு	Dinesh	
+DELETE_ENTRY	Yuvaraj kanakkula potta padhivai azhichidu	யுவராஜ் கணக்குல போட்ட பதிவை அழிச்சிடு	Yuvaraj	
+DELETE_ENTRY	Prakash kanakkula potta padhivai azhichidu	பிரகாஷ் கணக்குல போட்ட பதிவை அழிச்சிடு	Prakash	
+CLARIFY_DIRECTION	Indha 50 enaku vara vendiyadha, naan thara vendiyadha?	இந்த 50 எனக்கு வர வேண்டியதா, நான் தர வேண்டியதா?		50
+CLARIFY_DIRECTION	Indha 80 enaku vara vendiyadha, naan thara vendiyadha?	இந்த 80 எனக்கு வர வேண்டியதா, நான் தர வேண்டியதா?		80
+CLARIFY_DIRECTION	Indha 100 enaku vara vendiyadha, naan thara vendiyadha?	இந்த 100 எனக்கு வர வேண்டியதா, நான் தர வேண்டியதா?		100
+CLARIFY_DIRECTION	Indha 120 enaku vara vendiyadha, naan thara vendiyadha?	இந்த 120 எனக்கு வர வேண்டியதா, நான் தர வேண்டியதா?		120
+CLARIFY_DIRECTION	Indha 150 enaku vara vendiyadha, naan thara vendiyadha?	இந்த 150 எனக்கு வர வேண்டியதா, நான் தர வேண்டியதா?		150
+CLARIFY_DIRECTION	Indha 180 enaku vara vendiyadha, naan thara vendiyadha?	இந்த 180 எனக்கு வர வேண்டியதா, நான் தர வேண்டியதா?		180
+CLARIFY_DIRECTION	Indha 200 enaku vara vendiyadha, naan thara vendiyadha?	இந்த 200 எனக்கு வர வேண்டியதா, நான் தர வேண்டியதா?		200
+CLARIFY_DIRECTION	Indha 250 enaku vara vendiyadha, naan thara vendiyadha?	இந்த 250 எனக்கு வர வேண்டியதா, நான் தர வேண்டியதா?		250
+CLARIFY_DIRECTION	Indha 300 enaku vara vendiyadha, naan thara vendiyadha?	இந்த 300 எனக்கு வர வேண்டியதா, நான் தர வேண்டியதா?		300
+CLARIFY_DIRECTION	Indha 350 enaku vara vendiyadha, naan thara vendiyadha?	இந்த 350 எனக்கு வர வேண்டியதா, நான் தர வேண்டியதா?		350
+CLARIFY_DIRECTION	Indha 400 enaku vara vendiyadha, naan thara vendiyadha?	இந்த 400 எனக்கு வர வேண்டியதா, நான் தர வேண்டியதா?		400
+CLARIFY_DIRECTION	Indha 450 enaku vara vendiyadha, naan thara vendiyadha?	இந்த 450 எனக்கு வர வேண்டியதா, நான் தர வேண்டியதா?		450
+CLARIFY_DIRECTION	Indha 500 enaku vara vendiyadha, naan thara vendiyadha?	இந்த 500 எனக்கு வர வேண்டியதா, நான் தர வேண்டியதா?		500
+CLARIFY_DIRECTION	Indha 600 enaku vara vendiyadha, naan thara vendiyadha?	இந்த 600 எனக்கு வர வேண்டியதா, நான் தர வேண்டியதா?		600
+CLARIFY_DIRECTION	Indha 650 enaku vara vendiyadha, naan thara vendiyadha?	இந்த 650 எனக்கு வர வேண்டியதா, நான் தர வேண்டியதா?		650
+CLARIFY_DIRECTION	Indha 700 enaku vara vendiyadha, naan thara vendiyadha?	இந்த 700 எனக்கு வர வேண்டியதா, நான் தர வேண்டியதா?		700
+CLARIFY_DIRECTION	Indha 750 enaku vara vendiyadha, naan thara vendiyadha?	இந்த 750 எனக்கு வர வேண்டியதா, நான் தர வேண்டியதா?		750
+CLARIFY_DIRECTION	Indha 800 enaku vara vendiyadha, naan thara vendiyadha?	இந்த 800 எனக்கு வர வேண்டியதா, நான் தர வேண்டியதா?		800
+CLARIFY_DIRECTION	Indha 900 enaku vara vendiyadha, naan thara vendiyadha?	இந்த 900 எனக்கு வர வேண்டியதா, நான் தர வேண்டியதா?		900
+CLARIFY_DIRECTION	Indha 1000 enaku vara vendiyadha, naan thara vendiyadha?	இந்த 1000 எனக்கு வர வேண்டியதா, நான் தர வேண்டியதா?		1000
+CLARIFY_DIRECTION	Indha 1200 enaku vara vendiyadha, naan thara vendiyadha?	இந்த 1200 எனக்கு வர வேண்டியதா, நான் தர வேண்டியதா?		1200
+CLARIFY_DIRECTION	Indha 1500 enaku vara vendiyadha, naan thara vendiyadha?	இந்த 1500 எனக்கு வர வேண்டியதா, நான் தர வேண்டியதா?		1500
+CLARIFY_DIRECTION	Indha 1800 enaku vara vendiyadha, naan thara vendiyadha?	இந்த 1800 எனக்கு வர வேண்டியதா, நான் தர வேண்டியதா?		1800
+CLARIFY_DIRECTION	Indha 2000 enaku vara vendiyadha, naan thara vendiyadha?	இந்த 2000 எனக்கு வர வேண்டியதா, நான் தர வேண்டியதா?		2000
+CLARIFY_DIRECTION	Indha 2500 enaku vara vendiyadha, naan thara vendiyadha?	இந்த 2500 எனக்கு வர வேண்டியதா, நான் தர வேண்டியதா?		2500
+CLARIFY_DIRECTION	Indha 3000 enaku vara vendiyadha, naan thara vendiyadha?	இந்த 3000 எனக்கு வர வேண்டியதா, நான் தர வேண்டியதா?		3000
+CLARIFY_DIRECTION	Indha 3500 enaku vara vendiyadha, naan thara vendiyadha?	இந்த 3500 எனக்கு வர வேண்டியதா, நான் தர வேண்டியதா?		3500
+CLARIFY_DIRECTION	Indha 4000 enaku vara vendiyadha, naan thara vendiyadha?	இந்த 4000 எனக்கு வர வேண்டியதா, நான் தர வேண்டியதா?		4000
+CLARIFY_DIRECTION	Indha 5000 enaku vara vendiyadha, naan thara vendiyadha?	இந்த 5000 எனக்கு வர வேண்டியதா, நான் தர வேண்டியதா?		5000
+CLARIFY_DIRECTION	Indha 7500 enaku vara vendiyadha, naan thara vendiyadha?	இந்த 7500 எனக்கு வர வேண்டியதா, நான் தர வேண்டியதா?		7500
+CLARIFY_DIRECTION	Indha 10000 enaku vara vendiyadha, naan thara vendiyadha?	இந்த 10000 எனக்கு வர வேண்டியதா, நான் தர வேண்டியதா?		10000
+CLARIFY_DIRECTION	Indha panam vandhadha, naan kuduthena?	இந்த பணம் வந்ததா, நான் கொடுத்தேனா?		
+CLARIFY_AMOUNT	Thogai evlounu sollunga	தொகை எவ்வளவுனு சொல்லுங்க		
+CLARIFY_CUSTOMER	Idhu yaarukkaana kanakku?	இது யாருக்கான கணக்கு?		
+ADD_RECEIVABLE	vegamaa Kumar enaku 1800 rooba kudukanum	வேகமா குமார் எனக்கு 1800 ரூபா குடுக்கணும்	Kumar	1800
+ADD_RECEIVABLE	konjam Ravi enaku 3000 rooba kudukanum	கொஞ்சம் ரவி எனக்கு 3000 ரூபா குடுக்கணும்	Ravi	3000
+ADD_RECEIVABLE	vegamaa Murugan enaku 4000 rooba kudukanum	வேகமா முருகன் எனக்கு 4000 ரூபா குடுக்கணும்	Murugan	4000
+ADD_RECEIVABLE	konjam Saravanan enaku 10000 rooba kudukanum	கொஞ்சம் சரவணன் எனக்கு 10000 ரூபா குடுக்கணும்	Saravanan	10000
+ADD_RECEIVABLE	vegamaa Karthik enaku 80 rooba kudukanum	வேகமா கார்த்திக் எனக்கு 80 ரூபா குடுக்கணும்	Karthik	80
+ADD_RECEIVABLE	konjam Vijay enaku 150 rooba kudukanum	கொஞ்சம் விஜய் எனக்கு 150 ரூபா குடுக்கணும்	Vijay	150
+ADD_RECEIVABLE	vegamaa Arun enaku 200 rooba kudukanum	வேகமா அருண் எனக்கு 200 ரூபா குடுக்கணும்	Arun	200
+ADD_RECEIVABLE	konjam Mani enaku 350 rooba kudukanum	கொஞ்சம் மணி எனக்கு 350 ரூபா குடுக்கணும்	Mani	350
+ADD_RECEIVABLE	vegamaa Selvam enaku 450 rooba kudukanum	வேகமா செல்வம் எனக்கு 450 ரூபா குடுக்கணும்	Selvam	450
+ADD_RECEIVABLE	konjam Raja enaku 650 rooba kudukanum	கொஞ்சம் ராஜா எனக்கு 650 ரூபா குடுக்கணும்	Raja	650
+ADD_RECEIVABLE	vegamaa Meena enaku 750 rooba kudukanum	வேகமா மீனா எனக்கு 750 ரூபா குடுக்கணும்	Meena	750
+ADD_RECEIVABLE	konjam Latha enaku 1000 rooba kudukanum	கொஞ்சம் லதா எனக்கு 1000 ரூபா குடுக்கணும்	Latha	1000
+ADD_RECEIVABLE	vegamaa Suresh enaku 1500 rooba kudukanum	வேகமா சுரேஷ் எனக்கு 1500 ரூபா குடுக்கணும்	Suresh	1500
+ADD_RECEIVABLE	konjam Bala enaku 2500 rooba kudukanum	கொஞ்சம் பாலா எனக்கு 2500 ரூபா குடுக்கணும்	Bala	2500
+ADD_RECEIVABLE	vegamaa Kannan enaku 3500 rooba kudukanum	வேகமா கண்ணன் எனக்கு 3500 ரூபா குடுக்கணும்	Kannan	3500
+ADD_RECEIVABLE	konjam Satheesh enaku 7500 rooba kudukanum	கொஞ்சம் சதீஷ் எனக்கு 7500 ரூபா குடுக்கணும்	Satheesh	7500
+ADD_RECEIVABLE	vegamaa Yuvaraj enaku 50 rooba kudukanum	வேகமா யுவராஜ் எனக்கு 50 ரூபா குடுக்கணும்	Yuvaraj	50
+ADD_RECEIVABLE	konjam Prakash enaku 120 rooba kudukanum	கொஞ்சம் பிரகாஷ் எனக்கு 120 ரூபா குடுக்கணும்	Prakash	120
+ADD_RECEIVABLE	vegamaa Kumar kitta 180 rooba varanum	வேகமா குமார் கிட்ட 180 ரூபா வரணும்	Kumar	180
+ADD_RECEIVABLE	konjam Ravi kitta 300 rooba varanum	கொஞ்சம் ரவி கிட்ட 300 ரூபா வரணும்	Ravi	300
+ADD_RECEIVABLE	vegamaa Murugan kitta 400 rooba varanum	வேகமா முருகன் கிட்ட 400 ரூபா வரணும்	Murugan	400
+ADD_RECEIVABLE	konjam Saravanan kitta 600 rooba varanum	கொஞ்சம் சரவணன் கிட்ட 600 ரூபா வரணும்	Saravanan	600
+ADD_RECEIVABLE	vegamaa Prabhu kitta 700 rooba varanum	வேகமா பிரபு கிட்ட 700 ரூபா வரணும்	Prabhu	700
+ADD_RECEIVABLE	konjam Karthik kitta 900 rooba varanum	கொஞ்சம் கார்த்திக் கிட்ட 900 ரூபா வரணும்	Karthik	900
+ADD_RECEIVABLE	vegamaa Vijay kitta 1200 rooba varanum	வேகமா விஜய் கிட்ட 1200 ரூபா வரணும்	Vijay	1200
+ADD_RECEIVABLE	konjam Arun kitta 2000 rooba varanum	கொஞ்சம் அருண் கிட்ட 2000 ரூபா வரணும்	Arun	2000
+ADD_RECEIVABLE	vegamaa Mani kitta 3000 rooba varanum	வேகமா மணி கிட்ட 3000 ரூபா வரணும்	Mani	3000
+ADD_RECEIVABLE	konjam Selvam kitta 5000 rooba varanum	கொஞ்சம் செல்வம் கிட்ட 5000 ரூபா வரணும்	Selvam	5000
+ADD_RECEIVABLE	vegamaa Raja kitta 10000 rooba varanum	வேகமா ராஜா கிட்ட 10000 ரூபா வரணும்	Raja	10000
+ADD_RECEIVABLE	konjam Latha kitta 100 rooba varanum	கொஞ்சம் லதா கிட்ட 100 ரூபா வரணும்	Latha	100
+ADD_RECEIVABLE	vegamaa Suresh kitta 150 rooba varanum	வேகமா சுரேஷ் கிட்ட 150 ரூபா வரணும்	Suresh	150
+ADD_RECEIVABLE	konjam Bala kitta 250 rooba varanum	கொஞ்சம் பாலா கிட்ட 250 ரூபா வரணும்	Bala	250
+ADD_RECEIVABLE	vegamaa Kannan kitta 350 rooba varanum	வேகமா கண்ணன் கிட்ட 350 ரூபா வரணும்	Kannan	350
+ADD_RECEIVABLE	konjam Satheesh kitta 500 rooba varanum	கொஞ்சம் சதீஷ் கிட்ட 500 ரூபா வரணும்	Satheesh	500
+ADD_RECEIVABLE	vegamaa Dinesh kitta 650 rooba varanum	வேகமா தினேஷ் கிட்ட 650 ரூபா வரணும்	Dinesh	650
+ADD_RECEIVABLE	konjam Yuvaraj kitta 800 rooba varanum	கொஞ்சம் யுவராஜ் கிட்ட 800 ரூபா வரணும்	Yuvaraj	800
+ADD_RECEIVABLE	vegamaa Prakash kitta 1000 rooba varanum	வேகமா பிரகாஷ் கிட்ட 1000 ரூபா வரணும்	Prakash	1000
+ADD_RECEIVABLE	konjam Kumar thara vendiya 1800 roobaya kanakkula podu	கொஞ்சம் குமார் தர வேண்டிய 1800 ரூபாயை கணக்குல போடு	Kumar	1800
+ADD_RECEIVABLE	vegamaa Ravi thara vendiya 2500 roobaya kanakkula podu	வேகமா ரவி தர வேண்டிய 2500 ரூபாயை கணக்குல போடு	Ravi	2500
+ADD_RECEIVABLE	konjam Murugan thara vendiya 4000 roobaya kanakkula podu	கொஞ்சம் முருகன் தர வேண்டிய 4000 ரூபாயை கணக்குல போடு	Murugan	4000
+ADD_RECEIVABLE	vegamaa Saravanan thara vendiya 7500 roobaya kanakkula podu	வேகமா சரவணன் தர வேண்டிய 7500 ரூபாயை கணக்குல போடு	Saravanan	7500
+ADD_RECEIVABLE	konjam Karthik thara vendiya 80 roobaya kanakkula podu	கொஞ்சம் கார்த்திக் தர வேண்டிய 80 ரூபாயை கணக்குல போடு	Karthik	80
+ADD_RECEIVABLE	vegamaa Vijay thara vendiya 120 roobaya kanakkula podu	வேகமா விஜய் தர வேண்டிய 120 ரூபாயை கணக்குல போடு	Vijay	120
+ADD_RECEIVABLE	konjam Arun thara vendiya 200 roobaya kanakkula podu	கொஞ்சம் அருண் தர வேண்டிய 200 ரூபாயை கணக்குல போடு	Arun	200
+ADD_RECEIVABLE	vegamaa Mani thara vendiya 300 roobaya kanakkula podu	வேகமா மணி தர வேண்டிய 300 ரூபாயை கணக்குல போடு	Mani	300
+ADD_RECEIVABLE	konjam Selvam thara vendiya 450 roobaya kanakkula podu	கொஞ்சம் செல்வம் தர வேண்டிய 450 ரூபாயை கணக்குல போடு	Selvam	450
+ADD_RECEIVABLE	vegamaa Raja thara vendiya 600 roobaya kanakkula podu	வேகமா ராஜா தர வேண்டிய 600 ரூபாயை கணக்குல போடு	Raja	600
+ADD_RECEIVABLE	konjam Meena thara vendiya 750 roobaya kanakkula podu	கொஞ்சம் மீனா தர வேண்டிய 750 ரூபாயை கணக்குல போடு	Meena	750
+ADD_RECEIVABLE	vegamaa Latha thara vendiya 900 roobaya kanakkula podu	வேகமா லதா தர வேண்டிய 900 ரூபாயை கணக்குல போடு	Latha	900
+ADD_RECEIVABLE	konjam Suresh thara vendiya 1500 roobaya kanakkula podu	கொஞ்சம் சுரேஷ் தர வேண்டிய 1500 ரூபாயை கணக்குல போடு	Suresh	1500
+ADD_RECEIVABLE	vegamaa Bala thara vendiya 2000 roobaya kanakkula podu	வேகமா பாலா தர வேண்டிய 2000 ரூபாயை கணக்குல போடு	Bala	2000
+ADD_RECEIVABLE	konjam Kannan thara vendiya 3500 roobaya kanakkula podu	கொஞ்சம் கண்ணன் தர வேண்டிய 3500 ரூபாயை கணக்குல போடு	Kannan	3500
+ADD_RECEIVABLE	vegamaa Satheesh thara vendiya 5000 roobaya kanakkula podu	வேகமா சதீஷ் தர வேண்டிய 5000 ரூபாயை கணக்குல போடு	Satheesh	5000
+ADD_RECEIVABLE	konjam Yuvaraj thara vendiya 50 roobaya kanakkula podu	கொஞ்சம் யுவராஜ் தர வேண்டிய 50 ரூபாயை கணக்குல போடு	Yuvaraj	50
+ADD_RECEIVABLE	vegamaa Prakash thara vendiya 100 roobaya kanakkula podu	வேகமா பிரகாஷ் தர வேண்டிய 100 ரூபாயை கணக்குல போடு	Prakash	100
+ADD_RECEIVABLE	konjam Kumar innum 180 rooba tharala	கொஞ்சம் குமார் இன்னும் 180 ரூபா தரல	Kumar	180
+ADD_RECEIVABLE	vegamaa Ravi innum 250 rooba tharala	வேகமா ரவி இன்னும் 250 ரூபா தரல	Ravi	250
+ADD_RECEIVABLE	konjam Murugan innum 400 rooba tharala	கொஞ்சம் முருகன் இன்னும் 400 ரூபா தரல	Murugan	400
+ADD_RECEIVABLE	vegamaa Saravanan innum 500 rooba tharala	வேகமா சரவணன் இன்னும் 500 ரூபா தரல	Saravanan	500
+ADD_RECEIVABLE	konjam Prabhu innum 700 rooba tharala	கொஞ்சம் பிரபு இன்னும் 700 ரூபா தரல	Prabhu	700
+ADD_RECEIVABLE	vegamaa Karthik innum 800 rooba tharala	வேகமா கார்த்திக் இன்னும் 800 ரூபா தரல	Karthik	800
+ADD_RECEIVABLE	konjam Vijay innum 1200 rooba tharala	கொஞ்சம் விஜய் இன்னும் 1200 ரூபா தரல	Vijay	1200
+ADD_RECEIVABLE	vegamaa Arun innum 1800 rooba tharala	வேகமா அருண் இன்னும் 1800 ரூபா தரல	Arun	1800
+ADD_RECEIVABLE	konjam Mani innum 3000 rooba tharala	கொஞ்சம் மணி இன்னும் 3000 ரூபா தரல	Mani	3000
+ADD_RECEIVABLE	vegamaa Selvam innum 4000 rooba tharala	வேகமா செல்வம் இன்னும் 4000 ரூபா தரல	Selvam	4000
+ADD_RECEIVABLE	konjam Raja innum 10000 rooba tharala	கொஞ்சம் ராஜா இன்னும் 10000 ரூபா தரல	Raja	10000
+ADD_RECEIVABLE	vegamaa Latha innum 80 rooba tharala	வேகமா லதா இன்னும் 80 ரூபா தரல	Latha	80
+ADD_RECEIVABLE	konjam Suresh innum 150 rooba tharala	கொஞ்சம் சுரேஷ் இன்னும் 150 ரூபா தரல	Suresh	150
+ADD_RECEIVABLE	vegamaa Bala innum 200 rooba tharala	வேகமா பாலா இன்னும் 200 ரூபா தரல	Bala	200
+ADD_RECEIVABLE	konjam Kannan innum 350 rooba tharala	கொஞ்சம் கண்ணன் இன்னும் 350 ரூபா தரல	Kannan	350
+ADD_RECEIVABLE	vegamaa Satheesh innum 450 rooba tharala	வேகமா சதீஷ் இன்னும் 450 ரூபா தரல	Satheesh	450
+ADD_RECEIVABLE	konjam Dinesh innum 650 rooba tharala	கொஞ்சம் தினேஷ் இன்னும் 650 ரூபா தரல	Dinesh	650
+ADD_RECEIVABLE	vegamaa Yuvaraj innum 750 rooba tharala	வேகமா யுவராஜ் இன்னும் 750 ரூபா தரல	Yuvaraj	750
+ADD_RECEIVABLE	konjam Prakash innum 1000 rooba tharala	கொஞ்சம் பிரகாஷ் இன்னும் 1000 ரூபா தரல	Prakash	1000
+ADD_RECEIVABLE	vegamaa Kumarkitta irundhu 1500 rooba vaanganum	வேகமா குமார்கிட்ட இருந்து 1500 ரூபா வாங்கணும்	Kumar	1500
+ADD_RECEIVABLE	konjam Ravikitta irundhu 2500 rooba vaanganum	கொஞ்சம் ரவிகிட்ட இருந்து 2500 ரூபா வாங்கணும்	Ravi	2500
+ADD_RECEIVABLE	vegamaa Murugankitta irundhu 3500 rooba vaanganum	வேகமா முருகன்கிட்ட இருந்து 3500 ரூபா வாங்கணும்	Murugan	3500
+ADD_RECEIVABLE	konjam Saravanankitta irundhu 7500 rooba vaanganum	கொஞ்சம் சரவணன்கிட்ட இருந்து 7500 ரூபா வாங்கணும்	Saravanan	7500
+ADD_RECEIVABLE	vegamaa Karthikkitta irundhu 50 rooba vaanganum	வேகமா கார்த்திக்கிட்ட இருந்து 50 ரூபா வாங்கணும்	Karthik	50
+ADD_RECEIVABLE	konjam Vijaykitta irundhu 120 rooba vaanganum	கொஞ்சம் விஜய்கிட்ட இருந்து 120 ரூபா வாங்கணும்	Vijay	120
+ADD_RECEIVABLE	vegamaa Arunkitta irundhu 180 rooba vaanganum	வேகமா அருண்கிட்ட இருந்து 180 ரூபா வாங்கணும்	Arun	180
+ADD_RECEIVABLE	konjam Manikitta irundhu 300 rooba vaanganum	கொஞ்சம் மணிகிட்ட இருந்து 300 ரூபா வாங்கணும்	Mani	300
+ADD_RECEIVABLE	vegamaa Selvamkitta irundhu 400 rooba vaanganum	வேகமா செல்வம்கிட்ட இருந்து 400 ரூபா வாங்கணும்	Selvam	400
+ADD_RECEIVABLE	konjam Rajakitta irundhu 600 rooba vaanganum	கொஞ்சம் ராஜாகிட்ட இருந்து 600 ரூபா வாங்கணும்	Raja	600
+ADD_RECEIVABLE	vegamaa Meenakitta irundhu 700 rooba vaanganum	வேகமா மீனாகிட்ட இருந்து 700 ரூபா வாங்கணும்	Meena	700
+ADD_RECEIVABLE	konjam Lathakitta irundhu 900 rooba vaanganum	கொஞ்சம் லதாகிட்ட இருந்து 900 ரூபா வாங்கணும்	Latha	900
+ADD_RECEIVABLE	vegamaa Sureshkitta irundhu 1200 rooba vaanganum	வேகமா சுரேஷ்கிட்ட இருந்து 1200 ரூபா வாங்கணும்	Suresh	1200
+ADD_RECEIVABLE	konjam Balakitta irundhu 2000 rooba vaanganum	கொஞ்சம் பாலாகிட்ட இருந்து 2000 ரூபா வாங்கணும்	Bala	2000
+ADD_RECEIVABLE	vegamaa Kannankitta irundhu 3000 rooba vaanganum	வேகமா கண்ணன்கிட்ட இருந்து 3000 ரூபா வாங்கணும்	Kannan	3000
+ADD_RECEIVABLE	konjam Satheeshkitta irundhu 5000 rooba vaanganum	கொஞ்சம் சதீஷ்கிட்ட இருந்து 5000 ரூபா வாங்கணும்	Satheesh	5000
+ADD_RECEIVABLE	vegamaa Dineshkitta irundhu 10000 rooba vaanganum	வேகமா தினேஷ்கிட்ட இருந்து 10000 ரூபா வாங்கணும்	Dinesh	10000
+ADD_RECEIVABLE	konjam Prakashkitta irundhu 100 rooba vaanganum	கொஞ்சம் பிரகாஷ்கிட்ட இருந்து 100 ரூபா வாங்கணும்	Prakash	100
+ADD_PAYABLE	vegamaa Naan Kumarku 150 rooba kudukanum	வேகமா நான் குமார்க்கு 150 ரூபா குடுக்கணும்	Kumar	150
+ADD_PAYABLE	konjam Naan Raviku 250 rooba kudukanum	கொஞ்சம் நான் ரவிக்கு 250 ரூபா குடுக்கணும்	Ravi	250
+ADD_PAYABLE	vegamaa Naan Muruganku 350 rooba kudukanum	வேகமா நான் முருகன்க்கு 350 ரூபா குடுக்கணும்	Murugan	350
+ADD_PAYABLE	konjam Naan Saravananku 500 rooba kudukanum	கொஞ்சம் நான் சரவணன்க்கு 500 ரூபா குடுக்கணும்	Saravanan	500
+ADD_PAYABLE	vegamaa Naan Prabhuku 650 rooba kudukanum	வேகமா நான் பிரபுக்கு 650 ரூபா குடுக்கணும்	Prabhu	650
+ADD_PAYABLE	konjam Naan Karthikku 800 rooba kudukanum	கொஞ்சம் நான் கார்த்திக்க்கு 800 ரூபா குடுக்கணும்	Karthik	800
+ADD_PAYABLE	vegamaa Naan Vijayku 1000 rooba kudukanum	வேகமா நான் விஜய்க்கு 1000 ரூபா குடுக்கணும்	Vijay	1000
+ADD_PAYABLE	konjam Naan Arunku 1800 rooba kudukanum	கொஞ்சம் நான் அருண்க்கு 1800 ரூபா குடுக்கணும்	Arun	1800
+ADD_PAYABLE	vegamaa Naan Maniku 2500 rooba kudukanum	வேகமா நான் மணிக்கு 2500 ரூபா குடுக்கணும்	Mani	2500
+ADD_PAYABLE	konjam Naan Selvamku 4000 rooba kudukanum	கொஞ்சம் நான் செல்வம்க்கு 4000 ரூபா குடுக்கணும்	Selvam	4000
+ADD_PAYABLE	vegamaa Naan Rajaku 7500 rooba kudukanum	வேகமா நான் ராஜாக்கு 7500 ரூபா குடுக்கணும்	Raja	7500
+ADD_PAYABLE	konjam Naan Lathaku 80 rooba kudukanum	கொஞ்சம் நான் லதாக்கு 80 ரூபா குடுக்கணும்	Latha	80
+ADD_PAYABLE	vegamaa Naan Sureshku 120 rooba kudukanum	வேகமா நான் சுரேஷ்க்கு 120 ரூபா குடுக்கணும்	Suresh	120
+ADD_PAYABLE	konjam Naan Balaku 200 rooba kudukanum	கொஞ்சம் நான் பாலாக்கு 200 ரூபா குடுக்கணும்	Bala	200
+ADD_PAYABLE	vegamaa Naan Kannanku 300 rooba kudukanum	வேகமா நான் கண்ணன்க்கு 300 ரூபா குடுக்கணும்	Kannan	300
+ADD_PAYABLE	konjam Naan Satheeshku 450 rooba kudukanum	கொஞ்சம் நான் சதீஷ்க்கு 450 ரூபா குடுக்கணும்	Satheesh	450
+ADD_PAYABLE	vegamaa Naan Dineshku 600 rooba kudukanum	வேகமா நான் தினேஷ்க்கு 600 ரூபா குடுக்கணும்	Dinesh	600
+ADD_PAYABLE	konjam Naan Yuvarajku 750 rooba kudukanum	கொஞ்சம் நான் யுவராஜ்க்கு 750 ரூபா குடுக்கணும்	Yuvaraj	750
+ADD_PAYABLE	vegamaa Naan Prakashku 900 rooba kudukanum	வேகமா நான் பிரகாஷ்க்கு 900 ரூபா குடுக்கணும்	Prakash	900
+ADD_PAYABLE	konjam Kumarku 1500 rooba baaki iruku	கொஞ்சம் குமார்க்கு 1500 ரூபா பாக்கி இருக்கு	Kumar	1500
+ADD_PAYABLE	vegamaa Raviku 2000 rooba baaki iruku	வேகமா ரவிக்கு 2000 ரூபா பாக்கி இருக்கு	Ravi	2000
+ADD_PAYABLE	konjam Muruganku 3500 rooba baaki iruku	கொஞ்சம் முருகன்க்கு 3500 ரூபா பாக்கி இருக்கு	Murugan	3500
+ADD_PAYABLE	vegamaa Saravananku 5000 rooba baaki iruku	வேகமா சரவணன்க்கு 5000 ரூபா பாக்கி இருக்கு	Saravanan	5000
+ADD_PAYABLE	konjam Karthikku 50 rooba baaki iruku	கொஞ்சம் கார்த்திக்க்கு 50 ரூபா பாக்கி இருக்கு	Karthik	50
+ADD_PAYABLE	vegamaa Vijayku 100 rooba baaki iruku	வேகமா விஜய்க்கு 100 ரூபா பாக்கி இருக்கு	Vijay	100
+ADD_PAYABLE	konjam Arunku 180 rooba baaki iruku	கொஞ்சம் அருண்க்கு 180 ரூபா பாக்கி இருக்கு	Arun	180
+ADD_PAYABLE	vegamaa Maniku 250 rooba baaki iruku	வேகமா மணிக்கு 250 ரூபா பாக்கி இருக்கு	Mani	250
+ADD_PAYABLE	konjam Selvamku 400 rooba baaki iruku	கொஞ்சம் செல்வம்க்கு 400 ரூபா பாக்கி இருக்கு	Selvam	400
+ADD_PAYABLE	vegamaa Rajaku 500 rooba baaki iruku	வேகமா ராஜாக்கு 500 ரூபா பாக்கி இருக்கு	Raja	500
+ADD_PAYABLE	konjam Meenaku 700 rooba baaki iruku	கொஞ்சம் மீனாக்கு 700 ரூபா பாக்கி இருக்கு	Meena	700
+ADD_PAYABLE	vegamaa Lathaku 800 rooba baaki iruku	வேகமா லதாக்கு 800 ரூபா பாக்கி இருக்கு	Latha	800
+ADD_PAYABLE	konjam Sureshku 1200 rooba baaki iruku	கொஞ்சம் சுரேஷ்க்கு 1200 ரூபா பாக்கி இருக்கு	Suresh	1200
+ADD_PAYABLE	vegamaa Balaku 1800 rooba baaki iruku	வேகமா பாலாக்கு 1800 ரூபா பாக்கி இருக்கு	Bala	1800
+ADD_PAYABLE	konjam Kannanku 3000 rooba baaki iruku	கொஞ்சம் கண்ணன்க்கு 3000 ரூபா பாக்கி இருக்கு	Kannan	3000
+ADD_PAYABLE	vegamaa Satheeshku 4000 rooba baaki iruku	வேகமா சதீஷ்க்கு 4000 ரூபா பாக்கி இருக்கு	Satheesh	4000
+ADD_PAYABLE	konjam Dineshku 10000 rooba baaki iruku	கொஞ்சம் தினேஷ்க்கு 10000 ரூபா பாக்கி இருக்கு	Dinesh	10000
+ADD_PAYABLE	vegamaa Prakashku 80 rooba baaki iruku	வேகமா பிரகாஷ்க்கு 80 ரூபா பாக்கி இருக்கு	Prakash	80
+ADD_PAYABLE	konjam Kumarku kudukka vendiya 150 roobaya kanakkula podu	கொஞ்சம் குமார்க்கு கொடுக்க வேண்டிய 150 ரூபாயை கணக்குல போடு	Kumar	150
+ADD_PAYABLE	vegamaa Raviku kudukka vendiya 200 roobaya kanakkula podu	வேகமா ரவிக்கு கொடுக்க வேண்டிய 200 ரூபாயை கணக்குல போடு	Ravi	200
+ADD_PAYABLE	konjam Muruganku kudukka vendiya 350 roobaya kanakkula podu	கொஞ்சம் முருகன்க்கு கொடுக்க வேண்டிய 350 ரூபாயை கணக்குல போடு	Murugan	350
+ADD_PAYABLE	vegamaa Saravananku kudukka vendiya 450 roobaya kanakkula podu	வேகமா சரவணன்க்கு கொடுக்க வேண்டிய 450 ரூபாயை கணக்குல போடு	Saravanan	450
+ADD_PAYABLE	konjam Prabhuku kudukka vendiya 650 roobaya kanakkula podu	கொஞ்சம் பிரபுக்கு கொடுக்க வேண்டிய 650 ரூபாயை கணக்குல போடு	Prabhu	650
+ADD_PAYABLE	vegamaa Karthikku kudukka vendiya 750 roobaya kanakkula podu	வேகமா கார்த்திக்க்கு கொடுக்க வேண்டிய 750 ரூபாயை கணக்குல போடு	Karthik	750
+ADD_PAYABLE	konjam Vijayku kudukka vendiya 1000 roobaya kanakkula podu	கொஞ்சம் விஜய்க்கு கொடுக்க வேண்டிய 1000 ரூபாயை கணக்குல போடு	Vijay	1000
+ADD_PAYABLE	vegamaa Arunku kudukka vendiya 1500 roobaya kanakkula podu	வேகமா அருண்க்கு கொடுக்க வேண்டிய 1500 ரூபாயை கணக்குல போடு	Arun	1500
+ADD_PAYABLE	konjam Maniku kudukka vendiya 2500 roobaya kanakkula podu	கொஞ்சம் மணிக்கு கொடுக்க வேண்டிய 2500 ரூபாயை கணக்குல போடு	Mani	2500
+ADD_PAYABLE	vegamaa Selvamku kudukka vendiya 3500 roobaya kanakkula podu	வேகமா செல்வம்க்கு கொடுக்க வேண்டிய 3500 ரூபாயை கணக்குல போடு	Selvam	3500
+ADD_PAYABLE	konjam Rajaku kudukka vendiya 7500 roobaya kanakkula podu	கொஞ்சம் ராஜாக்கு கொடுக்க வேண்டிய 7500 ரூபாயை கணக்குல போடு	Raja	7500
+ADD_PAYABLE	vegamaa Lathaku kudukka vendiya 50 roobaya kanakkula podu	வேகமா லதாக்கு கொடுக்க வேண்டிய 50 ரூபாயை கணக்குல போடு	Latha	50
+ADD_PAYABLE	konjam Sureshku kudukka vendiya 120 roobaya kanakkula podu	கொஞ்சம் சுரேஷ்க்கு கொடுக்க வேண்டிய 120 ரூபாயை கணக்குல போடு	Suresh	120
+ADD_PAYABLE	vegamaa Balaku kudukka vendiya 180 roobaya kanakkula podu	வேகமா பாலாக்கு கொடுக்க வேண்டிய 180 ரூபாயை கணக்குல போடு	Bala	180
+ADD_PAYABLE	konjam Kannanku kudukka vendiya 300 roobaya kanakkula podu	கொஞ்சம் கண்ணன்க்கு கொடுக்க வேண்டிய 300 ரூபாயை கணக்குல போடு	Kannan	300
+ADD_PAYABLE	vegamaa Satheeshku kudukka vendiya 400 roobaya kanakkula podu	வேகமா சதீஷ்க்கு கொடுக்க வேண்டிய 400 ரூபாயை கணக்குல போடு	Satheesh	400
+ADD_PAYABLE	konjam Dineshku kudukka vendiya 600 roobaya kanakkula podu	கொஞ்சம் தினேஷ்க்கு கொடுக்க வேண்டிய 600 ரூபாயை கணக்குல போடு	Dinesh	600
+ADD_PAYABLE	vegamaa Yuvarajku kudukka vendiya 700 roobaya kanakkula podu	வேகமா யுவராஜ்க்கு கொடுக்க வேண்டிய 700 ரூபாயை கணக்குல போடு	Yuvaraj	700
+ADD_PAYABLE	konjam Prakashku kudukka vendiya 900 roobaya kanakkula podu	கொஞ்சம் பிரகாஷ்க்கு கொடுக்க வேண்டிய 900 ரூபாயை கணக்குல போடு	Prakash	900
+ADD_PAYABLE	vegamaa Kumarku innum 1200 rooba kudukala	வேகமா குமார்க்கு இன்னும் 1200 ரூபா கொடுக்கல	Kumar	1200
+ADD_PAYABLE	konjam Raviku innum 2000 rooba kudukala	கொஞ்சம் ரவிக்கு இன்னும் 2000 ரூபா கொடுக்கல	Ravi	2000
+ADD_PAYABLE	vegamaa Muruganku innum 3000 rooba kudukala	வேகமா முருகன்க்கு இன்னும் 3000 ரூபா கொடுக்கல	Murugan	3000
+ADD_PAYABLE	konjam Saravananku innum 5000 rooba kudukala	கொஞ்சம் சரவணன்க்கு இன்னும் 5000 ரூபா கொடுக்கல	Saravanan	5000
+ADD_PAYABLE	vegamaa Prabhuku innum 10000 rooba kudukala	வேகமா பிரபுக்கு இன்னும் 10000 ரூபா கொடுக்கல	Prabhu	10000
+ADD_PAYABLE	konjam Vijayku innum 100 rooba kudukala	கொஞ்சம் விஜய்க்கு இன்னும் 100 ரூபா கொடுக்கல	Vijay	100
+ADD_PAYABLE	vegamaa Arunku innum 150 rooba kudukala	வேகமா அருண்க்கு இன்னும் 150 ரூபா கொடுக்கல	Arun	150
+ADD_PAYABLE	konjam Maniku innum 250 rooba kudukala	கொஞ்சம் மணிக்கு இன்னும் 250 ரூபா கொடுக்கல	Mani	250
+ADD_PAYABLE	vegamaa Selvamku innum 350 rooba kudukala	வேகமா செல்வம்க்கு இன்னும் 350 ரூபா கொடுக்கல	Selvam	350
+ADD_PAYABLE	konjam Rajaku innum 500 rooba kudukala	கொஞ்சம் ராஜாக்கு இன்னும் 500 ரூபா கொடுக்கல	Raja	500
+ADD_PAYABLE	vegamaa Meenaku innum 650 rooba kudukala	வேகமா மீனாக்கு இன்னும் 650 ரூபா கொடுக்கல	Meena	650
+ADD_PAYABLE	konjam Lathaku innum 800 rooba kudukala	கொஞ்சம் லதாக்கு இன்னும் 800 ரூபா கொடுக்கல	Latha	800
+ADD_PAYABLE	vegamaa Sureshku innum 1000 rooba kudukala	வேகமா சுரேஷ்க்கு இன்னும் 1000 ரூபா கொடுக்கல	Suresh	1000
+ADD_PAYABLE	konjam Balaku innum 1800 rooba kudukala	கொஞ்சம் பாலாக்கு இன்னும் 1800 ரூபா கொடுக்கல	Bala	1800
+ADD_PAYABLE	vegamaa Kannanku innum 2500 rooba kudukala	வேகமா கண்ணன்க்கு இன்னும் 2500 ரூபா கொடுக்கல	Kannan	2500
+ADD_PAYABLE	konjam Satheeshku innum 4000 rooba kudukala	கொஞ்சம் சதீஷ்க்கு இன்னும் 4000 ரூபா கொடுக்கல	Satheesh	4000
+ADD_PAYABLE	vegamaa Dineshku innum 7500 rooba kudukala	வேகமா தினேஷ்க்கு இன்னும் 7500 ரூபா கொடுக்கல	Dinesh	7500
+ADD_PAYABLE	konjam Prakashku innum 80 rooba kudukala	கொஞ்சம் பிரகாஷ்க்கு இன்னும் 80 ரூபா கொடுக்கல	Prakash	80
+ADD_PAYABLE	vegamaa Kumarku 120 rooba settle pannanum	வேகமா குமார்க்கு 120 ரூபா செட்டில் பண்ணணும்	Kumar	120
+ADD_PAYABLE	konjam Raviku 200 rooba settle pannanum	கொஞ்சம் ரவிக்கு 200 ரூபா செட்டில் பண்ணணும்	Ravi	200
+ADD_PAYABLE	vegamaa Muruganku 300 rooba settle pannanum	வேகமா முருகன்க்கு 300 ரூபா செட்டில் பண்ணணும்	Murugan	300
+ADD_PAYABLE	konjam Saravananku 450 rooba settle pannanum	கொஞ்சம் சரவணன்க்கு 450 ரூபா செட்டில் பண்ணணும்	Saravanan	450
+ADD_PAYABLE	vegamaa Prabhuku 600 rooba settle pannanum	வேகமா பிரபுக்கு 600 ரூபா செட்டில் பண்ணணும்	Prabhu	600
+ADD_PAYABLE	konjam Karthikku 750 rooba settle pannanum	கொஞ்சம் கார்த்திக்க்கு 750 ரூபா செட்டில் பண்ணணும்	Karthik	750
+ADD_PAYABLE	vegamaa Vijayku 900 rooba settle pannanum	வேகமா விஜய்க்கு 900 ரூபா செட்டில் பண்ணணும்	Vijay	900
+ADD_PAYABLE	konjam Arunku 1500 rooba settle pannanum	கொஞ்சம் அருண்க்கு 1500 ரூபா செட்டில் பண்ணணும்	Arun	1500
+ADD_PAYABLE	vegamaa Maniku 2000 rooba settle pannanum	வேகமா மணிக்கு 2000 ரூபா செட்டில் பண்ணணும்	Mani	2000
+ADD_PAYABLE	konjam Selvamku 3500 rooba settle pannanum	கொஞ்சம் செல்வம்க்கு 3500 ரூபா செட்டில் பண்ணணும்	Selvam	3500
+ADD_PAYABLE	vegamaa Rajaku 5000 rooba settle pannanum	வேகமா ராஜாக்கு 5000 ரூபா செட்டில் பண்ணணும்	Raja	5000
+ADD_PAYABLE	konjam Lathaku 50 rooba settle pannanum	கொஞ்சம் லதாக்கு 50 ரூபா செட்டில் பண்ணணும்	Latha	50
+ADD_PAYABLE	vegamaa Sureshku 100 rooba settle pannanum	வேகமா சுரேஷ்க்கு 100 ரூபா செட்டில் பண்ணணும்	Suresh	100
+ADD_PAYABLE	konjam Balaku 180 rooba settle pannanum	கொஞ்சம் பாலாக்கு 180 ரூபா செட்டில் பண்ணணும்	Bala	180
+ADD_PAYABLE	vegamaa Kannanku 250 rooba settle pannanum	வேகமா கண்ணன்க்கு 250 ரூபா செட்டில் பண்ணணும்	Kannan	250
+ADD_PAYABLE	konjam Satheeshku 400 rooba settle pannanum	கொஞ்சம் சதீஷ்க்கு 400 ரூபா செட்டில் பண்ணணும்	Satheesh	400
+ADD_PAYABLE	vegamaa Dineshku 500 rooba settle pannanum	வேகமா தினேஷ்க்கு 500 ரூபா செட்டில் பண்ணணும்	Dinesh	500
+ADD_PAYABLE	konjam Yuvarajku 700 rooba settle pannanum	கொஞ்சம் யுவராஜ்க்கு 700 ரூபா செட்டில் பண்ணணும்	Yuvaraj	700
+ADD_PAYABLE	vegamaa Prakashku 800 rooba settle pannanum	வேகமா பிரகாஷ்க்கு 800 ரூபா செட்டில் பண்ணணும்	Prakash	800
+ADD_ADDITIONAL_RECEIVABLE	konjam Kumar enaku thara vendiya kanakkula innum 1200 rooba seru	கொஞ்சம் குமார் எனக்கு தர வேண்டிய கணக்குல இன்னும் 1200 ரூபா சேர்	Kumar	1200
+ADD_ADDITIONAL_RECEIVABLE	vegamaa Ravi enaku thara vendiya kanakkula innum 1800 rooba seru	வேகமா ரவி எனக்கு தர வேண்டிய கணக்குல இன்னும் 1800 ரூபா சேர்	Ravi	1800
+ADD_ADDITIONAL_RECEIVABLE	konjam Murugan enaku thara vendiya kanakkula innum 3000 rooba seru	கொஞ்சம் முருகன் எனக்கு தர வேண்டிய கணக்குல இன்னும் 3000 ரூபா சேர்	Murugan	3000
+ADD_ADDITIONAL_RECEIVABLE	vegamaa Saravanan enaku thara vendiya kanakkula innum 4000 rooba seru	வேகமா சரவணன் எனக்கு தர வேண்டிய கணக்குல இன்னும் 4000 ரூபா சேர்	Saravanan	4000
+ADD_ADDITIONAL_RECEIVABLE	konjam Prabhu enaku thara vendiya kanakkula innum 10000 rooba seru	கொஞ்சம் பிரபு எனக்கு தர வேண்டிய கணக்குல இன்னும் 10000 ரூபா சேர்	Prabhu	10000
+ADD_ADDITIONAL_RECEIVABLE	vegamaa Vijay enaku thara vendiya kanakkula innum 80 rooba seru	வேகமா விஜய் எனக்கு தர வேண்டிய கணக்குல இன்னும் 80 ரூபா சேர்	Vijay	80
+ADD_ADDITIONAL_RECEIVABLE	konjam Arun enaku thara vendiya kanakkula innum 150 rooba seru	கொஞ்சம் அருண் எனக்கு தர வேண்டிய கணக்குல இன்னும் 150 ரூபா சேர்	Arun	150
+ADD_ADDITIONAL_RECEIVABLE	vegamaa Mani enaku thara vendiya kanakkula innum 200 rooba seru	வேகமா மணி எனக்கு தர வேண்டிய கணக்குல இன்னும் 200 ரூபா சேர்	Mani	200
+ADD_ADDITIONAL_RECEIVABLE	konjam Selvam enaku thara vendiya kanakkula innum 350 rooba seru	கொஞ்சம் செல்வம் எனக்கு தர வேண்டிய கணக்குல இன்னும் 350 ரூபா சேர்	Selvam	350
+ADD_ADDITIONAL_RECEIVABLE	vegamaa Raja enaku thara vendiya kanakkula innum 450 rooba seru	வேகமா ராஜா எனக்கு தர வேண்டிய கணக்குல இன்னும் 450 ரூபா சேர்	Raja	450
+ADD_ADDITIONAL_RECEIVABLE	konjam Meena enaku thara vendiya kanakkula innum 650 rooba seru	கொஞ்சம் மீனா எனக்கு தர வேண்டிய கணக்குல இன்னும் 650 ரூபா சேர்	Meena	650
+ADD_ADDITIONAL_RECEIVABLE	vegamaa Latha enaku thara vendiya kanakkula innum 750 rooba seru	வேகமா லதா எனக்கு தர வேண்டிய கணக்குல இன்னும் 750 ரூபா சேர்	Latha	750
+ADD_ADDITIONAL_RECEIVABLE	konjam Suresh enaku thara vendiya kanakkula innum 1000 rooba seru	கொஞ்சம் சுரேஷ் எனக்கு தர வேண்டிய கணக்குல இன்னும் 1000 ரூபா சேர்	Suresh	1000
+ADD_ADDITIONAL_RECEIVABLE	vegamaa Bala enaku thara vendiya kanakkula innum 1500 rooba seru	வேகமா பாலா எனக்கு தர வேண்டிய கணக்குல இன்னும் 1500 ரூபா சேர்	Bala	1500
+ADD_ADDITIONAL_RECEIVABLE	konjam Kannan enaku thara vendiya kanakkula innum 2500 rooba seru	கொஞ்சம் கண்ணன் எனக்கு தர வேண்டிய கணக்குல இன்னும் 2500 ரூபா சேர்	Kannan	2500
+ADD_ADDITIONAL_RECEIVABLE	vegamaa Satheesh enaku thara vendiya kanakkula innum 3500 rooba seru	வேகமா சதீஷ் எனக்கு தர வேண்டிய கணக்குல இன்னும் 3500 ரூபா சேர்	Satheesh	3500
+ADD_ADDITIONAL_RECEIVABLE	konjam Dinesh enaku thara vendiya kanakkula innum 7500 rooba seru	கொஞ்சம் தினேஷ் எனக்கு தர வேண்டிய கணக்குல இன்னும் 7500 ரூபா சேர்	Dinesh	7500
+ADD_ADDITIONAL_RECEIVABLE	vegamaa Prakash enaku thara vendiya kanakkula innum 50 rooba seru	வேகமா பிரகாஷ் எனக்கு தர வேண்டிய கணக்குல இன்னும் 50 ரூபா சேர்	Prakash	50
+ADD_ADDITIONAL_RECEIVABLE	konjam Kumar baakiyoda kooduthalaa 120 rooba varavu vai	கொஞ்சம் குமார் பாக்கியோட கூடுதலா 120 ரூபா வரவு வை	Kumar	120
+ADD_ADDITIONAL_RECEIVABLE	vegamaa Ravi baakiyoda kooduthalaa 180 rooba varavu vai	வேகமா ரவி பாக்கியோட கூடுதலா 180 ரூபா வரவு வை	Ravi	180
+ADD_ADDITIONAL_RECEIVABLE	konjam Murugan baakiyoda kooduthalaa 300 rooba varavu vai	கொஞ்சம் முருகன் பாக்கியோட கூடுதலா 300 ரூபா வரவு வை	Murugan	300
+ADD_ADDITIONAL_RECEIVABLE	vegamaa Saravanan baakiyoda kooduthalaa 400 rooba varavu vai	வேகமா சரவணன் பாக்கியோட கூடுதலா 400 ரூபா வரவு வை	Saravanan	400
+ADD_ADDITIONAL_RECEIVABLE	konjam Prabhu baakiyoda kooduthalaa 600 rooba varavu vai	கொஞ்சம் பிரபு பாக்கியோட கூடுதலா 600 ரூபா வரவு வை	Prabhu	600
+ADD_ADDITIONAL_RECEIVABLE	vegamaa Karthik baakiyoda kooduthalaa 700 rooba varavu vai	வேகமா கார்த்திக் பாக்கியோட கூடுதலா 700 ரூபா வரவு வை	Karthik	700
+ADD_ADDITIONAL_RECEIVABLE	konjam Vijay baakiyoda kooduthalaa 900 rooba varavu vai	கொஞ்சம் விஜய் பாக்கியோட கூடுதலா 900 ரூபா வரவு வை	Vijay	900
+ADD_ADDITIONAL_RECEIVABLE	vegamaa Arun baakiyoda kooduthalaa 1200 rooba varavu vai	வேகமா அருண் பாக்கியோட கூடுதலா 1200 ரூபா வரவு வை	Arun	1200
+ADD_ADDITIONAL_RECEIVABLE	konjam Mani baakiyoda kooduthalaa 2000 rooba varavu vai	கொஞ்சம் மணி பாக்கியோட கூடுதலா 2000 ரூபா வரவு வை	Mani	2000
+ADD_ADDITIONAL_RECEIVABLE	vegamaa Selvam baakiyoda kooduthalaa 3000 rooba varavu vai	வேகமா செல்வம் பாக்கியோட கூடுதலா 3000 ரூபா வரவு வை	Selvam	3000
+ADD_ADDITIONAL_RECEIVABLE	konjam Raja baakiyoda kooduthalaa 5000 rooba varavu vai	கொஞ்சம் ராஜா பாக்கியோட கூடுதலா 5000 ரூபா வரவு வை	Raja	5000
+ADD_ADDITIONAL_RECEIVABLE	vegamaa Meena baakiyoda kooduthalaa 10000 rooba varavu vai	வேகமா மீனா பாக்கியோட கூடுதலா 10000 ரூபா வரவு வை	Meena	10000
+ADD_ADDITIONAL_RECEIVABLE	konjam Suresh baakiyoda kooduthalaa 100 rooba varavu vai	கொஞ்சம் சுரேஷ் பாக்கியோட கூடுதலா 100 ரூபா வரவு வை	Suresh	100
+ADD_ADDITIONAL_RECEIVABLE	vegamaa Bala baakiyoda kooduthalaa 150 rooba varavu vai	வேகமா பாலா பாக்கியோட கூடுதலா 150 ரூபா வரவு வை	Bala	150
+ADD_ADDITIONAL_RECEIVABLE	konjam Kannan baakiyoda kooduthalaa 250 rooba varavu vai	கொஞ்சம் கண்ணன் பாக்கியோட கூடுதலா 250 ரூபா வரவு வை	Kannan	250
+ADD_ADDITIONAL_RECEIVABLE	vegamaa Satheesh baakiyoda kooduthalaa 350 rooba varavu vai	வேகமா சதீஷ் பாக்கியோட கூடுதலா 350 ரூபா வரவு வை	Satheesh	350
+ADD_ADDITIONAL_RECEIVABLE	konjam Dinesh baakiyoda kooduthalaa 500 rooba varavu vai	கொஞ்சம் தினேஷ் பாக்கியோட கூடுதலா 500 ரூபா வரவு வை	Dinesh	500
+ADD_ADDITIONAL_RECEIVABLE	vegamaa Yuvaraj baakiyoda kooduthalaa 650 rooba varavu vai	வேகமா யுவராஜ் பாக்கியோட கூடுதலா 650 ரூபா வரவு வை	Yuvaraj	650
+ADD_ADDITIONAL_RECEIVABLE	konjam Prakash baakiyoda kooduthalaa 800 rooba varavu vai	கொஞ்சம் பிரகாஷ் பாக்கியோட கூடுதலா 800 ரூபா வரவு வை	Prakash	800
+ADD_ADDITIONAL_RECEIVABLE	vegamaa Kumar kitta vara vendiya thogaiya 1000 rooba adhigapaduthu	வேகமா குமார் கிட்ட வர வேண்டிய தொகையை 1000 ரூபா அதிகப்படுத்து	Kumar	1000
+ADD_ADDITIONAL_RECEIVABLE	konjam Ravi kitta vara vendiya thogaiya 1800 rooba adhigapaduthu	கொஞ்சம் ரவி கிட்ட வர வேண்டிய தொகையை 1800 ரூபா அதிகப்படுத்து	Ravi	1800
+ADD_ADDITIONAL_RECEIVABLE	vegamaa Murugan kitta vara vendiya thogaiya 2500 rooba adhigapaduthu	வேகமா முருகன் கிட்ட வர வேண்டிய தொகையை 2500 ரூபா அதிகப்படுத்து	Murugan	2500
+ADD_ADDITIONAL_RECEIVABLE	konjam Saravanan kitta vara vendiya thogaiya 4000 rooba adhigapaduthu	கொஞ்சம் சரவணன் கிட்ட வர வேண்டிய தொகையை 4000 ரூபா அதிகப்படுத்து	Saravanan	4000
+ADD_ADDITIONAL_RECEIVABLE	vegamaa Prabhu kitta vara vendiya thogaiya 7500 rooba adhigapaduthu	வேகமா பிரபு கிட்ட வர வேண்டிய தொகையை 7500 ரூபா அதிகப்படுத்து	Prabhu	7500
+ADD_ADDITIONAL_RECEIVABLE	konjam Vijay kitta vara vendiya thogaiya 80 rooba adhigapaduthu	கொஞ்சம் விஜய் கிட்ட வர வேண்டிய தொகையை 80 ரூபா அதிகப்படுத்து	Vijay	80
+ADD_ADDITIONAL_RECEIVABLE	vegamaa Arun kitta vara vendiya thogaiya 120 rooba adhigapaduthu	வேகமா அருண் கிட்ட வர வேண்டிய தொகையை 120 ரூபா அதிகப்படுத்து	Arun	120
+ADD_ADDITIONAL_RECEIVABLE	konjam Mani kitta vara vendiya thogaiya 200 rooba adhigapaduthu	கொஞ்சம் மணி கிட்ட வர வேண்டிய தொகையை 200 ரூபா அதிகப்படுத்து	Mani	200
+ADD_ADDITIONAL_RECEIVABLE	vegamaa Selvam kitta vara vendiya thogaiya 300 rooba adhigapaduthu	வேகமா செல்வம் கிட்ட வர வேண்டிய தொகையை 300 ரூபா அதிகப்படுத்து	Selvam	300
+ADD_ADDITIONAL_RECEIVABLE	konjam Raja kitta vara vendiya thogaiya 450 rooba adhigapaduthu	கொஞ்சம் ராஜா கிட்ட வர வேண்டிய தொகையை 450 ரூபா அதிகப்படுத்து	Raja	450
+ADD_ADDITIONAL_RECEIVABLE	vegamaa Meena kitta vara vendiya thogaiya 600 rooba adhigapaduthu	வேகமா மீனா கிட்ட வர வேண்டிய தொகையை 600 ரூபா அதிகப்படுத்து	Meena	600
+ADD_ADDITIONAL_RECEIVABLE	konjam Latha kitta vara vendiya thogaiya 750 rooba adhigapaduthu	கொஞ்சம் லதா கிட்ட வர வேண்டிய தொகையை 750 ரூபா அதிகப்படுத்து	Latha	750
+ADD_ADDITIONAL_RECEIVABLE	vegamaa Suresh kitta vara vendiya thogaiya 900 rooba adhigapaduthu	வேகமா சுரேஷ் கிட்ட வர வேண்டிய தொகையை 900 ரூபா அதிகப்படுத்து	Suresh	900
+ADD_ADDITIONAL_RECEIVABLE	konjam Bala kitta vara vendiya thogaiya 1500 rooba adhigapaduthu	கொஞ்சம் பாலா கிட்ட வர வேண்டிய தொகையை 1500 ரூபா அதிகப்படுத்து	Bala	1500
+ADD_ADDITIONAL_RECEIVABLE	vegamaa Kannan kitta vara vendiya thogaiya 2000 rooba adhigapaduthu	வேகமா கண்ணன் கிட்ட வர வேண்டிய தொகையை 2000 ரூபா அதிகப்படுத்து	Kannan	2000
+ADD_ADDITIONAL_RECEIVABLE	konjam Satheesh kitta vara vendiya thogaiya 3500 rooba adhigapaduthu	கொஞ்சம் சதீஷ் கிட்ட வர வேண்டிய தொகையை 3500 ரூபா அதிகப்படுத்து	Satheesh	3500
+ADD_ADDITIONAL_RECEIVABLE	vegamaa Dinesh kitta vara vendiya thogaiya 5000 rooba adhigapaduthu	வேகமா தினேஷ் கிட்ட வர வேண்டிய தொகையை 5000 ரூபா அதிகப்படுத்து	Dinesh	5000
+ADD_ADDITIONAL_RECEIVABLE	konjam Prakash kitta vara vendiya thogaiya 50 rooba adhigapaduthu	கொஞ்சம் பிரகாஷ் கிட்ட வர வேண்டிய தொகையை 50 ரூபா அதிகப்படுத்து	Prakash	50
+ADD_ADDITIONAL_PAYABLE	vegamaa Kumarku naan thara vendiya kanakkula innum 100 rooba seru	வேகமா குமார்க்கு நான் தர வேண்டிய கணக்குல இன்னும் 100 ரூபா சேர்	Kumar	100
+ADD_ADDITIONAL_PAYABLE	konjam Raviku naan thara vendiya kanakkula innum 180 rooba seru	கொஞ்சம் ரவிக்கு நான் தர வேண்டிய கணக்குல இன்னும் 180 ரூபா சேர்	Ravi	180
+ADD_ADDITIONAL_PAYABLE	vegamaa Muruganku naan thara vendiya kanakkula innum 250 rooba seru	வேகமா முருகன்க்கு நான் தர வேண்டிய கணக்குல இன்னும் 250 ரூபா சேர்	Murugan	250
+ADD_ADDITIONAL_PAYABLE	konjam Saravananku naan thara vendiya kanakkula innum 400 rooba seru	கொஞ்சம் சரவணன்க்கு நான் தர வேண்டிய கணக்குல இன்னும் 400 ரூபா சேர்	Saravanan	400
+ADD_ADDITIONAL_PAYABLE	vegamaa Prabhuku naan thara vendiya kanakkula innum 500 rooba seru	வேகமா பிரபுக்கு நான் தர வேண்டிய கணக்குல இன்னும் 500 ரூபா சேர்	Prabhu	500
+ADD_ADDITIONAL_PAYABLE	konjam Karthikku naan thara vendiya kanakkula innum 700 rooba seru	கொஞ்சம் கார்த்திக்க்கு நான் தர வேண்டிய கணக்குல இன்னும் 700 ரூபா சேர்	Karthik	700
+ADD_ADDITIONAL_PAYABLE	vegamaa Vijayku naan thara vendiya kanakkula innum 800 rooba seru	வேகமா விஜய்க்கு நான் தர வேண்டிய கணக்குல இன்னும் 800 ரூபா சேர்	Vijay	800
+ADD_ADDITIONAL_PAYABLE	konjam Arunku naan thara vendiya kanakkula innum 1200 rooba seru	கொஞ்சம் அருண்க்கு நான் தர வேண்டிய கணக்குல இன்னும் 1200 ரூபா சேர்	Arun	1200
+ADD_ADDITIONAL_PAYABLE	vegamaa Maniku naan thara vendiya kanakkula innum 1800 rooba seru	வேகமா மணிக்கு நான் தர வேண்டிய கணக்குல இன்னும் 1800 ரூபா சேர்	Mani	1800
+ADD_ADDITIONAL_PAYABLE	konjam Selvamku naan thara vendiya kanakkula innum 3000 rooba seru	கொஞ்சம் செல்வம்க்கு நான் தர வேண்டிய கணக்குல இன்னும் 3000 ரூபா சேர்	Selvam	3000
+ADD_ADDITIONAL_PAYABLE	vegamaa Rajaku naan thara vendiya kanakkula innum 4000 rooba seru	வேகமா ராஜாக்கு நான் தர வேண்டிய கணக்குல இன்னும் 4000 ரூபா சேர்	Raja	4000
+ADD_ADDITIONAL_PAYABLE	konjam Meenaku naan thara vendiya kanakkula innum 10000 rooba seru	கொஞ்சம் மீனாக்கு நான் தர வேண்டிய கணக்குல இன்னும் 10000 ரூபா சேர்	Meena	10000
+ADD_ADDITIONAL_PAYABLE	vegamaa Sureshku naan thara vendiya kanakkula innum 80 rooba seru	வேகமா சுரேஷ்க்கு நான் தர வேண்டிய கணக்குல இன்னும் 80 ரூபா சேர்	Suresh	80
+ADD_ADDITIONAL_PAYABLE	konjam Balaku naan thara vendiya kanakkula innum 150 rooba seru	கொஞ்சம் பாலாக்கு நான் தர வேண்டிய கணக்குல இன்னும் 150 ரூபா சேர்	Bala	150
+ADD_ADDITIONAL_PAYABLE	vegamaa Kannanku naan thara vendiya kanakkula innum 200 rooba seru	வேகமா கண்ணன்க்கு நான் தர வேண்டிய கணக்குல இன்னும் 200 ரூபா சேர்	Kannan	200
+ADD_ADDITIONAL_PAYABLE	konjam Satheeshku naan thara vendiya kanakkula innum 350 rooba seru	கொஞ்சம் சதீஷ்க்கு நான் தர வேண்டிய கணக்குல இன்னும் 350 ரூபா சேர்	Satheesh	350
+ADD_ADDITIONAL_PAYABLE	vegamaa Dineshku naan thara vendiya kanakkula innum 450 rooba seru	வேகமா தினேஷ்க்கு நான் தர வேண்டிய கணக்குல இன்னும் 450 ரூபா சேர்	Dinesh	450
+ADD_ADDITIONAL_PAYABLE	konjam Yuvarajku naan thara vendiya kanakkula innum 650 rooba seru	கொஞ்சம் யுவராஜ்க்கு நான் தர வேண்டிய கணக்குல இன்னும் 650 ரூபா சேர்	Yuvaraj	650
+ADD_ADDITIONAL_PAYABLE	vegamaa Prakashku naan thara vendiya kanakkula innum 750 rooba seru	வேகமா பிரகாஷ்க்கு நான் தர வேண்டிய கணக்குல இன்னும் 750 ரூபா சேர்	Prakash	750
+ADD_ADDITIONAL_PAYABLE	konjam Kumarku kudukka vendiya baakiya 1000 rooba kootti podu	கொஞ்சம் குமார்க்கு கொடுக்க வேண்டிய பாக்கிய 1000 ரூபா கூட்டி போடு	Kumar	1000
+ADD_ADDITIONAL_PAYABLE	vegamaa Raviku kudukka vendiya baakiya 1500 rooba kootti podu	வேகமா ரவிக்கு கொடுக்க வேண்டிய பாக்கிய 1500 ரூபா கூட்டி போடு	Ravi	1500
+ADD_ADDITIONAL_PAYABLE	konjam Muruganku kudukka vendiya baakiya 2500 rooba kootti podu	கொஞ்சம் முருகன்க்கு கொடுக்க வேண்டிய பாக்கிய 2500 ரூபா கூட்டி போடு	Murugan	2500
+ADD_ADDITIONAL_PAYABLE	vegamaa Saravananku kudukka vendiya baakiya 3500 rooba kootti podu	வேகமா சரவணன்க்கு கொடுக்க வேண்டிய பாக்கிய 3500 ரூபா கூட்டி போடு	Saravanan	3500
+ADD_ADDITIONAL_PAYABLE	konjam Prabhuku kudukka vendiya baakiya 7500 rooba kootti podu	கொஞ்சம் பிரபுக்கு கொடுக்க வேண்டிய பாக்கிய 7500 ரூபா கூட்டி போடு	Prabhu	7500
+ADD_ADDITIONAL_PAYABLE	vegamaa Vijayku kudukka vendiya baakiya 50 rooba kootti podu	வேகமா விஜய்க்கு கொடுக்க வேண்டிய பாக்கிய 50 ரூபா கூட்டி போடு	Vijay	50
+ADD_ADDITIONAL_PAYABLE	konjam Arunku kudukka vendiya baakiya 120 rooba kootti podu	கொஞ்சம் அருண்க்கு கொடுக்க வேண்டிய பாக்கிய 120 ரூபா கூட்டி போடு	Arun	120
+ADD_ADDITIONAL_PAYABLE	vegamaa Maniku kudukka vendiya baakiya 180 rooba kootti podu	வேகமா மணிக்கு கொடுக்க வேண்டிய பாக்கிய 180 ரூபா கூட்டி போடு	Mani	180
+ADD_ADDITIONAL_PAYABLE	konjam Selvamku kudukka vendiya baakiya 300 rooba kootti podu	கொஞ்சம் செல்வம்க்கு கொடுக்க வேண்டிய பாக்கிய 300 ரூபா கூட்டி போடு	Selvam	300
+ADD_ADDITIONAL_PAYABLE	vegamaa Rajaku kudukka vendiya baakiya 400 rooba kootti podu	வேகமா ராஜாக்கு கொடுக்க வேண்டிய பாக்கிய 400 ரூபா கூட்டி போடு	Raja	400
+ADD_ADDITIONAL_PAYABLE	konjam Meenaku kudukka vendiya baakiya 600 rooba kootti podu	கொஞ்சம் மீனாக்கு கொடுக்க வேண்டிய பாக்கிய 600 ரூபா கூட்டி போடு	Meena	600
+ADD_ADDITIONAL_PAYABLE	vegamaa Lathaku kudukka vendiya baakiya 700 rooba kootti podu	வேகமா லதாக்கு கொடுக்க வேண்டிய பாக்கிய 700 ரூபா கூட்டி போடு	Latha	700
+ADD_ADDITIONAL_PAYABLE	konjam Sureshku kudukka vendiya baakiya 900 rooba kootti podu	கொஞ்சம் சுரேஷ்க்கு கொடுக்க வேண்டிய பாக்கிய 900 ரூபா கூட்டி போடு	Suresh	900
+ADD_ADDITIONAL_PAYABLE	vegamaa Balaku kudukka vendiya baakiya 1200 rooba kootti podu	வேகமா பாலாக்கு கொடுக்க வேண்டிய பாக்கிய 1200 ரூபா கூட்டி போடு	Bala	1200
+ADD_ADDITIONAL_PAYABLE	konjam Kannanku kudukka vendiya baakiya 2000 rooba kootti podu	கொஞ்சம் கண்ணன்க்கு கொடுக்க வேண்டிய பாக்கிய 2000 ரூபா கூட்டி போடு	Kannan	2000
+ADD_ADDITIONAL_PAYABLE	vegamaa Satheeshku kudukka vendiya baakiya 3000 rooba kootti podu	வேகமா சதீஷ்க்கு கொடுக்க வேண்டிய பாக்கிய 3000 ரூபா கூட்டி போடு	Satheesh	3000

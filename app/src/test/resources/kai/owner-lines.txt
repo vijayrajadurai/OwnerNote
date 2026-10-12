@@ -200,3 +200,25 @@ ASK    | ABC Traders statement pdf                      | ABC Traders; PDF; ₹1
 # Owner (11 Oct 2026): "reminde pannu" is "remind pannu" — and never left in the reminder's words.
 REMIND | December 3 morning 10 sabari ku birthday ku wish pannanum reminde pannu | 2026-12-03 10:00 birthday
 REMIND | டிசம்பர் 3 காலைல 10 மணிக்கு சபரிக்கு பர்த்டே விஷ் பண்ணணும் ரிமைண்ட் பண்ணு | 2026-12-03 10:00 சபரிக்கு
+
+# The owner's dataset (Kai_Local_Tamil_Thanglish_100000, 12 Oct 2026): an entry said in other words (KaiLedgerPhrases).
+ENTRY  | Ramesh innum 500 rooba tharala                                   | CREDIT Ramesh 500
+ENTRY  | Selvam thara vendiya 800 roobaya kanakkula podu                  | CREDIT Selvam 800
+ENTRY  | Lakshmi kitta irundhu 600 rooba vaanganum                        | CREDIT Lakshmi 600
+ENTRY  | Kumar baakiyoda kooduthalaa 700 rooba varavu vai                 | CREDIT Kumar 700
+ENTRY  | Ramesh kitta vara vendiya thogaiya 300 rooba adhigapaduthu       | CREDIT Ramesh 300
+ENTRY  | konjam Kumar enaku thara vendiya kanakkula innum 250 rooba seru  | CREDIT Kumar 250
+ENTRY  | ABC Traders ku innum 1500 rooba kudukala                         | DEBIT ABC Traders 1500
+ENTRY  | Murugan Stores ku 4000 rooba baaki iruku                         | DEBIT Murugan Stores 4000
+ENTRY  | ABC Traders ku kudukka vendiya 900 roobaya kanakkula podu        | DEBIT ABC Traders 900
+ENTRY  | ABC Traders ku 600 rooba settle pannanum                         | DEBIT ABC Traders 600
+ENTRY  | Murugan Stores ku kudukka vendiya baakiya 750 rooba kootti podu  | DEBIT Murugan Stores 750
+ENTRY  | vegamaa ABC Traders ku naan thara vendiya kanakkula innum 350 rooba seru | DEBIT ABC Traders 350
+ENTRY  | Selvam baakila 450 rooba kattittaaru                             | IN Selvam 450
+ENTRY  | Kumar kudutha 500 roobaya varavula podu                          | IN Kumar 500
+ENTRY  | Ramesh 1200 rooba kuduthuttaaru                                  | IN Ramesh 1200
+ENTRY  | ABC Traders ku kudutha 2000 roobaya selavula record pannu        | OUT ABC Traders 2000
+ENTRY  | Murugan Stores ku 1000 rooba settle pannitten                    | OUT Murugan Stores 1000
+ENTRY  | ABC Traders ku 800 rooba anuppitten                              | OUT ABC Traders 800
+ENTRY  | padhivula naan ABC Traders ku 700 rooba kuduthuten               | OUT ABC Traders 700
+ENTRY  | சரி நான் மணிக்கு 750 ரூபா குடுக்கணும்                              | DEBIT Mani 750
