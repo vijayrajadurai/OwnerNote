@@ -378,6 +378,7 @@ object KaiFeed {
         enaku yenaku yenakku ennaku enakku
         ivan ivar ivaru ivanga ival adhe athe adhey andha antha indha intha endha entha yentha kadaisiya kadaisi munnadi munnaadi ellam ellaam aal aalu
         innum innoru innonu marupadi thirumba paadhi half
+        meedhi meethi meedi rate price vilai
         saraku sarakku saman saaman saamaan samaan maal kadaiku kadaikku porul
         # An accountant's words (owner, 11 Oct 2026: "pona maasam sales", "GST evlo", "advance evlo" were taken as a person's name).
         # "vandhirukku" is "came", never "to Vandhir" (owner's test, 12 Oct 2026).
