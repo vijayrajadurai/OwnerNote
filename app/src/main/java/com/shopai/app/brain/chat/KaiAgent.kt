@@ -584,6 +584,19 @@ class KaiAgent(
         lastPlainAnswer = if (t.card == null && t.reply.mood != KaiMood.CLARIFY && !KaiConversationCare.ownerDidNotFollow(raw)) raw to turnLang else null
     }
 
+    /** The owner's answer to "money to come in, or money you pay?": the question for that side, or null (they moved on). */
+    private fun sideAnswered(said: String): String? {
+        val t = " ${said.lowercase(Locale.ROOT).replace(Regex("""[?!.,]"""), " ")} "
+        if (t.trim().split(Regex("""\s+""")).size > 4) return null
+        val pays = Regex("""\s(?:naan|nan|neenga|naa|nanga|naanga|supplier|suppliers|kudukanum|kudukkanum|kudukka|pay|payable|i\s+owe|i\s+pay|நான்|சப்ளையர்\S*|கொடுக்க\S*)\s""")
+        val gets = Regex("""\s(?:enakku|enaku|ennaku|yenaku|customer|customers|vara|varanum|vaanganum|receivable|owes\s+me|they|எனக்கு|கஸ்டமர்\S*|வர\S*)\s""")
+        return when {
+            gets.containsMatchIn(t) && !pays.containsMatchIn(t) -> "enakku yaaru tharanum"
+            pays.containsMatchIn(t) && !gets.containsMatchIn(t) -> "naan yaarukku tharanum"
+            else -> null
+        }
+    }
+
     /** The owner's last question that got a plain answer, and the language it was answered in. */
     private var lastPlainAnswer: Pair<String, KaiLang>? = null
     /** This turn's language; [forcedLang] when the owner asked for it ("puriyala" → Tamil). */
@@ -1002,12 +1015,15 @@ class KaiAgent(
         val onTopic = personOnTopic?.takeIf { conversationState.conversationTurn - it.second <= 3 }?.first
             ?: conversationState.lastSaved?.takeIf { conversationState.conversationTurn - it.turn <= 3 }?.person
         // "meedhi eppo tharuvaan" right after Kumar's entry: Kumar's due date — never a person called "Meedhi".
-        val read = if (onTopic != null && (KaiConversationCare.asksBalanceAgain(earlier) || asksWhenAgain.containsMatchIn(earlier)) &&
+        val read = if (onTopic != null && (KaiConversationCare.asksBalanceAgain(earlier) || asksWhenAgain.containsMatchIn(earlier) ||
+                KaiChatUnderstanding.bareOwe(earlier)) &&
             com.shopai.app.brain.KaiUnderstanding.knownPerson(earlier, people0) == null) "$onTopic $earlier" else earlier
         com.shopai.app.brain.KaiUnderstanding.knownPerson(read, people0)?.let { personOnTopic = it to conversationState.conversationTurn + 1 }
         // "Power bank" is a product, not a bank: product names that hold a money word are joined first. "totel" = total (KaiFeed).
         // "Kumar innum 500 rooba tharala", "Kumarku 500 baaki iruku": an entry said in other words, read as Kai reads entries (KaiLedgerPhrases).
-        val said = com.shopai.app.brain.tools.KaiLedgerPhrases.canonical(com.shopai.app.brain.tools.KaiInventory.joinProductWords(spelled(read)))
+        val phrased = com.shopai.app.brain.tools.KaiLedgerPhrases.canonical(com.shopai.app.brain.tools.KaiInventory.joinProductWords(spelled(read)))
+        // "naan" / "enakku" / "suppliers" / "customers" right after Kai asked whose money it is: the full question, that side.
+        val said = (if (brain.sideAsked) { brain.sideAsked = false; sideAnswered(phrased) } else null) ?: phrased
         ownerWords = said
         val lang = forcedLang ?: if (tamil) KaiLang.TAMIL else KaiLanguage.forChat(said)
         turnLang = lang

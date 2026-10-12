@@ -44,6 +44,8 @@ enum class ChatIntent {
     RECEIVED_PAYMENTS,
     /** "Kumar correct date-la tharuvaara, illa late-aa?", "yaarlam late-aa pay pannuvaanga?": how people paid against their due dates. */
     PAYMENT_BEHAVIOUR,
+    /** "tharanum?", "evlo kudukkanum?" with nobody said: money to come in, or money the owner pays? Asked, never guessed. */
+    WHICH_SIDE,
     UNKNOWN,
 }
 
@@ -154,9 +156,9 @@ object KaiChatUnderstanding {
             " varanum", " owe", " outstanding", " எவ்வளவு", " பாக்கி", " தரணும்", " கொடுக்கணும்")
         val personWords = paidAlready || lastPayment || history || due
         // "yaar / yaaru / yar / who" — asking WHO (a list from the records), never one person.
-        val asksWho = has(" yaar", " yar ", " yaru ", " yaroda", " yaaroda", " yarukku", " yaruku", " who ", " whom", " whose", " யார்", " யாரு", " யாருக்கு")
+        val asksWho = has(" yaar", " yar ", " yaru ", " yaroda", " yaaroda", " yarukku", " yaruku", " yaaruku", " who ", " whom", " whose", " யார்", " யாரு", " யாருக்கு")
         // "yaarukku / yarukku / to whom / யாருக்கு" — the owner pays them.
-        val toWhom = has(" yaarukku", " yarukku", " yaruku", " to whom", " whom", " யாருக்கு")
+        val toWhom = has(" yaarukku", " yarukku", " yaruku", " yaaruku", " to whom", " whom", " யாருக்கு")
         // "overdue customers details sollu", "ellaa pending list": about the ledger's people, not a person follow-up.
         val ledgerScope = has(" overdue", " thaandi", " thandi", " customers", " suppliers", " payable", " receivable", " list", " ellaa", " ellarum",
             " ellaarum", " all ", " highest", " lowest", " smallest", " illama", " illaama", " தாண்டி", " எல்லா")
@@ -184,15 +186,23 @@ object KaiChatUnderstanding {
         // "Who has to pay me?" is money coming in, not the owner paying.
         // "Yaaru kudukkanum?" (who has to give — me): the person asked about gives; "yaarukku kudukkanum?" (to whom) is the owner paying.
         val whoGives = has(" yaar ", " yaaru ", " yar ", " yaru ") && !toWhom && !has(" naan ", " nan ", " neenga ")
+        // "naan yaaruku tharanum", "நான் யாருக்கு தரணும்", "who do I owe": the owner is the one paying — whatever the verb
+        // ("tharanum" too). Owner, 12 Oct 2026: "naan yaaruku tharanum" listed who owes the owner.
+        val oweVerb = has(" tharanum", " tharanam", " kudukanum", " kudukkanum", " kodukkanum", " kodukanum", " pay ", " payment", " pannanum",
+            " settle", " owe", " தரணும்", " கொடுக்கணும்", " குடுக்கணும்", " பே ")
+        val ownerGets = has(" enaku ", " enakku ", " ennaku ", " yenaku ", " yenakku ", " எனக்கு", " owes me", " owe me", " pay me", " kitta irundhu",
+            " varanum", " vaanganum", " vanganum", " vasool", " collect", " வரணும்", " வாங்கணும்", " கிட்ட இருந்து")
+        val ownerPays = oweVerb && !ownerGets && (has(" naan ", " nan ", " நான் ") || toWhom ||
+            has(" do i owe", " i owe", " should i pay", " do i pay", " i have to pay", " i need to pay", " whom should i", " who do i", " who should i pay"))
         val paysMe = has(" pay me", " pays me", " paying me", " pay us") || whoGives && has(" kudukkanum", " kodukkanum", " kudukanum", " kodukanum") ||
             // "Today who has to pay?", "who owes": the person asked about pays — unless the owner is the one paying ("who do I have to pay?").
             has(" who has to pay", " who have to pay", " who needs to pay", " who should pay", " who must pay", " who will pay", " who is paying", " who pays") &&
             !has(" do i ", " i have", " should i", " i need", " i must", " i owe")
         // "yaar kitta irundhu pay varanum": money to come FROM them — never the owner paying, even with "pay" in it (owner, 11 Oct 2026).
         val comesIn = has(" varanum", " vara vendiyadhu", " vara vendiyathu", " kitta irundhu", " kitta irunthu", " kittendhu", " from ", " வரணும்", " கிட்ட இருந்து")
-        val payWords = !paysMe && !comesIn && has(" kudukkanum", " kodukkanum", " kudukanum", " kodukanum", " kudukanu", " kudukka ", " pay ", " payable", " supplier", " i owe", " do i owe", " கொடுக்க", " குடுக்க")
-        val collectWords = paysMe || has(" vara vendiyadhu", " vara vendiyathu", " vara vendiyadu", " collect", " vasool", " tharanum", " varanum", " vanganum", " vaanganum", " receive", " receivable", " owes me",
-            " owe me", " payment", " cash tharanum", " vanganu", " vaanganu", " வசூல்", " தரணும்", " வரணும்", " வாங்கணும்")
+        val payWords = ownerPays || !paysMe && !comesIn && has(" kudukkanum", " kodukkanum", " kudukanum", " kodukanum", " kudukanu", " kudukka ", " pay ", " payable", " supplier", " i owe", " do i owe", " கொடுக்க", " குடுக்க")
+        val collectWords = !ownerPays && (paysMe || has(" vara vendiyadhu", " vara vendiyathu", " vara vendiyadu", " collect", " vasool", " tharanum", " varanum", " vanganum", " vaanganum", " receive", " receivable", " owes me",
+            " owe me", " payment", " cash tharanum", " vanganu", " vaanganu", " வசூல்", " தரணும்", " வரணும்", " வாங்கணும்"))
         // ---- one ledger question class each: which people, which side, which dates ----
         val listWords = has(" list", " bills", " details", " detail ", " ellaa", " ella ", " ellarum", " ellaarum", " ellaroda", " ellaaroda", " all ", " full ",
             " விவரம்", " எல்லா", " லிஸ்ட்")
@@ -231,6 +241,9 @@ object KaiChatUnderstanding {
         }
         if (ledgerList != null) return ledgerList
 
+        // "tharanum?", "evlo kudukkanum?", "baaki evlo tharanum": the money verb alone — whose money is it? Asked.
+        if (period == null && bareOwe(lower)) return ChatQuery(ChatIntent.WHICH_SIDE, PersonRef.None, amount, period)
+
         val intent = when {
             has(" reminder", " remind", " ninaivu", " நினைவூட்ட", " ரிமைண்டர்") -> ChatIntent.REMINDER_QUERY
             overdueAsk -> ChatIntent.OVERDUE_COLLECTIONS
@@ -263,6 +276,19 @@ object KaiChatUnderstanding {
             else -> ChatIntent.UNKNOWN
         }
         return ChatQuery(intent, PersonRef.None, amount, period, side = if (intent == ChatIntent.TOTAL_PAYABLE) Direction.PAYABLE else null, fullList = listWords)
+    }
+
+    private val oweWords = setOf("tharanum", "tharanam", "kudukanum", "kudukkanum", "kodukkanum", "kodukanum", "pay", "pannanum", "payment",
+        "தரணும்", "கொடுக்கணும்", "குடுக்கணும்")
+    private val bareWords = oweWords + setOf("evlo", "evvalavu", "evalo", "baaki", "bakki", "innum", "ethana", "எவ்வளவு", "பாக்கி", "இன்னும்")
+
+    /**
+     * "tharanum?", "evlo kudukkanum?", "baaki evlo tharanum": the money verb with no one in it — neither whose money nor which
+     * side. KaiAgent reads it for the person just talked about; with no one, Kai asks ([ChatIntent.WHICH_SIDE]).
+     */
+    fun bareOwe(text: String): Boolean {
+        val words = text.lowercase(Locale.ROOT).replace(Regex("""[?!.,;:]"""), " ").trim().split(Regex("""\s+""")).filter { it.isNotEmpty() }
+        return words.size in 1..3 && words.any { it in oweWords } && words.all { it in bareWords }
     }
 
     /** "late-aa", "correct date-la", "time-ku", "தாமதம்": paying after or on the due date. */

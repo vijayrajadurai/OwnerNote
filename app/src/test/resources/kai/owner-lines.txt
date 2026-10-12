@@ -222,3 +222,16 @@ ENTRY  | Murugan Stores ku 1000 rooba settle pannitten                    | OUT 
 ENTRY  | ABC Traders ku 800 rooba anuppitten                              | OUT ABC Traders 800
 ENTRY  | padhivula naan ABC Traders ku 700 rooba kuduthuten               | OUT ABC Traders 700
 ENTRY  | சரி நான் மணிக்கு 750 ரூபா குடுக்கணும்                              | DEBIT Mani 750
+
+# "naan yaaruku tharanum" listed who owes the owner (owner, 12 Oct 2026): the owner as the one paying, whatever the verb.
+ASK    | naan yaaruku tharanum                    | ₹14,000; ABC Traders
+ASK    | naan yaar yaaruku panam tharanum         | ₹14,000
+ASK    | yaaruku naan tharanum                    | ₹14,000
+ASK    | yaaruku payment pannanum                 | ₹14,000
+ASK    | naan evlo tharanum                       | ₹14,000
+ASK    | நான் யாருக்கு தரணும்                       | ₹14,000
+ASK    | நான் யார் யாருக்கு பணம் தரணும்              | ₹14,000
+ASK    | enaku yaaru tharanum                     | ₹13,500; Selvam
+ASK    | yaaru kudukanum                          | ₹13,500
+ASK    | whom should i pay                        | ₹14,000
+ASK    | tharanum                                 | vara vendiyadha
