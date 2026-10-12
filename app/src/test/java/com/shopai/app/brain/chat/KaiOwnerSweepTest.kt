@@ -979,4 +979,139 @@ class KaiOwnerSweepTest {
         flow(listOf("madhan ku 100 add panniko"), more = madhan) { t, _ -> card(t, "மதன்", "₹100") }
         assertTrue("${bad.size} flows failed:\n\n" + bad.joinToString("\n\n"), bad.isEmpty())
     }
+    /**
+     * Context (owner, 12 Oct 2026: "owner enna context-la solla varaaru-nu purinjukittu adhukku ethamaari answer kudukanum"): a
+     * follow-up said with no name — a due date, a correction, "pdf kudu", "call pannu", "remind pannu", "rate evlo", "10 illa 15",
+     * "nethu?" — is about what was just said. Typed and as the mic writes it; never a generic "edha pathi?" / "yaar pathi?".
+     */
+    @Test fun contextFollowUps() {
+        val out = StringBuilder(); var total = 0; var badN = 0
+        val generic = listOf("edha pathi sollureenga", "எதைப் பத்தி சொல்றீங்க", "yaar pathi kekkureenga", "யார் பத்தி கேக்குறீங்க", "vera vishayam pathiyaa",
+            "வேற விஷயம் பத்தியா", "clear-ah sollunga", "தெளிவா சொல்லுங்க", "edha pathi kekkureenga", "எதைப் பத்தி கேக்குறீங்க")
+        fun txt(t: KaiTurn?) = (t?.reply?.text.orEmpty() + " | " + t?.card?.lines?.joinToString(" | ").orEmpty())
+        // check: (lastTurn, shop) -> error or null; anyWords: any of these words must be in reply/card
+        fun conv(name: String, lines: List<String>, vararg anyOf: String, check: ((KaiTurn, Shop) -> String?)? = null) {
+            val mic = lines.map { if (it == "TAP") it else KaiMicForm.of(it) ?: it }
+            for ((how, said) in listOf("typed" to lines, "mic" to mic).distinctBy { it.second }) {
+                total++
+                val s = Shop(); var t: KaiTurn? = null; val errs = mutableListOf<String>()
+                for (l in said) {
+                    if (l == "TAP") { val b = t?.card?.buttons?.firstOrNull { it.action is KaiAction.ConfirmPlan || it.action is KaiAction.ConfirmStock || it.action is KaiAction.ConfirmReminder }
+                        if (b == null) errs += "nothing to TAP" else s.act(b.action); continue }
+                    t = s.say(l)
+                    generic.firstOrNull { txt(t).contains(it, ignoreCase = true) }?.let { errs += "generic after «$l»" }
+                }
+                if (anyOf.isNotEmpty() && anyOf.none { txt(t).contains(it, ignoreCase = true) }) errs += "want any of ${anyOf.toList()}"
+                check?.invoke(t!!, s)?.let { errs += it }
+                if (errs.isNotEmpty()) { badN++; out.append("##### [$how] $name — ${errs.joinToString("; ")}").append(s.log).append("\n\n") }
+            }
+        }
+        fun saved(n: Int): (KaiTurn, Shop) -> String? = { _, s -> if (s.tools.saved.size == n) null else "saved=${s.tools.saved.size}" }
+        val none: (KaiTurn, Shop) -> String? = { _, s -> if (s.nothingWritten() || s.tools.saved.isEmpty() && s.inv.moves.isEmpty()) null else "wrote" }
+        fun draft(who: String, amt: String): (KaiTurn, Shop) -> String? = { t, _ ->
+            if (t.card?.buttons?.any { it.action is KaiAction.ConfirmPlan } == true && txt(t).contains(amt) && (txt(t).contains(who) || txt(t).contains(KaiMicForm.repeated(who.lowercase())))) null else "no draft $who $amt" }
+        fun share(id: String): (KaiTurn, Shop) -> String? = { t, _ -> if (t.card?.buttons?.any { (it.action as? KaiAction.ShareStatement)?.partyId == id } == true) null else "no statement $id" }
+        // ---- a payment, then its due date / corrections
+        conv("due naalaiku", listOf("Kumar 3000 tharanum", "naalaiku"), check = draft("Kumar", "₹3,000"))
+        conv("due next month 10", listOf("Kumar 3000 tharanum", "adutha maasam 10"), check = draft("Kumar", "₹3,000"))
+        conv("due December 5", listOf("Kumar 3000 tharanum", "December 5"), check = draft("Kumar", "₹3,000"))
+        conv("due 15th", listOf("Kumar 3000 tharanum", "15th"), "15")
+        conv("due anjaam thethi", listOf("Kumar 3000 tharanum", "anjaam thethi"), "5")
+        conv("due next week", listOf("Kumar 3000 tharanum", "next week"))
+        conv("due venam", listOf("Kumar 3000 tharanum", "due venam"), check = draft("Kumar", "₹3,000"))
+        conv("due theriyala", listOf("Kumar 3000 tharanum", "theriyala"))
+        conv("due then cancel", listOf("Kumar 3000 tharanum", "cancel pannu"), check = none)
+        conv("amount corrected", listOf("Kumar 3000 tharanum", "illa 2000 dhaan"), "₹2,000")
+        conv("person corrected", listOf("Kumar 3000 tharanum", "illa Ramesh dhaan"), "Ramesh", "ரமேஷ்")
+        conv("due then tap", listOf("Kumar 3000 tharanum", "naalaiku", "TAP"), check = saved(1))
+        conv("small talk in between", listOf("Kumar 3000 tharanum", "saptiya", "naalaiku"), check = draft("Kumar", "₹3,000"))
+        // ---- a payment draft card
+        conv("card seri", listOf("Kumar 2000 kuduthan", "seri"), check = saved(1))
+        conv("card save pannu", listOf("Kumar 2000 kuduthan", "save pannu"), check = saved(1))
+        conv("card venam", listOf("Kumar 2000 kuduthan", "venam"), check = none)
+        conv("card amount 2500", listOf("Kumar 2000 kuduthan", "2000 illa 2500"), check = draft("Kumar", "₹2,500"))
+        conv("card gpay", listOf("Kumar 2000 kuduthan", "gpay la kuduthan"), "UPI", "GPay")
+        conv("card to Ramesh", listOf("Kumar 2000 kuduthan", "illa Ramesh kuduthan"), check = draft("Ramesh", "₹2,000"))
+        // ---- after a saved entry
+        conv("saved then balance", listOf("Kumar 2000 kuduthan", "TAP", "ippo evlo balance"), "₹2,000")
+        conv("saved then another", listOf("Kumar 2000 kuduthan", "TAP", "innoru 500 kuduthan"), check = draft("Kumar", "₹500"))
+        conv("saved then pdf", listOf("Kumar 2000 kuduthan", "TAP", "pdf kudu"), check = share("c1"))
+        conv("saved then when rest", listOf("Kumar 2000 kuduthan", "TAP", "meedhi eppo tharuvaan"), "Kumar", "குமார்")
+        conv("saved then athukuda", listOf("Kumar 2000 credit", "TAP", "athukuda 100 add panniko"), check = draft("Kumar", "₹100"))
+        conv("saved then remind", listOf("Kumar 2000 kuduthan", "TAP", "naalaiku call panna remind pannu"), "Kumar", "குமார்")
+        // ---- after a balance answer
+        conv("balance then due", listOf("Selvam evlo tharanum", "eppo tharanum"), "September 20", "செப்டம்பர் 20")
+        conv("balance then last payment", listOf("Selvam evlo tharanum", "last ah eppo kuduthan"), "₹3,000")
+        conv("balance then history", listOf("Selvam evlo tharanum", "history sollu"), "₹6,000")
+        conv("balance then pdf", listOf("Selvam evlo tharanum", "pdf kudu"), check = share("c3"))
+        conv("balance then pays", listOf("Selvam evlo tharanum", "ippo 1000 kuduthan"), check = draft("Selvam", "₹1,000"))
+        conv("balance then avan pays", listOf("Selvam evlo tharanum", "avan 2000 kuduthan"), check = draft("Selvam", "₹2,000"))
+        conv("balance then half", listOf("Selvam evlo tharanum", "avan paadhi kuduthan"), "₹3,000")
+        conv("balance then remind", listOf("Selvam evlo tharanum", "naalaiku 10 manikku remind pannu"), "Selvam", "செல்வம்")
+        conv("balance then call", listOf("Selvam evlo tharanum", "call pannu"), "Selvam", "செல்வம்")
+        conv("balance then another person", listOf("Ramesh evlo tharanum", "Lakshmi?"), "₹1,000")
+        conv("both total", listOf("Ramesh evlo tharanum", "Lakshmi evlo tharanum", "rendu perum total evlo"), "₹3,500")
+        conv("supplier due", listOf("ABC Traders ku evlo kudukkanum", "eppo kudukkanum"), "ABC")
+        conv("supplier then paid", listOf("ABC Traders ku evlo kudukkanum", "5000 kuduthen"), check = draft("ABC Traders", "₹5,000"))
+        conv("balance then credit", listOf("Kumar evlo tharanum", "avanukku 500 credit kuduthen"), check = draft("Kumar", "₹500"))
+        conv("balance then itha pdf", listOf("Kumar evlo tharanum", "itha pdf ah kudu"), check = share("c1"))
+        // ---- stock
+        conv("stock card 15 illa", listOf("Lux soap 10 vandhuchu", "10 illa 15"), "15")
+        conv("stock card venam", listOf("Colgate 2 box vandhuchu", "venam"), check = none)
+        conv("stock then evlo", listOf("Colgate 2 box vandhuchu", "TAP", "ippo evlo irukku"), "336")
+        conv("stock ask then in", listOf("Colgate evlo irukku", "2 box vandhuchu"), "Colgate")
+        conv("stock ask then rate", listOf("Colgate evlo irukku", "rate evlo"), "₹35", "₹28")
+        conv("stock ask then sold", listOf("Rice stock evlo", "2 moota vithuchu"), "Rice", "ரைஸ்")
+        conv("stock ask then remind", listOf("Maggi stock evlo", "naalaiku order panna remind pannu"), "Maggi", "மேகி")
+        // ---- new product
+        conv("new product steps", listOf("Cinthol soap 50 add pannu", "50 pieces", "30 rupees", "50 rupees"), "₹30", "₹50")
+        conv("new product no qty", listOf("Cinthol soap add pannu", "50 pieces"))
+        // ---- reminders
+        conv("reminder then time", listOf("naalaiku Kumar ku call panna remind pannu", "10 manikku"), "10:00", "10 மணி", "10 AM")
+        conv("reminder time changed", listOf("naalaiku Kumar ku call panna remind pannu", "10 manikku", "illa 11 manikku"), "11")
+        // ---- business questions
+        conv("sales then yesterday", listOf("innaiku sales evlo", "nethu?"))
+        conv("who owes then biggest", listOf("yaar yaar tharanum", "adhula periya amount yaaru"), "Selvam", "செல்வம்")
+        conv("who owes then first", listOf("yaar yaar tharanum", "mudhal aal evlo"), "Selvam", "செல்வம்")
+        conv("overdue then total", listOf("overdue list", "mothama evlo"), "₹6,000")
+        // ---- new person
+        conv("new person due", listOf("Suresh 1500 tharanum", "naalaiku"), check = draft("Suresh", "₹1,500"))
+        conv("half said", listOf("Dinesh pay", "enakku pay pannum", "10000 naalaiku"), check = draft("Dinesh", "₹10,000"))
+        // The same, other people and other words (not fitted to one set of lines).
+        conv("v due apram", listOf("Ramesh 1500 tharanum", "apram solren"), check = draft("Ramesh", "₹1,500"))
+        conv("v due date theriyala", listOf("Lakshmi 800 tharanum", "date theriyala"), check = draft("Lakshmi", "₹800"))
+        conv("v due naalaiku 2", listOf("Selvam 2500 tharanum", "naalaikku"), check = draft("Selvam", "₹2,500"))
+        conv("v due friday", listOf("Ramesh 1500 tharanum", "friday"), check = draft("Ramesh", "₹1,500"))
+        conv("v due moonaam", listOf("Lakshmi 800 tharanum", "moonaam thethi"), "3")
+        conv("v phonepe", listOf("Ramesh 1000 kuduthan", "phonepe la anuppinan"), "UPI")
+        conv("v cash", listOf("Ramesh 1000 gpay la kuduthan", "illa cash dhaan"), "Cash", "ரொக்கம்")
+        conv("v card amount", listOf("Lakshmi 500 kuduthaanga", "500 illa 700"), check = draft("Lakshmi", "₹700"))
+        conv("v card who", listOf("Lakshmi 500 kuduthaanga", "illa Selvam kuduthan"), check = draft("Selvam", "₹500"))
+        conv("v saved pdf", listOf("Ramesh 1000 kuduthan", "TAP", "avan statement pdf anuppu"), check = share("c2"))
+        conv("v saved when", listOf("Ramesh 1000 kuduthan", "TAP", "baaki eppo tharuvaan"), "Ramesh", "ரமேஷ்")
+        conv("v saved remind call", listOf("Lakshmi 500 kuduthaanga", "TAP", "saayangalam call panna remind pannu"), "Lakshmi", "லட்சுமி")
+        conv("v saved adhoda", listOf("Ramesh 1000 credit", "TAP", "adhoda 200 add pannu"), check = draft("Ramesh", "₹200"))
+        conv("v balance phone", listOf("Ramesh evlo tharanum", "phone pannu"), "Ramesh", "ரமேஷ்")
+        conv("v balance avanukku call", listOf("Lakshmi evlo tharanum", "avangalukku call pannu"), "Lakshmi", "லட்சுமி")
+        conv("v balance remind", listOf("Ramesh evlo tharanum", "saayangalam 6 manikku remind pannu"), "Ramesh", "ரமேஷ்")
+        conv("v balance due", listOf("Lakshmi evlo tharanum", "eppo tharuvaanga"), "October 12", "அக்டோபர் 12")
+        conv("v balance pays", listOf("Lakshmi evlo tharanum", "ippo 500 kuduthaanga"), check = draft("Lakshmi", "₹500"))
+        conv("v balance itha", listOf("Ramesh evlo tharanum", "idha whatsapp la anuppu"), check = share("c2"))
+        conv("v supplier pay", listOf("Murugan Stores ku evlo kudukkanum", "2000 anuppiten"), check = draft("Murugan Stores", "₹2,000"))
+        conv("v supplier remind", listOf("Murugan Stores ku evlo kudukkanum", "naalaiku remind pannu"), "Murugan")
+        conv("v stock 20 illa", listOf("Baniyan 10 vandhuchu", "10 illa 20"), "20")
+        conv("v stock dhaan", listOf("Baniyan 10 vandhuchu", "12 dhaan"), "12")
+        conv("v stock rate", listOf("Lux soap evlo irukku", "rate enna"), "₹38", "₹30")
+        conv("v stock price", listOf("Rice evlo irukku", "vilai evlo"), "₹65", "₹56")
+        conv("v stock order remind", listOf("Maggi evlo irukku", "order pannanum remind pannu naalaiku"), "Maggi", "மேகி")
+        conv("v reminder 6", listOf("naalaiku Ramesh ku call panna remind pannu", "kaalaila 10 manikku", "illa 6 manikku"), "6")
+        conv("v reminder time only", listOf("Lakshmi kitta payment vaanga remind pannu", "naalaiku 11 manikku"), "11")
+        conv("v sales week", listOf("indha vaaram sales evlo", "pona vaaram?"))
+        conv("v sales month", listOf("indha maasam selavu evlo", "pona maasam?"))
+        conv("v who second", listOf("yaar yaar tharanum", "rendavadhu aal evlo"), "Kumar", "குமார்")
+        conv("v new person", listOf("Arun 700 tharanum", "naalaiku"), check = draft("Arun", "₹700"))
+        conv("v new product", listOf("Hamam soap add pannu", "20 pieces"))
+        conv("v new product rupees", listOf("Hamam soap 20 vandhuchu", "pieces", "35 rs", "45 rs"), "₹35", "₹45")
+        assertTrue("$badN of $total conversations lost the context:\n\n$out", badN == 0)
+    }
 }
