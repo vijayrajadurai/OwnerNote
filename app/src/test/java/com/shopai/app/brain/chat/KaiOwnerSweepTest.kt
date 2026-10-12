@@ -1176,4 +1176,61 @@ class KaiOwnerSweepTest {
         conv("7 set balance zero", listOf("Kumar balance 0 nu podu"), none)
         assertTrue("$badN of $total principle checks failed:\n\n$out", badN == 0)
     }
+
+    /**
+     * The owner's dataset (src/test/resources/kai/dataset-local-sample.tsv — a sample of Kai_Local_Tamil_Thanglish_100000,
+     * 12 Oct 2026): each line typed and in the mic's Tamil, with the person in the books (as a customer for what they owe /
+     * paid, a supplier for what the owner owes / paid — ₹10,000 pending) and again with nobody in the books. An entry must be
+     * that kind, person and amount after Confirm; anything else writes nothing; a balance question with the person in the books
+     * says their ₹10,000.
+     */
+    @Test fun datasetLines() {
+        val rows = javaClass.getResourceAsStream("/kai/dataset-local-sample.tsv")!!.bufferedReader().readLines()
+            .filter { it.isNotBlank() && !it.startsWith("#") }.map { it.split("\t") }
+        val customerSide = setOf("ADD_RECEIVABLE", "ADD_ADDITIONAL_RECEIVABLE", "RECEIVE_PAYMENT", "CHECK_RECEIVABLE", "CHECK_HISTORY", "ADD_CUSTOMER", "EDIT_ENTRY", "DELETE_ENTRY")
+        val owed = mapOf("ADD_RECEIVABLE" to PlanKind.CREDIT_GIVEN, "ADD_ADDITIONAL_RECEIVABLE" to PlanKind.CREDIT_GIVEN,
+            "ADD_PAYABLE" to PlanKind.DEBIT_TAKEN, "ADD_ADDITIONAL_PAYABLE" to PlanKind.DEBIT_TAKEN)
+        val paid = mapOf("RECEIVE_PAYMENT" to PlanKind.PAYMENT_IN, "PAY_PAYMENT" to PlanKind.PAYMENT_OUT)
+        val bad = mutableListOf<String>()
+        var played = 0
+        for (r in rows) {
+            val intent = r[0]; val name = r.getOrElse(3) { "" }; val amount = r.getOrElse(4) { "" }
+            for (inBooks in listOf(true, false)) for ((how, said) in listOf("typed" to r[1], "mic" to r[2])) {
+                played++
+                val l = Ledger()
+                if (inBooks && name.isNotEmpty()) l.add("x1", name, intent in customerSide, "10000", d(9, 20), d(10, 20))
+                val inv = Inventory(); val books = Books(l); val tools = Tools(inv, l, today)
+                val k = KaiAgent(KaiBusinessBrain(books, today = { today }, random = kotlin.random.Random(1)), books, tools, now = { now })
+                val log = StringBuilder()
+                fun say(t: String) = runBlocking { k.ask(t) }.also { log.append("\n   » $t\n     ${it.reply.text.replace("\n", " / ")}") }
+                val kind = owed[intent] ?: paid[intent]?.takeIf { inBooks }
+                var t = say(said)
+                repeat(4) {
+                    if (tools.saved.isNotEmpty()) return@repeat
+                    val confirm = t.card?.buttons?.firstOrNull { it.action is KaiAction.ConfirmPlan }
+                    if (confirm != null) { t = runBlocking { k.act(confirm.action, KaiLang.TANGLISH) } ?: t; return@repeat }
+                    val txt = t.reply.text
+                    t = when {
+                        kind != null && Regex("""(?i)due date|eppo tharuvaanga|eppa tharuvaanga|eppo kudukkanum|eppa kudukkanum""").containsMatchIn(txt) && txt.trim().endsWith("?") ->
+                            say(if (how == "mic") KaiMicForm.of("due venam") ?: "due venam" else "due venam")
+                        kind != null && (txt.contains("illa pudhu") || txt.contains("இல்ல புது")) -> say(if (how == "mic") KaiMicForm.of("pudhu") ?: "pudhu" else "pudhu")
+                        else -> return@repeat
+                    }
+                }
+                val reply = t.reply.text
+                val p = tools.saved.singleOrNull()
+                val why = when {
+                    kind != null && p == null -> "no entry"
+                    kind != null && p!!.kind != kind -> "kind ${p.kind}"
+                    kind != null && !(p!!.partyName.equals(name, true) || com.shopai.app.util.NameSound.same(p.partyName, name)) -> "person ${p.partyName}"
+                    kind != null && p!!.amount.compareTo(BigDecimal(amount)) != 0 -> "amount ${p.amount}"
+                    kind == null && (tools.saved.isNotEmpty() || inv.moves.isNotEmpty() || inv.created.isNotEmpty()) -> "wrote ${tools.saved.map { "${it.kind} ${it.partyName} ${it.amount}" }}"
+                    kind == null && inBooks && name.isNotEmpty() && intent in setOf("CHECK_RECEIVABLE", "CHECK_PAYABLE") && !reply.contains("10,000") -> "no ₹10,000"
+                    else -> null
+                }
+                if (why != null) bad += "[$intent ${if (inBooks) "in books" else "new"} $how] $why$log"
+            }
+        }
+        assertTrue("${bad.size} of $played dataset lines failed:\n\n" + bad.take(30).joinToString("\n\n"), bad.isEmpty())
+    }
 }

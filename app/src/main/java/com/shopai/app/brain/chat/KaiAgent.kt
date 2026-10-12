@@ -1006,7 +1006,8 @@ class KaiAgent(
             com.shopai.app.brain.KaiUnderstanding.knownPerson(earlier, people0) == null) "$onTopic $earlier" else earlier
         com.shopai.app.brain.KaiUnderstanding.knownPerson(read, people0)?.let { personOnTopic = it to conversationState.conversationTurn + 1 }
         // "Power bank" is a product, not a bank: product names that hold a money word are joined first. "totel" = total (KaiFeed).
-        val said = com.shopai.app.brain.tools.KaiInventory.joinProductWords(spelled(read))
+        // "Kumar innum 500 rooba tharala", "Kumarku 500 baaki iruku": an entry said in other words, read as Kai reads entries (KaiLedgerPhrases).
+        val said = com.shopai.app.brain.tools.KaiLedgerPhrases.canonical(com.shopai.app.brain.tools.KaiInventory.joinProductWords(spelled(read)))
         ownerWords = said
         val lang = forcedLang ?: if (tamil) KaiLang.TAMIL else KaiLanguage.forChat(said)
         turnLang = lang
