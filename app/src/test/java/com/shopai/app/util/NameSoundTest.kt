@@ -15,6 +15,8 @@ class NameSoundTest {
         listOf(
             "Kumar" to "குமார்", "Ganesh" to "கணேஷ்", "Selvam" to "செல்வம்", "Dinesh" to "தினேஷ்",
             "Nadhiya" to "நதியா", "Nadiya" to "நதியா", "Deekshitha" to "தீக்ஷிதா", "Silver" to "சில்வர்", "Abi" to "அபி",
+            // "ங்க" is the "ng" English letters write.
+            "Thangam" to "தங்கம்", "Ranga" to "ரங்கா", "Lungi" to "லுங்கி",
         ).forEach { (en, ta) ->
             assertTrue("$en ~ $ta", NameSound.same(en, ta))
             assertTrue("$ta ~ $en", NameSound.same(ta, en))

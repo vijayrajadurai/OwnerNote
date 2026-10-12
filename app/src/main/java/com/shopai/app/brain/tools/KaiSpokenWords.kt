@@ -200,7 +200,10 @@ object KaiSpokenWords {
         return s.replace(Regex("""\s+"""), " ").trim()
     }
 
-    private fun wordOf(w: String): String = wordMap[w] ?: dative(w)?.let { d -> wordMap[d.substringBefore('-')]?.let { "$it-${d.substringAfter('-')}" } ?: d } ?: w
+    /** Words of goods names (KaiFeed): "விளக்கு" (lamp) of "மின் விளக்கு" ends like "-க்கு" but is never "to விள". */
+    private val goodsWords: Set<String> by lazy { KaiFeed.goodsNames.flatMap { (names, _) -> names.filter(::hasTamil).flatMap { it.split(' ') } }.toSet() }
+
+    private fun wordOf(w: String): String = wordMap[w] ?: if (w in goodsWords) w else dative(w)?.let { d -> wordMap[d.substringBefore('-')]?.let { "$it-${d.substringAfter('-')}" } ?: d } ?: w
 
     /**
      * A phrase Kai keeps (a reminder's task) back in the owner's own words: each word [normalize] turned into Tanglish goes back to

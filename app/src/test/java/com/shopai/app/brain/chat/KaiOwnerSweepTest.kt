@@ -815,4 +815,43 @@ class KaiOwnerSweepTest {
         System.getProperty("sweep.out")?.let { java.io.File(it).writeText("$count lines, ${failures.size} failed\n\n" + failures.joinToString("\n\n")) }
         assertTrue("${failures.size} of $count owner lines failed:\n\n" + failures.joinToString("\n\n"), failures.isEmpty())
     }
+
+    /**
+     * The owner's 8-shop stock list (src/test/resources/kai/shop-stock-8.txt, 12 Oct 2026): every product is added 5 at a time, said
+     * 7 ways — Tamil, Tanglish, English, Tamil + Tanglish, Tanglish + English, the mic's Tamil, the mic's Tanglish — with the shop
+     * keeping it under its English name, then under its Tanglish name. Each must reach that one record, nothing written before
+     * Confirm, no other product touched, no money saved. A shop that keeps the names in Tamil letters: never the wrong product.
+     */
+    @Test fun eightShopStockList() {
+        val rows = javaClass.getResourceAsStream("/kai/shop-stock-8.txt")!!.bufferedReader().readLines()
+            .map { it.substringBefore('#').trim() }.filter { it.isNotEmpty() }.map { it.split('|').map(String::trim) }
+        val bad = mutableListOf<String>()
+        var played = 0
+        for ((shopName, goods) in rows.groupBy { it[0] }) for (keep in listOf(3, 2, 1)) for ((idx, g) in goods.withIndex()) {
+            val (_, ta, tl, en, unit) = g
+            val qTl = when (unit) { "KG" -> "5 kg"; "LITRE" -> "5 litre"; else -> "5" }
+            val qEn = when (unit) { "KG" -> "5 kg"; "LITRE" -> "5 litres"; else -> "5 pieces" }
+            val qTa = when (unit) { "KG" -> "5 கிலோ"; "LITRE" -> "5 லிட்டர்"; else -> "5" }
+            val lines = listOf(
+                "$ta $qTa வந்திருக்கு", "$tl $qTl vandhuchu", if (idx % 2 == 0) "Add $qEn of $en to stock" else "$en $qEn received",
+                "$ta $qTl stock add pannu", if (idx % 2 == 0) "$en $qTl vandhuchu" else "$tl $qEn stock in", "$ta $qTa வந்துச்சு",
+                KaiMicForm.of("$tl $qTl vandhuchu") ?: "$tl $qTl vandhuchu",
+            )
+            for (said in lines) {
+                played++
+                val s = Shop()
+                s.inv.items.clear()
+                goods.forEachIndexed { j, q -> s.inv.items += KaiInventoryChatTest.Inventory.Item("x$j", q[keep].replaceFirstChar { it.uppercase() }, q[4], BigDecimal("100"), emptyMap(), null, null, shopName, null) }
+                val t = s.say(said)
+                val before = s.nothingWritten()
+                t.card?.buttons?.firstOrNull { it.action is KaiAction.ConfirmStock || it.action is KaiAction.ConfirmPlan }?.let { s.act(it.action) }
+                val target = s.inv.items.first { it.id == "x$idx" }
+                val othersSame = s.inv.items.filter { it.id != "x$idx" }.all { it.stock.compareTo(BigDecimal("100")) == 0 }
+                val added = target.stock.compareTo(BigDecimal("105")) == 0
+                val ok = before && othersSame && s.tools.saved.isEmpty() && (added || keep == 1)
+                if (!ok) bad += "[$shopName, kept as ${g[keep]}] «$said»${s.log}"
+            }
+        }
+        assertTrue("${bad.size} of $played stock lines failed:\n\n" + bad.take(40).joinToString("\n\n"), bad.isEmpty())
+    }
 }

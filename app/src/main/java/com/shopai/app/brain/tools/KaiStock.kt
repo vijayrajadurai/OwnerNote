@@ -160,15 +160,41 @@ object KaiStock {
      * sounds the same as the words said ("bhaniyan" for Baniyan, "kolgate" for Colgate): names of five letters or more only,
      * and only when exactly one product sounds like that.
      */
-    private fun productIn(lower: String, products: List<ProductRef>): ProductRef? {
+    private fun productIn(lower: String, products: List<ProductRef>): ProductRef? = productSaid(lower, products)?.first
+
+    /** The product named in [lower] and the words that named it ("kathavu keel" for Door hinge) — taken out before the quantity is read. */
+    private fun productSaid(lower: String, products: List<ProductRef>): Pair<ProductRef, String>? {
         val named = products.filter { it.name.isNotBlank() }
-        fun exact(words: String) = named.sortedByDescending { it.name.length }
-            .firstOrNull { p -> Regex("""(?<![\p{L}\p{N}])${Regex.escape(p.name.lowercase(Locale.ROOT))}(?![\p{L}])""").containsMatchIn(words) }
-        exact(lower)?.let { return it }
+        // A name inside another word is not it: "T-shirt" is never "Shirt".
+        // A name read as the words are ("எச்.டி.எச்.எம்.ஆர். போர்டு" with its dots as spaces).
+        fun exactAt(words: String) = named.sortedByDescending { it.name.length }.firstNotNullOfOrNull { p ->
+            Regex("""(?<![\p{L}\p{N}-])${Regex.escape(lowerOf(p.name).trim())}(?![\p{L}])""").find(words)?.let { p to it.range }
+        }
+        val exactHit = exactAt(lower)
+        // "kathavu keel 5", "plywood vettum karuvi 2": goods by the name the owner says (KaiFeed) — a longer name than the
+        // English one inside it ("Plywood") wins.
+        goodsIn(lower, named)?.let { (p, range) ->
+            if (exactHit == null || range.first <= exactHit.second.first && range.last >= exactHit.second.last && range != exactHit.second)
+                return p to lower.substring(range)
+        }
+        exactHit?.let { return it.first to lower.substring(it.second) }
         // "Arisi 2 moota", "ennai 5 bottle": the Tamil name of a product the shop keeps in English (and back).
         val aliased = lower.split(' ').joinToString(" ") { w -> tamilNames[w] ?: w }
-        if (aliased != lower) exact(aliased)?.let { return it }
+        if (aliased != lower) exactAt(aliased)?.let { return it.first to aliased.substring(it.second) }
         val words = lower.split(' ').filter { it.isNotEmpty() }
+        // The whole name said, not a part of a longer one: "Paint brush 5" is never "Paint", "Engine oil" never "Oil filter".
+        fun nameWord(w: String) = w.first().isLetter() && w !in units && w !in fillers && w !in numberWords && w !in stockTokens
+        fun wholeName(from: Int, to: Int) = (from == 0 || !nameWord(words[from - 1])) && (to >= words.size || !nameWord(words[to]))
+        // "Biscuits 5" for "Biscuit", "paint 5" for a "பெயிண்ட்" kept in Tamil: the name word for word, one or many, in any script.
+        val plain = words.map(::plainWord)
+        named.filter { p -> nameWords(p.name).map(::plainWord).let { pw -> plain.windowed(pw.size).withIndex().any { (i, w) -> wholeName(i, i + pw.size) && w.zip(pw).all { (a, b) -> sameWord(a, b) } } } }
+            .maxByOrNull { it.name.length }?.let { return it to it.name.lowercase(Locale.ROOT) }
+        // "Bolt 5" for a "போல்ட்" kept in Tamil letters: the same name said in the other script (whole name, by sound).
+        named.filter { p -> KaiSpokenWords.hasTamil(p.name) }.filter { p ->
+            val pw = p.name.trim().split(Regex("""\s+""")).size
+            (1..pw + 1).any { n -> words.windowed(n).withIndex().any { (i, w) -> wholeName(i, i + n) && w.all { nameWord(it) && !KaiSpokenWords.hasTamil(it) } &&
+                (com.shopai.app.util.NameSound.same(w.joinToString(""), p.name.replace(" ", "")) || KaiProductSound.sameName(p.name, w.joinToString(" "))) } }
+        }.singleOrNull()?.let { return it to it.name.lowercase(Locale.ROOT) }
         // Only a name said right before its quantity ("bhaniyan 20", "Lux 12 vandhuchu") — "collect in total" or "colgate paste 10"
         // (a longer name Kai doesn't have) are never taken for a product by sound or by its first word.
         fun beforeQty(end: Int) = words.getOrNull(end)?.let { n -> n.first().isDigit() || n in numberWords } == true
@@ -179,15 +205,25 @@ object KaiStock {
                     w.zip(pw).all { (a, b) -> a == b || (a.length >= 4 && b.length >= 4 && soundsSame(a, b)) }
             }
         }
-        sounds.singleOrNull()?.let { return it }
+        sounds.singleOrNull()?.let { return it to it.name.lowercase(Locale.ROOT) }
         // "Lux 12 vandhuchu" with only "Lux Soap" in the shop: the one product whose name starts with the word said
         // (three letters or more, not a unit / number / filler). Several such products: none — Kai asks as before.
         val first = named.filter { p ->
             val head = p.name.lowercase(Locale.ROOT).split(Regex("""\s+""")).first()
             head.length >= 3 && head.first().isLetter() && head !in units && head !in fillers &&
-                words.withIndex().any { (i, w) -> w == head && beforeQty(i + 1) }
+                words.withIndex().any { (i, w) -> w == head && beforeQty(i + 1) && wholeName(i, i + 1) }
         }
-        first.singleOrNull()?.let { return it }
+        first.singleOrNull()?.let { return it to it.name.lowercase(Locale.ROOT) }
+        // "Noodles 5" with "Instant noodles" in the shop, "Chain 2" with "Necklace / chain", "Sona Masoori 10 kg": the whole name said
+        // right before its quantity is a whole part of exactly one product's name. A unit word is a name only where nothing comes
+        // before it ("Tube 5" = Inner tube; "2 box 3" is never "Tile box").
+        for (end in words.indices) {
+            if (!beforeQty(end)) continue
+            var from = end
+            while (from > 0 && words[from - 1].let { w -> nameWord(w) || w in units && from - 1 == 0 }) from--
+            val said = words.subList(from, end)
+            if (said.sumOf { it.length } >= 3) named.filter { p -> holds(nameWords(p.name), said) }.singleOrNull()?.let { return it to said.joinToString(" ") }
+        }
         // "Suga 5", "Biscui 2 box", "Horlick 3": the one product whose first word the said word is the start of (four letters
         // or more, most of the name) — a name cut short while typing, never a new product.
         val cut = named.filter { p ->
@@ -197,7 +233,75 @@ object KaiStock {
                     w.first().isLetter() && w !in units && w !in fillers && beforeQty(i + 1)
             }
         }
-        return cut.singleOrNull()
+        return cut.singleOrNull()?.let { it to it.name.lowercase(Locale.ROOT) }
+    }
+
+    /** The words of stock lines ("vandhuchu", "received", "add") — never part of a product's name as said. */
+    private val stockTokens: Set<String> by lazy { (inWords + outWords + gaveWords).flatMap { it.split(' ') }.toSet() }
+
+    /** A goods name (KaiFeed) said as a whole phrase, as its words are or one letter off ("kadhavu" / "kathavu"), longest first. */
+    private class Goods(val words: List<String>, val names: List<String>)
+
+    /** Every name of one thing — Tamil, Tanglish, English — reaches the shop's record under any of them ("Door hinge" said, "Kathavu keel" kept). */
+    private val goods: List<Goods> by lazy {
+        KaiFeed.goodsNames.flatMap { (names, e) -> (names + e).map { k -> Goods(lowerOf(KaiSpokenWords.normalize(k)).trim().split(' ').map(::plainWord), names + e) } }
+            .sortedByDescending { g -> g.words.size }
+    }
+
+    /**
+     * One word of a goods name however it reached Kai: "அரிசி" / "arisi" / "Rice" (the mic's Tamil, the Tanglish, the shop's English
+     * for it) are one word — so "Puzhungal அரிசி" is "puzhungal arisi" = Boiled rice. The Tamil ↔ Tanglish pairs come from the goods
+     * list itself (its names said in as many words).
+     */
+    private val goodsWordPairs: Map<String, String> by lazy {
+        KaiFeed.goodsNames.flatMap { (names, _) ->
+            val ta = names.filter(KaiSpokenWords::hasTamil).map { it.split(' ') }
+            val en = names.filterNot(KaiSpokenWords::hasTamil).map { it.split(' ') }
+            ta.flatMap { t -> en.filter { it.size == t.size }.flatMap { e -> t.zip(e) } }
+        }.groupBy({ it.first }, { it.second }).mapNotNull { (k, v) -> v.distinct().singleOrNull()?.let { k to it } }.toMap()
+    }
+
+    private fun plainWord(w: String): String = (goodsWordPairs[w] ?: w).let { tamilNames[it] ?: it }
+
+    private fun goodsIn(lower: String, products: List<ProductRef>): Pair<ProductRef, IntRange>? {
+        if (products.isEmpty()) return null
+        val words = Regex("""\S+""").findAll(lower).toList()
+        val names = products.map { it.name }
+        fun near(a: String, b: String) = a == b || a.length >= 5 && b.length >= 5 && soundsSame(a, b) && editDistance(a, b) <= 2
+        for (loose in listOf(false, true)) for (size in goods.map { it.words.size }.distinct()) {
+            for (i in 0..words.size - size) {
+                val said = words.subList(i, i + size).map { plainWord(it.value) }
+                val meant = goods.filter { g -> g.words.size == size && g.words.zip(said).all { (a, b) -> if (loose) near(b, a) else a == b } }
+                if (meant.isEmpty()) continue
+                val shop = shopNameFor(meant.flatMap { it.names }.distinct(), names) ?: continue
+                val p = products.first { it.name == shop }
+                return p to (words[i].range.first..words[i + size - 1].range.last)
+            }
+        }
+        return null
+    }
+
+    /** A name's words, for comparing parts of names: "Necklace / chain" → necklace, chain ("Hand-pounded" stays one word). */
+    private fun nameWords(name: String) = name.lowercase(Locale.ROOT).split(Regex("""[\s/,()]+""")).filter { it.isNotEmpty() }
+
+    /** One word, one or many: "biscuit" / "biscuits". */
+    private fun sameWord(a: String, b: String) = a == b || a.length >= 3 && b.length >= 3 && a.removeSuffix("s") == b.removeSuffix("s")
+
+    /** [part] is a whole, shorter part of [name]: "noodles" of "instant noodles", never "shirt" of "t-shirt". */
+    private fun holds(name: List<String>, part: List<String>) =
+        part.isNotEmpty() && name.size > part.size && name.windowed(part.size).any { w -> w.zip(part).all { (a, b) -> sameWord(a, b) || sameWord(plainWord(a), plainWord(b)) } }
+
+    /**
+     * The one shop product an English goods name is ("door hinge" → Door hinge): the name itself (one or many), else the one name
+     * that holds it whole ("chain" → Necklace / chain). Null: the shop keeps no such goods, or two alike.
+     */
+    fun shopNameFor(english: List<String>, names: List<String>): String? {
+        val es = english.map { nameWords(it).map(::plainWord) }.filter { it.isNotEmpty() }
+        if (es.isEmpty()) return null
+        // "kambi" = wire or steel rod: the shop's "Steel rod" by that very name before the "Binding wire" that holds one of them.
+        names.filter { n -> nameWords(n).map(::plainWord).let { w -> es.any { e -> w.size == e.size && w.zip(e).all { (a, b) -> sameWord(a, b) } } } }
+            .distinctBy { it.lowercase(Locale.ROOT) }.let { if (it.size == 1) return it.single() else if (it.size > 1) return null }
+        return names.filter { n -> es.any { e -> holds(nameWords(n).map(::plainWord), e) } }.distinctBy { it.lowercase(Locale.ROOT) }.singleOrNull()
     }
 
     /** The common Tamil names of grocery goods, for a shop that keeps them in English ("arisi" = Rice). */
@@ -296,9 +400,10 @@ object KaiStock {
         // "5inch tape" is said and written "5 inch tape": the same product.
         val lower = lowerOf(text).replace(Regex("""(?<![\p{L}\d.])(\d+(?:\.\d+)?)(inch|inches|mm|cm|ft|feet|sqmm|watt|watts|volt|volts|amp|amps|hp)(?![\p{L}])"""), "$1 $2")
         if (notStock.containsMatchIn(lower) || timeAfterNumber.containsMatchIn(lower)) return null
-        val product = productIn(lower, products)
+        val found = productSaid(lower, products)
+        val product = found?.first
         val isIn = direction(lower, product) ?: return null
-        val named = product?.let { lower.replace(it.name.lowercase(Locale.ROOT), " ") } ?: lower
+        val named = found?.let { lower.replace(it.second, " ") } ?: lower
         val sized = if (product == null) sizeInName(named) else null
         val rest = sized?.second ?: named
         val words = rest.split(' ').filter { it.isNotEmpty() }
@@ -324,9 +429,9 @@ object KaiStock {
     fun unknownUnitWord(text: String, products: List<ProductRef>): String? {
         val lower = lowerOf(text)
         if (notStock.containsMatchIn(lower) || timeAfterNumber.containsMatchIn(lower)) return null
-        val product = productIn(lower, products) ?: return null
+        val (product, said) = productSaid(lower, products) ?: return null
         if (direction(lower, product) == null) return null
-        val rest = lower.replace(product.name.lowercase(Locale.ROOT), " ")
+        val rest = lower.replace(said, " ")
         val m = Regex("""(?<![\p{L}\p{N}])(\d+(?:\.\d+)?|${numberWords.keys.joinToString("|")})\s+([\p{L}\p{M}]+)""").find(rest) ?: return null
         val word = m.groupValues[2]
         if (word in units || word in fillers || word in numberWords || word.length < 2) return null

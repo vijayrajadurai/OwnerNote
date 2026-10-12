@@ -22,7 +22,8 @@ object KaiProductSound {
 
     private val tamilWord = Regex("""[஀-௿]+""")
 
-    private class Product(val name: String, val key: String, val loose: String, val words: Int, val vowelFirst: Boolean)
+    /** [out]: the shop's own name put in its place — a goods name (KaiFeed: "kathavu keel") stands for the product it names. */
+    private class Product(val name: String, val key: String, val loose: String, val words: Int, val vowelFirst: Boolean, val out: String = name)
 
     /** Every single word of the shop's product names, by sound ("Dal" of Toor Dal, "Tea" of Tea Powder). */
     private class Word(val text: String, val loose: String)
@@ -32,9 +33,19 @@ object KaiProductSound {
         val products = productNames.map { it.trim() }.filter { n -> n.isNotEmpty() && !KaiSpokenWords.hasTamil(n) && n.any(Char::isLetter) }.distinct()
             .mapNotNull { n ->
                 val key = NameSound.key(spoken(n)).takeIf { it.isNotEmpty() } ?: return@mapNotNull null
-                Product(n, key, loose(key), n.trim().split(Regex("""\s+""")).size, spoken(n).first() in "aeiou")
+                Product(n, key, loose(key), saidWords(n), spoken(n).first() in "aeiou")
             }
         if (products.isEmpty()) return text
+        // Goods by the name the owner says (KaiFeed): "கதவு கீல்" written as it is in the list, or heard like "kathavu keel".
+        val names = products.map { it.name }
+        val goods = KaiFeed.goodsNames.flatMap { (ks, e) -> ks.map { k -> k to ks + e } }.groupBy({ it.first }, { it.second }).mapValues { (_, v) -> v.flatten().distinct() }
+            .mapNotNull { (k, es) -> KaiStock.shopNameFor(es, names)?.let { k to it } }
+        val goodsWritten = goods.filter { KaiSpokenWords.hasTamil(it.first) }.groupBy({ fold(it.first) }, { it.second })
+            .mapValues { (_, v) -> v.distinct().singleOrNull() }
+        val heardGoods = goods.filter { !KaiSpokenWords.hasTamil(it.first) && it.first.count(Char::isLetter) >= 4 }.mapNotNull { (k, out) ->
+            val key = NameSound.key(spoken(k)).takeIf { it.isNotEmpty() } ?: return@mapNotNull null
+            Product(k, key, loose(key), k.split(Regex("""\s+""")).size, spoken(k).first() in "aeiou", out)
+        }
         val parts = products.flatMap { p -> p.name.split(Regex("""\s+""")).map { w -> Word(w, NameSound.key(spoken(w)).let { if (it.isEmpty()) it else loose(it) }) } }
         val words = tamilWord.findAll(text).toList()
         if (words.isEmpty()) return text
@@ -42,21 +53,39 @@ object KaiProductSound {
         var copied = 0
         var i = 0
         while (i < words.size) {
-            val found = (minOf(4, words.size - i) downTo 1).firstNotNullOfOrNull { span ->
+            val found = (minOf(6, words.size - i) downTo 1).firstNotNullOfOrNull { span ->
                 val run = words.subList(i, i + span)
                 // Only words said together (spaces between them), never a person in the books.
-                if ((1 until span).any { j -> text.substring(run[j - 1].range.last + 1, run[j].range.first).isNotBlank() }) return@firstNotNullOfOrNull null
+                // "டி-ஷர்ட்", "எம்.டி.எஃப். பலகை": a hyphen or the dots of letters said one by one join words too.
+                if ((1 until span).any { j -> !joiner.matches(text.substring(run[j - 1].range.last + 1, run[j].range.first)) }) return@firstNotNullOfOrNull null
                 if (run.any { w -> people.any { p -> p.split(Regex("""\s+""")).any { NameSound.same(w.value, it) } } }) return@firstNotNullOfOrNull null
+                // "6 எம்.எம். ஜல்லி": a goods name that starts with its size takes the number said before it.
+                val said = run.joinToString(" ") { it.value }
+                goodsWritten[fold(said)]?.let { return@firstNotNullOfOrNull Triple(span, it, run.first().range.first) }
+                Regex("""(\d+)\s*$""").find(text.substring(copied, run.first().range.first))?.let { n ->
+                    goodsWritten[fold(n.groupValues[1] + said)]?.let { return@firstNotNullOfOrNull Triple(span, it, copied + n.range.first) }
+                }
                 val known = run.all { KaiSpokenWords.normalize(it.value) != it.value }
-                match(run.joinToString(" ") { it.value }, span, products, parts, known, beforeQuantity(text, run.last().range.last + 1))?.let { span to it }
+                match(said, span, products + heardGoods, parts, known, beforeQuantity(text, run.last().range.last + 1))
+                    ?.let { Triple(span, it, run.first().range.first) }
             }
             if (found == null) { i++; continue }
-            val (span, name) = found
-            out.append(text, copied, words[i].range.first).append(name)
+            val (span, name, from) = found
+            out.append(text, copied, from).append(name)
             copied = words[i + span - 1].range.last + 1
             i += span
         }
         return if (copied == 0) text else out.append(text, copied, text.length).toString()
+    }
+
+    /** A name the shop keeps in Tamil letters said in English letters ("Clutch plate" for "கிளட்ச் பிளேட்"): the same name, by sound. */
+    fun sameName(tamil: String, english: String): Boolean {
+        if (!KaiSpokenWords.hasTamil(tamil) || KaiSpokenWords.hasTamil(english) || english.none(Char::isLetter)) return false
+        val key = NameSound.key(spoken(english)).takeIf { it.isNotEmpty() } ?: return false
+        val p = Product(english, key, loose(key), saidWords(english), spoken(english).first() in "aeiou")
+        val parts = english.trim().split(Regex("""\s+""")).map { w -> Word(w, NameSound.key(spoken(w)).let { if (it.isEmpty()) it else loose(it) }) }
+        val phrase = tamil.trim().replace(Regex("""[.\-]+"""), " ").replace(Regex("""\s+"""), " ").trim()
+        return match(phrase, phrase.split(' ').size, listOf(p), parts, known = false, beforeQty = true) != null
     }
 
     /** The one product a Tamil phrase sounds like, or null (none, too little to tell, or two alike). */
@@ -82,8 +111,18 @@ object KaiProductSound {
             if (ok) p to d else null
         }
         val best = scored.minOfOrNull { it.second } ?: return null
-        return scored.filter { it.second == best }.map { it.first.name }.distinct().singleOrNull()
+        // "ஹெட்லைட்" / "டெயில் லைட்" sound alike (Headlight, Tail light): the one said in as many words.
+        return scored.filter { it.second == best }.map { it.first }.let { alike -> alike.takeIf { a -> a.map { it.out }.distinct().size == 1 } ?: alike.filter { it.words == span } }
+            .map { it.out }.distinct().singleOrNull()
     }
+
+    /** How many words the mic writes for a name: "HDHMR Board" is six ("எச்.டி.எச்.எம்.ஆர். போர்டு") — letters said one by one. */
+    private fun saidWords(name: String): Int = name.trim().split(Regex("""\s+""")).sumOf { w -> if (w.length in 2..6 && w.all { it in 'A'..'Z' }) w.length else 1 }
+
+    private val joiner = Regex("""\s+|-|\.\s*""")
+
+    /** A Tamil name however it is spaced or joined: "பாசி பருப்பு" / "பாசிப்பருப்பு", "மிளகாய்த் தூள்" / "மிளகாய் தூள்". */
+    private fun fold(phrase: String): String = phrase.replace(Regex("""[\s.\-]+"""), "").replace(Regex("""([஀-௿])்(?=\1)"""), "")
 
     /** Right before a quantity: "2", "ஒரு", "இரண்டு" (a short name is only taken in a stock line's place for it). */
     private fun beforeQuantity(text: String, from: Int): Boolean {
@@ -99,7 +138,7 @@ object KaiProductSound {
     private fun spoken(name: String): String = name.trim().split(Regex("""\s+""")).joinToString(" ") { w ->
         when {
             w.length == 1 && w[0].isLetter() -> letterNames[w[0].lowercaseChar()] ?: w
-            w.length in 2..4 && w.all { it in 'A'..'Z' } -> w.lowercase().map { letterNames[it] ?: "$it" }.joinToString("")
+            w.length in 2..6 && w.all { it in 'A'..'Z' } -> w.lowercase().map { letterNames[it] ?: "$it" }.joinToString("")
             else -> w.lowercase()
                 .replace(Regex("""^kn"""), "n").replace(Regex("""^wr"""), "r").replace("ght", "t").replace("gh", "")
                 .replace("ture", "chur").replace("x", "ks").replace(Regex("""c(?=[eiy])"""), "s")

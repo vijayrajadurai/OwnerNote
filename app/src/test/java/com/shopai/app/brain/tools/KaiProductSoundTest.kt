@@ -62,4 +62,33 @@ class KaiProductSoundTest {
     @Test fun aShopWithOnlyTamilNamesIsLeftAlone() {
         assertEquals("அரிசி 2 மூட்டை", KaiProductSound.withProducts("அரிசி 2 மூட்டை", listOf("அரிசி"), emptyList()))
     }
+
+    @Test fun goodsByTheirOwnNameAndLookAlikeNames() {
+        // The owner's 8-shop stock list (12 Oct 2026): native names (KaiFeed.goodsNames), names that sound alike, hyphens, dotted letters.
+        fun heardIn(shop: List<String>, mic: String) = KaiProductSound.withProducts(mic, shop, people)
+        val hardware = listOf("Nut", "Bolt", "Measuring tape", "Door hinge", "Door lock", "Wire")
+        val auto = listOf("Headlight", "Tail light", "Inner tube", "Engine oil", "Oil filter")
+        val fashion = listOf("Shirt", "T-shirt", "Lungi", "Zipper", "Necklace / chain")
+        val plywood = listOf("Plywood", "MDF board", "HDHMR board", "Particle board")
+        val building = listOf("Steel rod", "Binding wire", "TMT steel bar", "Blue metal aggregate", "6 mm aggregate", "20 mm aggregate")
+        val said = listOf(
+            hardware to "அளவு நாடா" to "Measuring tape", hardware to "கதவு கீல்" to "Door hinge", hardware to "கதவு பூட்டு" to "Door lock",
+            auto to "ஹெட்லைட்" to "Headlight", auto to "டெயில் லைட்" to "Tail light",
+            fashion to "டி-ஷர்ட்" to "T-shirt", fashion to "லுங்கி" to "Lungi", fashion to "சட்டை" to "Shirt", fashion to "ஜிப்" to "Zipper",
+            plywood to "எச்.டி.எச்.எம்.ஆர். போர்டு" to "HDHMR board", plywood to "எம்.டி.எஃப். பலகை" to "MDF board",
+            building to "கம்பி" to "Steel rod", building to "ஜல்லி" to "Blue metal aggregate", building to "6 எம்.எம். ஜல்லி" to "6 mm aggregate",
+            building to "20 எம்.எம். ஜல்லி" to "20 mm aggregate", building to "டி.எம்.டி. கம்பி" to "TMT steel bar",
+        )
+        val wrong = said.mapNotNull { (shopAndMic, product) ->
+            val (shop, mic) = shopAndMic
+            val got = heardIn(shop, "$mic 5 வந்துச்சு")
+            if (got.startsWith("$product 5")) null else "$mic → $got (want $product)"
+        }
+        assertEquals(wrong.joinToString("\n"), 0, wrong.size)
+        // "கம்பி" is wire in a hardware shop. A goods name the shop doesn't keep is never turned into another product: no Measuring
+        // tape → "அளவு நாடா" is not Nut; "ஸ்பா" (not in any list) stays as said.
+        assertEquals("Wire 5", heardIn(hardware, "கம்பி 5"))
+        assertEquals("அளவு நாடா 5", heardIn(listOf("Nut", "Bolt"), "அளவு நாடா 5"))
+        assertEquals("ஸ்பா 5", heardIn(hardware, "ஸ்பா 5"))
+    }
 }
