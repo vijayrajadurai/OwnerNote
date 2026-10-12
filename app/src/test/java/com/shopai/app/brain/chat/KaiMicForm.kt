@@ -60,6 +60,7 @@ object KaiMicForm {
         friday=வெள்ளிக்கிழமை account=அக்கவுண்ட் gold=கோல்டு rate=ரேட் petrol=பெட்ரோல் price=விலை train=ட்ரெயின் varum=வரும் rasi=ராசி
         purchase=பர்சேஸ் selling=செல்லிங் labam=லாபம் profit=ப்ராஃபிட் margin=மார்ஜின் business=பிசினஸ் pogudhu=போகுது value=வேல்யூ selavu=செலவு
         vyabaram=வியாபாரம் summary=சம்மரி irukkanga=இருக்காங்க vasool=வசூல் bills=பில்ஸ் transactions=டிரான்ஸாக்ஷன்ஸ் advance=அட்வான்ஸ் discount=டிஸ்கவுண்ட்
+        andha=அந்த aalu=ஆளு thappu=தப்பு vithutom=வித்துட்டோம் serthu=சேர்த்து motham=மொத்தம் peroda=பேரோட meedhi=மீதி naal=நாள் kadaisi=கடைசி thethi=தேதி
         theerapoguthu=தீரப்போகுது sales=சேல்ஸ் vilai=விலை vara=வர
         palan=பலன் inniku=இன்னிக்கு biryani=பிரியாணி recipe=ரெசிபி gst=ஜிஎஸ்டி kooda=கூட bore=போர் adikkudhu=அடிக்குது cheque=செக் card=கார்டு
     """.trim().split(Regex("""\s+""")).associate { it.substringBefore('=') to it.substringAfter('=') }

@@ -270,7 +270,7 @@ internal object KaiConversationSemantics {
     fun correctionAmount(text: String): BigDecimal? {
         val n = text.trim().lowercase(Locale.ROOT)
         // Whole words only ("kuduthaanga" holds "thaan" but corrects nothing); "sorry 1500", "1500 nu maathu", "1500 தான்" correct too.
-        val correctionCue = Regex("""(?<![\p{L}])(illai|illa|actually|wrong|no|amount|only|dhaan|thaan|than|daan|received|sorry|maathu|maatru|change|correct)(?![\p{L}])|மட்டும்|இல்லை|இல்ல|தான்|மாத்து""")
+        val correctionCue = Regex("""(?<![\p{L}])(illai|illa|actually|wrong|thappu|thapu|tappu|no|amount|only|dhaan|thaan|than|daan|received|sorry|maathu|maatru|change|correct)(?![\p{L}])|மட்டும்|இல்லை|இல்ல|தான்|மாத்து|தப்பு""")
             .containsMatchIn(n)
         // "2000 illa 1500": the amount said after "illa" is the right one.
         val all = amountPattern.findAll(n).map { it.groupValues[1].replace(",", "").replace(Regex("\\s+"), "") }.toList()
@@ -962,6 +962,10 @@ class KaiAgent(
         // Push-back ("adha cancel pannu", "avan 3000 dhaan tharanum", "nee sonnadhu thappu", "puriyala") and what Kai can't do
         // (GST bill, WhatsApp, weather …): answered plainly — nothing is written here.
         if (openPayment == null) care(said, lang)?.let { return it }
+
+        // "rendu perum serthu motham" right after two people: their total — never "2" of a product called "Perum Motham".
+        if (openPayment == null && KaiConversationCare.asksBoth(said) && KaiConversationCare.withoutBoth(said).none(Char::isDigit) && brain.peopleTalkedAbout().size >= 2)
+            return question(said, lang, now().toLocalDate(), people0)
 
         // "Praba dhaan" / "vera aal" after "'Praba thambi' — Praba dhaan-aa, illa Praba-oda thambi-aa?".
         if (relationChoice != null) relationAnswered(said, lang)?.let { return it }
@@ -2108,9 +2112,12 @@ class KaiAgent(
 
     /** "due eppa?" / "eppa due?" with no name: the due date of the person just talked about. */
     private val bareDueQuestion = Regex("""(?i)^\s*(?:due\s*(?:date\s*)?(?:eppa|eppo|eppadi|enna|when|sollu|\?)|(?:eppa|eppo|when)\s*due(?:\s*date)?|""" +
-        """(?:date|thethi|due\s*date)\s*(?:sollu|sollunga|enna)|(?:endha|entha|yentha|which)\s*(?:date|thethi)\s*(?:tharanum|kudukkanum|tharuvaan|tharuvanga)?)\s*[?.!]*\s*$""")
+        """(?:date|thethi|due\s*date)\s*(?:sollu|sollunga|enna)|(?:endha|entha|yentha|which)\s*(?:date|thethi|naal|days?)\s*(?:tharanum|kudukkanum|tharuvaan|tharuvan|tharuvanga|tharuvaaru)?|""" +
+        """(?:kadaisi|last)\s*(?:date|thethi)\s*(?:enna|eppo|eppa|sollu)?)\s*[?.!]*\s*$""")
 
     private fun referenceResolved(spoken: String, named: List<String>): String? {
+        // "ivanga rendu perum evlo": both people talked about, not the last one.
+        if (named.isEmpty() && KaiConversationCare.asksBoth(spoken)) return spoken
         if (named.isEmpty() && bareDueQuestion.matches(spoken)) {
             val fresh = conversationState.conversationTurn - conversationState.mentionedTurn <= 4
             if (fresh && conversationState.mentionedPeople.size >= 2) return null
@@ -3106,6 +3113,8 @@ class KaiAgent(
      */
     private suspend fun newStockLine(text: String, said: String, lang: KaiLang, products: List<com.shopai.app.brain.tools.ProductRef>, people: List<String>): KaiTurn? {
         val (name, qty, unit) = com.shopai.app.brain.tools.KaiInventory.stockLine(text) ?: return null
+        // "adhu 1 box vandhirukku" right after Colgate: "adhu" is Colgate (the stock path below), never a new product called "Adhu".
+        if (lastProduct != null && productReference.matches(name.trim())) return null
         val asked = conversationState.conversationTurn - stockLineAskedTurn <= 2
         if (unit == null && !asked) return null
         // A customer / supplier in the books named here makes it money, not stock ("boxக்கு" is a unit, not a person).

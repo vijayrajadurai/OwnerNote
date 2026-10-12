@@ -119,6 +119,9 @@ object KaiFeed {
         vithuchu
         vithiruchu
         vithutten
+        vithutom
+        vithuttom
+        vithom
         vithen
         vitten
         udanjiduchu
@@ -209,10 +212,12 @@ object KaiFeed {
         ippo ipo ippa ipa ippodhu ippothu ipodhu indru inru
         hmm hm hmmm umm um mm ahh aah haan han oh ohh ayyo ayyoo seri sari ok okay
         enaku yenaku yenakku ennaku enakku
-        ivan ivar ivaru ivanga ival adhe athe adhey endha entha yentha kadaisiya kadaisi munnadi munnaadi ellam ellaam aal aalu
+        ivan ivar ivaru ivanga ival adhe athe adhey andha antha indha intha endha entha yentha kadaisiya kadaisi munnadi munnaadi ellam ellaam aal aalu
         innum innoru innonu marupadi thirumba paadhi half
         saraku sarakku saman saaman saamaan samaan maal kadaiku kadaikku porul
         # An accountant's words (owner, 11 Oct 2026: "pona maasam sales", "GST evlo", "advance evlo" were taken as a person's name).
+        # "vandhirukku" is "came", never "to Vandhir" (owner's test, 12 Oct 2026).
+        vandhir vanthir vandhur vanthur vandhiru vanthiru vandhuru vanthuru vandhiruk vanthiruk vandhuruk vanthuruk irukk iruk
         trial veliya veliye pona ponna pudhu pudhiya puthu puthiya market advance return returns discount kadan vasool gst tax labam laabam profit loss
         bill bills sales purchase purchases expense expenses selavu stock value vyabaram viyabaram business summary report
         லாபம் ஜிஎஸ்டி போன புது பில் வியாபாரம் பிசினஸ்

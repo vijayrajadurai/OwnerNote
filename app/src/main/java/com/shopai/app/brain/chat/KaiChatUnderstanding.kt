@@ -139,14 +139,17 @@ object KaiChatUnderstanding {
         val paidAlready = has(" already ", " kuduthana", " kuduthaana", " kuduthaan", " kuduthaara", " koduthana", " kuduthiruk", " katti", " kattina",
             " vandhucha", " vanthucha", " paid ", " has paid", " pay pannana", " ஏற்கனவே ", " கொடுத்தான", " கொடுத்தார",
             " pannirukk", " koduthiruk", " kuduthen", " koduthen", " kuduthirukken", " கொடுத்திருக்")
-        val lastPayment = has(" last payment", " kadaisi", " kadaisiya", " recent payment", " latest payment", " கடைசி") ||
+        // "kadaisi date enna" / "last date eppo": the last date to pay — the due date, not the last payment (owner's test, 12 Oct 2026).
+        val lastDate = has(" kadaisi date", " kadaisi thethi", " kadaisi naal", " last date", " கடைசி தேதி")
+        val lastPayment = !lastDate && has(" last payment", " kadaisi", " kadaisiya", " recent payment", " latest payment", " கடைசி") ||
             (has(" last ", " last-a", " last-ah", " last ah ", " last a ", " last aa ", " last time", " munnadi", " munnaadi", " previous", " mundhi") &&
                 has(" kuduth", " koduth", " pay ", " paid", " thandh", " anupp", " pannan", " pannaan"))
         // "innaiku enna transactions?", "pona maasam evlo saaman vaanginen": the shop's period, not one person's history (owner, 11 Oct 2026).
         val ledgerDay = person == PersonRef.None && period != null
         val history = !ledgerDay && has(" history", " details", " statement", " transactions", " transaction ", " varalaaru", " kanakku ", " full kanakku", " விவரம்", " கணக்கு ",
             " vanginen", " vaanginen", " vangirukk", " vaangirukk", " வாங்கினேன்")
-        val due = has(" eppo", " eppa ", " yeppa ", " yeppo ", " yepo ", " when ", " due ", " date ", " date-la", " date la", " thethi", " எப்போ", " எப்ப ", " தேதி")
+        val due = has(" eppo", " eppa ", " yeppa ", " yeppo ", " yepo ", " when ", " due ", " date ", " date-la", " date la", " thethi", " எப்போ", " எப்ப ", " தேதி",
+            " endha naal", " entha naal", " yentha naal", " endha days", " எந்த நாள்")
         val balance = has(" evlo", " evvalavu", " how much", " balance", " pending", " baaki", " bakki", " tharanum", " kudukkanum", " kodukkanum",
             " varanum", " owe", " outstanding", " எவ்வளவு", " பாக்கி", " தரணும்", " கொடுக்கணும்")
         val personWords = paidAlready || lastPayment || history || due

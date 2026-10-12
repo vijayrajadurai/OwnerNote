@@ -764,6 +764,17 @@ class KaiOwnerSweepTest {
         talk("a follow-up is not a cut-off line", listOf("Kumar evlo tharanum", "Ramesh kitta?"), check = nothingWritten("₹2,500"))
         talk("next monday is the due date", listOf("Kumar enakku 2000 next monday tharanum")) { _ ->
             if (lastTurn?.card?.lines?.any { it.contains("October 12") || it.contains("அக்டோபர் 12") } == true) null else "no due date: ${lastTurn?.card?.lines}" }
+        // Context said the new ways (owner, 12 Oct 2026, 1034 phrasings typed + spoken): "andha aalu", "kadaisi date", "endha naal",
+        // "rendu peroda … serthu", "adhu 1 box vandhirukku", "thappu, 1800", "last aalukku", "vithutom".
+        val dueToday: (Shop) -> String? = { s -> lastTurn?.reply?.text.orEmpty().let { t -> if ((t.contains("innaikku", true) || t.contains("இன்னைக்கு")) && s.nothingWritten()) null else "said: $t" } }
+        talk("andha aalu is the person just asked", listOf("Kumar kanakku enna", "andha aalu evlo tharavendiyadhu"), check = nothingWritten("₹4,000"))
+        talk("kadaisi date is the due date", listOf("Kumar kanakku enna", "kadaisi date enna"), check = dueToday)
+        talk("endha naal tharuvan", listOf("Kumar baaki evlo", "endha naal tharuvan"), check = dueToday)
+        talk("rendu peroda baaki serthu", listOf("Kumar baaki evlo", "Ramesh baaki evlo", "rendu peroda baaki serthu"), check = nothingWritten("₹6,500"))
+        talk("adhu 1 box vandhirukku is the product just asked", listOf("Colgate evlo irukku", "adhu 1 box vandhirukku", "TAP"), check = stock("Colgate" to "288"))
+        talk("athula 1 box vithutom", listOf("Colgate stock enna", "athula 1 box vithutom", "TAP"), check = stock("Colgate" to "192"))
+        talk("thappu, 1800", listOf("Kumar 2000 kuduthan", "thappu, 1800", "TAP"), check = saved("Kumar", "1800", PlanKind.PAYMENT_IN))
+        talk("last aalukku call pannu", listOf("innaiku yaar tharanum", "last aalukku call pannu"), check = nothingWritten("Ramesh"))
         // A reminder said aloud keeps the owner's own Tamil words; "reminde" (typed so) is not part of what to do.
         talk("a spoken reminder keeps its Tamil", listOf("டிசம்பர் 3 காலைல 10 மணிக்கு சபரிக்கு பர்த்டே விஷ் பண்ணணும் ரிமைண்ட் பண்ணு", "TAP")) { s ->
             when (val t = s.tools.rems.singleOrNull()?.title) { null -> "no reminder"; "சபரிக்கு பர்த்டே விஷ் பண்ணணும்" -> null; else -> "title: $t" } }
