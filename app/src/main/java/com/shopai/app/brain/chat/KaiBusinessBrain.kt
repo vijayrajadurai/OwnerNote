@@ -252,6 +252,7 @@ class KaiBusinessBrain(
         listIsLatest = false
         return when {
             query.intent == ChatIntent.UNKNOWN -> reply(query.intent, KaiMood.CLARIFY, lang, unclear(lang))
+            query.intent == ChatIntent.WHICH_SIDE -> { sideAsked = true; reply(query.intent, KaiMood.CLARIFY, lang, whichSide(lang)) }
             // "Kumar correct date-la tharuvaara?", "avar late-aa tharuvaara?": one person's habit.
             query.intent == ChatIntent.PAYMENT_BEHAVIOUR && (query.person is PersonRef.Named || query.person == PersonRef.Pronoun && !query.fullList) ->
                 personAnswer(query, ledger, lang, day)
@@ -1464,6 +1465,18 @@ class KaiBusinessBrain(
         KaiLang.TAMIL -> "ஓனர், $name-னு record எனக்கு கிடைக்கல."
         KaiLang.TANGLISH -> "Owner, $name-nu ${if (payable) "supplier" else "customer"} record enakku kidaikala."
         KaiLang.ENGLISH -> "Owner, I couldn't find a record for $name."
+    }
+
+    /**
+     * Kai asked "money to come in, or money you pay?" ([ChatIntent.WHICH_SIDE]); the owner's next short answer ("naan",
+     * "enakku", "suppliers", "customers") is read as the full question (KaiAgent). Cleared by whoever reads it.
+     */
+    var sideAsked = false
+
+    private fun whichSide(lang: KaiLang) = when (lang) {
+        KaiLang.TAMIL -> "ஓனர், உங்களுக்கு வர வேண்டியதா (கஸ்டமர்கள் தரணும்), இல்ல நீங்க கொடுக்க வேண்டியதா (சப்ளையர்களுக்கு)? \"எனக்கு யாரு தரணும்\" இல்ல \"நான் யாருக்கு தரணும்\"-னு சொல்லுங்க."
+        KaiLang.TANGLISH -> "Owner, ungalukku vara vendiyadha (customers tharanum), illa neenga kudukka vendiyadha (suppliers-ku)? \"Enakku yaaru tharanum\" illa \"naan yaarukku tharanum\"-nu sollunga."
+        KaiLang.ENGLISH -> "Owner, money to come in (customers owe you), or money you pay (suppliers)? Say \"who owes me\" or \"who do I owe\"."
     }
 
     private fun whoDoYouMean(lang: KaiLang) = when (lang) {
