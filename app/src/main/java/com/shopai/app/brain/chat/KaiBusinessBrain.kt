@@ -179,7 +179,9 @@ class KaiBusinessBrain(
 
     /** "mudhal aal", "rendavadhu per", "last person", "முதல் ஆள்": a place in the last list. */
     private val ordinalPhrase = Regex("""(?i)(?<![\p{L}])(mudhal|modhal|mudhala|first|1st|onnavadhu|onnaavadhu|rendavadhu|randavadhu|rendaavadhu|second|2nd|""" +
-        """moonavadhu|munavadhu|moonaavadhu|third|3rd|naalavadhu|naalaavadhu|fourth|4th|anjavadhu|fifth|5th|kadaisi|last)\s*(?:aal|aalu|per|peru|person|customer|supplier|name|one)(?![\p{L}])|""" +
+        """moonavadhu|munavadhu|moonaavadhu|third|3rd|naalavadhu|naalaavadhu|fourth|4th|anjavadhu|fifth|5th|kadaisi|last)\s*(?:aal|aalu|per|peru|person|customer|supplier|name|one)""" +
+        // "last aalukku", "mudhal aaloda": the case ending glued on stays for withListPerson.
+        """(?=(?:ukku|uku|kku|ku|oda|kitta)?(?![\p{L}]))|""" +
         """(முதல்|ரெண்டாவது|இரண்டாவது|மூணாவது|மூன்றாவது|நாலாவது|கடைசி)\s*(?:ஆள்|ஆளு|பேர்|நபர்)""")
 
     /**

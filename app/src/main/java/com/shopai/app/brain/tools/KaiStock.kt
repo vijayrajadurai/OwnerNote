@@ -65,7 +65,7 @@ object KaiStock {
         "stock out", "stock remove", "remove pannu", "remove panniten", "sale panniten", "sale pannen", "sold", "out pannu", "out panniten",
         "out aachu", "out aagiduchu", "poiduchu", "poiduchchu", "poiruchu", "poiruchi", "poiruchchu", "poyiruchu", "poyiruchi", "poyiduchu", "poyiduchi", "poiduchi",
         "poirichu", "poyirichu", "pochu", "poachu", "pochi", "pochchu", "sale aachu", "sale achu", "sale aagiduchu",
-        "vithuduchu", "vithachu", "vithuten", "vitthuten", "vithuchu", "vithuchchu", "vitthuchu", "vithiruchu", "vithutten", "vithen", "vitten", "vikkapattadhu", "eduthutanga", "eduthuttanga", "eduthaanga", "eduthanga", "eduthuttaanga", "outward",
+        "vithuduchu", "vithachu", "vithuten", "vitthuten", "vithuchu", "vithuchchu", "vitthuchu", "vithiruchu", "vithutten", "vithutom", "vithuttom", "vithom", "vithen", "vitten", "vikkapattadhu", "eduthutanga", "eduthuttanga", "eduthaanga", "eduthanga", "eduthuttaanga", "outward",
         "sell panniten", "sell pannen", "sell aachu", "sell achu", "sell panni", "sold out", "out",
         "ஸ்டாக் வெளியே", "விற்றுவிட்டேன்", "போயிடுச்சு", "போச்சு", "விற்றேன்", "வித்தேன்", "வித்துட்டேன்", "விற்றோம்", "விற்பனை ஆச்சு",
         "வித்துச்சு", "வித்துடுச்சு", "விற்றுச்சு", "வித்தாச்சு", "விற்பனை", "vithuduchu",
