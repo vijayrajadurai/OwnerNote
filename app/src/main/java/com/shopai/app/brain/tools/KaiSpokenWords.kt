@@ -35,6 +35,10 @@ object KaiSpokenWords {
         "பதினைந்தாம்" to "15-aam", "இருபதாம்" to "20-aam", "இருவதாம்" to "20-aam", "இருபத்தஞ்சாம்" to "25-aam", "முப்பதாம்" to "30-aam",
         // "அதுகூட 100 ஆட் பண்ணிக்கோ": on top of the entry just saved.
         "பண்ணிக்கோ" to "panniko", "பண்ணிக்கோங்க" to "pannikonga", "பண்ணிக்கங்க" to "pannikonga", "பண்ணிக்க" to "pannikka",
+        // Weekdays as said ("வெள்ளிக்கிழமை" to "due date eppa?" was answered as a date question).
+        "திங்கக்கிழமை" to "monday", "திங்கள்கிழமை" to "monday", "செவ்வாய்க்கிழமை" to "tuesday", "செவ்வாகிழமை" to "tuesday",
+        "புதன்கிழமை" to "wednesday", "வியாழக்கிழமை" to "thursday", "வெள்ளிக்கிழமை" to "friday", "சனிக்கிழமை" to "saturday",
+        "ஞாயிற்றுக்கிழமை" to "sunday", "ஞாயித்துக்கிழமை" to "sunday", "ஞாயிறு" to "sunday",
         "அதுகூட" to "athukuda", "அதுக்கூட" to "athukuda", "அதுகூடவே" to "athukuda", "அதோடு" to "adhoda",
         "டூ" to "2", "த்ரீ" to "3", "ஃபோர்" to "4", "ஃபைவ்" to "5", "பைவ்" to "5", "டென்" to "10", "ட்வென்டி" to "20",
         // ---- time ----

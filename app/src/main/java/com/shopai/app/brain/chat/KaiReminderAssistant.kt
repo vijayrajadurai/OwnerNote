@@ -70,7 +70,11 @@ class KaiReminderAssistant(
 
     /** "confirm" / "venam" / "maathu" right after "…reminder set pannalama?" — the reminder's answer, not a payment's. */
     fun answersConfirm(text: String): Boolean = waiting == Waiting.CONFIRM &&
-        text.trim().lowercase(Locale.ROOT).trim('.', '!', ' ').let { t -> confirmYes.matches(t) || confirmNo.matches(t) || confirmEdit.containsMatchIn(t) }
+        text.trim().lowercase(Locale.ROOT).trim('.', '!', ' ').let { t -> confirmYes.matches(t) || confirmNo.matches(t) || confirmEdit.containsMatchIn(t) || newTimeOnly(t) }
+
+    /** "illa 11 manikku", "11 manikku", "saayangalam 6 manikku" to "…set pannalama?": only a new time (owner, 12 Oct 2026). */
+    private fun newTimeOnly(t: String): Boolean = t.split(Regex("""\s+""")).size <= 5 && t.any(Char::isDigit) &&
+        Regex("""(?<![\p{L}])(manikku|maniku|mani|am|pm|o'?clock|மணிக்கு|மணி)(?![\p{L}])|\d:\d""").containsMatchIn(t) && clockFrom(t, null) != null
 
     /** Kai asked which of several same-named contacts the reminder is for. */
     fun awaitingContact(): Boolean = waiting == Waiting.CONTACT
@@ -131,6 +135,16 @@ class KaiReminderAssistant(
             Waiting.CONFIRM -> {
                 val p = key?.let { pending[it] } ?: return null
                 val t = text.trim().lowercase(Locale.ROOT).trim('.', '!', ' ')
+                if (newTimeOnly(t)) {
+                    val said = KaiTime.parse(text, now())
+                    val clock = clockFrom(text, p.time?.dayPart?.let(::partWord))
+                    val time = when {
+                        said != null && said.daySpecified -> said
+                        clock != null && p.time != null -> withTime(p.time, clock)
+                        else -> said
+                    }
+                    if (time != null) return proceed(p.copy(time = time), p.lang ?: lang)
+                }
                 when {
                     confirmYes.matches(t) -> confirmCreate(p, lang)
                     confirmNo.matches(t) -> act(KaiAction.CancelRequest(p.key), p.lang ?: lang)
@@ -261,7 +275,9 @@ class KaiReminderAssistant(
                 ta = "சரி ஓனர். எப்போ நினைவூட்டணும்? (உதா: 10 நிமிஷத்துல, நாளைக்கு காலை 10 மணிக்கு)",
                 tl = "Seri Owner. Eppa remind pannanum? (eg: 10 minutes la, naalaikku kaalaila 10 manikku)",
                 en = "When should I remind you, Owner? (e.g. in 10 minutes, tomorrow 10 AM)")
-            return KaiTurn(ChatReply(text, KaiMood.CLARIFY, ChatIntent.REMINDER_QUERY), KaiCard(emptyList(), buttons + cancelButton(p.key, lang)))
+            // The task Kai understood is shown with the question ("Call Kumar", "Maggi order"), so the owner sees what it will be.
+            return KaiTurn(ChatReply(text, KaiMood.CLARIFY, ChatIntent.REMINDER_QUERY),
+                KaiCard(listOfNotNull(p.draft.title.takeIf { it.isNotBlank() }), buttons + cancelButton(p.key, lang)))
         }
         // 2. "Every month" without the date.
         if (Missing.DAY_OF_MONTH in time.missing) {

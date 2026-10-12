@@ -341,7 +341,10 @@ internal object KaiConversationSemantics {
     private val noDueDate = Regex(
         """^(?:(?:seri|ok|okay|illa|no)\s+)?(?:due\s*date|due\s*thethi|due|date|thethi|deadline)\s*(?:-?\s*(?:um|lam|ellam))?\s*""" +
             """(?:venam|venaam|vendam|vendaam|venda|vendaa|veenam|illa|illai|thevai\s*illa|theva\s*illa|thevaiyilla|no|none|not\s*needed|skip|வேண்டாம்|இல்லை)$|""" +
-            """^(?:no|without)\s+(?:due\s*date|due|date)$|^(?:தேதி|டியூ)\s*(?:வேண்டாம்|இல்லை)$""",
+            """^(?:no|without)\s+(?:due\s*date|due|date)$|^(?:தேதி|டியூ)\s*(?:வேண்டாம்|இல்லை)$|""" +
+            // "theriyala" / "apram solren" to "due date eppa?": not known yet — the entry with no due date (owner, 12 Oct 2026).
+            """^(?:(?:due\s*date|date|thethi)\s+)?(?:theriyala|theriyalai|teriyala|therila|therla|terla|theriyadhu|theriyaadhu|theriyathu|sollala|solla\s*mudiyala|""" +
+            """apram\s+solren|aprom\s+solren|appuram\s+solren|later|no\s+idea|don'?t\s+know|not\s+sure|தெரியல|தெரியாது|அப்புறம்\s+சொல்றேன்)$""",
     )
     fun dropsDueDate(text: String): Boolean = noDueDate.matches(plain(text))
 
@@ -626,6 +629,12 @@ class KaiAgent(
             val who = conversationState.lastSaved?.takeIf { conversationState.conversationTurn - it.turn <= 12 }?.person ?: personOnTopic?.first ?: brain.lastPerson()
             if (who != null) return askAs(lang, "$who " + Regex("""(?i)(?<![\p{L}])(innoru|innum\s+oru|innonu|innum|marupadi|thirumba|again|another|also)(?![\p{L}])|இன்னொரு|இன்னும்|மறுபடி""").replace(said, " ").trim())
         }
+        // "call pannu" right after Selvam's balance: call Selvam (owner, 12 Oct 2026: "idhu Selvam pathiyaa?").
+        if (named == null && bareCall.matches(said.trim())) recentPerson()?.let { who -> return askAs(lang, "$who ku call pannu") }
+        // "naalaiku 10 manikku remind pannu" after Selvam's balance / "order panna remind pannu" after Maggi's stock: about them.
+        if (named == null) reminderAbout(said)?.let { return askAs(lang, it) }
+        // "nethu?" right after "innaiku sales evlo": the same question for that day.
+        periodFollowUp(said)?.let { return askAs(lang, it) }
         // "athukuda 100 add panniko" right after Madhan's ₹2,000 was saved: ₹100 more on Madhan — a new draft (Confirm first).
         if (named == null) onTopOf.find(said)?.let { m ->
             val who = conversationState.lastSaved?.takeIf { conversationState.conversationTurn - it.turn <= 12 }?.person
@@ -720,6 +729,51 @@ class KaiAgent(
     }
 
     /** The owner's words with a name / amount filled in, answered in the language the owner used (spoken Tamil gets Tamil). */
+    private val modeWord = Regex("""(?i)(?<![\p{L}])(?:upi|gpay|g\s*pay|phonepe|phone\s*pe|paytm|bank|neft|imps|card|cash|online)(?![\p{L}])|ஜிபே|ரொக்கம்|கேஷ்""")
+    private val bareCall = Regex("""(?i)^(?:avanukku|avarukku|avangalukku|avalukku|avan\s*ku|ivanukku)?\s*(?:call|phone|kal|ring)\s*(?:pannu|pannunga|panni\s*kudu|podu|pottu\s*kudu|pannanum|pannu\s*da|panniru|pannidu)?\s*[.!?]*$""")
+    private val remindWord = Regex("""(?i)(?<![\p{L}])(?:remind\p{L}*|reminder|nyabagam\s*paduthu|ninaivu\s*paduthu|alarm)(?![\p{L}])""")
+    private val timeOrFiller = Regex(
+        """(?i)(?<![\p{L}\p{N}])(?:naalaiku|naalaikku|nalaiku|naalai|innaiku|innaikku|indru|kaalaila|kaalai|morning|madhiyam|afternoon|saayangalam|evening|""" +
+            """raathiri|night|monday|tuesday|wednesday|thursday|friday|saturday|sunday|adutha|next|week|vaaram|maasam|month|\d+(?::\d+)?|manikku|mani|am|pm|""" +
+            """minutes?|la|ku|kku|enakku|oru|pannu|pannunga|panna|pannanum|panniko|vai|vei|vechu|podu|set|seri|please|sollu)(?![\p{L}])""",
+    )
+
+    /**
+     * A reminder asked with nothing to remind: "naalaiku 10 manikku remind pannu" right after Selvam's balance is about Selvam's
+     * payment; "call panna remind pannu" after Kumar's entry is a call to Kumar; "order panna remind pannu" after Maggi's stock is
+     * Maggi's order. The line said again with them in it; null when the owner said what to remind (or nothing is on the topic).
+     */
+    private suspend fun reminderAbout(said: String): String? {
+        if (!remindWord.containsMatchIn(said) || said.contains('?')) return null
+        val rest = timeOrFiller.replace(remindWord.replace(said.lowercase(Locale.ROOT), " "), " ").replace(Regex("""\s+"""), " ").trim()
+        val product = recentProduct()
+        val what = when {
+            product != null && (rest.isEmpty() || Regex("""^(?:order|vaanga|vaanganum|purchase|stock|re-?order)(?:\s+.*)?$""").matches(rest)) -> "$product order panna"
+            rest.isEmpty() -> recentPerson()?.let { who ->
+                val supplier = runCatching { books.snapshot() }.getOrNull()?.find(who)?.singleOrNull()?.side == com.shopai.app.brain.Direction.PAYABLE
+                if (supplier) "$who-ku payment kudukka" else "$who kitta payment vaanga"
+            }
+            Regex("""^(?:call|phone|kal)$""").matches(rest) -> recentPerson()?.let { "$it-ku call panna" }
+            else -> null
+        } ?: return null
+        val m = remindWord.find(said) ?: return null
+        return said.substring(0, m.range.first).replace(Regex("""(?i)(?<![\p{L}])(?:call|phone|order)\s+panna\s*$"""), "").trimEnd() + " $what " + said.substring(m.range.first)
+    }
+
+    private val periodWords = Regex("""(?i)(?<![\p{L}])(?:innaiku|innaikku|today|indru|nethu|nethiku|neththu|nethaiku|yesterday|pona\s+vaaram|last\s+week|indha\s+vaaram|this\s+week|""" +
+        """pona\s+maasam|last\s+month|indha\s+maasam|this\s+month|indha\s+month)(?![\p{L}])|இன்னைக்கு|இன்று|நேத்து|நேற்று|(?:இந்த|போன)\s*(?:வாரம்|மாசம்|மாதம்)""")
+
+    /** "nethu?" / "pona vaaram?" right after "innaiku sales evlo": that question again for the new day — null when it isn't one. */
+    private fun periodFollowUp(said: String): String? {
+        val t = said.trim().trimEnd('?', '!', '.', ' ')
+        val newPeriod = periodWords.find(t)?.takeIf { it.value.length >= t.replace(Regex("""(?i)^(?:appo|apo|and|um|sari)\s+"""), "").replace(Regex("""(?i)\s*(?:um|evlo|enna)$"""), "").length - 1 }
+            ?: return null
+        val last = recentAsks.toList().dropLast(1).lastOrNull() ?: return null
+        val old = periodWords.find(last) ?: return null
+        if (old.value.equals(newPeriod.value, ignoreCase = true)) return null
+        return last.replaceRange(old.range, newPeriod.value)
+    }
+
     /** "athukuda / adhoda / adhu kooda / extra / mela 100 add panniko": more on the entry just made. */
     private val onTopOf = Regex("""(?i)^\s*(?:athukuda|athukooda|adhukuda|adhukooda|athu\s+kooda|adhu\s+kooda|athoda|adhoda|athodu|adhodu|extra|mela|melum)\s+(?=\d)""")
 
@@ -866,6 +920,12 @@ class KaiAgent(
 
     /** The person this conversation is on, and the turn they came up ("Akash evlo" → "avan 6000 kuduthutan" → "ippa evlo tharanum"). */
     private var personOnTopic: Pair<String, Long>? = null
+    /**
+     * "meedhi eppo tharuvaan", "eppo tharuvaanga", "baaki eppa kudupaan": when the person talked about pays — asked with no name.
+     * "avan eppa tharuvaan" is not taken here: the pronoun has its own reading (two people just named → Kai asks which).
+     */
+    private val asksWhenAgain = Regex("""(?i)^\s*(?:meedhi|meethi|meedi|baaki|bakki|balance|pending|remaining)?\s*(?:eppo|eppa|yeppa|yeppo|epo|when)\s+""" +
+        """(?:tharuv\p{L}*|tharuvaan\p{L}*|tharanum|kudupp\p{L}*|kudupaan\p{L}*|kudukkanum|pay\s+pannuv\p{L}*|varum|kattuv\p{L}*)\s*[?!.]*\s*$""")
 
     /** The people and products of this shop, by name (for reading spoken Tamil). */
     private suspend fun knownNames(): List<String> =
@@ -892,8 +952,10 @@ class KaiAgent(
         // "ippa evlo tharanum" right after talking about Akash: Akash's balance now — not everyone's list.
         val people0 = runCatching { books.snapshot()?.people.orEmpty() }.getOrDefault(emptyList())
         val onTopic = personOnTopic?.takeIf { conversationState.conversationTurn - it.second <= 3 }?.first
-        val read = if (onTopic != null && KaiConversationCare.asksBalanceAgain(earlier) && com.shopai.app.brain.KaiUnderstanding.knownPerson(earlier, people0) == null)
-            "$onTopic $earlier" else earlier
+            ?: conversationState.lastSaved?.takeIf { conversationState.conversationTurn - it.turn <= 3 }?.person
+        // "meedhi eppo tharuvaan" right after Kumar's entry: Kumar's due date — never a person called "Meedhi".
+        val read = if (onTopic != null && (KaiConversationCare.asksBalanceAgain(earlier) || asksWhenAgain.containsMatchIn(earlier)) &&
+            com.shopai.app.brain.KaiUnderstanding.knownPerson(earlier, people0) == null) "$onTopic $earlier" else earlier
         com.shopai.app.brain.KaiUnderstanding.knownPerson(read, people0)?.let { personOnTopic = it to conversationState.conversationTurn + 1 }
         // "Power bank" is a product, not a bank: product names that hold a money word are joined first. "totel" = total (KaiFeed).
         val said = com.shopai.app.brain.tools.KaiInventory.joinProductWords(spelled(read))
@@ -926,6 +988,12 @@ class KaiAgent(
                 val outgoing = openPayment.kind == PlanKind.PAYMENT_OUT || openPayment.kind == PlanKind.CREDIT_GIVEN
                 return revise(openPayment.key, openPayment.partyName, correctedAmount, openPayment.mode, outgoing, lang)
                     .also { conversationState.pendingCorrection = false }
+            }
+            // "gpay la kuduthan" / "cash dhaan" to the open draft: the same draft, paid that way (owner, 12 Oct 2026: "Evlo amount?").
+            if (correctedAmount == null && said.none(Char::isDigit) && modeWord.containsMatchIn(said) &&
+                (openPayment.kind == PlanKind.PAYMENT_IN || openPayment.kind == PlanKind.PAYMENT_OUT)) {
+                val mode = com.shopai.app.brain.tools.KaiInventory.modeOf(said)
+                if (mode != openPayment.mode) return revise(openPayment.key, openPayment.partyName, openPayment.amount, mode, openPayment.kind == PlanKind.PAYMENT_OUT, lang)
             }
             // "due venam" with the draft on screen: the same draft, with no due date — never a cancel, never "paid".
             if (openPayment.key == conversationState.statedDraftKey && KaiConversationSemantics.dropsDueDate(said)) {
@@ -2959,6 +3027,8 @@ class KaiAgent(
 
     private suspend fun rememberProduct(name: String) {
         conversationState.lastProduct = name
+        // "rate evlo" right after "Colgate evlo irukku": Colgate's rate.
+        productTalkTurn = conversationState.conversationTurn
         conversationState.lastRelevantEntity = name
         conversationState.lastBusinessTopic = "STOCK_QUERY"
         conversationState.currentIntent = "STOCK_QUERY"
@@ -3266,6 +3336,7 @@ class KaiAgent(
         )
     }
 
+    private val oldThenNew = Regex("""(?i)^\s*(\d+(?:\.\d+)?)\s*([\p{L}]+)?\s*(?:illa|illai|no|இல்ல)[\s,]+(\d+(?:\.\d+)?)\s*([\p{L}]+)?\s*(?:dhaan|than|thaan|dhan|தான்)?\s*[.!]?\s*$""")
     private val itemCorrection = Regex("""(?i)^\s*(?:(?:illa|illai|no|இல்ல)[\s,]+)?(\d+(?:\.\d+)?)\s*([\p{L}]+)?\s*(?:dhaan|than|thaan|dhan|தான்|only|mattum)\s*[.!]?\s*$|^\s*(?:illa|illai|no|இல்ல)[\s,]+(\d+(?:\.\d+)?)\s*([\p{L}]+)?\s*[.!]?\s*$""")
 
     /** The owner's reply while a new product is open: an answer, a correction, Confirm / cancel — null when it is something else. */
@@ -3317,6 +3388,14 @@ class KaiAgent(
         val last = lastDraft?.takeIf { it.second == "STOCK" } ?: return null
         val plan = stockPlans.values.lastOrNull { it.said == last.first } ?: return null
         val text = com.shopai.app.brain.tools.KaiSpokenWords.normalize(said).trim()
+        // "10 illa 15": the old quantity, then the new one (owner, 12 Oct 2026).
+        oldThenNew.find(text)?.let { m ->
+            val q = m.groupValues[3].toBigDecimalOrNull()?.takeIf { it.signum() > 0 } ?: return null
+            val unit = (m.groupValues[4].ifEmpty { m.groupValues[2] }).takeIf { it.isNotEmpty() }?.let(com.shopai.app.brain.tools.KaiInventory::unitOf)
+                ?: plan.conv?.input?.singleOrNull()?.unit ?: plan.unit
+            stockPlans.remove(plan.key)
+            return draftParts(plan.product, listOf(com.shopai.app.brain.tools.QtyPart(q, unit)), plan.incoming, plan.said, lang, plan.key)
+        }
         val m = itemCorrection.find(text) ?: return null
         val q = (m.groupValues[1].ifEmpty { m.groupValues[3] }).toBigDecimalOrNull()?.takeIf { it.signum() > 0 } ?: return null
         val unit = (m.groupValues[2].ifEmpty { m.groupValues[4] }).takeIf { it.isNotEmpty() }?.let(com.shopai.app.brain.tools.KaiInventory::unitOf)
@@ -5155,8 +5234,8 @@ class KaiAgent(
         val name = (q.person as? PersonRef.Named)?.name ?: com.shopai.app.brain.KaiUnderstanding.knownPerson(said, ledger.people)
             // "Suresh statement PDF" with no Suresh in the books: said plainly, never another person's statement.
             ?: com.shopai.app.brain.KaiUnderstanding.personIn(said)?.takeUnless { KaiStatement.isAskWord(it) || KaiStatement.pointsBack(it) || it.lowercase(Locale.ROOT) in statementFillers }
-            // "Avan statement PDF anuppu", "itha PDF-a kudu": the person just talked about.
-            ?: brain.lastPerson()
+            // "Avan statement PDF anuppu", "itha PDF-a kudu", "pdf kudu" right after Kumar's entry: the person just talked about.
+            ?: recentPerson()
         if (name == null) {
             // "Idha WhatsApp-la anuppu" with nobody talked about: not a statement (Kai says what it can't send).
             if (KaiStatement.onlyByReference(said)) return null
@@ -5179,6 +5258,17 @@ class KaiAgent(
         }
         return statementCard(parties.single(), from, to, lang)
     }
+
+    /** The person this conversation is about now: the entry just saved or the person just named (the latest), else the one Kai answered about. */
+    private fun recentPerson(): String? {
+        val saved = conversationState.lastSaved?.takeIf { conversationState.conversationTurn - it.turn <= 6 }?.let { it.person to it.turn }
+        val topic = personOnTopic?.takeIf { conversationState.conversationTurn - it.second <= 4 }
+        return listOfNotNull(saved, topic).maxByOrNull { it.second }?.first ?: brain.lastPerson()
+    }
+
+    /** The product this conversation is about now (a stock / price answer a few turns ago), when the talk is about stock. */
+    private fun recentProduct(): String? = conversationState.lastProduct
+        ?.takeIf { conversationState.lastBusinessTopic == "STOCK_QUERY" && conversationState.conversationTurn - productTalkTurn <= 4 }
 
     private val statementFillers = setOf("give", "send", "share", "me", "the", "my", "kudu", "kudunga", "venum")
 
