@@ -488,6 +488,12 @@ class KaiOwnerSweepTest {
             lastTurn?.reply?.text.orEmpty().let { t -> if (want.all { w -> t.contains(w) || mic && t.contains(KaiMicForm.repeated(w)) }) null else "said: $t" } }
         fun nothingWritten(vararg words: String): (Shop) -> String? = { s -> said(*words)(s) ?: if (s.nothingWritten()) null else "wrote something" }
         fun button(kind: String): (Shop) -> String? = { _ -> if (lastTurn?.card?.buttons?.any { (it.action as? KaiAction.OpenRecord)?.kind == kind } == true) null else "no $kind button" }
+        // Whose money, when only the verb is said (owner, 12 Oct 2026): Kai asks, the next short answer picks the side; with someone just
+        // talked about, it is that person's.
+        talk("which side: the owner pays", listOf("tharanum", "naan"), check = said("₹14,000", "ABC Traders"))
+        talk("which side: money to come", listOf("evlo kudukkanum", "customers"), check = said("₹13,500", "Selvam"))
+        talk("which side: asked first", listOf("tharanum"), check = { s -> if (s.log.contains("vara vendiyadha") || s.log.contains("வர வேண்டியதா")) null else "did not ask which side" })
+        talk("which side: the person just talked about", listOf("Kumar evlo tharanum", "evlo tharanum"), check = said("₹4,000"))
         talk("both of them", listOf("Selvam evlo tharanum", "Ramesh?", "rendu perum total evlo"), check = said("Selvam ₹6,000", "Ramesh ₹2,500", "₹8,500"))
         talk("both of them, spoken", listOf("செல்வம் எவ்வளவு தரணும்", "ரமேஷ் எவ்வளவு தரணும்", "ரெண்டு பேரும் மொத்தம் எவ்வளவு"), check = said("₹8,500"))
         talk("the first person asked", listOf("Kumar evlo tharanum", "Colgate stock evlo", "Lakshmi due date eppo", "first ketta aal evlo tharanum nu sonna"),

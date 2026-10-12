@@ -376,6 +376,8 @@ object KaiFeed {
         ippo ipo ippa ipa ippodhu ippothu ipodhu indru inru
         hmm hm hmmm umm um mm ahh aah haan han oh ohh ayyo ayyoo seri sari ok okay
         enaku yenaku yenakku ennaku enakku
+        # "yaaruku naan tharanum", "whom should I pay": asking who, never a person called "Yaaruku" / "Whom" (owner, 12 Oct 2026).
+        yaaruku yaarukku yaruku yarukku yaaru yaar yaru yar whom who should
         ivan ivar ivaru ivanga ival adhe athe adhey andha antha indha intha endha entha yentha kadaisiya kadaisi munnadi munnaadi ellam ellaam aal aalu
         innum innoru innonu marupadi thirumba paadhi half
         meedhi meethi meedi rate price vilai
