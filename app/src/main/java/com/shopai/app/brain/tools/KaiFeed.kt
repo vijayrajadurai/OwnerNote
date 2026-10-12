@@ -66,6 +66,18 @@ object KaiFeed {
         transfer pannaan
         transfer pannitan
         transfer pannitaan
+        # "Lakshmi 300 thandhaa" (owner, 12 Oct 2026: answered as a balance question). A bare "settle" / "clear" goes either way — KaiLedgerPhrases reads it.
+        thandhaa
+        thandha
+        thanthaa
+        thandhuttaa
+        kuduthaa
+        koduthaa
+        anuppunaa
+        anupunaa
+        pottaa
+        kattunaa
+        kattinaa
     """)
 
     /** Money the owner PAID — "ABC Traders-ku 500 ____". */
@@ -378,6 +390,8 @@ object KaiFeed {
         enaku yenaku yenakku ennaku enakku
         # "yaaruku naan tharanum", "whom should I pay": asking who, never a person called "Yaaruku" / "Whom" (owner, 12 Oct 2026).
         yaaruku yaarukku yaruku yarukku yaaru yaar yaru yar whom who should
+        # A bill, a payment app or an expense — never a person ("current bill 1200 kattinen", "GPay la 500 vandhuchu").
+        rent vaadagai vadagai current eb electricity bill gpay phonepe paytm upi cash bank salary sambalam petrol diesel gas kooli transport auto
         ivan ivar ivaru ivanga ival adhe athe adhey andha antha indha intha endha entha yentha kadaisiya kadaisi munnadi munnaadi ellam ellaam aal aalu
         innum innoru innonu marupadi thirumba paadhi half
         meedhi meethi meedi rate price vilai
@@ -419,6 +433,9 @@ object KaiFeed {
     /** How owners actually type a word = the word Kai's rules read ("totel" = total). Whole words only. */
     val spellings: Map<String, String> = pairs("""
         totel = total
+        # "Kumar kitta pesanum": a call to make — Kai asks when to remind (owner, 12 Oct 2026: answered with a balance).
+        pesanum = call pannanum
+        pesanu = call pannanum
         yevlo = evlo
         yewlo = evlo
         ewlo = evlo

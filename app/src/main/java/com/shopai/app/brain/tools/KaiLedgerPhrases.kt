@@ -60,9 +60,14 @@ object KaiLedgerPhrases {
     private val iPaid = listOf(
         rx("""$DATIVE\s+kudutha\s+$AMT\S*\s+selavula\s+(?:record|padhivu|பதிவு)\s+pannu"""),
         rx("""$DATIVE\s+$AMT\s+settle\s+pannitt?en"""),
+        // "ABC Traders ku 2000 settle": settled to them — paid out (without "-ku", "Ramesh 2000 settle" is money in).
+        rx("""$DATIVE\s+$AMT\s+(?:settle|settled|clear|cleared)(?:\s+(?:pannen|panniten|pannitten|aachu|ஆச்சு))?"""),
         rx("""$DATIVE\s+$AMT\s+anupp?itt?en"""),
         rx("""(?:naan|nan)\s+$DATIVE\s+$AMT\s+kuduthutt?en"""),
     )
+
+    /** "Ramesh 2000 settle", "Ramesh 2000 clear aachu": with no "-ku" (read after [iPaid]), the person settled with the owner — money in. */
+    private val settledBy = rx("""$P\s+$AMT\s+(?:settle|settled|clear|cleared)(?:\s+(?:aachu|ஆச்சு|pannitaan|pannitan|pannitaar))?""")
 
     /** "Kumaruku" is Kumar + uku, "Prabhuku" is Prabhu + ku, "Karthikku" is Karthik + ku. */
     private fun bareOf(word: String): String {
@@ -98,8 +103,12 @@ object KaiLedgerPhrases {
         first(iOwe)?.let { m -> return "naan ${person(m.groupValues[1])} ${m.groupValues[2]} tharanum" }
         first(theyPaid)?.let { m -> return "${m.groupValues[1]} ${m.groupValues[2]} kuduthaan" }
         first(iPaid)?.let { m -> return "${person(m.groupValues[1])} ${m.groupValues[2]} kuduthen" }
+        settledBy.find(bare)?.let { m -> if (!m.groupValues[1].contains(Regex("""(?i)(?<![\p{L}])(?:naan|nan|enakku|enaku)(?![\p{L}])"""))) return "${m.groupValues[1]} ${m.groupValues[2]} kuduthaan" }
         owedQuestion.find(bare)?.let { m -> if (!notPerson.matches(m.groupValues[1] + "ku") && !pronoun(m.groupValues[1])) return "${m.groupValues[1].removeSuffix("ு")}-ku evlo kudukkanum?" }
         gluedQuestion.find(bare)?.let { m -> if (!notPerson.matches(m.groupValues[1]) && !pronoun(m.groupValues[1])) return "${bareOf(m.groupValues[1])}-ku${m.groupValues[2]}" }
+        // "Kumar 500 adhu", "Kumar 500 pa": a word said after the amount that says nothing — the line is "Kumar 500" (Kai asks which way).
+        val filler = Regex("""^(.*\d[\d,]*)\s+(?:adhu|athu|idhu|ithu|nu|pa|ma|da|sir|owner|anna|ok|okay|ji|அது|இது)\s*[.!]?$""", RegexOption.IGNORE_CASE)
+        filler.find(bare)?.let { return it.groupValues[1] }
         return if (t != text.trim() && Regex("""\d""").containsMatchIn(t)) t else text
     }
 }
