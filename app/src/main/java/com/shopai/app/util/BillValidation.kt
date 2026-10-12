@@ -99,8 +99,22 @@ object GstinReader {
     /** The GSTIN when its check digit passes (after position-aware OCR fixes), else null. */
     fun read(raw: String): String? {
         val upper = raw.uppercase()
-        return listOf(upper, normalize(upper)).distinct().firstOrNull { valid(it) }
+        val base = listOf(upper, normalize(upper)).distinct()
+        base.firstOrNull { valid(it) }?.let { return it }
+        // The check character (15th) and the entity code (13th) can be a digit or a letter: "1Z1" read for "1ZI". The check
+        // character alone first (the entity code is a digit for almost every business); one answer only, else none.
+        for (tries in listOf(base.flatMap { swaps(it, 14) }, base.flatMap { swaps(it, 12) }, base.flatMap { g -> swaps(g, 12).flatMap { a -> swaps(a, 14) } })) {
+            val ok = tries.distinct().filter { valid(it) }
+            if (ok.size == 1) return ok.single()
+            if (ok.size > 1) return null
+        }
+        return null
     }
+
+    private val lookAlike = mapOf('1' to "IL", 'I' to "1L", 'L' to "1I", '0' to "OD", 'O' to "0D", 'D' to "0O", '5' to "S", 'S' to "5", '8' to "B", 'B' to "8",
+        '2' to "Z", 'Z' to "2", '6' to "G", 'G' to "6")
+    private fun swaps(g: String, at: Int): List<String> =
+        if (at >= g.length) listOf(g) else listOf(g) + lookAlike[g[at]].orEmpty().map { c -> g.substring(0, at) + c + g.substring(at + 1) }
 
     fun valid(gstin: String): Boolean {
         if (!Regex("""\d{2}[A-Z]{5}\d{4}[A-Z][0-9A-Z]Z[0-9A-Z]""").matches(gstin)) return false
@@ -154,6 +168,8 @@ object OcrResultChooser {
         s -= 15 * bill.check.issues.count { it.field == BillCheckField.TAX || it.field == BillCheckField.TOTAL }
         if (bill.date != null) s += 5
         if (bill.merchantName != null) s += 5
+        // Items that add up to the bill: the rows were read, not just the column of amounts.
+        if (bill.items.size >= 2 && !bill.check.has(BillIssue.ITEMS_MISMATCH)) s += 3 * minOf(bill.items.size, 10)
         s -= 3 * mixedScriptWords(text)
         return s
     }
@@ -164,7 +180,7 @@ object OcrResultChooser {
         // REVIEW_REQUIRED (items not adding up, a line missing) also tries the other passes: a tilted photo's first read can
         // lose half the bill and still find its amount in words (test bill, 12 Oct 2026).
         return bill.totalFromLabel && !bill.check.moneyNeedsCheck && bill.check.status != BillStatus.INVALID &&
-            bill.check.status != BillStatus.REVIEW_REQUIRED && mixedScriptWords(text) <= 1
+            bill.check.status != BillStatus.REVIEW_REQUIRED && mixedScriptWords(text) <= 1 && !BillTextParser.readAsColumns(text)
     }
 
     /** "Tota்l", "GSTஇN": words mixing Latin letters and Tamil script. */
@@ -172,9 +188,13 @@ object OcrResultChooser {
         w.any { it in 'A'..'Z' || it in 'a'..'z' } && w.any { it in '஀'..'௿' }
     }
 
-    /** Index of the best text (first one wins a tie, so the cheapest pass is kept). */
+    /**
+     * Index of the best text (first one wins a tie, so the cheapest pass is kept). Passes that read the same total back each
+     * other up: a noisy pass with more (garbage) lines doesn't win over three that agree (dot-matrix bill, 12 Oct 2026).
+     */
     fun best(texts: List<String>): Int {
-        val scores = texts.map(::score)
+        val totals = texts.map { BillTextParser.parse(it).total }
+        val scores = texts.indices.map { i -> score(texts[i]) + 20 * totals.indices.count { j -> j != i && totals[i] != null && totals[j]?.compareTo(totals[i]) == 0 } }
         return texts.indices.maxWithOrNull(compareBy<Int>({ scores[it] }, { -it })) ?: -1
     }
 }
@@ -221,8 +241,10 @@ object BillValidation {
         }
 
         // taxable + tax (± round off, or rounded to the rupee) = grand total.
+        val (charges, afterTax) = BillTextParser.chargesIn(lines)
         if (taxable != null && tax != null && total != null && BillIssue.TAX_IMPOSSIBLE !in issues) {
-            val sum = taxable + tax
+            // TCS / cess are added after the tax.
+            val sum = taxable + tax + afterTax
             val round = bill.roundOff ?: BigDecimal.ZERO
             val candidates = listOf(sum, sum + round, sum - round, sum.setScale(0, java.math.RoundingMode.HALF_UP))
             if (candidates.none { (it - total).abs() <= BigDecimal("0.05") }) issues += BillIssue.TOTAL_MISMATCH
@@ -233,7 +255,9 @@ object BillValidation {
             val itemSum = BillTextParser.sum(bill.items)
             val beforeTax = listOfNotNull(taxable, total?.let { t -> tax?.let { t - it } })
             // Items are printed before the discount: their sum is the value before tax plus the discount.
-            val targets = beforeTax + listOfNotNull(total) + bill.discount?.let { d -> (beforeTax + listOfNotNull(total)).map { it + d } }.orEmpty()
+            // Service charge / freight are in the value before tax but are not items.
+            val bases = (beforeTax + listOfNotNull(total)).flatMap { listOf(it, it - charges, it - afterTax, it - charges - afterTax) }
+            val targets = bases + bill.discount?.let { d -> bases.map { it + d } }.orEmpty()
             if (targets.isNotEmpty() && targets.none { (it - itemSum).abs() <= rupee }) issues += BillIssue.ITEMS_MISMATCH
         }
 
