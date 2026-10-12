@@ -1005,4 +1005,52 @@ class KaiHumanUnderstandingTest {
 
     @Test
     fun g42_kalpanaUnknownSaysNoRecord() = has(kai().say("Kalpana balance evlo?"), "kidaikala")
+
+    /**
+     * KAI's rulebook, point 4 (memory and learning): words and nicknames are learned only when the owner confirms, a corrected
+     * meaning replaces the old one, a balance said in chat is never learned (the records are shown instead), and a general
+     * "keep this in mind" is answered with what Kai can keep — typed and from the mic.
+     */
+    @Test
+    fun principleFourMemory() = runBlocking {
+        fun fresh(): Pair<KaiAgent, Access> { val a = Access(InMemoryKaiMemoryStore(), "biz-A", "owner-A", Tools(Db())); return kai(a) to a }
+        suspend fun words(a: Access) = a.current().list().map { it.triggerPhrase.lowercase() to it.meaningValue.lowercase() }
+        // A nickname, confirmed, then used.
+        fresh().let { (k, a) ->
+            k.chat("Ravi-a naan 'Ravi anna' nu kupduven", "Save")
+            assertEquals(listOf("ravi anna" to "ravi"), words(a))
+            has(k.say("Ravi anna evlo tharanum"), "Ravi", "₹1,500")
+        }
+        fresh().let { (k, a) ->
+            k.chat("'KM' na Kumar", "Save")
+            has(k.say("KM evlo tharanum"), "₹3,000")
+            assertEquals(listOf("km" to "kumar"), words(a))
+        }
+        fresh().let { (k, a) ->
+            k.chat("'கேஎம்' னா குமார்", "சேவ்")
+            has(k.say("கேஎம் எவ்வளவு தரணும்"), "₹3,000")
+        }
+        // Not confirmed: nothing kept.
+        fresh().let { (k, a) -> k.chat("'KM' na Kumar", "Vendam"); assertTrue(words(a).isEmpty()) }
+        // A corrected meaning replaces the old one.
+        fresh().let { (k, a) ->
+            k.chat("'petti' na box", "Save", "illa 'petti' na packet", "Save")
+            assertEquals(listOf("petti" to "packet"), words(a))
+        }
+        // A balance said in chat is never learned and never changes the records: the records, and how to put a real entry.
+        for (line in listOf("Kumar balance 0 dhaan, adha nyabagam vechuko", "Kumar ku 1000 dhaan pending nu nyabagam vechuko")) fresh().let { (k, a) ->
+            val t = k.say(line)
+            has(t, "₹3,000", "maatha maatten")
+            assertTrue(words(a).isEmpty())
+            assertTrue(db.saved.isEmpty())
+        }
+        // Something Kai can't keep: said plainly (never a reminder made of it, never kept).
+        fresh().let { (k, a) ->
+            val t = k.say("naan kaalaila 9 manikku kadai open pannuven nu nyabagam vechuko")
+            has(t, "vasadhi illa")
+            assertTrue(t.card == null && words(a).isEmpty())
+        }
+        // "nee sonnadhu thappu" after a balance: the apology with the verified record.
+        fresh().let { (k, _) -> k.chat("Kumar evlo tharanum"); has(k.say("nee sonnadhu thappu"), "Mannichikonga", "₹3,000") }
+    }
 }

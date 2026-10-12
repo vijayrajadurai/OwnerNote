@@ -63,6 +63,9 @@ object KaiPersonalTeaching {
         // "… remember pannu / nyabagam vechuko" at the end.
         t = t.replace(Regex("""(?i)[\s,]*(-?\s*nu\s+)?(remember\s+(pannu|panniko|pannikko|vechuko)|nyabagam\s+vechuko|gnabagam\s+vechuko|vechuko|ninaivil vai)\s*$"""), "").trim()
 
+        // "Ravi-a naan 'Ravi anna'-nu kupduven": a nickname — read as "'Ravi anna' na Ravi" (owner, 12 Oct 2026).
+        Regex("""^\s*([\p{L}\p{M}][\p{L}\p{M} ]{0,30}?)\s*-?\s*(?:a|ai|ya|yai|vai|ah|ஐ|யை)?\s+(?:naan\s+|nan\s+|naanga\s+)?[`'"‘“]?([\p{L}\p{M}][\p{L}\p{M} ]{0,30}?)[`'"’”]?\s*-?\s*(?:nu|nnu|ன்னு|னு)\s*(?:dhaan\s+|than\s+)?(?:kupduven|kuppiduven|kooppiduven|koopduven|koopiduven|kupduvom|kooppiduvom|solluven|sollhuven|solluvom|கூப்பிடுவேன்|சொல்லுவேன்)\s*[.!]?\s*$""", RegexOption.IGNORE_CASE)
+            .find(t)?.let { n -> t = "'${n.groupValues[2].trim()}' na ${n.groupValues[1].trim()}" }
         val (phrase, meaning) = split(t) ?: return null
         val p = phrase.trim().trim('`', '\'', '"', '‘', '’', '“', '”', '-', ' ')
         val m = meaning.trim().trim('`', '\'', '"', '‘', '’', '“', '”', ' ')

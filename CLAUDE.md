@@ -1,5 +1,10 @@
 # OwnerNote — working rules
 
+## KAI follows its rulebook: `docs/KAI_PRINCIPLES.md` (owner, 12 Oct 2026)
+
+Every Kai change keeps the seven principles there (language, context, truthfulness, memory, safe actions, response
+quality, no rule / record changes from chat) and adds a test for the principle it serves.
+
 ## Kai Chat: the text box and the mic are one Kai (owner's rule, 10 Oct 2026)
 
 Every Kai Chat feature or fix must work the same typed and spoken. Both go to `KaiChatSession.send` → `KaiAgent.ask`;
