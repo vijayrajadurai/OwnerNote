@@ -50,6 +50,15 @@ object KaiSpokenWords {
         "கழிச்சு" to "kalichi", "கழிச்சி" to "kalichi", "கழித்து" to "kalichi", "அப்புறம்" to "apram", "அப்றம்" to "apram", "பிறகு" to "piragu",
         "மாலையில்" to "maalaila", "மாலையில" to "maalaila", "மாலைல" to "maalaila", "சாவி" to "saavi", "போட்டு" to "pottu", "போடு" to "podu",
         "இன்னும்" to "innum",
+        // How owners say an entry in other words (owner's dataset, 12 Oct 2026; KaiLedgerPhrases). Common words the rest of
+        // Kai still reads in Tamil ("தர வேண்டும்", "வரவு", "கொடுக்க") are not mapped; KaiLedgerPhrases reads them either way.
+        "தரல" to "tharala", "கொடுக்கல" to "kudukala", "குடுக்கல" to "kudukala", "வேண்டிய" to "vendiya",
+        "ரூபாயை" to "roobaya", "கணக்குல" to "kanakkula", "தொகையை" to "thogaiya", "தொகையோட" to "thogaiyoda",
+        "அதிகப்படுத்து" to "adhigapaduthu", "பாக்கியோட" to "baakiyoda", "கூடுதலா" to "kooduthalaa", 
+        "பாக்கிய" to "baakiya", "கூட்டி" to "kootti", "பாக்கில" to "baakila",
+        "கொடுத்த" to "kudutha", "குடுத்த" to "kudutha", "வரவுல" to "varavula", "செலவுல" to "selavula", 
+        "செலவாச்சு" to "selavaachu", "வேகமா" to "vegamaa", "பதிவுல" to "padhivula", "தடவை" to "thadava", "சீக்கிரம்" to "seekiram",
+        "செட்டில்" to "settle",
         // ---- reminders / calls ----
         "ரிமைண்டர்" to "reminder", "ரிமைண்ட்" to "remind", "ரிமைன்டர்" to "reminder",
         "ஞாபகப்படுத்து" to "nyabagam paduthu", "ஞாபகப்படுத்துங்க" to "nyabagam paduthu", "ஞாபகம்" to "nyabagam",

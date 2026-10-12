@@ -446,7 +446,7 @@ class KaiBusinessBrain(
                     // "Rendu Murugan-oda balance sollu": each record on its own, even when one was just talked about.
                     matches.size > 1 && (everyOne.containsMatchIn(rawText) || bothOf(ref.name).containsMatchIn(rawText)) -> return everyRecord(ref.name, matches, query.intent, lang, rawText)
                     hinted != null -> hinted
-                    all.isEmpty() -> return reply(query.intent, KaiMood.CLARIFY, lang, notFound(ref.name, lang))
+                    all.isEmpty() -> return reply(query.intent, KaiMood.CLARIFY, lang, notFound(ref.name, lang, query.side == Direction.PAYABLE))
                     matches.isEmpty() -> {
                         // Still the person being talked about: "due eppa?" next is about them.
                         lastParty = all.first()
@@ -1459,9 +1459,10 @@ class KaiBusinessBrain(
         }
     }
 
-    private fun notFound(name: String, lang: KaiLang) = when (lang) {
+    /** No one by that name; "naan Kumar-ku evlo tharanum?" (what the owner owes) looks for a supplier, not a customer. */
+    private fun notFound(name: String, lang: KaiLang, payable: Boolean = false) = when (lang) {
         KaiLang.TAMIL -> "ஓனர், $name-னு record எனக்கு கிடைக்கல."
-        KaiLang.TANGLISH -> "Owner, $name-nu customer record enakku kidaikala."
+        KaiLang.TANGLISH -> "Owner, $name-nu ${if (payable) "supplier" else "customer"} record enakku kidaikala."
         KaiLang.ENGLISH -> "Owner, I couldn't find a record for $name."
     }
 
