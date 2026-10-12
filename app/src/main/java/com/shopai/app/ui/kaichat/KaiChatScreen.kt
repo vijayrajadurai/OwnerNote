@@ -121,6 +121,14 @@ fun KaiChatScreen(
             // Morning Work (from Kai's MORNING_WORK answer): the guided screen, or the record behind a task.
             is com.shopai.app.brain.chat.KaiAction.OpenMorningWork -> onOpenMorningWork(action.start)
             is com.shopai.app.brain.chat.KaiAction.OpenRecord -> onOpenRecord(action.kind, action.id)
+            // "Kumar statement WhatsApp-la anuppu": the PDF is made here from the books, then WhatsApp opens with it (the owner sends).
+            is com.shopai.app.brain.chat.KaiAction.ShareStatement -> {
+                val lang = session.messages.firstOrNull { it.id == messageId }?.lang ?: com.shopai.app.brain.KaiLang.TANGLISH
+                scope.launch {
+                    val shared = runCatching { shareStatement(container, context, action, lang) }
+                    if (shared.isFailure) android.widget.Toast.makeText(context, pdfFailed(lang), android.widget.Toast.LENGTH_LONG).show()
+                }
+            }
             else -> Unit
         }
     }

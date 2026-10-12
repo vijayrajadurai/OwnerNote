@@ -50,11 +50,13 @@ class KaiOwnerSweepTest {
             val nextDue: LocalDate? get() = entries.filter { it.open.signum() > 0 }.minOfOrNull { it.due ?: it.created }
         }
         val parties = mutableListOf<Party>()
+        /** A party's phone number (by id), when the books have one. */
+        val phones = mutableMapOf<String, String>()
         fun add(id: String, name: String, customer: Boolean, amount: String, created: LocalDate, due: LocalDate?): Entry {
             val p = parties.firstOrNull { it.id == id } ?: Party(id, name, customer).also { parties += it }
             return Entry(BigDecimal(amount), created, due).also { p.entries += it }
         }
-        fun summary(p: Party) = PartySummary(p.id, p.name, null, p.pending.toDouble(), p.nextDue?.let { "${it}T00:00:00Z" })
+        fun summary(p: Party) = PartySummary(p.id, p.name, phones[p.id], p.pending.toDouble(), p.nextDue?.let { "${it}T00:00:00Z" })
         fun snapshot() = BusinessSnapshot(customers = parties.filter { it.customer }.map(::summary), suppliers = parties.filter { !it.customer }.map(::summary))
     }
 
@@ -853,5 +855,128 @@ class KaiOwnerSweepTest {
             }
         }
         assertTrue("${bad.size} of $played stock lines failed:\n\n" + bad.take(40).joinToString("\n\n"), bad.isEmpty())
+    }
+
+    /**
+     * "Kumar oda credit debit history PDF kudu" (owner, 12 Oct 2026): a person's statement as a PDF, sent by the owner on WhatsApp.
+     * Typed and as the mic writes it: the card for that one person (WhatsApp + PDF buttons, the period asked), nothing written.
+     * Money, reminders and plain history questions stay what they were; a person not in the books is said plainly.
+     */
+    @Test fun statementPdf() {
+        val bad = mutableListOf<String>()
+        fun check(typed: String, partyId: String, from: LocalDate?, to: LocalDate, sums: String, phone: String? = null) {
+            for (said in listOfNotNull(typed, KaiMicForm.of(typed))) {
+                val s = Shop()
+                phone?.let { s.l.phones["c1"] = it }
+                val t = s.say(said)
+                val share = t.card?.buttons?.mapNotNull { it.action as? KaiAction.ShareStatement }.orEmpty()
+                val ok = s.nothingWritten() && share.size == 2 && share.all { it.partyId == partyId && it.from == from && it.to == to } &&
+                    share.map { it.whatsapp } == listOf(true, false) && t.card!!.lines.any { line -> sums.split(';').all { line.contains(it.trim()) } } &&
+                    (phone == null || t.card!!.lines.first().contains(phone))
+                if (!ok) bad += "«$said»${s.log}"
+            }
+        }
+        val all = d(10, 8)
+        check("Kumar oda credit debit history pdf ah kudu", "c1", null, all, "₹12,000; ₹8,000; ₹4,000")
+        check("Kumar statement pdf venum", "c1", null, all, "₹12,000; ₹8,000; ₹4,000")
+        check("Kumar kanakku pdf la anuppu", "c1", null, all, "₹4,000")
+        check("Kumar statement whatsapp la anuppu", "c1", null, all, "₹4,000", phone = "98400 12345")
+        check("Kumar oda full kanakku share pannu", "c1", null, all, "₹4,000")
+        check("Kumar transactions download pannu", "c1", null, all, "₹4,000")
+        check("Kumar pona maasam statement pdf kudu", "c1", d(9, 1), d(9, 30), "₹8,000; ₹5,000; ₹3,000")
+        check("Give me Kumar's statement as PDF", "c1", null, all, "₹12,000; ₹8,000; ₹4,000")
+        check("Send Kumar ledger pdf", "c1", null, all, "₹4,000")
+        check("Ramesh pdf kudu", "c2", null, all, "₹4,500; ₹2,000; ₹2,500")
+        check("ABC Traders statement pdf", "s1", null, all, "₹10,000; ₹0; ₹10,000")
+        check("குமார் ஓட கிரெடிட் டெபிட் ஹிஸ்டரி பிடிஎஃப் குடு", "c1", null, all, "₹12,000; ₹8,000; ₹4,000")
+        check("குமார் கணக்கு பிடிஎஃப் வேணும்", "c1", null, all, "₹4,000")
+        check("குமார் ஸ்டேட்மெண்ட் வாட்ஸ்அப்ல அனுப்பு", "c1", null, all, "₹4,000")
+        // "avan" right after Kumar: Kumar's statement.
+        run {
+            val s = Shop()
+            s.say("Kumar evlo tharanum")
+            val share = s.say("avan statement pdf anuppu").card?.buttons?.mapNotNull { it.action as? KaiAction.ShareStatement }.orEmpty()
+            if (share.map { it.partyId }.distinct() != listOf("c1")) bad += "«avan statement pdf anuppu» after Kumar${s.log}"
+        }
+        // "Lokesh enaku evlo" → "Yeppa tharanum" → "Itha pdf ah kudu" (owner, 12 Oct 2026): "itha" is Lokesh, typed and into the mic.
+        val lokesh = listOf(
+            listOf("Lokesh enaku evlo", "Yeppa tharanum", "Itha pdf ah kudu"),
+            listOf("Lokesh enaku evlo", "Yeppa tharanum", "idha whatsapp la anuppu"),
+            listOf("Lokesh enaku evlo", "Itha pdf ah kudu"),
+            listOf("லோகேஷ் எனக்கு எவ்வளவு", "எப்ப தரணும்", "இத பிடிஎஃப்ஆ குடு"),
+            listOf("லோகேஷ் எனக்கு எவ்வளவு", "எப்ப தரணும்", "இதை வாட்ஸ்அப்ல அனுப்பு"),
+        )
+        for (flow in lokesh) for (lines in listOfNotNull(flow, flow.map { KaiMicForm.of(it) ?: it }.takeIf { it != flow })) {
+            val s = Shop { add("c9", "Lokesh", true, "6000", d(9, 10), d(10, 20)).payments += BigDecimal("1500") to d(9, 30); add("c9", "Lokesh", true, "2000", d(10, 2), d(10, 15)) }
+            var t: KaiTurn? = null
+            for (l in lines) t = s.say(l)
+            val share = t?.card?.buttons?.mapNotNull { it.action as? KaiAction.ShareStatement }.orEmpty()
+            if (share.size != 2 || share.any { it.partyId != "c9" } || t?.reply?.text?.contains("₹6,500") != true || !s.nothingWritten()) bad += "Lokesh flow ${lines}${s.log}"
+        }
+        // "Itha pdf ah kudu" with nobody talked about: Kai asks whose; "idha whatsapp la anuppu": what Kai can't send, as before.
+        run {
+            val s = Shop()
+            if (!s.say("Itha pdf ah kudu").reply.text.contains("Yaaroda")) bad += "«Itha pdf ah kudu» alone${s.log}"
+            val s2 = Shop()
+            if (!s2.say("idha whatsapp la anuppu").reply.text.contains("WhatsApp / SMS")) bad += "«idha whatsapp la anuppu» alone${s2.log}"
+        }
+        // Not a statement: money, a reminder, the history said in the chat. A name not in the books: said, no card.
+        for ((said, want) in listOf("Kumar history sollu" to "₹12,000", "Suresh statement pdf" to "Suresh", "statement pdf kudu" to "Yaaroda")) {
+            val s = Shop()
+            val t = s.say(said)
+            if (t.card?.buttons?.any { it.action is KaiAction.ShareStatement } == true || !t.reply.text.contains(want) || !s.nothingWritten()) bad += "«$said»${s.log}"
+        }
+        for (said in listOf("Kumar ku 500 whatsapp la anuppu", "Kumar ku whatsapp la remind pannu", "Kumar 2000 kuduthan")) {
+            val s = Shop()
+            val t = s.say(said)
+            if (t.card?.buttons?.any { it.action is KaiAction.ShareStatement } == true) bad += "«$said» is not a statement${s.log}"
+        }
+        assertTrue("${bad.size} statement lines failed:\n\n" + bad.joinToString("\n\n"), bad.isEmpty())
+    }
+
+    /**
+     * The owner's phone, 12 Oct 2026 (screenshots): one message at a time, Kai must keep the thread — typed and into the mic.
+     * New product rates said as "அம்பது ரூபா", a product with no quantity, "அஞ்சாம் தேதி" for a due date, "athukuda 100 add
+     * panniko" after a saved entry, and a typed name for a person kept in Tamil letters. Nothing is written before Confirm.
+     */
+    @Test fun ownersPhoneFlows() {
+        val bad = mutableListOf<String>()
+        val madhan: Ledger.() -> Unit = { add("c7", "மதன்", true, "2000", d(9, 20), d(10, 30)) }
+        fun flow(lines: List<String>, confirmFirst: Boolean = false, more: Ledger.() -> Unit = {}, ok: (KaiTurn, Shop) -> Boolean) {
+            val mic = lines.map { KaiMicForm.of(it) ?: it }
+            for (said in listOfNotNull(lines, mic.takeIf { it != lines })) {
+                val s = Shop(more)
+                var t: KaiTurn? = null
+                said.forEachIndexed { i, l ->
+                    t = s.say(l)
+                    if (i == 0 && confirmFirst) t!!.card?.buttons?.firstOrNull { it.action is KaiAction.ConfirmPlan }?.let { s.act(it.action) }
+                }
+                val savedBefore = if (confirmFirst) 1 else 0
+                if (s.tools.saved.size != savedBefore || s.inv.moves.isNotEmpty() || !ok(t!!, s)) bad += "$said${s.log}"
+            }
+        }
+        fun card(t: KaiTurn, vararg words: String) = t.card != null && words.all { w -> t.card!!.lines.any { it.contains(w) } || t.reply.text.contains(w) }
+        // 1. A new product's rates, the selling rate said "அம்பது ரூபா" / "50 rupees"; "30 rupees" to the gram question is the purchase rate.
+        flow(listOf("Cinthol soap 50 add pannu", "50 pieces", "30 rupees", "50 rupees")) { t, _ -> card(t, "₹30", "₹50", "50 pieces") && t.card!!.buttons.any { it.action is KaiAction.ConfirmGoods || it.action is KaiAction.ConfirmStock || it.action.toString().contains("Item") } }
+        flow(listOf("சிந்தால் சோப்பு 50 ஆட் பண்ணு", "50 பீஸ்", "முப்பது ரூபா", "அம்பது ரூபா")) { t, _ -> card(t, "₹30", "₹50", "50 pieces") }
+        // 2. A product with no quantity: Kai asks how much came in (never everyone's pending total).
+        flow(listOf("Cinthol soap add pannu")) { t, _ -> t.reply.text.contains("evlo vandhirukku") || t.reply.text.contains("எவ்வளவு வந்திருக்கு") }
+        flow(listOf("சிந்தால் சோப்பு ஆட் பண்ணு")) { t, _ -> t.reply.text.contains("எவ்வளவு வந்திருக்கு") }
+        // 3. "அஞ்சாம் தேதி" / "anjaam thethi" for the due date: the 5th — asked which month when Kai asked the date, or the open
+        // draft's due date (the next 5th).
+        fun fifth(t: KaiTurn, day: Int) = t.reply.text.contains("$day-ஆ") || card(t, "நவம்பர் $day") || card(t, "November $day")
+        flow(listOf("குமார் 3000 தரணும் ஆட் பண்ணிக்கோ", "அஞ்சாம் தேதி")) { t, _ -> fifth(t, 5) }
+        flow(listOf("குமார் 3000 தரணும் ஆட் பண்ணிக்கோ", "மூணாம் தேதி")) { t, _ -> fifth(t, 3) }
+        flow(listOf("சுரேஷ் 3000 தரணும் ஆட் பண்ணிக்கோ", "அஞ்சாம் தேதி")) { t, _ -> fifth(t, 5) }
+        flow(listOf("Kumar 3000 tharanum", "anjaam thethi")) { t, _ -> fifth(t, 5) || t.reply.text.contains("5-aa") }
+        // … and with the draft card already open: that draft's due date.
+        flow(listOf("Kumar 3000 tharanum add panniko", "anjaam thethi")) { t, _ -> card(t, "November 5") || card(t, "நவம்பர் 5") }
+        // 4. "athukuda 100 add panniko" right after an entry was saved: ₹100 more on that person — a new draft.
+        flow(listOf("Kumar 2000 credit", "athukuda 100 add panniko"), confirmFirst = true) { t, _ -> card(t, "Kumar", "₹100") }
+        flow(listOf("madhan 2000 credit", "athukuda 100 add panniko"), confirmFirst = true, more = madhan) { t, _ -> card(t, "மதன்", "₹100") }
+        flow(listOf("மதன் 2000 கிரெடிட்", "அதுகூட 100 ஆட் பண்ணிக்கோ"), confirmFirst = true, more = madhan) { t, _ -> card(t, "மதன்", "₹100") }
+        // 5. A typed name for a person kept in Tamil letters: "madhan ku 100 add panniko" is a ₹100 entry on மதன், not a balance answer.
+        flow(listOf("madhan ku 100 add panniko"), more = madhan) { t, _ -> card(t, "மதன்", "₹100") }
+        assertTrue("${bad.size} flows failed:\n\n" + bad.joinToString("\n\n"), bad.isEmpty())
     }
 }
