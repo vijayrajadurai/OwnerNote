@@ -83,7 +83,9 @@ object KaiSpokenWords {
         "லாபம்" to "labam", "பிசினஸ்" to "business", "போகுது" to "pogudhu", "வேல்யூ" to "value", "வர" to "vara", "கலெக்ஷன்" to "collection", "வேண்டியது" to "vendiyadhu",
         "டிரான்ஸாக்ஷன்" to "transaction", "டிரான்ஸாக்ஷன்ஸ்" to "transactions", "பில்ஸ்" to "bills", "லாஸ்" to "loss", "டேக்ஸ்" to "tax", "அட்வான்ஸ்" to "advance",
         "டிஸ்கவுண்ட்" to "discount", "செலவு" to "selavu", "வியாபாரம்" to "viyabaram", "சம்மரி" to "summary", "இருக்காங்க" to "irukkanga",
-        "தீரப்போகுது" to "theerapogudhu", "வசூல்" to "vasool", "ஷீட்" to "sheet",
+        "தீரப்போகுது" to "theerapogudhu",
+        // Context words said aloud (owner, 12 Oct 2026): "அந்த ஆளு", "ரெண்டு பேரோட", "வித்துட்டோம்", "மீதி".
+        "அந்த" to "andha", "பேரு" to "peru", "பேரோட" to "peroda", "வித்துட்டோம்" to "vithutom", "வித்தோம்" to "vithom", "மீதி" to "meedhi", "வசூல்" to "vasool", "ஷீட்" to "sheet",
         "கேட்ட" to "ketta", "ஆளு" to "aalu", "ஆள்" to "aal", "தேதி" to "thethi", "கிழமை" to "kizhamai", "வருஷம்" to "varusham",
         // ---- what Kai doesn't do (weather, news, orders, staff) — said in Tamil script, heard as typed ----
         "கணக்கு" to "kanakku", "கணக்க" to "kanakka", "சேலரி" to "salary", "சம்பளம்" to "sambalam", "எம்ப்ளாயி" to "employee", "எம்ப்ளாயீ" to "employee",

@@ -174,11 +174,11 @@ object KaiEntityResolver {
 
     private val personRef = Regex(
         """$B(avanukku|avanuku|avanuk|avarukku|avaruku|avangalukku|avangaluku|avalukku|avaluku|avan|avanu|avar|avaru|avanga|avangal|aval|ava|""" +
-            """avanoda|avaroda|avangaloda|avanai|avarai|avana|avara|indha\s+aal|andha\s+aal|andha\s+customer|andha\s+supplier|indha\s+customer|""" +
+            """avanoda|avaroda|avangaloda|avanai|avarai|avana|avara|indha\s+aalu|andha\s+aalu|indha\s+aal|andha\s+aal|andha\s+customer|andha\s+supplier|indha\s+customer|""" +
             """same\s+person|same\s+customer|him|her|he|she|""" +
             // "ivan / ivar / ivanga", "adhe aal", "same aal" (owner's test, 11 Oct 2026: read as a person called "Ivan" / "Adhe").
-            """ivanukku|ivanuku|ivarukku|ivaruku|ivangalukku|ivan|ivar|ivaru|ivanga|ival|ivanoda|ivaroda|adhe\s+aal|athe\s+aal|adhey\s+aal|same\s+aal|avare|avane)$E|""" +
-            """அவனுக்கு|அவருக்கு|அவங்களுக்கு|அவளுக்கு|அவன்|அவர்|அவங்க|அவள்|இவனுக்கு|இவருக்கு|இவன்|இவர்|இவங்க|அதே\s+ஆள்""",
+            """ivanukku|ivanuku|ivarukku|ivaruku|ivangalukku|ivan|ivar|ivaru|ivanga|ival|ivanoda|ivaroda|adhe\s+aalu|athe\s+aalu|adhey\s+aalu|same\s+aalu|adhe\s+aal|athe\s+aal|adhey\s+aal|same\s+aal|avare|avane)$E|""" +
+            """அவனுக்கு|அவருக்கு|அவங்களுக்கு|அவளுக்கு|அவன்|அவர்|அவங்க|அவள்|இவனுக்கு|இவருக்கு|இவன்|இவர்|இவங்க|அதே\s+ஆளு|அதே\s+ஆள்|அந்த\s+ஆளு|அந்த\s+ஆள்""",
         RegexOption.IGNORE_CASE,
     )
 
