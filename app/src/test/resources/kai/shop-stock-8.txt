@@ -1,0 +1,236 @@
+# The owner's 8-shop stock list (12 Oct 2026): every product by its Tamil, Tanglish and English name — one record.
+# KaiOwnerSweepTest.eightShopStockList adds 5 of each, said 7 ways (Tamil, Tanglish, English, Tamil + Tanglish, Tanglish + English,
+# the mic's Tamil, the mic's Tanglish), with the shop keeping it under its English name, then its Tanglish name.
+#   SHOP | Tamil | Tanglish | English | unit
+
+Hardware Shop | ஆணி | Aani | Nail | PCS
+Hardware Shop | திருகு | Thirugu | Screw | PCS
+Hardware Shop | போல்ட் | Bolt | Bolt | PCS
+Hardware Shop | நட் | Nut | Nut | PCS
+Hardware Shop | வாஷர் | Washer | Washer | PCS
+Hardware Shop | கதவு கீல் | Kathavu keel | Door hinge | PCS
+Hardware Shop | கதவு பூட்டு | Kathavu pootu | Door lock | PCS
+Hardware Shop | கதவு கைப்பிடி | Kathavu kaipidi | Door handle | PCS
+Hardware Shop | சுத்தியல் | Suthiyal | Hammer | PCS
+Hardware Shop | இடுக்கி | Idukki | Pliers | PCS
+Hardware Shop | ஸ்க்ரூ டிரைவர் | Screwdriver | Screwdriver | PCS
+Hardware Shop | அளவு நாடா | Alavu naada | Measuring tape | PCS
+Hardware Shop | ரம்பம் | Rambam | Hacksaw | PCS
+Hardware Shop | கம்பி | Kambi | Wire | PCS
+Hardware Shop | மின் சுவிட்ச் | Min switch | Electrical switch | PCS
+Hardware Shop | மின் பிளக் | Min plug | Electrical plug | PCS
+Hardware Shop | மின் விளக்கு | Min vilakku | Light bulb | PCS
+Hardware Shop | தண்ணீர் குழாய் | Thanneer kuzhaai | Water pipe | PCS
+Hardware Shop | குழாய் இணைப்பு | Kuzhaai inaippu | Pipe fitting | PCS
+Hardware Shop | குழாய் வால்வு | Kuzhaai valve | Pipe valve | PCS
+Hardware Shop | பெயிண்ட் | Paint | Paint | PCS
+Hardware Shop | சுவர் புட்டி | Suvar putty | Wall putty | PCS
+Hardware Shop | பெயிண்ட் பிரஷ் | Paint brush | Paint brush | PCS
+Hardware Shop | ஒட்டும் பசை | Ottum pasai | Adhesive | PCS
+Hardware Shop | கையுறை | Kaiyurai | Gloves | PCS
+Wholesale & Retail Grocery | அரிசி | Arisi | Rice | KG
+Wholesale & Retail Grocery | பச்சரிசி | Pachcharisi | Raw rice | KG
+Wholesale & Retail Grocery | புழுங்கல் அரிசி | Puzhungal arisi | Boiled rice | LITRE
+Wholesale & Retail Grocery | இட்லி அரிசி | Idli arisi | Idli rice | KG
+Wholesale & Retail Grocery | பாசுமதி அரிசி | Basmati arisi | Basmati rice | KG
+Wholesale & Retail Grocery | கோதுமை மாவு | Gothumai maavu | Wheat flour | KG
+Wholesale & Retail Grocery | மைதா | Maida | Refined flour | KG
+Wholesale & Retail Grocery | ரவை | Ravai | Semolina | KG
+Wholesale & Retail Grocery | அரிசி மாவு | Arisi maavu | Rice flour | KG
+Wholesale & Retail Grocery | துவரம் பருப்பு | Thuvaram paruppu | Toor dal | KG
+Wholesale & Retail Grocery | உளுந்து | Ulundhu | Urad dal | KG
+Wholesale & Retail Grocery | பாசிப்பருப்பு | Paasi paruppu | Moong dal | KG
+Wholesale & Retail Grocery | கடலைப்பருப்பு | Kadalai paruppu | Chana dal | KG
+Wholesale & Retail Grocery | கொண்டைக்கடலை | Kondaikadalai | Chickpeas | KG
+Wholesale & Retail Grocery | பச்சைப் பயறு | Pachchai payaru | Green gram | KG
+Wholesale & Retail Grocery | சமையல் எண்ணெய் | Samayal ennai | Cooking oil | LITRE
+Wholesale & Retail Grocery | கடலை எண்ணெய் | Kadalai ennai | Groundnut oil | LITRE
+Wholesale & Retail Grocery | நல்லெண்ணெய் | Nallennai | Sesame oil | LITRE
+Wholesale & Retail Grocery | தேங்காய் எண்ணெய் | Thengai ennai | Coconut oil | LITRE
+Wholesale & Retail Grocery | சர்க்கரை | Sarkkarai | Sugar | KG
+Wholesale & Retail Grocery | உப்பு | Uppu | Salt | KG
+Wholesale & Retail Grocery | வெல்லம் | Vellam | Jaggery | KG
+Wholesale & Retail Grocery | மிளகாய்த் தூள் | Milagai thool | Chilli powder | KG
+Wholesale & Retail Grocery | மஞ்சள் தூள் | Manjal thool | Turmeric powder | KG
+Wholesale & Retail Grocery | மல்லித் தூள் | Malli thool | Coriander powder | KG
+Wholesale & Retail Grocery | சீரகம் | Seeragam | Cumin | KG
+Wholesale & Retail Grocery | கடுகு | Kadugu | Mustard seeds | KG
+Wholesale & Retail Grocery | புளி | Puli | Tamarind | KG
+Wholesale & Retail Grocery | தேயிலை | Theyilai | Tea | KG
+Wholesale & Retail Grocery | காபித் தூள் | Coffee thool | Coffee powder | KG
+Wholesale & Retail Grocery | பிஸ்கட் | Biscuit | Biscuits | PCS
+Wholesale & Retail Grocery | சிப்ஸ் | Chips | Chips | PCS
+Wholesale & Retail Grocery | நூடுல்ஸ் | Noodles | Instant noodles | PCS
+Wholesale & Retail Grocery | சாக்லேட் | Chocolate | Chocolate | PCS
+Wholesale & Retail Grocery | பால் | Paal | Milk | LITRE
+Wholesale & Retail Grocery | தயிர் | Thayir | Curd | LITRE
+Wholesale & Retail Grocery | சோப்பு | Soap | Bath soap | PCS
+Wholesale & Retail Grocery | ஷாம்பு | Shampoo | Shampoo | PCS
+Wholesale & Retail Grocery | பற்பசை | Parpasaai | Toothpaste | PCS
+Wholesale & Retail Grocery | துணி துவைக்கும் தூள் | Thuni thuvaikkum thool | Detergent powder | KG
+Wholesale & Retail Grocery | பாத்திரம் கழுவும் திரவம் | Paathiram kazhuvum thiravam | Dishwashing liquid | LITRE
+Wholesale & Retail Grocery | தரை சுத்தம் செய்யும் திரவம் | Tharai sutham seyyum thiravam | Floor cleaner | LITRE
+Automobile Shop | என்ஜின் ஆயில் | Engine oil | Engine oil | LITRE
+Automobile Shop | கியர் ஆயில் | Gear oil | Gear oil | LITRE
+Automobile Shop | பிரேக் ஆயில் | Brake oil | Brake fluid | LITRE
+Automobile Shop | குளிரூட்டி திரவம் | Kulirootti thiravam | Coolant | LITRE
+Automobile Shop | ஆயில் ஃபில்டர் | Oil filter | Oil filter | LITRE
+Automobile Shop | ஏர் ஃபில்டர் | Air filter | Air filter | PCS
+Automobile Shop | எரிபொருள் ஃபில்டர் | Eriporul filter | Fuel filter | PCS
+Automobile Shop | ஸ்பார்க் பிளக் | Spark plug | Spark plug | PCS
+Automobile Shop | பிரேக் பேடு | Brake pad | Brake pad | PCS
+Automobile Shop | பிரேக் ஷூ | Brake shoe | Brake shoe | PCS
+Automobile Shop | கிளட்ச் பிளேட் | Clutch plate | Clutch plate | PCS
+Automobile Shop | செயின் | Chain | Chain | PCS
+Automobile Shop | ஸ்ப்ராக்கெட் | Sprocket | Sprocket | PCS
+Automobile Shop | பேட்டரி | Battery | Battery | PCS
+Automobile Shop | ஹெட்லைட் | Headlight | Headlight | PCS
+Automobile Shop | டெயில் லைட் | Tail light | Tail light | PCS
+Automobile Shop | இண்டிகேட்டர் | Indicator | Turn indicator | PCS
+Automobile Shop | ஹாரன் | Horn | Horn | PCS
+Automobile Shop | வைப்பர் | Wiper | Wiper blade | PCS
+Automobile Shop | டயர் | Tyre | Tyre | PCS
+Automobile Shop | டியூப் | Tube | Inner tube | PCS
+Automobile Shop | கண்ணாடி | Kannadi | Mirror | PCS
+Automobile Shop | ஆக்சிலரேட்டர் கேபிள் | Accelerator cable | Accelerator cable | PCS
+Automobile Shop | பிரேக் கேபிள் | Brake cable | Brake cable | PCS
+Automobile Shop | ஷாக் அப்சார்பர் | Shock absorber | Shock absorber | PCS
+Automobile Shop | வீல் பேரிங் | Wheel bearing | Wheel bearing | PCS
+Automobile Shop | கிரீஸ் | Grease | Grease | PCS
+Automobile Shop | ஹெல்மெட் | Helmet | Helmet | PCS
+Automobile Shop | சீட் கவர் | Seat cover | Seat cover | PCS
+Automobile Shop | மொபைல் ஹோல்டர் | Mobile holder | Mobile holder | PCS
+Rice Wholesale Shop | பொன்னி பச்சரிசி | Ponni pachcharisi | Ponni raw rice | KG
+Rice Wholesale Shop | பொன்னி புழுங்கல் அரிசி | Ponni puzhungal arisi | Ponni boiled rice | LITRE
+Rice Wholesale Shop | சோனா மசூரி | Sona Masoori | Sona Masoori rice | KG
+Rice Wholesale Shop | இட்லி அரிசி | Idli arisi | Idli rice | KG
+Rice Wholesale Shop | பாசுமதி அரிசி | Basmati arisi | Basmati rice | KG
+Rice Wholesale Shop | கைக்குத்தல் அரிசி | Kaikuthal arisi | Hand-pounded rice | KG
+Rice Wholesale Shop | சிவப்பரிசி | Sivapparisi | Red rice | KG
+Rice Wholesale Shop | கருப்பு அரிசி | Karuppu arisi | Black rice | KG
+Rice Wholesale Shop | பிரவுன் ரைஸ் | Brown rice | Brown rice | KG
+Rice Wholesale Shop | கேரளா மட்டை அரிசி | Kerala matta arisi | Kerala Matta rice | KG
+Rice Wholesale Shop | புதிய அரிசி | Pudhu arisi | New-season rice | KG
+Rice Wholesale Shop | பழைய அரிசி | Pazhaya arisi | Aged rice | KG
+Rice Wholesale Shop | நெல் | Nel | Paddy | KG
+Rice Wholesale Shop | அரிசி தவிடு | Arisi thavidu | Rice bran | KG
+Rice Wholesale Shop | அரிசி உமி | Arisi umi | Rice husk | KG
+Rice Wholesale Shop | அரிசி மாவு | Arisi maavu | Rice flour | KG
+Rice Wholesale Shop | கோதுமை | Gothumai | Wheat | KG
+Rice Wholesale Shop | கம்பு | Kambu | Pearl millet | KG
+Rice Wholesale Shop | கேழ்வரகு | Kelvaragu | Finger millet | KG
+Rice Wholesale Shop | சோளம் | Cholam | Sorghum | KG
+Rice Wholesale Shop | தினை | Thinai | Foxtail millet | KG
+Rice Wholesale Shop | சாமை | Saamai | Little millet | KG
+Rice Wholesale Shop | மூட்டை | Mootai | Sack | PCS
+Rice Wholesale Shop | அரிசிப் பை | Arisi pai | Rice bag | PCS
+Fashion, Branded & Fancy Store | சட்டை | Sattai | Shirt | PCS
+Fashion, Branded & Fancy Store | டி-ஷர்ட் | T-shirt | T-shirt | PCS
+Fashion, Branded & Fancy Store | பேண்ட் | Pant | Trousers | PCS
+Fashion, Branded & Fancy Store | ஜீன்ஸ் | Jeans | Jeans | PCS
+Fashion, Branded & Fancy Store | ஷார்ட்ஸ் | Shorts | Shorts | PCS
+Fashion, Branded & Fancy Store | வேட்டி | Vetti | Dhoti | PCS
+Fashion, Branded & Fancy Store | லுங்கி | Lungi | Lungi | PCS
+Fashion, Branded & Fancy Store | புடவை | Pudavai | Saree | PCS
+Fashion, Branded & Fancy Store | ரவிக்கை | Ravikkai | Blouse | PCS
+Fashion, Branded & Fancy Store | சுடிதார் | Chudidhar | Salwar suit | PCS
+Fashion, Branded & Fancy Store | குர்த்தி | Kurthi | Kurti | PCS
+Fashion, Branded & Fancy Store | லெக்கின்ஸ் | Leggings | Leggings | PCS
+Fashion, Branded & Fancy Store | துப்பட்டா | Thuppatta | Dupatta | PCS
+Fashion, Branded & Fancy Store | நைட்டி | Nighty | Nightdress | PCS
+Fashion, Branded & Fancy Store | உள்ளாடை | Ulladai | Innerwear | PCS
+Fashion, Branded & Fancy Store | குழந்தைகள் உடை | Kuzhandhaigal udai | Kidswear | PCS
+Fashion, Branded & Fancy Store | பள்ளிச் சீருடை | Palli seerudai | School uniform | PCS
+Fashion, Branded & Fancy Store | காலுறை | Kaalurai | Socks | PCS
+Fashion, Branded & Fancy Store | பெல்ட் | Belt | Belt | PCS
+Fashion, Branded & Fancy Store | பணப்பை | Panappai | Wallet | PCS
+Fashion, Branded & Fancy Store | கைப்பை | Kaippai | Handbag | PCS
+Fashion, Branded & Fancy Store | காதணி | Kaadhani | Earrings | PCS
+Fashion, Branded & Fancy Store | வளையல் | Valaiyal | Bangles | PCS
+Fashion, Branded & Fancy Store | மோதிரம் | Mothiram | Ring | PCS
+Fashion, Branded & Fancy Store | செயின் | Chain | Necklace / chain | PCS
+Fashion, Branded & Fancy Store | முடி கிளிப் | Mudi clip | Hair clip | PCS
+Fashion, Branded & Fancy Store | ரப்பர் பேண்ட் | Rubber band | Hair tie | PCS
+Fashion, Branded & Fancy Store | கண்ணாடி | Kannadi | Sunglasses | PCS
+Fashion, Branded & Fancy Store | கைக்கடிகாரம் | Kaikadigaaram | Wristwatch | PCS
+Fashion, Branded & Fancy Store | தையல் நூல் | Thaiyal nool | Sewing thread | PCS
+Fashion, Branded & Fancy Store | பட்டன் | Button | Button | PCS
+Fashion, Branded & Fancy Store | ஜிப் | Zip | Zipper | PCS
+Fashion, Branded & Fancy Store | ஊசி | Oosi | Needle | PCS
+Fashion, Branded & Fancy Store | ரிப்பன் | Ribbon | Ribbon | PCS
+Plywood Shop | பிளைவுட் | Plywood | Plywood | PCS
+Plywood Shop | கமர்ஷியல் பிளைவுட் | Commercial plywood | Commercial plywood | PCS
+Plywood Shop | மெரைன் பிளைவுட் | Marine plywood | Marine plywood | PCS
+Plywood Shop | ஷட்டரிங் பிளைவுட் | Shuttering plywood | Shuttering plywood | PCS
+Plywood Shop | எம்.டி.எஃப். பலகை | MDF palagai | MDF board | PCS
+Plywood Shop | பார்ட்டிக்கிள் போர்டு | Particle board | Particle board | PCS
+Plywood Shop | பிளாக்போர்டு | Blackboard | Blockboard | PCS
+Plywood Shop | ஃப்ளஷ் டோர் | Flush door | Flush door | PCS
+Plywood Shop | லேமினேட் | Laminate | Laminate sheet | PCS
+Plywood Shop | வெனீர் | Veneer | Veneer sheet | PCS
+Plywood Shop | எச்.டி.எச்.எம்.ஆர். போர்டு | HDHMR board | HDHMR board | PCS
+Plywood Shop | மரப் பலகை | Mara palagai | Wooden board | PCS
+Plywood Shop | மரக் கட்டை | Mara kattai | Timber | PCS
+Plywood Shop | மரப் பட்டை | Mara pattai | Wooden batten | PCS
+Plywood Shop | எட்ஜ் பேண்டிங் | Edge banding | Edge banding tape | PCS
+Plywood Shop | மரப் பசை | Mara pasai | Wood adhesive | PCS
+Plywood Shop | மர பாலிஷ் | Mara polish | Wood polish | PCS
+Plywood Shop | மர வார்னிஷ் | Mara varnish | Wood varnish | PCS
+Plywood Shop | கதவு கைப்பிடி | Kathavu kaipidi | Door handle | PCS
+Plywood Shop | கேபினெட் கீல் | Cabinet keel | Cabinet hinge | PCS
+Plywood Shop | டிராயர் சேனல் | Drawer channel | Drawer channel | PCS
+Plywood Shop | மரத் திருகு | Mara thirugu | Wood screw | PCS
+Plywood Shop | சாண்ட்பேப்பர் | Sandpaper | Sandpaper | PCS
+Plywood Shop | பிளைவுட் வெட்டும் கருவி | Plywood vettum karuvi | Plywood cutting tool | PCS
+Marble & Tiles Shop | மார்பிள் | Marble | Marble | PCS
+Marble & Tiles Shop | கிரானைட் | Granite | Granite | PCS
+Marble & Tiles Shop | தரை ஓடு | Tharai odu | Floor tile | PCS
+Marble & Tiles Shop | சுவர் ஓடு | Suvar odu | Wall tile | PCS
+Marble & Tiles Shop | செராமிக் ஓடு | Ceramic odu | Ceramic tile | PCS
+Marble & Tiles Shop | விட்ரிஃபைடு ஓடு | Vitrified odu | Vitrified tile | PCS
+Marble & Tiles Shop | போர்சலின் ஓடு | Porcelain odu | Porcelain tile | PCS
+Marble & Tiles Shop | ஆன்டி-ஸ்கிட் ஓடு | Anti-skid odu | Anti-skid tile | PCS
+Marble & Tiles Shop | வெளிப்புற ஓடு | Velippura odu | Outdoor tile | PCS
+Marble & Tiles Shop | படிக்கட்டு ஓடு | Padikattu odu | Stair tile | PCS
+Marble & Tiles Shop | மொசைக் ஓடு | Mosaic odu | Mosaic tile | PCS
+Marble & Tiles Shop | டைல் பசை | Tile pasai | Tile adhesive | PCS
+Marble & Tiles Shop | சிமெண்டு கிரவுட் | Cement grout | Cement grout | PCS
+Marble & Tiles Shop | எபாக்சி கிரவுட் | Epoxy grout | Epoxy grout | PCS
+Marble & Tiles Shop | டைல் ஸ்பேசர் | Tile spacer | Tile spacer | PCS
+Marble & Tiles Shop | டைல் கட்டர் | Tile cutter | Tile cutter | PCS
+Marble & Tiles Shop | டைல் லெவலிங் கிளிப் | Tile levelling clip | Tile levelling clip | PCS
+Marble & Tiles Shop | டைல் கிளீனர் | Tile cleaner | Tile cleaner | LITRE
+Marble & Tiles Shop | ஸ்டோன் பாலிஷ் | Stone polish | Stone polish | PCS
+Marble & Tiles Shop | எட்ஜ் டிரிம் | Edge trim | Tile edge trim | PCS
+Marble & Tiles Shop | ஸ்கர்டிங் ஓடு | Skirting odu | Skirting tile | PCS
+Marble & Tiles Shop | டைல் பெட்டி | Tile petti | Tile box | PCS
+Construction Materials | செங்கல் | Chengal | Brick | PCS
+Construction Materials | சுட்ட செங்கல் | Sutta chengal | Burnt clay brick | PCS
+Construction Materials | ஃப்ளை ஆஷ் செங்கல் | Fly ash chengal | Fly ash brick | PCS
+Construction Materials | ஹாலோ பிளாக் | Hollow block | Hollow concrete block | PCS
+Construction Materials | சாலிட் பிளாக் | Solid block | Solid concrete block | PCS
+Construction Materials | ஏ.ஏ.சி. பிளாக் | AAC block | AAC block | PCS
+Construction Materials | பேவர் பிளாக் | Paver block | Paver block | PCS
+Construction Materials | சிமெண்டு | Simantu | Cement | PCS
+Construction Materials | வெள்ளை சிமெண்டு | Vellai simantu | White cement | PCS
+Construction Materials | பி.பி.சி. சிமெண்டு | PPC simantu | PPC cement | PCS
+Construction Materials | ஓ.பி.சி. சிமெண்டு | OPC simantu | OPC cement | PCS
+Construction Materials | எம்-சாண்ட் | M-sand | Manufactured sand | KG
+Construction Materials | பி-சாண்ட் | P-sand | Plastering sand | KG
+Construction Materials | ஆற்று மணல் | Aatru manal | River sand | KG
+Construction Materials | நிரப்பு மண் | Nirappu mannu | Filling soil | KG
+Construction Materials | செம்மண் | Semman | Red soil | KG
+Construction Materials | தோட்ட மண் | Thotta mannu | Garden soil | KG
+Construction Materials | ஜல்லி | Jalli | Blue metal aggregate | KG
+Construction Materials | 6 எம்.எம். ஜல்லி | 6 mm jalli | 6 mm aggregate | KG
+Construction Materials | 12 எம்.எம். ஜல்லி | 12 mm jalli | 12 mm aggregate | KG
+Construction Materials | 20 எம்.எம். ஜல்லி | 20 mm jalli | 20 mm aggregate | KG
+Construction Materials | 40 எம்.எம். ஜல்லி | 40 mm jalli | 40 mm aggregate | KG
+Construction Materials | க்ரஷர் தூள் | Crusher thool | Crusher dust | KG
+Construction Materials | கம்பி | Kambi | Steel rod | PCS
+Construction Materials | டி.எம்.டி. கம்பி | TMT kambi | TMT steel bar | PCS
+Construction Materials | கட்டுக் கம்பி | Kattu kambi | Binding wire | PCS
+Construction Materials | கூரைத் தாள் | Koorai thaal | Roofing sheet | PCS
+Construction Materials | கான்கிரீட் குழாய் | Concrete kuzhaai | Concrete pipe | PCS
+Construction Materials | சிமெண்டு மூட்டை | Simantu mootai | Cement bag | PCS
+Construction Materials | லாரி லோடு | Lorry load | Truckload | PCS

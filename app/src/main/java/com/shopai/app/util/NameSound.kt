@@ -32,7 +32,8 @@ object NameSound {
 
     private fun tamil(raw: String): Pair<String, String> {
         // "ட்ச" is how Tamil writes "ksh" / "x" (லட்சுமி = Lakshmi, லட்சம் = laksham): read as "க்ச" (k + s).
-        val s = raw.replace("ட்ச", "க்ச").replace("க்ஷ", "க்ச")
+        // "ங்க" is the "ng" English letters write ("லுங்கி" = Lungi, "தங்கம்" = Thangam): one sound, as "ng" is read below.
+        val s = raw.replace("ட்ச", "க்ச").replace("க்ஷ", "க்ச").replace("ங்க", "ங")
         val cons = StringBuilder()
         val vowels = StringBuilder()
         var i = 0
