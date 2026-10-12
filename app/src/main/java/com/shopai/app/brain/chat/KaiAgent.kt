@@ -629,6 +629,25 @@ class KaiAgent(
             val who = conversationState.lastSaved?.takeIf { conversationState.conversationTurn - it.turn <= 12 }?.person ?: personOnTopic?.first ?: brain.lastPerson()
             if (who != null) return askAs(lang, "$who " + Regex("""(?i)(?<![\p{L}])(innoru|innum\s+oru|innonu|innum|marupadi|thirumba|again|another|also)(?![\p{L}])|இன்னொரு|இன்னும்|மறுபடி""").replace(said, " ").trim())
         }
+        // "Kumar 500": paid, or owed? One short question with what the records say (principle 3) — never a guess.
+        if (named != null) bareNameAmount.matchEntire(said.trim())?.takeIf { m ->
+            // Only the name and the amount — "ராஜா kuduthaan 750" has a verb (one word per word of the name).
+            val said1 = m.groupValues[1].trim()
+            said1.split(Regex("""\s+""")).size == named.trim().split(Regex("""\s+""")).size && samePerson(said1, named) }?.let { m ->
+            val amount = m.groupValues[2].replace(",", "").toBigDecimalOrNull()?.takeIf { it.signum() > 0 } ?: return@let
+            val p = runCatching { books.snapshot() }.getOrNull()?.find(named)?.distinctBy { it.id }?.singleOrNull() ?: return@let
+            bareAmount = Triple(p.name, amount, conversationState.conversationTurn)
+            val a = KaiFormat.rupees(amount.toDouble()); val owed = KaiFormat.rupees(p.pending)
+            val supplier = p.side == com.shopai.app.brain.Direction.PAYABLE
+            // What the records say first, then the one short question.
+            return say(lang, KaiMood.CLARIFY, "bare name and amount", ta = if (supplier)
+                    "Records-ல நீங்க ${p.name}-க்கு $owed கொடுக்கணும். ${p.name} $a — நீங்க $a கொடுத்தீங்களா, இல்ல புதுசா $a வாங்கினீங்களா (debit) ஓனர்?"
+                else "Records-ல ${p.name} $owed தரணும். ${p.name} $a — ${p.name} $a கொடுத்தாரா, இல்ல $a தரணுமா (credit) ஓனர்?",
+                tl = if (supplier) "Records-la neenga ${p.name}-ku $owed kudukkanum. ${p.name} $a — neenga $a kudutheengala, illa pudhusaa $a vaangineengala (debit) Owner?"
+                else "Records-la ${p.name} $owed tharanum. ${p.name} $a — ${p.name} $a kuduthaara, illa $a tharanum-aa (credit) Owner?",
+                en = if (supplier) "The records say you owe ${p.name} $owed. ${p.name} $a — did you pay $a, or buy $a more on credit, Owner?"
+                else "The records say ${p.name} owes $owed. ${p.name} $a — did ${p.name} pay $a, or does ${p.name} owe $a more (credit), Owner?")
+        }
         // "call pannu" right after Selvam's balance: call Selvam (owner, 12 Oct 2026: "idhu Selvam pathiyaa?").
         if (named == null && bareCall.matches(said.trim())) recentPerson()?.let { who -> return askAs(lang, "$who ku call pannu") }
         // "naalaiku 10 manikku remind pannu" after Selvam's balance / "order panna remind pannu" after Maggi's stock: about them.
@@ -666,9 +685,23 @@ class KaiAgent(
                 tl = "Owner, neenga kadaisiya kettadhu:\n" + asked.mapIndexed { i, q -> "${i + 1}. $q" }.joinToString("\n"),
                 en = "Owner, you last asked:\n" + asked.mapIndexed { i, q -> "${i + 1}. $q" }.joinToString("\n"))
         }
-        if (KaiConversationCare.kaiGotItWrong(said)) return gotItWrong(null, lang)
+        if (KaiConversationCare.kaiGotItWrong(said)) return gotItWrong(null, lang, recordFact(lang))
         if (KaiConversationCare.ownerDidNotFollow(said)) explainAgain(lang)?.let { return it }
         if (KaiConversationCare.disputesBalance(said)) disputed(said, named, lang)?.let { return it }
+        // "Kumar balance 0 dhaan, adha nyabagam vechuko": a balance is never learned from chat (principles 4 and 7) — the records,
+        // and how to put a real entry. Anything else to "keep in mind" (not a word's meaning): said plainly what Kai can keep.
+        // A task to do ("Kumar-ku call pannanum nu nyabagam vechuko") is a reminder — that goes on as before.
+        if (keepInMind.containsMatchIn(said) && !Regex("""(?i)\p{L}+(?:anum|aanum|ணும்)(?![\p{L}])|(?<![\p{L}])(?:remind\p{L}*|call)(?![\p{L}])""").containsMatchIn(said)) {
+            val fact = keepInMind.replace(said, " ").replace(Regex("""(?i)[\s,]*(?:adha|atha|idha|itha|adhai|idhai|nu|-nu)\s*$"""), "").trim().trimEnd(',', '.')
+            if (named != null && fact.any(Char::isDigit)) disputed(fact, named, lang)?.let { return it }
+            if (named == null || !owedTalk.containsMatchIn(fact)) return say(lang, KaiMood.NEUTRAL, "keep in mind: not a word",
+                ta = "ஓனர், இதை நினைவில் வைக்க எனக்கு வசதி இல்ல. ஒரு வார்த்தையோட அர்த்தம் (உதா: “petti னா box”), ஒருத்தரோட செல்லப் பேர் மட்டும் சேமிப்பேன்; பணம் / stock எல்லாம் records-ல இருந்து தான். நினைவூட்டணும்னா “நாளைக்கு 10 மணிக்கு remind பண்ணு”-னு சொல்லுங்க.",
+                tl = "Owner, idha nyabagam vechukka enakku vasadhi illa. Oru vaarthai artham (eg: “petti na box”), oruthar nickname mattum save pannuven; panam / stock ellam records-la irundhu dhaan. Remind pannanumna “naalaiku 10 manikku remind pannu”-nu sollunga.",
+                en = "Owner, I can't keep that in memory. I save a word's meaning (e.g. “petti means box”) or someone's nickname; money and stock always come from the records. For a reminder, say “remind me tomorrow at 10”.")
+            return say(lang, KaiMood.NEUTRAL, "keep in mind: a balance", ta = "ஓனர், பாக்கியை chat-ல சொன்னதை வெச்சு நான் மாத்தவோ நினைவில் வைக்கவோ மாட்டேன் — அது records-ல இருந்து தான் வரும். பணம் வந்திருந்தா / கொடுத்திருந்தா அதை entry-ஆ சொல்லுங்க, draft பண்றேன்.",
+                tl = "Owner, balance-a chat-la sonnadha vechu naan maathavo nyabagam vechukkavo maatten — adhu records-la irundhu dhaan varum. Panam vandhirundhaa / kuduthirundhaa adha entry-aa sollunga, draft panren.",
+                en = "Owner, I don't change or memorise a balance from a chat message — it always comes from the records. If money came in or went out, tell me the entry and I'll draft it.")
+        }
         if (KaiConversationCare.makesBill(said)) return noBillHere(said, named, lang)
         // "Kumar statement WhatsApp-la anuppu" is the statement PDF the owner sends (statementAsk), not a message Kai can't send.
         // "Idha WhatsApp-la anuppu" with nobody talked about reaches here: what Kai can't send, said as before.
@@ -812,7 +845,22 @@ class KaiAgent(
     }
 
     /** "nee sonnadhu thappu": sorry, and what to say to put it right — nothing changes by itself. */
-    private fun gotItWrong(saved: KaiSavedPayment?, lang: KaiLang): KaiTurn {
+    /**
+     * What the records say about the person just answered about — given with the apology for "nee sonnadhu thappu", so the
+     * owner sees the verified figure (principle 6: apologize, correct, explain the verified result). Null: nobody on topic.
+     */
+    private suspend fun recordFact(lang: KaiLang): String? {
+        val who = personOnTopic?.takeIf { conversationState.conversationTurn - it.second <= 2 }?.first ?: return null
+        val p = runCatching { books.snapshot() }.getOrNull()?.find(who)?.distinctBy { it.id }?.singleOrNull() ?: return null
+        val a = KaiFormat.rupees(p.pending)
+        val supplier = p.side == com.shopai.app.brain.Direction.PAYABLE
+        return pick(lang,
+            ta = if (supplier) " Records-ல ${p.name}-க்கு நீங்க $a கொடுக்கணும்-னு தான் இருக்கு." else " Records-ல ${p.name} $a தரணும்-னு தான் இருக்கு.",
+            tl = if (supplier) " Records-la ${p.name}-ku neenga $a kudukkanum-nu dhaan irukku." else " Records-la ${p.name} $a tharanum-nu dhaan irukku.",
+            en = if (supplier) " The records say you owe ${p.name} $a." else " The records say ${p.name} owes $a.")
+    }
+
+    private fun gotItWrong(saved: KaiSavedPayment?, lang: KaiLang, fact: String? = null): KaiTurn {
         val last = saved?.let { s ->
             val a = KaiFormat.rupees(s.amount.toDouble())
             Triple(" கடைசியா சேமிச்சது: ${s.reference} — ${s.person} $a. அது தப்புன்னா “$a இல்ல, மாத்து”-னு சொல்லுங்க.",
@@ -820,9 +868,9 @@ class KaiAgent(
                 " The last entry saved: ${s.reference} — ${s.person} $a. If that's wrong, say “not $a, change it”.")
         }
         return say(lang, KaiMood.CLARIFY, "owner: Kai got it wrong",
-            ta = "மன்னிச்சுக்கோங்க ஓனர் 🙏 எது தப்பு-னு சொல்லுங்க — பேரா, தொகையா, இல்ல வேற விஷயமா? உதா: “Kumar இல்ல, Ramesh” / “2000 இல்ல 1500”." + (last?.first ?: ""),
-            tl = "Mannichikonga Owner 🙏 Edhu thappu-nu sollunga — peru-aa, amount-aa, illa vera vishayam-aa? Eg: “Kumar illa, Ramesh” / “2000 illa 1500”." + (last?.second ?: ""),
-            en = "Sorry, Owner 🙏 Tell me what's wrong — the name, the amount, or something else? E.g. “not Kumar, Ramesh” / “not 2000, 1500”." + (last?.third ?: ""))
+            ta = "மன்னிச்சுக்கோங்க ஓனர் 🙏" + (fact ?: "") + " எது தப்பு-னு சொல்லுங்க — பேரா, தொகையா, இல்ல வேற விஷயமா? உதா: “Kumar இல்ல, Ramesh” / “2000 இல்ல 1500”." + (last?.first ?: ""),
+            tl = "Mannichikonga Owner 🙏" + (fact ?: "") + " Edhu thappu-nu sollunga — peru-aa, amount-aa, illa vera vishayam-aa? Eg: “Kumar illa, Ramesh” / “2000 illa 1500”." + (last?.second ?: ""),
+            en = "Sorry, Owner 🙏" + (fact ?: "") + " Tell me what's wrong — the name, the amount, or something else? E.g. “not Kumar, Ramesh” / “not 2000, 1500”." + (last?.third ?: ""))
     }
 
     /** "puriyala" after a plain answer: the same answer again, in Tamil (said again when it already was — the mic's case). */
@@ -1051,6 +1099,7 @@ class KaiAgent(
         // "Kumar oda credit debit history PDF kudu", "Kumar statement WhatsApp-la anuppu", "itha PDF-a kudu": a person's statement
         // as a PDF — before the conversation care that would ask what "itha" means.
         topicAnswered(said, lang)?.let { return it }
+        if (openPayment == null) bareAmountAnswered(said, lang)?.let { return it }
         if (openPayment == null) statementAsk(said, lang)?.let { return it }
         if (openPayment == null) care(said, lang)?.let { return it }
 
@@ -1779,6 +1828,35 @@ class KaiAgent(
         return conversationState.lastPerson
     }
 
+    /** "Kumar 500" asked about: (person, amount, turn) — the owner's "kuduthan" / "credit" next makes the draft. */
+    private var bareAmount: Triple<String, BigDecimal, Long>? = null
+    private val bareNameAmount = Regex("""(?i)^([\p{L}\p{M}][\p{L}\p{M} .-]{1,40}?)\s*-?\s*(?:ku|kku|kitta)?\s+(?:₹|rs\.?\s*)?(\d[\d,]*)\s*(?:rs|rupees|ruba)?\s*[?.!]*$""")
+    private val paidWord = Regex("""(?i)(?<![\p{L}])(?:kuduth\p{L}*|koduth\p{L}*|thandh\p{L}*|vandhuchu|vanthuchu|paid|pay\s+pannit\p{L}*|anupp\p{L}*|katt\p{L}*|vaanginen|vaangitten)(?![\p{L}])""")
+    private val owedWord = Regex("""(?i)(?<![\p{L}])(?:credit|kadan|tharanum|tharuvaan\p{L}*|baaki|udhaar|udhar|debit|kudukkanum|kudukanum)(?![\p{L}])""")
+
+    /** The answer to "Kumar ₹500 — Kumar kuduthaara, illa Kumar ₹500 tharanum-aa?": that entry's draft (Confirm first). */
+    private suspend fun bareAmountAnswered(said: String, lang: KaiLang): KaiTurn? {
+        val (who, amount, turn) = bareAmount ?: return null
+        if (conversationState.conversationTurn != turn + 1) { bareAmount = null; return null }
+        val a = amount.stripTrailingZeros().toPlainString()
+        val t = said.trim()
+        val supplier = runCatching { books.snapshot() }.getOrNull()?.find(who)?.singleOrNull()?.side == com.shopai.app.brain.Direction.PAYABLE
+        val line = when {
+            t.any(Char::isDigit) || t.split(Regex("""\s+""")).size > 4 -> null
+            owedWord.containsMatchIn(t) -> if (supplier) "naan $who ku $a kudukkanum" else "$who enakku $a tharanum"
+            paidWord.containsMatchIn(t) -> if (supplier) "$who ku $a kuduthen" else "$who $a kuduthan"
+            else -> null
+        } ?: return null
+        bareAmount = null
+        return askAs(lang, line)
+    }
+
+    /** "nyabagam vechuko", "remember pannu", "ninaivil vai": keep this in mind (not "nyabagam paduthu" — remind me). */
+    private val keepInMind = Regex("""(?i)[\s,]*(?:-?\s*nu\s+)?(?:nyabagam\s+vechuko|nyabagam\s+vechukko|gnabagam\s+vechuko|nyabagam\s+vechukonga|remember\s+(?:pannu|panniko|pannikko|this|it)|ninaivil\s+vai|நினைவில்\s+வை|ஞாபகம்\s+வச்சுக்கோ|ஞாபகம்\s+வெச்சுக்கோ)\s*[.!]?\s*""")
+    private val owedTalk = Regex("""(?i)(?<![\p{L}])(?:balance|pending|baaki|bakki|tharanum|kudukkanum|kadan|credit|debit|owes?)(?![\p{L}])""")
+
+    /** The turn Kai last said "edha pathi sollureenga?" with nothing open. */
+    private var nothingOpenTurn = -10L
     /** The turn Kai asked "idhu <topic> pathiyaa, illa vera vishayam pathiyaa?" — its "ama" picks the thread up again. */
     private var topicAskedTurn = -10L
     private val aboutIt = Regex("""(?i)(?<![\p{L}])(?:adhu|athu|adhe|athe|adhey)\s*(?:dhaan|than|thaan|dhan)|(?<![\p{L}])(?:payment|panam|kaasu|due|date)\s*(?:ah|a|aa|-a)?\s*(?:pathi|patthi|pathiye)?\s*(?:dhaan|than|thaan|dhan)(?![\p{L}])|பத்தி\s*தான்|அது\s*தான்""")
@@ -1835,6 +1913,15 @@ class KaiAgent(
             ta = "Owner, எதைப் பத்தி கேக்குறீங்க? Product பேர் சொல்லுங்க.",
             tl = "Owner, edha pathi kekkureenga? Product per sollunga.",
             en = "Owner, which one do you mean? Tell me the product.")
+        // Not understood twice in a row: never the same generic line again — what Kai can read, with examples (principle 6).
+        if (conversationState.conversationTurn - nothingOpenTurn <= 1) {
+            nothingOpenTurn = conversationState.conversationTurn
+            return say(lang, KaiMood.CLARIFY, "clarify: nothing open, again",
+                ta = "மன்னிச்சுக்கோங்க ஓனர், இது எனக்கு புரியல 🙏 இப்படி சொல்லுங்க: “Kumar 2000 குடுத்தான்”, “Colgate 2 box வந்துச்சு”, “நாளைக்கு 10 மணிக்கு Ramesh-க்கு call பண்ண remind பண்ணு”, “Kumar எவ்வளவு தரணும்”.",
+                tl = "Mannichikonga Owner, idhu enakku puriyala 🙏 Ippadi sollunga: “Kumar 2000 kuduthan”, “Colgate 2 box vandhuchu”, “naalaiku 10 manikku Ramesh ku call panna remind pannu”, “Kumar evlo tharanum”.",
+                en = "Sorry Owner, I didn't understand that 🙏 You can say: “Kumar paid 2000”, “Colgate 2 boxes came in”, “remind me to call Ramesh tomorrow at 10”, “how much does Kumar owe”.")
+        }
+        nothingOpenTurn = conversationState.conversationTurn
         return say(lang, KaiMood.CLARIFY, "clarify: nothing open",
             ta = "Owner, எதைப் பத்தி சொல்றீங்க? Payment-ஆ, stock-ஆ, reminder-ஆ?",
             tl = "Owner, edha pathi sollureenga? Payment-aa, stock-aa, reminder-aa?",
@@ -4604,6 +4691,10 @@ class KaiAgent(
             return say(lang, KaiMood.CLARIFY, "payment: amount missing",
                 ta = "எவ்வளவு தொகை ஓனர்?", tl = "Evlo amount Owner?", en = "How much was it, Owner?")
         }
+        // "Suresh 2000 kuduthan" with no Suresh in the books: Suresh, asked about as a new name — never "Yaar kitta vaanguninga?".
+        if (r.name.isNullOrBlank()) com.shopai.app.brain.KaiUnderstanding.personPhraseIn(r.said)
+            ?.takeIf { p -> r.said.trimStart().startsWith(p, ignoreCase = true) && Regex("""[\p{L}\p{M} ]+""").matches(p) && !notAName(p) && p.split(' ').size <= 3 }
+            ?.let { return payment(r.copy(name = it), lang) }
         if (r.name.isNullOrBlank()) {
             incompletePayment = r
             conversationState.pendingCorrection = true
@@ -4689,8 +4780,17 @@ class KaiAgent(
     }
 
     private suspend fun prepared(r: PaymentRequest, kind: PlanKind, name: String, partyId: String?, lang: KaiLang): KaiTurn {
-        val plan = tools.prepare(kind, name, partyId, r.amount!!, r.mode, r.said)
+        val prepared = tools.prepare(kind, name, partyId, r.amount!!, r.mode, r.said)
             ?: return say(lang, KaiMood.ERROR, "draft failed", ta = "இதை இப்போ தயார் பண்ண முடியல ஓனர்.", tl = "Owner, idha ippo ready panna mudiyala.", en = "I couldn't prepare this right now, Owner.")
+        // Above the ledger's limit (₹1 crore): never confirmable — a slip of the tongue or an extra zero (principle 5).
+        val tooBig = com.shopai.app.util.exceedsMaxLedgerAmount(prepared.amount.toDouble())
+        val plan = if (tooBig) prepared.copy(problems = prepared.problems + pick(lang,
+            ta = "₹1 கோடிக்கு மேல ஒரு entry போட முடியாது — சரியான தொகை சொல்லுங்க.",
+            tl = "₹1 crore-ku mela oru entry poda mudiyaadhu — sariyaana amount sollunga.",
+            en = "An entry can't be above ₹1 crore — please say the right amount.")) else prepared
+        // The same entry as the one just saved (same person, amount and kind): said before Confirm — a second one only if meant.
+        val repeat = conversationState.lastSaved?.takeIf { s -> conversationState.conversationTurn - s.turn <= 5 && s.kind == kind &&
+            s.amount.compareTo(plan.amount) == 0 && samePerson(s.person, plan.partyName) }
         // A short reference for the owner (the draft's internal id stays in the log result).
         val ref = tools.log("${kind.name.lowercase()} ${plan.partyName}", "draft", "${KaiFormat.rupees(plan.amount.toDouble())} ${plan.mode} draft=${plan.key}", ActionStatus.DRAFT, null)
         plans[plan.key] = plan.copy(reference = ref, dueDate = r.dueDate ?: plan.dueDate)
@@ -4751,7 +4851,14 @@ class KaiAgent(
             add(pick(lang, ta = "குறிப்பு எண்: $ref", tl = "Ref: $ref", en = "Ref: $ref"))
         }
         val blocked = plan.problems.isNotEmpty()
-        val intro = if (extra != null && owed != null) {
+        val repeatNote = repeat?.let { s ->
+            val a2 = KaiFormat.rupees(s.amount.toDouble())
+            pick(lang,
+                ta = "ஓனர், இப்போ தான் ${s.person} $a2 சேமிச்சோம் (${s.reference}). இது இன்னொரு $a2-ஆ? ஆமா-னா உறுதி செய்யுங்க. ",
+                tl = "Owner, ippo dhaan ${s.person} $a2 save pannom (${s.reference}). Idhu innoru $a2-aa? Aama-na Confirm pannunga. ",
+                en = "Owner, ${s.person} $a2 was just saved (${s.reference}). Is this another $a2? If so, confirm. ")
+        }
+        val intro = (repeatNote ?: "") + if (extra != null && owed != null && !tooBig) {
             val o = KaiFormat.rupees(owed.toDouble()); val a2 = KaiFormat.rupees(plan.amount.toDouble()); val e = KaiFormat.rupees(extra.toDouble())
             val who = ownerName(plan.partyId, plan.partyName)
             if (kind == PlanKind.PAYMENT_IN) pick(lang,
@@ -4775,7 +4882,8 @@ class KaiAgent(
                     KaiButton(pick(lang, ta = "மாற்று", tl = "Edit", en = "Edit"), KaiAction.EditPlan(plan.key)),
                     KaiButton(cancelLabel(lang), KaiAction.CancelPlan(plan.key)),
                 ),
-                warning = plan.problems.takeIf { it.isNotEmpty() }?.joinToString("\n"),
+                warning = (plan.problems + listOfNotNull(repeat?.let { s -> pick(lang, ta = "ஏற்கனவே சேமிச்சது: ${s.reference}", tl = "Already saved: ${s.reference}", en = "Already saved: ${s.reference}") }))
+                    .takeIf { it.isNotEmpty() }?.joinToString("\n"),
             ),
             plans[plan.key],
         ).also { draftTurns[plan.key] = it }
