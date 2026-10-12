@@ -898,6 +898,28 @@ class KaiOwnerSweepTest {
             val share = s.say("avan statement pdf anuppu").card?.buttons?.mapNotNull { it.action as? KaiAction.ShareStatement }.orEmpty()
             if (share.map { it.partyId }.distinct() != listOf("c1")) bad += "«avan statement pdf anuppu» after Kumar${s.log}"
         }
+        // "Lokesh enaku evlo" → "Yeppa tharanum" → "Itha pdf ah kudu" (owner, 12 Oct 2026): "itha" is Lokesh, typed and into the mic.
+        val lokesh = listOf(
+            listOf("Lokesh enaku evlo", "Yeppa tharanum", "Itha pdf ah kudu"),
+            listOf("Lokesh enaku evlo", "Yeppa tharanum", "idha whatsapp la anuppu"),
+            listOf("Lokesh enaku evlo", "Itha pdf ah kudu"),
+            listOf("லோகேஷ் எனக்கு எவ்வளவு", "எப்ப தரணும்", "இத பிடிஎஃப்ஆ குடு"),
+            listOf("லோகேஷ் எனக்கு எவ்வளவு", "எப்ப தரணும்", "இதை வாட்ஸ்அப்ல அனுப்பு"),
+        )
+        for (flow in lokesh) for (lines in listOfNotNull(flow, flow.map { KaiMicForm.of(it) ?: it }.takeIf { it != flow })) {
+            val s = Shop { add("c9", "Lokesh", true, "6000", d(9, 10), d(10, 20)).payments += BigDecimal("1500") to d(9, 30); add("c9", "Lokesh", true, "2000", d(10, 2), d(10, 15)) }
+            var t: KaiTurn? = null
+            for (l in lines) t = s.say(l)
+            val share = t?.card?.buttons?.mapNotNull { it.action as? KaiAction.ShareStatement }.orEmpty()
+            if (share.size != 2 || share.any { it.partyId != "c9" } || t?.reply?.text?.contains("₹6,500") != true || !s.nothingWritten()) bad += "Lokesh flow ${lines}${s.log}"
+        }
+        // "Itha pdf ah kudu" with nobody talked about: Kai asks whose; "idha whatsapp la anuppu": what Kai can't send, as before.
+        run {
+            val s = Shop()
+            if (!s.say("Itha pdf ah kudu").reply.text.contains("Yaaroda")) bad += "«Itha pdf ah kudu» alone${s.log}"
+            val s2 = Shop()
+            if (!s2.say("idha whatsapp la anuppu").reply.text.contains("WhatsApp / SMS")) bad += "«idha whatsapp la anuppu» alone${s2.log}"
+        }
         // Not a statement: money, a reminder, the history said in the chat. A name not in the books: said, no card.
         for ((said, want) in listOf("Kumar history sollu" to "₹12,000", "Suresh statement pdf" to "Suresh", "statement pdf kudu" to "Yaaroda")) {
             val s = Shop()

@@ -83,6 +83,7 @@ object KaiSpokenWords {
         "டவுன்லோடு" to "download", "பிரிண்ட்" to "print", "ப்ரிண்ட்" to "print", "அனுப்பு" to "anuppu", "அனுப்புங்க" to "anuppunga",
         "அனுப்பிவிடு" to "anuppividu", "வாட்ஸ்அப்பில்" to "whatsapp la", "வாட்ஸ்அப்புல" to "whatsapp la", "டீடெயில்ஸ்" to "details",
         "ஓட" to "oda", "குடு" to "kudu", "குடுங்க" to "kudunga", "போன" to "pona",
+        "பிடிஎஃப்ஆ" to "pdf-a", "பிடிஎஃப்ப" to "pdf-a", "பிடிஎஃப்பை" to "pdf-a", "பிடிஎஃப்ஃபா" to "pdf-a", "இத" to "itha", "இதை" to "idhai", "இதையும்" to "idhaiyum", "அத" to "atha", "அதை" to "adhai",
         "வாட்ஸ்அப்ல" to "whatsapp la", "ரெண்டு பேரும்" to "rendu perum", "பேரும்" to "perum", "ஃபர்ஸ்ட்" to "first", "முதல்ல" to "mudhalla", "அதே" to "adhe", "முன்னாடி" to "munnadi", "இவன்" to "ivan", "இவர்" to "ivar", "இவங்க" to "ivanga", "அதோட" to "adhoda", "முதல்" to "mudhal", "ரெண்டாவது" to "rendavadhu", "இரண்டாவது" to "rendavadhu", "மூணாவது" to "moonavadhu", "மூன்றாவது" to "moonavadhu", "நாலாவது" to "naalavadhu", "கடைசி" to "kadaisi",
         // An accountant's words said aloud (owner, 11 Oct 2026).
         "பர்சேஸ்" to "purchase", "செல்லிங்" to "selling", "பிரைஸ்" to "price", "மார்ஜின்" to "margin", "ப்ராஃபிட்" to "profit", "ப்ராபிட்" to "profit",

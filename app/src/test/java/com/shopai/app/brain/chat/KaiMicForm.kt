@@ -49,7 +49,7 @@ object KaiMicForm {
         kalichi=கழிச்சு kanakku=கணக்கு ketta=கேட்ட loan=லோன் maathu=மாத்து mazhai=மழை nadu=நாடு nee=நீ nu=னு order=ஆர்டர்
         paakalam=பாக்கலாம் perum=பேரும் podu=போடு pottutta=போட்டுட்ட puriyala=புரியல reminder=ரிமைண்டர் salary=சேலரி score=ஸ்கோர்
         sonna=சொன்ன sonnadhu=சொன்னது tamil=தமிழ் tharnum=தரணும் thappa=தப்பா thappu=தப்பு varuma=வருமா varusham=வருஷம் venum=வேணும்
-        pdf=பிடிஎஃப் statement=ஸ்டேட்மெண்ட் share=ஷேர் download=டவுன்லோட் ledger=லெட்ஜர் history=ஹிஸ்டரி kudu=குடு debit=டெபிட் pona=போன
+        pdf=பிடிஎஃப் itha=இத idha=இத statement=ஸ்டேட்மெண்ட் share=ஷேர் download=டவுன்லோட் ledger=லெட்ஜர் history=ஹிஸ்டரி kudu=குடு debit=டெபிட் pona=போன
         whatsapp=வாட்ஸ்அப் near=நியர் nearby=நியர்பை by=பை iruka=இருக்கா paru=பாரு paaru=பாரு hardware=ஹார்டுவேர் shops=ஷாப்ஸ் spa=ஸ்பா
         salon=சலூன் gym=ஜிம் pakkathula=பக்கத்துல
         poiruchi=போயிருச்சு vangiirukan=வாங்கியிருக்கான் irukan=இருக்கான் vangi=வாங்கி

@@ -24,6 +24,10 @@ object KaiStatement {
     private val shareWord = Regex(
         """(?<![\p{L}])(?:whatsapp|whatsapp-la|whatsappla|whats\s*app|share|download|print|export|send|forward|anuppu|anupu|anuppunga|anupunga|anuppi\s*vidu|anuppividu|anuppidu)(?![\p{L}])""",
     )
+    /** "Idha WhatsApp-la anuppu" right after a person's balance: "this" — that person's statement. */
+    private val thisWord = Regex("""(?<![\p{L}])(?:itha|idha|ithai|idhai|ithu|idhu|idhaiyum|ithaiyum|atha|adha|athai|adhai|this|it)(?![\p{L}])""")
+    private val whatsappWord = Regex("""(?<![\p{L}])whats\s*app""")
+
     /** Money or a reminder said with it: "Kumar-ku 500 WhatsApp-la anuppu" is a payment, "Kumar-ku remind pannu" a reminder. */
     private val notStatement = Regex("""(?<![\p{L}])(?:remind|reminder|rs|rupees?|ruba|rubai|gpay|phonepe|paytm|upi|cash|panam|kaasu|call)(?![\p{L}])|₹""")
     private val number = Regex("""(?<![\p{L}\p{N}])(\d[\d,]*)(?![\p{N}])""")
@@ -39,7 +43,19 @@ object KaiStatement {
         if (notStatement.containsMatchIn(lower)) return false
         // An amount is money; a year or a day of the month ("2026", "1 to 30") is a period.
         if (number.findAll(lower).any { m -> m.groupValues[1].replace(",", "").toLongOrNull()?.let { it in 100..1899 || it > 2100 } == true }) return false
-        return pdfWord.containsMatchIn(lower) || ledgerWord.containsMatchIn(lower) && shareWord.containsMatchIn(lower)
+        return pdfWord.containsMatchIn(lower) || ledgerWord.containsMatchIn(lower) && shareWord.containsMatchIn(lower) || onlyByReference(lower)
+    }
+
+    /** "Idha WhatsApp-la anuppu": a statement only because of "this" — it means one only right after a person was talked about. */
+    fun onlyByReference(said: String): Boolean {
+        val lower = said.lowercase(Locale.ROOT)
+        return !pdfWord.containsMatchIn(lower) && !ledgerWord.containsMatchIn(lower) &&
+            thisWord.containsMatchIn(lower) && whatsappWord.containsMatchIn(lower) && shareWord.containsMatchIn(lower)
+    }
+
+    /** "Itha", "this", "avan": the thing or person just talked about — never a name. */
+    fun pointsBack(word: String): Boolean = word.lowercase(Locale.ROOT).let { w ->
+        thisWord.matches(w) || w in setOf("avan", "aval", "avar", "avaru", "avanga", "ivan", "ival", "ivar", "ivaru", "ivanga", "andha", "antha", "indha", "intha")
     }
 
     private val inr = NumberFormat.getNumberInstance(Locale("en", "IN")).apply { maximumFractionDigits = 2 }

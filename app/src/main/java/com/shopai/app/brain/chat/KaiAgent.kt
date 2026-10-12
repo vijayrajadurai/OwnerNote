@@ -656,7 +656,8 @@ class KaiAgent(
         if (KaiConversationCare.disputesBalance(said)) disputed(said, named, lang)?.let { return it }
         if (KaiConversationCare.makesBill(said)) return noBillHere(said, named, lang)
         // "Kumar statement WhatsApp-la anuppu" is the statement PDF the owner sends (statementAsk), not a message Kai can't send.
-        if (KaiConversationCare.sendsMessage(said) && !KaiStatement.asks(said)) {
+        // "Idha WhatsApp-la anuppu" with nobody talked about reaches here: what Kai can't send, said as before.
+        if (KaiConversationCare.sendsMessage(said) && (!KaiStatement.asks(said) || KaiStatement.onlyByReference(said))) {
             val note = pick(lang, ta = "ஓனர், WhatsApp / SMS-ல நான் அனுப்ப முடியாது.", tl = "Owner, WhatsApp / SMS-la naan anuppa mudiyaadhu.",
                 en = "Owner, I can't send WhatsApp / SMS messages.")
             val rest = KaiConversationCare.withoutMessageApp(said)
@@ -969,9 +970,10 @@ class KaiAgent(
 
         // Push-back ("adha cancel pannu", "avan 3000 dhaan tharanum", "nee sonnadhu thappu", "puriyala") and what Kai can't do
         // (GST bill, WhatsApp, weather …): answered plainly — nothing is written here.
-        if (openPayment == null) care(said, lang)?.let { return it }
-        // "Kumar oda credit debit history PDF kudu", "Kumar statement WhatsApp-la anuppu": that person's statement as a PDF.
+        // "Kumar oda credit debit history PDF kudu", "Kumar statement WhatsApp-la anuppu", "itha PDF-a kudu": a person's statement
+        // as a PDF — before the conversation care that would ask what "itha" means.
         if (openPayment == null) statementAsk(said, lang)?.let { return it }
+        if (openPayment == null) care(said, lang)?.let { return it }
 
         // "rendu perum serthu motham" right after two people: their total — never "2" of a product called "Perum Motham".
         if (openPayment == null && KaiConversationCare.asksBoth(said) && KaiConversationCare.withoutBoth(said).none(Char::isDigit) && brain.peopleTalkedAbout().size >= 2)
@@ -5074,13 +5076,17 @@ class KaiAgent(
         val to = period?.to?.let { minOf(it, today) } ?: today
         val name = (q.person as? PersonRef.Named)?.name ?: com.shopai.app.brain.KaiUnderstanding.knownPerson(said, ledger.people)
             // "Suresh statement PDF" with no Suresh in the books: said plainly, never another person's statement.
-            ?: com.shopai.app.brain.KaiUnderstanding.personIn(said)?.takeUnless { KaiStatement.isAskWord(it) || it.lowercase(Locale.ROOT) in statementFillers }
-            // "Avan statement PDF anuppu", "PDF-a anuppu": the person just talked about.
+            ?: com.shopai.app.brain.KaiUnderstanding.personIn(said)?.takeUnless { KaiStatement.isAskWord(it) || KaiStatement.pointsBack(it) || it.lowercase(Locale.ROOT) in statementFillers }
+            // "Avan statement PDF anuppu", "itha PDF-a kudu": the person just talked about.
             ?: brain.lastPerson()
-            ?: return say(lang, KaiMood.CLARIFY, null,
+        if (name == null) {
+            // "Idha WhatsApp-la anuppu" with nobody talked about: not a statement (Kai says what it can't send).
+            if (KaiStatement.onlyByReference(said)) return null
+            return say(lang, KaiMood.CLARIFY, null,
                 ta = "யாரோட கணக்கு PDF வேணும் ஓனர்? பேர் சொல்லுங்க.",
                 tl = "Yaaroda statement PDF venum Owner? Per sollunga.",
                 en = "Whose statement do you want as a PDF, Owner?")
+        }
         val parties = ledger.find(name).distinctBy { it.side to it.id }
         if (parties.isEmpty()) return say(lang, KaiMood.CLARIFY, null,
             ta = "ஓனர், $name records-ல இல்ல.", tl = "Owner, $name records-la illa.", en = "Owner, $name isn't in your records.")
@@ -5096,7 +5102,7 @@ class KaiAgent(
         return statementCard(parties.single(), from, to, lang)
     }
 
-    private val statementFillers = setOf("avan", "aval", "avar", "avanga", "ivan", "ival", "ivar", "give", "send", "share", "me", "the", "my")
+    private val statementFillers = setOf("give", "send", "share", "me", "the", "my", "kudu", "kudunga", "venum")
 
     private suspend fun statementCard(p: com.shopai.app.brain.PartyFacts, from: LocalDate?, to: LocalDate, lang: KaiLang): KaiTurn {
         val customer = p.side == com.shopai.app.brain.Direction.RECEIVABLE
