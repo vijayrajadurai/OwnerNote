@@ -23,6 +23,19 @@ object KaiSpokenWords {
         "நாலு" to "4", "நான்கு" to "4", "அஞ்சு" to "5", "ஐந்து" to "5", "ஆறு" to "6", "ஏழு" to "7", "எட்டு" to "8",
         "ஒன்பது" to "9", "பத்து" to "10", "பதினஞ்சு" to "15", "பதினைந்து" to "15", "இருபது" to "20", "முப்பது" to "30",
         "நாற்பது" to "40", "ஐம்பது" to "50", "அரை" to "half",
+        // The numbers as they are said (owner's mic, 12 Oct 2026: "அம்பது ரூபா" for a selling rate was not understood).
+        "அம்பது" to "50", "அம்பதுக்கு" to "50", "இருவது" to "20", "நாப்பது" to "40", "அறுபது" to "60", "அறுவது" to "60", "எழுபது" to "70",
+        "எழுவது" to "70", "எண்பது" to "80", "எம்பது" to "80", "தொண்ணூறு" to "90", "பதினொன்னு" to "11", "பன்னெண்டு" to "12",
+        "பன்னிரண்டு" to "12", "இருபத்தஞ்சு" to "25", "இருவத்தஞ்சு" to "25", "முப்பத்தஞ்சு" to "35", "நாப்பத்தஞ்சு" to "45",
+        "அம்பத்தஞ்சு" to "55", "எழுபத்தஞ்சு" to "75", "நூத்தம்பது" to "150", "ரூவா" to "rupees", "ரூபாய்க்கு" to "rupees",
+        // A day of the month said as an ordinal: "அஞ்சாம் தேதி" = the 5th (owner's mic, 12 Oct 2026).
+        "ஒண்ணாம்" to "1-aam", "ஒன்றாம்" to "1-aam", "ரெண்டாம்" to "2-aam", "இரண்டாம்" to "2-aam", "மூணாம்" to "3-aam", "மூன்றாம்" to "3-aam",
+        "நாலாம்" to "4-aam", "நான்காம்" to "4-aam", "அஞ்சாம்" to "5-aam", "ஐந்தாம்" to "5-aam", "ஆறாம்" to "6-aam", "ஏழாம்" to "7-aam",
+        "எட்டாம்" to "8-aam", "ஒம்பதாம்" to "9-aam", "ஒன்பதாம்" to "9-aam", "பத்தாம்" to "10-aam", "பதினஞ்சாம்" to "15-aam",
+        "பதினைந்தாம்" to "15-aam", "இருபதாம்" to "20-aam", "இருவதாம்" to "20-aam", "இருபத்தஞ்சாம்" to "25-aam", "முப்பதாம்" to "30-aam",
+        // "அதுகூட 100 ஆட் பண்ணிக்கோ": on top of the entry just saved.
+        "பண்ணிக்கோ" to "panniko", "பண்ணிக்கோங்க" to "pannikonga", "பண்ணிக்கங்க" to "pannikonga", "பண்ணிக்க" to "pannikka",
+        "அதுகூட" to "athukuda", "அதுக்கூட" to "athukuda", "அதுகூடவே" to "athukuda", "அதோடு" to "adhoda",
         "டூ" to "2", "த்ரீ" to "3", "ஃபோர்" to "4", "ஃபைவ்" to "5", "பைவ்" to "5", "டென்" to "10", "ட்வென்டி" to "20",
         // ---- time ----
         "நாளைக்கு" to "naalaikku", "நாளை" to "naalai", "நாளன்னைக்கு" to "naalanniku",
@@ -77,6 +90,13 @@ object KaiSpokenWords {
         "பாக்கலாம்" to "paakalam", "பார்க்கலாம்" to "paakalam", "மாத்து" to "maathu", "மாத்துங்க" to "maathunga", "கேன்சல்" to "cancel",
         "டெலீட்" to "delete", "தப்பா" to "thappa", "தப்பு" to "thappu", "சொன்னது" to "sonnadhu", "போட்டுட்ட" to "pottutta", "போட்டுட்டேன்" to "pottuten",
         "புரியல" to "puriyala", "புரிஞ்சுக்கல" to "purinjukala", "ஜிஎஸ்டி" to "gst", "பில்லு" to "bill", "இன்வாய்ஸ்" to "invoice", "வாட்ஸ்அப்" to "whatsapp",
+        // A person's statement as a document (owner, 12 Oct 2026: "குமார் கணக்கு பிடிஎஃப் வேணும்", "ஸ்டேட்மெண்ட் வாட்ஸ்அப்ல அனுப்பு").
+        "பிடிஎஃப்" to "pdf", "பிடிஎப்" to "pdf", "பீடிஎஃப்" to "pdf", "பிடிஎஃப்ல" to "pdf la", "பிடிஎஃப்பா" to "pdf-a", "ஸ்டேட்மென்ட்" to "statement",
+        "ஸ்டேட்மெண்ட்" to "statement", "ஸ்டேட்மென்ட்ட" to "statement", "லெட்ஜர்" to "ledger", "ஷேர்" to "share", "டவுன்லோட்" to "download",
+        "டவுன்லோடு" to "download", "பிரிண்ட்" to "print", "ப்ரிண்ட்" to "print", "அனுப்பு" to "anuppu", "அனுப்புங்க" to "anuppunga",
+        "அனுப்பிவிடு" to "anuppividu", "வாட்ஸ்அப்பில்" to "whatsapp la", "வாட்ஸ்அப்புல" to "whatsapp la", "டீடெயில்ஸ்" to "details",
+        "ஓட" to "oda", "குடு" to "kudu", "குடுங்க" to "kudunga", "போன" to "pona",
+        "பிடிஎஃப்ஆ" to "pdf-a", "பிடிஎஃப்ப" to "pdf-a", "பிடிஎஃப்பை" to "pdf-a", "பிடிஎஃப்ஃபா" to "pdf-a", "இத" to "itha", "இதை" to "idhai", "இதையும்" to "idhaiyum", "அத" to "atha", "அதை" to "adhai",
         "வாட்ஸ்அப்ல" to "whatsapp la", "ரெண்டு பேரும்" to "rendu perum", "பேரும்" to "perum", "ஃபர்ஸ்ட்" to "first", "முதல்ல" to "mudhalla", "அதே" to "adhe", "முன்னாடி" to "munnadi", "இவன்" to "ivan", "இவர்" to "ivar", "இவங்க" to "ivanga", "அதோட" to "adhoda", "முதல்" to "mudhal", "ரெண்டாவது" to "rendavadhu", "இரண்டாவது" to "rendavadhu", "மூணாவது" to "moonavadhu", "மூன்றாவது" to "moonavadhu", "நாலாவது" to "naalavadhu", "கடைசி" to "kadaisi",
         // An accountant's words said aloud (owner, 11 Oct 2026).
         "பர்சேஸ்" to "purchase", "செல்லிங்" to "selling", "பிரைஸ்" to "price", "மார்ஜின்" to "margin", "ப்ராஃபிட்" to "profit", "ப்ராபிட்" to "profit",
@@ -213,6 +233,33 @@ object KaiSpokenWords {
         if (!hasTamil(said)) return phrase
         val back = tamilWord.findAll(said).map { it.value }.mapNotNull { w -> wordOf(w).takeIf { it != w && !it.contains(' ') }?.let { it.lowercase() to w } }.toMap()
         return phrase.split(' ').joinToString(" ") { t -> back[t.lowercase()] ?: t }
+    }
+
+    /**
+     * A typed name for a person the shop keeps in Tamil letters: "madhan ku 100 add panniko" with "மதன்" in the books →
+     * "மதன்-ku 100 add panniko" (owner's phone, 12 Oct 2026: answered with Madhan's balance instead of the entry). Only a word
+     * that sounds like exactly one Tamil-script name, and no name the shop has in English letters; Kai's own words never.
+     */
+    /** The one person kept in Tamil letters a typed word names ("madhan" → "மதன்"), or null — see [withBookNames]. */
+    fun bookNameIn(text: String, names: List<String>): String? {
+        val swapped = withBookNames(text, names)
+        if (swapped == text) return null
+        return names.filter { hasTamil(it) && swapped.contains(it) }.distinct().singleOrNull()
+    }
+
+    fun withBookNames(text: String, names: List<String>): String {
+        if (hasTamil(text)) return text
+        val tamilNames = names.map { it.trim() }.filter { n -> hasTamil(n) && !n.contains(' ') }.distinct()
+        if (tamilNames.isEmpty()) return text
+        val latin = names.filter { !hasTamil(it) }.flatMap { it.lowercase().split(Regex("""\s+""")) }.toSet()
+        val known = wordMap.values.flatMap { it.lowercase().split(' ') }.toSet() + KaiFeed.notNames + KaiFeed.everydayWords
+        return Regex("""(?<![\p{L}])([A-Za-z]{3,})(\s*-?\s*(?:kku|ku|kitta|oda|ukku))?(?![\p{L}])""").replace(text) { m ->
+            val w = m.groupValues[1]
+            val lw = w.lowercase()
+            if (lw in latin || lw in known) return@replace m.value
+            val hit = tamilNames.filter { com.shopai.app.util.NameSound.same(w, it) }.singleOrNull() ?: return@replace m.value
+            hit + (m.groupValues[2].takeIf { it.isNotBlank() }?.let { "-" + it.trim().trimStart('-').trim() } ?: "")
+        }
     }
 
     /**

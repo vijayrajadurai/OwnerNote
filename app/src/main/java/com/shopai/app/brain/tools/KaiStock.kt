@@ -239,6 +239,9 @@ object KaiStock {
     /** The words of stock lines ("vandhuchu", "received", "add") — never part of a product's name as said. */
     private val stockTokens: Set<String> by lazy { (inWords + outWords + gaveWords).flatMap { it.split(' ') }.toSet() }
 
+    /** A word of a stock line ("vandhiruku", "pochu", "sold"), apart from "add" / "stock" themselves. */
+    fun isStockWord(word: String): Boolean = word.lowercase(Locale.ROOT).let { w -> w !in setOf("add", "stock", "in", "out", "new") && w in stockTokens }
+
     /** A goods name (KaiFeed) said as a whole phrase, as its words are or one letter off ("kadhavu" / "kathavu"), longest first. */
     private class Goods(val words: List<String>, val names: List<String>)
 
