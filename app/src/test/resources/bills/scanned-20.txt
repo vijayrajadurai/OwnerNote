@@ -1,0 +1,399 @@
+# 20 shop bills (GST invoices, thermal receipts, kirana / estimate / medical / hardware / restaurant / credit / fuel /
+# Tamil bills, a tilted shadowed photo, a low-res receipt, a sideways photo) rendered as images and read by the app's
+# own Tesseract passes (eng / eng+tam / one column / cleaned / turned) on 12 Oct 2026. Each case: the text the pass that
+# won gave, and what the bill really says. BillScannedBillsTest parses every one.
+#   === <bill> | <pass>
+#   want: field=value; …   (guessed=true: the total is not from a Total line, so it must be flagged)
+#   <OCR text lines>
+
+=== b01_gst_wholesale | eng
+want: total=7321.00; tax=1116.72; cgst=558.36; sgst=558.36; taxable=6204.00; date=2026-10-05; invoice=SVT/2026/1182; sellerGstin=33AABCS1429B1Z1; buyerGstin=33AAFCV2231K1ZH; merchant=SRI VINAYAGA TRADERS; customer=Vijayalakshmi Stores; roundOff=0.28; items=3
+TAX INVOICE
+SRI VINAYAGA TRADERS
+45, Market Road, Madurai - 625001
+GSTIN: 33AABCS1429B1Z1
+Invoice No: SVT/2026/1182 Date: 05/10/2026
+Bill To: Vijayalakshmi Stores GSTIN: 33AAFCV2231K1ZH
+S.No Description HSN Qty Rate GST% Amount
+1 Colgate 200g 3306 48Pcs 28.00 18% 1,344.00
+2 Lux Soap 100g 3401 72Pcs 30.00 18% 2,160.00
+3 Surf Excel 1kg 3402 20Pcs 135.00 18% 2,700.00
+Taxable Value 6,204.00
+CGST @ 9% 558.36
+SGST @ 9% 558.36
+Round Off +0.28
+Grand Total Rs. 7,321.00
+Rupees Seven Thousand Three Hundred Twenty One Only
+For SRI VINAYAGA TRADERS
+Authorised Signatory
+
+=== b02_gst_igst | eng
+want: total=6321.00; tax=301.00; igst=301.00; taxable=6020.00; date=2026-10-02; invoice=MSP-24-0931; sellerGstin=29AAGCM7710Q1ZS; buyerGstin=33AAFCV2231K1ZH; merchant=MYSORE SPICES PVT LTD; customer=Vijayalakshmi Stores; items=2
+TAX INVOICE
+MYSORE SPICES PVT LTD
+Plot 12, KIADB Industrial Area, Mysuru
+GSTIN: 29AAGCM7710Q1ZS
+Invoice No: MSP-24-0931 Date: 02-10-2026
+Bill To: Vijayalakshmi Stores GSTIN: 33AAFCV2231K1ZH
+S.No Description HSN Qty Rate GST% Amount
+1 Turmeric Powder 500g 0910 40Pkt 62.50 5% 2,500.00
+2 Chilli Powder 500g 0904 40Pkt 88.00 5% 3,520.00
+Taxable Value 6,020.00
+IGST @ 5% 301.00
+Grand Total Rs. 6,321.00
+Rupees Six Thousand Three Hundred Twenty One Only
+For MYSORE SPICES PVT LTD
+Authorised Signatory
+
+=== b03_gst_multirate | eng
+want: total=6857.00; tax=506.50; cgst=253.25; sgst=253.25; taxable=6350.00; date=2026-09-28; invoice=AD/0457; sellerGstin=33BQRPK4521L1ZK; buyerGstin=33AAFCV2231K1ZH; merchant=ANNAI DISTRIBUTORS; customer=Vijayalakshmi Stores; roundOff=0.50; items=4
+TAX INVOICE
+ANNAI DISTRIBUTORS
+12, Big Bazaar Street, Coimbatore
+GSTIN: 33BQRPK4521L1ZK
+Invoice No: AD/0457
+Bill To: Vijayalakshmi Stores
+Date: 28/09/2026
+GSTIN: 33AAFCV2231K1ZH
+S.No Description HSN Qty Rate GST% Amount
+1 Aashirvaad Atta 5kg 1101 10Bag 245.00 5% 2,450.00
+2 Britannia Biscuit 1905 60 Pkt 25.00 12% 1,500.00
+3 Tata Salt 1kg 2501 50Pkt 24.00 5% 1,200.00
+4 Maggi Noodles 1902 96 Pkt 12.50 12% 1,200.00
+Taxable Value 6,350.00
+CGST @ 2.5% 91.25
+SGST @ 2.5% 91.25
+CGST @ 6% 162.00
+SGST @ 6% 162.00
+Round Off +0.50
+Grand Total Rs. 6,857.00
+Rupees Six Thousand Eight Hundred Fifty Seven Only
+For ANNAI DISTRIBUTORS
+Authorised Signatory
+
+=== b04_thermal_supermarket | eng
+want: total=372.76; tax=17.76; date=2026-10-11; invoice=004512; sellerGstin=33AAACN4417F1ZX; merchant=NILGIRIS SUPERMARKET; items=5
+NILGIRIS SUPERMARKET
+Anna Nagar, Chennai
+GSTIN 33AAACN4417F1ZX
+Bill No: 004512 Date: 11/10/2026
+Cashier: Priya
+Item Qty x Rate Amt
+Milk 500ml 4x27 .00 108.00
+Bread 1x45 .00 45.00
+Eggs 6 2x42 .00 84.00
+Butter 100g 1x58 .00 58.00
+Banana lkg 1x60 .00 60.00
+Sub Total 355.00
+CGST 2.5% 8.88
+SGST 2.5% 8.88
+TOTAL 372.76
+Cash: 500.00
+Change: 127.24
+Thank You! Visit Again
+
+=== b05_kirana_tamil_header | eng
+want: total=848.00; date=2026-10-10; invoice=2231; merchant=SRI MURUGAN STORES; items=4
+SRI MURUGAN STORES
+go00 oooo0od oooooooo
+Bill No: 2231
+Ph: 98431 22456
+Date: 10-10-2026
+Item Qty x Rate Amt
+Rice 5kg 1x320.00 320.00
+Toor Dal 1kg 1x140.00 140.00
+Oil 1L 2x150.00 300.00
+Sugar 1kg 2x44.00 88.00
+Total 848.00
+Thank You! Visit Again
+
+=== b06_estimate_no_gst | eng
+want: total=2210.00; date=2026-10-04; invoice=77; merchant=Lakshmi Tex; customer=Kavitha; items=3
+ESTIMATE
+Lakshmi Tex
+Erode
+No: 77 Date: 04/10/2026
+Name: Kavitha
+Item Qty x Rate Amt
+Cotton Saree 2x850.00 1700.00
+Blouse Piece 2x120.00 240.00
+Towel 3x90.00 270.00
+Net Amount 2210.00
+Thank You! Visit Again
+
+=== b07_medical_discount | eng
+want: total=229.70; date=2026-10-08; invoice=MDU-88213; sellerGstin=33AAJCA1267N1ZI; merchant=APOLLO PHARMACY; customer=Selvi; discount=27.30; items=4
+APOLLO PHARMACY
+Simmakkal, Madurai
+GSTIN: 33AAJCA1267N1ZI
+Inv No: MDU-88213
+Date: 08/10/2026
+Patient: Selvi
+Item Qty x Rate Amt
+Dolo 650 Tab 2x30. 00 60.00
+Cetirizine Tab 1x18. 00 18.00
+ORS Sachet 4x21.00 84.00
+Vicks 25ml 1x95.00 95.00
+Gross Amount 257.00
+Net Payable 229.70
+Thank You! Visit Again
+
+=== b08_hardware_roundoff | eng
+want: total=611.00; date=2026-10-03; invoice=GH/772; merchant=GANESH HARDWARES; items=3
+GANESH HARDWARES
+Tiruppur
+Bill No: GH/772
+Date: 03.10.2026
+Item Qty x Rate Amt
+Screw 2 inch 100x1.35 135.00
+Hinge 6x38 .50 231.00
+Fevicol 500g 1x245.00 245.00
+Sub Total 611.00
+Total 611.00
+Thank You! Visit Again
+
+=== b09_restaurant | eng
+want: total=504.00; tax=24.00; date=2026-10-09; invoice=1890; sellerGstin=33AACFH2290R1Z3; merchant=HOTEL ANNAPOORNA; items=3
+HOTEL ANNAPOORNA
+Pure Veg Restaurant
+GSTIN: 33AACFH2290R1Z3
+Bill: 1890 Table: 6
+Date: 09/10/2026 Time: 13:42
+Item Qty x Rate Amt
+Meals 2x150.00 300.00
+Masala Dosa 1x90 .00 90.00
+Filter Coffee 3x30 .00 90.00
+Sub Total 480.00
+CGST @2.5% 12.00
+SGST @2.5% 12.00
+Grand Total 504.00
+Thank You! Visit Again
+
+=== b10_credit_balance | eng
+want: total=3000.00; date=2026-10-06; invoice=KE-445; merchant=KUMAR ELECTRICALS; customer=Ravi Kumar; items=3
+KUMAR ELECTRICALS
+Nagercoil
+Bill No: KE-445
+Date: 06/10/2026
+Customer: Ravi Kumar
+Item Qty x Rate Amt
+LED Bulb 9W 10x85.00 850.00
+Switch Board 2x350.00 700.00
+Wire 90m 1x1450.00 1450.00
+Total 3000.00
+Advance Paid: 1000.00
+Balance Due: 2000.00
+Thank You! Visit Again
+
+=== b11_gst_photo_tilted | cleancol/eng
+want: total=11600.00; tax=552.40; cgst=276.20; sgst=276.20; taxable=11048.00; date=2026-10-09; invoice=KA-2026-778; sellerGstin=33AAEFR9087M1ZK; buyerGstin=33AAFCV2231K1ZH; merchant=KRISHNA AGENCIES; customer=Vijayalakshmi Stores; roundOff=-0.40; items=2
+TAX INVOICE
+KRISHNA AGENCIES
+7, Gandhi Road, Trichy - 620001
+GSTIN: 33AAEFR9087M12K
+Invoice No: KA-2026-778 Date: 09/10/2026
+Bill To: Vijayalakshmi Stores GSTIN: 33AAFCV2231K1ZH
+$.No Description HSN Qt Rate GST% Amount
+1 Sunflower Oil IL 1512 24Bt 152.00 5% 3,648.00
+2 Basmati Rice 25kg 1006 «4 Bag 1850.00 5% 7,400.00
+Taxable Value 11,048.00
+CGST @ 2.5% 276.20
+SGST @ 2.5% 276.20
+Round Off -—0.40
+Grand Total Rs. 11,600.00
+Rupees Eleven Thousand Six Hundred Onty
+For KRISHNAAGENCIES
+Authorised Signatory
+
+=== b12_thermal_lowres | col/eng
+want: total=220.00; date=2026-10-10; invoice=33871; merchant=RELIANCE FRESH; items=4
+RELIANCE FRESH
+KK Nagar, Madurai
+Bill No: 33871
+Date: 10/10/2026
+Item Qty x Rate Amt
+Tomato lkg 1x38.00 38.00
+Onion 2kg 1x70.00 70.00
+Potato lkg 1x42.00 42.00
+Curd 400g 2x35.00 70.00
+TOTAL 220.00
+Thank You! Visit Again
+
+=== b13_gst_many_items | eng
+want: total=19404.00; tax=1543.96; cgst=771.98; sgst=771.98; taxable=17860.00; date=2026-10-07; invoice=MWM/26/5521; sellerGstin=33AAKFM3344D1ZM; buyerGstin=33AAFCV2231K1ZH; merchant=MEENAKSHI WHOLESALE MART; customer=Vijayalakshmi Stores; discount=500.00; roundOff=0.04; items=14
+TAX INVOICE
+MEENAKSHI WHOLESALE MART
+88, East Masi Street, Madurai
+GSTIN: 33AAKFM3344D1ZM
+Invoice No: MWM/26/5521 Date: 07/10/2026
+Bill To: Vijayalakshmi Stores GSTIN: 33AAFCV2231K1ZH
+S.No Description HSN Qty Rate GST% Amount
+1 Toor Dal 1kg 0713 20 Kg 142.00 5% 2,840.00
+2 Moong Dal 1kg 0713 10 Kg 118.00 5% 1,180.00
+3 Sugar 1kg 1701 50 Kg 44.00 5% 2,200.00
+4 Tea Powder 250g 0902 24Pkt 95.00 5% 2,280.00
+5 Coffee 200g 0901 12 Pkt 160.00 5% 1,920.00
+6 Rava 500g 1103 30 Pkt 28.00 5% 840.00
+7 Ghee 500ml 0405 6 Btl 330.00 12% 1,980.00
+8 Hair Oil 200ml 3305 24 Btl 78.00 18% 1,872.00
+9 Shampoo Sachet 3305 100 Pcs 2.00 18% 200.00
+10 Dettol Soap 3401 36Pcs 38.00 18% 1,368.00
+11 Agarbatti 3307 20 Box 45.00 5% 900.00
+12 Matchbox 3605 100 Pcs 1.00 12% 100.00
+13 Candle 3406 40Pcs 5.00 12% 200.00
+14 ~—~-Vim Bar 3402 48Pcs 10.00 18% 480.00
+Less: Discount 500.00
+Taxable Value 17,860.00
+CGST @ 2.5% 295.72
+SGST @ 2.5% 295.72
+CGST @ 6% 133.07
+SGST @ 6% 133.07
+CGST @ 9% 343.19
+SGST @ 9% 343.19
+Round Off +0.04
+Grand Total Rs. 19,404.00
+Rupees Nineteen Thousand Four Hundred Four Only
+For MEENAKSHI WHOLESALE MART
+Authorised Signatory
+
+=== b14_gst_no_words | eng
+want: total=9020.80; tax=1710.80; cgst=855.40; sgst=855.40; taxable=7310.00; date=2026-10-01; invoice=PH/2026/309; sellerGstin=33AAJFP8820H1Z5; merchant=PANDIAN HARDWARES; customer=Murugan Construction; items=3
+INVOICE
+PANDIAN HARDWARES
+21, Railway Feeder Road, Tirunelveli
+GSTIN: 33AAJFP8820H1Z5
+Invoice No: PH/2026/309
+Bill To: Murugan Construction
+Date: 01/10/2026
+S.No Description HSN Qty Rate GST% Amount
+1 PVC Pipe 1 inch 3917 25 Nos 112.00 18% 2,800.00
+2 Elbow 1 inch 3917 40Nos 14.00 18% 560.00
+3 Cement Bag 2523 10 Bag 395.00 28% 3,950.00
+Taxable Value 7,310.00
+CGST @ 9% 302.40
+SGST @ 9% 302.40
+CGST @ 14% 553.00
+SGST @ 14% 553.00
+Grand Total Rs. 9,020.80
+For PANDIAN HARDWARES
+Authorised Signatory
+
+=== b15_date_words | eng
+want: total=930.00; date=2026-10-12; invoice=SS/90122; merchant=SARAVANA STORES; items=2
+SARAVANA STORES
+T Nagar, Chennai
+Invoice: SS/90122
+Date: 12-Oct-2026
+Item Qty x Rate Amt
+Steel Tumbler 6x65.00 390.00
+Kadai 2L 1x540.00 540.00
+Total Amount 930.00
+Thank You! Visit Again
+
+=== b16_total_rs_label | eng
+want: total=4398.00; date=2026-10-07; invoice=VC-2041; merchant=VASANTH & CO; items=2
+VASANTH & CO
+Tirunelveli
+Bill No: VC-2041
+Date: 07/10/2026
+Item Qty x Rate Amt
+Mixer Grinder 1x3499.00 3499.00
+Iron Box 1x899.00 899.00
+TOTAL AMOUNT (Rs.) 4398.00
+Thank You! Visit Again
+
+=== b17_fuel | rot90/eng
+want: total=1077.62; date=2026-10-11; invoice=556677; merchant=SRI BALAJI FUELS; items=1
+INDIAN OIL - SRI BALAJI FUELS
+NH 44, Dindigul
+Receipt No: 556677
+Date: 11/10/2026 Pump: 3
+Item Qty x Rate
+Petrol (Ltr) 10 .50x102.63
+Amount
+Mode: UPI
+Thank You! Visit Again
+Amt
+1077.62
+1077.62
+
+=== b18_tamil_items | eng
+want: total=603.00; date=2026-10-09; invoice=518; merchant=AMMAN MALIGAI; items=3
+AMMAN MALIGA\
+Karaikudi
+Bill No: 518
+Date: 09/10/2026
+Item Qty x Rate Amt
+AAA 5 AGert
+1x310.00 310.00
+UGLY | Aer
+1x138.00 138.00
+erooot@levots 1 6l
+1x155.00 155.00
+000 | Total 603.00
+Thank You! Visit Again
+
+=== b19_upi_paid_words | eng
+want: total=1134.00; tax=54.00; date=2026-10-10; invoice=SKS-1102; sellerGstin=33AAECS7788G1ZY; merchant=SRI KRISHNA SWEETS; items=2
+SRI KRISHNA SWEETS
+RS Puram, Coimbatore
+GSTIN: 33AAECS7788G1ZY
+Bill No: SKS-1102
+Date: 10/10/2026
+Item Qty x Rate Amt
+Mysore Pak 500g 2x380.00 760.00
+Kaju Katli 250g 1x320.00 320.00
+Sub Total 1080.00
+CGST 2.5% 27.00
+SGST 2.5% 27.00
+Grand Total 1134.00
+Paid via UPI
+Balance: 0.00
+Rupees One Thousand One Hundred Thirty Four On
+Thank You! Visit Again
+
+=== b20_gst_sideways | rot90/eng
+want: total=5118.00; tax=548.40; cgst=274.20; sgst=274.20; taxable=4570.00; date=2026-10-10; invoice=SPS/119; sellerGstin=33ACXPS6611E1ZC; merchant=SELVAM PAPER STORES; customer=Ramesh Kumar; roundOff=-0.40; items=2
+TAX INVOICE
+SELVAM PAPER STORES
+3, Town Hall Road, Salem
+GSTIN: 33ACXPS6611E1ZC
+Invoice No: SPS/119
+Bill To: Ramesh Kumar
+Date: 10/10/2026
+S.No Description HSN Qty Rate GST% Amount
+1 A4 Paper Ream 4802. 10Rm 265.00 12% 2,650.00
+2 Notebook 200pg 4820 40Pcs 48.00 12% 1,920.00
+Taxable Value 4,570.00
+CGST @ 6% 274.20
+SGST @ 6% 274.20
+Round Off -0.40
+Grand Total Rs. 5,118.00
+Rupees Five Thousand One Hundred Eighteen Only
+For SELVAM PAPER STORES
+Authorised Signatory
+
+=== b12_thermal_lowres | eng (columns split)
+want: total=220.00; guessed=True
+RELIANCE FRESH
+KK Nagar, Madurai
+Bill No: 33871
+Date: 10/10/2026
+Item
+Tomato lkg
+Onion 2kg
+Potato lkg
+Curd 400g
+TOTAL
+Qty x Rate
+1x38.00
+1x70.00
+1x42.00
+2x35.00
+Thank You! Visit Again
+Amt
+38.00
+70.00
+42.00
+70.00
+220.00

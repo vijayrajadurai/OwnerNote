@@ -101,12 +101,17 @@ class DeviceTextRecognizer(
             fun bestEngine() = passes[OcrResultChooser.best(passes.map { it.second.text })].first
             englishApi()?.let { passes += it to read(it, prepared) }
             if (!done()) passes += mixed to read(mixed, prepared)
+            // The page read as one column, row by row: PSM_AUTO can split a receipt into blocks ("TOTAL" in one, its
+            // amount in another), which loses the label next to its number (bill tests, 12 Oct 2026).
+            if (!done()) passes += bestEngine().let { it to read(it, prepared, PSM_SINGLE_COLUMN) }
             if (!done()) {
-                // The cleaned image (deskew + adaptive threshold) with whichever engine read better so far.
+                // The cleaned image (deskew + adaptive threshold) with whichever engine read better so far — as blocks,
+                // then (still not good enough: a shadowed, tilted photo) as one column.
                 val clean = OcrImagePreprocessor.cleanVariant(prepared)
                 try {
                     val engine = bestEngine()
                     passes += engine to read(engine, clean)
+                    if (!done()) passes += engine to read(engine, clean, PSM_SINGLE_COLUMN)
                 } finally {
                     clean.recycle()
                 }
@@ -129,10 +134,14 @@ class DeviceTextRecognizer(
         }
     }
 
-    /** One Tesseract read of [image]; the engine is always cleared afterwards, even on failure. */
-    private suspend fun read(api: TessBaseAPI, image: Bitmap): OcrRecognitionResult = apiMutex.withLock {
+    /**
+     * One Tesseract read of [image] in page-segmentation mode [pageSegMode]; the engine is always cleared (and set back to
+     * PSM_AUTO) afterwards, even on failure.
+     */
+    private suspend fun read(api: TessBaseAPI, image: Bitmap, pageSegMode: Int = TessBaseAPI.PageSegMode.PSM_AUTO): OcrRecognitionResult = apiMutex.withLock {
         if (closed) return@withLock OcrRecognitionResult("", success = false)
         try {
+            api.setPageSegMode(pageSegMode)
             api.setImage(image)
             // Keep line breaks: bill/note parsing reads the text line by line
             // (the header line and the "Total" line must stay separate).
@@ -148,6 +157,7 @@ class DeviceTextRecognizer(
             OcrRecognitionResult("", success = false)
         } finally {
             runCatching { api.clear() }
+            runCatching { api.setPageSegMode(TessBaseAPI.PageSegMode.PSM_AUTO) }
             if (releasePending) recycleEngines()
         }
     }
@@ -268,6 +278,8 @@ class DeviceTextRecognizer(
 
     private companion object {
         const val MAX_DECODE_SIDE_PX = 2048
+        /** Tesseract's page-segmentation mode 4: one column of text of variable sizes, read row by row. */
+        const val PSM_SINGLE_COLUMN = 4
     }
 
     /**
