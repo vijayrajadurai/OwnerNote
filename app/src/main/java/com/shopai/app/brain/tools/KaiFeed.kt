@@ -191,6 +191,170 @@ object KaiFeed {
         டால் = dal
     """)
 
+    /**
+     * Goods by the name the owner says — Tamil script / Tanglish, one word or several → the English name a shop may keep them
+     * under (owner's 8-shop stock list, 12 Oct 2026: "கதவு கீல்" / "kathavu keel" = Door hinge, "அளவு நாடா" = Measuring tape).
+     * A name counts only when it is the shop's own product, or a whole part of exactly one ("Chain" of "Necklace / chain");
+     * one name for two goods ("kambi" = wire, steel rod) is read by what the shop keeps. English names said in Tamil letters
+     * ("ஹெட்லைட்") are not listed — [KaiProductSound] hears them.
+     */
+    val goodsNames: List<Pair<List<String>, String>> = meanings("""
+        ஆணி / aani = nail
+        திருகு / thirugu = screw
+        கதவு கீல் / kathavu keel = door hinge
+        கதவு பூட்டு / kathavu pootu = door lock
+        கதவு கைப்பிடி / kathavu kaipidi = door handle
+        சுத்தியல் / suthiyal = hammer
+        இடுக்கி / idukki = pliers
+        அளவு நாடா / alavu naada = measuring tape
+        ரம்பம் / rambam = hacksaw
+        கம்பி / kambi = wire
+        மின் சுவிட்ச் / min switch = electrical switch
+        மின் பிளக் / min plug = electrical plug
+        மின் விளக்கு / min vilakku = light bulb
+        தண்ணீர் குழாய் / thanneer kuzhaai = water pipe
+        குழாய் இணைப்பு / kuzhaai inaippu = pipe fitting
+        குழாய் வால்வு / kuzhaai valve = pipe valve
+        சுவர் புட்டி / suvar putty = wall putty
+        ஒட்டும் பசை / ottum pasai = adhesive
+        கையுறை / kaiyurai = gloves
+        அரிசி / arisi = rice
+        பச்சரிசி / pachcharisi = raw rice
+        புழுங்கல் அரிசி / puzhungal arisi = boiled rice
+        இட்லி அரிசி / idli arisi = idli rice
+        பாசுமதி அரிசி / basmati arisi = basmati rice
+        கோதுமை மாவு / gothumai maavu = wheat flour
+        மைதா / maida = refined flour
+        ரவை / ravai = semolina
+        அரிசி மாவு / arisi maavu = rice flour
+        துவரம் பருப்பு / thuvaram paruppu = toor dal
+        உளுந்து / ulundhu = urad dal
+        பாசிப்பருப்பு / paasi paruppu = moong dal
+        கடலைப்பருப்பு / kadalai paruppu = chana dal
+        கொண்டைக்கடலை / kondaikadalai = chickpeas
+        பச்சைப் பயறு / pachchai payaru = green gram
+        சமையல் எண்ணெய் / samayal ennai = cooking oil
+        கடலை எண்ணெய் / kadalai ennai = groundnut oil
+        நல்லெண்ணெய் / nallennai = sesame oil
+        தேங்காய் எண்ணெய் / thengai ennai = coconut oil
+        சர்க்கரை / sarkkarai = sugar
+        உப்பு / uppu = salt
+        வெல்லம் / vellam = jaggery
+        மிளகாய்த் தூள் / milagai thool = chilli powder
+        மஞ்சள் தூள் / manjal thool = turmeric powder
+        மல்லித் தூள் / malli thool = coriander powder
+        சீரகம் / seeragam = cumin
+        கடுகு / kadugu = mustard seeds
+        புளி / puli = tamarind
+        தேயிலை / theyilai = tea
+        காபித் தூள் / coffee thool = coffee powder
+        பால் / paal = milk
+        தயிர் / thayir = curd
+        பற்பசை / parpasaai = toothpaste
+        துணி துவைக்கும் தூள் / thuni thuvaikkum thool = detergent powder
+        பாத்திரம் கழுவும் திரவம் / paathiram kazhuvum thiravam = dishwashing liquid
+        தரை சுத்தம் செய்யும் திரவம் / tharai sutham seyyum thiravam = floor cleaner
+        பிரேக் ஆயில் / brake oil = brake fluid
+        குளிரூட்டி திரவம் / kulirootti thiravam = coolant
+        எரிபொருள் ஃபில்டர் / eriporul filter = fuel filter
+        கண்ணாடி / kannadi = mirror
+        பொன்னி பச்சரிசி / ponni pachcharisi = ponni raw rice
+        பொன்னி புழுங்கல் அரிசி / ponni puzhungal arisi = ponni boiled rice
+        கைக்குத்தல் அரிசி / kaikuthal arisi = hand-pounded rice
+        சிவப்பரிசி / sivapparisi = red rice
+        கருப்பு அரிசி / karuppu arisi = black rice
+        கேரளா மட்டை அரிசி / kerala matta arisi = kerala matta rice
+        புதிய அரிசி / pudhu arisi = new-season rice
+        பழைய அரிசி / pazhaya arisi = aged rice
+        நெல் / nel = paddy
+        அரிசி தவிடு / arisi thavidu = rice bran
+        அரிசி உமி / arisi umi = rice husk
+        கோதுமை / gothumai = wheat
+        கம்பு / kambu = pearl millet
+        கேழ்வரகு / kelvaragu = finger millet
+        சோளம் / cholam = sorghum
+        தினை / thinai = foxtail millet
+        சாமை / saamai = little millet
+        மூட்டை / mootai = sack
+        அரிசிப் பை / arisi pai = rice bag
+        சட்டை / sattai = shirt
+        பேண்ட் / pant = trousers
+        வேட்டி / vetti = dhoti
+        புடவை / pudavai = saree
+        ரவிக்கை / ravikkai = blouse
+        சுடிதார் / chudidhar = salwar suit
+        குர்த்தி / kurthi = kurti
+        துப்பட்டா / thuppatta = dupatta
+        நைட்டி / nighty = nightdress
+        உள்ளாடை / ulladai = innerwear
+        குழந்தைகள் உடை / kuzhandhaigal udai = kidswear
+        பள்ளிச் சீருடை / palli seerudai = school uniform
+        காலுறை / kaalurai = socks
+        பணப்பை / panappai = wallet
+        கைப்பை / kaippai = handbag
+        காதணி / kaadhani = earrings
+        வளையல் / valaiyal = bangles
+        மோதிரம் / mothiram = ring
+        முடி கிளிப் / mudi clip = hair clip
+        ரப்பர் பேண்ட் / rubber band = hair tie
+        கண்ணாடி / kannadi = sunglasses
+        கைக்கடிகாரம் / kaikadigaaram = wristwatch
+        தையல் நூல் / thaiyal nool = sewing thread
+        ஊசி / oosi = needle
+        எம்.டி.எஃப். பலகை / mdf palagai = mdf board
+        பிளாக்போர்டு / blackboard = blockboard
+        மரப் பலகை / mara palagai = wooden board
+        மரக் கட்டை / mara kattai = timber
+        மரப் பட்டை / mara pattai = wooden batten
+        மரப் பசை / mara pasai = wood adhesive
+        மர பாலிஷ் / mara polish = wood polish
+        மர வார்னிஷ் / mara varnish = wood varnish
+        கேபினெட் கீல் / cabinet keel = cabinet hinge
+        மரத் திருகு / mara thirugu = wood screw
+        பிளைவுட் வெட்டும் கருவி / plywood vettum karuvi = plywood cutting tool
+        தரை ஓடு / tharai odu = floor tile
+        சுவர் ஓடு / suvar odu = wall tile
+        செராமிக் ஓடு / ceramic odu = ceramic tile
+        விட்ரிஃபைடு ஓடு / vitrified odu = vitrified tile
+        போர்சலின் ஓடு / porcelain odu = porcelain tile
+        ஆன்டி-ஸ்கிட் ஓடு / anti-skid odu = anti-skid tile
+        வெளிப்புற ஓடு / velippura odu = outdoor tile
+        படிக்கட்டு ஓடு / padikattu odu = stair tile
+        மொசைக் ஓடு / mosaic odu = mosaic tile
+        டைல் பசை / tile pasai = tile adhesive
+        ஸ்கர்டிங் ஓடு / skirting odu = skirting tile
+        டைல் பெட்டி / tile petti = tile box
+        செங்கல் / chengal = brick
+        சுட்ட செங்கல் / sutta chengal = burnt clay brick
+        ஃப்ளை ஆஷ் செங்கல் / fly ash chengal = fly ash brick
+        ஹாலோ பிளாக் / hollow block = hollow concrete block
+        சாலிட் பிளாக் / solid block = solid concrete block
+        சிமெண்டு / simantu = cement
+        வெள்ளை சிமெண்டு / vellai simantu = white cement
+        பி.பி.சி. சிமெண்டு / ppc simantu = ppc cement
+        ஓ.பி.சி. சிமெண்டு / opc simantu = opc cement
+        எம்-சாண்ட் / m-sand = manufactured sand
+        பி-சாண்ட் / p-sand = plastering sand
+        ஆற்று மணல் / aatru manal = river sand
+        நிரப்பு மண் / nirappu mannu = filling soil
+        செம்மண் / semman = red soil
+        தோட்ட மண் / thotta mannu = garden soil
+        ஜல்லி / jalli = blue metal aggregate
+        6 எம்.எம். ஜல்லி / 6 mm jalli = 6 mm aggregate
+        12 எம்.எம். ஜல்லி / 12 mm jalli = 12 mm aggregate
+        20 எம்.எம். ஜல்லி / 20 mm jalli = 20 mm aggregate
+        40 எம்.எம். ஜல்லி / 40 mm jalli = 40 mm aggregate
+        க்ரஷர் தூள் / crusher thool = crusher dust
+        கம்பி / kambi = steel rod
+        டி.எம்.டி. கம்பி / tmt kambi = tmt steel bar
+        கட்டுக் கம்பி / kattu kambi = binding wire
+        கூரைத் தாள் / koorai thaal = roofing sheet
+        கான்கிரீட் குழாய் / concrete kuzhaai = concrete pipe
+        சிமெண்டு மூட்டை / simantu mootai = cement bag
+        லாரி லோடு / lorry load = truckload
+        ஜிப் / zip = zipper
+    """)
+
     /** A unit word = Kai's unit (PCS, BOX, BAG, KG, GRAM, LITRE, ML, PACKET, BOTTLE, DOZEN, BUNDLE, METER …). */
     val units: Map<String, String> = pairs("""
         pottalam = PACKET
@@ -300,6 +464,12 @@ object KaiFeed {
     private fun lines(text: String): List<String> = clean(text).map { it.lowercase() }
 
     private fun words(text: String): Set<String> = clean(text).flatMap { it.lowercase().split(Regex("""\s+""")) }.toSet()
+
+    /** `name / other name = meaning` lines (the names of one thing together), a name allowed under two meanings. */
+    private fun meanings(text: String): List<Pair<List<String>, String>> = clean(text).mapNotNull { line ->
+        val (k, v) = line.split('=', limit = 2).map { it.trim() }.takeIf { it.size == 2 && it.all(String::isNotEmpty) } ?: return@mapNotNull null
+        k.split(" / ").map { it.trim().lowercase() }.filter { it.isNotEmpty() } to v.lowercase()
+    }
 
     private fun pairs(text: String): Map<String, String> = clean(text).mapNotNull { line ->
         val (k, v) = line.split('=', limit = 2).map { it.trim() }.takeIf { it.size == 2 && it.all(String::isNotEmpty) } ?: return@mapNotNull null
