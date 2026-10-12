@@ -609,6 +609,8 @@ object KaiInventory {
                 }
                 else -> {
                     val q = numberIn(text, today)?.takeIf { it.signum() > 0 } ?: return null
+                    // "30 rupees" to "how many grams?": the owner gave the price — it is the purchase rate, the size is skipped.
+                    if (moneySaid.containsMatchIn(lower)) return spec.copy(purchase = q, skipped = spec.skipped + ItemField.SIZE)
                     val u = lower.split(' ').firstNotNullOfOrNull(::unitOf)?.takeIf { it in weightUnits } ?: defaultSizeUnit(spec, q)
                     spec.copy(size = "${plain(q)} ${unitShort(u)}", sizeQty = q, sizeUnit = u)
                 }
@@ -625,6 +627,9 @@ object KaiInventory {
             }
         }
     }
+
+    /** A price said with its money word ("30 rupees", "₹30", "30 ரூபா"). */
+    private val moneySaid = Regex("""(?<![\p{L}])(?:rupees?|rs|ruba|rubai|rupa|rooba|ரூபா|ரூபாய்)(?![\p{L}])|₹""")
 
     private fun defaultSizeUnit(spec: ItemSpec, q: BigDecimal): String =
         if (styleOf(spec) == SizeStyle.VOLUME) (if (q <= BigDecimal(5)) "LITRE" else "ML") else "GRAM"
