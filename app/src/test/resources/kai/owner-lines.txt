@@ -235,3 +235,13 @@ ASK    | enaku yaaru tharanum                     | ₹13,500; Selvam
 ASK    | yaaru kudukanum                          | ₹13,500
 ASK    | whom should i pay                        | ₹14,000
 ASK    | tharanum                                 | vara vendiyadha
+
+# Words Kai didn't read (owner, 12 Oct 2026: "if Kai doesn't understand, let it ask, and let the flow go on").
+ENTRY  | Lakshmi 300 thandhaa                     | IN Lakshmi 300
+ENTRY  | Ramesh 2000 settle                       | IN Ramesh 2000
+ENTRY  | ABC Traders ku 2000 settle               | OUT ABC Traders 2000
+ENTRY  | Murugan Stores ku 1500 clear aachu       | OUT Murugan Stores 1500
+ASK    | Kumar 500 adhu                           | ₹500; kuduthaara
+ASK    | rent kattanum                            | Daily Cash
+ASK    | current bill 1200 kattinen               | Daily Cash; ₹1200
+ASK    | Kumar kitta pesanum                      | Kumar

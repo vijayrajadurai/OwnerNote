@@ -494,6 +494,23 @@ class KaiOwnerSweepTest {
         talk("which side: money to come", listOf("evlo kudukkanum", "customers"), check = said("₹13,500", "Selvam"))
         talk("which side: asked first", listOf("tharanum"), check = { s -> if (s.log.contains("vara vendiyadha") || s.log.contains("வர வேண்டியதா")) null else "did not ask which side" })
         talk("which side: the person just talked about", listOf("Kumar evlo tharanum", "evlo tharanum"), check = said("₹4,000"))
+        // Not understood (owner, 12 Oct 2026): Kai asks what it is about, the one-word answer gets the question for that with how to say it,
+        // and the owner's next line goes straight in — Confirm first.
+        talk("not understood → payment → the entry", listOf("jamaai", "payment", "Kumar 500 kuduthan", "TAP")) { s ->
+            if (s.tools.saved.singleOrNull()?.let { it.partyName == "Kumar" && it.amount.compareTo(BigDecimal("500")) == 0 } == true) null
+            else "saved ${s.tools.saved.map { "${it.partyName} ${it.amount}" }}" }
+        talk("not understood → payment: the way to say it", listOf("jamaai", "payment"), check = nothingWritten("Kumar 500", "ABC Traders"))
+        talk("not understood → stock: the way to say it", listOf("blah blah", "stock"), check = nothingWritten("Colgate 2"))
+        talk("not understood → balance: whose", listOf("blah blah", "balance"), check = nothingWritten("Kumar"))
+        talk("a person, then balance: that person's", listOf("Kumar", "balance"), check = said("₹4,000"))
+        talk("product and count: which way, then the draft", listOf("Colgate 2 box", "vandhuchu", "TAP")) { s ->
+            if (s.inv.item("Colgate").stock.compareTo(BigDecimal("336")) == 0) null else "Colgate ${s.inv.item("Colgate").stock}" }
+        talk("product and count: asked which way", listOf("Colgate 2 box"), check = nothingWritten("Colgate"))
+        talk("a name and an amount: asked which way", listOf("Kumar 500 adhu", "vandhuchu", "TAP")) { s ->
+            if (s.tools.saved.singleOrNull()?.let { it.partyName == "Kumar" && it.amount.compareTo(BigDecimal("500")) == 0 } == true) null
+            else "saved ${s.tools.saved.map { "${it.partyName} ${it.amount}" }}" }
+        talk("an expense is never a person", listOf("current bill 1200 kattinen"), check = nothingWritten("₹1200"))
+        talk("an unknown word is asked, not guessed", listOf("spa 300 kattinen"), check = nothingWritten("₹300"))
         talk("both of them", listOf("Selvam evlo tharanum", "Ramesh?", "rendu perum total evlo"), check = said("Selvam ₹6,000", "Ramesh ₹2,500", "₹8,500"))
         talk("both of them, spoken", listOf("செல்வம் எவ்வளவு தரணும்", "ரமேஷ் எவ்வளவு தரணும்", "ரெண்டு பேரும் மொத்தம் எவ்வளவு"), check = said("₹8,500"))
         talk("the first person asked", listOf("Kumar evlo tharanum", "Colgate stock evlo", "Lakshmi due date eppo", "first ketta aal evlo tharanum nu sonna"),

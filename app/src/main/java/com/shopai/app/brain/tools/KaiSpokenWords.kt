@@ -166,6 +166,9 @@ object KaiSpokenWords {
         "கிட்ட" to "kitta", "கிட்டே" to "kitta", "இருந்து" to "irundhu", "இருந்தது" to "irundhuchu",
         "ஜிபே" to "gpay", "கூகுள்பே" to "gpay", "போன்பே" to "phonepe", "பேடிஎம்" to "paytm", "யுபிஐ" to "upi", "பே" to "pay", "ஜிபேல" to "gpay la",
         "பேமெண்ட்" to "payment", "பேமென்ட்" to "payment", "பேமண்ட்" to "payment", "செட்டில்" to "settle", "கிளியர்" to "clear",
+        // "லட்சுமி 300 தந்தா", "குமார் கிட்ட பேசணும்", "ரெண்ட் கட்டணும்", "கரண்ட் பில் 1200 கட்டினேன்" (owner, 12 Oct 2026).
+        "தந்தா" to "thandhaa", "தந்துட்டா" to "thandhuttaa", "பேசணும்" to "pesanum", "பேசனும்" to "pesanum", "ரெண்ட்" to "rent",
+        "வாடகை" to "vaadagai", "கரண்ட்" to "current", "சேலரி" to "salary", "சம்பளம்" to "sambalam", "செட்டில்ட்" to "settled",
         "கேஷ்" to "cash", "கேஷா" to "cash", "ஆன்லைன்" to "online", "ஆன்லைன்ல" to "online la", "டிரான்ஸ்பர்" to "transfer", "ட்ரான்ஸ்ஃபர்" to "transfer",
         "கிரெடிட்" to "credit", "கிரெடிட்ல" to "credit la", "க்ரெடிட்" to "credit", "டெபிட்" to "debit", "உதார்" to "udhaar",
         "பெண்டிங்" to "pending", "பேலன்ஸ்" to "balance", "லிஸ்ட்" to "list", "டோட்டல்" to "total", "டோட்டலா" to "total", "டோட்டல்ல" to "total la", "மொத்தத்துல" to "mothathula", "மொத்தம்" to "motham", "மொத்தமா" to "mothama",
