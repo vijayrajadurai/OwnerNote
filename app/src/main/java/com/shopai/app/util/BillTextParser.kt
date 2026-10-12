@@ -207,7 +207,7 @@ object BillTextParser {
             taxableValue = findTaxableValue(lines),
             gst = gst,
             roundOff = findRoundOff(lines),
-            discount = findDiscount(lines),
+            discount = findDiscount(lines) ?: discountFromGross(lines, total),
             sellerGstin = gstins.firstOrNull { !it.buyer },
             buyerGstin = gstins.firstOrNull { it.buyer },
         )
@@ -269,10 +269,21 @@ object BillTextParser {
     private val invoiceNo = Regex(
         """(?i)(?<![\p{L}])(?:tax\s*)?(?:invoice|inv|bill|receipt)\s*(?:no|number|num|#)\.?\s*[:\-#.]?\s*([A-Za-z0-9][A-Za-z0-9/\-]{0,19})""",
     )
+    // "Invoice: SS/90122", "Bill: 1890", "No: 77" — the label with only its colon (a real bill's way too; test bills, 12 Oct 2026).
+    private val invoiceColon = Regex(
+        """(?i)(?:(?<![\p{L}])(?:invoice|inv|bill|receipt)|^no)\s*[:#]\s*([A-Za-z0-9][A-Za-z0-9/\-]{0,19})""",
+    )
 
     private fun findInvoiceNumber(lines: List<String>): String? = lines.firstNotNullOfOrNull { line ->
         invoiceNo.find(line)?.groupValues?.get(1)?.takeIf { it.any(Char::isDigit) }
+    } ?: lines.firstNotNullOfOrNull { line ->
+        invoiceColon.find(line)?.groupValues?.get(1)?.takeIf { it.any(Char::isDigit) && !dateRegex.matches(it) }
     }
+
+    /** A bill / invoice / table / token number line: its number is never money and the line is never an item. */
+    private fun isReferenceLine(line: String): Boolean =
+        invoiceNo.containsMatchIn(line) || invoiceColon.containsMatchIn(line) ||
+            Regex("""(?i)(?<![\p{L}])(?:table|token|kot|order\s*no|receipt\s*no|pump|patient)(?![\p{L}])""").containsMatchIn(line)
 
     private val ratePercent = Regex("""(\d{1,2}(?:[.,]\d{1,2})?)\s*%""")
 
@@ -350,18 +361,26 @@ object BillTextParser {
         else lastAmount(line)
     }
 
+    /** "Gross Amount 257.00" above "Net Payable 229.70" with no discount line: the difference was given off. */
+    private fun discountFromGross(lines: List<String>, total: BigDecimal?): BigDecimal? {
+        total ?: return null
+        val gross = lines.firstNotNullOfOrNull { line -> if (labelKey(line).startsWith("gross")) lastAmount(line) else null } ?: return null
+        return (gross - total).takeIf { it.signum() > 0 && it < gross }
+    }
+
     /** "Round Off (-) 0.40" → -0.40; "Round Off 0.50" → 0.50 (the sign as printed). */
     private fun findRoundOff(lines: List<String>): BigDecimal? = lines.firstNotNullOfOrNull { line ->
         if (!labelKey(line).startsWith("round")) return@firstNotNullOfOrNull null
         val amount = lastAmount(line, allowZero = true) ?: return@firstNotNullOfOrNull null
-        if (Regex("""\(-\)|-\s*\d|less""", RegexOption.IGNORE_CASE).containsMatchIn(line)) amount.negate() else amount
+        // "-0.40", "(-) 0.40", "-—0.40" (a dash the OCR doubled), "– 0.40".
+        if (Regex("""\(-\)|[-—–]+\s*\d|less""", RegexOption.IGNORE_CASE).containsMatchIn(line)) amount.negate() else amount
     }
 
     // ---- Customer name ----
 
     private val customerLabel = Regex(
         // Whole label only: "Customer's Seal and Signature" is not a customer name.
-        """^(?:customer\s*name|cust(?:omer)?\.?\s*name|party\s*name|bill(?:ed)?\s*to|customer|cust\.?|party|name|m/s\.?)(?![\p{L}'’])\s*[:\-.]?\s*(.+)$""",
+        """^(?:customer\s*name|cust(?:omer)?\.?\s*name|party\s*name|patient\s*name|bill(?:ed)?\s*to|customer|cust\.?|party|patient|name|m/s\.?)(?![\p{L}'’])\s*[:\-.]?\s*(.+)$""",
         RegexOption.IGNORE_CASE,
     )
     private val notAName = listOf("mobile", "phone", "ph", "mob", "gst", "gstin", "address", "id", "no", "code", "copy")
@@ -410,7 +429,7 @@ object BillTextParser {
     // The right-hand header column OCR merges into the same line
     // ("SAMPATHI CREDITS PRIVATE LIMITED Dispatch Doc No.").
     private val sideColumnFields = Regex(
-        """\s+(?:(?:payment|bank|shipping|shipment|transport|invoice|order|other)\s*details?|mode\s*[:\-]|dispatch|delivery\s*note|inv(?:oice)?\.?\s*(?:no|number|#|date)|bill\s*no|dated|date\s*[:\-]|place\s*of\s*supply|buyer'?s\s*order|reference|other\s*references|mode\s*/?\s*terms|terms\s*of|destination|e-?way).*$""",
+        """\s+(?:(?:payment|bank|shipping|shipment|transport|invoice|order|other)\s*details?|mode\s*[:\-]|dispatch|delivery\s*note|inv(?:oice)?\.?\s*(?:no|number|#|date)|bill\s*no|dated|date\s*[:\-]|place\s*of\s*supply|buyer'?s\s*order|reference|other\s*references|mode\s*/?\s*terms|terms\s*of|destination|e-?way|(?:gstin|gst\s*no|uin)(?![\p{L}])).*$""",
         RegexOption.IGNORE_CASE,
     )
 
@@ -597,14 +616,17 @@ object BillTextParser {
 
     // The bill total is the largest real amount — ignoring payment lines
     // (Cash 600 for a 599 bill) and phone/date lines.
-    private fun largestAmount(lines: List<String>): BigDecimal? =
-        lines.filterNot { line ->
+    // A bill / invoice number is never the total (test bill, 12 Oct 2026: "Bill No: 33871" read as ₹33,871 when the
+    // TOTAL row's amount sat in another OCR column); when amounts are printed with paise, the total is one of those.
+    private fun largestAmount(lines: List<String>): BigDecimal? {
+        val kept = lines.filterNot { line ->
             val lower = line.lowercase()
-            looksLikeMetadata(lower) ||
+            looksLikeMetadata(lower) || isReferenceLine(line) ||
                 (paymentMethodWords + explicitPaidWords + listOf("change", "balance")).any { containsWord(lower, it) }
         }
-            .mapNotNull { lastAmount(it) }
-            .maxOrNull()
+        val withPaise = kept.filter { moneyWithPaise.containsMatchIn(it) }
+        return (withPaise.ifEmpty { kept }).mapNotNull { lastAmount(it) }.maxOrNull()
+    }
 
     private fun findItems(lines: List<String>, endExclusive: Int): List<BillLineItem> {
         val items = mutableListOf<BillLineItem>()
@@ -612,16 +634,25 @@ object BillTextParser {
             val line = lines[index]
             val lower = line.lowercase()
             if (looksLikeMetadata(lower)) continue
-            if (nonItemWords.any { containsWord(lower, it) }) continue
+            if (nonItemWords.any { containsWord(lower, it) } || isReferenceLine(line)) continue
             // An item's price is printed at the end of its line.
             val amount = lastAmount(line, mustEndLine = true) ?: continue
             val description = line.replace(trailingNumbersRegex, "")
                 .trim(' ', '-', ':', '.', '|', '*')
-            if (description.count { it.isLetter() } < 2) continue
+            if (description.count { it.isLetter() } < 2) {
+                // "அரிசி 5 கிலோ" on its own line, "1x310.00 310.00" under it: the name is the line above.
+                val above = lines.getOrNull(index - 1)
+                if (above == null || !qtyTimesRate.containsMatchIn(line) || moneyWithPaise.containsMatchIn(above) || above.count { it.isLetter() } < 2 ||
+                    looksLikeMetadata(above.lowercase()) || nonItemWords.any { containsWord(above.lowercase(), it) } || isReferenceLine(above)) continue
+                items += BillLineItem(above.trim(' ', '-', ':', '.', '|', '*'), amount)
+                continue
+            }
             items += itemColumns(line, description, amount)
         }
         return items
     }
+
+    private val qtyTimesRate = Regex("""\d\s*[x×*]\s*\d""", RegexOption.IGNORE_CASE)
 
     // "Basmati Rice 1006 18 % 10 KG 85.00 850.00": HSN, GST rate, qty, unit, rate, amount.
     // The HSN code is followed by numbers (rate / qty), never by words ("Mixer 1000 Watt" is a name).
@@ -708,7 +739,7 @@ object BillTextParser {
                 customerLabel.find(line) == null &&
                 totalLabels.none { lower.contains(it) } &&
                 !looksLikeMetadata(lower)
-        }?.trim(' ', '-', ':', '.', '*', '|')
+        }?.trim(' ', '-', ':', '.', '*', '|', '\\', '/')
 
     private fun looksLikeMetadata(lower: String): Boolean =
         dateRegex.containsMatchIn(lower) ||

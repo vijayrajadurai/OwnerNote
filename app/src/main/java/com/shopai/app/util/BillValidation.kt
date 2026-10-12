@@ -38,6 +38,8 @@ enum class BillIssue(val severity: BillStatus, val field: BillCheckField) {
     BUYER_UNREADABLE(BillStatus.PARTIAL, BillCheckField.PARTY),
     /** No grand total could be read. */
     TOTAL_MISSING(BillStatus.PARTIAL, BillCheckField.TOTAL),
+    /** No "Total" line or amount in words was read: the total shown is the largest amount (the bill screen says so). */
+    TOTAL_GUESSED(BillStatus.PARTIAL, BillCheckField.TOTAL),
     /** Very little text came out of the photo — confidence alone is never trusted. */
     TOO_LITTLE_TEXT(BillStatus.REVIEW_REQUIRED, BillCheckField.TOTAL),
 }
@@ -75,11 +77,15 @@ object GstinReader {
 
     /** Every GSTIN-like code in the bill; one after a buyer / bill-to heading is the buyer's. */
     fun findAll(lines: List<String>): List<GstinRead> {
-        val buyerAt = lines.indexOfFirst { Regex("""(?i)\b(buyer|bill(?:ed)?\s*to|consignee|ship\s*to|customer)\b""").containsMatchIn(it) }
+        val heading = Regex("""(?i)\b(buyer|bill(?:ed)?\s*to|consignee|ship\s*to|customer)\b""")
+        val buyerAt = lines.indexOfFirst { heading.containsMatchIn(it) }
         return lines.flatMapIndexed { i, line ->
             if (!Regex("""(?i)gst|uin""").containsMatchIn(line) && candidate.findAll(line).none { looksLikeGstin(it.value) }) return@flatMapIndexed emptyList()
-            candidate.findAll(line).map { it.groupValues[1] }.filter { looksLikeGstin(it) }.map { raw ->
-                GstinRead(raw = raw, value = read(raw), buyer = buyerAt in 0 until i)
+            // "Bill To: Vijayalakshmi Stores   GSTIN: 33AAF…": on the heading's own line, a GSTIN after the heading is the buyer's.
+            val headingEnd = if (i == buyerAt) heading.find(line)?.range?.last ?: Int.MAX_VALUE else Int.MAX_VALUE
+            candidate.findAll(line).filter { looksLikeGstin(it.groupValues[1]) }.map { m ->
+                val raw = m.groupValues[1]
+                GstinRead(raw = raw, value = read(raw), buyer = buyerAt in 0 until i || m.range.first > headingEnd)
             }.toList()
         }.distinctBy { it.raw }
     }
@@ -155,7 +161,10 @@ object OcrResultChooser {
     /** Good enough to stop after one pass: a labelled total, nothing impossible, no money check needed. */
     fun goodEnough(text: String): Boolean {
         val bill = BillTextParser.parse(text)
-        return bill.totalFromLabel && !bill.check.moneyNeedsCheck && bill.check.status != BillStatus.INVALID && mixedScriptWords(text) <= 1
+        // REVIEW_REQUIRED (items not adding up, a line missing) also tries the other passes: a tilted photo's first read can
+        // lose half the bill and still find its amount in words (test bill, 12 Oct 2026).
+        return bill.totalFromLabel && !bill.check.moneyNeedsCheck && bill.check.status != BillStatus.INVALID &&
+            bill.check.status != BillStatus.REVIEW_REQUIRED && mixedScriptWords(text) <= 1
     }
 
     /** "Tota்l", "GSTஇN": words mixing Latin letters and Tamil script. */
@@ -224,13 +233,15 @@ object BillValidation {
             val itemSum = BillTextParser.sum(bill.items)
             val beforeTax = listOfNotNull(taxable, total?.let { t -> tax?.let { t - it } })
             // Items are printed before the discount: their sum is the value before tax plus the discount.
-            val targets = beforeTax + listOfNotNull(total) + bill.discount?.let { d -> beforeTax.map { it + d } }.orEmpty()
+            val targets = beforeTax + listOfNotNull(total) + bill.discount?.let { d -> (beforeTax + listOfNotNull(total)).map { it + d } }.orEmpty()
             if (targets.isNotEmpty() && targets.none { (it - itemSum).abs() <= rupee }) issues += BillIssue.ITEMS_MISMATCH
         }
 
         if (listOfNotNull(bill.sellerGstin, bill.buyerGstin).any { !it.valid }) issues += BillIssue.GSTIN_INVALID
         if (bill.customerName == null && BillTextParser.namesABuyer(lines)) issues += BillIssue.BUYER_UNREADABLE
         if (total == null) issues += BillIssue.TOTAL_MISSING
+        // No "Total" line and no amount in words: the total is the biggest amount seen — the owner checks it.
+        else if (!bill.totalFromLabel) issues += BillIssue.TOTAL_GUESSED
         // A photo that lost most of its text can still report high confidence (TEST-025).
         if (lines.size < 4 || (total == null && lines.size < 8)) issues += BillIssue.TOO_LITTLE_TEXT
 
