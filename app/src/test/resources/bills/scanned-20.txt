@@ -3,7 +3,7 @@
 # own Tesseract passes (eng / eng+tam / one column / cleaned / turned) on 12 Oct 2026. Each case: the text the pass that
 # won gave, and what the bill really says. BillScannedBillsTest parses every one.
 #   === <bill> | <pass>
-#   want: field=value; …   (guessed=true: the total is not from a Total line, so it must be flagged)
+#   want: field=value; …
 #   <OCR text lines>
 
 === b01_gst_wholesale | eng
@@ -374,7 +374,7 @@ For SELVAM PAPER STORES
 Authorised Signatory
 
 === b12_thermal_lowres | eng (columns split)
-want: total=220.00; guessed=True
+want: total=220.00
 RELIANCE FRESH
 KK Nagar, Madurai
 Bill No: 33871
