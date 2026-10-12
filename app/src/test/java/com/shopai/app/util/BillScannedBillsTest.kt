@@ -5,17 +5,18 @@ import org.junit.Test
 import java.math.BigDecimal
 
 /**
- * 20 shop bills read by the app's own Tesseract passes (src/test/resources/bills/scanned-20.txt): GST invoices
- * (CGST/SGST, IGST, several rates, many items, discount), thermal receipts, kirana, estimate, medical, hardware,
- * restaurant, credit, fuel and Tamil bills, a tilted shadowed photo, a low-res receipt and a sideways photo.
- * Every field the bill prints must be read as printed; a total not read from a Total line is never READY.
+ * 50 shop bills read by the app's own Tesseract passes (src/test/resources/bills/scanned-20.txt, scanned-30.txt):
+ * GST invoices (CGST/SGST, IGST, several rates, Tally two-column with an HSN summary, e-invoice, lakh amounts, discount,
+ * freight, TCS), thermal / dot-matrix / faded receipts, kirana, estimate, medical, hardware, restaurant, credit, fuel and
+ * Tamil bills, and photos tilted, shadowed, dark, wrinkled, in perspective, on a table, sideways and upside down.
+ * Every field the fixture expects must be read as printed; a total not read from a Total line is never READY.
  */
 class BillScannedBillsTest {
 
     private data class Case(val bill: String, val pass: String, val want: Map<String, String>, val text: String)
 
-    private fun cases(): List<Case> {
-        val raw = javaClass.getResourceAsStream("/bills/scanned-20.txt")!!.bufferedReader().readText()
+    private fun cases(file: String): List<Case> {
+        val raw = javaClass.getResourceAsStream("/bills/$file")!!.bufferedReader().readText()
         return raw.split(Regex("""(?m)^=== """)).drop(1).map { block ->
             val lines = block.lines()
             val (bill, pass) = lines[0].split(" | ").let { it[0].trim() to it.getOrElse(1) { "" }.trim() }
@@ -28,10 +29,15 @@ class BillScannedBillsTest {
     private fun money(a: BigDecimal?, b: String) = a != null && (a - BigDecimal(b)).abs() <= BigDecimal("0.01")
 
     @Test
-    fun everyScannedBillReadsAsPrinted() {
+    fun everyScannedBillReadsAsPrinted() = check("scanned-20.txt", 20)
+
+    @Test
+    fun thirtyMoreScannedBillsReadAsPrinted() = check("scanned-30.txt", 30)
+
+    private fun check(file: String, bills: Int) {
         val failures = mutableListOf<String>()
-        val all = cases()
-        assertTrue("fixture has the 20 bills", all.map { it.bill }.distinct().size == 20)
+        val all = cases(file)
+        assertTrue("$file has the $bills bills", all.map { it.bill }.distinct().size == bills)
         for (c in all) {
             val b = BillTextParser.parse(c.text)
             fun check(field: String, ok: Boolean, got: Any?) { if (!ok) failures += "${c.bill} (${c.pass}) $field: want ${c.want[field]} got $got" }
@@ -53,6 +59,8 @@ class BillScannedBillsTest {
                 "items" -> check(field, b.items.size == want.toInt(), b.items.map { "${it.description} ${it.amount}" })
                 // The amount came from no Total line: offered, flagged, never READY.
                 "guessed" -> check(field, !b.totalFromLabel && b.check.status != BillStatus.READY && b.check.has(BillIssue.TOTAL_GUESSED), "${b.totalFromLabel} ${b.check}")
+                // The photo lost the amounts: whatever was read must go to the owner for review, never READY.
+                "review" -> check(field, b.check.status == BillStatus.REVIEW_REQUIRED || b.check.status == BillStatus.INVALID, b.check)
             }
             // A bill number / invoice number is never read as money.
             b.invoiceNumber?.filter(Char::isDigit)?.takeIf { it.length >= 3 }?.let { n ->

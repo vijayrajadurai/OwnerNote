@@ -1,0 +1,584 @@
+# 30 more shop bills (12 Oct 2026), built unlike the first 20: Tally two-column invoices with an HSN tax summary,
+# an e-invoice (IRN), lakh-format amounts, discount + freight, TCS, a boxed NET AMOUNT, IGST, other fonts, jewellery;
+# photos in perspective, dark, wrinkled, on a table, upside down, sideways, tilted 8° with a PAID stamp, faded;
+# dot-matrix and faded thermal receipts, a 25-item receipt, a Tamil-only bill, service charge, previous balance,
+# a return line, a composition dealer, a courier receipt. Read by the app's Tesseract passes; the text of the pass
+# that won is kept. Only fields read as printed are expected (a GSTIN character the photo lost is left out);
+# review=true: the read was wrong, so it must never be READY.
+
+=== c01_tally_two_column | eng
+want: total=6117; tax=933.12; cgst=466.56; sgst=466.56; taxable=5184.00; date=2026-10-04; invoice=SLA/1029; sellerGstin=33ABCFS1122L1ZH; buyerGstin=33AAFCV2231K1ZH; customer=Vijayalakshmi Stores; roundOff=-0.12; items=2
+SRI LAKSHMI AGENCIES
+14, Nethaji Road, Madurai
+GSTIN/UIN: 33ABCFS1122L1ZH
+TAX INVOICE
+Invoice No.: SLA/1029
+Dated: 4-Oct-2026
+Mode/Terms of Payment: Credit
+Buyer (Bill to)
+Vijayalakshmi Stores
+GSTIN/UIN : 33AAFCV2231K1ZH
+Sl Description of Goods HSNISAC Quantity Rate Amount
+1 Clinic Plus Shampoo 175ml 3305 24 Nos 112.00 2,688.00
+2 Pears Soap 125g 3305 48 Nos 52.00 2,496.00
+Taxable Value 5,184.00
+Output CGST @9% 466.56
+Output SGST @9% 466.56
+Round Off (-)0.12
+Grand Total Rs. 6,117.00
+HSNISAC Taxable CGST % Amount SGST % Amount Total Tax
+3305 5,184.00 9% 466.56 9% 466.56 933.12
+Total 5,184.00 466.56 466.56 933.12
+Amount Chargeable (in words): INR Six Thousand One Hundred Seventeen Only
+for SRI LAKSHMI AGENCIES
+Authorised Signatory
+
+=== c02_e_invoice_irn | eng
+want: total=8892; tax=1356.48; cgst=678.24; sgst=678.24; taxable=7536.00; date=2026-10-06; invoice=TFD/E/5531; sellerGstin=33AADCT8890P1ZI; buyerGstin=33AAFCV2231K1ZH; customer=Vijayalakshmi Stores; roundOff=-0.48; items=3
+TAX INVOICE
+TAMILNADU FMCG DISTRIBUTORS
+Guindy Industrial Estate, Chennai
+GSTIN: 33AADCT8890P1Z1
+Invoice No: TFD/E/5531 Date: 06/10/2026
+Customer: Vijayalakshmi Stores
+Customer GSTIN: 33AAFCV2231K1ZH
+IRN: 8f3a91cOb7e24d65a1fOc9e2d4b7a6f3e1c2d3b4a5f6e7d8c9b0alf2e3d4c5b6
+Ack No: 112619283746501 Ack Date: 06/10/2026
+Sl Description of Goods HSNISAC Quantity Rate Amount
+1 Horlicks 500g 1901 12 Nos 245.00 2,940.00
+2 Boost 500g 1901 12 Nos 238.00 2,856.00
+3 Complan 500g 1901 6 Nos 290.00 1,740.00
+Taxable Value 7,536.00
+Output CGST @9% 678.24
+Output SGST @9% 678.24
+Round Off (-)0.48
+Grand Total Rs. 8,892.00
+Amount Chargeable (in words): INR Eight Thousand Eight Hundred Ninety Two Only
+for TAMILNADU FMCG DISTRIBUTORS
+Authorised Signatory
+
+=== c03_lakh_format | eng
+want: total=159477; tax=24327.00; cgst=12163.50; sgst=12163.50; taxable=135150.00; date=2026-10-02; invoice=CS/26/0091; sellerGstin=33AAHFC4471B1ZX; buyerGstin=33AAKCB2290D1Z0; customer=Bharath Builders; items=2
+TAX INVOICE
+CHETTINAD STEELS
+Karaikudi Main Road
+GSTIN: 33AAHFC4471B1ZX
+Invoice No: CS/26/0091 Date: 02/10/2026
+Customer: Bharath Builders
+Customer GSTIN: 33AAKCB2290D1Z0
+Sl Description of Goods HSNISAC Quantity Rate Amount
+1 TMT Bar 12mm (Ton) 7214 2.5 52500.00 1,31,250.00
+2 Binding Wire (Kg) 7214 50 78.00 3,900.00
+Taxable Value 1,35,150.00
+Output CGST @9% 12,163.50
+Output SGST @9% 12,163.50
+Grand Total Rs. 1,59,477.00
+Amount Chargeable (in words): INR One Lakh Fifty Nine Thousand Four Hundred Seventy Seven Only
+for CHETTINAD STEELS
+Authorised Signatory
+
+=== c04_discount_freight | eng
+want: total=8708; tax=1328.40; cgst=664.20; sgst=664.20; taxable=7380.00; date=2026-10-07; invoice=VP-7781; sellerGstin=33AAMFV6612K1ZV; buyerGstin=33AAFCV2231K1ZH; customer=Vijayalakshmi Stores; discount=370.00; roundOff=-0.40; items=4
+TAX INVOICE
+VELAN PLASTICS
+SIDCO Estate, Hosur
+GSTIN: 33AAMFV6612K1ZV
+Invoice No: VP-7781
+Customer: Vijayalakshmi Stores
+Customer GSTIN: 33AAFCV2231K1ZH
+Date: 07/10/2026
+Sl Description of Goods HSNISAC Quantity Rate Amount
+1 Plastic Bucket 20L 3924 20 Nos 145.00 2,900.00
+2 Mug 1L 3924 50 Nos 28.00 1,400.00
+3 Tub 40L 3924 10 Nos 310.00 3,100.00
+Less: Discount @ 5% 370.00
+Freight Charges 350.00
+Taxable Value 7,380.00
+Output CGST @9% 664.20
+Output SGST @9% 664.20
+Round Off (-)0.40
+Grand Total Rs. 8,708.00
+Amount Chargeable (in words): INR Eight Thousand Seven Hundred Eight Only
+for VELAN PLASTICS
+Authorised Signatory
+
+=== c05_tcs | eng
+want: total=17972; tax=855.00; cgst=427.50; sgst=427.50; taxable=17100.00; date=2026-10-08; invoice=PTT/313; sellerGstin=33AAJFP7745C1Z9; buyerGstin=33AAFCV2231K1ZH; customer=Vijayalakshmi Stores; roundOff=-0.10; items=1
+TAX INVOICE
+PRIME TEA TRADERS
+Coonoor, Nilgiris
+GSTIN: 33AAJFP7745C1Z9
+Invoice No: PTT/313 Date: 08/10/2026
+Customer: Vijayalakshmi Stores
+Customer GSTIN: 33AAFCV2231K1ZH
+Sl Description of Goods HSNISAC Quantity Rate Amount
+1 CTC Tea Dust 1kg 0902 60 Kg 285.00 17,100.00
+Taxable Value 17,100.00
+Output CGST @2.5% 427.50
+Output SGST @2.5% 427.50
+TCS @ 0.1% 17.10
+Round Off (-)0.10
+Grand Total Rs. 17,972.00
+Amount Chargeable (in words): INR Seventeen Thousand Nine Hundred Seventy Two Only
+for PRIME TEA TRADERS
+Authorised Signatory
+
+=== c06_boxed_total | eng
+want: total=6915; tax=1054.80; cgst=527.40; sgst=527.40; taxable=5860.00; date=2026-10-09; invoice=SE/0456; sellerGstin=33AAQFS3321M1ZY; customer=Arun Kumar; roundOff=0.20; items=2
+TAX INVOICE
+SUNDARAM ELECTRICALS
+Gandhipuram, Coimbatore
+GSTIN: 33AAQFS3321M1ZY
+Invoice No: SE/0456 Date: 09/10/2026
+Customer: Arun Kumar
+Sl Description of Goods HSNISAC Quantity Rate Amount
+1 Ceiling Fan 1200mm 8414 2 Nos 2150.00 4,300.00
+2 LED Tube 20W 8414 6 Nos 260.00 1,560.00
+Taxable Value 5,860.00
+Output CGST @9% 527.40
+Output SGST @9% 527.40
+Round Off 0.20
+NET AMOUNT Rs. 6,915.00
+for SUNDARAM ELECTRICALS
+Authorised Signatory
+
+=== c07_interstate_igst_two_col | eng
+want: total=8400; tax=400.00; igst=400.00; taxable=8000.00; date=2026-10-05; invoice=KSC/2026/88; sellerGstin=32AAECK5512H1ZW; buyerGstin=33AAFCV2231K1ZH; customer=Vijayalakshmi Stores; items=2
+TAX INVOICE
+KERALA SPICES CO Invoice No.: KSC/2026/88
+Kumily, Idukki, Kerala Dated: 05/10/2026
+GSTIN/UIN: 32AAECK5512H1ZW Mode/Terms of Payment: Credit
+Buyer (Bill to)
+Vijayalakshmi Stores
+GSTIN/UIN : 33AAFCV2231K1ZH
+Sl Description of Goods HSNISAC Quantity Rate Amount
+1 Cardamom 8mm (Kg) 0908 2 2450.00 4,900.00
+2 Pepper Black (Kg) 0908 5 620.00 3,100.00
+Taxable Value 8,000.00
+IGST @5% 400.00
+Grand Total Rs. 8,400.00
+Amount Chargeable (in words): INR Eight Thousand Four Hundred Only
+for KERALA SPICES CO
+Authorised Signatory
+
+=== c08_carlito_font | eng
+want: total=12034; tax=1835.64; cgst=917.82; sgst=917.82; taxable=10198.00; date=2026-10-10; invoice=RM/889; sellerGstin=33AAUFR9981Q1ZT; customer=Prakash; roundOff=0.36; items=2
+TAX INVOICE
+ROYAL MOBILES
+Big Bazaar Street, Trichy
+GSTIN: 33AAUFR9981Q1ZT
+Invoice No: RM/889
+Customer: Prakash
+Phone: 98421 77812
+Date: 10/10/2026
+sl Description of Goods HSN/SAC = Quantity Rate Amount
+1 Redmi 13C 4/128 IMEI 862453061234567 8517 1 Nos 9999.00 9,999.00
+2 Tempered Glass 8517 1 Nos 199.00 199.00
+Taxable Value 10,198.00
+Output CGST @9% 917.82
+Output SGST @9% 917.82
+Round Off 0.36
+Grand Total Rs. 12,034.00
+Amount Chargeable (in words): INR Twelve Thousand Thirty Four Only
+for ROYAL MOBILES
+Authorised Signatory
+
+=== c09_caladea_jewellery | eng
+want: total=63422; tax=1847.26; cgst=923.63; sgst=923.63; taxable=61575.00; date=2026-10-03; invoice=SGJ/2026/41; customer=Meena; roundOff=-0.26; items=2
+TAX INVOICE
+SRI GANESH JEWELLERY
+South Car Street, Srirangam
+GSTIN: 33AAVFS1234R1Z)
+Invoice No: SGJ/2026/41 Date: 03/10/2026
+Customer: Meena
+sl Description of Goods HSN/SAC Quantity Rate Amount
+1 Gold Chain 22K (gm) 7113 8.5 6750.00 57,375.00
+2 Making Charges 7113 1 4200.00 4,200.00
+Taxable Value 61,575.00
+Output CGST @15% 923.63
+Output SGST @1.5% 923.63
+Round Off (-)0.26
+Grand Total Rs. 63,422.00
+Amount Chargeable (in words): INR Sixty Three Thousand Four Hundred Twenty Two Only
+for SRI GANESH JEWELLERY
+Authorised Signatory
+
+=== c10_photo_perspective | eng
+want: total=5324; tax=812.16; cgst=406.08; sgst=406.08; taxable=4512.00; invoice=AA/3321; sellerGstin=33AAWFA5566S1ZF; buyerGstin=33AAFCV2231K1ZH; customer=Vijayalakshmi Stores; roundOff=-0.16; items=2
+TAX INVOICE
+ARUL AGENCIES
+Palayamkottai, Tirunelveli
+GSTIN: 33AAWFA5566S1ZF
+invoice No: AA/3321
+Customer: Vijayalakshmi Stores
+Customer GSTIN: 33AAFCV2231K1ZH
+Date: 09/10/202€
+si Description of Goods HSN/SAC Quantity Rate Amount
+1 Sunrise Coffee 100g 0901 24 Nos 92.00 2,208.00
+2 Bru Coffee 100g 0901 24 Nos 96.00 2,304.00
+Taxable Value 4,512.00
+Output CGST @9% 406.08
+Output SGST @9% 406.08
+Round Off (-)0.16
+Grand Total Rs. 5,324.00
+Amount Chargeable (in words): INR Five Thousand Three Hundred Twenty Four Only
+for ARUL AGENCIES
+Authorised Signatory
+
+=== c11_photo_dark | eng
+want: total=4952; tax=235.80; cgst=117.90; sgst=117.90; taxable=4716.00; date=2026-10-08; invoice=MT/1180; sellerGstin=33AAXFM6677T1ZU; buyerGstin=33AAFCV2231K1ZH; customer=Vijayalakshmi Stores; roundOff=0.20; items=2
+TAX INVOICE
+MAHALAKSHMI TRADERS
+Theni Main Road
+GSTIN: 33AAXFM6677T1ZU
+Invoice No: MT/1180 Date: 08/10/2026
+Customer: Vijayalakshmi Stores
+Customer GSTIN: 33AAFCV2231K1ZH
+SI Description of Goods HSN/ISAC Quantity Rate Amount
+1 idhayam Oil 1L 1512 12 Nos 235.00 2,820.00
+2 Gold Winner LL 1512 12 Nos 158.00 1,896.00
+Taxable Value 4,716.00
+Output CGST @2.5% 117.90
+Output SGST @2.5% 117.90
+Round Off 0.20
+Grand Total Rs. 4,952.00
+Amount Chargeabie (in words): INR Four Thousand Nine Hundred Fifty Two Only
+for MAHALAKSHMI TRADERS
+Authorised Signatory
+
+=== c12_photo_wrinkled | eng
+want: total=4872; tax=522.00; cgst=261.00; sgst=261.00; taxable=4350.00; date=2026-10-07; sellerGstin=33AAYFB7788U1ZW; buyerGstin=33AAFCV2231K1ZH; customer=Vijayalakshmi Stores; items=2
+TAX INVOICE
+BALAJI PAPERS
+Sivakasi
+GSTIN: 33AAYFB7788U1ZW
+(nvoice No: BP/S51
+Customer: Vijayalakshmi Stores
+Customer GSTIN: 33AAFCV2231K1ZH
+Date: 07/10/2026
+SI Description of Goods HSNISAC Quantity Rate Amount
+1 Notebook 172pg 4820 100 Nos 34.00 3,400.00
+2 Pen Blue (Box) 4820 10 Nos 95.00 950.00
+Taxable Value 4,350.00
+Output CGST @6% 261.00
+Output SGST @6% 261.00
+Grand Total Rs. 4,872.00
+Amount Chargeable (in words): INR Four Thousand Eight Hundred Seventy Two Only
+for BALAJ! PAPERS
+Authorised Signatory
+
+=== c13_photo_on_table | eng
+want: total=386; tax=41.40; cgst=20.70; sgst=20.70; taxable=345.00; date=2026-10-11; invoice=RMD/7701; customer=Selvi; roundOff=-0.40
+TAX INVOICE
+RAJA MEDICALS
+KK Nagar, Madurai
+GSTIN: S3AAZFRE899V177
+Invoice No: RMD/7701
+Customer: Selvi
+Date: 11/1 0/2026
+Description of Goods HSN/SAC Quantity
+Amount
+Paracetamol 500 (Strip) 3004 10 Nos
+Vitamin C (Strip) 3004 5 Nos
+185.00
+160.00
+Taxable Value
+Output CGsT @6%
+Output SGST @6%
+Round Off
+345.00
+20.70
+20.70
+(-)0.40
+Grand Total
+Rs. 386.00
+Amount Chargeable (in Words): INR Three Hundred Eighty Six Only
+for RAJA MEDICALS
+Authorised Signatory
+
+=== c14_photo_upside_down | rot270/eng
+want: total=10868; tax=517.50; cgst=258.75; sgst=258.75; taxable=10350.00; date=2026-10-06; invoice=KF/220; sellerGstin=33AAAFK9900W1ZP; buyerGstin=33AAFCV2231K1ZH; customer=Vijayalakshmi Stores; roundOff=0.50; items=2
+TAX INVOICE
+KAVERI FOODS
+Thanjavur
+GSTIN: 33AAAFK9900W1ZP
+Invoice No: KF/220 Date: 06/10/2026
+Customer: Vijayalakshmi Stores
+Customer GSTIN: 33AAFCV2231K1ZH
+Sl Description of Goods HSNISAC Quantity Rate Amount
+1 Rice Ponni 26kg 1006 5 Nos 1380.00 6,900.00
+2 Idli Rice 26kg 1006 3 Nos 1150.00 3,450.00
+Taxable Value 10,350.00
+Output CGST @2.5% 258.75
+Output SGST @2.5% 258.75
+Round Off 0.50
+Grand Total Rs. 10,868.00
+Amount Chargeable (in words): INR Ten Thousand Eight Hundred Sixty Eight Only
+for KAVERI FOODS
+Authorised Signatory
+
+=== c15_photo_rot270 | eng
+want: total=4022; tax=191.50; cgst=95.75; sgst=95.75; taxable=3830.00; date=2026-10-05; invoice=NT/0778; sellerGstin=33AABFN1010X1Z6; customer=Kavitha; roundOff=0.50; items=2
+TAX INVOICE
+NILA TEXTILES
+Erode
+GSTIN: 33AABFN1010X1Z6
+Invoice No: NT/0778 Date: 05/10/2026
+Customer: Kavitha
+Sl Description of Goods HSNISAC Quantity Rate Amount
+1 Cotton Saree 5208 3 Nos 850.00 2,550.00
+2 Dhoti 4m 5208 4 Nos 320.00 1,280.00
+Taxable Value 3,830.00
+Output CGST @2.5% 95.75
+Output SGST @2.5% 95.75
+Round Off 0.50
+Grand Total Rs. 4,022.00
+Amount Chargeable (in words): INR Four Thousand Twenty Two Only
+for NILA TEXTILES
+Authorised Signatory
+
+=== c16_photo_tilt8_stamp | clean/eng
+want: total=4767; tax=727.20; cgst=363.60; sgst=363.60; taxable=4040.00; date=2026-10-10; invoice=SRH/1092; sellerGstin=33AACFS2020Y1ZU; customer=Murugan; roundOff=-0.20; items=2
+TAX INVOICE
+SRIRAM HARDWARE
+Cuddalore
+GSTIN: 33AACFS2020Y1ZU
+Invoice No: SRH/1092 Date: 10/10/2026
+Customer: Murugan
+sl Description of Goods HSNISAC Quantity Rate Amount
+1 Asian Paints 4. 3208 2 Nos 1850.00 3,700.00
+2 Brush 3 inch 3208 4 Nos 85.00 340.00
+Taxable Value 4,040.00
+Output CGST @9% 363.60
+Output SGST Qe 363.60
+Round Off (-)0.20
+Grand Tptal Rs. 4,767.00
+Amount Chargeable (in words): INR Four Thousand Seven Hurgired PAI D
+{OPSR!I ZAM HARDWARE
+pfithorised Signatory
+
+=== c17_faded | eng
+want: total=19425; tax=925.00; cgst=462.50; sgst=462.50; taxable=18500.00; date=2026-10-04; invoice=GVA/66; sellerGstin=33AADFG3030Z1ZZ; buyerGstin=33AAFCV2231K1ZH; customer=Vijayalakshmi Stores; items=1
+TAX INVOICE
+GREEN VALLEY AGRO
+Pollachi
+GSTIN: 33AADFG3030Z1ZZ
+Invoice No: GVA/66 Date: 04/10/2026
+Customer: Vijayalakshmi Stores
+Customer GSTIN: 33AAFCV2231K1ZH
+Sl Description of Goods HSNISAC Quantity Rate Amount
+1 Coconut 1000 Nos 0801 1 Nos 18500.00 18,500.00
+Taxable Value 18,500.00
+Output CGST @2.5% 462.50
+Output SGST @2.5% 462.50
+Grand Total Rs. 19,425.00
+Amount Chargeable (in words): INR Nineteen Thousand Four Hundred Twenty Five Only
+for GREEN VALLEY AGRO
+Authorised Signatory
+
+=== c18_dot_matrix_wholesale | col/eng
+want: total=9110.00; items=3
+MANI & SONS’ WHOLESALE
+Mandi .Street,. Dindigul
+Bill. No.3) 44741 “Dt2°06=10=2026,
+Party: Ganesh. Stores .
+“Sugar 50kg Bag. “3 ‘4300.00
+Jaggéry 10kg ; ; 3 : 1860.00 ..-
+Groundnut ikg--. ~ ; : 25 2950..00
+_NET AMOUNT : 9110.00
+“*
+**° Thank you, visit ‘again
+
+=== c19_faded_thermal | eng
+want: total=225.76; tax=10.76; date=2026-10-10; invoice=118273; items=4
+MORE SUPERMARKET
+Thillai Nagar, Trichy
+Bill:118273
+10/10/26 18:22
+Cashier: 07
+Aavin Milk 500ml 2 52.00
+Britannia Bread 1 45.00
+Amul Butter 100g 1 58.00
+Lays 52g 3 60.00
+Sub Total 215.00
+CGST 2.5% 5.38
+SGST 2.5% 5.38
+TOTAL 225.76
+UPI : 225.76
+** Thank you,
+visit again **
+
+=== c20_long_receipt | eng
+want: total=2546.00; date=2026-10-11; invoice=3390; items=25
+SRI VARI MALIGAI
+Ph 94433 12121
+Bill No: 3390
+Date: 11/10/2026
+Rice 1kg 5 310.00
+Toor Dal 2 284.00
+Urad Dal 1 128.00
+Moong Dal 1 118.00
+Sugar 3 132.00
+Salt 2 48.00
+Tamarind 250g 1 65.00
+Chilli Powder 1 88.00
+Turmeric 1 34.00
+Mustard 1 22.00
+Cumin 100g 1 48.00
+Pepper 50g 1 45.00
+Oil 1L 2 310.00
+Ghee 200ml 1 140.00
+Tea 250g 1 95.00
+Coffee 200g 1 160.00
+Rava 2 56.00
+Maida 1 36.00
+Atta 1kg 2 104.00
+Biscuit 4 40.00
+Soap 3 114.00
+Detergent 1 110.00
+Agarbatti 1 45.00
+Matches 2 4.00
+Candle 2 10.00
+Total 2546.00
+Cash: 2546.00
+** Thank you, visit again **
+
+=== c21_tamil_only | col/eng+tam
+want: total=540.00; date=2026-10-09; invoice=712; items=3
+ஸ்ரீ கணேஷ்‌ ஸ்டோர்ஸ்‌
+SRI GANESH STORES
+மதுரை
+பில்‌ எண்‌: 712
+தேதி: 09/10/2026
+அரிசி
+5 x 62.00 310.00
+சர்க்கரை
+2 x 44.00 88.00
+துவரம்‌ பருப்பு
+1 x 142.00 142.00
+மொத்தம்‌ 540.00
+** Thank you, visit again **
+
+=== c22_restaurant_service | eng
+want: total=705.60; tax=33.60; date=2026-10-10; invoice=SB/26/9910; sellerGstin=33AAEFS4455B1ZK; items=4
+HOTEL SARAVANA BHAVAN
+GSTIN: 33AAEFS4455B1ZK
+Bill No: SB/26/9910 Table: 12
+Date: 10/10/2026 20:41
+Steward: Ravi
+Mini Meals 2 360.00
+Ghee Roast 1 140.00
+Badam Milk 2 140.00
+Sub Total 640.00
+Service Charge 5% 32.00
+CGST 2.5% 16.80
+SGST 2.5% 16.80
+Bill Amount 705.60
+* Thank you, visit again **
+
+=== c23_previous_balance | eng
+want: total=3480.00; date=2026-10-01; invoice=AMD-61; customer=Rajesh; items=2
+ANBU MILK DEPOT
+Karur
+Bill No: AMD-61
+Date: 01/10/2026
+Customer: Rajesh
+Milk (Ltr) Sept 60 2880.00
+Curd (Ltr) 10 600.00
+Bill Total 3480.00
+Previous Balance 1250.00
+Total Due 4730.00
+** Thank you, visit again **
+
+=== c24_return_line | eng
+want: total=9249.00; date=2026-10-08; invoice=KS/44521; items=3
+KUMARAN SILKS
+T Nagar, Chennai
+Invoice No: KS/44521
+Date: 08/10/2026
+Silk Saree 1 8450.00
+Kurti 2 1598.00
+Return: Kurti (Exchange) -799.00
+Gross Total 9249.00
+Net Payable 9249.00
+Card: 9249.00
+** Thank you, visit again **
+
+=== c25_composite_dealer | eng
+want: total=498.00; date=2026-10-07; invoice=1180; items=3
+SELVI PROVISION STORE
+Composition Taxable Person, not eligible to collect tax
+Bill of Supply No: 1180
+Date: 07/10/2026
+Coconut Oil 500m! 2 260.00
+Soap 4 140.00
+Washing Powder 1kg 1 98.00
+Total Amount 498.00
+** Thank you, visit again **
+
+=== c26_courier | eng
+want: total=590.00; tax=90.00; date=2026-10-09; invoice=PC889123; items=2
+PROFESSIONAL COURIERS
+Franchise: Madurai 12
+Receipt No: PC889123
+Date: 09/10/2026
+Consignee: Bangalore
+Document 500g 1 120.00
+Parcel 3kg 1 380.00
+Sub Total 500.00
+IGST 18% 90.00
+Total Amount 590.00
+Mode: Cash
+* Thank you, visit again **
+
+=== c27_receipt_dark_tilt | eng
+want: total=372.00; date=2026-10-11; invoice=2219; items=3
+JAYA BAKERY
+Anna Nagar, Madurai
+Bill No: 2219
+Date: 11/10/2026
+Veg Puff 4 72.00
+Plum Cake 500g 1 220.00
+Milk Bread 2 80.00
+TOTAL 372.00
+Cash: 500.00
+Change: 128.00
+“ Thank you, visit again **
+
+=== c28_receipt_on_table | eng
+want: review=true
+Ai CHIPS
+gambakkam, Chen
+Nun nai
+Bill No: 5540
+Date: 10/10/2026
+Banana Chips 2509
+mixture 5009
+Total
+** Thank you, visit again
+
+=== c29_receipt_lowres_noise | eng
+want: total=430.00; date=2026-10-09; items=3
+FRESH MART
+a oS Hosur Road
+Bill No: 77126.
+Date: 09/10/2026 . oe
+Apple lkg- 180.00
+Orange Ikg © oe 3 ~. 180.00
+- Grapes 508g —_ : 70.00.
+“TOTAL “430.00
+** Thank ‘you, yvisait-agdin ** —
+-
+
+=== c30_receipt_perspective | eng
+want: total=192.00; date=2026-10-11; invoice=901; items=3
+GOLDEN TEA STALL
+Bus Stand, Salem
+Bill No: 901
+Date: 11/10/2026
+Tea 72.00
+Coffee 4 60.00
+Vada 6 60.00
+ve eee
+TOTAL 192.00
+** Thank you, visit again **
