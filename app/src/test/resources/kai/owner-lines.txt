@@ -193,6 +193,9 @@ ASK    | ஜிஎஸ்டி எவ்வளவு கட்டணும்   
 ASK    | balance sheet kudu                              | balance sheet
 ASK    | Kumar yevlo tharanum                            | ₹4,000
 ASK    | innaiku enna transactions                       | Daily Cash Note
+ASK    | Kumar statement pdf kudu                       | Kumar; PDF; ₹4,000    # a statement PDF card (owner, 12 Oct 2026)
+ASK    | Kumar statement whatsapp la anuppu             | Kumar; PDF; ₹4,000
+ASK    | ABC Traders statement pdf                      | ABC Traders; PDF; ₹10,000
 
 # Owner (11 Oct 2026): "reminde pannu" is "remind pannu" — and never left in the reminder's words.
 REMIND | December 3 morning 10 sabari ku birthday ku wish pannanum reminde pannu | 2026-12-03 10:00 birthday

@@ -99,6 +99,13 @@ sealed interface KaiAction {
     data class SaveUnitConversion(val productId: String, val productName: String, val unit: String, val perUnit: String, val baseUnit: String) : KaiAction
     /** "Owner, `petti` na box-ah?" — the unit the owner picked ("" = something else: Kai asks). */
     data class PickUnit(val key: String, val unit: String) : KaiAction
+    /**
+     * A person's statement as a PDF, made on the phone from the books ([from] null: the whole history). [whatsapp]: WhatsApp opens
+     * with it in that person's chat — the owner presses send; otherwise the phone's share sheet.
+     */
+    data class ShareStatement(val partyId: String, val name: String, val customer: Boolean, val from: LocalDate?, val to: LocalDate, val whatsapp: Boolean) : KaiAction
+    /** "Endha Kumar?" for a statement: this record's. */
+    data class StatementFor(val partyId: String, val customer: Boolean, val from: LocalDate?, val to: LocalDate) : KaiAction
     /** After "Kai naan enna teach panniruken?": EDIT / FORGET / KEEP. */
     data class ManageMemory(val op: String) : KaiAction
     /** The owner's Morning Routine Kai proposed: [Save] is the only way it changes. */
@@ -648,7 +655,8 @@ class KaiAgent(
         if (KaiConversationCare.ownerDidNotFollow(said)) explainAgain(lang)?.let { return it }
         if (KaiConversationCare.disputesBalance(said)) disputed(said, named, lang)?.let { return it }
         if (KaiConversationCare.makesBill(said)) return noBillHere(said, named, lang)
-        if (KaiConversationCare.sendsMessage(said)) {
+        // "Kumar statement WhatsApp-la anuppu" is the statement PDF the owner sends (statementAsk), not a message Kai can't send.
+        if (KaiConversationCare.sendsMessage(said) && !KaiStatement.asks(said)) {
             val note = pick(lang, ta = "ஓனர், WhatsApp / SMS-ல நான் அனுப்ப முடியாது.", tl = "Owner, WhatsApp / SMS-la naan anuppa mudiyaadhu.",
                 en = "Owner, I can't send WhatsApp / SMS messages.")
             val rest = KaiConversationCare.withoutMessageApp(said)
@@ -962,6 +970,8 @@ class KaiAgent(
         // Push-back ("adha cancel pannu", "avan 3000 dhaan tharanum", "nee sonnadhu thappu", "puriyala") and what Kai can't do
         // (GST bill, WhatsApp, weather …): answered plainly — nothing is written here.
         if (openPayment == null) care(said, lang)?.let { return it }
+        // "Kumar oda credit debit history PDF kudu", "Kumar statement WhatsApp-la anuppu": that person's statement as a PDF.
+        if (openPayment == null) statementAsk(said, lang)?.let { return it }
 
         // "rendu perum serthu motham" right after two people: their total — never "2" of a product called "Perum Motham".
         if (openPayment == null && KaiConversationCare.asksBoth(said) && KaiConversationCare.withoutBoth(said).none(Char::isDigit) && brain.peopleTalkedAbout().size >= 2)
@@ -4211,6 +4221,11 @@ class KaiAgent(
         // In goods mode a confirmed draft goes into the list (saved only on the list's Confirm), then the next one.
         if (action is KaiAction.ConfirmStock && goodsOpen()) goodsKeep(action.key, lang)?.let { return nextGoods(it, lang) }
         when (action) {
+            is KaiAction.StatementFor -> {
+                val p = runCatching { books.snapshot() }.getOrNull()?.parties
+                    ?.firstOrNull { it.id == action.partyId && (it.side == com.shopai.app.brain.Direction.RECEIVABLE) == action.customer } ?: return null
+                return statementCard(p, action.from, action.to, lang)
+            }
             KaiAction.ConfirmGoods -> return confirmGoods(lang)
             KaiAction.EditGoods -> {
                 if (goodsList.isEmpty()) return null
@@ -5040,6 +5055,100 @@ class KaiAgent(
     }
 
     // ------------------------------------------------------------ wording
+
+    // ------------------------------------------------------------------ a person's statement (PDF / WhatsApp)
+
+    /**
+     * "Kumar oda credit debit history PDF kudu", "Kumar statement WhatsApp-la anuppu", "குமார் கணக்கு பிடிஎஃப் வேணும்": that person's
+     * statement — what the records hold, in short — with the WhatsApp and PDF buttons. Kai only reads the books; the PDF is made
+     * on the phone and WhatsApp opens with it in the person's chat: the owner presses send. Never a guessed person.
+     */
+    private suspend fun statementAsk(said: String, lang: KaiLang): KaiTurn? {
+        if (!KaiStatement.asks(said)) return null
+        val ledger = runCatching { books.snapshot() }.getOrNull() ?: return null
+        val today = now().toLocalDate()
+        val q = KaiChatUnderstanding.understand(said, today, ledger.people)
+        // "pona maasam", "September", "last 3 months": that period; nothing said: the whole history.
+        val period = q.period?.takeIf { !it.from.isAfter(today) }
+        val from = period?.from
+        val to = period?.to?.let { minOf(it, today) } ?: today
+        val name = (q.person as? PersonRef.Named)?.name ?: com.shopai.app.brain.KaiUnderstanding.knownPerson(said, ledger.people)
+            // "Suresh statement PDF" with no Suresh in the books: said plainly, never another person's statement.
+            ?: com.shopai.app.brain.KaiUnderstanding.personIn(said)?.takeUnless { KaiStatement.isAskWord(it) || it.lowercase(Locale.ROOT) in statementFillers }
+            // "Avan statement PDF anuppu", "PDF-a anuppu": the person just talked about.
+            ?: brain.lastPerson()
+            ?: return say(lang, KaiMood.CLARIFY, null,
+                ta = "யாரோட கணக்கு PDF வேணும் ஓனர்? பேர் சொல்லுங்க.",
+                tl = "Yaaroda statement PDF venum Owner? Per sollunga.",
+                en = "Whose statement do you want as a PDF, Owner?")
+        val parties = ledger.find(name).distinctBy { it.side to it.id }
+        if (parties.isEmpty()) return say(lang, KaiMood.CLARIFY, null,
+            ta = "ஓனர், $name records-ல இல்ல.", tl = "Owner, $name records-la illa.", en = "Owner, $name isn't in your records.")
+        if (parties.size > 1) {
+            fun label(p: com.shopai.app.brain.PartyFacts) = "${p.name} · " + if (p.side == com.shopai.app.brain.Direction.RECEIVABLE)
+                "customer · " + pick(lang, ta = "பாக்கி", tl = "pending", en = "pending") + " " + KaiFormat.rupees(p.pending)
+            else "supplier · " + pick(lang, ta = "கொடுக்கணும்", tl = "kudukkanum", en = "to pay") + " " + KaiFormat.rupees(p.pending)
+            return KaiTurn(
+                ChatReply(pick(lang, ta = "எந்த $name ஓனர்?", tl = "Endha $name Owner?", en = "Which $name, Owner?"), KaiMood.CLARIFY, ChatIntent.CUSTOMER_HISTORY),
+                KaiCard(emptyList(), parties.map { p -> KaiButton(label(p), KaiAction.StatementFor(p.id, p.side == com.shopai.app.brain.Direction.RECEIVABLE, from, to)) }),
+            )
+        }
+        return statementCard(parties.single(), from, to, lang)
+    }
+
+    private val statementFillers = setOf("avan", "aval", "avar", "avanga", "ivan", "ival", "ivar", "give", "send", "share", "me", "the", "my")
+
+    private suspend fun statementCard(p: com.shopai.app.brain.PartyFacts, from: LocalDate?, to: LocalDate, lang: KaiLang): KaiTurn {
+        val customer = p.side == com.shopai.app.brain.Direction.RECEIVABLE
+        val ledger = runCatching { books.snapshot() }.getOrNull()
+        val phone = (if (customer) ledger?.customers else ledger?.suppliers)?.firstOrNull { it.id == p.id }?.phone?.takeIf { it.isNotBlank() }
+        val h = books.history(p) ?: return say(lang, KaiMood.ERROR, "statement: books unavailable",
+            ta = "உங்க கணக்கு புத்தகத்தை இப்போ படிக்க முடியல ஓனர்.", tl = "Owner, books-a ippo padikka mudiyala.", en = "I couldn't read your records right now, Owner.")
+        if (h.entries.isEmpty()) return say(lang, KaiMood.NEUTRAL, null,
+            ta = "ஓனர், ${p.name}-க்கு records-ல எந்த entry-யும் இல்ல — PDF-ல போட எதுவும் இல்ல.",
+            tl = "Owner, ${p.name}-ku records-la entry edhuvum illa — PDF-la poda onnum illa.",
+            en = "Owner, there are no entries for ${p.name} yet — nothing to put in a PDF.")
+        val st = com.shopai.app.util.partyStatement(p.name, phone, customer, h.entries.map { e ->
+            com.shopai.app.util.StatementTxn(e.amount, e.paid, null, e.createdAt, e.dueDate, e.payments.map { com.shopai.app.util.StatementPayment(it.amount, it.date, null) })
+        }, from, to, now().toLocalDate())
+        val period = KaiStatement.periodText(from, to, lang)
+        val given = KaiFormat.rupees(st.given)
+        val paid = KaiFormat.rupees(st.paid)
+        val balance = KaiFormat.rupees(maxOf(0.0, st.closing))
+        val n = p.name
+        val sums = if (customer) pick(lang, ta = "கடன் $given · வந்தது $paid · பாக்கி $balance", tl = "Credit $given · Vandhadhu $paid · Pending $balance",
+            en = "Credit $given · Received $paid · Balance due $balance")
+        else pick(lang, ta = "வாங்கியது $given · கொடுத்தது $paid · கொடுக்கணும் $balance", tl = "Vaangiyadhu $given · Kuduthadhu $paid · Kudukkanum $balance",
+            en = "Bought $given · Paid $paid · To pay $balance")
+        val how = if (phone != null) pick(lang,
+            ta = "WhatsApp-ஐ தொட்டா $n chat-ல PDF-ஓட WhatsApp திறக்கும் — நீங்க Send அமுக்குங்க.",
+            tl = "WhatsApp-a thottaa $n chat-la PDF-oda WhatsApp open aagum — neenga Send amuthunga.",
+            en = "Tap WhatsApp: it opens $n's chat with the PDF attached — you press Send.")
+        else pick(lang,
+            ta = "$n phone number records-ல இல்ல — WhatsApp-ல contact-ஐ நீங்க தேர்ந்தெடுங்க.",
+            tl = "$n phone number records-la illa — WhatsApp-la contact-a neenga select pannunga.",
+            en = "$n has no phone number in your records — pick the contact in WhatsApp.")
+        val reply = pick(lang,
+            ta = "சரி ஓனர் — $n-ஓட கணக்கு PDF ரெடி ($period): $sums. $how",
+            tl = "Seri Owner — $n-oda statement PDF ready ($period): $sums. $how",
+            en = "Okay Owner — $n's statement PDF is ready ($period): $sums. $how")
+        return KaiTurn(
+            ChatReply(reply, KaiMood.EXPLAINING, ChatIntent.CUSTOMER_HISTORY),
+            KaiCard(
+                listOfNotNull(
+                    "$n · " + (if (customer) "customer" else "supplier") + (phone?.let { " · $it" } ?: ""),
+                    period,
+                    sums,
+                ),
+                listOf(
+                    KaiButton(pick(lang, ta = "WhatsApp-ல $n-க்கு அனுப்பு", tl = "WhatsApp-la $n-ku anuppu", en = "Send to $n on WhatsApp"),
+                        KaiAction.ShareStatement(p.id, n, customer, from, to, whatsapp = true), primary = true),
+                    KaiButton(pick(lang, ta = "PDF share / save", tl = "PDF share / save", en = "Share / save PDF"),
+                        KaiAction.ShareStatement(p.id, n, customer, from, to, whatsapp = false)),
+                ),
+            ),
+        )
+    }
 
     private fun say(lang: KaiLang, mood: KaiMood, log: String?, ta: String, tl: String, en: String): KaiTurn {
         log?.let { tools.log(it, "kai", "asked", ActionStatus.ANSWERED) }

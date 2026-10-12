@@ -77,6 +77,12 @@ object KaiSpokenWords {
         "பாக்கலாம்" to "paakalam", "பார்க்கலாம்" to "paakalam", "மாத்து" to "maathu", "மாத்துங்க" to "maathunga", "கேன்சல்" to "cancel",
         "டெலீட்" to "delete", "தப்பா" to "thappa", "தப்பு" to "thappu", "சொன்னது" to "sonnadhu", "போட்டுட்ட" to "pottutta", "போட்டுட்டேன்" to "pottuten",
         "புரியல" to "puriyala", "புரிஞ்சுக்கல" to "purinjukala", "ஜிஎஸ்டி" to "gst", "பில்லு" to "bill", "இன்வாய்ஸ்" to "invoice", "வாட்ஸ்அப்" to "whatsapp",
+        // A person's statement as a document (owner, 12 Oct 2026: "குமார் கணக்கு பிடிஎஃப் வேணும்", "ஸ்டேட்மெண்ட் வாட்ஸ்அப்ல அனுப்பு").
+        "பிடிஎஃப்" to "pdf", "பிடிஎப்" to "pdf", "பீடிஎஃப்" to "pdf", "பிடிஎஃப்ல" to "pdf la", "பிடிஎஃப்பா" to "pdf-a", "ஸ்டேட்மென்ட்" to "statement",
+        "ஸ்டேட்மெண்ட்" to "statement", "ஸ்டேட்மென்ட்ட" to "statement", "லெட்ஜர்" to "ledger", "ஷேர்" to "share", "டவுன்லோட்" to "download",
+        "டவுன்லோடு" to "download", "பிரிண்ட்" to "print", "ப்ரிண்ட்" to "print", "அனுப்பு" to "anuppu", "அனுப்புங்க" to "anuppunga",
+        "அனுப்பிவிடு" to "anuppividu", "வாட்ஸ்அப்பில்" to "whatsapp la", "வாட்ஸ்அப்புல" to "whatsapp la", "டீடெயில்ஸ்" to "details",
+        "ஓட" to "oda", "குடு" to "kudu", "குடுங்க" to "kudunga", "போன" to "pona",
         "வாட்ஸ்அப்ல" to "whatsapp la", "ரெண்டு பேரும்" to "rendu perum", "பேரும்" to "perum", "ஃபர்ஸ்ட்" to "first", "முதல்ல" to "mudhalla", "அதே" to "adhe", "முன்னாடி" to "munnadi", "இவன்" to "ivan", "இவர்" to "ivar", "இவங்க" to "ivanga", "அதோட" to "adhoda", "முதல்" to "mudhal", "ரெண்டாவது" to "rendavadhu", "இரண்டாவது" to "rendavadhu", "மூணாவது" to "moonavadhu", "மூன்றாவது" to "moonavadhu", "நாலாவது" to "naalavadhu", "கடைசி" to "kadaisi",
         // An accountant's words said aloud (owner, 11 Oct 2026).
         "பர்சேஸ்" to "purchase", "செல்லிங்" to "selling", "பிரைஸ்" to "price", "மார்ஜின்" to "margin", "ப்ராஃபிட்" to "profit", "ப்ராபிட்" to "profit",
