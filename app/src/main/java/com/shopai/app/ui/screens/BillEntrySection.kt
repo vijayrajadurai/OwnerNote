@@ -119,8 +119,16 @@ class BillEntryState {
     var stockRows by mutableStateOf<List<BillStockRow>>(emptyList())
         private set
 
-    fun setStockLines(lines: List<BillStock.Line>) {
+    /** "Intha bill la irukura stock ah add pannu / kammi pannu" said to Kai: that way; null = by the bill (supplier in, customer out). */
+    var stockWay by mutableStateOf<BillStock.Way?>(null)
+        private set
+
+    /** The bill's items go into stock (true) or out of it (false). */
+    val stockIn: Boolean get() = stockWay?.let { it == BillStock.Way.IN } ?: (type == TransactionSaveType.DEBIT)
+
+    fun setStockLines(lines: List<BillStock.Line>, way: BillStock.Way? = null) {
         stockRows = lines.map { BillStockRow(it) }
+        stockWay = way
     }
 
     /** What the save moves: each ticked product and its quantity in the product's unit. */
@@ -222,6 +230,7 @@ class BillEntryState {
         totalSuggestion = null
         shopSuggestion = null
         stockRows = emptyList()
+        stockWay = null
         visible = false
     }
 
@@ -490,13 +499,13 @@ fun BillEntrySection(
         // The items on the bill: supplier bill → stock in, customer bill → stock out (on save, never before).
         if (state.stockRows.isNotEmpty()) {
             Text(
-                stringResource(if (isSupplier) R.string.bill_stock_title_in else R.string.bill_stock_title_out),
+                stringResource(if (state.stockIn) R.string.bill_stock_title_in else R.string.bill_stock_title_out),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold,
                 color = ShopAiThemeColors.primary,
                 modifier = Modifier.padding(top = 12.dp),
             )
-            state.stockRows.forEach { row -> BillStockRowView(row, isSupplier) }
+            state.stockRows.forEach { row -> BillStockRowView(row, state.stockIn) }
         }
     }
 
@@ -539,7 +548,7 @@ private fun VerifyNote(state: BillEntryState, field: BillField) {
 
 /** One bill item: ticked → its product's stock moves by the quantity on save. Shows the stock before → after. */
 @Composable
-private fun BillStockRowView(row: BillStockRow, isSupplier: Boolean) {
+private fun BillStockRowView(row: BillStockRow, stockIn: Boolean) {
     val product = row.line.product
     fun plain(q: BigDecimal) = q.stripTrailingZeros().toPlainString()
     Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
@@ -554,8 +563,8 @@ private fun BillStockRowView(row: BillStockRow, isSupplier: Boolean) {
             val note = when {
                 product == null -> stringResource(R.string.bill_stock_no_product)
                 row.include && q != null -> {
-                    val after = if (isSupplier) product.stock + q else product.stock - q
-                    if (!isSupplier && after.signum() < 0) stringResource(R.string.bill_stock_short, plain(product.stock), product.unit)
+                    val after = if (stockIn) product.stock + q else product.stock - q
+                    if (!stockIn && after.signum() < 0) stringResource(R.string.bill_stock_short, plain(product.stock), product.unit)
                     else stringResource(R.string.bill_stock_change, plain(product.stock), plain(after), product.unit)
                 }
                 row.line.problem == BillStock.Problem.NO_QUANTITY -> stringResource(R.string.bill_stock_no_qty, product.unit)

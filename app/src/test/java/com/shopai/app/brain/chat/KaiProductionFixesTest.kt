@@ -208,7 +208,8 @@ class KaiProductionFixesTest {
             assertTrue(s, t.reply.text.contains("📷"))
             assertEquals(s, KaiIntentKind.SCAN_BILL, KaiIntents.classify(s, now, emptyList(), tools.products))
         }
-        assertEquals("Sure Owner, bill scan pannalam 📷", kai.ask("bill scan pannu").reply.text)
+        // The scan reply also says what happens to the bill's stock (owner, 13 Oct 2026): purchase in, sale out, after Confirm.
+        kai.ask("bill scan pannu").reply.text.let { assertTrue(it, it.startsWith("Sure Owner, bill scan pannalam 📷") && it.contains("stock serum")) }
         assertTrue(tools.logs.any { it.first == KaiIntents.OPEN_BILL_SCANNER && it.second == ActionStatus.OPENED })
         // A question about a bill is not the scanner.
         assertFalse(KaiIntents.isBillScan("Kumar bill evlo?"))
@@ -390,7 +391,7 @@ class KaiProductionFixesTest {
         // The phone's Tamil speech-to-text writes the same request in Tamil script: same action, answered in Tamil.
         val spoken = KaiAgent(KaiBusinessBrain(Books()), Books(), Tools(), { now }, Access(InMemoryKaiMemoryStore(), "o", Tools())).ask("பில் ஸ்கேன் பண்ணு")
         assertEquals(typed.direct, spoken.direct)
-        assertEquals("சரி ஓனர், பில் ஸ்கேன் பண்ணலாம் 📷", spoken.reply.text)
+        assertTrue(spoken.reply.text, spoken.reply.text.startsWith("சரி ஓனர், பில் ஸ்கேன் பண்ணலாம் 📷") && spoken.reply.text.contains("stock சேரும்"))
         assertNotNull(typed.direct)
     }
 }

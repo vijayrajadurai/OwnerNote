@@ -88,6 +88,15 @@ class BillStockTest {
         assertFalse(l.sure)
     }
 
+    @Test fun theWayAskedIsReadOnceAndNotForever() {
+        BillStock.Request.ask(BillStock.Way.IN, now = 1_000L)
+        assertEquals(BillStock.Way.IN, BillStock.Request.take(now = 2_000L))
+        assertNull(BillStock.Request.take(now = 3_000L))
+        // Asked long ago (over 15 minutes): not this scan's.
+        BillStock.Request.ask(BillStock.Way.OUT, now = 0L)
+        assertNull(BillStock.Request.take(now = 16 * 60_000L))
+    }
+
     @Test fun summaryLinesAreNotItems() {
         assertTrue(BillStock.lines(listOf(BillLineItem("12345", r("10"))), shop).isEmpty())
     }

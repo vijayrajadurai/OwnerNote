@@ -16,6 +16,19 @@ import java.util.Locale
  */
 object BillStock {
 
+    /** Which way a bill's items move the stock: in (a purchase bill) or out (a sales bill). */
+    enum class Way { IN, OUT }
+
+    /**
+     * What the owner asked when Kai opened the scanner ("intha bill la irukura stock ah add pannu" → IN, "… kammi pannu" →
+     * OUT; "bill scan pannu" → null: by the bill — purchase in, sale out). Read once by the scan that follows, within 15 minutes.
+     */
+    object Request {
+        @Volatile private var asked: Pair<Way?, Long>? = null
+        fun ask(way: Way?, now: Long = System.currentTimeMillis()) { asked = way to now }
+        fun take(now: Long = System.currentTimeMillis()): Way? = asked?.takeIf { now - it.second in 0..15 * 60_000L }?.first.also { asked = null }
+    }
+
     enum class Problem {
         /** No product of the shop has this name — added to stock only once the owner picks / creates it in Inventory. */
         NO_PRODUCT,
