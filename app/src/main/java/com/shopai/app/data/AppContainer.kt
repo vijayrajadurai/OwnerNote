@@ -218,6 +218,9 @@ class AppContainer(context: Context) {
     }
 
     /** The phone's one morning alarm + notification. */
+    /** The daily expiry alert, run with the daily reminder check. */
+    val expiryAlerts: com.shopai.app.notifications.ExpiryAlerts by lazy { com.shopai.app.notifications.ExpiryAlerts(appContext, books) }
+
     val morningAlarms: com.shopai.app.notifications.MorningWorkAlarms by lazy {
         com.shopai.app.notifications.MorningWorkAlarms(appContext)
     }

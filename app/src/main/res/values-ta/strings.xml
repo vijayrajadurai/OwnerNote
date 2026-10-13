@@ -1450,4 +1450,5 @@ NewonX — Owner Note. ஆப்பில் உதவி & ஆதரவு.]]><
     <string name="bill_stock_qty">அளவு (%1$s)</string>
     <string name="bill_stock_moved">%1$d item stock மாறிடுச்சு.</string>
     <string name="bill_stock_failed">இதுக்கு stock மாறல: %1$s</string>
+    <string name="expiry_notification_channel">காலாவதி அறிவிப்புகள்</string>
 </resources>
