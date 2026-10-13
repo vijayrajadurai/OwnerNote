@@ -68,6 +68,9 @@ class KaiInventoryChatTest {
         var failCreate = false
 
         fun item(name: String) = items.single { it.name.equals(name, true) }
+        /** Batches with expiry (medical shop): what [expiring] reads. */
+        val batches = mutableListOf<com.shopai.app.brain.tools.BatchFact>()
+        override suspend fun expiring(until: java.time.LocalDate) = batches.filter { !it.expiry.isAfter(until) && it.qty.signum() > 0 }
 
         override suspend fun products() = items.map { ProductRef(it.id, it.name, it.unit, it.stock, it.conversions, it.purchase, it.selling, it.minimum, it.category) }
         override suspend fun parties(name: String) = parties.filter { it.name.contains(name, true) }

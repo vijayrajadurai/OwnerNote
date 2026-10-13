@@ -18,6 +18,9 @@ data class StockFact(
     val reorderAt: BigDecimal? = null,
 )
 
+/** One batch of a product with its expiry (medicines, food): what the books' batch records say. */
+data class BatchFact(val product: String, val batchNo: String, val expiry: java.time.LocalDate, val qty: BigDecimal, val unit: String)
+
 data class ProductSalesFact(val name: String, val qty: BigDecimal, val value: BigDecimal)
 
 /** A customer or supplier in the books. [balance]: what they owe me (customer) / what I owe them (supplier). */
@@ -161,6 +164,8 @@ interface KaiTools {
     /** [product] null = every product with stock. */
     suspend fun stock(product: String?): List<StockFact>? = null
     suspend fun lowStock(): List<StockFact>? = null
+    /** Batches with stock that expire on or before [until] (expired ones too), from the books' batch records; null = unavailable. */
+    suspend fun expiring(until: java.time.LocalDate): List<BatchFact>? = null
     suspend fun topProducts(from: LocalDate, to: LocalDate, limit: Int): List<ProductSalesFact>? = null
     suspend fun parties(name: String): List<PartyMatch>? = null
 
