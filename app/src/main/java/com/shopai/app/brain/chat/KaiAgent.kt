@@ -1133,7 +1133,8 @@ class KaiAgent(
             val productNames = runCatching { tools.products()?.map { it.name } }.getOrNull().orEmpty()
             // ("எம் 8" — a letter said before a number — is the size M8, as typed.)
             com.shopai.app.brain.tools.KaiSpokenWords.code(com.shopai.app.brain.tools.KaiSpokenWords.withNames(com.shopai.app.brain.tools.KaiSpokenWords.normalize(
-                com.shopai.app.brain.tools.KaiProductSound.withProducts(tamilProductCase(productCase(raw.trim(), productNames), productNames, people), productNames, people)), people + productNames))
+                com.shopai.app.brain.tools.KaiProductSound.withProducts(tamilProductCase(productCase(raw.trim(), productNames), productNames, people), productNames, people)), people + productNames),
+                productNames.flatMap { it.uppercase().split(Regex("""[\s-]+""")) }.filter { t -> t.any(Char::isLetter) && t.any(Char::isDigit) }.toSet())
         }
         // "first ketta aal evlo tharanum", "munnadi ketta aal": the person this conversation was about, by name.
         // "mudhal aal ku call pannu": the person at that place in the list just shown.
