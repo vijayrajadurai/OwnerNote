@@ -165,6 +165,9 @@ object KaiStock {
         .replace(Regex("""(?<![\p{L}\d.])(\d+(?:\.\d+)?)(inch|inches|mm|cm|ft|feet|sqmm)(?![\p{L}])"""), "$1 $2")
         .replace(Regex("""\s+"""), " ").trim() + " "
 
+    /** [text] as product names are compared: a size however written or said, one way ("16A" = "16 amp", "half inch" = "0.5 inch"). */
+    fun sizeKey(text: String): String = lowerOf(KaiSpokenWords.normalize(text))
+
     /**
      * A size however it is written or said, one way (owner's hardware stock master, 13 Oct 2026): "16A" / "16 amp" / "16 amps",
      * "1/2 inch" / "half inch" / "arai inch", "3/4" / "mukkal", "1 1/4" / "onnekaal" = 1.25, "1 1/2" / "onnara" = 1.5, "1 L" /

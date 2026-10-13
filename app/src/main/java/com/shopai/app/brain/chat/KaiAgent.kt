@@ -3503,7 +3503,8 @@ class KaiAgent(
 
     /** The shop's products whose name has every word of [name] ("Plywood" → Plywood 12mm, Plywood 18mm; "paint" → Emulsion Paint …). */
     private fun productsNamed(name: String, products: List<com.shopai.app.brain.tools.ProductRef>): List<com.shopai.app.brain.tools.ProductRef> {
-        val words = KaiPrivateMemory.normalize(name).split(' ').filter { w -> w.length >= 3 && w.none(Char::isDigit) && com.shopai.app.brain.tools.KaiStock.unitOf(w) == null }
+        // Every word of the name said counts — "GI elbow" is not PVC elbow, "FR wire" not Wire nail, "Cat6 cable" not Cable tie.
+        val words = KaiPrivateMemory.normalize(name).split(' ').filter { w -> w.length >= 2 && w.any(Char::isLetter) && com.shopai.app.brain.tools.KaiStock.unitOf(w) == null }
         if (words.isEmpty()) return emptyList()
         return products.filter { p -> KaiPrivateMemory.normalize(p.name).split(' ').let { pw -> words.all { it in pw } } }
     }
@@ -3517,9 +3518,9 @@ class KaiAgent(
         val found = productsNamed(name, products)
         if (found.size == 1) return withProduct(line, name, found.single(), lang)
         if (found.size < 2) return null
-        productChoice = ProductChoice(found.take(6), line, name, conversationState.conversationTurn, lang)
+        productChoice = ProductChoice(found.take(8), line, name, conversationState.conversationTurn, lang)
         val n = name.trim().lowercase(Locale.ROOT)
-        val list = found.take(6).map { it.name }
+        val list = found.take(8).map { it.name }
         return say(lang, KaiMood.CLARIFY, "which product: $n",
             ta = "எந்த $n ஓனர்? ${list.joinToString("-ஆ, ")}-ஆ?",
             tl = "Endha $n Owner? ${list.joinToString("-aa, ")}-aa?",
@@ -3550,6 +3551,10 @@ class KaiAgent(
             val own = KaiPrivateMemory.normalize(p.name).replace(Regex("""(\d)\s*(mm|cm|inch|ft)\b"""), "$1$2").split(' ').filter { it !in asked }
             own.isNotEmpty() && own.all { w -> answer.contains(" $w ") }
         }.singleOrNull()
+            // A size however said ("16A" / "16 amp", "half inch" / "1/2 inch"): the one candidate whose size it is.
+            ?: com.shopai.app.brain.tools.KaiStock.sizeKey(said).trim().takeIf { it.any(Char::isDigit) }?.let { k ->
+                c.candidates.filter { p -> com.shopai.app.brain.tools.KaiStock.sizeKey(p.name).trimEnd().endsWith(" $k") }.singleOrNull()
+            }
             ?: com.shopai.app.brain.tools.KaiStock.productNamedIn(said, c.candidates)
             ?: c.candidates.getOrNull(0)?.takeIf { firstWord.containsMatchIn(said) }
             ?: c.candidates.getOrNull(1)?.takeIf { secondWord.containsMatchIn(said) }

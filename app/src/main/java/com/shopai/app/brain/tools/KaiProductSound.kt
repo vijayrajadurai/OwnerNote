@@ -44,7 +44,9 @@ object KaiProductSound {
         // picks the product (KaiStock), or Kai asks which.
         val sizeless = products.mapNotNull { p ->
             val ws = p.name.split(Regex("""\s+"""))
-            ws.filterNot { w -> w.any(Char::isDigit) }.takeIf { it.isNotEmpty() && it.size < ws.size }?.joinToString(" ")
+            // "Braided hose 1/2 inch" → "Braided hose" (the size and its unit both go); "1-way switch 6A" → "switch".
+            val cut = ws.indexOfFirst { w -> w.any(Char::isDigit) }
+            (if (cut > 0) ws.take(cut) else ws.filterNot { w -> w.any(Char::isDigit) }).takeIf { it.isNotEmpty() && it.size < ws.size }?.joinToString(" ")
         // ("டோலோ 650" is Dolo 650 — a short name too, then heard only right before its quantity, as short names are.)
         }.distinct().filter { b -> products.none { it.name.equals(b, ignoreCase = true) } && b.count(Char::isLetter) >= 3 }.mapNotNull { b ->
             val key = NameSound.key(spoken(b)).takeIf { it.isNotEmpty() } ?: return@mapNotNull null
