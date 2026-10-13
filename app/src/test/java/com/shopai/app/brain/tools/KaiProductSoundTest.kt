@@ -53,6 +53,29 @@ class KaiProductSoundTest {
         assertTrue(h("சுகர் 5 கிலோ").contains("Sugar") && !h("சுகர் 5 கிலோ").contains("Switch"))
     }
 
+    /**
+     * Medical shop names as the mic writes them (owner, 13 Oct 2026): "Syringe" / "Bandage" (a final ge is a j), "Ointment" (its t
+     * isn't heard, the oi written with ய), "Eye Drops" (eye = ai) — and what kind of product a spoken name is, as typed.
+     */
+    @Test fun medicalNamesSaidIntoTheMic() {
+        val shop3 = listOf("Syringe", "Cotton Bandage", "Betadine Ointment", "Eye Drops", "Surgical Gloves", "Benadryl Syrup")
+        fun h(mic: String) = KaiSpokenWords.normalize(KaiProductSound.withProducts(mic, shop3, people))
+        for ((mic, product) in listOf("சிரிஞ்ச் 100 ஆட் பண்ணு" to "Syringe", "சிரிஞ்ச் எவ்வளவு ஸ்டாக் இருக்கு" to "Syringe",
+                "காட்டன் பேண்டேஜ் 10 ரோல்" to "Cotton Bandage", "பீட்டாடின் ஆயின்மென்ட் 5 டியூப்" to "Betadine Ointment",
+                "ஐ டிராப்ஸ் எவ்வளவு ஸ்டாக் இருக்கு" to "Eye Drops", "சர்ஜிக்கல் கிளவுஸ் 2 பாக்ஸ்" to "Surgical Gloves")) {
+            val got = h(mic)
+            assertTrue("$mic → $got", got.contains(product))
+        }
+        val inv = com.shopai.app.brain.tools.KaiInventory
+        for (name in listOf("பெனட்ரில் சிரப்", "பீட்டாடின் ஆயின்மென்ட்", "காட்டன் பேண்டேஜ்", "இன்சுலின் இன்ஜெக்ஷன்", "சர்ஜிக்கல் கிளவுஸ்", "ஐ டிராப்ஸ்"))
+            assertEquals(name, com.shopai.app.brain.tools.ProductKind.PHARMACY, inv.kindOf(name, null))
+        // Sounding like a word of another kind is not enough: syrup is not "cheruppu" (footwear) or "surf"; gloves is not glass.
+        assertTrue(KaiProductSound.wordGap("சிரப்", "surf") == null)
+        assertTrue(KaiProductSound.wordGap("கிளவுஸ்", "gloves")!! < KaiProductSound.wordGap("கிளவுஸ்", "glass")!!)
+        // Not a medicine word at all: still a grocery item.
+        assertEquals(com.shopai.app.brain.tools.ProductKind.GROCERY, inv.kindOf("பாசி பருப்பு", "KG"))
+    }
+
     @Test fun productNamesSaidIntoTheMic() {
         val said = mapOf(
             "பிரிட்டானியா பிஸ்கட்" to "Britannia Biscuit", "குட் டே" to "Good Day", "பார்லே ஜி" to "Parle G", "சன்ஃபீஸ்ட் மேரி" to "Sunfeast Marie",

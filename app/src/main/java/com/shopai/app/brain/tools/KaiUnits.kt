@@ -64,6 +64,8 @@ object KaiUnits {
         "DOZEN" to "PCS" -> BigDecimal(12)
         // A sheet / board of a product counted in pieces is one piece ("Laminate sheet 5" for Laminate kept in pieces).
         "SHEET" to "PCS", "BOARD" to "PCS" -> BigDecimal.ONE
+        // "Betadine 5 tube" for an ointment kept in tubes: a tube said is read as a piece (toothpaste) — one piece is one tube.
+        "PCS" to "TUBE" -> BigDecimal.ONE
         // A quintal is 100 kg and a tonne 1,000 kg everywhere; a load, a length, a bag or a tin is not — Kai asks for those.
         "QUINTAL" to "KG" -> BigDecimal(100)
         "TONNE" to "KG" -> BigDecimal(1000)
