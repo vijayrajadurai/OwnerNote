@@ -1492,4 +1492,17 @@ NewonX — Owner Note. Use Help & Support in the app.]]></string>
     <string name="morning_notification_failed">Couldn\'t schedule the morning notification. Please try again.</string>
     <string name="morning_notification_open_settings">Open notification settings</string>
     <string name="morning_notification_signed_out">Sign in to use the morning notification.</string>
+    <!-- A scanned bill's items: stock in (supplier bill) / stock out (customer bill), moved only when the bill is saved. -->
+    <string name="bill_stock_title_in">Stock in from this bill</string>
+    <string name="bill_stock_title_out">Stock out (sold on this bill)</string>
+    <string name="bill_stock_change">Stock %1$s → %2$s %3$s</string>
+    <string name="bill_stock_short">Only %1$s %2$s in stock — check the quantity</string>
+    <string name="bill_stock_no_product">Not in your inventory — stock won\'t change. Add it in Inventory first.</string>
+    <string name="bill_stock_no_qty">Quantity not read — tick and type it in %1$s</string>
+    <string name="bill_stock_no_unit">No unit on the bill — check the quantity is in %1$s, then tick</string>
+    <string name="bill_stock_unknown_unit">%1$s isn\'t a unit of this product — tick and type the quantity in %2$s</string>
+    <string name="bill_stock_not_ticked">Not added to stock</string>
+    <string name="bill_stock_qty">Quantity (%1$s)</string>
+    <string name="bill_stock_moved">Stock updated for %1$d item(s).</string>
+    <string name="bill_stock_failed">Stock not changed for: %1$s</string>
 </resources>

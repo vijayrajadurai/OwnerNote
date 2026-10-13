@@ -1437,4 +1437,17 @@ NewonX — Owner Note. ஆப்பில் உதவி & ஆதரவு.]]><
     <string name="morning_notification_failed">காலை அறிவிப்பை set பண்ண முடியல. மறுபடியும் முயற்சி பண்ணுங்க.</string>
     <string name="morning_notification_open_settings">Notification settings திற</string>
     <string name="morning_notification_signed_out">காலை அறிவிப்புக்கு login பண்ணுங்க.</string>
+    <!-- ஸ்கேன் பில் items: supplier பில் → stock சேரும், customer பில் → stock குறையும் (பில் சேமிக்கும் போது மட்டும்). -->
+    <string name="bill_stock_title_in">இந்த பில்லில் இருந்து stock சேரும்</string>
+    <string name="bill_stock_title_out">இந்த பில்லில் வித்த stock குறையும்</string>
+    <string name="bill_stock_change">Stock %1$s → %2$s %3$s</string>
+    <string name="bill_stock_short">Stock-ல %1$s %2$s தான் இருக்கு — அளவை சரிபாருங்க</string>
+    <string name="bill_stock_no_product">Inventory-ல இல்ல — stock மாறாது. முதல்ல Inventory-ல சேருங்க.</string>
+    <string name="bill_stock_no_qty">அளவு படிக்கல — tick பண்ணி %1$s-ல போடுங்க</string>
+    <string name="bill_stock_no_unit">பில்லில் unit இல்ல — அளவு %1$s-ல தானா-னு பாத்து tick பண்ணுங்க</string>
+    <string name="bill_stock_unknown_unit">%1$s இந்த product-ஓட unit இல்ல — tick பண்ணி %2$s-ல அளவு போடுங்க</string>
+    <string name="bill_stock_not_ticked">Stock-ல சேர்க்கல</string>
+    <string name="bill_stock_qty">அளவு (%1$s)</string>
+    <string name="bill_stock_moved">%1$d item stock மாறிடுச்சு.</string>
+    <string name="bill_stock_failed">இதுக்கு stock மாறல: %1$s</string>
 </resources>

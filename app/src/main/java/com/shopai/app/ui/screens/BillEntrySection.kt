@@ -1,9 +1,11 @@
 package com.shopai.app.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -27,6 +29,7 @@ import com.shopai.app.ui.components.TransactionSaveType
 import com.shopai.app.ui.theme.Danger
 import com.shopai.app.ui.theme.ShopAiThemeColors
 import com.shopai.app.util.BillNotesFormatter
+import com.shopai.app.util.BillStock
 import com.shopai.app.util.BillTextParser
 import com.shopai.app.util.ExtractedBill
 import com.shopai.app.util.exceedsMaxLedgerAmount
@@ -47,6 +50,22 @@ internal fun looksGarbled(name: String): Boolean {
     val chars = name.filter { !it.isWhitespace() }
     if (chars.count(Char::isLetter) < 3) return true
     return chars.count(Char::isLetter).toDouble() / chars.length < 0.7
+}
+
+/**
+ * One item line of a scanned bill on the review screen. Ticked: it moves the stock of [BillStock.Line.product] by [qty]
+ * (in the product's unit) when the bill is saved — up for a supplier bill, down for a customer bill. Only lines whose
+ * product and quantity are sure start ticked; the owner checks the rest.
+ */
+@Stable
+class BillStockRow(val line: BillStock.Line) {
+    var include by mutableStateOf(line.sure)
+    var qty by mutableStateOf(
+        (line.qty ?: line.billQty?.takeIf { line.problem == BillStock.Problem.NO_UNIT })?.stripTrailingZeros()?.toPlainString().orEmpty(),
+    )
+    val parsedQty: BigDecimal? get() = qty.replace(",", "").toBigDecimalOrNull()?.takeIf { it.signum() > 0 }
+    /** Ticked and ready: a product and a quantity. */
+    val moves: Boolean get() = include && line.product != null && parsedQty != null
 }
 
 /**
@@ -96,6 +115,17 @@ class BillEntryState {
     /** A name read by the server, not on the phone: offered, never filled in by itself. */
     var shopSuggestion by mutableStateOf<String?>(null)
         private set
+    /** The bill's item lines matched to the shop's products: the stock they move when the bill is saved. */
+    var stockRows by mutableStateOf<List<BillStockRow>>(emptyList())
+        private set
+
+    fun setStockLines(lines: List<BillStock.Line>) {
+        stockRows = lines.map { BillStockRow(it) }
+    }
+
+    /** What the save moves: each ticked product and its quantity in the product's unit. */
+    val stockToMove: List<Pair<com.shopai.app.brain.tools.ProductRef, BigDecimal>>
+        get() = stockRows.filter { it.moves }.map { it.line.product!! to it.parsedQty!! }
 
     /** The owner checked [field] (confirmed it, or typed it). */
     fun verified(field: BillField) {
@@ -163,7 +193,9 @@ class BillEntryState {
             parsedPaid != null &&
             !paidTooMuch &&
             // Nothing uncertain is saved without the owner's check.
-            toVerify.isEmpty()
+            toVerify.isEmpty() &&
+            // A ticked stock line needs its quantity.
+            stockRows.none { it.include && it.line.product != null && it.parsedQty == null }
 
     fun startManual() {
         reset()
@@ -189,6 +221,7 @@ class BillEntryState {
         toVerify = emptySet()
         totalSuggestion = null
         shopSuggestion = null
+        stockRows = emptyList()
         visible = false
     }
 
@@ -453,6 +486,18 @@ fun BillEntrySection(
                 modifier = Modifier.padding(top = 4.dp),
             )
         }
+
+        // The items on the bill: supplier bill → stock in, customer bill → stock out (on save, never before).
+        if (state.stockRows.isNotEmpty()) {
+            Text(
+                stringResource(if (isSupplier) R.string.bill_stock_title_in else R.string.bill_stock_title_out),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
+                color = ShopAiThemeColors.primary,
+                modifier = Modifier.padding(top = 12.dp),
+            )
+            state.stockRows.forEach { row -> BillStockRowView(row, isSupplier) }
+        }
     }
 
     if (state.toVerify.isNotEmpty()) {
@@ -489,5 +534,50 @@ private fun VerifyNote(state: BillEntryState, field: BillField) {
         TextButton(onClick = { state.verified(field) }) {
             Text(stringResource(R.string.bill_verify_ok), fontWeight = FontWeight.SemiBold)
         }
+    }
+}
+
+/** One bill item: ticked → its product's stock moves by the quantity on save. Shows the stock before → after. */
+@Composable
+private fun BillStockRowView(row: BillStockRow, isSupplier: Boolean) {
+    val product = row.line.product
+    fun plain(q: BigDecimal) = q.stripTrailingZeros().toPlainString()
+    Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
+        Checkbox(checked = row.include && product != null, onCheckedChange = { row.include = it }, enabled = product != null)
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                if (product != null) "${row.line.itemName} → ${product.name}" else row.line.itemName,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            val q = row.parsedQty
+            val note = when {
+                product == null -> stringResource(R.string.bill_stock_no_product)
+                row.include && q != null -> {
+                    val after = if (isSupplier) product.stock + q else product.stock - q
+                    if (!isSupplier && after.signum() < 0) stringResource(R.string.bill_stock_short, plain(product.stock), product.unit)
+                    else stringResource(R.string.bill_stock_change, plain(product.stock), plain(after), product.unit)
+                }
+                row.line.problem == BillStock.Problem.NO_QUANTITY -> stringResource(R.string.bill_stock_no_qty, product.unit)
+                row.line.problem == BillStock.Problem.NO_UNIT -> stringResource(R.string.bill_stock_no_unit, product.unit)
+                row.line.problem == BillStock.Problem.UNKNOWN_UNIT -> stringResource(R.string.bill_stock_unknown_unit, row.line.billUnit.orEmpty(), product.unit)
+                else -> stringResource(R.string.bill_stock_not_ticked)
+            }
+            Text(
+                note,
+                style = MaterialTheme.typography.bodySmall,
+                color = if (product == null || (row.include && q == null)) Danger else ShopAiThemeColors.onSurfaceVariant,
+            )
+        }
+    }
+    if (product != null && row.include) {
+        ShopTextField(
+            stringResource(R.string.bill_stock_qty, product.unit),
+            row.qty,
+            { row.qty = it.filter { ch -> ch.isDigit() || ch == '.' } },
+            placeholder = "0",
+            error = if (row.parsedQty == null) stringResource(R.string.bill_amount_invalid) else null,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        )
     }
 }
