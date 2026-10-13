@@ -36,6 +36,15 @@ object KaiProductSound {
                 Product(n, key, loose(key), saidWords(n), spoken(n).first() in "aeiou")
             }
         if (products.isEmpty()) return text
+        // "பிளைவுட் 12mm" for Plywood 12mm / Plywood 18mm: the name without its size is heard too ("Plywood"); the size said after it
+        // picks the product (KaiStock), or Kai asks which.
+        val sizeless = products.mapNotNull { p ->
+            val ws = p.name.split(Regex("""\s+"""))
+            ws.filterNot { w -> w.any(Char::isDigit) }.takeIf { it.isNotEmpty() && it.size < ws.size }?.joinToString(" ")
+        }.distinct().filter { b -> products.none { it.name.equals(b, ignoreCase = true) } && b.count(Char::isLetter) >= 5 }.mapNotNull { b ->
+            val key = NameSound.key(spoken(b)).takeIf { it.isNotEmpty() } ?: return@mapNotNull null
+            Product(b, key, loose(key), saidWords(b), spoken(b).first() in "aeiou")
+        }
         // Goods by the name the owner says (KaiFeed): "கதவு கீல்" written as it is in the list, or heard like "kathavu keel".
         val names = products.map { it.name }
         val goods = KaiFeed.goodsNames.flatMap { (ks, e) -> ks.map { k -> k to ks + e } }.groupBy({ it.first }, { it.second }).mapValues { (_, v) -> v.flatten().distinct() }
@@ -66,7 +75,7 @@ object KaiProductSound {
                     goodsWritten[fold(n.groupValues[1] + said)]?.let { return@firstNotNullOfOrNull Triple(span, it, copied + n.range.first) }
                 }
                 val known = run.all { KaiSpokenWords.normalize(it.value) != it.value }
-                match(said, span, products + heardGoods, parts, known, beforeQuantity(text, run.last().range.last + 1))
+                match(said, span, products + heardGoods + sizeless, parts, known, beforeQuantity(text, run.last().range.last + 1))
                     ?.let { Triple(span, it, run.first().range.first) }
             }
             if (found == null) { i++; continue }
@@ -91,7 +100,7 @@ object KaiProductSound {
     /** The one product a Tamil phrase sounds like, or null (none, too little to tell, or two alike). */
     private fun match(said: String, span: Int, products: List<Product>, parts: List<Word>, known: Boolean, beforeQty: Boolean): String? {
         // The mic writes an English "w" before a vowel as "ஒய" ("ஒயர்" = Wire, "ஒயிட்" = White): heard as "வ".
-        val phrase = said.replace(Regex("""(?<![஀-௿])ஒய"""), "வய")
+        val phrase = said.replace(Regex("""(?<![஀-௿])ஒய"""), "வய").replace("ட்ச", "ச")
         val key = NameSound.key(phrase.replace(" ", ""))
         if (key.isEmpty()) return null
         val l = loose(key)
@@ -148,6 +157,8 @@ object KaiProductSound {
             w.length == 1 && w[0].isLetter() -> letterNames[w[0].lowercaseChar()] ?: w
             w.length in 2..6 && w.all { it in 'A'..'Z' } -> w.lowercase().map { letterNames[it] ?: "$it" }.joinToString("")
             else -> w.lowercase()
+                // "Cough" = kof, "Laugh" = laf; "Switch" / "Watch": the t of "tch" isn't heard (the mic writes "ஸ்விட்ச்" / "ஸ்விச்").
+                .replace(Regex("""(?<=[ctrnl])ough$"""), "of").replace(Regex("""augh$"""), "af").replace("tch", "ch")
                 .replace(Regex("""^kn"""), "n").replace(Regex("""^wr"""), "r").replace("ght", "t").replace("gh", "")
                 .replace("ture", "chur").replace("x", "ks").replace(Regex("""c(?=[eiy])"""), "s")
         }

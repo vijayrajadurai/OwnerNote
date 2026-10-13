@@ -105,6 +105,13 @@ object KaiStock {
         "tablet" to "TABLET", "tablets" to "TABLET", "tab" to "TABLET", "tabs" to "TABLET", "capsule" to "TABLET", "capsules" to "TABLET",
         "maathirai" to "TABLET", "mathirai" to "TABLET", "மாத்திரை" to "TABLET", "கிலோ" to "KG", "பாக்கெட்" to "PACK", "meter" to "METER", "metre" to "METER", "ஜோடி" to "PAIR", "can" to "CAN", "cans" to "CAN",
         "gram" to "GRAM", "grams" to "GRAM", "gm" to "GRAM", "gms" to "GRAM", "g" to "GRAM", "ml" to "ML", "dozens" to "DOZEN",
+        // The owner's 10-category guide (13 Oct 2026): rice mandi, building materials, plywood, medical, spare parts.
+        "quintal" to "QUINTAL", "quintals" to "QUINTAL", "kuintal" to "QUINTAL", "qtl" to "QUINTAL", "குவிண்டால்" to "QUINTAL",
+        "tonne" to "TONNE", "tonnes" to "TONNE", "ton" to "TONNE", "tons" to "TONNE", "டன்" to "TONNE",
+        "load" to "LOAD", "loads" to "LOAD", "லோடு" to "LOAD", "லோட்" to "LOAD", "cft" to "CFT", "sqft" to "SQFT", "sft" to "SQFT",
+        "length" to "LENGTH", "lengths" to "LENGTH", "neelam" to "LENGTH", "நீளம்" to "LENGTH", "sheet" to "SHEET", "sheets" to "SHEET",
+        "ஷீட்" to "SHEET", "board" to "BOARD", "boards" to "BOARD", "vial" to "VIAL", "vials" to "VIAL", "வயல்" to "VIAL",
+        "kit" to "KIT", "kits" to "KIT", "கிட்" to "KIT", "feet" to "FEET", "ft" to "FEET", "adi" to "FEET", "அடி" to "FEET",
     ) + KaiFeed.units
 
     private val reasons = listOf(
@@ -151,7 +158,32 @@ object KaiStock {
 
     private val stockContext = Regex("""(?i)(?<![\p{L}])(stock|inventory|iruppu|product)(?![\p{L}])""")
 
-    private fun lowerOf(text: String) = " " + text.lowercase(Locale.ROOT).replace(Regex("""[!,;.]"""), " ").replace(Regex("""\s+"""), " ").trim() + " "
+    // "Plywood 18mm" and "plywood 18 mm" are one name: a size / thickness is always written apart, in the text and in the names.
+    private fun lowerOf(text: String) = " " + text.lowercase(Locale.ROOT).replace(Regex("""[!,;.]"""), " ")
+        .replace(Regex("""(?<![\p{L}\d.])(\d+(?:\.\d+)?)(inch|inches|mm|cm|ft|feet|sqmm)(?![\p{L}])"""), "$1 $2")
+        .replace(Regex("""\s+"""), " ").trim() + " "
+
+    /** A size in a product name: "12 mm", "4 inch" (after [lowerOf]). */
+    private val sizeInAName = Regex("""\d+(?:\.\d+)? (?:inch|inches|mm|cm|ft|feet|sqmm)""")
+
+    /**
+     * "12 mm plywood 5 sheet" for "Plywood 12mm": a product whose name has a size, said with the size first — every word of the name
+     * is there, the size as said. The words put in the name's own order at the front, so the rest reads as for "Plywood 12mm 5 sheet".
+     */
+    private fun inNameOrder(lower: String, products: List<ProductRef>): String {
+        val hit = products.filter { it.name.isNotBlank() }.mapNotNull { p ->
+            val name = lowerOf(p.name).trim()
+            val sizes = sizeInAName.findAll(name).map { it.value }.toList()
+            if (sizes.isEmpty()) return@mapNotNull null
+            val words = sizeInAName.replace(name, " ").split(' ').filter { it.isNotEmpty() }
+            if (words.isEmpty() || Regex("""(?<![\p{L}\p{N}])${Regex.escape(name)}(?![\p{L}\p{N}])""").containsMatchIn(lower)) return@mapNotNull null
+            val all = (sizes + words).all { w -> Regex("""(?<![\p{L}\p{N}.])${Regex.escape(w)}(?![\p{L}\p{N}])""").containsMatchIn(lower) }
+            if (all) p to (sizes + words) else null
+        }.maxByOrNull { it.first.name.length } ?: return lower
+        var rest = lower
+        for (w in hit.second) rest = rest.replaceFirst(Regex("""(?<![\p{L}\p{N}.])${Regex.escape(w)}(?![\p{L}\p{N}])"""), " ")
+        return " " + lowerOf(hit.first.name).trim() + " " + rest.replace(Regex("""\s+"""), " ").trim() + " "
+    }
 
     private fun has(lower: String, list: List<String>) = list.any { w -> Regex("""(?<![\p{L}])${Regex.escape(w)}(?![\p{L}])""").containsMatchIn(lower) }
 
@@ -311,7 +343,7 @@ object KaiStock {
     private val tamilNames get() = KaiFeed.productNames
 
     /** The product named in [text] — exactly, by its Tamil name, by sound, or by the one name it starts — or null. */
-    fun productNamedIn(text: String, products: List<ProductRef>): ProductRef? = productIn(lowerOf(KaiSpokenWords.normalize(text)), products)
+    fun productNamedIn(text: String, products: List<ProductRef>): ProductRef? = productIn(inNameOrder(lowerOf(KaiSpokenWords.normalize(text)), products), products)
 
     /** Two spellings of one word ("bhaniyan" / "baniyan", "kolgate" / "colgate"): the same consonant skeleton, three or more of them. */
     private fun soundsSame(a: String, b: String): Boolean =
@@ -401,7 +433,7 @@ object KaiStock {
 
     fun understand(text: String, products: List<ProductRef>): StockRequest? {
         // "5inch tape" is said and written "5 inch tape": the same product.
-        val lower = lowerOf(text).replace(Regex("""(?<![\p{L}\d.])(\d+(?:\.\d+)?)(inch|inches|mm|cm|ft|feet|sqmm|watt|watts|volt|volts|amp|amps|hp)(?![\p{L}])"""), "$1 $2")
+        val lower = inNameOrder(lowerOf(text).replace(Regex("""(?<![\p{L}\d.])(\d+(?:\.\d+)?)(inch|inches|mm|cm|ft|feet|sqmm|watt|watts|volt|volts|amp|amps|hp)(?![\p{L}])"""), "$1 $2"), products)
         if (notStock.containsMatchIn(lower) || timeAfterNumber.containsMatchIn(lower)) return null
         val found = productSaid(lower, products)
         val product = found?.first

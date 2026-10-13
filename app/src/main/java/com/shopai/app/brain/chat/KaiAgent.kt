@@ -1240,6 +1240,8 @@ class KaiAgent(
         topicAnswered(said, lang)?.let { return it }
         // The answer to "intha bill-oda stock-a add pannanuma, illa kammi pannanuma?" — before "add pannu" reads as a save.
         if (openPayment == null) billStockAnswered(said, lang)?.let { return it }
+        // The answer to "Endha plywood? Plywood 12mm-aa, Plywood 18mm-aa?": the line said before, for that product.
+        if (openPayment == null) productChoiceAnswered(said, lang)?.let { return it }
         if (openPayment == null) bareAmountAnswered(said, lang)?.let { return it }
         if (openPayment == null) statementAsk(said, lang)?.let { return it }
         if (openPayment == null) care(said, lang)?.let { return it }
@@ -1376,6 +1378,8 @@ class KaiAgent(
         if (plans.isEmpty() && products != null && spoken.none(Char::isDigit)) KaiCommands.movement(spoken)?.let { _ ->
             productIn(spoken, products)?.let { p -> return productMovement(p, lang, now().toLocalDate()) }
         }
+        // "Expiry aagura medicine list kudu": the batches expiring soon (and expired), read-only from the batch records.
+        if (plans.isEmpty() && KaiCommands.asksExpiry(spoken)) return expiryList(spoken, lang, products.orEmpty(), now().toLocalDate())
         // "Stock report", "stock value evlo", "stock-la evlo panam mudangi irukku": the report / the money in stock — not the item list.
         if (plans.isEmpty() && products != null && KaiCommands.asksStockReport(spoken)) return stockReport(lang, now().toLocalDate())
         if (plans.isEmpty() && products != null && KaiCommands.asksStockValue(spoken)) return stockValue(spoken, lang, products)
@@ -3474,6 +3478,67 @@ class KaiAgent(
         return people.any { p -> KaiPrivateMemory.normalize(p).split(' ').firstOrNull()?.takeIf { it.length >= 3 }?.let { it in words } == true }
     }
 
+    /** "Endha plywood?" asked: the products it could be, the line said, the name said, the turn and the language. */
+    private data class ProductChoice(val candidates: List<com.shopai.app.brain.tools.ProductRef>, val line: String, val name: String, val turn: Long, val lang: KaiLang)
+    private var productChoice: ProductChoice? = null
+    private var choiceRerun = false
+
+    /** The shop's products whose name has every word of [name] ("Plywood" → Plywood 12mm, Plywood 18mm; "paint" → Emulsion Paint …). */
+    private fun productsNamed(name: String, products: List<com.shopai.app.brain.tools.ProductRef>): List<com.shopai.app.brain.tools.ProductRef> {
+        val words = KaiPrivateMemory.normalize(name).split(' ').filter { w -> w.length >= 3 && w.none(Char::isDigit) && com.shopai.app.brain.tools.KaiStock.unitOf(w) == null }
+        if (words.isEmpty()) return emptyList()
+        return products.filter { p -> KaiPrivateMemory.normalize(p.name).split(' ').let { pw -> words.all { it in pw } } }
+    }
+
+    /**
+     * [name] isn't a product, but is part of the names of some: two or more → Kai asks which one, and the owner's answer ("12mm",
+     * "Emulsion", "first") runs the same line for it; exactly one → the line runs for that product (its draft names it for Confirm).
+     */
+    private suspend fun oneOfMany(name: String, line: String, lang: KaiLang, products: List<com.shopai.app.brain.tools.ProductRef>): KaiTurn? {
+        if (choiceRerun) return null
+        val found = productsNamed(name, products)
+        if (found.size == 1) return withProduct(line, name, found.single(), lang)
+        if (found.size < 2) return null
+        productChoice = ProductChoice(found.take(6), line, name, conversationState.conversationTurn, lang)
+        val n = name.trim().lowercase(Locale.ROOT)
+        val list = found.take(6).map { it.name }
+        return say(lang, KaiMood.CLARIFY, "which product: $n",
+            ta = "எந்த $n ஓனர்? ${list.joinToString("-ஆ, ")}-ஆ?",
+            tl = "Endha $n Owner? ${list.joinToString("-aa, ")}-aa?",
+            en = "Which $n, Owner? ${list.joinToString(", ", postfix = "?")}")
+    }
+
+    /** The owner's line with the product's full name in place of the name said, read again (once). */
+    private suspend fun withProduct(line: String, name: String, product: com.shopai.app.brain.tools.ProductRef, lang: KaiLang): KaiTurn? {
+        val m = Regex("""(?i)(?<![\p{L}])${Regex.escape(name.trim())}(?![\p{L}])""").find(line) ?: return null
+        val again = line.replaceRange(m.range, product.name)
+        val keep = forcedLang
+        forcedLang = lang
+        choiceRerun = true
+        return try { answerOwner(again) } finally { forcedLang = keep; choiceRerun = false }
+    }
+
+    private val firstWord = Regex("""(?i)(?<![\p{L}])(first|mudhal|mudhala|modhal|onnu|1st|மொதல்|முதல்)(?![\p{L}])""")
+    private val secondWord = Regex("""(?i)(?<![\p{L}])(second|rendavadhu|rendavathu|rendu|2nd|ரெண்டாவது)(?![\p{L}])""")
+
+    private suspend fun productChoiceAnswered(said: String, lang: KaiLang): KaiTurn? {
+        val c = productChoice ?: return null
+        if (conversationState.conversationTurn != c.turn + 1) { productChoice = null; return null }
+        productChoice = null
+        val asked = KaiPrivateMemory.normalize(c.name).split(' ').toSet()
+        val answer = " " + KaiPrivateMemory.normalize(said).replace(Regex("""(\d)\s*(mm|cm|inch|ft)\b"""), "$1$2") + " "
+        // The words that tell them apart ("12mm" of Plywood 12mm, "emulsion" of Emulsion Paint) said in the answer.
+        val picked = c.candidates.filter { p ->
+            val own = KaiPrivateMemory.normalize(p.name).replace(Regex("""(\d)\s*(mm|cm|inch|ft)\b"""), "$1$2").split(' ').filter { it !in asked }
+            own.isNotEmpty() && own.all { w -> answer.contains(" $w ") }
+        }.singleOrNull()
+            ?: com.shopai.app.brain.tools.KaiStock.productNamedIn(said, c.candidates)
+            ?: c.candidates.getOrNull(0)?.takeIf { firstWord.containsMatchIn(said) }
+            ?: c.candidates.getOrNull(1)?.takeIf { secondWord.containsMatchIn(said) }
+            ?: return null
+        return withProduct(c.line, c.name, picked, if (lang == KaiLang.ENGLISH) c.lang else lang)
+    }
+
     /** A name that isn't in the inventory: a nickname of a product (Kai asks which), or a new product (camera / form). */
     private suspend fun unknownProduct(req: com.shopai.app.brain.tools.StockRequest, said: String, lang: KaiLang, products: List<com.shopai.app.brain.tools.ProductRef>): KaiTurn {
         val prefill = StockPrefill(req.spokenName, req.qty, req.unit, said)
@@ -3486,6 +3551,8 @@ class KaiAgent(
                 return if (req.incoming) t.copy(card = t.card?.copy(buttons = t.card.buttons + newOne)) else t
             }
         }
+        // "5 litre paint sale pannu" with Emulsion Paint and Spray Paint: which paint (one only: that one, shown on the draft).
+        oneOfMany(req.spokenName, said, lang, products)?.let { return it }
         if (!req.incoming) {
             tools.log(com.shopai.app.brain.tools.KaiIntents.STOCK_OUT, "inventory", "${req.spokenName}: product not found", ActionStatus.ANSWERED, null, said)
             return KaiTurn(
@@ -3566,6 +3633,8 @@ class KaiAgent(
             lastProduct = product
             return draftParts(product, listOf(com.shopai.app.brain.tools.QtyPart(qty, unit)), true, said, lang)
         }
+        // "Plywood 5 sheet" with Plywood 12mm and Plywood 18mm in the shop: which one — never a new product called "Plywood".
+        oneOfMany(name, text, lang, products)?.let { return it }
         tools.log(com.shopai.app.brain.tools.KaiIntents.STOCK_IN, "kai", "$name: new product by chat", ActionStatus.ANSWERED, null, said)
         return itemStep(newKey(), com.shopai.app.brain.tools.KaiInventory.withDetails(spec, text), said, lang)
     }
@@ -5576,6 +5645,37 @@ class KaiAgent(
             ta = "ஓனர், ${p.name} கடந்த 30 நாள்ல $q வித்தது — $v. விக்கிற ${sold.size} product-ல $n-வது. Stock-ல $left இருக்கு.",
             tl = "Owner, ${p.name} kadandha 30 naal-la $q vithadhu — $v. Vikkura ${sold.size} product-la $n-vadhu. Stock-la $left irukku.",
             en = "Owner, ${p.name} sold $q in the last 30 days — $v, number $n of ${sold.size} products sold. $left in stock.")
+    }
+
+    /**
+     * "Expiry aagura medicine list kudu" (owner's 10-category guide): batches with stock expiring within 30 days, and the ones already
+     * expired, from the books' batch records — read-only; a product named narrows it to that product. Nothing is guessed.
+     */
+    private suspend fun expiryList(text: String, lang: KaiLang, products: List<com.shopai.app.brain.tools.ProductRef>, today: LocalDate): KaiTurn {
+        val all = runCatching { tools.expiring(today.plusDays(30)) }.getOrNull() ?: return unverified(lang, "expiry list")
+        val product = productIn(text, products)
+        val list = (if (product != null) all.filter { it.product.equals(product.name, ignoreCase = true) } else all).sortedBy { it.expiry }
+        tools.log("expiry list", "batch records", "${list.size} batches", ActionStatus.ANSWERED)
+        val inv = com.shopai.app.brain.tools.KaiInventory
+        if (list.isEmpty()) return say(lang, KaiMood.HAPPY, "expiry: none",
+            ta = "ஓனர், அடுத்த 30 நாள்ல காலாவதி ஆகுற batch எதுவும் இல்ல (batch பதிவுகள் படி).",
+            tl = "Owner, adutha 30 naal-la expiry aagura batch edhuvum illa (batch records padi).",
+            en = "Owner, no batch expires in the next 30 days (by your batch records).")
+        val expired = list.count { it.expiry.isBefore(today) }
+        fun whenText(d: LocalDate): String {
+            val days = java.time.temporal.ChronoUnit.DAYS.between(today, d)
+            return when {
+                days < 0 -> pickLang(lang, ta = "${-days} நாள் முன்னாடி expire ஆச்சு", tl = "${-days} naal munnaadi expire aachu", en = "expired ${-days} days ago")
+                days == 0L -> pickLang(lang, ta = "இன்னைக்கு expire", tl = "innaikku expire", en = "expires today")
+                else -> pickLang(lang, ta = "$days நாள்ல", tl = "$days naal-la", en = "in $days days")
+            }
+        }
+        val lines = list.take(15).map { b -> "${b.product} — Batch ${b.batchNo} — ${inv.shown(b.qty, b.unit)} — ${KaiFormat.date(b.expiry, lang, today)} (${whenText(b.expiry)})" }
+        val head = pickLang(lang,
+            ta = "ஓனர், 30 நாளுக்குள் ${list.size} batch காலாவதி ஆகுது" + (if (expired > 0) ", $expired already expire ஆச்சு." else "."),
+            tl = "Owner, 30 naal-kulla ${list.size} batch expiry aagudhu" + (if (expired > 0) ", $expired already expire aachu." else "."),
+            en = "Owner, ${list.size} batch${if (list.size == 1) "" else "es"} expire within 30 days" + (if (expired > 0) ", $expired already expired." else "."))
+        return KaiTurn(ChatReply(head, if (expired > 0) KaiMood.CONCERNED else KaiMood.EXPLAINING, ChatIntent.GENERAL_BUSINESS_QUERY), KaiCard(lines, emptyList()))
     }
 
     /** Each product's money in stock at its purchase price (null price: left out, and named). */

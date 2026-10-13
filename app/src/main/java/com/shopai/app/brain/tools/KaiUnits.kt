@@ -39,6 +39,18 @@ object KaiUnits {
             "L", "LTR", "LITER", "LITRES", "LITRE" -> "LITRE"
             "BOXES", "BOX" -> "BOX"
             "TRAYS", "TRAY" -> "TRAY"
+            // Rice mandi, building materials, plywood, medical, spare parts (owner's 10-category guide, 13 Oct 2026).
+            "QUINTAL", "QUINTALS", "QTL" -> "QUINTAL"
+            "TON", "TONS", "TONNE", "TONNES" -> "TONNE"
+            "LOAD", "LOADS" -> "LOAD"
+            "CFT", "CUFT" -> "CFT"
+            "SQFT", "SFT" -> "SQFT"
+            "LENGTH", "LENGTHS" -> "LENGTH"
+            "SHEET", "SHEETS" -> "SHEET"
+            "VIAL", "VIALS" -> "VIAL"
+            "KIT", "KITS" -> "KIT"
+            "FT", "FEET", "FOOT" -> "FEET"
+            "METRE", "METERS", "METRES", "MTR", "MTRS", "METER" -> "METER"
             else -> it
         }
     }
@@ -50,6 +62,15 @@ object KaiUnits {
         "LITRE" to "ML" -> BigDecimal(1000)
         "ML" to "LITRE" -> BigDecimal("0.001")
         "DOZEN" to "PCS" -> BigDecimal(12)
+        // A sheet / board of a product counted in pieces is one piece ("Laminate sheet 5" for Laminate kept in pieces).
+        "SHEET" to "PCS", "BOARD" to "PCS" -> BigDecimal.ONE
+        // A quintal is 100 kg and a tonne 1,000 kg everywhere; a load, a length, a bag or a tin is not — Kai asks for those.
+        "QUINTAL" to "KG" -> BigDecimal(100)
+        "TONNE" to "KG" -> BigDecimal(1000)
+        "TONNE" to "QUINTAL" -> BigDecimal(10)
+        "KG" to "QUINTAL" -> BigDecimal("0.01")
+        "KG" to "TONNE" -> BigDecimal("0.001")
+        "QUINTAL" to "TONNE" -> BigDecimal("0.1")
         else -> null
     }
 

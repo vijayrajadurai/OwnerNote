@@ -41,6 +41,18 @@ class KaiProductSoundTest {
         assertTrue(h("ஒயர் கட் ஆயிடுச்சு").let { !it.contains("Wire") })
     }
 
+    /** "Switch" / "Watch" (the mic writes "ஸ்விட்ச்" / "வாட்ச்"), "Cough Syrup" ("காஃப் சிரப்" — the gh of cough is an f). */
+    @Test fun tchAndOughSaidIntoTheMic() {
+        val shop2 = listOf("Switch", "Watch", "Cough Syrup", "Socket", "Sugar")
+        fun h(mic: String) = KaiSpokenWords.normalize(KaiProductSound.withProducts(mic, shop2, people))
+        for ((mic, product) in listOf("ஸ்விட்ச் 10 பீஸ்" to "Switch", "ஸ்விட்ச் எவ்வளவு இருக்கு" to "Switch", "வாட்ச் 2 வித்துச்சு" to "Watch",
+                "காஃப் சிரப் 5 பாட்டில்" to "Cough Syrup", "காஃப் சிரப் எவ்வளவு இருக்கு" to "Cough Syrup")) {
+            val got = h(mic)
+            assertTrue("$mic → $got", got.contains(product))
+        }
+        assertTrue(h("சுகர் 5 கிலோ").contains("Sugar") && !h("சுகர் 5 கிலோ").contains("Switch"))
+    }
+
     @Test fun productNamesSaidIntoTheMic() {
         val said = mapOf(
             "பிரிட்டானியா பிஸ்கட்" to "Britannia Biscuit", "குட் டே" to "Good Day", "பார்லே ஜி" to "Parle G", "சன்ஃபீஸ்ட் மேரி" to "Sunfeast Marie",

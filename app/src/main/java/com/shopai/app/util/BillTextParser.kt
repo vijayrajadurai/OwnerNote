@@ -738,7 +738,10 @@ object BillTextParser {
     private val itemUnits = setOf("nos", "no", "pcs", "pc", "kg", "kgs", "g", "gm", "gms", "l", "ltr", "ml", "btl", "pkt", "box", "bag", "bags", "dozen", "doz", "set", "mtr", "m", "unit", "units", "each", "ea",
         // Hardware, plywood, tiles and spare-parts bills (owner, 13 Oct 2026).
         "ltrs", "litre", "litres", "mtrs", "meter", "metre", "sheet", "sheets", "sqft", "sft", "can", "cans", "tin", "roll", "rolls", "pair", "pairs",
-        "bundle", "bundles", "coil", "coils", "bucket", "buckets", "carton", "cartons", "tube", "tubes", "pkts", "boxes", "sets")
+        "bundle", "bundles", "coil", "coils", "bucket", "buckets", "carton", "cartons", "tube", "tubes", "pkts", "boxes", "sets",
+        // Rice mandi, building materials, medical, spare parts (owner's 10-category guide, 13 Oct 2026).
+        "quintal", "quintals", "qtl", "tonne", "tonnes", "ton", "tons", "cft", "strip", "strips", "vial", "vials", "tablet", "tablets", "tab", "tabs",
+        "capsule", "capsules", "sachet", "sachets", "kit", "kits", "load", "loads", "length", "lengths", "board", "boards", "ft", "feet", "bottle", "bottles")
 
     /**
      * Splits a GST table row: the HSN/SAC code leaves the description, and the
@@ -803,7 +806,8 @@ object BillTextParser {
     private fun itemUnitsPattern() = listOf("nos", "no", "pcs", "pc", "kgs", "kg", "gms", "gm", "g", "ltrs", "litres", "litre", "ltr", "ml", "l", "btl", "pkts", "pkt",
         "boxes", "box", "bags", "bag", "dozen", "doz", "sets", "set", "mtrs", "meter", "metre", "mtr", "m", "units", "unit", "each", "ea", "sheets", "sheet",
         "sqft", "sft", "cans", "can", "tin", "rolls", "roll", "pairs", "pair", "bundles", "bundle", "coils", "coil", "buckets", "bucket", "cartons", "carton",
-        "tubes", "tube").joinToString("|")
+        "tubes", "tube", "quintals", "quintal", "qtl", "tonnes", "tonne", "tons", "ton", "cft", "strips", "strip", "vials", "vial", "tablets", "tablet",
+        "tabs", "tab", "capsules", "capsule", "sachets", "sachet", "kits", "kit", "loads", "load", "lengths", "length", "boards", "board", "feet", "ft", "bottles", "bottle").joinToString("|")
 
     private fun tokenAmountOrZero(token: String): BigDecimal? {
         val plain = token.replace(",", "")
