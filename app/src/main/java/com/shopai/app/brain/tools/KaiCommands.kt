@@ -267,8 +267,8 @@ object KaiCommands {
         if (Regex("""\d""").containsMatchIn(t) && Regex("""(?<![\p{L}])(add|vandhuchu|vandhirukku|serthu|sethu|batch\s+no)(?![\p{L}])""").containsMatchIn(t)) return false
         return expiryAsk.containsMatchIn(t)
     }
-    private val expiryWord = Regex("""(?<![\p{L}])(expiry|expire|expired|expiring|expires|exp\s*date|kaalavadhi|kalavadhi|kaalavathi)|காலாவதி|எக்ஸ்பைரி|எக்ஸ்பையர்""")
-    private val expiryAsk = Regex("""(?<![\p{L}])(list|evlo|enna|edhu|ethu|yedhu|endha|entha|yentha|aagura|agura|aagudhu|aaguthu|agudhu|aagum|aaga|pogudhu|poguthu|pora|varudhu|varuthu|kudu|sollu|kaattu|kaatu|which|show|soon|month|maasam|week|vaaram|report|medicine|medicines|marundhu|batch|batches|items?|products?|stock)(?![\p{L}])|ஆகுற|ஆகுது|லிஸ்ட்|மருந்து|எந்த|குடு|சொல்லு""")
+    private val expiryWord = Regex("""(?<![\p{L}])(expiry|expire|expired|expiring|expires|exp\s*date|kaalavadhi|kalavadhi|kaalavathi|best\s*before|use\s*-?\s*by|shelf\s*life|fefo|first\s+expiry)|(endha|entha|yentha|which)\s+batch\s+(first|mudhal|modhal)|காலாவதி|எக்ஸ்பைரி|எக்ஸ்பையர்|எக்ஸ்பைர்""")
+    private val expiryAsk = Regex("""(?<![\p{L}])(list|evlo|enna|edhu|ethu|yedhu|endha|entha|yentha|aagura|agura|aagudhu|aaguthu|agudhu|aagum|aaga|aagapora|agapora|aagappora|pogudhu|poguthu|pora|varudhu|varuthu|kudu|sollu|kaattu|kaatu|which|show|soon|month|maasam|week|vaaram|report|medicine|medicines|marundhu|batch|batches|items?|products?|stock|eppo|eppa|when|date|aach\w*|fefo|first|mudhal|innaikku|naalaikku)(?![\p{L}])|ஆகுற|ஆகுது|ஆகப்போற|லிஸ்ட்|மருந்து|எந்த|குடு|சொல்லு|எப்போ|ஆச்சு|ஸ்டாக்""")
 
     fun asksStockReport(text: String) = stockReport.containsMatchIn(text)
     fun asksStockValue(text: String) = stockMoney.containsMatchIn(text)

@@ -30,6 +30,8 @@ class ReminderAlarmReceiver : BroadcastReceiver() {
                         runCatching { app.container.reminderRepository.listReminders() }.getOrNull()
                     }
                     alarms.notifyDueToday(fresh ?: alarms.cached())
+                    // Stock expiring within a week (or expired), from the batch records: one alert a day, only when there is some.
+                    runCatching { app.container.expiryAlerts.check() }
                 }
                 alarms.markCheckedToday()
                 alarms.ensureScheduled()
