@@ -31,9 +31,13 @@ object KaiProductSound {
     fun withProducts(text: String, productNames: List<String>, people: List<String> = emptyList()): String {
         if (!KaiSpokenWords.hasTamil(text)) return text
         val products = productNames.map { it.trim() }.filter { n -> n.isNotEmpty() && !KaiSpokenWords.hasTamil(n) && n.any(Char::isLetter) }.distinct()
-            .mapNotNull { n ->
-                val key = NameSound.key(spoken(n)).takeIf { it.isNotEmpty() } ?: return@mapNotNull null
-                Product(n, key, loose(key), saidWords(n), spoken(n).first() in "aeiou")
+            .flatMap { n ->
+                // "ENO", "BPL": capitals are said letter by letter ("பிபிஎல்") — or as a word when they read as one ("ஈனோ").
+                val asWord = n.split(Regex("""\s+""")).joinToString(" ") { w -> if (w.length in 3..6 && w.all { it in 'A'..'Z' } && w.any { it in "AEIOU" }) w.lowercase() else w }
+                listOfNotNull(n, asWord.takeIf { it != n }).mapNotNull { said ->
+                    val key = NameSound.key(spoken(said)).takeIf { it.isNotEmpty() } ?: return@mapNotNull null
+                    Product(said, key, loose(key), saidWords(said), spoken(said).first() in "aeiou", n)
+                }
             }
         if (products.isEmpty()) return text
         // "பிளைவுட் 12mm" for Plywood 12mm / Plywood 18mm: the name without its size is heard too ("Plywood"); the size said after it
@@ -41,7 +45,8 @@ object KaiProductSound {
         val sizeless = products.mapNotNull { p ->
             val ws = p.name.split(Regex("""\s+"""))
             ws.filterNot { w -> w.any(Char::isDigit) }.takeIf { it.isNotEmpty() && it.size < ws.size }?.joinToString(" ")
-        }.distinct().filter { b -> products.none { it.name.equals(b, ignoreCase = true) } && b.count(Char::isLetter) >= 5 }.mapNotNull { b ->
+        // ("டோலோ 650" is Dolo 650 — a short name too, then heard only right before its quantity, as short names are.)
+        }.distinct().filter { b -> products.none { it.name.equals(b, ignoreCase = true) } && b.count(Char::isLetter) >= 3 }.mapNotNull { b ->
             val key = NameSound.key(spoken(b)).takeIf { it.isNotEmpty() } ?: return@mapNotNull null
             Product(b, key, loose(key), saidWords(b), spoken(b).first() in "aeiou")
         }
@@ -82,6 +87,10 @@ object KaiProductSound {
             val (span, name, from) = found
             out.append(text, copied, from).append(name)
             copied = words[i + span - 1].range.last + 1
+            // "மாக்ஸ் 500" → "Mox 500": the strength said after the name is the name's own, not a second quantity ("அப்ரைஸ் டி3" → Uprise D3).
+            Regex("""(\d+(?:\.\d+)?)$""").find(name.substringAfterLast(' '))?.value?.let { size ->
+                Regex("""^\s*${Regex.escape(size)}(?!\d)""").find(text.substring(copied))?.let { copied += it.range.last + 1 }
+            }
             i += span
         }
         return if (copied == 0) text else out.append(text, copied, text.length).toString()
@@ -127,8 +136,14 @@ object KaiProductSound {
 
     /** The one product a Tamil phrase sounds like, or null (none, too little to tell, or two alike). */
     private fun match(said: String, span: Int, products: List<Product>, parts: List<Word>, known: Boolean, beforeQty: Boolean): String? {
+        // "ட்ச" is the "tch" of Switch (the t not heard) — or a real "tz" / "dc" (Cetzine, Gudcef): read both ways.
+        return matchSaid(said.replace("ட்ச", "ச"), span, products, parts, known, beforeQty)
+            ?: if (said.contains("ட்ச")) matchSaid(said.replace("ட்ச", "ட்ஸ"), span, products, parts, known, beforeQty) else null
+    }
+
+    private fun matchSaid(said: String, span: Int, products: List<Product>, parts: List<Word>, known: Boolean, beforeQty: Boolean): String? {
         // The mic writes an English "w" before a vowel as "ஒய" ("ஒயர்" = Wire, "ஒயிட்" = White): heard as "வ".
-        val phrase = said.replace(Regex("""(?<![஀-௿])ஒய"""), "வய").replace("ட்ச", "ச")
+        val phrase = said.replace(Regex("""(?<![஀-௿])ஒய"""), "வய")
             // An English "oi" / "ai" at the start of a word is written with a gliding ய ("ஆயின்மென்ட்" = Ointment): no consonant of its own.
             .replace(Regex("""(?<![஀-௿])([அஆஒஓ])யி"""), "$1இ")
         val key = NameSound.key(phrase.replace(" ", ""))
@@ -144,7 +159,7 @@ object KaiProductSound {
                 // A short name (Tide, Pepsi, Maida): right before its quantity, its first vowel heard the same, and no word of another
                 // product as close ("தூள்" is not Dal; "டெட்டால்" is Dettol, not the Dal of Toor Dal; "டைட்" is Tide, not Tea).
                 d == 0 -> beforeQty && span == p.words && tamilVowel(phrase).intersect(latinVowel(spoken(p.name))).isNotEmpty() &&
-                    shapeGap(phrase, p.name).let { gap -> gap <= 1 && parts.none { w -> w.loose == l && (spoken(w.text).first() in "aeiou") == vowelFirst && !p.name.split(Regex("""\s+""")).contains(w.text) &&
+                    shapeGap(phrase, p.name).let { gap -> gap <= 1 && parts.none { w -> w.loose == l && (spoken(w.text).first() in "aeiou") == vowelFirst && p.name.split(Regex("""\s+""")).none { it.equals(w.text, ignoreCase = true) } &&
                         tamilVowel(phrase).intersect(latinVowel(spoken(w.text))).isNotEmpty() && shapeGap(phrase, w.text) <= gap } }
                 d == 1 && minOf(l.length, p.loose.length) >= 5 -> span == p.words || span == 1
                 else -> false
@@ -193,6 +208,8 @@ object KaiProductSound {
                 .replace("ture", "chur").replace("x", "ks").replace(Regex("""c(?=[eiy])"""), "s")
                 // "Bandage" = bendej, "Syringe" = sirinj, "Bridge" = brij; "Ointment" = oinment (the t isn't heard); "Eye" = ai.
                 .replace(Regex("""d?ge$"""), "j").replace("ntm", "nm").replace(Regex("""^eye$"""), "ai")
+                // "Dr Trust" = doctor trust ("டாக்டர்"), "Head & Shoulders" = and; "Flagyl" = flajil; "Zincovit" = zingovit ("சிங்கோவிட்").
+                .replace(Regex("""^dr\.?$"""), "doktar").replace(Regex("""^&$"""), "and").replace(Regex("""g(?=y)"""), "j").replace(Regex("""n[ck]"""), "ng")
         }
     }
 

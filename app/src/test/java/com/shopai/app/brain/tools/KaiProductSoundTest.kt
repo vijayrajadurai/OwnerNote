@@ -76,6 +76,28 @@ class KaiProductSoundTest {
         assertEquals(com.shopai.app.brain.tools.ProductKind.GROCERY, inv.kindOf("பாசி பருப்பு", "KG"))
     }
 
+    /**
+     * Pharmacy brands (owner's stock master, 13 Oct 2026): "Dr" is doctor ("டாக்டர்"), "&" is and, gy = jy (Flagyl), nc = ng
+     * (Zincovit), a real "tz" / "dc" ("செட்சின்", "குட்செஃப்"), capitals said as a word ("ஈனோ" = ENO), a short brand before its
+     * quantity ("டோலோ 650" is Dolo 650, not Dettol) and the strength said once ("மாக்ஸ் 500" is Mox 500, not Mox 500 500).
+     */
+    @Test fun pharmacyBrandsSaidIntoTheMic() {
+        val shop4 = listOf("Dr Trust Thermometer", "Dr Morepen", "Head & Shoulders", "Flagyl 400", "Zincovit", "Cetzine 10", "Gudcef 200", "ENO",
+            "Dolo 650", "Dettol", "Mox 500", "Uprise D3", "BPL", "Telma 40", "Telmikind 40")
+        fun h(mic: String) = KaiSpokenWords.normalize(KaiProductSound.withProducts(mic, shop4, people))
+        for ((mic, want) in listOf("டாக்டர் டிரஸ்ட் தெர்மாமீட்டர் 2 பீஸ்" to "Dr Trust Thermometer 2", "டாக்டர் மோர்பென் 2 பீஸ்" to "Dr Morepen 2",
+                "ஹெட் அண்ட் ஷோல்டர்ஸ் 5 பாட்டில்" to "Head & Shoulders 5", "ஃபிளாஜில் 400 5 ஸ்ட்ரிப்" to "Flagyl 400 5", "சிங்கோவிட் 5 ஸ்ட்ரிப்" to "Zincovit 5",
+                "செட்சின் 10 5 ஸ்ட்ரிப்" to "Cetzine 10 5", "குட்செஃப் 200 5 ஸ்ட்ரிப்" to "Gudcef 200 5", "ஈனோ 5 பாக்கெட்" to "ENO 5",
+                "டோலோ 650 5 ஸ்ட்ரிப்" to "Dolo 650 5", "டெட்டால் 5 பாட்டில்" to "Dettol 5", "மாக்ஸ் 500 5 ஸ்ட்ரிப்" to "Mox 500 5",
+                "அப்ரைஸ் டி3 5 பாக்கெட்" to "Uprise D3 5", "டெல்மா 40 5 ஸ்ட்ரிப்" to "Telma 40 5",
+                "டெல்மிகைண்ட் 40 5 ஸ்ட்ரிப்" to "Telmikind 40 5")) {
+            val got = h(mic)
+            assertTrue("$mic → $got", got.startsWith(want) && !got.startsWith("$want 0"))
+        }
+        // A word that sounds like nothing in the shop stays as the mic wrote it.
+        h("ஸ்பா 5 பீஸ்").let { got -> assertTrue(got, shop4.none { got.contains(it) }) }
+    }
+
     @Test fun productNamesSaidIntoTheMic() {
         val said = mapOf(
             "பிரிட்டானியா பிஸ்கட்" to "Britannia Biscuit", "குட் டே" to "Good Day", "பார்லே ஜி" to "Parle G", "சன்ஃபீஸ்ட் மேரி" to "Sunfeast Marie",
