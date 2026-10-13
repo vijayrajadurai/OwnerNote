@@ -516,6 +516,10 @@ class KaiOwnerSweepTest {
             else "saved ${s.tools.saved.map { "${it.partyName} ${it.amount}" }}" }
         talk("an expense is never a person", listOf("current bill 1200 kattinen"), check = nothingWritten("₹1200"))
         talk("an unknown word is asked, not guessed", listOf("spa 300 kattinen"), check = nothingWritten("₹300"))
+        // "nalla irukku" is not a selling word: never the best sellers or the unsold list (owner, 13 Oct 2026).
+        talk("stock 'nalla irukku' is not movement", listOf("yentha stock nalla irukku")) { s ->
+            val t = lastTurn?.reply?.text.orEmpty() + lastTurn?.card?.lines.orEmpty().joinToString()
+            if (s.nothingWritten() && !t.contains("₹17,600") && !t.contains("vikkala") && !t.contains("விக்கல")) null else "read as movement: $t" }
         // "idhu Kumar pathiyaa, illa vera vishayam pathiyaa?" (owner, 13 Oct 2026): "aamaa" goes on with Kumar, never the same question
         // again; "vera vishayam" / "illa" drops Kumar (the draft on screen stays) and asks what it is about.
         talk("Kumar pathiyaa? aamaa: Kumar, and what to say next", listOf("Kumar", "blah blah", "aamaa"), check = nothingWritten("₹4,000", "Kumar 500"))
