@@ -66,6 +66,38 @@ object BillStock {
 
     private fun key(unit: String?): String? = unit?.trim()?.lowercase(Locale.ROOT)?.takeIf { it.isNotEmpty() }?.let { unitKeys[it] ?: it }
 
+    /** What saving a scanned bill does, as the bill screen decides it before the owner changes anything. */
+    data class Plan(
+        /** true: a credit entry (my sales bill — the customer owes me); false: a debit entry (a purchase bill — I owe the shop). */
+        val credit: Boolean,
+        /** The bill total written as "Total / Grand total" (null: not read — the owner types it). */
+        val total: BigDecimal?,
+        val party: String?,
+        /** The items go into stock (true) or out of it (false). */
+        val stockIn: Boolean,
+        /** The lines ticked by themselves: each product and its quantity in the product's unit. */
+        val moves: List<Pair<ProductRef, BigDecimal>>,
+        val lines: List<Line>,
+    )
+
+    /**
+     * The scanned bill [text] → the credit / debit entry and the stock it moves: the same parser, direction and matching the
+     * bill screen uses ([BillTextParser], [BillDirection], [lines]); [asked] is what the owner told Kai ("stock ah add pannu").
+     */
+    fun plan(text: String, products: List<ProductRef>, me: MyBusiness, asked: Way? = null): Plan {
+        val bill = BillTextParser.parse(text)
+        val credit = BillDirection.decide(text, bill, me).direction == TxnDirection.CREDIT
+        val lines = lines(bill.items, products)
+        return Plan(
+            credit = credit,
+            total = bill.total?.takeIf { bill.totalFromLabel },
+            party = if (credit) bill.customerName else bill.merchantName,
+            stockIn = asked?.let { it == Way.IN } ?: !credit,
+            moves = lines.filter { it.sure }.map { it.product!! to it.qty!! },
+            lines = lines,
+        )
+    }
+
     /** Every bill line, matched to a product where one has its name. */
     fun lines(items: List<BillLineItem>, products: List<ProductRef>): List<Line> =
         items.filter { it.description.any(Char::isLetter) }.map { line(it, products) }
