@@ -5652,30 +5652,44 @@ class KaiAgent(
      * expired, from the books' batch records — read-only; a product named narrows it to that product. Nothing is guessed.
      */
     private suspend fun expiryList(text: String, lang: KaiLang, products: List<com.shopai.app.brain.tools.ProductRef>, today: LocalDate): KaiTurn {
-        val all = runCatching { tools.expiring(today.plusDays(30)) }.getOrNull() ?: return unverified(lang, "expiry list")
+        val ask = com.shopai.app.brain.tools.KaiExpiry.ask(text)
+        // Every batch with an expiry, read once (a FEFO answer needs the far ones too).
+        val all = runCatching { tools.expiring(today.plusYears(5)) }.getOrNull() ?: return unverified(lang, "expiry list")
         val product = productIn(text, products)
-        val list = (if (product != null) all.filter { it.product.equals(product.name, ignoreCase = true) } else all).sortedBy { it.expiry }
-        tools.log("expiry list", "batch records", "${list.size} batches", ActionStatus.ANSWERED)
-        val inv = com.shopai.app.brain.tools.KaiInventory
-        if (list.isEmpty()) return say(lang, KaiMood.HAPPY, "expiry: none",
-            ta = "ஓனர், அடுத்த 30 நாள்ல காலாவதி ஆகுற batch எதுவும் இல்ல (batch பதிவுகள் படி).",
-            tl = "Owner, adutha 30 naal-la expiry aagura batch edhuvum illa (batch records padi).",
-            en = "Owner, no batch expires in the next 30 days (by your batch records).")
-        val expired = list.count { it.expiry.isBefore(today) }
-        fun whenText(d: LocalDate): String {
-            val days = java.time.temporal.ChronoUnit.DAYS.between(today, d)
-            return when {
-                days < 0 -> pickLang(lang, ta = "${-days} நாள் முன்னாடி expire ஆச்சு", tl = "${-days} naal munnaadi expire aachu", en = "expired ${-days} days ago")
-                days == 0L -> pickLang(lang, ta = "இன்னைக்கு expire", tl = "innaikku expire", en = "expires today")
-                else -> pickLang(lang, ta = "$days நாள்ல", tl = "$days naal-la", en = "in $days days")
-            }
+        val mine = if (product != null) all.filter { it.product.equals(product.name, ignoreCase = true) } else all
+        val E = com.shopai.app.brain.tools.KaiExpiry
+        // "Endha batch first vikkanum?" (FEFO): each product's batch that expires first.
+        if (ask.fefo) {
+            val first = E.firstOut(mine)
+            tools.log("expiry fefo", "batch records", "${first.size} products", ActionStatus.ANSWERED)
+            if (first.isEmpty()) return say(lang, KaiMood.CLARIFY, "fefo: none",
+                ta = "ஓனர், batch / expiry பதிவு இருக்கிற stock எதுவும் இல்ல.", tl = "Owner, batch / expiry record irukra stock edhuvum illa.",
+                en = "Owner, no stock has batch / expiry records.")
+            return KaiTurn(ChatReply(pickLang(lang,
+                ta = "ஓனர், முதல்ல expire ஆகுற batch-ஐ முதல்ல விக்கணும் (FEFO):", tl = "Owner, mudhalla expire aagura batch-a mudhalla vikkanum (FEFO):",
+                en = "Owner, sell the batch that expires first, first (FEFO):"), KaiMood.EXPLAINING, ChatIntent.GENERAL_BUSINESS_QUERY),
+                KaiCard(first.take(15).map { E.line(it, today, lang) }, emptyList()))
         }
-        val lines = list.take(15).map { b -> "${b.product} — Batch ${b.batchNo} — ${inv.shown(b.qty, b.unit)} — ${KaiFormat.date(b.expiry, lang, today)} (${whenText(b.expiry)})" }
+        val list = E.within(mine, today, ask)
+        tools.log("expiry list", "batch records", "${list.size} batches (${ask.days} days${if (ask.expiredOnly) ", expired" else ""})", ActionStatus.ANSWERED)
+        val window = when {
+            ask.expiredOnly -> pickLang(lang, ta = "ஏற்கனவே expire ஆன", tl = "already expire aana", en = "already expired")
+            ask.days == 0L -> pickLang(lang, ta = "இன்னைக்கு", tl = "innaikku", en = "today")
+            else -> pickLang(lang, ta = "${ask.days} நாளுக்குள்", tl = "${ask.days} naal-kulla", en = "within ${ask.days} days")
+        }
+        val whose = product?.let { "${it.name} " }.orEmpty()
+        if (list.isEmpty()) return say(lang, KaiMood.HAPPY, "expiry: none",
+            ta = "ஓனர், $window ${whose}காலாவதி ஆகுற batch எதுவும் இல்ல (batch பதிவுகள் படி).",
+            tl = "Owner, $window ${whose}expiry aagura batch edhuvum illa (batch records padi).",
+            en = "Owner, no ${whose}batch expires $window (by your batch records).")
+        val expired = list.count { it.expiry.isBefore(today) }
         val head = pickLang(lang,
-            ta = "ஓனர், 30 நாளுக்குள் ${list.size} batch காலாவதி ஆகுது" + (if (expired > 0) ", $expired already expire ஆச்சு." else "."),
-            tl = "Owner, 30 naal-kulla ${list.size} batch expiry aagudhu" + (if (expired > 0) ", $expired already expire aachu." else "."),
-            en = "Owner, ${list.size} batch${if (list.size == 1) "" else "es"} expire within 30 days" + (if (expired > 0) ", $expired already expired." else "."))
-        return KaiTurn(ChatReply(head, if (expired > 0) KaiMood.CONCERNED else KaiMood.EXPLAINING, ChatIntent.GENERAL_BUSINESS_QUERY), KaiCard(lines, emptyList()))
+            ta = "ஓனர், $window ${whose}${list.size} batch காலாவதி" + (if (expired > 0 && !ask.expiredOnly) ", $expired already expire ஆச்சு." else "."),
+            tl = "Owner, $window ${whose}${list.size} batch expiry" + (if (expired > 0 && !ask.expiredOnly) ", $expired already expire aachu." else "."),
+            en = "Owner, ${list.size} ${whose}batch${if (list.size == 1) "" else "es"} $window" + (if (expired > 0 && !ask.expiredOnly) ", $expired already expired." else "."))
+        return KaiTurn(ChatReply(head, if (expired > 0) KaiMood.CONCERNED else KaiMood.EXPLAINING, ChatIntent.GENERAL_BUSINESS_QUERY),
+            KaiCard(list.take(20).map { E.line(it, today, lang) } + listOfNotNull((list.size - 20).takeIf { it > 0 }?.let {
+                pickLang(lang, ta = "+ இன்னும் $it", tl = "+ innum $it", en = "+ $it more") }), emptyList()))
     }
 
     /** Each product's money in stock at its purchase price (null price: left out, and named). */

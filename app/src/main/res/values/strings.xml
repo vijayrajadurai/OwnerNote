@@ -1505,4 +1505,5 @@ NewonX — Owner Note. Use Help & Support in the app.]]></string>
     <string name="bill_stock_qty">Quantity (%1$s)</string>
     <string name="bill_stock_moved">Stock updated for %1$d item(s).</string>
     <string name="bill_stock_failed">Stock not changed for: %1$s</string>
+    <string name="expiry_notification_channel">Expiry alerts</string>
 </resources>
