@@ -3580,14 +3580,34 @@ class KaiAgent(
         // A new product: added right here in the chat — Kai asks only what is missing, one detail at a time (no camera on its own).
         val line = com.shopai.app.brain.tools.KaiInventory.stockLine(said)
         val spokenWords = req.spokenName.lowercase(Locale.ROOT).split(' ').toSet()
-        val name = line?.first?.split(' ')?.filter { it.lowercase(Locale.ROOT) in spokenWords }?.joinToString(" ")?.takeIf { it.isNotBlank() } ?: req.spokenName
-        val unit = com.shopai.app.brain.tools.KaiUnits.canon(req.parts.firstOrNull()?.unit ?: req.unit)
-        val qty = req.parts.firstOrNull()?.qty ?: req.qty
+        val name0 = line?.first?.split(' ')?.filter { it.lowercase(Locale.ROOT) in spokenWords }?.joinToString(" ")?.takeIf { it.isNotBlank() } ?: req.spokenName
+        // "Dolo 650 10 strip", "Azithromycin 500 3 strip": the first number is the medicine's strength — part of its name — and the
+        // number before the unit is the quantity (never 650 strips).
+        val strength = strengthLine.find(said)?.takeIf { m ->
+            com.shopai.app.brain.tools.KaiUnits.canon(com.shopai.app.brain.tools.KaiInventory.unitOf(m.groupValues[5].lowercase(Locale.ROOT)) ?: m.groupValues[5]) != null &&
+                m.groupValues[1].trim().lowercase(Locale.ROOT).endsWith(name0.lowercase(Locale.ROOT))
+        }
+        val name = strength?.let { "$name0 ${it.groupValues[2]}${it.groupValues[3]}" } ?: name0
+        val unit = strength?.let { com.shopai.app.brain.tools.KaiUnits.canon(com.shopai.app.brain.tools.KaiInventory.unitOf(it.groupValues[5].lowercase(Locale.ROOT)) ?: it.groupValues[5]) }
+            ?: com.shopai.app.brain.tools.KaiUnits.canon(req.parts.firstOrNull()?.unit ?: req.unit)
+        val qty = strength?.groupValues?.get(4)?.toBigDecimalOrNull() ?: req.parts.firstOrNull()?.qty ?: req.qty
         // "5inch tape 10": the size said in the name is the product's size too (Kai doesn't ask it again).
-        val spec = com.shopai.app.brain.tools.ItemSpec(name, com.shopai.app.brain.tools.KaiInventory.kindOf(name, unit), qty, unit, size = req.size)
+        val spec = com.shopai.app.brain.tools.ItemSpec(name, kindInShop(name, unit, products), qty, unit, size = req.size)
         tools.log(com.shopai.app.brain.tools.KaiIntents.STOCK_IN, "kai", "$name: new product by chat", ActionStatus.ANSWERED, null, said)
         return itemStep(newKey(), com.shopai.app.brain.tools.KaiInventory.withDetails(spec, said), said, lang)
     }
+
+    /**
+     * A new product's kind: from its name; a name that doesn't tell ("Digene", "ORS" said aloud) in a shop that keeps its stock by
+     * batch (a medical shop) is a medicine — its batch / expiry are asked; else from the unit it was said in.
+     */
+    private fun kindInShop(name: String, unit: String?, products: List<com.shopai.app.brain.tools.ProductRef>): com.shopai.app.brain.tools.ProductKind {
+        val inv = com.shopai.app.brain.tools.KaiInventory
+        return inv.kindByName(name) ?: if (products.any { it.batchTracked }) com.shopai.app.brain.tools.ProductKind.PHARMACY else inv.kindByUnit(unit)
+    }
+
+    /** "<name> 650 10 strip": a name, its strength (650, 500mg), then the quantity and its unit. */
+    private val strengthLine = Regex("""(?i)^(.*?[\p{L}\p{M}][\p{L}\p{M}\s.'-]*?)\s+(\d+(?:\.\d+)?)\s*(mg|mcg|ml)?\s+(\d+(?:\.\d+)?)\s*([\p{L}\p{M}]+)""")
 
     private val photoAsked = Regex("""(?i)(?<![\p{L}])(photo|foto|camera|cam|pic|picture|scan|click)(?![\p{L}])|போட்டோ|கேமரா""")
 
@@ -3619,7 +3639,7 @@ class KaiAgent(
         if (unit == null && !asked) return null
         // A customer / supplier in the books named here makes it money, not stock ("boxக்கு" is a unit, not a person).
         if (com.shopai.app.brain.KaiUnderstanding.knownPerson(text, people) != null || namesPerson(text, name, people)) return null
-        val kind = com.shopai.app.brain.tools.KaiInventory.kindOf(name, unit)
+        val kind = kindInShop(name, unit, products)
         val spec = com.shopai.app.brain.tools.ItemSpec(name, kind, qty, unit)
         val product = products.firstOrNull { KaiPrivateMemory.normalize(it.name) == KaiPrivateMemory.normalize(name) }
             // "அரிசி 2 மூட்டை வந்தது" with Rice in the shop: the product by its Tamil name / sound / the one name it starts.

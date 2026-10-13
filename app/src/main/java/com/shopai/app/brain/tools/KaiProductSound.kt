@@ -97,10 +97,40 @@ object KaiProductSound {
         return match(phrase, phrase.split(' ').size, listOf(p), parts, known = false, beforeQty = true) != null
     }
 
+    /**
+     * One Tamil word the mic wrote is exactly this English word by sound ("சிரப்" = syrup, "இன்ஜெக்ஷன்" = injection) — no near
+     * misses: used to read what kind of product a name said aloud is, as its typed name would be read.
+     */
+    fun sameWord(tamil: String, english: String): Boolean = wordGap(tamil, english) != null
+
+    /** [sameWord], and how far apart the two are in shape (syllables) — the closer one wins when two words both sound alike. */
+    fun wordGap(tamil: String, english: String): Int? {
+        if (!KaiSpokenWords.hasTamil(tamil) || KaiSpokenWords.hasTamil(english) || english.none(Char::isLetter)) return null
+        val phrase = tamil.trim().replace(Regex("""(?<![஀-௿])ஒய"""), "வய").replace("ட்ச", "ச").replace(Regex("""(?<![஀-௿])([அஆஒஓ])யி"""), "$1இ")
+        val key = NameSound.key(phrase).takeIf { it.length >= 3 } ?: return null
+        val sp = spoken(english)
+        val en = NameSound.key(sp).takeIf { it.length >= 3 } ?: return null
+        if (loose(key) != loose(en) || (phrase.first() in 'அ'..'ஔ') != (sp.first() in "aeiou")) return null
+        // "சிரப்" is syrup, not surf: the first vowel is heard too — after the vowel Tamil puts inside "dr", "gl", "pl" ("டிராப்ஸ்" = drops).
+        val cluster = Regex("""^[^aeiouy]{2}""").containsMatchIn(sp) && !sp.startsWith("ch") && !sp.startsWith("sh") && !sp.startsWith("th")
+        val rest = phrase.drop(2)
+        val heard = when {
+            !cluster || rest.isEmpty() -> tamilVowel(phrase)
+            // "கிளவுஸ்": the ள after the cluster carries its own "a".
+            rest.length > 1 && rest[0] in '\u0B95'..'\u0BB9' && rest[1] !in '\u0BBE'..'\u0BCD' -> setOf('a')
+            else -> tamilVowel(rest)
+        }
+        if (heard.intersect(latinVowel(sp)).isEmpty()) return null
+        // "கிளவுஸ்" is gloves (its v heard), not glass.
+        return shapeGap(phrase, english) + if (key.replace("y", "") == en.replace("y", "")) 0 else 1
+    }
+
     /** The one product a Tamil phrase sounds like, or null (none, too little to tell, or two alike). */
     private fun match(said: String, span: Int, products: List<Product>, parts: List<Word>, known: Boolean, beforeQty: Boolean): String? {
         // The mic writes an English "w" before a vowel as "ஒய" ("ஒயர்" = Wire, "ஒயிட்" = White): heard as "வ".
         val phrase = said.replace(Regex("""(?<![஀-௿])ஒய"""), "வய").replace("ட்ச", "ச")
+            // An English "oi" / "ai" at the start of a word is written with a gliding ய ("ஆயின்மென்ட்" = Ointment): no consonant of its own.
+            .replace(Regex("""(?<![஀-௿])([அஆஒஓ])யி"""), "$1இ")
         val key = NameSound.key(phrase.replace(" ", ""))
         if (key.isEmpty()) return null
         val l = loose(key)
@@ -161,6 +191,8 @@ object KaiProductSound {
                 .replace(Regex("""(?<=[ctrnl])ough$"""), "of").replace(Regex("""augh$"""), "af").replace("tch", "ch")
                 .replace(Regex("""^kn"""), "n").replace(Regex("""^wr"""), "r").replace("ght", "t").replace("gh", "")
                 .replace("ture", "chur").replace("x", "ks").replace(Regex("""c(?=[eiy])"""), "s")
+                // "Bandage" = bendej, "Syringe" = sirinj, "Bridge" = brij; "Ointment" = oinment (the t isn't heard); "Eye" = ai.
+                .replace(Regex("""d?ge$"""), "j").replace("ntm", "nm").replace(Regex("""^eye$"""), "ai")
         }
     }
 
