@@ -120,7 +120,11 @@ object KaiInventory {
             "tiffin", "bottle", "dabba", "storage", "jar", "jars", "spoon", "ladle", "karandi", "பாத்திரம்", "குடம்", "தட்டு", "டம்ளர்", "கரண்டி"),
         ProductKind.PHARMACY to listOf("tablet", "tablets", "medicine", "medicines", "marundhu", "maathirai", "paracetamol", "dolo", "crocin", "calpol",
             "syrup", "tonic", "capsule", "capsules", "bandage", "bandaid", "cotton", "gauze", "ointment", "betadine", "savlon", "ors",
-            "electral", "vicks", "zandu", "amrutanjan", "inhaler", "glucose", "thermometer", "mask", "masks", "gloves", "syringe", "மாத்திரை", "மருந்து"),
+            "electral", "vicks", "zandu", "amrutanjan", "inhaler", "glucose", "thermometer", "mask", "masks", "gloves", "syringe", "மாத்திரை", "மருந்து",
+            // Medical shop words (owner, 13 Oct 2026: any medical product, typed or spoken, gets its batch / expiry asked).
+            "injection", "injections", "inj", "vial", "vials", "insulin", "drops", "eyedrops", "sanitizer", "sanitiser", "antiseptic", "dettol",
+            "balm", "volini", "moov", "iodex", "digene", "gelusil", "eno", "glucon", "nebulizer", "crepe", "plaster", "bandaids", "dressing",
+            "catheter", "inhalers", "syringes", "suspension", "lozenges", "strepsils", "multivitamin", "vitamin", "calcium", "antacid"),
         ProductKind.VEGETABLE to listOf("thakkali", "tomato", "tomatoes", "vengayam", "onion", "onions", "urulai", "kizhangu", "potato", "potatoes",
             "kathirikai", "brinjal", "vendakkai", "carrot", "beans", "cabbage", "muttaikose", "kosu", "beetroot", "cauliflower", "keerai", "greens",
             "milagai", "chilli", "inji", "ginger", "poondu", "garlic", "elumichai", "lemon", "thengai", "coconut", "ilaneer", "pazham", "vazhaipazham",
@@ -163,6 +167,8 @@ object KaiInventory {
         Regex("""(?i)(?<![\p{L}])(?:spark\s+plug|brake\s+pads?|air\s+filter|oil\s+filter|bike\s+\p{L}+)""") to ProductKind.AUTO,
         Regex("""(?i)(?<![\p{L}])(?:mosquito|naphthalene)\s+\p{L}+""") to ProductKind.HOMECARE,
         Regex("""(?i)(?<![\p{L}])(?:cough|cold)\s+syrup|(?<![\p{L}])first[\s-]*aid""") to ProductKind.PHARMACY,
+        // A medicine's own name by how drug names end (Azithromycin, Amoxicillin, Pantoprazole, Metformin, Cetirizine, Atorvastatin …).
+        Regex("""(?i)(?<![\p{L}])\p{L}{3,}(?:mycin|cillin|cycline|prazole|tidine|formin|izine|olol|pril|sartan|statin|floxacin|conazole|profen|fenac|dipine|gliptin|gliflozin|thromycin|cetamol|semide|lukast)(?![\p{L}])""") to ProductKind.PHARMACY,
         Regex("""(?i)(?<![\p{L}])paint\s+brush|(?<![\p{L}])extension\s+board""") to ProductKind.HARDWARE,
         Regex("""(?i)(?<![\p{L}])(?:detergent|washing)\s+(?:powder|bar|cake|liquid)""") to ProductKind.HOMECARE,
         Regex("""(?i)(?<![\p{L}])ice\s*creams?""") to ProductKind.BEVERAGE,
@@ -172,13 +178,28 @@ object KaiInventory {
     )
 
     /** A product's kind from its name, else from the unit it was said in. */
-    fun kindOf(name: String, unit: String?): ProductKind {
+    fun kindOf(name: String, unit: String?): ProductKind = kindByName(name) ?: kindByUnit(unit)
+
+    /** A product's kind from its name alone; null when the name doesn't tell. */
+    fun kindByName(name: String): ProductKind? {
         phraseKinds.firstOrNull { (r, _) -> r.containsMatchIn(name) }?.let { return it.second }
         val words = name.lowercase(Locale.ROOT).split(Regex("""[^\p{L}\p{M}\p{N}-]+""")).filter { it.isNotEmpty() }
         val joined = words.joinToString("")
         // A whole word first ("Coconut oil" → oil, "Muttaikose" → cabbage), then a long word inside a joined name ("Mallipoo").
         kindWords.firstOrNull { (_, list) -> list.any { w -> w in words } }?.let { return it.first }
         kindWords.firstOrNull { (_, list) -> list.any { w -> w.length >= 6 && joined.contains(w) } }?.let { return it.first }
+        // The name as the mic wrote it ("பெனட்ரில் சிரப்", "காட்டன் பேண்டேஜ்"): its words by sound — the same kind as typed; the
+        // kind most of its words sound like.
+        val tamil = words.filter(KaiSpokenWords::hasTamil)
+        if (tamil.isNotEmpty()) kindWords.mapNotNull { (kind, list) ->
+            val gaps = tamil.mapNotNull { t -> list.filter { w -> w.length >= 4 && !KaiSpokenWords.hasTamil(w) }.mapNotNull { w -> KaiProductSound.wordGap(t, w) }.minOrNull() }
+            if (gaps.isEmpty()) null else Triple(kind, gaps.size, gaps.sum())
+        }.sortedWith(compareBy({ -it.second }, { it.third })).firstOrNull()?.let { return it.first }
+        return null
+    }
+
+    /** A product's kind from the unit it was said in ("strip" → medical, "bag" → grocery). */
+    fun kindByUnit(unit: String?): ProductKind {
         return when (KaiUnits.canon(unit)) {
             "BAG", "KG", "GRAM" -> ProductKind.GROCERY
             "CASE", "LITRE", "ML", "BOTTLE", "CAN" -> ProductKind.BEVERAGE
