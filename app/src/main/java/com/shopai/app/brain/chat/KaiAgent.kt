@@ -845,7 +845,8 @@ class KaiAgent(
             else say(lang, KaiMood.NEUTRAL, "beyond: message app", ta = "$note உங்களுக்கு call / message பண்ண reminder வேணும்னா சொல்லுங்க.",
                 tl = "$note Ungalukku call / message panna reminder venumna sollunga.", en = "$note If you want, I can remind you to call or message them.")
         }
-        if (named == null) KaiConversationCare.beyondBooks(said)?.let { return beyond(it, lang) }
+        // "Prega News 5 pieces add pannu": a product the shop keeps, named "news" — not the news (the rest of the line is read).
+        if (named == null) KaiConversationCare.beyondBooks(withoutShopProducts(said))?.let { return beyond(it, lang) }
         // "4773.13 yar tharanum": who has that balance — the exact one, or the nearest said as nearest; never a guess.
         if (named == null) KaiConversationCare.amountWho(said)?.let { amount -> whoHasAmount(amount, lang)?.let { return it } }
         // "2500 ku gst evlo": the rate isn't said — each common rate worked out, never one guessed.
@@ -1061,6 +1062,11 @@ class KaiAgent(
         return turn.copy(card = KaiCard(emptyList(), listOf(KaiButton(pick(lang, ta = "🧾 Bill போடுங்க", tl = "🧾 Bill podunga", en = "🧾 Make a bill"),
             KaiAction.OpenRecord("SALE_BILL", partyId.orEmpty()), primary = true))))
     }
+
+    /** [text] without the shop's product names said in it as whole names. */
+    private suspend fun withoutShopProducts(text: String): String = runCatching { tools.products() }.getOrNull().orEmpty()
+        .filter { it.name.count(Char::isLetter) >= 3 }.sortedByDescending { it.name.length }
+        .fold(text) { t, p -> t.replace(Regex("""(?i)(?<![\p{L}])${Regex.escape(p.name)}(?![\p{L}])"""), " ") }
 
     /** Weather, cricket, news, jokes, online orders, loans, staff salary: said plainly — not something Kai does. */
     private fun beyond(topic: KaiConversationCare.Beyond, lang: KaiLang): KaiTurn {
