@@ -42,6 +42,10 @@ sealed interface KaiCommand {
     data object TopProducts : KaiCommand
     /** "Yentha stock move agala?", "Dead stock enna?": products in stock that did not sell lately. */
     data object SlowStock : KaiCommand
+    /** "Stock-la evlo panam mudangi irukku?", "stock value": the money in stock at purchase prices. */
+    data object StockValue : KaiCommand
+    /** "Stock performance report", "stock report": sellers, slow and unsold stock, low stock and money in stock together. */
+    data object StockReport : KaiCommand
 
     /** A question for the Business Brain. */
     data object Question : KaiCommand
@@ -85,6 +89,8 @@ object KaiCommands {
         // ---- which stock moves, which doesn't (from the sales records) ----
         // "vikkala", "pogala", "fast-a pogudhu" alone are everyday words: they mean stock only next to a stock / item / which word.
         val aboutStock = stockThings.containsMatchIn(t)
+        if (stockReport.containsMatchIn(t)) return KaiCommand.StockReport
+        if (stockMoney.containsMatchIn(t)) return KaiCommand.StockValue
         if (slowMoving.containsMatchIn(t) || aboutStock && slowVerbs.containsMatchIn(t)) return KaiCommand.SlowStock
         if (fastMoving.containsMatchIn(t) || aboutStock && fastVerbs.containsMatchIn(t)) return KaiCommand.TopProducts
 
@@ -244,10 +250,21 @@ object KaiCommands {
     /** "theerapoguthu", "theera pogudhu", "mudiya pogudhu": stock running out ("thira" is "open" — never this). */
     private val runningOut = Regex("""(?i)(?<![\p{L}])(?:theera|theeru|mudiya)\s*-?\s*po\p{L}*|தீரப்போ\p{L}*|தீர\s+போ\p{L}*""")
 
+    fun asksStockReport(text: String) = stockReport.containsMatchIn(text)
+    fun asksStockValue(text: String) = stockMoney.containsMatchIn(text)
+
+    /** "stock performance report", "stock report", "ஸ்டாக் அறிக்கை". */
+    private val stockReport = Regex("""(?i)(?<![\p{L}])(?:stock|inventory|ஸ்டாக்)\s*(?:performance|report|analysis|analyse|arikkai)(?![\p{L}])|ஸ்டாக்\s*அறிக்கை""")
+    /** "stock la evlo panam mudangi irukku", "stock value", "stock mathippu evlo": money held in stock — never a stock count. */
+    private val stockMoney = Regex("""(?i)(?<![\p{L}])(?:stock|inventory|saamaan|saman|porul|maal)\p{L}{0,4}\s+(?:\p{L}+\s+){0,3}?(?:panam|paisa|kaasu|money|value|worth|mathippu|madhippu|mudang\p{L}*|blocked|locked)(?![\p{L}])""" +
+        """|(?<![\p{L}])mudangi\s*(?:irukk?u|kidakku)|ஸ்டாக்\S*\s+(?:\S+\s+){0,3}?(?:பணம்|மதிப்பு|முடங்\S*)""")
+
     /** "move agala", "dead stock", "slow moving", "unsold": stock that is not selling. */
     private val slowMoving = Regex(
         """(?<![\p{L}])(move\s*-?\s*(?:agala|aagala|aagalai|agalai|aaga\s*maattengudhu|aagudhu\s*illa|aguthu\s*illa|aagave\s*illa|agave\s*illa)|""" +
-            """not\s+moving|non\s*-?\s*moving|slow\s*-?\s*moving|dead\s*stock|unsold|not\s+selling|didn'?t\s+sell|not\s+sold)(?![\p{L}])|நகரல""",
+            """not\s+moving|non\s*-?\s*moving|slow\s*-?\s*moving|dead\s*stock|unsold|not\s+selling|didn'?t\s+sell|not\s+sold|""" +
+            // "vikkadha stock", "medhuva vikkura products" (owner, 13 Oct 2026)
+            """vikkaa?(?:dha|tha)\p{L}*|(?:medhuva|methuva|mella|mellamaa?|slow\s*-?\s*aa?)\s*(?:vikk\p{L}*|pog\p{L}*|move\p{L}*))(?![\p{L}])|நகரல|விக்காத|மெதுவா\s*விக்""",
         RegexOption.IGNORE_CASE,
     )
     /** "vikkala", "pogala", "thengi irukku", "slow-aa": not selling — when said about stock / items. */
@@ -260,7 +277,7 @@ object KaiCommands {
     private val fastMoving = Regex(
         """(?<![\p{L}])(fast\s*-?\s*(?:a|ah|aa)?\s*(?:move\p{L}*|moving|vikk\p{L}*|vith\p{L}*|sell\p{L}*)|vegama\s*(?:vikk\p{L}*|vith\p{L}*|move\p{L}*)|""" +
             """seekiram\s*(?:vikk\p{L}*|vith\p{L}*|theer\p{L}*)|sikkiram\s*(?:vikk\p{L}*|vith\p{L}*)|moving\s+(?:items?|products?|stock)|""" +
-            """sells?\s+(?:the\s+)?(?:most|fast)|selling\s+fast)(?![\p{L}])|வேகமா\s*விக்""",
+            """sells?\s+(?:the\s+)?(?:most|fast)|selling\s+fast|(?:adhigama|athigama|adhigam|niraya|niraiya)\s*(?:vikk\p{L}*|vith\p{L}*))(?![\p{L}])|வேகமா\s*விக்|அதிகமா\s*விக்""",
         RegexOption.IGNORE_CASE,
     )
     /** "fast-a pogudhu", "vegama theerudhu": selling fast — when said about stock / items. */

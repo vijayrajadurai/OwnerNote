@@ -531,6 +531,37 @@ class KaiAgent(
     private val priceFollow = Regex("""(?i)(?<![\p{L}])(rate|price|vilai|selling|purchase|mrp|margin|profit|labam|laabam)(?![\p{L}])|விலை|ரேட்|லாபம்""")
     /** The turn a product's price / details were last answered: "labam evlo?" right after "Colgate rate enna?" is about Colgate. */
     private var productTalkTurn = -10L
+    /** "Vengayathula" = Vengayam + "-la", "Ricela" = Rice + "-la": a shop product with a case ending, written apart ("Vengayam la"). */
+    private fun productCase(text: String, productNames: List<String>): String {
+        if (productNames.isEmpty()) return text
+        val words = productNames.flatMap { it.split(Regex("""\s+""")) }.filter { it.length >= 3 && it.any(Char::isLetter) }
+        fun product(w: String) = words.firstOrNull { it.equals(w, ignoreCase = true) }
+        return Regex("""(?<![\p{L}])\p{L}{4,}(?![\p{L}])""").replace(text) { m ->
+            val w = m.value
+            if (product(w) != null) return@replace w
+            Regex("""(?i)^(\p{L}{2,}?)a(?:tth|th|t)(?:ula|la|il|ila|oda|ode|ukku|uku)$""").find(w)?.let { c -> product(c.groupValues[1] + "am")?.let { return@replace "$it la" } }
+            Regex("""(?i)^(\p{L}{3,}?)(?:ula|la|le|oda)$""").find(w)?.let { c -> product(c.groupValues[1])?.let { return@replace "$it la" } }
+            w
+        }
+    }
+
+    /** "வெங்காயத்துல" = "வெங்காயம்" + "-ல": with the product heard in it, written apart so the sound match finds it. */
+    private fun tamilProductCase(text: String, productNames: List<String>, people: List<String>): String {
+        if (productNames.isEmpty()) return text
+        fun isProduct(w: String) = com.shopai.app.brain.tools.KaiProductSound.withProducts(w, productNames, people) != w ||
+            com.shopai.app.brain.tools.KaiSpokenWords.withNames(w, productNames).let { n -> productNames.any { it.equals(n.trim(), ignoreCase = true) } }
+        val am = Regex("""([\u0B80-\u0BFF]+?)த்(?:துல|துலே|துக்கு|தில்|தோட)(?![\u0B80-\u0BFF])""").replace(text) { m ->
+            val whole = m.groupValues[1] + "ம்"
+            if (isProduct(whole)) whole else m.value
+        }
+        // "ரைஸ்ல", "கோல்கேட்டுல": the product name with "-ல" glued on.
+        return Regex("""(?<![\u0B80-\u0BFF])([\u0B80-\u0BFF]{2,}?)(்டுல|ுல|ல|லே|ோட)(?![\u0B80-\u0BFF])""").replace(am) { m ->
+            // "கோல்கேட்டுல" = "கோல்கேட்" + "டுல", "ரைஸுல" = "ரைஸ்" + "ுல": the vowel sign took the place of the "்".
+            val stem = m.groupValues[1] + if (m.groupValues[2] == "்டுல" || m.groupValues[2] == "ுல") "்" else ""
+            if (!isProduct(m.value) && isProduct(stem)) stem else m.value
+        }
+    }
+
     private fun withLastProduct(text: String): String {
         val product = conversationState.lastProduct ?: return text
         if (!productAsk.containsMatchIn(text) || text.contains(product, ignoreCase = true)) return text
@@ -1085,11 +1116,12 @@ class KaiAgent(
         val tamil = com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(raw)
         // A product named in Tamil letters ("பிரிட்டானியா பிஸ்கட்", "டூர் தால்") is the shop's product it sounds like, as a whole
         // phrase — any product name, no list per name (KaiProductSound).
-        val heard = if (!tamil) raw.trim() else {
+        // "Vengayathula evlo labam", "வெங்காயத்துல": the product with "-la" on it — Vengayam la (any product, by its own name).
+        val heard = if (!tamil) productCase(raw.trim(), runCatching { tools.products()?.map { it.name } }.getOrNull().orEmpty()) else {
             val people = runCatching { books.snapshot()?.people.orEmpty() }.getOrDefault(emptyList())
             val productNames = runCatching { tools.products()?.map { it.name } }.getOrNull().orEmpty()
             com.shopai.app.brain.tools.KaiSpokenWords.withNames(com.shopai.app.brain.tools.KaiSpokenWords.normalize(
-                com.shopai.app.brain.tools.KaiProductSound.withProducts(raw.trim(), productNames, people)), people + productNames)
+                com.shopai.app.brain.tools.KaiProductSound.withProducts(tamilProductCase(productCase(raw.trim(), productNames), productNames, people), productNames, people)), people + productNames)
         }
         // "first ketta aal evlo tharanum", "munnadi ketta aal": the person this conversation was about, by name.
         // "mudhal aal ku call pannu": the person at that place in the list just shown.
@@ -1336,6 +1368,9 @@ class KaiAgent(
         if (plans.isEmpty() && products != null) productHalfStep(spoken, lang, products)?.let { return it }
         if (plans.isEmpty() && products != null) newStockLine(spoken, said, lang, products, people)?.let { return it }
         if (plans.isEmpty() && products != null) newProductAdd(spoken, said, lang, products, people)?.let { return it }
+        // "Stock report", "stock value evlo", "stock-la evlo panam mudangi irukku": the report / the money in stock — not the item list.
+        if (plans.isEmpty() && products != null && KaiCommands.asksStockReport(spoken)) return stockReport(lang, now().toLocalDate())
+        if (plans.isEmpty() && products != null && KaiCommands.asksStockValue(spoken)) return stockValue(spoken, lang, products)
         // Inventory by chat: bills with goods, product changes / details, the inventory summary — before reminders and payments.
         if (plans.isEmpty() && products != null) inventoryChat(spoken, said, lang, products, people)?.let { return it }
         // "Murukku evlo irukku?", "How much Phone Cover is left?": a product of this shop named in full in a stock question is
@@ -1544,6 +1579,8 @@ class KaiAgent(
             is KaiCommand.MoneyBalance -> money(cmd.kind, lang)
             KaiCommand.TopProducts -> topProducts(text, lang, at.toLocalDate(), people)
             KaiCommand.SlowStock -> slowStock(text, lang, at.toLocalDate(), people)
+            KaiCommand.StockValue -> stockValue(text, lang, products)
+            KaiCommand.StockReport -> stockReport(lang, at.toLocalDate())
             KaiCommand.Question -> {
                 // "Cigarette evlo irukku?", "pipe evlo iruku": every product with that word, each with its stock (owner, 10 Oct 2026).
                 if (stockAsk.containsMatchIn(text) && KaiCommands.personIn(text, people) == null && productNamed(text, products) == null) stockByWords(text, lang)?.let { return it }
@@ -2247,7 +2284,8 @@ class KaiAgent(
         fun usable(raw: String): String? {
             val w = raw.substringBefore('-')
             val k = w.lowercase(Locale.ROOT)
-            if (w.length < 3 || k in known || k in notQualifiers || k in relationWords || KaiEntityResolver.isFunctionWord(k)) return null
+            if (w.length < 3 || k in known || k in notQualifiers || k in relationWords || KaiEntityResolver.isFunctionWord(k) ||
+                k in com.shopai.app.brain.tools.KaiFeed.notNames) return null
             if (verbEnding.containsMatchIn(k) || samePerson(k, person) || com.shopai.app.brain.KaiUnderstanding.isNumberWord(k)) return null
             // "Karthik kuduthar 5000", "Divya pay pannitaan": the verb, never a second name ("Karthik Kuduthar").
             if (giveVerb.matches(k) || k in com.shopai.app.brain.tools.KaiFeed.receivedWords || k in com.shopai.app.brain.tools.KaiFeed.paidWords) return null
@@ -3787,7 +3825,7 @@ class KaiAgent(
      * "Rice purchase rate enna?", "Oil selling price?", "Colgate evlo labam?": the product's own prices from the books, per its
      * stock unit. A price the books don't hold is said plainly (and how to set it) — never guessed, never another figure.
      */
-    private fun productRate(p: com.shopai.app.brain.tools.ProductRef, kind: com.shopai.app.brain.tools.KaiInventory.RateKind, lang: KaiLang): KaiTurn {
+    private suspend fun productRate(p: com.shopai.app.brain.tools.ProductRef, kind: com.shopai.app.brain.tools.KaiInventory.RateKind, lang: KaiLang): KaiTurn {
         val inv = com.shopai.app.brain.tools.KaiInventory
         lastProduct = p
         conversationState.lastProduct = p.name; productTalkTurn = conversationState.conversationTurn
@@ -3827,10 +3865,23 @@ class KaiAgent(
                             ta = "ஓனர், ${p.name}-ல லாபம் இல்ல: purchase $buy, selling $sell.",
                             tl = "Owner, ${p.name}-la labam illa: purchase $buy, selling $sell.",
                             en = "Owner, ${p.name} makes no margin: purchase $buy, selling $sell.")
-                        else say(lang, KaiMood.EXPLAINING, null,
-                            ta = "ஓனர், ${p.name} ஒரு $per-க்கு லாபம் ${inv.rupees(gain)}$pctText — purchase $buy, selling $sell.",
-                            tl = "Owner, ${p.name} oru $per-ku labam ${inv.rupees(gain)}$pctText — purchase $buy, selling $sell.",
-                            en = "Owner, ${p.name} earns ${inv.rupees(gain)} per $per$pctText — purchase $buy, selling $sell.")
+                        else {
+                            // "Vengayathula evlo labam": also what this month's sales of it earned, at today's rates (an estimate, said so).
+                            val today = now().toLocalDate()
+                            val sold = runCatching { tools.topProducts(today.withDayOfMonth(1), today, 10_000) }.getOrNull()
+                                ?.firstOrNull { it.name.equals(p.name, ignoreCase = true) }?.qty?.takeIf { it.signum() > 0 }
+                            val month = sold?.let { q ->
+                                val earned = inv.rupees(gain.multiply(q))
+                                val shown = inv.shown(q, p.unit)
+                                pickLang(lang, ta = " இந்த மாசம் $shown வித்தது — லாபம் சுமார் $earned (இன்னைய rate படி மதிப்பீடு).",
+                                    tl = " Indha month $shown vithadhu — labam sumaar $earned (innaiya rate padi mathippeedu).",
+                                    en = " This month $shown sold — about $earned profit (an estimate at today's rates).")
+                            }.orEmpty()
+                            say(lang, KaiMood.EXPLAINING, null,
+                                ta = "ஓனர், ${p.name} ஒரு $per-க்கு லாபம் ${inv.rupees(gain)}$pctText — purchase $buy, selling $sell.$month",
+                                tl = "Owner, ${p.name} oru $per-ku labam ${inv.rupees(gain)}$pctText — purchase $buy, selling $sell.$month",
+                                en = "Owner, ${p.name} earns ${inv.rupees(gain)} per $per$pctText — purchase $buy, selling $sell.$month")
+                        }
                     }
                 }
             }
@@ -4802,7 +4853,8 @@ class KaiAgent(
     private val spellings = HashMap<String, String>()
     private val notSpellings = setOf("pay", "gpay", "upi", "cash", "full", "paid", "bill", "avar", "avan", "aval", "avanga", "ava", "owner", "bro", "sir", "kai")
 
-    private val fullAmount = Regex("""(?i)(?<![\p{L}])(full|fulla|fullah|full-aa|full\s+amount|full\s+payment|settle|settled|motham|mothama|muzhusa|muzhusaa|muzhu|clear|whole|all|ellam|ellaam)(?![\p{L}])|முழுசா|மொத்தம்|ஃபுல்""")
+    private val fullAmount = Regex("""(?i)(?<![\p{L}])(full|fulla|fullah|full-aa|full\s+amount|full\s+payment|settle|settled|motham|mothama|muzhusa|muzhusaa|muzhu|clear|whole|all|ellam|ellaam|ellathaiyum|ellathayum|ellathaium|ellaathaiyum|ellathiyum|ellathum|yellathaium|yellathaiyum|yellathayum|yellam|""" +
+        """fullaa|fullah|muzhusaaga|mothamaa)(?![\p{L}])|முழுசா|மொத்தம்|ஃபுல்|எல்லாத்தையும்|எல்லாத்தயும்|எல்லாமே|எல்லாம்""")
 
     /** What the books say is pending with the one record [r] names, on the side the payment is for — null when unclear. */
     private suspend fun pendingOf(r: PaymentRequest): BigDecimal? {
@@ -4817,7 +4869,8 @@ class KaiAgent(
         // "Kumar evlo tharanum" → "2000 kuduthan": the one person just talked about (never two; the draft names them for Confirm).
         val onTopic = conversationState.lastPerson?.takeIf {
             conversationState.conversationTurn - conversationState.mentionedTurn <= 3 && conversationState.mentionedPeople.size < 2 }
-        val r = if (r0.name.isNullOrBlank() && r0.amount != null && onTopic != null) r0.copy(name = onTopic) else r0
+        // "Dinesh evlo tharanum" → "ellathaiyum kuduthutan" / "settle pannitan": the same person, the whole pending (Confirm first).
+        val r = if (r0.name.isNullOrBlank() && (r0.amount != null || fullAmount.containsMatchIn(r0.said)) && onTopic != null) r0.copy(name = onTopic) else r0
         conversationState.currentIntent = "PAYMENT"
         conversationState.currentAction = "DRAFT_PAYMENT"
         conversationState.lastPerson = r.name
@@ -5352,6 +5405,188 @@ class KaiAgent(
         )
     }
 
+    private val tamilMonths = listOf("ஜனவரி", "பிப்ரவரி", "மார்ச்", "ஏப்ரல்", "மே", "ஜூன்", "ஜூலை", "ஆகஸ்ட்", "செப்டம்பர்", "அக்டோபர்", "நவம்பர்", "டிசம்பர்")
+    private fun monthName(d: LocalDate, lang: KaiLang) = if (lang == KaiLang.TAMIL) tamilMonths[d.monthValue - 1]
+        else d.month.getDisplayName(java.time.format.TextStyle.FULL, Locale.ENGLISH)
+
+    /** One period's profit from the books: sales, the cost of what was sold, shop expenses. */
+    private class ProfitFigures(val sales: BigDecimal, val cost: BigDecimal, val costFromPurchases: Boolean, val noPrice: List<String>, val expenses: BigDecimal) {
+        val gross: BigDecimal get() = sales - cost
+        val net: BigDecimal get() = gross - expenses
+        val empty: Boolean get() = sales.signum() == 0 && cost.signum() == 0 && expenses.signum() == 0
+    }
+
+    /**
+     * The cost of the goods sold is each sold item's quantity × its purchase price (the item-wise sales records); with no
+     * item-wise sales, the period's purchases stand in (said so). Null: the books can't be read.
+     */
+    private suspend fun profitFigures(from: LocalDate, to: LocalDate): ProfitFigures? {
+        val sales = runCatching { tools.sales(from, to) }.getOrNull() ?: return null
+        val expenses = runCatching { tools.expenses(from, to) }.getOrNull() ?: BigDecimal.ZERO
+        val sold = runCatching { tools.topProducts(from, to, 10_000) }.getOrNull().orEmpty().filter { it.qty.signum() > 0 }
+        val prices = runCatching { tools.products() }.getOrNull().orEmpty().associateBy { it.name.lowercase(Locale.ROOT) }
+        if (sold.isNotEmpty() && prices.isNotEmpty()) {
+            val noPrice = sold.filter { prices[it.name.lowercase(Locale.ROOT)]?.purchasePrice == null }.map { it.name }
+            val cost = sold.fold(BigDecimal.ZERO) { acc, f -> acc + (prices[f.name.lowercase(Locale.ROOT)]?.purchasePrice?.multiply(f.qty) ?: BigDecimal.ZERO) }
+            return ProfitFigures(sales, cost, false, noPrice, expenses)
+        }
+        val bought = runCatching { tools.purchases(from, to) }.getOrNull() ?: BigDecimal.ZERO
+        return ProfitFigures(sales, bought, true, emptyList(), expenses)
+    }
+
+    /**
+     * "Indha maasam labam evlo", "profit and loss report", "P&L kaattu": an estimate from the books — sales, the cost of the
+     * goods sold, shop expenses, gross and net profit, and last month beside it. Every figure is from the records and the
+     * answer says it is an estimate (principle 3). Null: the books can't be read (the plain "not kept" answer follows).
+     */
+    private suspend fun profitReport(lang: KaiLang, today: LocalDate, period: ChatPeriod): KaiTurn? {
+        val to = minOf(period.to, today)
+        val now = profitFigures(period.from, to) ?: return null
+        val label = periodName(period, lang, today)
+        fun r(a: BigDecimal) = KaiFormat.rupees(a.toDouble())
+        tools.log("profit report", "books", "sales ${now.sales} cost ${now.cost} expenses ${now.expenses}", ActionStatus.ANSWERED)
+        if (now.empty) return say(lang, KaiMood.CLARIFY, "profit: no figures",
+            ta = "ஓனர், $label sales, purchase, செலவு எதுவும் பதிவுல இல்ல — அதனால லாபம் கணக்கு போட முடியல.",
+            tl = "Owner, $label sales, purchase, selavu edhuvum record-la illa — adhanaala labam kanakku poda mudiyala.",
+            en = "Owner, there are no sales, purchases or expenses recorded for ${label.lowercase(Locale.ROOT)}, so I can't work out a profit.")
+        // Last month beside a month (the whole of it); other periods stand alone.
+        val monthly = period.kind == ChatPeriod.Kind.THIS_MONTH || period.kind == ChatPeriod.Kind.LAST_MONTH
+        val prevFrom = period.from.minusMonths(1).withDayOfMonth(1)
+        val before = if (monthly) profitFigures(prevFrom, period.from.minusDays(1))?.takeIf { !it.empty } else null
+        val costLine = if (now.costFromPurchases) pickLang(lang, ta = "வாங்கின பொருட்கள் (purchase)", tl = "Vaangina porul (purchase)", en = "Goods bought (purchases)")
+            else pickLang(lang, ta = "பொருட்களின் கொள்முதல் செலவு", tl = "Vitha porul-oda purchase vilai", en = "Cost of goods sold")
+        val lines = mutableListOf(
+            pickLang(lang, ta = "மொத்த விற்பனை", tl = "Mothha sales", en = "Total sales") + " — " + r(now.sales),
+            "$costLine — ${r(now.cost)}",
+            pickLang(lang, ta = "கடைச் செலவுகள்", tl = "Kadai selavu", en = "Shop expenses") + " — " + r(now.expenses),
+            pickLang(lang, ta = "மொத்த லாபம் (gross)", tl = "Mothha labam (gross)", en = "Gross profit") + " — " + r(now.gross),
+            pickLang(lang, ta = "நிகர லாபம் (மதிப்பீடு)", tl = "Nigara labam (mathippeedu)", en = "Net profit (estimate)") + " — " + r(now.net),
+        )
+        before?.let { b ->
+            val m = monthName(prevFrom, lang)
+            val d = now.net - b.net
+            val change = when (d.signum()) {
+                0 -> pickLang(lang, ta = "அதே அளவு", tl = "adhey alavu", en = "the same")
+                1 -> pickLang(lang, ta = "${r(d)} அதிகம்", tl = "${r(d)} adhigam", en = "${r(d)} more")
+                else -> pickLang(lang, ta = "${r(d.negate())} குறைவு", tl = "${r(d.negate())} kammi", en = "${r(d.negate())} less")
+            }
+            lines += pickLang(lang, ta = "$m நிகர லாபம் — ${r(b.net)} (இப்போ $change)", tl = "$m nigara labam — ${r(b.net)} (ippo $change)",
+                en = "$m net profit — ${r(b.net)} (now $change)")
+        }
+        val notes = buildList {
+            if (now.costFromPurchases) add(pickLang(lang, ta = "Item-wise sales பதிவு இல்ல, அதனால இந்த காலத்துல வாங்கினதை செலவா எடுத்தேன் — stock-ல இருக்கிறதும் இதுல சேரும்.",
+                tl = "Item-wise sales record illa, adhanaala indha period-la vaanginadha cost-a eduthen — stock-la irukradhum idhula serum.",
+                en = "There are no item-wise sales, so I took this period's purchases as the cost — stock still on the shelf is in it."))
+            if (now.noPrice.isNotEmpty()) add(pickLang(lang, ta = "${now.noPrice.size} product-க்கு purchase price இல்ல (${now.noPrice.take(3).joinToString()}) — அதோட cost சேரல, லாபம் கொஞ்சம் அதிகமா தெரியும்.",
+                tl = "${now.noPrice.size} product-ku purchase price illa (${now.noPrice.take(3).joinToString()}) — adhoda cost seraala, labam konjam adhigama theriyum.",
+                en = "${now.noPrice.size} product${if (now.noPrice.size == 1) "" else "s"} have no purchase price (${now.noPrice.take(3).joinToString()}) — their cost isn't counted, so the profit looks a little high."))
+        }
+        val net = r(now.net)
+        val head = if (now.net.signum() >= 0) pickLang(lang, ta = "ஓனர், $label லாபம் சுமார் $net (மதிப்பீடு).", tl = "Owner, $label labam sumaar $net (mathippeedu).",
+                en = "Owner, ${label.lowercase(Locale.ROOT)} profit is about $net (an estimate).")
+            else pickLang(lang, ta = "ஓனர், $label நஷ்டம் சுமார் ${r(now.net.negate())} (மதிப்பீடு).", tl = "Owner, $label nashtam sumaar ${r(now.net.negate())} (mathippeedu).",
+                en = "Owner, ${label.lowercase(Locale.ROOT)} shows a loss of about ${r(now.net.negate())} (an estimate).")
+        return KaiTurn(ChatReply((listOf(head) + notes).joinToString("\n"), KaiMood.EXPLAINING, ChatIntent.GENERAL_BUSINESS_QUERY), KaiCard(lines, emptyList()))
+    }
+
+    /** Each product's money in stock at its purchase price (null price: left out, and named). */
+    private fun stockMoney(products: List<com.shopai.app.brain.tools.ProductRef>) =
+        products.filter { it.stock.signum() > 0 }.map { it to it.purchasePrice?.multiply(it.stock) }
+
+    /** "Stock-la evlo panam mudangi irukku?": the money in stock at purchase prices — the product named, else all, biggest first. */
+    private suspend fun stockValue(text: String, lang: KaiLang, products0: List<com.shopai.app.brain.tools.ProductRef>?): KaiTurn {
+        val products = products0 ?: runCatching { tools.products() }.getOrNull() ?: return unverified(lang, "stock value")
+        fun r(a: BigDecimal) = KaiFormat.rupees(a.toDouble())
+        val inv = com.shopai.app.brain.tools.KaiInventory
+        productIn(text, products)?.let { p ->
+            val price = p.purchasePrice ?: return say(lang, KaiMood.CLARIFY, "stock value: no price",
+                ta = "ஓனர், ${p.name}-க்கு purchase price இல்ல — “${p.name} purchase rate 40”-னு சொன்னா மதிப்பு சொல்லுவேன்.",
+                tl = "Owner, ${p.name}-ku purchase price illa — “${p.name} purchase rate 40”-nu sonna mathippu solluven.",
+                en = "Owner, ${p.name} has no purchase price — say “${p.name} purchase rate 40” and I'll tell you its value.")
+            val v = r(price.multiply(p.stock.max(BigDecimal.ZERO)))
+            return say(lang, KaiMood.EXPLAINING, "stock value: ${p.name}",
+                ta = "ஓனர், ${p.name} ${inv.shown(p.stock, p.unit)} — purchase விலை படி $v stock-ல இருக்கு.",
+                tl = "Owner, ${p.name} ${inv.shown(p.stock, p.unit)} — purchase vilai padi $v stock-la irukku.",
+                en = "Owner, ${p.name}: ${inv.shown(p.stock, p.unit)} — $v in stock at purchase price.")
+        }
+        val held = stockMoney(products)
+        val priced = held.filter { it.second != null }.sortedByDescending { it.second }
+        val noPrice = held.filter { it.second == null }.map { it.first.name }
+        val total = priced.fold(BigDecimal.ZERO) { a, (_, v) -> a + v!! }
+        tools.log("stock value", "inventory", "total $total, ${noPrice.size} unpriced", ActionStatus.ANSWERED)
+        if (priced.isEmpty()) return say(lang, KaiMood.CLARIFY, "stock value: no prices",
+            ta = "ஓனர், stock-ல இருக்கிற product-க்கு purchase price இல்ல — அதனால எவ்வளவு பணம் முடங்கியிருக்கு-னு சொல்ல முடியல.",
+            tl = "Owner, stock-la irukra product-ku purchase price illa — adhanaala evlo panam mudangi irukku-nu solla mudiyala.",
+            en = "Owner, the products in stock have no purchase prices, so I can't tell how much money is in stock.")
+        val missing = if (noPrice.isEmpty()) "" else pickLang(lang,
+            ta = " ${noPrice.size} product-க்கு purchase price இல்ல (${noPrice.take(3).joinToString()}) — அது இதுல சேரல.",
+            tl = " ${noPrice.size} product-ku purchase price illa (${noPrice.take(3).joinToString()}) — adhu idhula seraala.",
+            en = " ${noPrice.size} product${if (noPrice.size == 1) "" else "s"} have no purchase price (${noPrice.take(3).joinToString()}) — not counted.")
+        return KaiTurn(
+            ChatReply(pickLang(lang, ta = "ஓனர், stock-ல ${r(total)} முடங்கியிருக்கு (purchase விலை படி).$missing",
+                tl = "Owner, stock-la ${r(total)} mudangi irukku (purchase vilai padi).$missing",
+                en = "Owner, ${r(total)} is held in stock (at purchase prices).$missing"), KaiMood.EXPLAINING, ChatIntent.GENERAL_BUSINESS_QUERY),
+            KaiCard(priced.take(8).map { (p, v) -> "${p.name} — ${inv.shown(p.stock, p.unit)} — ${r(v!!)}" }, emptyList()),
+        )
+    }
+
+    /**
+     * "Stock performance report": what sells most and least (the last 30 days), stock unsold for 60 days and the money in it,
+     * low stock, and the money held in stock — all from the item-wise sales and the inventory. What the books lack is said.
+     */
+    private suspend fun stockReport(lang: KaiLang, today: LocalDate): KaiTurn {
+        val products = runCatching { tools.products() }.getOrNull() ?: return unverified(lang, "stock report")
+        val inv = com.shopai.app.brain.tools.KaiInventory
+        fun r(a: BigDecimal) = KaiFormat.rupees(a.toDouble())
+        val sold30 = runCatching { tools.topProducts(today.minusDays(29), today, 10_000) }.getOrNull().orEmpty().filter { it.qty.signum() > 0 }.sortedByDescending { it.value }
+        val sold60 = runCatching { tools.topProducts(today.minusDays(59), today, 10_000) }.getOrNull().orEmpty().filter { it.qty.signum() > 0 }
+        val low = runCatching { tools.lowStock() }.getOrNull().orEmpty()
+        val held = stockMoney(products)
+        val total = held.mapNotNull { it.second }.fold(BigDecimal.ZERO) { a, v -> a + v }
+        val noPrice = held.count { it.second == null }
+        val unit = products.associate { it.name.lowercase(Locale.ROOT) to it.unit }
+        fun sold(f: com.shopai.app.brain.tools.ProductSalesFact) = (unit[f.name.lowercase(Locale.ROOT)]?.let { "${inv.shown(f.qty, it)} — " }.orEmpty()) + r(f.value)
+        val lines = mutableListOf<String>()
+        fun section(ta: String, tl: String, en: String) { lines += "— ${pickLang(lang, ta = ta, tl = tl, en = en)} —" }
+        val headParts = mutableListOf<String>()
+        if (sold30.isEmpty()) {
+            section("விற்பனை", "Sales", "Sales")
+            lines += pickLang(lang, ta = "கடந்த 30 நாள்ல item-wise sales பதிவு இல்ல — எது அதிகமா / மெதுவா விக்குது-னு சொல்ல முடியாது.",
+                tl = "Kadandha 30 naal-la item-wise sales record illa — edhu adhigama / medhuva vikkudhu-nu solla mudiyadhu.",
+                en = "No item-wise sales in the last 30 days — I can't tell what sells fast or slow.")
+        } else {
+            section("அதிகமா விக்கிறது (30 நாள்)", "Adhigama vikkuradhu (30 naal)", "Best sellers (30 days)")
+            sold30.take(3).forEachIndexed { i, f -> lines += "${i + 1}. ${f.name} — ${sold(f)}" }
+            headParts += pickLang(lang, ta = "அதிகமா விக்கிறது ${sold30.first().name}", tl = "adhigama vikkuradhu ${sold30.first().name}", en = "best seller ${sold30.first().name}")
+            if (sold30.size > 3) {
+                section("மெதுவா விக்கிறது (30 நாள்)", "Medhuva vikkuradhu (30 naal)", "Slow sellers (30 days)")
+                sold30.takeLast(minOf(3, sold30.size - 3)).reversed().forEach { f -> lines += "${f.name} — ${sold(f)}" }
+            }
+        }
+        if (sold60.isNotEmpty()) {
+            val names = sold60.map { it.name.lowercase(Locale.ROOT) }.toSet()
+            val idle = held.filter { it.first.name.lowercase(Locale.ROOT) !in names }.sortedByDescending { it.second ?: BigDecimal.ZERO }
+            section("60 நாளா விக்காத stock", "60 naal-a vikkaadha stock", "Unsold for 60 days")
+            if (idle.isEmpty()) lines += pickLang(lang, ta = "எதுவும் இல்ல", tl = "Edhuvum illa", en = "None")
+            else {
+                idle.take(5).forEach { (p, v) -> lines += "${p.name} — ${inv.shown(p.stock, p.unit)}" + (v?.let { " — ${r(it)}" }.orEmpty()) }
+                val idleMoney = idle.mapNotNull { it.second }.fold(BigDecimal.ZERO) { a, v -> a + v }
+                headParts += pickLang(lang, ta = "60 நாளா விக்காதது ${idle.size} product (${r(idleMoney)})", tl = "60 naal-a vikkaadhadhu ${idle.size} product (${r(idleMoney)})",
+                    en = "${idle.size} unsold for 60 days (${r(idleMoney)})")
+            }
+        }
+        section("குறைந்த stock", "Low stock", "Low stock")
+        if (low.isEmpty()) lines += pickLang(lang, ta = "எதுவும் இல்ல", tl = "Edhuvum illa", en = "None")
+        else low.take(5).forEach { f -> lines += "${f.name} — ${inv.shown(f.qty, f.unit)}" + (f.reorderAt?.let { " (reorder ${inv.shown(it, f.unit)})" }.orEmpty()) }
+        section("Stock-ல முடங்கியிருக்கும் பணம்", "Stock-la mudangi irukra panam", "Money held in stock")
+        lines += r(total) + if (noPrice > 0) pickLang(lang, ta = " ($noPrice product-க்கு purchase price இல்ல)", tl = " ($noPrice product-ku purchase price illa)",
+            en = " ($noPrice without a purchase price)") else ""
+        tools.log("stock report", "inventory + sales ledger", "${sold30.size} sold, ${low.size} low, total $total", ActionStatus.ANSWERED)
+        val head = pickLang(lang, ta = "ஓனர், stock-ல ${r(total)} முடங்கியிருக்கு", tl = "Owner, stock-la ${r(total)} mudangi irukku",
+            en = "Owner, ${r(total)} is held in stock") + headParts.joinToString("") { "; $it" } + "."
+        return KaiTurn(ChatReply(head, KaiMood.EXPLAINING, ChatIntent.GENERAL_BUSINESS_QUERY), KaiCard(lines, emptyList()))
+    }
+
     // An accountant's questions Kai has no figure for (owner, 11 Oct 2026): "profit evlo", "GST evlo kattanum", "balance sheet kudu".
     private val profitAsk = Regex("""(?i)(?<![\p{L}])(?:profit|labam|laabam|labama|labamaa|nashtam|nashtama|nashtamaa|loss|p\s*&\s*l|p\s*and\s*l|pnl)(?![\p{L}])|லாபம்|நஷ்டம்""")
     private val taxAsk = Regex("""(?i)(?<![\p{L}])(?:gst|tax|vari|itr|tds)(?![\p{L}])|ஜிஎஸ்டி|வரி""")
@@ -5372,6 +5607,8 @@ class KaiAgent(
         if (!profit && !tax && !sheet && untracked == null) return null
         val period = q.period ?: if (has(text, "inniku", "innaikku", "innaiku", "today", "இன்னைக்கு")) ChatPeriod(today, today, ChatPeriod.Kind.TODAY)
             else ChatPeriod(today.withDayOfMonth(1), today, ChatPeriod.Kind.THIS_MONTH)
+        // "Indha maasam labam evlo", "P&L report": the estimate from the books.
+        if (profit && !tax && !sheet && untracked == null) profitReport(lang, today, period)?.let { return it }
         val to = minOf(period.to, today)
         val sales = runCatching { tools.sales(period.from, to) }.getOrNull()
         val bought = runCatching { tools.purchases(period.from, to) }.getOrNull()

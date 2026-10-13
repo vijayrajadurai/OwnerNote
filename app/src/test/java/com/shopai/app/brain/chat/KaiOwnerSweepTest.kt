@@ -104,6 +104,11 @@ class KaiOwnerSweepTest {
         override fun zone() = "Asia/Kolkata"
         override suspend fun lowStock() = inv.items.filter { i -> i.stock.signum() <= 0 || i.minimum?.let { i.stock <= it } == true }
             .map { com.shopai.app.brain.tools.StockFact(it.name, it.stock, it.unit, it.minimum) }
+        /** Sales, purchases, expenses by month ("2026-10"); none by default (Kai then says the books don't have them). */
+        var money: Map<String, Triple<BigDecimal, BigDecimal, BigDecimal>> = emptyMap()
+        override suspend fun sales(from: LocalDate, to: LocalDate) = money[from.toString().take(7)]?.first
+        override suspend fun purchases(from: LocalDate, to: LocalDate) = money[from.toString().take(7)]?.second
+        override suspend fun expenses(from: LocalDate, to: LocalDate) = money[from.toString().take(7)]?.third
         override suspend fun topProducts(from: LocalDate, to: LocalDate, limit: Int) = listOf(
             ProductSalesFact("Rice", BigDecimal("320"), BigDecimal("17600")), ProductSalesFact("Colgate", BigDecimal("90"), BigDecimal("4500")),
         ).take(limit)
@@ -843,6 +848,63 @@ class KaiOwnerSweepTest {
                 else -> failures += "[owner-lines.txt] unknown kind '$kind': $raw"
             }
         }
+    }
+
+    /**
+     * The owner's lines (13 Oct 2026), each typed and as the mic writes it: the whole balance paid after "Dinesh evlo tharanum",
+     * a product with "-la" on it ("Vengayathula"), the profit & loss estimate and the stock report — from the records, nothing
+     * written before Confirm, nothing invented when the books have no figures.
+     */
+    @Test fun fullPaymentProductCaseAndReports() {
+        val fails = mutableListOf<String>()
+        fun shop(figures: Boolean = true) = Shop { add("c9", "Dinesh", true, "4000", d(10, 1), d(10, 10)) }.apply {
+            inv.items += Inventory.Item("p7", "Vengayam", "KG", BigDecimal("80"), emptyMap(), BigDecimal("30"), BigDecimal("40"), "Grocery", null)
+            if (figures) tools.money = mapOf("2026-10" to Triple(BigDecimal("300000"), BigDecimal("200000"), BigDecimal("25000")),
+                "2026-09" to Triple(BigDecimal("250000"), BigDecimal("180000"), BigDecimal("20000")))
+        }
+        fun all(t: KaiTurn) = t.reply.text + " " + t.card?.lines.orEmpty().joinToString(" ")
+        fun play(name: String, lines: List<String>, figures: Boolean = true, check: (Shop, KaiTurn) -> String?) {
+            val s = shop(figures)
+            var last: KaiTurn? = null
+            for (l in lines) last = s.say(l)
+            check(s, last!!)?.let { fails += "[$name] $it${s.log}" }
+        }
+        fun has(vararg w: String): (Shop, KaiTurn) -> String? = { s, t -> w.firstOrNull { !all(t).contains(it) }?.let { "lacks '$it'" } ?: if (s.nothingWritten()) null else "wrote something" }
+        fun paidFull(s: Shop, t: KaiTurn): String? {
+            if (!s.nothingWritten()) return "wrote before Confirm"
+            val b = t.card?.buttons?.firstOrNull { it.action is KaiAction.ConfirmPlan } ?: return "no draft"
+            s.act(b.action)
+            val ok = s.tools.saved.singleOrNull()?.let { it.kind == PlanKind.PAYMENT_IN && it.partyName == "Dinesh" && it.amount.compareTo(BigDecimal("4000")) == 0 } == true
+            return if (ok) null else "saved ${s.tools.saved.map { "${it.kind} ${it.partyName} ${it.amount}" }}"
+        }
+        // "Dinesh evlo tharanum" → the whole of it paid, said many ways.
+        for (paid in listOf("yellathaium kuduthutan", "ellathaiyum kuduthutan", "settle pannitan", "full ah kattitan", "4000 kuduthutan",
+                "எல்லாத்தையும் குடுத்துட்டான்", "ஃபுல்லா கட்டிட்டான்", "செட்டில் பண்ணிட்டான்"))
+            play("full after the balance: $paid", listOf(if (paid.any { it in '஀'..'௿' }) "தினேஷ் எவ்வளவு தரணும்" else "Dinesh evlo tharanum", paid), check = ::paidFull)
+        for (line in listOf("Dinesh yellathaium kuduthutan", "Dinesh full payment settle pannitan", "Dinesh full ah kattitan", "தினேஷ் எல்லாத்தையும் குடுத்துட்டான்"))
+            play("full, named: $line", listOf(line), check = ::paidFull)
+        // A word that is not "all": never the whole balance.
+        play("part, not full", listOf("Dinesh evlo tharanum", "konjam kuduthutan")) { s, t ->
+            if (s.nothingWritten() && t.card?.lines?.none { it.contains("₹4,000") } != false) null else "took it as the full ₹4,000" }
+        // A product with "-la" / "-oda" on it.
+        for (q in listOf("Vengayathula evlo labam", "வெங்காயத்துல எவ்வளவு லாபம்")) play("product case: $q", listOf(q), check = has("Vengayam", "₹10"))
+        for (q in listOf("Ricela evlo labam", "ரைஸ்ல எவ்வளவு லாபம்")) play("product case and this month: $q", listOf(q), check = has("Rice", "₹9", "320", "₹2,880"))
+        play("not a product: asked, not another product", listOf("Kathirikkayathula evlo labam")) { s, t -> if (s.nothingWritten() && !all(t).contains("Vengayam")) null else "guessed" }
+        // Profit & loss: an estimate from the books, with last month beside it.
+        for (q in listOf("indha maasam labam evlo", "profit and loss report", "இந்த மாசம் லாபம் எவ்வளவு"))
+            play("P&L: $q", listOf(q)) { s, t -> has("₹3,00,000", "₹25,000", "₹2,54,560", "₹2,09,560")(s, t)
+                ?: if (all(t).contains("September") || all(t).contains("செப்டம்பர்")) null else "no last month" }
+        play("P&L with no figures: nothing invented", listOf("indha maasam labam evlo"), figures = false) { s, t ->
+            if (s.nothingWritten() && !all(t).contains("₹") && !t.reply.text.contains("sumaar")) null else "invented a figure" }
+        // The stock report, the money in stock, what sells and what doesn't.
+        for (q in listOf("stock report", "stock performance report", "ஸ்டாக் அறிக்கை"))
+            play("stock report: $q", listOf(q), check = has("Rice", "Oil", "Maggi", "₹63,920", "₹43,200"))
+        for (q in listOf("stock la evlo panam mudangi irukku", "stock value evlo", "ஸ்டாக்ல எவ்வளவு பணம் முடங்கியிருக்கு"))
+            play("stock value: $q", listOf(q), check = has("₹63,920", "Oil", "₹36,000"))
+        play("one product's stock value", listOf("Colgate stock value"), check = has("₹6,720"))
+        for (q in listOf("vikkadha stock", "medhuva vikkura products", "விக்காத பொருள் எது")) play("unsold: $q", listOf(q), check = has("Oil", "Baniyan"))
+        for (q in listOf("adhigama vikkura porul", "endha item adhigama vikkudhu")) play("best seller: $q", listOf(q), check = has("Rice"))
+        assertTrue("${fails.size} failed:\n\n" + fails.joinToString("\n\n"), fails.isEmpty())
     }
 
     @Test fun ownersDay() {

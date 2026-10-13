@@ -246,3 +246,12 @@ ASK    | rent kattanum                            | Daily Cash
 ASK    | current bill 1200 kattinen               | Daily Cash; ₹1200
 ASK    | Kumar kitta pesanum                      | Kumar
 ASK    | athu evlo irukku                         | Product   # nothing talked about: asked which, never a person called "Athu"
+
+# The whole balance paid, a product with "-la" on it, and the stock questions (owner, 13 Oct 2026).
+ENTRY  | Kumar ellathaiyum kuduthutan             | IN Kumar 4000
+ENTRY  | Kumar full ah kattitan                   | IN Kumar 4000
+ASK    | Ricela evlo labam                        | ₹9; 320
+ASK    | stock la evlo panam mudangi irukku       | ₹61,520
+ASK    | vikkadha stock                           | Oil; Baniyan
+ASK    | adhigama vikkura porul                   | Rice
+ASK    | stock report                             | Rice; Maggi; ₹61,520
