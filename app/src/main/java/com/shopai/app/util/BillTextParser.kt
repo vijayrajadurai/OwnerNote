@@ -167,7 +167,8 @@ object BillTextParser {
     private val timeRegex = Regex("""\b\d{1,2}:\d{2}(?::\d{2})?\b""")
     // Qty / rate / amount columns at the end of an item line. Stops at a
     // number with a unit ("5kg", "1L") so the pack size stays in the name.
-    private val trailingNumbersRegex = Regex("""(?:[\s:x@*/=\-]*(?:₹|rs\.?|inr)?\s*\d[\d,]*(?:\.\d+)?)+[\s/\-]*$""", RegexOption.IGNORE_CASE)
+    // "2 x 95.00" — an "x" on its own is "times"; the "x" ending a word ("4 box 1800.00") stays in the word.
+    private val trailingNumbersRegex = Regex("""(?:(?:[\s:@*/=\-]|(?<!\p{L})[x×])*(?:₹|rs\.?|inr)?\s*\d[\d,]*(?:\.\d+)?)+[\s/\-]*$""", RegexOption.IGNORE_CASE)
 
     // Anything bigger is almost certainly a phone/GST/bill number, not money.
     private val maxPlausibleAmount = BigDecimal("10000000")

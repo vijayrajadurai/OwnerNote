@@ -911,6 +911,53 @@ class KaiOwnerSweepTest {
         assertTrue("${fails.size} failed:\n\n" + fails.joinToString("\n\n"), fails.isEmpty())
     }
 
+    /**
+     * "Intha bill la irukura stock ah add pannu / seru / seathuko", "… kali / less / kammi pannu", "purchase invoice-na add, sales-na
+     * less" (owner, 13 Oct 2026): the bill scanner opens with the way the stock goes, the credit / debit entry as always, nothing
+     * written in chat. A line that doesn't say which way is asked, and the answer opens the scanner — typed and spoken.
+     */
+    @Test fun billStockByChat() {
+        val fails = mutableListOf<String>()
+        val inWay = com.shopai.app.util.BillStock.Way.IN
+        val outWay = com.shopai.app.util.BillStock.Way.OUT
+        fun play(lines: List<String>, way: com.shopai.app.util.BillStock.Way?, opens: Boolean = true) {
+            com.shopai.app.util.BillStock.Request.take()
+            val s = Shop()
+            var t: KaiTurn? = null
+            for (l in lines) t = s.say(l)
+            val asked = com.shopai.app.util.BillStock.Request.take()
+            val opened = t!!.direct == KaiAction.OpenScanner
+            if (asked != way || opened != opens || t.card?.buttons?.none { it.action == KaiAction.OpenScanner } != false || !s.nothingWritten())
+                fails += "${lines.joinToString(" → ")}: way=$asked opened=$opened${s.log}"
+        }
+        for (l in listOf("intha bill la irukura stock ah add pannu", "intha bill la irukura stock ah seru", "intha bill la irukura stock ah seathuko",
+                "இந்த பில்ல இருக்குற ஸ்டாக்க சேர்த்துக்கோ", "இந்த பில்ல இருக்குற ஸ்டாக்க சேரு")) play(listOf(l), inWay)
+        for (l in listOf("intha bill la irukura stock ah kali pannu", "intha bill la irukura stock ah less pannu", "intha bill la irukura stock ah kammi pannu",
+                "இந்த பில்ல இருக்குற ஸ்டாக்க கம்மி பண்ணு", "இந்த பில்ல இருக்குற ஸ்டாக்க கழி")) play(listOf(l), outWay)
+        // A plain scan, and the rule said: by the bill (purchase in, sale out); the rule shows the button, not the camera at once.
+        for (l in listOf("intha bill scan pannu", "இந்த பில் ஸ்கேன் பண்ணு")) play(listOf(l), null)
+        for (l in listOf("Purchase invoice ah iruntha, inventory la stock add pannidu", "Sales invoices ah iruntha, inventory la stock ah less panniko"))
+            play(listOf(l), null, opens = false)
+        // Which way not said: asked; the answer opens the scanner that way.
+        play(listOf("intha bill la irukura stock ah check pannu", "add pannu"), inWay)
+        play(listOf("intha bill la irukura stock ah check pannu", "sales bill"), outWay)
+        play(listOf("இந்த பில்ல இருக்குற ஸ்டாக்க செக் பண்ணு", "கம்மி பண்ணு"), outWay)
+        play(listOf("intha bill la irukura stock ah check pannu", "theriyala"), null)
+        // The question is asked, never guessed (a word not in the list: "check").
+        run {
+            val s = Shop()
+            val t = s.say("intha bill la irukura stock ah check pannu")
+            if (t.direct != null || !(t.reply.text.contains("add pannanuma") && t.reply.text.contains("kammi pannanuma"))) fails += "not asked: ${t.reply.text}"
+        }
+        // Not about a bill's stock: unchanged.
+        run {
+            val s = Shop()
+            val t = s.say("Colgate 2 box vandhuchu")
+            if (t.direct != null || t.card?.buttons?.none { it.label.startsWith("Confirm") } != false) fails += "stock line changed: ${t.reply.text}"
+        }
+        assertTrue("${fails.size} failed:\n\n" + fails.joinToString("\n\n"), fails.isEmpty())
+    }
+
     @Test fun ownersDay() {
         moneyLines(); reminderLines(); stockLines(); questionLines(); conversationLines(); feedLines()
         // The same lines said into the mic.

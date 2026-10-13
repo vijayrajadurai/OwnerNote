@@ -146,6 +146,8 @@ fun DocumentCaptureSection(
     val billPaymentFailedFormat = stringResource(R.string.bill_payment_failed)
     val paidOnBillNote = stringResource(R.string.bill_paid_on_bill_note)
     val billSavedMessage = stringResource(R.string.capture_bill_saved)
+    val stockMovedFormat = stringResource(R.string.bill_stock_moved)
+    val stockFailedFormat = stringResource(R.string.bill_stock_failed)
 
     // ---- Reading a photo ----
 
@@ -169,6 +171,10 @@ fun DocumentCaptureSection(
             ?: runCatching { container.businessRepository.getMyBusiness() }.getOrNull()?.let { com.shopai.app.util.MyBusiness(it.businessName, null, it.phone) }
             ?: com.shopai.app.util.MyBusiness(null, null, null)
         bill.applyScan(local, server?.partyName, server?.amount, com.shopai.app.util.BillDirection.decide(text, local, me), ocrConfidence)
+        // The bill's items matched to the shop's products: the stock it moves (checked on the review, moved only on save).
+        val products = runCatching { container.kaiTools.products() }.getOrNull().orEmpty()
+        // "Intha bill la irukura stock ah add / kammi pannu" said to Kai before the scan: that way; else by the bill.
+        bill.setStockLines(com.shopai.app.util.BillStock.lines(local.items, products), com.shopai.app.util.BillStock.Request.take())
         // Kai: what he read on the bill, and whether the total needs a check.
         container.kaiBrain.announce(
             com.shopai.app.brain.KaiResponder.billRead(
@@ -344,13 +350,31 @@ fun DocumentCaptureSection(
                 )
             }.getOrNull()
 
+            // The items ticked on the review, after the entry is saved: stock in for a supplier bill, stock out for a customer bill.
+            val stockReason = "Bill: ${shop.ifBlank { party }}" + bill.invoiceNumber.trim().takeIf { it.isNotEmpty() }?.let { " · Inv $it" }.orEmpty()
+            val stockFailed = mutableListOf<String>()
+            var stockMoved = 0
+            val stockIn = bill.stockIn
+            for ((product, qty) in bill.stockToMove) {
+                val moved = runCatching {
+                    if (stockIn) {
+                        container.inventoryRepository.stockIn(product.id, qty.toDouble(), stockReason)
+                        true
+                    } else {
+                        container.inventoryRepository.stockOut(product.id, qty.toDouble(), stockReason) is com.shopai.app.data.repository.StockChangeResult.Ok
+                    }
+                }.getOrDefault(false)
+                if (moved) stockMoved++ else stockFailed += product.name
+            }
+
             bill.reset()
             selectedBillId = savedId
             when {
                 !paymentRecorded -> error = billPaymentFailedFormat.format(BillNotesFormatter.rupees(paid))
                 savedId == null -> error = errorLocalSave
-                else -> info = billSavedMessage
+                else -> info = billSavedMessage + if (stockMoved > 0) " " + stockMovedFormat.format(stockMoved) else ""
             }
+            if (stockFailed.isNotEmpty()) error = listOfNotNull(error, stockFailedFormat.format(stockFailed.joinToString())).joinToString("\n")
             // Kai: what is still pending on the saved bill (from the saved values).
             if (paymentRecorded) {
                 val pending = (total - paid).toDouble()
