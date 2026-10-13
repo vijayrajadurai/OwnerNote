@@ -177,7 +177,7 @@ object KaiSpokenWords {
         "சரி" to "seri", "ஓகே" to "ok", "ஆமா" to "aama", "ஆமாம்" to "aama", "இல்ல" to "illa", "இல்லை" to "illa", "சேவ்" to "save",
         "இப்போ" to "ippo", "இப்ப" to "ippa", "இப்பொழுது" to "ippo", "எப்போ" to "eppo", "எப்ப" to "eppa", "எப்படி" to "eppadi",
         "யார்" to "yaar", "யாரு" to "yaaru", "யாருக்கு" to "yaarukku", "யாருகிட்ட" to "yaarukitta", "யாரெல்லாம்" to "yaarellam",
-        "கொஞ்சம்" to "konjam", "ஃபுல்" to "full", "ஃபுல்லா" to "fulla", "முழுசா" to "muzhusa", "ரூபாய்" to "rupees", "ரூபா" to "rupees",
+        "கொஞ்சம்" to "konjam", "ஃபுல்" to "full", "ஃபுல்லா" to "fulla", "எல்லாத்தையும்" to "ellathaiyum", "முடங்கியிருக்கு" to "mudangi irukku", "முடங்கி" to "mudangi", "விக்காத" to "vikkaadha", "மெதுவா" to "medhuva", "அறிக்கை" to "arikkai", "விக்குற" to "vikkura", "விக்குது" to "vikkudhu", "ரிப்போர்ட்" to "report", "பர்ஃபார்மன்ஸ்" to "performance", "பெர்ஃபார்மன்ஸ்" to "performance", "எல்லாத்தயும்" to "ellathaiyum", "முழுசா" to "muzhusa", "ரூபாய்" to "rupees", "ரூபா" to "rupees",
         // ---- stock (what typed Tanglish already says) ----
         "வித்துச்சு" to "vithuchu", "வித்துடுச்சு" to "vithiruchu", "வித்துட்டேன்" to "vithutten", "வித்தேன்" to "vithen", "விக்கல" to "vikkala",
         "ஆயிடுச்சு" to "aagiduchu", "ஆகிடுச்சு" to "aagiduchu", "ஆயிருச்சு" to "aagiduchu", "உடைஞ்சிடுச்சு" to "udanjiduchu", "உடைஞ்சுச்சு" to "udanjuchu",
