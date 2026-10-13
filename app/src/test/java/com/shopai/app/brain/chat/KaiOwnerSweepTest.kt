@@ -511,6 +511,20 @@ class KaiOwnerSweepTest {
             else "saved ${s.tools.saved.map { "${it.partyName} ${it.amount}" }}" }
         talk("an expense is never a person", listOf("current bill 1200 kattinen"), check = nothingWritten("₹1200"))
         talk("an unknown word is asked, not guessed", listOf("spa 300 kattinen"), check = nothingWritten("₹300"))
+        // "idhu Kumar pathiyaa, illa vera vishayam pathiyaa?" (owner, 13 Oct 2026): "aamaa" goes on with Kumar, never the same question
+        // again; "vera vishayam" / "illa" drops Kumar (the draft on screen stays) and asks what it is about.
+        talk("Kumar pathiyaa? aamaa: Kumar, and what to say next", listOf("Kumar", "blah blah", "aamaa"), check = nothingWritten("₹4,000", "Kumar 500"))
+        talk("Colgate stock pathiyaa? aamaa: its stock", listOf("Colgate stock evlo", "blah blah", "aamaa"), check = nothingWritten("240", "Colgate 2"))
+        talk("vera vishayam → stock: the stock question", listOf("Kumar", "blah blah", "vera vishayam", "stock"), check = nothingWritten("Colgate 2"))
+        talk("vera vishayam → the next entry goes in", listOf("Kumar", "blah blah", "vera vishayam", "Ramesh 300 kuduthan", "TAP")) { s ->
+            if (s.tools.saved.singleOrNull()?.let { it.partyName == "Ramesh" && it.amount.compareTo(BigDecimal("300")) == 0 } == true) null
+            else "saved ${s.tools.saved.map { "${it.partyName} ${it.amount}" }}" }
+        talk("vera vishayam → avan: asked who, not Kumar", listOf("Kumar", "blah blah", "vera vishayam", "avan evlo tharanum")) { s ->
+            val t = lastTurn?.reply?.text.orEmpty()
+            if (!t.contains("Kumar") && !t.contains("குமார்") && s.nothingWritten()) null else "said: $t" }
+        talk("illa to Kumar pathiyaa: the draft is kept", listOf("Kumar ku 500 credit", "blah blah", "illa")) { s ->
+            val t = lastTurn?.reply?.text.orEmpty()
+            if (t.contains("₹500") && !t.contains("cancel", true) && !t.contains("ரத்து") && s.nothingWritten()) null else "said: $t" }
         talk("both of them", listOf("Selvam evlo tharanum", "Ramesh?", "rendu perum total evlo"), check = said("Selvam ₹6,000", "Ramesh ₹2,500", "₹8,500"))
         talk("both of them, spoken", listOf("செல்வம் எவ்வளவு தரணும்", "ரமேஷ் எவ்வளவு தரணும்", "ரெண்டு பேரும் மொத்தம் எவ்வளவு"), check = said("₹8,500"))
         talk("the first person asked", listOf("Kumar evlo tharanum", "Colgate stock evlo", "Lakshmi due date eppo", "first ketta aal evlo tharanum nu sonna"),

@@ -91,6 +91,8 @@ class KaiBusinessBrain(
 
     /** The person asked about last (for "avan 3000 dhaan tharanum"). */
     fun lastPerson(): String? = talkedAbout.lastOrNull()?.name
+    /** "vera vishayam": the person talked about is no longer the topic ("avan" asks again; who came first is kept). */
+    fun forgetLastPerson() { talkedAbout.clear(); lastParty = null }
     /** Parties the owner must choose between ("Kumar-nu rendu customer irukku"). */
     private var choices: List<PartyFacts> = emptyList()
     private var choiceQuery: ChatQuery? = null
