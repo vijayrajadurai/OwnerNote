@@ -44,8 +44,8 @@ object KaiProductSound {
         // picks the product (KaiStock), or Kai asks which.
         val sizeless = products.mapNotNull { p ->
             val ws = p.name.split(Regex("""\s+"""))
-            // "Braided hose 1/2 inch" → "Braided hose" (the size and its unit both go); "1-way switch 6A" → "switch".
-            val cut = ws.indexOfFirst { w -> w.any(Char::isDigit) }
+            // "Braided hose 1/2 inch" → "Braided hose" (the size and its unit both go); "1-way switch 6A" → "1-way switch".
+            val cut = ws.withIndex().indexOfFirst { (i, w) -> i > 0 && w.any(Char::isDigit) }
             (if (cut > 0) ws.take(cut) else ws.filterNot { w -> w.any(Char::isDigit) }).takeIf { it.isNotEmpty() && it.size < ws.size }?.joinToString(" ")
         // ("டோலோ 650" is Dolo 650 — a short name too, then heard only right before its quantity, as short names are.)
         }.distinct().filter { b -> products.none { it.name.equals(b, ignoreCase = true) } && b.count(Char::isLetter) >= 3 }.mapNotNull { b ->
@@ -65,6 +65,11 @@ object KaiProductSound {
         val parts = products.flatMap { p -> p.name.split(Regex("""\s+""")).map { w -> Word(w, NameSound.key(spoken(w)).let { if (it.isEmpty()) it else loose(it) }) } }
         val words = tamilWord.findAll(text).toList()
         if (words.isEmpty()) return text
+        // "கேட் 6 கேபிள்" for Cat6 Cable: a name's letters-and-number word, said as a word and the number.
+        productNames.flatMap { it.split(Regex("""\s+""")) }.mapNotNull { w -> Regex("""^([A-Za-z]{2,})(\d+)$""").find(w)?.let { w to it } }.distinct()
+            .fold(text) { t, (w, m) ->
+                Regex("""([஀-௿]+)\s*${m.groupValues[2]}(?!\d)""").replace(t) { r -> if (sameWord(r.groupValues[1], m.groupValues[1]) || NameSound.same(r.groupValues[1], m.groupValues[1])) w else r.value }
+            }.takeIf { it != text }?.let { return withProducts(it, productNames, people) }
         val out = StringBuilder()
         var copied = 0
         var i = 0
@@ -138,9 +143,11 @@ object KaiProductSound {
 
     /** The one product a Tamil phrase sounds like, or null (none, too little to tell, or two alike). */
     private fun match(said: String, span: Int, products: List<Product>, parts: List<Word>, known: Boolean, beforeQty: Boolean): String? {
-        // "ட்ச" is the "tch" of Switch (the t not heard) — or a real "tz" / "dc" (Cetzine, Gudcef): read both ways.
-        return matchSaid(said.replace("ட்ச", "ச"), span, products, parts, known, beforeQty)
-            ?: if (said.contains("ட்ச")) matchSaid(said.replace("ட்ச", "ட்ஸ"), span, products, parts, known, beforeQty) else null
+        // "ட்ச" is the "tch" of Switch (the t not heard) — or a real "tz" / "dc" (Cetzine, Gudcef); "ங்க" the ng of Zinco — or the
+        // n-k of Anchor ("ஆங்கர்"): read both ways. "ட்ஜ" is the dge of Wedge; "ஹவுஸ்" the ou of House (வு after a consonant).
+        val heard = said.replace("ட்ஜ", "ஜ").replace(Regex("""([க-ஹ])வு"""), "$1ு")
+        return listOf(heard.replace("ட்ச", "ச"), heard.replace("ட்ச", "ட்ஸ"), heard.replace("ங்க", "ன்க"), said.replace("ட்ச", "ச")).distinct()
+            .firstNotNullOfOrNull { matchSaid(it, span, products, parts, known, beforeQty) }
     }
 
     private fun matchSaid(said: String, span: Int, products: List<Product>, parts: List<Word>, known: Boolean, beforeQty: Boolean): String? {
@@ -168,14 +175,23 @@ object KaiProductSound {
             }
             if (ok) p to d else null
         }
-        val best = scored.minOfOrNull { it.second } ?: return null
+        val best0 = scored.minOfOrNull { it.second } ?: return null
+        // "கோச் ஸ்க்ரூ" / "ஹெக்ஸ் ஸ்க்ரூ" sound alike by consonants (the h isn't heard): the one whose first vowel and shape are heard.
+        val vowel = tamilVowel(phrase)
+        val narrowed = scored.filter { it.second == best0 }.let { tied ->
+            if (tied.map { it.first.out }.distinct().size < 2) tied
+            else tied.filter { latinVowel(spoken(it.first.name)).intersect(vowel).isNotEmpty() }.ifEmpty { tied }
+                .let { v -> val g = v.minOf { shapeGap(phrase, it.first.name) }; v.filter { shapeGap(phrase, it.first.name) == g } }
+        }
+        val scored2 = narrowed
+        val best = best0
         // "ஹெட்லைட்" / "டெயில் லைட்" sound alike (Headlight, Tail light): the one said in as many words.
-        return scored.filter { it.second == best }.map { it.first }.let { alike -> alike.takeIf { a -> a.map { it.out }.distinct().size == 1 } ?: alike.filter { it.words == span } }
+        return scored2.filter { it.second == best }.map { it.first }.let { alike -> alike.takeIf { a -> a.map { it.out }.distinct().size == 1 } ?: alike.filter { it.words == span } }
             .map { it.out }.distinct().singleOrNull()
     }
 
     /** How many words the mic writes for a name: "HDHMR Board" is six ("எச்.டி.எச்.எம்.ஆர். போர்டு") — letters said one by one. */
-    private fun saidWords(name: String): Int = name.trim().split(Regex("""\s+""")).sumOf { w -> if (w.length in 2..6 && w.all { it in 'A'..'Z' }) w.length else 1 }
+    private fun saidWords(name: String): Int = name.trim().split(Regex("""[\s-]+""")).filter { it.isNotEmpty() }.sumOf { w -> if (w.length in 2..6 && w.all { it in 'A'..'Z' }) w.length else 1 }
 
     private val joiner = Regex("""\s+|-|\.\s*""")
 
@@ -211,6 +227,8 @@ object KaiProductSound {
                 // "Bandage" = bendej, "Syringe" = sirinj, "Bridge" = brij; "Ointment" = oinment (the t isn't heard); "Eye" = ai.
                 .replace(Regex("""d?ge$"""), "j").replace("ntm", "nm").replace(Regex("""^eye$"""), "ai")
                 // "Dr Trust" = doctor trust ("டாக்டர்"), "Head & Shoulders" = and; "Flagyl" = flajil; "Zincovit" = zingovit ("சிங்கோவிட்").
+                // "1-way" = one way ("ஒன் வே"), "2-way" = two way.
+                .replace(Regex("""^1-"""), "one ").replace(Regex("""^2-"""), "two ").replace(Regex("""^3-"""), "three ")
                 .replace(Regex("""^dr\.?$"""), "doktar").replace(Regex("""^&$"""), "and").replace(Regex("""g(?=y)"""), "j").replace(Regex("""n[ck]"""), "ng")
         }
     }

@@ -3502,6 +3502,24 @@ class KaiAgent(
     private var choiceRerun = false
 
     /** The shop's products whose name has every word of [name] ("Plywood" → Plywood 12mm, Plywood 18mm; "paint" → Emulsion Paint …). */
+    /**
+     * The longest run of the owner's words that some product names hold, as a phrase ("1-way switch", "GI sheet", "Paint bucket",
+     * "6A socket" — a size read however said): those products and the phrase (canonical). Null when no run of words names any.
+     */
+    private fun productsByPhrase(line: String, products: List<com.shopai.app.brain.tools.ProductRef>): Pair<List<com.shopai.app.brain.tools.ProductRef>, String>? {
+        val st = com.shopai.app.brain.tools.KaiStock
+        val words = st.sizeKey(line).trim().split(' ').filter { it.isNotEmpty() }
+        val names = products.map { it to " " + st.sizeKey(it.name).trim() + " " }
+        for (n in minOf(6, words.size) downTo 1) for (i in 0..words.size - n) {
+            val w = words.subList(i, i + n)
+            if (w.none { it.length >= 2 && it.any(Char::isLetter) && st.unitOf(it) == null && !st.isStockWord(it) && it !in setOf("add", "stock", "pannu") }) continue
+            val phrase = " " + w.joinToString(" ") + " "
+            val hits = names.filter { it.second.contains(phrase) }.map { it.first }
+            if (hits.isNotEmpty()) return hits to phrase.trim()
+        }
+        return null
+    }
+
     private fun productsNamed(name: String, products: List<com.shopai.app.brain.tools.ProductRef>): List<com.shopai.app.brain.tools.ProductRef> {
         // Every word of the name said counts — "GI elbow" is not PVC elbow, "FR wire" not Wire nail, "Cat6 cable" not Cable tie.
         val words = KaiPrivateMemory.normalize(name).split(' ').filter { w -> w.length >= 2 && w.any(Char::isLetter) && com.shopai.app.brain.tools.KaiStock.unitOf(w) == null }
@@ -3515,11 +3533,14 @@ class KaiAgent(
      */
     private suspend fun oneOfMany(name: String, line: String, lang: KaiLang, products: List<com.shopai.app.brain.tools.ProductRef>): KaiTurn? {
         if (choiceRerun) return null
-        val found = productsNamed(name, products)
-        if (found.size == 1) return withProduct(line, name, found.single(), lang)
+        // The whole phrase said first ("1-way switch 7" is never a 2-way switch), else the name's words.
+        val byPhrase = productsByPhrase(line, products)?.takeIf { (hits, phrase) -> hits.size >= 2 || phrase.split(' ').size > 1 }
+        val found = byPhrase?.first ?: productsNamed(name, products)
+        val said = byPhrase?.second ?: name
+        if (found.size == 1) return withProduct(line, said, found.single(), lang)
         if (found.size < 2) return null
-        productChoice = ProductChoice(found.take(8), line, name, conversationState.conversationTurn, lang)
-        val n = name.trim().lowercase(Locale.ROOT)
+        productChoice = ProductChoice(found.take(8), line, said, conversationState.conversationTurn, lang)
+        val n = said.trim().lowercase(Locale.ROOT)
         val list = found.take(8).map { it.name }
         return say(lang, KaiMood.CLARIFY, "which product: $n",
             ta = "எந்த $n ஓனர்? ${list.joinToString("-ஆ, ")}-ஆ?",
@@ -3529,8 +3550,13 @@ class KaiAgent(
 
     /** The owner's line with the product's full name in place of the name said, read again (once). */
     private suspend fun withProduct(line: String, name: String, product: com.shopai.app.brain.tools.ProductRef, lang: KaiLang): KaiTurn? {
-        val m = Regex("""(?i)(?<![\p{L}])${Regex.escape(name.trim())}(?![\p{L}])""").find(line) ?: return null
-        val again = line.replaceRange(m.range, product.name)
+        val m = Regex("""(?i)(?<![\p{L}])${Regex.escape(name.trim())}(?![\p{L}])""").find(line)
+        val again = if (m != null) line.replaceRange(m.range, product.name) else {
+            // The name as read ("6 amp socket" for "6A socket", or from the mic): the line read the same way, with the product put in.
+            val key = " " + com.shopai.app.brain.tools.KaiStock.sizeKey(line).trim() + " "
+            val at = key.indexOf(" ${name.trim()} ").takeIf { it >= 0 } ?: return null
+            key.replaceRange(at + 1, at + 1 + name.trim().length, product.name).trim()
+        }
         val keep = forcedLang
         forcedLang = lang
         choiceRerun = true

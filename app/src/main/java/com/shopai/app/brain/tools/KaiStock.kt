@@ -230,7 +230,12 @@ object KaiStock {
         // A name inside another word is not it: "T-shirt" is never "Shirt".
         // A name read as the words are ("எச்.டி.எச்.எம்.ஆர். போர்டு" with its dots as spaces).
         fun exactAt(words: String) = named.sortedByDescending { it.name.length }.firstNotNullOfOrNull { p ->
-            Regex("""(?<![\p{L}\p{N}-])${Regex.escape(lowerOf(p.name).trim())}(?![\p{L}])""").find(words)?.let { p to it.range }
+            val own = lowerOf(p.name).trim()
+            Regex("""(?<![\p{L}\p{N}-])${Regex.escape(own)}(?![\p{L}])""").find(words)?.takeIf { m ->
+                // "Paint bucket 7" is not Bucket when "Paint bucket …" products are kept: the word before belongs to a longer name.
+                val before = words.substring(0, m.range.first).trim().substringAfterLast(' ')
+                before.isEmpty() || !before.first().isLetter() || named.none { o -> o !== p && (" " + lowerOf(o.name).trim() + " ").contains(" $before $own ") }
+            }?.let { p to it.range }
         }
         val exactHit = exactAt(lower)
         // "kathavu keel 5", "plywood vettum karuvi 2": goods by the name the owner says (KaiFeed) — a longer name than the
