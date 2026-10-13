@@ -60,10 +60,47 @@ object KaiIntents {
     const val LEARN_PERSONAL_TERM = "LEARN_PERSONAL_TERM"
 
     /** "bill scan pannu", "bill ah scan pannu", "indha bill add pannu", "purchase bill scan pannu", "bill photo edu", "bill camera open pannu". */
-    private val billWords = Regex("""(?i)(?<![\p{L}])(bill|bills|invoice|receipt)(?![\p{L}])|பில்|ரசீது""")
+    private val billWords = Regex("""(?i)(?<![\p{L}])(bill|bills|invoice|invoices|receipt|receipts)(?![\p{L}])|பில்|ரசீது|இன்வாய்ஸ்""")
     private val billDo = Regex(
         """(?i)(?<![\p{L}])(scan|add|enter|podu|potu|poodu|eduthu|edu|edunga|photo|pic|picture|camera|cam|open|upload|serthu|sethu|save|click)(?![\p{L}])|சேர்|ஸ்கேன்""",
     )
+
+    /** "intha bill la irukura stock ah add pannu / seru / seathuko", "… kali / less / kammi pannu", "purchase invoice-na stock add pannidu". */
+    data class BillStockAsk(val way: com.shopai.app.util.BillStock.Way?, val rule: Boolean, val unclear: Boolean = false)
+    private val stockThing = Regex("""(?i)(?<![\p{L}])(stock|stocks|inventory|item|items|saamaan|saaman|saman|porul|maal)(?![\p{L}])|ஸ்டாக்|சாமான்|பொருள்""")
+    private val stockUp = Regex("""(?i)(?<![\p{L}])(add|seru|sethu|serthu|seathu|serthuko|sethuko|seathuko|serthukko|sethukko|seathukko|serkka|koottu|kootu|increase|yeathu|yethu)(?![\p{L}])|சேர்|கூட்டு""")
+    private val stockDown = Regex("""(?i)(?<![\p{L}])(kali|kazhi|kalichu|kazhichu|kalichuko|kalichiko|kazhichuko|less|kammi|kurai|kuraichu|kuraichuko|minus|reduce|decrease|edunga)(?![\p{L}])|கழி|கம்மி|குறை|லெஸ்""")
+    private val purchaseSale = Regex("""(?i)(?<![\p{L}])(purchase|purchases|sale|sales|selling|vaangina|vitha)(?![\p{L}])|பர்சேஸ்|சேல்ஸ்""")
+    private val ruleWord = Regex("""(?i)(?<![\p{L}])(iruntha|irundha|irunthaa|irundhaa|irunthal|aana|aanaa|na)(?![\p{L}])|இருந்தா""")
+
+    fun billStock(text: String): BillStockAsk? {
+        val t = KaiSpokenWords.normalize(text)
+        if (!billWords.containsMatchIn(t) || !stockThing.containsMatchIn(t)) return null
+        val up = stockUp.containsMatchIn(t)
+        val down = stockDown.containsMatchIn(t)
+        // "Purchase invoice-ah iruntha stock add pannidu, sales-ah iruntha less panniko": the rule itself — by the bill.
+        if (purchaseSale.containsMatchIn(t) && ruleWord.containsMatchIn(t) && (up || down)) return BillStockAsk(null, rule = true)
+        return when {
+            up && !down -> BillStockAsk(com.shopai.app.util.BillStock.Way.IN, rule = false)
+            down && !up -> BillStockAsk(com.shopai.app.util.BillStock.Way.OUT, rule = false)
+            // "intha bill la irukura stock ah check pannu": the bill's stock, but which way isn't said — Kai asks.
+            Regex("""(?i)(?<![\p{L}])(intha|indha|inthe|this)(?![\p{L}])|இந்த""").containsMatchIn(t) && !Regex("""(?i)(?<![\p{L}])(evlo|evvalavu|how\s+much)(?![\p{L}])""").containsMatchIn(t) ->
+                BillStockAsk(null, rule = false, unclear = true)
+            else -> null
+        }
+    }
+
+    /** The answer to "add pannanuma, illa kammi pannanuma?": in ("add", "seru", "purchase"), out ("kammi", "less", "sales"), or null. */
+    fun stockWay(text: String): com.shopai.app.util.BillStock.Way? {
+        val t = KaiSpokenWords.normalize(text)
+        val inWord = stockUp.containsMatchIn(t) || Regex("""(?i)(?<![\p{L}])(purchase|vaangina|vandhadhu|vandhuchu|in)(?![\p{L}])|பர்சேஸ்""").containsMatchIn(t)
+        val outWord = stockDown.containsMatchIn(t) || Regex("""(?i)(?<![\p{L}])(sale|sales|vitha|vithadhu|vithuchu|out)(?![\p{L}])|சேல்ஸ்""").containsMatchIn(t)
+        return when {
+            inWord && !outWord -> com.shopai.app.util.BillStock.Way.IN
+            outWord && !inWord -> com.shopai.app.util.BillStock.Way.OUT
+            else -> null
+        }
+    }
 
     fun isBillScan(text: String): Boolean {
         val t = KaiSpokenWords.normalize(text)

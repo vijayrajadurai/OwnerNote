@@ -1238,6 +1238,8 @@ class KaiAgent(
         // "Kumar oda credit debit history PDF kudu", "Kumar statement WhatsApp-la anuppu", "itha PDF-a kudu": a person's statement
         // as a PDF — before the conversation care that would ask what "itha" means.
         topicAnswered(said, lang)?.let { return it }
+        // The answer to "intha bill-oda stock-a add pannanuma, illa kammi pannanuma?" — before "add pannu" reads as a save.
+        if (openPayment == null) billStockAnswered(said, lang)?.let { return it }
         if (openPayment == null) bareAmountAnswered(said, lang)?.let { return it }
         if (openPayment == null) statementAsk(said, lang)?.let { return it }
         if (openPayment == null) care(said, lang)?.let { return it }
@@ -1360,6 +1362,8 @@ class KaiAgent(
         // "Nagapattinam" / "rendavadhu" to the Brain's "which Lokesh?": that record's answer.
         // "Colgate 5 box, boxku 48 pieces, purchase 28, selling 35": a stock line with its details — before the calculator
         // reads "28 … 35" as a margin sum. Only with a unit and product details (or right after Kai asked which product).
+        // "Intha bill la irukura stock ah add pannu / kammi pannu": the bill scanner, its items going into / out of stock (owner, 13 Oct 2026).
+        if (plans.isEmpty()) com.shopai.app.brain.tools.KaiIntents.billStock(spoken)?.let { return billStockScan(it, lang, said) }
         // Not understood, then one word ("payment", "kadan", "stock", "balance"): the question for that, so the flow goes on.
         if (plans.isEmpty()) guidedTopic(said, lang)?.let { return it }
         // "current bill 1200 kattinen", "rent kattanum": an expense, not a person's entry — said plainly, with where it goes.
@@ -5207,16 +5211,71 @@ class KaiAgent(
     }
 
     /** "Bill scan pannu" — the camera opens straight away (OPEN_BILL_SCANNER); the bill becomes a draft the owner checks. */
+    /**
+     * "Intha bill la irukura stock ah add pannu" (in), "… kammi pannu" (out), "purchase-na add, sales-na less" (by the bill):
+     * the scanner opens; the bill's credit / debit entry goes as always, and its items are ticked to move the stock that way.
+     * Nothing is saved until the owner confirms the bill.
+     */
+    /** The turn Kai asked "intha bill-oda stock-a add pannanuma, illa kammi pannanuma?", and the language it asked in. */
+    private var billStockAskTurn = -10L
+    private var billStockAskLang = KaiLang.TANGLISH
+
+    /** "add pannu" / "kammi" / "sales bill" → that way; "theriyala" → by the bill (purchase in, sale out); anything else moves on. */
+    private fun billStockAnswered(said: String, lang: KaiLang): KaiTurn? {
+        if (conversationState.conversationTurn != billStockAskTurn + 1) return null
+        billStockAskTurn = -10L
+        val l = if (lang == KaiLang.ENGLISH && said.trim().split(Regex("""\s+""")).size <= 3) billStockAskLang else lang
+        com.shopai.app.brain.tools.KaiIntents.stockWay(said)?.let { way ->
+            return billStockScan(com.shopai.app.brain.tools.KaiIntents.BillStockAsk(way, rule = false), l, said)
+        }
+        if (Regex("""(?i)(?<![\p{L}])(theriyala|therila|teriyala|theriyalai|don'?t\s+know|not\s+sure|nee\s+paaru|neeye\s+paaru)(?![\p{L}])|தெரியல""").containsMatchIn(said))
+            return billStockScan(com.shopai.app.brain.tools.KaiIntents.BillStockAsk(null, rule = false), l, said)
+        return null
+    }
+
+    private fun billStockScan(ask: com.shopai.app.brain.tools.KaiIntents.BillStockAsk, lang: KaiLang, said: String): KaiTurn {
+        if (ask.unclear) {
+            billStockAskTurn = conversationState.conversationTurn
+            billStockAskLang = lang
+            return say(lang, KaiMood.CLARIFY, "bill stock: which way",
+                ta = "ஓனர், இந்த பில்லில் இருக்குற stock-ஐ சேர்க்கணுமா (purchase பில்), இல்ல குறைக்கணுமா (sales பில்)?",
+                tl = "Owner, intha bill-la irukra stock-a add pannanuma (purchase bill), illa kammi pannanuma (sales bill)?",
+                en = "Owner, should this bill's stock be added (a purchase bill) or taken out (a sales bill)?")
+        }
+        com.shopai.app.util.BillStock.Request.ask(ask.way)
+        tools.log(com.shopai.app.brain.tools.KaiIntents.OPEN_BILL_SCANNER, "bill scanner", "camera opened (stock ${ask.way ?: "by bill"})", ActionStatus.OPENED, null, said)
+        val text = when (ask.way) {
+            com.shopai.app.util.BillStock.Way.IN -> pick(lang,
+                ta = "சரி ஓனர், பில்லை ஸ்கேன் பண்ணுங்க 📷 அதுல இருக்குற items stock-ல சேரும். Credit / debit entry எப்பவும் போல வரும் — நீங்க Confirm பண்ணின பிறகுதான் ரெண்டும் சேமிக்கும்.",
+                tl = "Seri Owner, bill-a scan pannunga 📷 Adhula irukra items stock-la serum. Credit / debit entry eppavum pola varum — neenga Confirm pannina apram dhaan rendum save aagum.",
+                en = "Okay Owner, scan the bill 📷 Its items will be added to stock. The credit / debit entry goes as always — both are saved only after you confirm.")
+            com.shopai.app.util.BillStock.Way.OUT -> pick(lang,
+                ta = "சரி ஓனர், பில்லை ஸ்கேன் பண்ணுங்க 📷 அதுல இருக்குற items stock-ல இருந்து குறையும். Credit / debit entry எப்பவும் போல வரும் — நீங்க Confirm பண்ணின பிறகுதான் ரெண்டும் சேமிக்கும்.",
+                tl = "Seri Owner, bill-a scan pannunga 📷 Adhula irukra items stock-la irundhu kuraiyum. Credit / debit entry eppavum pola varum — neenga Confirm pannina apram dhaan rendum save aagum.",
+                en = "Okay Owner, scan the bill 📷 Its items will be taken out of stock. The credit / debit entry goes as always — both are saved only after you confirm.")
+            null -> pick(lang,
+                ta = "சரி ஓனர் — purchase பில் ஸ்கேன் பண்ணினா அதுல இருக்குற stock சேரும், sales பில்னா stock குறையும். Credit / debit entry எப்பவும் போல. Confirm பண்ணின பிறகுதான் சேமிக்கும்.",
+                tl = "Seri Owner — purchase bill scan pannina adhula irukra stock serum, sales bill-na stock kuraiyum. Credit / debit entry eppavum pola. Confirm pannina apram dhaan save aagum.",
+                en = "Okay Owner — scan a purchase bill and its stock is added; a sales bill takes it out. The credit / debit entry goes as always. Saved only after you confirm.")
+        }
+        val button = KaiButton(pick(lang, ta = "பில் ஸ்கேன்", tl = "Scan bill", en = "Scan bill"), KaiAction.OpenScanner, primary = true)
+        return KaiTurn(ChatReply(text, KaiMood.EXPLAINING, ChatIntent.GENERAL_BUSINESS_QUERY), KaiCard(emptyList(), listOf(button)),
+            // The rule said ("purchase-na add pannidu"): the button, not the camera at once.
+            direct = if (ask.rule) null else KaiAction.OpenScanner)
+    }
+
     private fun scan(classifyOnly: Boolean, lang: KaiLang, said: String = ""): KaiTurn {
+        // A plain "bill scan pannu": the stock goes by the bill (purchase in, sale out).
+        com.shopai.app.util.BillStock.Request.ask(null)
         tools.log(com.shopai.app.brain.tools.KaiIntents.OPEN_BILL_SCANNER, "bill scanner", if (classifyOnly) "camera opened (purchase / sale check)" else "camera opened", ActionStatus.OPENED, null, said)
         val text = if (classifyOnly) pick(lang,
             ta = "சரி ஓனர், பில் ஸ்கேன் பண்ணலாம் 📷 இது purchase-ஆ sale-ஆ என்று பார்த்து சொல்லுவேன் — நீங்க உறுதி செய்த பிறகுதான் சேமிப்பு.",
             tl = "Sure Owner, bill scan pannalam 📷 Idhu purchase-ah sale-ah nu paathu solluven — neenga confirm pannina apram dhaan save.",
             en = "Sure Owner, let's scan the bill 📷 I'll tell you if it's a purchase or a sale — nothing is saved until you confirm.")
         else pick(lang,
-            ta = "சரி ஓனர், பில் ஸ்கேன் பண்ணலாம் 📷",
-            tl = "Sure Owner, bill scan pannalam 📷",
-            en = "Sure Owner, let's scan the bill 📷")
+            ta = "சரி ஓனர், பில் ஸ்கேன் பண்ணலாம் 📷 Purchase பில்னா அதுல இருக்குற stock சேரும், sales பில்னா குறையும் — Confirm பண்ணின பிறகுதான்.",
+            tl = "Sure Owner, bill scan pannalam 📷 Purchase bill-na adhula irukra stock serum, sales bill-na kuraiyum — Confirm pannina apram dhaan.",
+            en = "Sure Owner, let's scan the bill 📷 A purchase bill adds its stock, a sales bill takes it out — only after you confirm.")
         return KaiTurn(
             ChatReply(text, KaiMood.EXPLAINING, ChatIntent.GENERAL_BUSINESS_QUERY),
             KaiCard(emptyList(), listOf(KaiButton(pick(lang, ta = "பில் ஸ்கேன்", tl = "Scan bill", en = "Scan bill"), KaiAction.OpenScanner, primary = true))),

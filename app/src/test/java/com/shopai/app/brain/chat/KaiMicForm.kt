@@ -67,6 +67,7 @@ object KaiMicForm {
         tharala=தரல kudukala=கொடுக்கல vendiya=வேண்டிய roobaya=ரூபாயை kanakkula=கணக்குல thogaiya=தொகையை thogaiyoda=தொகையோட adhigapaduthu=அதிகப்படுத்து baakiyoda=பாக்கியோட kooduthalaa=கூடுதலா baakiya=பாக்கிய kootti=கூட்டி baakila=பாக்கில kudutha=குடுத்த varavula=வரவுல selavula=செலவுல vegamaa=வேகமா padhivula=பதிவுல thadava=தடவை seekiram=சீக்கிரம் thara=தர varavu=வரவு vai=வை kudukka=குடுக்க seru=சேர் kattittaaru=கட்டிட்டாரு kuduthuttaaru=குடுத்துட்டாரு anuppitten=அனுப்பிட்டேன் pannitten=பண்ணிட்டேன் kuduthuten=குடுத்துட்டேன் rooba=ரூபா innum=இன்னும் record=பதிவு konjam=கொஞ்சம் selavaachu=செலவாச்சு
         yaaruku=யாருக்கு yaarukku=யாருக்கு
         vera=வேற vishayam=விஷயம் aamaa=ஆமா blah=ப்ளா
+        irukura=இருக்குற seru=சேரு kali=கழி kammi=கம்மி less=லெஸ் iruntha=இருந்தா invoice=இன்வாய்ஸ் panniko=பண்ணிக்கோ pannidu=பண்ணிடு intha=இந்த
         nalla=நல்லா aguthu=ஆகுது pothu=போகுது nikkuthu=நிக்குது nikkudhu=நிக்குது nikkura=நிக்குற pola=போல pogadha=போகாத item=ஐட்டம் porul=பொருள் vikkuthu=விக்குது yentha=எந்த move=மூவ் agala=ஆகல pogudhu=போகுது
         ellathaiyum=எல்லாத்தையும் kattitan=கட்டிட்டான் ricela=ரைஸ்ல mudangi=முடங்கி vikkadha=விக்காத vikkura=விக்குற report=ரிப்போர்ட்
         thandhaa=தந்தா pesanum=பேசணும் rent=ரெண்ட் current=கரண்ட் vaadagai=வாடகை kattanum=கட்டணும் vithucha=வித்துச்சா vandhucha=வந்துச்சா
