@@ -83,6 +83,8 @@ object KaiProductSound {
                 // "டி-ஷர்ட்", "எம்.டி.எஃப். பலகை": a hyphen or the dots of letters said one by one join words too.
                 if ((1 until span).any { j -> !joiner.matches(text.substring(run[j - 1].range.last + 1, run[j].range.first)) }) return@firstNotNullOfOrNull null
                 if (run.any { w -> people.any { p -> p.split(Regex("""\s+""")).any { NameSound.same(w.value, it) } } }) return@firstNotNullOfOrNull null
+                // A stock question's own words ("எவ்வளவு", "ஸ்டாக்", "இருக்கு") are never part of a name.
+                if (run.any { it.value in stockAsk }) return@firstNotNullOfOrNull null
                 // "6 எம்.எம். ஜல்லி": a goods name that starts with its size takes the number said before it.
                 val said = run.joinToString(" ") { it.value }
                 goodsWritten[fold(said)]?.let { return@firstNotNullOfOrNull Triple(span, it, run.first().range.first) }
@@ -148,7 +150,8 @@ object KaiProductSound {
     private fun match(said: String, span: Int, products: List<Product>, parts: List<Word>, known: Boolean, beforeQty: Boolean): String? {
         // "ட்ச" is the "tch" of Switch (the t not heard) — or a real "tz" / "dc" (Cetzine, Gudcef); "ங்க" the ng of Zinco — or the
         // n-k of Anchor / Angle ("ஆங்கர்", "ஆங்கிள்"): read every way. "ட்ஜ" is the dge of Wedge; "ஹவுஸ்" the ou of House.
-        val heard = said.replace("ட்ஜ", "ஜ").replace(Regex("""([க-ஹ])வு"""), "$1ு")
+        // (The ou only before another consonant: "ஹவுஸ்", never the end of "எவ்வளவு".)
+        val heard = said.replace("ட்ஜ", "ஜ").replace(Regex("""([க-ஹ])வு(?=[க-ஹ])"""), "$1ு")
         // (Each reading changes one thing: "ஸ்விட்ச்" read for its ங்க is still Switch, never "ஸ்விக்ச்" = Jigsaw.)
         val usual = heard.replace("ட்ச", "ச")
         val found = listOf(usual, heard.replace("ட்ச", "ட்ஸ"), usual.replace("ங்க", "ன்க"), said.replace("ட்ச", "ச")).distinct()
@@ -256,8 +259,8 @@ object KaiProductSound {
                 .replace(Regex("""^([a-z])-""")) { m -> (letterNames[m.groupValues[1][0]] ?: m.groupValues[1]) + " " }
                 .replace(Regex("""^u(?=ni|ti|ri|sa|se|su|ro)"""), "yu").replace(Regex("""^chem"""), "kem").replace(Regex("""^chr"""), "kr")
                 .replace("sch", "sk").replace(Regex("""^(te|me)ch"""), "$1k")
-                // "1-way" = one way ("ஒன் வே"), "2-way" = two way.
-                .replace(Regex("""^1-"""), "one ").replace(Regex("""^2-"""), "two ").replace(Regex("""^3-"""), "three ")
+                // "1-way" = one way ("ஒன் வே"), "2-way" = two way ("டூ வே").
+                .replace(Regex("""^1-"""), "one ").replace(Regex("""^2-"""), "tu ").replace(Regex("""^3-"""), "three ")
                 .replace(Regex("""^dr\.?$"""), "doktar").replace(Regex("""^&$"""), "and").replace(Regex("""g(?=y)"""), "j").replace(Regex("""n[ck]"""), "ng")
         }
     }
