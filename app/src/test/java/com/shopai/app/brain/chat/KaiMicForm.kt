@@ -66,6 +66,7 @@ object KaiMicForm {
         theerapoguthu=தீரப்போகுது sales=சேல்ஸ் vilai=விலை vara=வர
         tharala=தரல kudukala=கொடுக்கல vendiya=வேண்டிய roobaya=ரூபாயை kanakkula=கணக்குல thogaiya=தொகையை thogaiyoda=தொகையோட adhigapaduthu=அதிகப்படுத்து baakiyoda=பாக்கியோட kooduthalaa=கூடுதலா baakiya=பாக்கிய kootti=கூட்டி baakila=பாக்கில kudutha=குடுத்த varavula=வரவுல selavula=செலவுல vegamaa=வேகமா padhivula=பதிவுல thadava=தடவை seekiram=சீக்கிரம் thara=தர varavu=வரவு vai=வை kudukka=குடுக்க seru=சேர் kattittaaru=கட்டிட்டாரு kuduthuttaaru=குடுத்துட்டாரு anuppitten=அனுப்பிட்டேன் pannitten=பண்ணிட்டேன் kuduthuten=குடுத்துட்டேன் rooba=ரூபா innum=இன்னும் record=பதிவு konjam=கொஞ்சம் selavaachu=செலவாச்சு
         yaaruku=யாருக்கு yaarukku=யாருக்கு
+        vera=வேற vishayam=விஷயம் aamaa=ஆமா blah=ப்ளா
         thandhaa=தந்தா pesanum=பேசணும் rent=ரெண்ட் current=கரண்ட் vaadagai=வாடகை kattanum=கட்டணும் vithucha=வித்துச்சா vandhucha=வந்துச்சா
         palan=பலன் inniku=இன்னிக்கு biryani=பிரியாணி recipe=ரெசிபி gst=ஜிஎஸ்டி kooda=கூட bore=போர் adikkudhu=அடிக்குது cheque=செக் card=கார்டு
     """.trim().split(Regex("""\s+""")).associate { it.substringBefore('=') to it.substringAfter('=') }

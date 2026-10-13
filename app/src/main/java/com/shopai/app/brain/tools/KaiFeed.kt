@@ -392,7 +392,7 @@ object KaiFeed {
         yaaruku yaarukku yaruku yarukku yaaru yaar yaru yar whom who should
         # A bill, a payment app or an expense — never a person ("current bill 1200 kattinen", "GPay la 500 vandhuchu").
         rent vaadagai vadagai current eb electricity bill gpay phonepe paytm upi cash bank salary sambalam petrol diesel gas kooli transport auto
-        ivan ivar ivaru ivanga ival adhe athe adhey andha antha indha intha endha entha yentha kadaisiya kadaisi munnadi munnaadi ellam ellaam aal aalu
+        ivan ivar ivaru ivanga ival adhu athu idhu ithu adhe athe adhey andha antha indha intha endha entha yentha kadaisiya kadaisi munnadi munnaadi ellam ellaam aal aalu
         innum innoru innonu marupadi thirumba paadhi half
         meedhi meethi meedi rate price vilai
         saraku sarakku saman saaman saamaan samaan maal kadaiku kadaikku porul
