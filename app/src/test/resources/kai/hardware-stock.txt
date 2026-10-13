@@ -1,0 +1,1105 @@
+# The owner's hardware shop stock master (13 Oct 2026): product name | category. All kept in pieces (Nos).
+Wood screw 3x10 mm|Fasteners & General Hardware
+Wood screw 3x20 mm|Fasteners & General Hardware
+Wood screw 4x25 mm|Fasteners & General Hardware
+Wood screw 4x40 mm|Fasteners & General Hardware
+Wood screw 5x50 mm|Fasteners & General Hardware
+Wood screw 6x75 mm|Fasteners & General Hardware
+Self-tapping screw 3x10 mm|Fasteners & General Hardware
+Self-tapping screw 3x20 mm|Fasteners & General Hardware
+Self-tapping screw 4x25 mm|Fasteners & General Hardware
+Self-tapping screw 4x40 mm|Fasteners & General Hardware
+Self-tapping screw 5x50 mm|Fasteners & General Hardware
+Self-tapping screw 6x75 mm|Fasteners & General Hardware
+Drywall screw 3x10 mm|Fasteners & General Hardware
+Drywall screw 3x20 mm|Fasteners & General Hardware
+Drywall screw 4x25 mm|Fasteners & General Hardware
+Drywall screw 4x40 mm|Fasteners & General Hardware
+Drywall screw 5x50 mm|Fasteners & General Hardware
+Drywall screw 6x75 mm|Fasteners & General Hardware
+Machine screw 3x10 mm|Fasteners & General Hardware
+Machine screw 3x20 mm|Fasteners & General Hardware
+Machine screw 4x25 mm|Fasteners & General Hardware
+Machine screw 4x40 mm|Fasteners & General Hardware
+Machine screw 5x50 mm|Fasteners & General Hardware
+Machine screw 6x75 mm|Fasteners & General Hardware
+Roofing screw 3x10 mm|Fasteners & General Hardware
+Roofing screw 3x20 mm|Fasteners & General Hardware
+Roofing screw 4x25 mm|Fasteners & General Hardware
+Roofing screw 4x40 mm|Fasteners & General Hardware
+Roofing screw 5x50 mm|Fasteners & General Hardware
+Roofing screw 6x75 mm|Fasteners & General Hardware
+Chipboard screw 3x10 mm|Fasteners & General Hardware
+Chipboard screw 3x20 mm|Fasteners & General Hardware
+Chipboard screw 4x25 mm|Fasteners & General Hardware
+Chipboard screw 4x40 mm|Fasteners & General Hardware
+Chipboard screw 5x50 mm|Fasteners & General Hardware
+Chipboard screw 6x75 mm|Fasteners & General Hardware
+Coach screw 3x10 mm|Fasteners & General Hardware
+Coach screw 3x20 mm|Fasteners & General Hardware
+Coach screw 4x25 mm|Fasteners & General Hardware
+Coach screw 4x40 mm|Fasteners & General Hardware
+Coach screw 5x50 mm|Fasteners & General Hardware
+Coach screw 6x75 mm|Fasteners & General Hardware
+Hex screw 3x10 mm|Fasteners & General Hardware
+Hex screw 3x20 mm|Fasteners & General Hardware
+Hex screw 4x25 mm|Fasteners & General Hardware
+Hex screw 4x40 mm|Fasteners & General Hardware
+Hex screw 5x50 mm|Fasteners & General Hardware
+Hex screw 6x75 mm|Fasteners & General Hardware
+Phillips screw 3x10 mm|Fasteners & General Hardware
+Phillips screw 3x20 mm|Fasteners & General Hardware
+Phillips screw 4x25 mm|Fasteners & General Hardware
+Phillips screw 4x40 mm|Fasteners & General Hardware
+Phillips screw 5x50 mm|Fasteners & General Hardware
+Phillips screw 6x75 mm|Fasteners & General Hardware
+Countersunk screw 3x10 mm|Fasteners & General Hardware
+Countersunk screw 3x20 mm|Fasteners & General Hardware
+Countersunk screw 4x25 mm|Fasteners & General Hardware
+Countersunk screw 4x40 mm|Fasteners & General Hardware
+Countersunk screw 5x50 mm|Fasteners & General Hardware
+Countersunk screw 6x75 mm|Fasteners & General Hardware
+Hex bolt M4|Fasteners & General Hardware
+Hex bolt M6|Fasteners & General Hardware
+Hex bolt M8|Fasteners & General Hardware
+Hex bolt M10|Fasteners & General Hardware
+Hex bolt M12|Fasteners & General Hardware
+Hex bolt M16|Fasteners & General Hardware
+Carriage bolt M4|Fasteners & General Hardware
+Carriage bolt M6|Fasteners & General Hardware
+Carriage bolt M8|Fasteners & General Hardware
+Carriage bolt M10|Fasteners & General Hardware
+Carriage bolt M12|Fasteners & General Hardware
+Carriage bolt M16|Fasteners & General Hardware
+Anchor bolt M4|Fasteners & General Hardware
+Anchor bolt M6|Fasteners & General Hardware
+Anchor bolt M8|Fasteners & General Hardware
+Anchor bolt M10|Fasteners & General Hardware
+Anchor bolt M12|Fasteners & General Hardware
+Anchor bolt M16|Fasteners & General Hardware
+U-bolt M4|Fasteners & General Hardware
+U-bolt M6|Fasteners & General Hardware
+U-bolt M8|Fasteners & General Hardware
+U-bolt M10|Fasteners & General Hardware
+U-bolt M12|Fasteners & General Hardware
+U-bolt M16|Fasteners & General Hardware
+Eye bolt M4|Fasteners & General Hardware
+Eye bolt M6|Fasteners & General Hardware
+Eye bolt M8|Fasteners & General Hardware
+Eye bolt M10|Fasteners & General Hardware
+Eye bolt M12|Fasteners & General Hardware
+Eye bolt M16|Fasteners & General Hardware
+Hex nut M4|Fasteners & General Hardware
+Hex nut M6|Fasteners & General Hardware
+Hex nut M8|Fasteners & General Hardware
+Hex nut M10|Fasteners & General Hardware
+Hex nut M12|Fasteners & General Hardware
+Hex nut M16|Fasteners & General Hardware
+Lock nut M4|Fasteners & General Hardware
+Lock nut M6|Fasteners & General Hardware
+Lock nut M8|Fasteners & General Hardware
+Lock nut M10|Fasteners & General Hardware
+Lock nut M12|Fasteners & General Hardware
+Lock nut M16|Fasteners & General Hardware
+Wing nut M4|Fasteners & General Hardware
+Wing nut M6|Fasteners & General Hardware
+Wing nut M8|Fasteners & General Hardware
+Wing nut M10|Fasteners & General Hardware
+Wing nut M12|Fasteners & General Hardware
+Wing nut M16|Fasteners & General Hardware
+Washer M4|Fasteners & General Hardware
+Washer M6|Fasteners & General Hardware
+Washer M8|Fasteners & General Hardware
+Washer M10|Fasteners & General Hardware
+Washer M12|Fasteners & General Hardware
+Washer M16|Fasteners & General Hardware
+Spring washer M4|Fasteners & General Hardware
+Spring washer M6|Fasteners & General Hardware
+Spring washer M8|Fasteners & General Hardware
+Spring washer M10|Fasteners & General Hardware
+Spring washer M12|Fasteners & General Hardware
+Spring washer M16|Fasteners & General Hardware
+Flat washer M4|Fasteners & General Hardware
+Flat washer M6|Fasteners & General Hardware
+Flat washer M8|Fasteners & General Hardware
+Flat washer M10|Fasteners & General Hardware
+Flat washer M12|Fasteners & General Hardware
+Flat washer M16|Fasteners & General Hardware
+Wire nail 20 mm|Fasteners & General Hardware
+Wire nail 25 mm|Fasteners & General Hardware
+Wire nail 40 mm|Fasteners & General Hardware
+Wire nail 50 mm|Fasteners & General Hardware
+Wire nail 75 mm|Fasteners & General Hardware
+Wire nail 100 mm|Fasteners & General Hardware
+Concrete nail 20 mm|Fasteners & General Hardware
+Concrete nail 25 mm|Fasteners & General Hardware
+Concrete nail 40 mm|Fasteners & General Hardware
+Concrete nail 50 mm|Fasteners & General Hardware
+Concrete nail 75 mm|Fasteners & General Hardware
+Concrete nail 100 mm|Fasteners & General Hardware
+Roofing nail 20 mm|Fasteners & General Hardware
+Roofing nail 25 mm|Fasteners & General Hardware
+Roofing nail 40 mm|Fasteners & General Hardware
+Roofing nail 50 mm|Fasteners & General Hardware
+Roofing nail 75 mm|Fasteners & General Hardware
+Roofing nail 100 mm|Fasteners & General Hardware
+Panel pin 20 mm|Fasteners & General Hardware
+Panel pin 25 mm|Fasteners & General Hardware
+Panel pin 40 mm|Fasteners & General Hardware
+Panel pin 50 mm|Fasteners & General Hardware
+Panel pin 75 mm|Fasteners & General Hardware
+Panel pin 100 mm|Fasteners & General Hardware
+Staple pin 20 mm|Fasteners & General Hardware
+Staple pin 25 mm|Fasteners & General Hardware
+Staple pin 40 mm|Fasteners & General Hardware
+Staple pin 50 mm|Fasteners & General Hardware
+Staple pin 75 mm|Fasteners & General Hardware
+Staple pin 100 mm|Fasteners & General Hardware
+Cotter pin 20 mm|Fasteners & General Hardware
+Cotter pin 25 mm|Fasteners & General Hardware
+Cotter pin 40 mm|Fasteners & General Hardware
+Cotter pin 50 mm|Fasteners & General Hardware
+Cotter pin 75 mm|Fasteners & General Hardware
+Cotter pin 100 mm|Fasteners & General Hardware
+Split pin 20 mm|Fasteners & General Hardware
+Split pin 25 mm|Fasteners & General Hardware
+Split pin 40 mm|Fasteners & General Hardware
+Split pin 50 mm|Fasteners & General Hardware
+Split pin 75 mm|Fasteners & General Hardware
+Split pin 100 mm|Fasteners & General Hardware
+Rivet 20 mm|Fasteners & General Hardware
+Rivet 25 mm|Fasteners & General Hardware
+Rivet 40 mm|Fasteners & General Hardware
+Rivet 50 mm|Fasteners & General Hardware
+Rivet 75 mm|Fasteners & General Hardware
+Rivet 100 mm|Fasteners & General Hardware
+Blind rivet 20 mm|Fasteners & General Hardware
+Blind rivet 25 mm|Fasteners & General Hardware
+Blind rivet 40 mm|Fasteners & General Hardware
+Blind rivet 50 mm|Fasteners & General Hardware
+Blind rivet 75 mm|Fasteners & General Hardware
+Blind rivet 100 mm|Fasteners & General Hardware
+Wall plug 6 mm|Fasteners & General Hardware
+Wall plug 8 mm|Fasteners & General Hardware
+Wall plug 10 mm|Fasteners & General Hardware
+Wall plug 12 mm|Fasteners & General Hardware
+Nylon anchor 6 mm|Fasteners & General Hardware
+Nylon anchor 8 mm|Fasteners & General Hardware
+Nylon anchor 10 mm|Fasteners & General Hardware
+Nylon anchor 12 mm|Fasteners & General Hardware
+Wedge anchor 6 mm|Fasteners & General Hardware
+Wedge anchor 8 mm|Fasteners & General Hardware
+Wedge anchor 10 mm|Fasteners & General Hardware
+Wedge anchor 12 mm|Fasteners & General Hardware
+Chemical anchor 6 mm|Fasteners & General Hardware
+Chemical anchor 8 mm|Fasteners & General Hardware
+Chemical anchor 10 mm|Fasteners & General Hardware
+Chemical anchor 12 mm|Fasteners & General Hardware
+Expansion anchor 6 mm|Fasteners & General Hardware
+Expansion anchor 8 mm|Fasteners & General Hardware
+Expansion anchor 10 mm|Fasteners & General Hardware
+Expansion anchor 12 mm|Fasteners & General Hardware
+Hose clamp 6 mm|Fasteners & General Hardware
+Hose clamp 8 mm|Fasteners & General Hardware
+Hose clamp 10 mm|Fasteners & General Hardware
+Hose clamp 12 mm|Fasteners & General Hardware
+Cable tie 6 mm|Fasteners & General Hardware
+Cable tie 8 mm|Fasteners & General Hardware
+Cable tie 10 mm|Fasteners & General Hardware
+Cable tie 12 mm|Fasteners & General Hardware
+Threaded rod 6 mm|Fasteners & General Hardware
+Threaded rod 8 mm|Fasteners & General Hardware
+Threaded rod 10 mm|Fasteners & General Hardware
+Threaded rod 12 mm|Fasteners & General Hardware
+Turnbuckle 6 mm|Fasteners & General Hardware
+Turnbuckle 8 mm|Fasteners & General Hardware
+Turnbuckle 10 mm|Fasteners & General Hardware
+Turnbuckle 12 mm|Fasteners & General Hardware
+D-shackle 6 mm|Fasteners & General Hardware
+D-shackle 8 mm|Fasteners & General Hardware
+D-shackle 10 mm|Fasteners & General Hardware
+D-shackle 12 mm|Fasteners & General Hardware
+Flat screwdriver|Hand Tools
+Phillips screwdriver|Hand Tools
+Tester screwdriver|Hand Tools
+Combination plier|Hand Tools
+Long nose plier|Hand Tools
+Side cutter|Hand Tools
+Wire stripper|Hand Tools
+Crimping tool|Hand Tools
+Adjustable wrench|Hand Tools
+Pipe wrench|Hand Tools
+Allen key set|Hand Tools
+Torx key set|Hand Tools
+Claw hammer|Hand Tools
+Ball peen hammer|Hand Tools
+Sledge hammer|Hand Tools
+Rubber mallet|Hand Tools
+Hacksaw frame|Hand Tools
+Hacksaw blade|Hand Tools
+Hand saw|Hand Tools
+Coping saw|Hand Tools
+Utility knife|Hand Tools
+Knife blade|Hand Tools
+Tin snip|Hand Tools
+Chisel|Hand Tools
+Cold chisel|Hand Tools
+Wood chisel|Hand Tools
+File set|Hand Tools
+Measuring tape|Hand Tools
+Steel ruler|Hand Tools
+Spirit level|Hand Tools
+Plumb bob|Hand Tools
+Try square|Hand Tools
+Combination square|Hand Tools
+Chalk line|Hand Tools
+Vernier caliper|Hand Tools
+Feeler gauge|Hand Tools
+Marking gauge|Hand Tools
+Open-end spanner|Hand Tools
+Ring spanner|Hand Tools
+Combination spanner|Hand Tools
+Adjustable spanner|Hand Tools
+Socket set|Hand Tools
+Ratchet handle|Hand Tools
+Torque wrench|Hand Tools
+Pipe vice|Hand Tools
+Bench vice|Hand Tools
+Bolt cutter|Hand Tools
+Corded drill machine|Power Tools & Accessories
+Cordless drill machine|Power Tools & Accessories
+Rotary hammer|Power Tools & Accessories
+Angle grinder|Power Tools & Accessories
+Bench grinder|Power Tools & Accessories
+Circular saw|Power Tools & Accessories
+Jigsaw|Power Tools & Accessories
+Orbital sander|Power Tools & Accessories
+Heat gun|Power Tools & Accessories
+Impact driver|Power Tools & Accessories
+Demolition hammer|Power Tools & Accessories
+Electric screwdriver|Power Tools & Accessories
+Blower|Power Tools & Accessories
+Pressure washer|Power Tools & Accessories
+Drill bit HSS|Power Tools & Accessories
+Masonry drill bit|Power Tools & Accessories
+Wood drill bit|Power Tools & Accessories
+SDS drill bit|Power Tools & Accessories
+Grinding disc|Power Tools & Accessories
+Cutting disc|Power Tools & Accessories
+Flap disc|Power Tools & Accessories
+Diamond blade|Power Tools & Accessories
+Wire cup brush|Power Tools & Accessories
+Sanding sheet|Power Tools & Accessories
+Sanding belt|Power Tools & Accessories
+Saw blade|Power Tools & Accessories
+Hole saw|Power Tools & Accessories
+Extension cable reel|Power Tools & Accessories
+Interior emulsion paint 200 ml|Paints, Finishes & Adhesives
+Interior emulsion paint 500 ml|Paints, Finishes & Adhesives
+Interior emulsion paint 1 L|Paints, Finishes & Adhesives
+Interior emulsion paint 4 L|Paints, Finishes & Adhesives
+Interior emulsion paint 10 L|Paints, Finishes & Adhesives
+Interior emulsion paint 20 L|Paints, Finishes & Adhesives
+Exterior emulsion paint 200 ml|Paints, Finishes & Adhesives
+Exterior emulsion paint 500 ml|Paints, Finishes & Adhesives
+Exterior emulsion paint 1 L|Paints, Finishes & Adhesives
+Exterior emulsion paint 4 L|Paints, Finishes & Adhesives
+Exterior emulsion paint 10 L|Paints, Finishes & Adhesives
+Exterior emulsion paint 20 L|Paints, Finishes & Adhesives
+Enamel paint 200 ml|Paints, Finishes & Adhesives
+Enamel paint 500 ml|Paints, Finishes & Adhesives
+Enamel paint 1 L|Paints, Finishes & Adhesives
+Enamel paint 4 L|Paints, Finishes & Adhesives
+Enamel paint 10 L|Paints, Finishes & Adhesives
+Enamel paint 20 L|Paints, Finishes & Adhesives
+Metal primer 200 ml|Paints, Finishes & Adhesives
+Metal primer 500 ml|Paints, Finishes & Adhesives
+Metal primer 1 L|Paints, Finishes & Adhesives
+Metal primer 4 L|Paints, Finishes & Adhesives
+Metal primer 10 L|Paints, Finishes & Adhesives
+Metal primer 20 L|Paints, Finishes & Adhesives
+Wood primer 200 ml|Paints, Finishes & Adhesives
+Wood primer 500 ml|Paints, Finishes & Adhesives
+Wood primer 1 L|Paints, Finishes & Adhesives
+Wood primer 4 L|Paints, Finishes & Adhesives
+Wood primer 10 L|Paints, Finishes & Adhesives
+Wood primer 20 L|Paints, Finishes & Adhesives
+Red oxide primer 200 ml|Paints, Finishes & Adhesives
+Red oxide primer 500 ml|Paints, Finishes & Adhesives
+Red oxide primer 1 L|Paints, Finishes & Adhesives
+Red oxide primer 4 L|Paints, Finishes & Adhesives
+Red oxide primer 10 L|Paints, Finishes & Adhesives
+Red oxide primer 20 L|Paints, Finishes & Adhesives
+Epoxy paint 200 ml|Paints, Finishes & Adhesives
+Epoxy paint 500 ml|Paints, Finishes & Adhesives
+Epoxy paint 1 L|Paints, Finishes & Adhesives
+Epoxy paint 4 L|Paints, Finishes & Adhesives
+Epoxy paint 10 L|Paints, Finishes & Adhesives
+Epoxy paint 20 L|Paints, Finishes & Adhesives
+Spray paint 200 ml|Paints, Finishes & Adhesives
+Spray paint 500 ml|Paints, Finishes & Adhesives
+Spray paint 1 L|Paints, Finishes & Adhesives
+Spray paint 4 L|Paints, Finishes & Adhesives
+Spray paint 10 L|Paints, Finishes & Adhesives
+Spray paint 20 L|Paints, Finishes & Adhesives
+Distemper 200 ml|Paints, Finishes & Adhesives
+Distemper 500 ml|Paints, Finishes & Adhesives
+Distemper 1 L|Paints, Finishes & Adhesives
+Distemper 4 L|Paints, Finishes & Adhesives
+Distemper 10 L|Paints, Finishes & Adhesives
+Distemper 20 L|Paints, Finishes & Adhesives
+Texture paint 200 ml|Paints, Finishes & Adhesives
+Texture paint 500 ml|Paints, Finishes & Adhesives
+Texture paint 1 L|Paints, Finishes & Adhesives
+Texture paint 4 L|Paints, Finishes & Adhesives
+Texture paint 10 L|Paints, Finishes & Adhesives
+Texture paint 20 L|Paints, Finishes & Adhesives
+Road marking paint 200 ml|Paints, Finishes & Adhesives
+Road marking paint 500 ml|Paints, Finishes & Adhesives
+Road marking paint 1 L|Paints, Finishes & Adhesives
+Road marking paint 4 L|Paints, Finishes & Adhesives
+Road marking paint 10 L|Paints, Finishes & Adhesives
+Road marking paint 20 L|Paints, Finishes & Adhesives
+Waterproof coating 200 ml|Paints, Finishes & Adhesives
+Waterproof coating 500 ml|Paints, Finishes & Adhesives
+Waterproof coating 1 L|Paints, Finishes & Adhesives
+Waterproof coating 4 L|Paints, Finishes & Adhesives
+Waterproof coating 10 L|Paints, Finishes & Adhesives
+Waterproof coating 20 L|Paints, Finishes & Adhesives
+Paint brush 1 inch|Paints, Finishes & Adhesives
+Paint brush 2 inch|Paints, Finishes & Adhesives
+Paint brush 3 inch|Paints, Finishes & Adhesives
+Paint brush 4 inch|Paints, Finishes & Adhesives
+Roller brush 1 inch|Paints, Finishes & Adhesives
+Roller brush 2 inch|Paints, Finishes & Adhesives
+Roller brush 3 inch|Paints, Finishes & Adhesives
+Roller brush 4 inch|Paints, Finishes & Adhesives
+Paint roller handle 1 inch|Paints, Finishes & Adhesives
+Paint roller handle 2 inch|Paints, Finishes & Adhesives
+Paint roller handle 3 inch|Paints, Finishes & Adhesives
+Paint roller handle 4 inch|Paints, Finishes & Adhesives
+Paint tray 1 inch|Paints, Finishes & Adhesives
+Paint tray 2 inch|Paints, Finishes & Adhesives
+Paint tray 3 inch|Paints, Finishes & Adhesives
+Paint tray 4 inch|Paints, Finishes & Adhesives
+Putty knife 1 inch|Paints, Finishes & Adhesives
+Putty knife 2 inch|Paints, Finishes & Adhesives
+Putty knife 3 inch|Paints, Finishes & Adhesives
+Putty knife 4 inch|Paints, Finishes & Adhesives
+Scraper blade 1 inch|Paints, Finishes & Adhesives
+Scraper blade 2 inch|Paints, Finishes & Adhesives
+Scraper blade 3 inch|Paints, Finishes & Adhesives
+Scraper blade 4 inch|Paints, Finishes & Adhesives
+Masking tape 1 inch|Paints, Finishes & Adhesives
+Masking tape 2 inch|Paints, Finishes & Adhesives
+Masking tape 3 inch|Paints, Finishes & Adhesives
+Masking tape 4 inch|Paints, Finishes & Adhesives
+Sandpaper 1 inch|Paints, Finishes & Adhesives
+Sandpaper 2 inch|Paints, Finishes & Adhesives
+Sandpaper 3 inch|Paints, Finishes & Adhesives
+Sandpaper 4 inch|Paints, Finishes & Adhesives
+Paint thinner 1 inch|Paints, Finishes & Adhesives
+Paint thinner 2 inch|Paints, Finishes & Adhesives
+Paint thinner 3 inch|Paints, Finishes & Adhesives
+Paint thinner 4 inch|Paints, Finishes & Adhesives
+Turpentine 1 inch|Paints, Finishes & Adhesives
+Turpentine 2 inch|Paints, Finishes & Adhesives
+Turpentine 3 inch|Paints, Finishes & Adhesives
+Turpentine 4 inch|Paints, Finishes & Adhesives
+Paint bucket 1 inch|Paints, Finishes & Adhesives
+Paint bucket 2 inch|Paints, Finishes & Adhesives
+Paint bucket 3 inch|Paints, Finishes & Adhesives
+Paint bucket 4 inch|Paints, Finishes & Adhesives
+Stirring stick 1 inch|Paints, Finishes & Adhesives
+Stirring stick 2 inch|Paints, Finishes & Adhesives
+Stirring stick 3 inch|Paints, Finishes & Adhesives
+Stirring stick 4 inch|Paints, Finishes & Adhesives
+White glue|Paints, Finishes & Adhesives
+Epoxy adhesive|Paints, Finishes & Adhesives
+Instant adhesive|Paints, Finishes & Adhesives
+Contact adhesive|Paints, Finishes & Adhesives
+PVC solvent cement|Paints, Finishes & Adhesives
+Silicone sealant|Paints, Finishes & Adhesives
+Acrylic sealant|Paints, Finishes & Adhesives
+PU foam|Paints, Finishes & Adhesives
+Thread seal tape|Paints, Finishes & Adhesives
+Pipe thread sealant|Paints, Finishes & Adhesives
+Construction adhesive|Paints, Finishes & Adhesives
+Tile adhesive|Paints, Finishes & Adhesives
+Grout|Paints, Finishes & Adhesives
+PVC pipe 1/2 inch|Plumbing & Pipes
+PVC pipe 3/4 inch|Plumbing & Pipes
+PVC pipe 1 inch|Plumbing & Pipes
+PVC pipe 1.25 inch|Plumbing & Pipes
+PVC pipe 1.5 inch|Plumbing & Pipes
+PVC pipe 2 inch|Plumbing & Pipes
+PVC pipe 3 inch|Plumbing & Pipes
+PVC pipe 4 inch|Plumbing & Pipes
+UPVC pipe 1/2 inch|Plumbing & Pipes
+UPVC pipe 3/4 inch|Plumbing & Pipes
+UPVC pipe 1 inch|Plumbing & Pipes
+UPVC pipe 1.25 inch|Plumbing & Pipes
+UPVC pipe 1.5 inch|Plumbing & Pipes
+UPVC pipe 2 inch|Plumbing & Pipes
+UPVC pipe 3 inch|Plumbing & Pipes
+UPVC pipe 4 inch|Plumbing & Pipes
+CPVC pipe 1/2 inch|Plumbing & Pipes
+CPVC pipe 3/4 inch|Plumbing & Pipes
+CPVC pipe 1 inch|Plumbing & Pipes
+CPVC pipe 1.25 inch|Plumbing & Pipes
+CPVC pipe 1.5 inch|Plumbing & Pipes
+CPVC pipe 2 inch|Plumbing & Pipes
+CPVC pipe 3 inch|Plumbing & Pipes
+CPVC pipe 4 inch|Plumbing & Pipes
+SWR pipe 1/2 inch|Plumbing & Pipes
+SWR pipe 3/4 inch|Plumbing & Pipes
+SWR pipe 1 inch|Plumbing & Pipes
+SWR pipe 1.25 inch|Plumbing & Pipes
+SWR pipe 1.5 inch|Plumbing & Pipes
+SWR pipe 2 inch|Plumbing & Pipes
+SWR pipe 3 inch|Plumbing & Pipes
+SWR pipe 4 inch|Plumbing & Pipes
+HDPE pipe 1/2 inch|Plumbing & Pipes
+HDPE pipe 3/4 inch|Plumbing & Pipes
+HDPE pipe 1 inch|Plumbing & Pipes
+HDPE pipe 1.25 inch|Plumbing & Pipes
+HDPE pipe 1.5 inch|Plumbing & Pipes
+HDPE pipe 2 inch|Plumbing & Pipes
+HDPE pipe 3 inch|Plumbing & Pipes
+HDPE pipe 4 inch|Plumbing & Pipes
+GI pipe 1/2 inch|Plumbing & Pipes
+GI pipe 3/4 inch|Plumbing & Pipes
+GI pipe 1 inch|Plumbing & Pipes
+GI pipe 1.25 inch|Plumbing & Pipes
+GI pipe 1.5 inch|Plumbing & Pipes
+GI pipe 2 inch|Plumbing & Pipes
+GI pipe 3 inch|Plumbing & Pipes
+GI pipe 4 inch|Plumbing & Pipes
+MS pipe 1/2 inch|Plumbing & Pipes
+MS pipe 3/4 inch|Plumbing & Pipes
+MS pipe 1 inch|Plumbing & Pipes
+MS pipe 1.25 inch|Plumbing & Pipes
+MS pipe 1.5 inch|Plumbing & Pipes
+MS pipe 2 inch|Plumbing & Pipes
+MS pipe 3 inch|Plumbing & Pipes
+MS pipe 4 inch|Plumbing & Pipes
+PPR pipe 1/2 inch|Plumbing & Pipes
+PPR pipe 3/4 inch|Plumbing & Pipes
+PPR pipe 1 inch|Plumbing & Pipes
+PPR pipe 1.25 inch|Plumbing & Pipes
+PPR pipe 1.5 inch|Plumbing & Pipes
+PPR pipe 2 inch|Plumbing & Pipes
+PPR pipe 3 inch|Plumbing & Pipes
+PPR pipe 4 inch|Plumbing & Pipes
+Flexible hose 1/2 inch|Plumbing & Pipes
+Flexible hose 3/4 inch|Plumbing & Pipes
+Flexible hose 1 inch|Plumbing & Pipes
+Flexible hose 1.25 inch|Plumbing & Pipes
+Flexible hose 1.5 inch|Plumbing & Pipes
+Flexible hose 2 inch|Plumbing & Pipes
+Flexible hose 3 inch|Plumbing & Pipes
+Flexible hose 4 inch|Plumbing & Pipes
+Braided hose 1/2 inch|Plumbing & Pipes
+Braided hose 3/4 inch|Plumbing & Pipes
+Braided hose 1 inch|Plumbing & Pipes
+Braided hose 1.25 inch|Plumbing & Pipes
+Braided hose 1.5 inch|Plumbing & Pipes
+Braided hose 2 inch|Plumbing & Pipes
+Braided hose 3 inch|Plumbing & Pipes
+Braided hose 4 inch|Plumbing & Pipes
+Drain pipe 1/2 inch|Plumbing & Pipes
+Drain pipe 3/4 inch|Plumbing & Pipes
+Drain pipe 1 inch|Plumbing & Pipes
+Drain pipe 1.25 inch|Plumbing & Pipes
+Drain pipe 1.5 inch|Plumbing & Pipes
+Drain pipe 2 inch|Plumbing & Pipes
+Drain pipe 3 inch|Plumbing & Pipes
+Drain pipe 4 inch|Plumbing & Pipes
+PVC elbow 1/2 inch|Plumbing & Pipes
+PVC elbow 3/4 inch|Plumbing & Pipes
+PVC elbow 1 inch|Plumbing & Pipes
+PVC elbow 1.25 inch|Plumbing & Pipes
+PVC elbow 1.5 inch|Plumbing & Pipes
+PVC elbow 2 inch|Plumbing & Pipes
+PVC tee 1/2 inch|Plumbing & Pipes
+PVC tee 3/4 inch|Plumbing & Pipes
+PVC tee 1 inch|Plumbing & Pipes
+PVC tee 1.25 inch|Plumbing & Pipes
+PVC tee 1.5 inch|Plumbing & Pipes
+PVC tee 2 inch|Plumbing & Pipes
+PVC socket 1/2 inch|Plumbing & Pipes
+PVC socket 3/4 inch|Plumbing & Pipes
+PVC socket 1 inch|Plumbing & Pipes
+PVC socket 1.25 inch|Plumbing & Pipes
+PVC socket 1.5 inch|Plumbing & Pipes
+PVC socket 2 inch|Plumbing & Pipes
+PVC reducer 1/2 inch|Plumbing & Pipes
+PVC reducer 3/4 inch|Plumbing & Pipes
+PVC reducer 1 inch|Plumbing & Pipes
+PVC reducer 1.25 inch|Plumbing & Pipes
+PVC reducer 1.5 inch|Plumbing & Pipes
+PVC reducer 2 inch|Plumbing & Pipes
+PVC union 1/2 inch|Plumbing & Pipes
+PVC union 3/4 inch|Plumbing & Pipes
+PVC union 1 inch|Plumbing & Pipes
+PVC union 1.25 inch|Plumbing & Pipes
+PVC union 1.5 inch|Plumbing & Pipes
+PVC union 2 inch|Plumbing & Pipes
+PVC end cap 1/2 inch|Plumbing & Pipes
+PVC end cap 3/4 inch|Plumbing & Pipes
+PVC end cap 1 inch|Plumbing & Pipes
+PVC end cap 1.25 inch|Plumbing & Pipes
+PVC end cap 1.5 inch|Plumbing & Pipes
+PVC end cap 2 inch|Plumbing & Pipes
+CPVC elbow 1/2 inch|Plumbing & Pipes
+CPVC elbow 3/4 inch|Plumbing & Pipes
+CPVC elbow 1 inch|Plumbing & Pipes
+CPVC elbow 1.25 inch|Plumbing & Pipes
+CPVC elbow 1.5 inch|Plumbing & Pipes
+CPVC elbow 2 inch|Plumbing & Pipes
+CPVC tee 1/2 inch|Plumbing & Pipes
+CPVC tee 3/4 inch|Plumbing & Pipes
+CPVC tee 1 inch|Plumbing & Pipes
+CPVC tee 1.25 inch|Plumbing & Pipes
+CPVC tee 1.5 inch|Plumbing & Pipes
+CPVC tee 2 inch|Plumbing & Pipes
+CPVC socket 1/2 inch|Plumbing & Pipes
+CPVC socket 3/4 inch|Plumbing & Pipes
+CPVC socket 1 inch|Plumbing & Pipes
+CPVC socket 1.25 inch|Plumbing & Pipes
+CPVC socket 1.5 inch|Plumbing & Pipes
+CPVC socket 2 inch|Plumbing & Pipes
+GI elbow 1/2 inch|Plumbing & Pipes
+GI elbow 3/4 inch|Plumbing & Pipes
+GI elbow 1 inch|Plumbing & Pipes
+GI elbow 1.25 inch|Plumbing & Pipes
+GI elbow 1.5 inch|Plumbing & Pipes
+GI elbow 2 inch|Plumbing & Pipes
+GI tee 1/2 inch|Plumbing & Pipes
+GI tee 3/4 inch|Plumbing & Pipes
+GI tee 1 inch|Plumbing & Pipes
+GI tee 1.25 inch|Plumbing & Pipes
+GI tee 1.5 inch|Plumbing & Pipes
+GI tee 2 inch|Plumbing & Pipes
+GI socket 1/2 inch|Plumbing & Pipes
+GI socket 3/4 inch|Plumbing & Pipes
+GI socket 1 inch|Plumbing & Pipes
+GI socket 1.25 inch|Plumbing & Pipes
+GI socket 1.5 inch|Plumbing & Pipes
+GI socket 2 inch|Plumbing & Pipes
+GI nipple 1/2 inch|Plumbing & Pipes
+GI nipple 3/4 inch|Plumbing & Pipes
+GI nipple 1 inch|Plumbing & Pipes
+GI nipple 1.25 inch|Plumbing & Pipes
+GI nipple 1.5 inch|Plumbing & Pipes
+GI nipple 2 inch|Plumbing & Pipes
+GI reducer 1/2 inch|Plumbing & Pipes
+GI reducer 3/4 inch|Plumbing & Pipes
+GI reducer 1 inch|Plumbing & Pipes
+GI reducer 1.25 inch|Plumbing & Pipes
+GI reducer 1.5 inch|Plumbing & Pipes
+GI reducer 2 inch|Plumbing & Pipes
+Flange 1/2 inch|Plumbing & Pipes
+Flange 3/4 inch|Plumbing & Pipes
+Flange 1 inch|Plumbing & Pipes
+Flange 1.25 inch|Plumbing & Pipes
+Flange 1.5 inch|Plumbing & Pipes
+Flange 2 inch|Plumbing & Pipes
+Compression fitting 1/2 inch|Plumbing & Pipes
+Compression fitting 3/4 inch|Plumbing & Pipes
+Compression fitting 1 inch|Plumbing & Pipes
+Compression fitting 1.25 inch|Plumbing & Pipes
+Compression fitting 1.5 inch|Plumbing & Pipes
+Compression fitting 2 inch|Plumbing & Pipes
+Pipe clamp 1/2 inch|Plumbing & Pipes
+Pipe clamp 3/4 inch|Plumbing & Pipes
+Pipe clamp 1 inch|Plumbing & Pipes
+Pipe clamp 1.25 inch|Plumbing & Pipes
+Pipe clamp 1.5 inch|Plumbing & Pipes
+Pipe clamp 2 inch|Plumbing & Pipes
+Ball valve|Plumbing & Pipes
+Gate valve|Plumbing & Pipes
+Check valve|Plumbing & Pipes
+Foot valve|Plumbing & Pipes
+Float valve|Plumbing & Pipes
+Bib cock|Plumbing & Pipes
+Stop cock|Plumbing & Pipes
+Angle valve|Plumbing & Pipes
+Flush valve|Plumbing & Pipes
+Pressure reducing valve|Plumbing & Pipes
+Water pump|Plumbing & Pipes
+Submersible pump|Plumbing & Pipes
+Booster pump|Plumbing & Pipes
+Pump spare seal|Plumbing & Pipes
+Pillar cock|Plumbing & Pipes
+Sink cock|Plumbing & Pipes
+Wall mixer|Plumbing & Pipes
+Shower head|Plumbing & Pipes
+Hand shower|Plumbing & Pipes
+Health faucet|Plumbing & Pipes
+Flexible connection|Plumbing & Pipes
+Waste coupling|Plumbing & Pipes
+Bottle trap|Plumbing & Pipes
+P-trap|Plumbing & Pipes
+S-trap|Plumbing & Pipes
+Floor drain|Plumbing & Pipes
+Flush tank|Plumbing & Pipes
+Flush pipe|Plumbing & Pipes
+Toilet seat cover|Plumbing & Pipes
+Wash basin bracket|Plumbing & Pipes
+FR wire 0.75 sq mm|Electrical Supplies
+FR wire 1 sq mm|Electrical Supplies
+FR wire 1.5 sq mm|Electrical Supplies
+FR wire 2.5 sq mm|Electrical Supplies
+FR wire 4 sq mm|Electrical Supplies
+FR wire 6 sq mm|Electrical Supplies
+FR wire 10 sq mm|Electrical Supplies
+FRLS wire 0.75 sq mm|Electrical Supplies
+FRLS wire 1 sq mm|Electrical Supplies
+FRLS wire 1.5 sq mm|Electrical Supplies
+FRLS wire 2.5 sq mm|Electrical Supplies
+FRLS wire 4 sq mm|Electrical Supplies
+FRLS wire 6 sq mm|Electrical Supplies
+FRLS wire 10 sq mm|Electrical Supplies
+House wire 0.75 sq mm|Electrical Supplies
+House wire 1 sq mm|Electrical Supplies
+House wire 1.5 sq mm|Electrical Supplies
+House wire 2.5 sq mm|Electrical Supplies
+House wire 4 sq mm|Electrical Supplies
+House wire 6 sq mm|Electrical Supplies
+House wire 10 sq mm|Electrical Supplies
+Flexible copper wire 0.75 sq mm|Electrical Supplies
+Flexible copper wire 1 sq mm|Electrical Supplies
+Flexible copper wire 1.5 sq mm|Electrical Supplies
+Flexible copper wire 2.5 sq mm|Electrical Supplies
+Flexible copper wire 4 sq mm|Electrical Supplies
+Flexible copper wire 6 sq mm|Electrical Supplies
+Flexible copper wire 10 sq mm|Electrical Supplies
+Aluminium cable 0.75 sq mm|Electrical Supplies
+Aluminium cable 1 sq mm|Electrical Supplies
+Aluminium cable 1.5 sq mm|Electrical Supplies
+Aluminium cable 2.5 sq mm|Electrical Supplies
+Aluminium cable 4 sq mm|Electrical Supplies
+Aluminium cable 6 sq mm|Electrical Supplies
+Aluminium cable 10 sq mm|Electrical Supplies
+Coaxial cable 0.75 sq mm|Electrical Supplies
+Coaxial cable 1 sq mm|Electrical Supplies
+Coaxial cable 1.5 sq mm|Electrical Supplies
+Coaxial cable 2.5 sq mm|Electrical Supplies
+Coaxial cable 4 sq mm|Electrical Supplies
+Coaxial cable 6 sq mm|Electrical Supplies
+Coaxial cable 10 sq mm|Electrical Supplies
+Cat6 cable 0.75 sq mm|Electrical Supplies
+Cat6 cable 1 sq mm|Electrical Supplies
+Cat6 cable 1.5 sq mm|Electrical Supplies
+Cat6 cable 2.5 sq mm|Electrical Supplies
+Cat6 cable 4 sq mm|Electrical Supplies
+Cat6 cable 6 sq mm|Electrical Supplies
+Cat6 cable 10 sq mm|Electrical Supplies
+Telephone cable 0.75 sq mm|Electrical Supplies
+Telephone cable 1 sq mm|Electrical Supplies
+Telephone cable 1.5 sq mm|Electrical Supplies
+Telephone cable 2.5 sq mm|Electrical Supplies
+Telephone cable 4 sq mm|Electrical Supplies
+Telephone cable 6 sq mm|Electrical Supplies
+Telephone cable 10 sq mm|Electrical Supplies
+Submersible cable 0.75 sq mm|Electrical Supplies
+Submersible cable 1 sq mm|Electrical Supplies
+Submersible cable 1.5 sq mm|Electrical Supplies
+Submersible cable 2.5 sq mm|Electrical Supplies
+Submersible cable 4 sq mm|Electrical Supplies
+Submersible cable 6 sq mm|Electrical Supplies
+Submersible cable 10 sq mm|Electrical Supplies
+Earthing wire 0.75 sq mm|Electrical Supplies
+Earthing wire 1 sq mm|Electrical Supplies
+Earthing wire 1.5 sq mm|Electrical Supplies
+Earthing wire 2.5 sq mm|Electrical Supplies
+Earthing wire 4 sq mm|Electrical Supplies
+Earthing wire 6 sq mm|Electrical Supplies
+Earthing wire 10 sq mm|Electrical Supplies
+Extension cord 0.75 sq mm|Electrical Supplies
+Extension cord 1 sq mm|Electrical Supplies
+Extension cord 1.5 sq mm|Electrical Supplies
+Extension cord 2.5 sq mm|Electrical Supplies
+Extension cord 4 sq mm|Electrical Supplies
+Extension cord 6 sq mm|Electrical Supplies
+Extension cord 10 sq mm|Electrical Supplies
+1-way switch 6A|Electrical Supplies
+1-way switch 16A|Electrical Supplies
+1-way switch 20A|Electrical Supplies
+1-way switch 32A|Electrical Supplies
+2-way switch 6A|Electrical Supplies
+2-way switch 16A|Electrical Supplies
+2-way switch 20A|Electrical Supplies
+2-way switch 32A|Electrical Supplies
+Bell push switch 6A|Electrical Supplies
+Bell push switch 16A|Electrical Supplies
+Bell push switch 20A|Electrical Supplies
+Bell push switch 32A|Electrical Supplies
+6A socket 6A|Electrical Supplies
+6A socket 16A|Electrical Supplies
+6A socket 20A|Electrical Supplies
+6A socket 32A|Electrical Supplies
+16A socket 6A|Electrical Supplies
+16A socket 16A|Electrical Supplies
+16A socket 20A|Electrical Supplies
+16A socket 32A|Electrical Supplies
+Universal socket 6A|Electrical Supplies
+Universal socket 16A|Electrical Supplies
+Universal socket 20A|Electrical Supplies
+Universal socket 32A|Electrical Supplies
+Plug top 6A|Electrical Supplies
+Plug top 16A|Electrical Supplies
+Plug top 20A|Electrical Supplies
+Plug top 32A|Electrical Supplies
+Multi-plug 6A|Electrical Supplies
+Multi-plug 16A|Electrical Supplies
+Multi-plug 20A|Electrical Supplies
+Multi-plug 32A|Electrical Supplies
+Ceiling rose 6A|Electrical Supplies
+Ceiling rose 16A|Electrical Supplies
+Ceiling rose 20A|Electrical Supplies
+Ceiling rose 32A|Electrical Supplies
+Lamp holder 6A|Electrical Supplies
+Lamp holder 16A|Electrical Supplies
+Lamp holder 20A|Electrical Supplies
+Lamp holder 32A|Electrical Supplies
+Fan regulator 6A|Electrical Supplies
+Fan regulator 16A|Electrical Supplies
+Fan regulator 20A|Electrical Supplies
+Fan regulator 32A|Electrical Supplies
+Dimmer switch 6A|Electrical Supplies
+Dimmer switch 16A|Electrical Supplies
+Dimmer switch 20A|Electrical Supplies
+Dimmer switch 32A|Electrical Supplies
+Modular plate 6A|Electrical Supplies
+Modular plate 16A|Electrical Supplies
+Modular plate 20A|Electrical Supplies
+Modular plate 32A|Electrical Supplies
+Switch box 6A|Electrical Supplies
+Switch box 16A|Electrical Supplies
+Switch box 20A|Electrical Supplies
+Switch box 32A|Electrical Supplies
+SP MCB 6A|Electrical Supplies
+SP MCB 10A|Electrical Supplies
+SP MCB 16A|Electrical Supplies
+SP MCB 20A|Electrical Supplies
+SP MCB 32A|Electrical Supplies
+SP MCB 40A|Electrical Supplies
+SP MCB 63A|Electrical Supplies
+DP MCB 6A|Electrical Supplies
+DP MCB 10A|Electrical Supplies
+DP MCB 16A|Electrical Supplies
+DP MCB 20A|Electrical Supplies
+DP MCB 32A|Electrical Supplies
+DP MCB 40A|Electrical Supplies
+DP MCB 63A|Electrical Supplies
+TP MCB 6A|Electrical Supplies
+TP MCB 10A|Electrical Supplies
+TP MCB 16A|Electrical Supplies
+TP MCB 20A|Electrical Supplies
+TP MCB 32A|Electrical Supplies
+TP MCB 40A|Electrical Supplies
+TP MCB 63A|Electrical Supplies
+RCCB 6A|Electrical Supplies
+RCCB 10A|Electrical Supplies
+RCCB 16A|Electrical Supplies
+RCCB 20A|Electrical Supplies
+RCCB 32A|Electrical Supplies
+RCCB 40A|Electrical Supplies
+RCCB 63A|Electrical Supplies
+RCBO 6A|Electrical Supplies
+RCBO 10A|Electrical Supplies
+RCBO 16A|Electrical Supplies
+RCBO 20A|Electrical Supplies
+RCBO 32A|Electrical Supplies
+RCBO 40A|Electrical Supplies
+RCBO 63A|Electrical Supplies
+MCCB 6A|Electrical Supplies
+MCCB 10A|Electrical Supplies
+MCCB 16A|Electrical Supplies
+MCCB 20A|Electrical Supplies
+MCCB 32A|Electrical Supplies
+MCCB 40A|Electrical Supplies
+MCCB 63A|Electrical Supplies
+Distribution board 6A|Electrical Supplies
+Distribution board 10A|Electrical Supplies
+Distribution board 16A|Electrical Supplies
+Distribution board 20A|Electrical Supplies
+Distribution board 32A|Electrical Supplies
+Distribution board 40A|Electrical Supplies
+Distribution board 63A|Electrical Supplies
+Isolator 6A|Electrical Supplies
+Isolator 10A|Electrical Supplies
+Isolator 16A|Electrical Supplies
+Isolator 20A|Electrical Supplies
+Isolator 32A|Electrical Supplies
+Isolator 40A|Electrical Supplies
+Isolator 63A|Electrical Supplies
+Changeover switch 6A|Electrical Supplies
+Changeover switch 10A|Electrical Supplies
+Changeover switch 16A|Electrical Supplies
+Changeover switch 20A|Electrical Supplies
+Changeover switch 32A|Electrical Supplies
+Changeover switch 40A|Electrical Supplies
+Changeover switch 63A|Electrical Supplies
+Fuse holder 6A|Electrical Supplies
+Fuse holder 10A|Electrical Supplies
+Fuse holder 16A|Electrical Supplies
+Fuse holder 20A|Electrical Supplies
+Fuse holder 32A|Electrical Supplies
+Fuse holder 40A|Electrical Supplies
+Fuse holder 63A|Electrical Supplies
+Cartridge fuse 6A|Electrical Supplies
+Cartridge fuse 10A|Electrical Supplies
+Cartridge fuse 16A|Electrical Supplies
+Cartridge fuse 20A|Electrical Supplies
+Cartridge fuse 32A|Electrical Supplies
+Cartridge fuse 40A|Electrical Supplies
+Cartridge fuse 63A|Electrical Supplies
+Surge protector 6A|Electrical Supplies
+Surge protector 10A|Electrical Supplies
+Surge protector 16A|Electrical Supplies
+Surge protector 20A|Electrical Supplies
+Surge protector 32A|Electrical Supplies
+Surge protector 40A|Electrical Supplies
+Surge protector 63A|Electrical Supplies
+Contactor 6A|Electrical Supplies
+Contactor 10A|Electrical Supplies
+Contactor 16A|Electrical Supplies
+Contactor 20A|Electrical Supplies
+Contactor 32A|Electrical Supplies
+Contactor 40A|Electrical Supplies
+Contactor 63A|Electrical Supplies
+Overload relay 6A|Electrical Supplies
+Overload relay 10A|Electrical Supplies
+Overload relay 16A|Electrical Supplies
+Overload relay 20A|Electrical Supplies
+Overload relay 32A|Electrical Supplies
+Overload relay 40A|Electrical Supplies
+Overload relay 63A|Electrical Supplies
+Terminal block 6A|Electrical Supplies
+Terminal block 10A|Electrical Supplies
+Terminal block 16A|Electrical Supplies
+Terminal block 20A|Electrical Supplies
+Terminal block 32A|Electrical Supplies
+Terminal block 40A|Electrical Supplies
+Terminal block 63A|Electrical Supplies
+LED bulb|Electrical Supplies
+LED tube light|Electrical Supplies
+Panel light|Electrical Supplies
+Flood light|Electrical Supplies
+Batten light|Electrical Supplies
+Emergency light|Electrical Supplies
+Street light|Electrical Supplies
+Ceiling fan|Electrical Supplies
+Exhaust fan|Electrical Supplies
+Fan capacitor|Electrical Supplies
+LED driver|Electrical Supplies
+Junction box|Electrical Supplies
+Conduit pipe|Electrical Supplies
+Conduit bend|Electrical Supplies
+Cable gland|Electrical Supplies
+Cable lug|Electrical Supplies
+Insulation tape|Electrical Supplies
+Earthing clamp|Electrical Supplies
+Door lock|Locks, Hinges & Furniture Fittings
+Mortise lock|Locks, Hinges & Furniture Fittings
+Rim lock|Locks, Hinges & Furniture Fittings
+Padlock|Locks, Hinges & Furniture Fittings
+Shutter lock|Locks, Hinges & Furniture Fittings
+Drawer lock|Locks, Hinges & Furniture Fittings
+Cabinet lock|Locks, Hinges & Furniture Fittings
+Digital door lock|Locks, Hinges & Furniture Fittings
+Lock cylinder|Locks, Hinges & Furniture Fittings
+Lock body|Locks, Hinges & Furniture Fittings
+Butt hinge|Locks, Hinges & Furniture Fittings
+Piano hinge|Locks, Hinges & Furniture Fittings
+Concealed hinge|Locks, Hinges & Furniture Fittings
+Hydraulic hinge|Locks, Hinges & Furniture Fittings
+Door closer|Locks, Hinges & Furniture Fittings
+Tower bolt|Locks, Hinges & Furniture Fittings
+Aldrop|Locks, Hinges & Furniture Fittings
+Door stopper|Locks, Hinges & Furniture Fittings
+Door viewer|Locks, Hinges & Furniture Fittings
+Handle set|Locks, Hinges & Furniture Fittings
+Door latch|Locks, Hinges & Furniture Fittings
+Flush bolt|Locks, Hinges & Furniture Fittings
+Door magnet|Locks, Hinges & Furniture Fittings
+Cabinet handle|Locks, Hinges & Furniture Fittings
+Drawer channel|Locks, Hinges & Furniture Fittings
+Drawer slide|Locks, Hinges & Furniture Fittings
+Gas spring|Locks, Hinges & Furniture Fittings
+Shelf support|Locks, Hinges & Furniture Fittings
+Furniture leg|Locks, Hinges & Furniture Fittings
+Corner bracket|Locks, Hinges & Furniture Fittings
+Magnetic catch|Locks, Hinges & Furniture Fittings
+Furniture screw|Locks, Hinges & Furniture Fittings
+Wardrobe rod|Locks, Hinges & Furniture Fittings
+Wardrobe bracket|Locks, Hinges & Furniture Fittings
+OPC cement|Building & Construction Materials
+PPC cement|Building & Construction Materials
+White cement|Building & Construction Materials
+Wall putty|Building & Construction Materials
+Tile grout|Building & Construction Materials
+Waterproofing compound|Building & Construction Materials
+Concrete bonding agent|Building & Construction Materials
+Curing compound|Building & Construction Materials
+Repair mortar|Building & Construction Materials
+TMT bar 1 m|Building & Construction Materials
+TMT bar 2 m|Building & Construction Materials
+TMT bar 3 m|Building & Construction Materials
+TMT bar 6 m|Building & Construction Materials
+Binding wire 1 m|Building & Construction Materials
+Binding wire 2 m|Building & Construction Materials
+Binding wire 3 m|Building & Construction Materials
+Binding wire 6 m|Building & Construction Materials
+GI sheet 1 m|Building & Construction Materials
+GI sheet 2 m|Building & Construction Materials
+GI sheet 3 m|Building & Construction Materials
+GI sheet 6 m|Building & Construction Materials
+Roofing sheet 1 m|Building & Construction Materials
+Roofing sheet 2 m|Building & Construction Materials
+Roofing sheet 3 m|Building & Construction Materials
+Roofing sheet 6 m|Building & Construction Materials
+Polycarbonate sheet 1 m|Building & Construction Materials
+Polycarbonate sheet 2 m|Building & Construction Materials
+Polycarbonate sheet 3 m|Building & Construction Materials
+Polycarbonate sheet 6 m|Building & Construction Materials
+Wire mesh 1 m|Building & Construction Materials
+Wire mesh 2 m|Building & Construction Materials
+Wire mesh 3 m|Building & Construction Materials
+Wire mesh 6 m|Building & Construction Materials
+Chain link mesh 1 m|Building & Construction Materials
+Chain link mesh 2 m|Building & Construction Materials
+Chain link mesh 3 m|Building & Construction Materials
+Chain link mesh 6 m|Building & Construction Materials
+MS angle 1 m|Building & Construction Materials
+MS angle 2 m|Building & Construction Materials
+MS angle 3 m|Building & Construction Materials
+MS angle 6 m|Building & Construction Materials
+MS flat 1 m|Building & Construction Materials
+MS flat 2 m|Building & Construction Materials
+MS flat 3 m|Building & Construction Materials
+MS flat 6 m|Building & Construction Materials
+MS channel 1 m|Building & Construction Materials
+MS channel 2 m|Building & Construction Materials
+MS channel 3 m|Building & Construction Materials
+MS channel 6 m|Building & Construction Materials
+MS square pipe 1 m|Building & Construction Materials
+MS square pipe 2 m|Building & Construction Materials
+MS square pipe 3 m|Building & Construction Materials
+MS square pipe 6 m|Building & Construction Materials
+GI wire 1 m|Building & Construction Materials
+GI wire 2 m|Building & Construction Materials
+GI wire 3 m|Building & Construction Materials
+GI wire 6 m|Building & Construction Materials
+Barbed wire 1 m|Building & Construction Materials
+Barbed wire 2 m|Building & Construction Materials
+Barbed wire 3 m|Building & Construction Materials
+Barbed wire 6 m|Building & Construction Materials
+Plywood sheet|Building & Construction Materials
+MDF board|Building & Construction Materials
+Particle board|Building & Construction Materials
+PVC foam board|Building & Construction Materials
+Acrylic sheet|Building & Construction Materials
+Gypsum board|Building & Construction Materials
+Cement board|Building & Construction Materials
+Glass wool insulation|Building & Construction Materials
+Foam insulation sheet|Building & Construction Materials
+Laminated sheet|Building & Construction Materials
+One-piece closet|Sanitaryware & Bathroom
+Two-piece closet|Sanitaryware & Bathroom
+Wall-hung closet|Sanitaryware & Bathroom
+Wash basin|Sanitaryware & Bathroom
+Pedestal basin|Sanitaryware & Bathroom
+Counter basin|Sanitaryware & Bathroom
+Urinal|Sanitaryware & Bathroom
+Cistern|Sanitaryware & Bathroom
+Flush plate|Sanitaryware & Bathroom
+Bathroom mirror|Sanitaryware & Bathroom
+Towel rod|Sanitaryware & Bathroom
+Towel ring|Sanitaryware & Bathroom
+Soap dish|Sanitaryware & Bathroom
+Robe hook|Sanitaryware & Bathroom
+Toilet paper holder|Sanitaryware & Bathroom
+Corner shelf|Sanitaryware & Bathroom
+Grab bar|Sanitaryware & Bathroom
+Shower arm|Sanitaryware & Bathroom
+Shower hose|Sanitaryware & Bathroom
+Bathroom shelf|Sanitaryware & Bathroom
+Safety helmet|Safety & Workwear
+Safety goggles|Safety & Workwear
+Face shield|Safety & Workwear
+Dust mask|Safety & Workwear
+Respirator|Safety & Workwear
+Ear plug|Safety & Workwear
+Ear muff|Safety & Workwear
+Safety shoe|Safety & Workwear
+Hand gloves|Safety & Workwear
+Cut-resistant gloves|Safety & Workwear
+Welding gloves|Safety & Workwear
+Reflective vest|Safety & Workwear
+Safety harness|Safety & Workwear
+Fall arrest lanyard|Safety & Workwear
+Fire extinguisher|Safety & Workwear
+Fire blanket|Safety & Workwear
+First aid kit|Safety & Workwear
+Warning tape|Safety & Workwear
+Safety cone|Safety & Workwear
+Barricade tape|Safety & Workwear
+Emergency sign|Safety & Workwear
+Garden hose|Garden, Outdoor & Cleaning
+Hose nozzle|Garden, Outdoor & Cleaning
+Sprinkler|Garden, Outdoor & Cleaning
+Pruning shear|Garden, Outdoor & Cleaning
+Garden spade|Garden, Outdoor & Cleaning
+Garden fork|Garden, Outdoor & Cleaning
+Rake|Garden, Outdoor & Cleaning
+Watering can|Garden, Outdoor & Cleaning
+Hedge shear|Garden, Outdoor & Cleaning
+Lawn mower blade|Garden, Outdoor & Cleaning
+Floor wiper|Garden, Outdoor & Cleaning
+Broom|Garden, Outdoor & Cleaning
+Mop|Garden, Outdoor & Cleaning
+Scrub brush|Garden, Outdoor & Cleaning
+Wire brush|Garden, Outdoor & Cleaning
+Bucket|Garden, Outdoor & Cleaning
+Dustpan|Garden, Outdoor & Cleaning
+Cleaning cloth|Garden, Outdoor & Cleaning
+Drain cleaner tool|Garden, Outdoor & Cleaning
+Pressure sprayer|Garden, Outdoor & Cleaning
+Duct tape|Adhesives, Tapes & Consumables
+Electrical tape|Adhesives, Tapes & Consumables
+Masking tape|Adhesives, Tapes & Consumables
+Double-sided tape|Adhesives, Tapes & Consumables
+Foam tape|Adhesives, Tapes & Consumables
+PTFE tape|Adhesives, Tapes & Consumables
+Packaging tape|Adhesives, Tapes & Consumables
+Lubricating oil|Adhesives, Tapes & Consumables
+Grease|Adhesives, Tapes & Consumables
+WD-type penetrating spray|Adhesives, Tapes & Consumables
+Cotton waste|Adhesives, Tapes & Consumables
+Cleaning solvent|Adhesives, Tapes & Consumables
+Silica gel|Adhesives, Tapes & Consumables
+Cable marker|Adhesives, Tapes & Consumables
+Marker pen|Adhesives, Tapes & Consumables
+Utility rope|Adhesives, Tapes & Consumables
+Nylon rope|Adhesives, Tapes & Consumables
+Tarpaulin|Adhesives, Tapes & Consumables
+Plastic sheet|Adhesives, Tapes & Consumables
+Grease gun|Automotive & Workshop
+Oil can|Automotive & Workshop
+Air hose|Automotive & Workshop
+Air blow gun|Automotive & Workshop
+Air compressor accessory|Automotive & Workshop
+Bench grinder wheel|Automotive & Workshop
+Welding electrode|Automotive & Workshop
+Welding holder|Automotive & Workshop
+Earth clamp|Automotive & Workshop
+Welding cable|Automotive & Workshop
+Soldering iron|Automotive & Workshop
+Solder wire|Automotive & Workshop
+Multimeter|Automotive & Workshop
+Clamp meter|Automotive & Workshop
+Test lead|Automotive & Workshop

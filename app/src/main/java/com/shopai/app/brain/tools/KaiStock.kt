@@ -161,12 +161,36 @@ object KaiStock {
     private val stockContext = Regex("""(?i)(?<![\p{L}])(stock|inventory|iruppu|product)(?![\p{L}])""")
 
     // "Plywood 18mm" and "plywood 18 mm" are one name: a size / thickness is always written apart, in the text and in the names.
-    private fun lowerOf(text: String) = " " + text.lowercase(Locale.ROOT).replace(Regex("""[!,;.]"""), " ")
+    private fun lowerOf(text: String) = " " + sizes(text.lowercase(Locale.ROOT).replace(Regex("""[!,;]|\.(?!\d)"""), " "))
         .replace(Regex("""(?<![\p{L}\d.])(\d+(?:\.\d+)?)(inch|inches|mm|cm|ft|feet|sqmm)(?![\p{L}])"""), "$1 $2")
         .replace(Regex("""\s+"""), " ").trim() + " "
 
+    /**
+     * A size however it is written or said, one way (owner's hardware stock master, 13 Oct 2026): "16A" / "16 amp" / "16 amps",
+     * "1/2 inch" / "half inch" / "arai inch", "3/4" / "mukkal", "1 1/4" / "onnekaal" = 1.25, "1 1/2" / "onnara" = 1.5, "1 L" /
+     * "1 litre", "1 m" / "1 meter", "3x10 mm" / "3 by 10 mm", "1.5 sq mm" / "1.5 sqmm" — the product's name and what the owner
+     * said read the same.
+     */
+    private fun sizes(t: String): String {
+        val inch = """(?=\s*(?:inch|inches)(?![\p{L}]))"""
+        return t
+            .replace(Regex("""(?<![\p{L}\d./])(\d+)\s+1/2$inch"""), "$1.5").replace(Regex("""(?<![\p{L}\d./])(\d+)\s+1/4$inch"""), "$1.25")
+            .replace(Regex("""(?<![\p{L}\d./])(\d+)\s+3/4$inch"""), "$1.75")
+            .replace(Regex("""(?<![\p{L}\d./])1/2$inch"""), "0.5").replace(Regex("""(?<![\p{L}\d./])3/4$inch"""), "0.75")
+            .replace(Regex("""(?<![\p{L}\d./])1/4$inch"""), "0.25")
+            .replace(Regex("""(?<![\p{L}])(?:half|arai|ara)\s+$inch"""), "0.5 ").replace(Regex("""(?<![\p{L}])(?:mukkal|mukkaal|mukal)\s+$inch"""), "0.75 ")
+            .replace(Regex("""(?<![\p{L}])(?:onnekaal|onnekal|onrekaal|onnaekaal|onnegaal)\s+$inch"""), "1.25 ")
+            .replace(Regex("""(?<![\p{L}])(?:onnara|onnarai|onrarai|onrara)\s+$inch"""), "1.5 ")
+            .replace(Regex("""(?<![\p{L}])(?:rendara|rendarai|irandarai)\s+$inch"""), "2.5 ")
+            .replace(Regex("""(?<![\p{L}\d.])(\d+(?:\.\d+)?)\s*(?:a|amp|amps|ampere|amperes)(?![\p{L}])"""), "$1 amp")
+            .replace(Regex("""(?<![\p{L}\d.])(\d+(?:\.\d+)?)\s*(?:l|ltr|ltrs|liter|liters|litre|litres)(?![\p{L}])"""), "$1 litre")
+            .replace(Regex("""(?<![\p{L}\d.])(\d+(?:\.\d+)?)\s*(?:m|mtr|mtrs|meter|meters|metre|metres)(?![\p{L}])"""), "$1 meter")
+            .replace(Regex("""(?<![\p{L}\d.])(\d+)\s*(?:x|×|\*|by|into)\s*(\d+)(?=\s*mm(?![\p{L}]))"""), "$1x$2")
+            .replace(Regex("""(?<![\p{L}])(?:sq\.?\s*mm|square\s+mm|sq\s+mm)(?![\p{L}])"""), "sqmm")
+    }
+
     /** A size in a product name: "12 mm", "4 inch" (after [lowerOf]). */
-    private val sizeInAName = Regex("""\d+(?:\.\d+)? (?:inch|inches|mm|cm|ft|feet|sqmm)""")
+    private val sizeInAName = Regex("""(?<![\d./])(?:\d+/\d+|\d+(?:\.\d+)?) (?:inch|inches|mm|cm|ft|feet|sqmm)""")
 
     /**
      * "12 mm plywood 5 sheet" for "Plywood 12mm": a product whose name has a size, said with the size first — every word of the name
@@ -179,11 +203,12 @@ object KaiStock {
             if (sizes.isEmpty()) return@mapNotNull null
             val words = sizeInAName.replace(name, " ").split(' ').filter { it.isNotEmpty() }
             if (words.isEmpty() || Regex("""(?<![\p{L}\p{N}])${Regex.escape(name)}(?![\p{L}\p{N}])""").containsMatchIn(lower)) return@mapNotNull null
-            val all = (sizes + words).all { w -> Regex("""(?<![\p{L}\p{N}.])${Regex.escape(w)}(?![\p{L}\p{N}])""").containsMatchIn(lower) }
+            // "2 inch" is not inside "1/2 inch" (PVC pipe 1/2 inch is never PVC pipe 2 inch).
+            val all = (sizes + words).all { w -> Regex("""(?<![\p{L}\p{N}./])${Regex.escape(w)}(?![\p{L}\p{N}/])""").containsMatchIn(lower) }
             if (all) p to (sizes + words) else null
         }.maxByOrNull { it.first.name.length } ?: return lower
         var rest = lower
-        for (w in hit.second) rest = rest.replaceFirst(Regex("""(?<![\p{L}\p{N}.])${Regex.escape(w)}(?![\p{L}\p{N}])"""), " ")
+        for (w in hit.second) rest = rest.replaceFirst(Regex("""(?<![\p{L}\p{N}./])${Regex.escape(w)}(?![\p{L}\p{N}/])"""), " ")
         return " " + lowerOf(hit.first.name).trim() + " " + rest.replace(Regex("""\s+"""), " ").trim() + " "
     }
 
@@ -439,8 +464,9 @@ object KaiStock {
         if (notStock.containsMatchIn(lower) || timeAfterNumber.containsMatchIn(lower)) return null
         val found = productSaid(lower, products)
         val product = found?.first
-        val isIn = direction(lower, product) ?: return null
         val named = found?.let { lower.replace(it.second, " ") } ?: lower
+        // In or out from the words around the name: "Cotton waste 7 add pannu" is stock in (waste is the product's own word).
+        val isIn = direction(named, product) ?: return null
         val sized = if (product == null) sizeInName(named) else null
         val rest = sized?.second ?: named
         val words = rest.split(' ').filter { it.isNotEmpty() }

@@ -741,7 +741,8 @@ class KaiAgent(
                     return takeBack(saved, Regex("""\d[\d,]*""").findAll(said).map { it.value.replace(",", "") }.firstOrNull { it != amount }, lang)
                 null -> Unit
             }
-            if (KaiConversationCare.kaiGotItWrong(said)) return gotItWrong(saved, lang)
+            // ("Cotton waste 7 add pannu": a product the shop keeps, not "waste" said of Kai.)
+            if (KaiConversationCare.kaiGotItWrong(withoutShopProducts(said))) return gotItWrong(saved, lang)
         }
         // "adha cancel pannu" a few turns after the save (a stock or small-talk question in between): still that entry,
         // when it is pointed at and no reminder was set since.
@@ -816,7 +817,7 @@ class KaiAgent(
                 tl = "Owner, neenga kadaisiya kettadhu:\n" + asked.mapIndexed { i, q -> "${i + 1}. $q" }.joinToString("\n"),
                 en = "Owner, you last asked:\n" + asked.mapIndexed { i, q -> "${i + 1}. $q" }.joinToString("\n"))
         }
-        if (KaiConversationCare.kaiGotItWrong(said)) return gotItWrong(null, lang, recordFact(lang))
+        if (KaiConversationCare.kaiGotItWrong(withoutShopProducts(said))) return gotItWrong(null, lang, recordFact(lang))
         if (KaiConversationCare.ownerDidNotFollow(said)) explainAgain(lang)?.let { return it }
         if (KaiConversationCare.disputesBalance(said)) disputed(said, named, lang)?.let { return it }
         // "Kumar balance 0 dhaan, adha nyabagam vechuko": a balance is never learned from chat (principles 4 and 7) — the records,
@@ -4319,7 +4320,7 @@ class KaiAgent(
         val n = shown(qty, unit)
         tools.log(if (incoming) com.shopai.app.brain.tools.KaiIntents.STOCK_IN else com.shopai.app.brain.tools.KaiIntents.STOCK_OUT, "draft", "${product.name} $n draft=$key", ActionStatus.DRAFT, null, said)
         // "Oil 3 bottle damage", "Colgate actual 230": why it changed — kept with the movement (the books' adjustment reason).
-        val why = com.shopai.app.brain.tools.KaiStock.reasonOf(said) ?: "Physical count".takeIf { said.startsWith(physicalNote) }
+        val why = com.shopai.app.brain.tools.KaiStock.reasonOf(said.replace(Regex("(?i)" + Regex.escape(product.name)), " ")) ?: "Physical count".takeIf { said.startsWith(physicalNote) }
         val reply = if (why != null && !short) pick(lang,
             ta = "சரி ஓனர். ${product.name} — $n ${if (incoming) "stock-in" else "stock-out"} ($why). ${if (incoming) "இப்போ" else "மீதம்"}: ${shown(after, product.unit)}.",
             tl = "Seri Owner. ${product.name} — $n ${if (incoming) "stock-in" else "stock-out"} ($why). ${if (incoming) "Ippo stock" else "Remaining"}: ${shown(after, product.unit)}.",
@@ -4395,7 +4396,7 @@ class KaiAgent(
         }
         val sign = if (incoming) "+" else "−"
         // "Colgate 1 box supplier return": why it changed, said in the reply and kept with the movement.
-        val why = com.shopai.app.brain.tools.KaiStock.reasonOf(said) ?: "Physical count".takeIf { said.startsWith(physicalNote) }
+        val why = com.shopai.app.brain.tools.KaiStock.reasonOf(said.replace(Regex("(?i)" + Regex.escape(product.name)), " ")) ?: "Physical count".takeIf { said.startsWith(physicalNote) }
         val lines = listOfNotNull(
             product.name,
             pick(lang, ta = "நீங்க சொன்னது: ", tl = "Input: ", en = "Input: ") + input,
