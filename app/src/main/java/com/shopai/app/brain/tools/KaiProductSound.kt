@@ -83,8 +83,11 @@ object KaiProductSound {
                 // "டி-ஷர்ட்", "எம்.டி.எஃப். பலகை": a hyphen or the dots of letters said one by one join words too.
                 if ((1 until span).any { j -> !joiner.matches(text.substring(run[j - 1].range.last + 1, run[j].range.first)) }) return@firstNotNullOfOrNull null
                 if (run.any { w -> people.any { p -> p.split(Regex("""\s+""")).any { NameSound.same(w.value, it) } } }) return@firstNotNullOfOrNull null
-                // A unit said alone ("பாக்கெட்" = packet) is the unit, not a product that sounds like it (Bucket).
-                if (span == 1 && KaiStock.unitOf(KaiSpokenWords.normalize(run[0].value)) != null) return@firstNotNullOfOrNull null
+                // A unit said after its number ("10 பாக்கெட்" = 10 packets) is the unit, not a product that sounds like it (Bucket); said
+                // as the item itself ("பக்கெட் 7"), it may be the product.
+                if (span == 1 && KaiStock.unitOf(KaiSpokenWords.normalize(run[0].value)) != null &&
+                    Regex("""(\d|${KaiSpokenWords.numberWordsPattern})\s*$""").containsMatchIn(KaiSpokenWords.normalize(text.substring(0, run[0].range.first))))
+                    return@firstNotNullOfOrNull null
                 // A stock question's own words ("எவ்வளவு", "ஸ்டாக்", "இருக்கு") are never part of a name.
                 if (run.any { it.value in stockAsk }) return@firstNotNullOfOrNull null
                 // Nor a number or a size said with it ("அரை இன்ச்", "முக்கால்", "ஒன்றரை"): "பிவிசி ரெடியூசர் அரை இன்ச்" keeps its half inch.
@@ -183,6 +186,12 @@ object KaiProductSound {
         return heard.intersect(latinVowel(sp)).isNotEmpty()
     }
 
+    /** Syllables of a Tamil word: its vowels and the consonants that carry one (not those with the pulli). */
+    private fun syllables(word: String): Int = word.indices.count { i ->
+        val c = word[i]
+        c in '\u0B85'..'\u0B94' || c in '\u0B95'..'\u0BB9' && word.getOrNull(i + 1) != '்'
+    }
+
     /** The phrase's first vowel is a long ஆ / ா. */
     private fun longA(phrase: String): Boolean = phrase.firstOrNull { it in '\u0B85'..'\u0B94' || it in '\u0BBE'..'\u0BCC' }.let { it == 'ா' || it == 'ஆ' }
 
@@ -220,6 +229,11 @@ object KaiProductSound {
             if (p.vowelFirst != vowelFirst || p.key.first() != key.first()) return@mapNotNull null
             val d = if (relaxed) distance(once(l), once(p.loose)) else distance(l, p.loose)
             val words = span in minOf(p.minWords, p.words)..p.words
+            // Capitals said letter by letter ("MCCB" = em-si-si-bi): one syllable a letter, so "எம்சிபி" (three) is never MCCB (four).
+            // (only where the letters are written as one word: "எச்.டி.எச்.எம்.ஆர்." said one by one is counted by its words)
+            p.name.trim().split(Regex("""\s+""")).first().takeIf { w -> w.length in 2..6 && w.all { it in 'A'..'Z' } && 'W' !in w && span <= p.minWords }?.let { caps ->
+                if (syllables(phrase.trim().split(' ').first()) != caps.length) return@mapNotNull null
+            }
             val ok = when {
                 known -> d == 0 && l.length >= 3 && words && NameSound.same(phrase.replace(" ", ""), spoken(p.name).replace(" ", ""))
                 // (relaxed — sounds said twice heard once — only for a whole name of two words or more: "பிவிசி யூனியன்", never one word)
@@ -307,7 +321,7 @@ object KaiProductSound {
                 .replace(Regex("""^u(?=ni|ti|ri|sa|se|su|ro)"""), "yu").replace(Regex("""^chem"""), "kem").replace(Regex("""^chr"""), "kr")
                 .replace("sch", "sk").replace(Regex("""^(te|me)ch"""), "$1k")
                 // "Hydraulic" = haidraulic, "Nylon" = nailon: a y between consonants is a vowel; "Gel", "Emergency", "Agent": a soft g.
-                .replace(Regex("""(?<=^[^aeiouy]{1,2})y(?=[^aeiouy])"""), "i").replace(Regex("""^ge(?=[lmnr])"""), "je")
+                .replace(Regex("""^gy"""), "jy").replace(Regex("""(?<=^[^aeiouy]{1,2})y(?=[^aeiouy])"""), "i").replace(Regex("""^ge(?=[lmnr])"""), "je")
                 .replace(Regex("""(?<=[aeiour])g(?=en)"""), "j")
                 .replace(Regex("""^dr\.?$"""), "doktar").replace(Regex("""^&$"""), "and").replace(Regex("""g(?=y)"""), "j").replace(Regex("""n(?:c(?!h)|k)"""), "ng")
                 // "Chalk" = chak ("சாக்"): the l of -alk isn't heard.

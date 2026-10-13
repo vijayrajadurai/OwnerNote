@@ -250,6 +250,9 @@ object KaiSpokenWords {
         out.toString()
     }
 
+    /** Number words as [normalize] leaves them (Tanglish), for "a unit right after its number". */
+    val numberWordsPattern = "onnu|oru|rendu|moonu|naalu|anju|aaru|ezhu|ettu|ombodhu|pathu|one|two|three|four|five|six|seven|eight|nine|ten"
+
     fun normalize(text: String): String {
         if (!hasTamil(text)) return text
         var s = amounts(text)

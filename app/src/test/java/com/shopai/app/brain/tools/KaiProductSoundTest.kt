@@ -135,6 +135,11 @@ class KaiProductSoundTest {
         fun h6(mic: String) = KaiSpokenWords.normalize(KaiProductSound.withProducts(mic, shop6, people))
         assertTrue(h6("ஆர்சிபிஓ 7").startsWith("RCBO 7") && h6("ஆர்சிசிபி 7").startsWith("RCCB 7") && h6("ஸ்க்ரூ 7").startsWith("Screw 7"))
         assertTrue(h6("10 பாக்கெட்").let { !it.contains("Bucket") } && h6("பக்கெட் 2").startsWith("Bucket 2"))
+        // Letters said one by one, one syllable each: "எம்சிபி" (MCB) is never MCCB; DP / TP MCB sound the same — neither is picked.
+        val shop7 = listOf("MCCB 6A", "SP MCB 6A", "DP MCB 6A", "TP MCB 6A", "Gypsum board")
+        fun h7(mic: String) = KaiSpokenWords.normalize(KaiProductSound.withProducts(mic, shop7, people))
+        assertTrue(h7("டிபி எம்சிபி 6 ஆம்ப் 7").let { !it.contains("MCCB") && !it.contains("DP MCB") && !it.contains("TP MCB") })
+        assertTrue(h7("எம்சிசிபி 6 ஆம்ப் 7").startsWith("MCCB") && h7("எஸ்பி எம்சிபி 6 ஆம்ப் 7").startsWith("SP MCB") && h7("ஜிப்சம் போர்டு 7").startsWith("Gypsum board"))
         // A letter before a number is a size only where the shop's names have it: "எம் 4" = M4; "டி 10 பாக்கெட்" stays D, 10 packets.
         val known = setOf("M4", "M8")
         assertEquals("Hex bolt M4 7", KaiSpokenWords.code("Hex bolt எம் 4 7", known))
