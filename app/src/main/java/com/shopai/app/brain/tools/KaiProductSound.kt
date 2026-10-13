@@ -149,7 +149,9 @@ object KaiProductSound {
         // "ட்ச" is the "tch" of Switch (the t not heard) — or a real "tz" / "dc" (Cetzine, Gudcef); "ங்க" the ng of Zinco — or the
         // n-k of Anchor / Angle ("ஆங்கர்", "ஆங்கிள்"): read every way. "ட்ஜ" is the dge of Wedge; "ஹவுஸ்" the ou of House.
         val heard = said.replace("ட்ஜ", "ஜ").replace(Regex("""([க-ஹ])வு"""), "$1ு")
-        val found = listOf(heard.replace("ட்ச", "ச"), heard.replace("ட்ச", "ட்ஸ"), heard.replace("ங்க", "ன்க"), said.replace("ட்ச", "ச")).distinct()
+        // (Each reading changes one thing: "ஸ்விட்ச்" read for its ங்க is still Switch, never "ஸ்விக்ச்" = Jigsaw.)
+        val usual = heard.replace("ட்ச", "ச")
+        val found = listOf(usual, heard.replace("ட்ச", "ட்ஸ"), usual.replace("ங்க", "ன்க"), said.replace("ட்ச", "ச")).distinct()
             .mapNotNull { matchSaid(it, span, products, parts, known, beforeQty) }
         if (found.map { it.out }.distinct().size <= 1) return found.firstOrNull()?.out
         // Two readings, two products ("எம்எஸ் ஆங்கிள்": MS channel by one, MS angle by the other): the closer, then the one whose words
