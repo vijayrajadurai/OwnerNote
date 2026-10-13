@@ -255,3 +255,15 @@ ASK    | stock la evlo panam mudangi irukku       | ₹61,520
 ASK    | vikkadha stock                           | Oil; Baniyan
 ASK    | adhigama vikkura porul                   | Rice
 ASK    | stock report                             | Rice; Maggi; ₹61,520
+
+# Which stock moves, which stands (owner, 13 Oct 2026): "nalla move aguthu", "nalla pothu", "nalla pola", "nikkuthu".
+ASK    | Yentha stock nalla move aguthu           | Rice
+ASK    | Yentha item nalla pothu                  | Rice
+ASK    | yentha porul nalla vikkuthu              | Rice
+ASK    | Yentha stock move agala                  | Oil; Baniyan
+ASK    | Yentha item nalla pola                   | Oil; Baniyan
+ASK    | Yentha stock nikkuthu                    | Oil; Baniyan
+ASK    | pogadha item enna                        | Oil
+ASK    | Colgate nalla pogudhu                    | 90; ₹4,500
+ASK    | Oil nikkudhu                             | Oil; 240
+ASK    | எந்த ஐட்டம் நிக்குது                       | Oil; Baniyan

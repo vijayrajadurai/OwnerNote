@@ -250,6 +250,15 @@ object KaiCommands {
     /** "theerapoguthu", "theera pogudhu", "mudiya pogudhu": stock running out ("thira" is "open" — never this). */
     private val runningOut = Regex("""(?i)(?<![\p{L}])(?:theera|theeru|mudiya)\s*-?\s*po\p{L}*|தீரப்போ\p{L}*|தீர\s+போ\p{L}*""")
 
+    /** "Colgate nalla pogudhu" / "Colgate nikkudhu": true = selling well, false = not moving, null = no word about its movement. */
+    fun movement(text: String): Boolean? {
+        val t = text.lowercase(java.util.Locale.ROOT)
+        return when {
+            slowMoving.containsMatchIn(t) || slowVerbs.containsMatchIn(t) -> false
+            fastMoving.containsMatchIn(t) || fastVerbs.containsMatchIn(t) -> true
+            else -> null
+        }
+    }
     fun asksStockReport(text: String) = stockReport.containsMatchIn(text)
     fun asksStockValue(text: String) = stockMoney.containsMatchIn(text)
 
@@ -270,7 +279,9 @@ object KaiCommands {
     /** "vikkala", "pogala", "thengi irukku", "slow-aa": not selling — when said about stock / items. */
     private val slowVerbs = Regex(
         """(?<![\p{L}])(vikkala|vikkalai|vikkalaye|vikkave\s*illa|vikkavey\s*illa|vitkala|vikka\s*maattengudhu|pogala|pogave\s*illa|thengi|thaengi|""" +
-            """thangi\s*irukku|slow\s*-?\s*(?:aa|ah|a|move\p{L}*|pogu\p{L}*|vikk\p{L}*))(?![\p{L}])|விக்கல|தேங்கி""",
+            // "nalla pola", "pogadha item", "nikkuthu", "nikkura stock" (owner, 13 Oct 2026)
+            """pola|pogaa?(?:dha|tha)|nikk(?:udhu|uthu|uthe|ura|ira|idhu|ithu|um)|ninnuduchu|ninnudichu|ninnu\s*pochu|""" +
+            """thangi\s*irukku|slow\s*-?\s*(?:aa|ah|a|move\p{L}*|pogu\p{L}*|vikk\p{L}*))(?![\p{L}])|விக்கல|தேங்கி|நிக்கு|நிக்கிற|போகல|போகாத""",
         RegexOption.IGNORE_CASE,
     )
     /** "fast move aguthu", "fast-a vikkudhu", "fast moving": what sells most. */
@@ -281,7 +292,10 @@ object KaiCommands {
         RegexOption.IGNORE_CASE,
     )
     /** "fast-a pogudhu", "vegama theerudhu": selling fast — when said about stock / items. */
-    private val fastVerbs = Regex("""(?<![\p{L}])((?:fast|vegama|seekiram)\s*-?\s*(?:a|ah|aa)?\s*(?:pog\p{L}*|theer\p{L}*|kaali\p{L}*))(?![\p{L}])""", RegexOption.IGNORE_CASE)
+    private val fastVerbs = Regex("""(?<![\p{L}])((?:fast|vegama|seekiram)\s*-?\s*(?:a|ah|aa)?\s*(?:pog\p{L}*|theer\p{L}*|kaali\p{L}*)|""" +
+        // "nalla move aguthu", "nalla pothu", "nalla pora item", "nalla vikkudhu" — said positively (the "-ala" forms are read as slow first).
+        """nalla\s*-?\s*(?:a|ah|aa)?\s*(?:move\s*(?:aa|a)?g(?:udhu|uthu|ura|ra|um)|moving|pog(?:udhu|uthu|ura|ra|um)|pothu|podhu|pora|povudhu|vikk(?:udhu|uthu|ura|ra|um)|vith\p{L}*|sell\p{L}*))(?![\p{L}])""" +
+        """|நல்லா\s*(?:போகு|போற|விக்கு|மூவ்)""", RegexOption.IGNORE_CASE)
     /** Stock, items, products — or "which one" — the words that make a selling verb about the shelf. */
     private val stockThings = Regex(
         """(?<![\p{L}])(stock|stocks|item|items|product|products|maal|saamaan|saman|porul|porulgal|inventory|endha|yentha|entha|edhu|ethu|yedhu|which|what)(?![\p{L}])|ஸ்டாக்|பொருள்|எந்த|எது""",

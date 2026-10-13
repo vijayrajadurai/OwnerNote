@@ -1368,6 +1368,10 @@ class KaiAgent(
         if (plans.isEmpty() && products != null) productHalfStep(spoken, lang, products)?.let { return it }
         if (plans.isEmpty() && products != null) newStockLine(spoken, said, lang, products, people)?.let { return it }
         if (plans.isEmpty() && products != null) newProductAdd(spoken, said, lang, products, people)?.let { return it }
+        // "Colgate nalla pogudhu?", "Colgate nikkudhu": how that one product sold lately — from the item-wise sales.
+        if (plans.isEmpty() && products != null && spoken.none(Char::isDigit)) KaiCommands.movement(spoken)?.let { _ ->
+            productIn(spoken, products)?.let { p -> return productMovement(p, lang, now().toLocalDate()) }
+        }
         // "Stock report", "stock value evlo", "stock-la evlo panam mudangi irukku": the report / the money in stock — not the item list.
         if (plans.isEmpty() && products != null && KaiCommands.asksStockReport(spoken)) return stockReport(lang, now().toLocalDate())
         if (plans.isEmpty() && products != null && KaiCommands.asksStockValue(spoken)) return stockValue(spoken, lang, products)
@@ -5487,6 +5491,32 @@ class KaiAgent(
             else pickLang(lang, ta = "ஓனர், $label நஷ்டம் சுமார் ${r(now.net.negate())} (மதிப்பீடு).", tl = "Owner, $label nashtam sumaar ${r(now.net.negate())} (mathippeedu).",
                 en = "Owner, ${label.lowercase(Locale.ROOT)} shows a loss of about ${r(now.net.negate())} (an estimate).")
         return KaiTurn(ChatReply((listOf(head) + notes).joinToString("\n"), KaiMood.EXPLAINING, ChatIntent.GENERAL_BUSINESS_QUERY), KaiCard(lines, emptyList()))
+    }
+
+    /** "Colgate nalla pogudhu?": what it sold in the last 30 days and where it stands among the sellers, or that it didn't sell. */
+    private suspend fun productMovement(p: com.shopai.app.brain.tools.ProductRef, lang: KaiLang, today: LocalDate): KaiTurn {
+        val inv = com.shopai.app.brain.tools.KaiInventory
+        val sold = tools.topProducts(today.minusDays(29), today, 10_000)?.filter { it.qty.signum() > 0 }?.sortedByDescending { it.value }
+            ?: return unverified(lang, "item sales")
+        lastProduct = p
+        conversationState.lastProduct = p.name; productTalkTurn = conversationState.conversationTurn
+        tools.log("product movement ${p.name}", "sales ledger", "${sold.size} sold", ActionStatus.ANSWERED)
+        if (sold.isEmpty()) return say(lang, KaiMood.CLARIFY, "movement: no sales",
+            ta = "ஓனர், கடந்த 30 நாள்ல item-wise sales பதிவு இல்ல — ${p.name} எப்படி போகுது-னு சொல்ல முடியாது.",
+            tl = "Owner, kadandha 30 naal-la item-wise sales record illa — ${p.name} eppadi pogudhu-nu solla mudiyadhu.",
+            en = "Owner, there are no item-wise sales in the last 30 days, so I can't tell how ${p.name} is selling.")
+        val i = sold.indexOfFirst { it.name.equals(p.name, ignoreCase = true) }
+        val left = inv.shown(p.stock, p.unit)
+        if (i < 0) return say(lang, KaiMood.CONCERNED, "movement: ${p.name} unsold",
+            ta = "ஓனர், ${p.name} கடந்த 30 நாள்ல ஒண்ணு கூட விக்கல — stock-ல $left நிக்குது.",
+            tl = "Owner, ${p.name} kadandha 30 naal-la onnu kooda vikkala — stock-la $left nikkudhu.",
+            en = "Owner, ${p.name} hasn't sold at all in the last 30 days — $left is sitting in stock.")
+        val f = sold[i]
+        val q = inv.shown(f.qty, p.unit); val v = KaiFormat.rupees(f.value.toDouble()); val n = i + 1
+        return say(lang, if (n <= 3) KaiMood.HAPPY else KaiMood.EXPLAINING, "movement: ${p.name} #$n",
+            ta = "ஓனர், ${p.name} கடந்த 30 நாள்ல $q வித்தது — $v. விக்கிற ${sold.size} product-ல $n-வது. Stock-ல $left இருக்கு.",
+            tl = "Owner, ${p.name} kadandha 30 naal-la $q vithadhu — $v. Vikkura ${sold.size} product-la $n-vadhu. Stock-la $left irukku.",
+            en = "Owner, ${p.name} sold $q in the last 30 days — $v, number $n of ${sold.size} products sold. $left in stock.")
     }
 
     /** Each product's money in stock at its purchase price (null price: left out, and named). */

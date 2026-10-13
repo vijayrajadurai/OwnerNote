@@ -43,7 +43,9 @@ object KaiLanguage {
             "kitta", "enakku", "enaku", "tharanum", "kudukkanum", "kuduthaan", "kuduthen", "kuduthutaan", "vandhuchu", "irukku", "evlo",
             "naan", "avan", "avar", "sollu", "vaanganum", "anuppitaan", "anuppinen", "innaikku", "naalaikku", "nalaiku",
             // "Yentha stock fast move aguthu?", "stock evlo iruku": Tanglish question words and endings.
-            "yentha", "endha", "entha", "aguthu", "agudhu", "aagudhu", "agala", "aagala", "iruku", "vikkala", "vikkudhu", "vikkuthu", "innaiku")
+            "yentha", "endha", "entha", "aguthu", "agudhu", "aagudhu", "agala", "aagala", "iruku", "vikkala", "vikkudhu", "vikkuthu", "innaiku",
+            // "nalla move aagura stock", "nikkura item", "pogadha porul" (owner, 13 Oct 2026)
+            "nalla", "aagura", "agura", "nikkudhu", "nikkuthu", "nikkura", "pogudhu", "poguthu", "pothu", "pogala", "pola", "pogadha", "vikkura", "porul")
         // "pay pannitaru", "kuduthutaanga", "anuppinaar": a Tanglish verb form, whatever its ending.
         val tanglishVerb = Regex("""(?:pann|kudu|kodu|anupp|vaang|vang|vandh|thar)[a-z]*|[a-z]+(?:itaan|ittaan|itaar|itaru|ittaru|itaanga|inaan|inaar|itten|anum|kanum)""")
         if (words.any { it in tanglish || tanglishVerb.matches(it) }) return KaiLang.TANGLISH
