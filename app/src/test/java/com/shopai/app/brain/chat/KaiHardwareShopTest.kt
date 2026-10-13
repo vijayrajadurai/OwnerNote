@@ -134,7 +134,15 @@ class KaiHardwareShopTest {
     @Test fun aNameWithoutItsSizeIsAsked() {
         val fails = mutableListOf<String>()
         val families = names.groupBy(::baseOf).filter { (b, v) -> v.size > 1 && b !in names }
-        for ((b, v) in families) for (line in listOf("$b 7 add pannu", "${spoken(v.first()).let { sp -> sizeOf(v.first())?.let { sp.removeSuffix(" " + sizeSpoken(it)) } ?: sp }} 7 ஆட் பண்ணு")) {
+        fun spokenBase(v: List<String>) = spoken(v.first()).let { sp -> sizeOf(v.first())?.let { sp.removeSuffix(" " + sizeSpoken(it)) } ?: sp }
+        // DP MCB / TP MCB are the same in Tamil letters ("டிபி எம்சிபி"): said aloud, Kai asks which — never picks one.
+        val homophones = families.values.groupBy(::spokenBase).filter { it.value.size > 1 }.keys
+        for ((b, v) in families) for (line in listOf("$b 7 add pannu", "${spokenBase(v)} 7 ஆட் பண்ணு")) {
+            if (spokenBase(v) in homophones && line.startsWith(spokenBase(v))) {
+                val t = runBlocking { KaiAgent(KaiBusinessBrain(Books()), Books(), Inventory().also { it.items += base.items }, { now }).ask(line) }
+                if (t.card?.buttons?.any { it.label.contains("Confirm") || it.label.contains("உறுதி") } == true) fails += "HOMOPHONE [$line] drafted: ${all(t)}"
+                continue
+            }
             val inv = Inventory().also { it.items += base.items.map { i -> i.copy(stock = BigDecimal("50")) } }
             val kai = KaiAgent(KaiBusinessBrain(Books()), Books(), inv, { now })
             val t = runBlocking { kai.ask(line) }
