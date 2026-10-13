@@ -160,6 +160,15 @@ interface BooksDao {
     @Query("SELECT * FROM batches WHERE productId = :productId AND batchNo = :batchNo LIMIT 1")
     suspend fun batchByNo(productId: String, batchNo: String): BatchEntity?
 
+    /** A product's batches and the stock each still has (FEFO picking, [com.shopai.app.books.model.BatchPick]). */
+    @Query(
+        """SELECT b.id AS id, b.batchNo AS batchNo, b.expiryDay AS expiryDay, b.createdAt AS createdAt,
+                  COALESCE((SELECT SUM(m.qtyMilli) FROM stock_movements m
+                            WHERE m.businessId = b.businessId AND m.productId = b.productId AND m.batchId = b.id AND m.active = 1), 0) AS qtyMilli
+           FROM batches b WHERE b.businessId = :businessId AND b.productId = :productId""",
+    )
+    suspend fun productBatches(businessId: String, productId: String): List<com.shopai.app.books.model.BatchStock>
+
     /** Batches with an expiry date on or before [untilDay] (read only — Kai's Morning Work). */
     @Query("SELECT * FROM batches WHERE businessId = :businessId AND expiryDay IS NOT NULL AND expiryDay <= :untilDay ORDER BY expiryDay LIMIT :limit")
     suspend fun batchesExpiringBy(businessId: String, untilDay: Int, limit: Int): List<BatchEntity>

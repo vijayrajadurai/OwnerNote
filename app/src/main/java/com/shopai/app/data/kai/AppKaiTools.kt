@@ -125,7 +125,7 @@ class AppKaiTools(
             val conversions = if (secondary != null && milli != null && milli > 0) mapOf(secondary to BigDecimal.valueOf(milli).divide(BigDecimal(1000))) else emptyMap()
             com.shopai.app.brain.tools.ProductRef(it.id, it.name, it.unit, BigDecimal.valueOf(it.currentStock), conversions,
                 purchasePrice = e?.purchasePricePaise?.let(::rupees), sellingPrice = e?.sellingPricePaise?.let(::rupees),
-                minStock = e?.minStockMilli?.let(::qty), category = it.category)
+                minStock = e?.minStockMilli?.let(::qty), category = it.category, batchTracked = e?.batchTracked == true)
         }
     }
 
@@ -190,13 +190,15 @@ class AppKaiTools(
                 val account = MoneyAccounts.accountFor(s, bill.mode) ?: return emptyList()
                 return listOf(com.shopai.app.books.engine.PaymentPart(account.id, bill.mode, grandTotal))
             }
+            // A batch-tracked product: the sale from the batch that expires first, the purchase into a new batch.
+            val items = s.engine.fillBatches(listOf(item), forSale = !bill.purchase, LocalDate.now())
             val result = if (bill.purchase) {
-                val base = com.shopai.app.books.engine.PurchaseInput(partyId = bill.partyId, billNumber = null, date = LocalDate.now(), items = listOf(item), meta = meta)
+                val base = com.shopai.app.books.engine.PurchaseInput(partyId = bill.partyId, billNumber = null, date = LocalDate.now(), items = items, meta = meta)
                 val quote = s.engine.quotePurchase(base)
                 if (!quote.ok) return ActionOutcome.Failed(quote.errors.firstOrNull()?.message ?: "not saved")
                 s.engine.postPurchase(base.copy(paid = paidNow(quote.totals?.grandTotalPaise), meta = reviewed("PurchaseInput")))
             } else {
-                val base = com.shopai.app.books.engine.SaleInput(partyId = bill.partyId, date = LocalDate.now(), items = listOf(item), meta = meta)
+                val base = com.shopai.app.books.engine.SaleInput(partyId = bill.partyId, date = LocalDate.now(), items = items, meta = meta)
                 val quote = s.engine.quoteSale(base)
                 if (!quote.ok) return ActionOutcome.Failed(quote.errors.firstOrNull()?.message ?: "not saved")
                 s.engine.postSale(base.copy(received = paidNow(quote.totals?.grandTotalPaise), meta = reviewed("SaleInput")))
@@ -237,10 +239,46 @@ class AppKaiTools(
         }.getOrElse { ActionOutcome.Failed(it.message ?: "not saved") }
     }
 
+    /**
+     * New stock of a batch-tracked product as the batch the owner said (Confirm on the draft): the books' own batch record —
+     * a batch not yet in the books is created with the expiry said; only an expiry said → a new batch named by the date.
+     */
+    override suspend fun stockInBatch(product: com.shopai.app.brain.tools.ProductRef, qty: BigDecimal, said: String, batch: com.shopai.app.brain.tools.StockBatch): ActionOutcome {
+        val s = session() ?: return changeStock(product, qty, true, said)
+        return runCatching {
+            val no = batch.batchNo?.trim()?.takeIf { it.isNotEmpty() } ?: freeBatchNo(s, product.id, batch.expiry)
+            // "expiry" / "batch" in the owner's words name the batch — they are not the reason (an expired-stock write-off).
+            val why = said.replace(Regex("""(?i)(?<![\p{L}])(?:exp\w*|best\s+before|batch)(?![\p{L}])"""), " ")
+            val result = s.engine.postStockAdjustment(
+                com.shopai.app.books.engine.StockAdjustmentInput(
+                    productId = product.id, date = LocalDate.now(), reason = com.shopai.app.books.engine.AdjustmentReasonText.from(why),
+                    changeQtyMilli = qty.multiply(BigDecimal(1000)).setScale(0, RoundingMode.HALF_UP).longValueExact(),
+                    batchNo = no, expiryDate = batch.expiry, note = "Kai: ${said.take(80)}",
+                    meta = com.shopai.app.books.engine.PostMeta(java.util.UUID.randomUUID().toString()),
+                ),
+            )
+            when (result) {
+                is PostResult.Posted -> ActionOutcome.Done(product.name, BigDecimal.valueOf(s.ledger.stock(product.id), 3))
+                is PostResult.Rejected -> ActionOutcome.Failed(result.errors.firstOrNull()?.message ?: "not saved")
+            }
+        }.getOrElse { ActionOutcome.Failed(it.message ?: "not saved") }
+    }
+
+    /** "B-261013" for new stock with only its expiry said; "B-261013-2" when today's batch has another expiry. */
+    private suspend fun freeBatchNo(s: BooksSession, productId: String, expiry: LocalDate?): String {
+        val base = com.shopai.app.books.model.BatchPick.newNo(LocalDate.now())
+        for (no in listOf(base) + (2..99).map { "$base-$it" }) {
+            val b = s.dao.batchByNo(productId, no) ?: return no
+            if (b.expiryDay == expiry?.toEpochDay()?.toInt()) return no
+        }
+        return "$base-${java.util.UUID.randomUUID().toString().take(4)}"
+    }
+
     /** Only called after the owner checked the product details (typed / read from a photo). Stock is added after, as a normal stock in. */
     override suspend fun createProduct(product: com.shopai.app.brain.tools.NewProduct): com.shopai.app.brain.tools.ProductRef? {
         // A chat entry ("Colgate 5 box, boxku 48 pieces, purchase 28 …"): units, prices and opening stock in one write of the books.
-        if (product.secondaryUnit != null || product.purchasePrice != null || product.sellingPrice != null || (product.openingQty?.signum() ?: 0) > 0) {
+        if (product.secondaryUnit != null || product.purchasePrice != null || product.sellingPrice != null || (product.openingQty?.signum() ?: 0) > 0 ||
+            !product.batchNo.isNullOrBlank() || product.expiry != null) {
             // Without the books (local / server mode) the same entry goes through the inventory screen's own store below.
             session()?.let { s ->
                 return runCatching { createWithOpening(s, product) }
@@ -288,8 +326,15 @@ class AppKaiTools(
             val second = product.secondaryUnit?.let { s.masters.ensureUnit(it) ?: error("Check the unit") }?.takeIf { !it.equals(unit, ignoreCase = true) }
             val perMilli = product.perSecondary?.takeIf { second != null && it.signum() > 0 }
                 ?.multiply(BigDecimal(1000))?.setScale(0, RoundingMode.HALF_UP)?.longValueExact()
-            // Batch and expiry are kept with the product. The product is not marked batch-tracked: Kai's own stock in / out
-            // (and the stock screen's) do not choose a batch yet, and the books would reject them for a batch-tracked product.
+            // A batch / expiry said (medicines, food, seeds, paint …): the product is batch-tracked and its stock is the books'
+            // own batch record with that expiry — so the expiry list and the daily alert have it. Batch tracking is switched on
+            // for the business; screens that don't choose a batch get one picked by the books (sale first-expiry-first).
+            val batch = product.batchNo?.trim()?.takeIf { it.isNotEmpty() }
+                ?: product.expiry?.let { com.shopai.app.books.model.BatchPick.newNo(LocalDate.now()) }
+            if (batch != null && s.dao.business(s.ctx.businessId)?.batchTracking != true) {
+                val on = s.masters.updateSettings(batchTracking = true)
+                if (on is com.shopai.app.books.engine.MasterResult.Rejected) error(on.errors.firstOrNull()?.message ?: "Batch tracking not switched on")
+            }
             val notes = listOfNotNull(
                 product.weight?.takeIf { it.isNotBlank() }?.let { "Size: $it" },
                 product.packSize?.takeIf { it.isNotBlank() }?.let { "Size: $it" },
@@ -304,7 +349,7 @@ class AppKaiTools(
                     categoryId = s.masters.categoryId(product.category.ifBlank { "General" }),
                     brandId = s.masters.brandId(product.brand?.takeIf { it.isNotBlank() }),
                     purchasePricePaise = product.purchasePrice?.let(::paise), sellingPricePaise = product.sellingPrice?.let(::paise),
-                    imagePath = product.imageUri, description = notes,
+                    imagePath = product.imageUri, description = notes, batchTracked = batch != null,
                 ),
             )
             val row = (result as? com.shopai.app.books.engine.MasterResult.Ok)?.value
@@ -315,7 +360,7 @@ class AppKaiTools(
             if (opening > 0) {
                 val posted = s.engine.postOpeningStock(
                     com.shopai.app.books.engine.OpeningStockInput(
-                        productId = row.id, date = LocalDate.now(), qtyMilli = opening,
+                        productId = row.id, date = LocalDate.now(), qtyMilli = opening, batchNo = batch, expiryDate = product.expiry,
                         meta = com.shopai.app.books.engine.PostMeta(
                             java.util.UUID.randomUUID().toString(), TxnSource.VOICE,
                             // The owner reviewed it in the chat; without its draft the books refuse a voice post (and nothing was saved).
@@ -325,12 +370,16 @@ class AppKaiTools(
                     ),
                 )
                 if (posted !is PostResult.Posted) error((posted as? PostResult.Rejected)?.errors?.firstOrNull()?.message ?: "Opening stock not saved")
+            } else if (batch != null) {
+                // No stock yet: the batch is recorded with its expiry, and the first stock in goes into it.
+                s.dao.upsertBatch(com.shopai.app.books.data.BatchEntity(java.util.UUID.randomUUID().toString(), s.ctx.businessId, row.id, batch,
+                    expiryDay = product.expiry?.toEpochDay()?.toInt(), createdAt = System.currentTimeMillis()))
             }
         }
         val p = created ?: error("Product not saved")
         val conversions = if (p.secondaryUnit != null && p.conversionMilli != null && p.conversionMilli > 0)
             mapOf(p.secondaryUnit to BigDecimal.valueOf(p.conversionMilli).divide(BigDecimal(1000))) else emptyMap()
-        return com.shopai.app.brain.tools.ProductRef(p.id, p.name, p.primaryUnit, qty(s.ledger.stock(p.id)), conversions)
+        return com.shopai.app.brain.tools.ProductRef(p.id, p.name, p.primaryUnit, qty(s.ledger.stock(p.id)), conversions, batchTracked = p.batchTracked)
     }
 
     override suspend fun expiring(until: LocalDate): List<com.shopai.app.brain.tools.BatchFact>? {

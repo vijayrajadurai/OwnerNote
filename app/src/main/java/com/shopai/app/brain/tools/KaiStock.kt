@@ -18,6 +18,8 @@ data class ProductRef(
     /** The minimum (low-stock) level in [unit]; null = not set. */
     val minStock: BigDecimal? = null,
     val category: String? = null,
+    /** The books keep this product's stock by batch (medicines, food …): new stock comes in as a batch with its expiry. */
+    val batchTracked: Boolean = false,
 )
 
 /**

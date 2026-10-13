@@ -403,11 +403,32 @@ object KaiInventory {
     }
 
     /** "batch B123", "batch no 45A" said with the stock. */
-    private fun batchIn(text: String): String? =
+    fun batchIn(text: String): String? =
         Regex("""(?i)(?<![\p{L}])batch\s*(?:no\.?|number|num)?\s*[:#-]?\s*([A-Za-z0-9][A-Za-z0-9/-]{0,19})""").find(text)?.groupValues?.get(1)
 
+    private val batchCode = Regex("""(?i)(?<![\p{L}])batch\s*(?:no\.?|number|num)?\s*[:#-]?\s*([A-Za-z]{0,4}-?\d[A-Za-z0-9/-]{0,15})(?![\p{L}\d])""")
+    private val expiryDate = Regex("""(?i)(?<![\p{L}])(?:expiry|exp|expires?|best\s+before)\s*(?:date)?\s*[:-]?\s*""" +
+        """(\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}|\d{1,2}[/.-]\d{2,4}|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*,?\s*\d{2,4})(?!\d)""")
+
+    /**
+     * "Paracetamol 20 strip vandhuchu batch B20 expiry 06/2027": the batch code (with a digit) and the expiry date said with
+     * stock, cut out of the line — (the rest of the line, the batch said). Null when neither is there, or when nothing with a
+     * number is left (the reply is only the batch / expiry — the open question reads it as it is).
+     */
+    fun batchPart(text: String, today: LocalDate = LocalDate.now()): Pair<String, StockBatch>? {
+        val b = batchCode.find(text)
+        val e = expiryDate.find(text)
+        if (b == null && e == null) return null
+        val expiry = e?.let { expiryIn(it.groupValues[1], today) }
+        var rest = text
+        listOfNotNull(b?.range, e?.range).sortedByDescending { it.first }.forEach { rest = rest.removeRange(it) }
+        rest = rest.replace(Regex("""\s*,\s*(?=,|$)"""), "").replace(Regex("""\s+"""), " ").trim().trimEnd(',', '.').trim()
+        if (rest.none(Char::isDigit) || rest.none(Char::isLetter)) return null
+        return rest to StockBatch(b?.groupValues?.get(1)?.uppercase(Locale.ROOT), expiry)
+    }
+
     /** "expiry 03/2027", "exp 12/05/2027" said with the stock. */
-    private fun expirySaid(text: String, today: LocalDate): LocalDate? =
+    fun expirySaid(text: String, today: LocalDate): LocalDate? =
         Regex("""(?i)(?<![\p{L}])(?:expiry|exp|expires?|best\s+before)\s*(?:date)?\s*[:-]?\s*(.{3,20})""").find(text)?.groupValues?.get(1)?.let { expiryIn(it, today) }
 
     private val colourWords = Regex("""(?i)(?<![\p{L}])(red|blue|green|black|white|yellow|pink|grey|gray|brown|maroon|orange|purple|violet|cream|navy|""" +

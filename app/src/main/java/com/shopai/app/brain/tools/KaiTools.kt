@@ -120,6 +120,9 @@ data class NewProduct(
 )
 
 /** What the owner changes on a product; null = unchanged. Prices per stock unit, the minimum in stock units. */
+/** The batch new stock comes in as: the number and / or expiry the owner said (null = not said — the books name a new batch by date). */
+data class StockBatch(val batchNo: String?, val expiry: java.time.LocalDate?)
+
 data class ProductChange(val purchasePrice: BigDecimal? = null, val sellingPrice: BigDecimal? = null, val minStock: BigDecimal? = null)
 
 /**
@@ -206,6 +209,9 @@ interface KaiTools {
     /** The business's products with their stock (null = can't read). */
     suspend fun products(): List<ProductRef>? = null
     suspend fun changeStock(product: ProductRef, qty: BigDecimal, incoming: Boolean, said: String): ActionOutcome = ActionOutcome.Failed("unavailable")
+
+    /** Stock in of a batch-tracked product as the batch the owner said — the books' own batch record, with its expiry. */
+    suspend fun stockInBatch(product: ProductRef, qty: BigDecimal, said: String, batch: StockBatch): ActionOutcome = changeStock(product, qty, true, said)
 
     /**
      * The owner confirmed a change to a product's details: purchase / selling price per stock unit, or its minimum
