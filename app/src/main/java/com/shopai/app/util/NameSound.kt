@@ -89,6 +89,9 @@ object NameSound {
 
     private fun collapse(s: String): String = s.replace(Regex("""(.)\1+"""), "$1")
 
+    /** The vowels of a name in order (a / e / i / o / u), as [key] reads its consonants. */
+    fun vowels(name: String): String = sound(name).second
+
     /** The sound key of a name (its consonant skeleton). */
     fun key(name: String): String = sound(name).first
 

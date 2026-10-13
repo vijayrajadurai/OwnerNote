@@ -83,6 +83,8 @@ object KaiProductSound {
                 // "டி-ஷர்ட்", "எம்.டி.எஃப். பலகை": a hyphen or the dots of letters said one by one join words too.
                 if ((1 until span).any { j -> !joiner.matches(text.substring(run[j - 1].range.last + 1, run[j].range.first)) }) return@firstNotNullOfOrNull null
                 if (run.any { w -> people.any { p -> p.split(Regex("""\s+""")).any { NameSound.same(w.value, it) } } }) return@firstNotNullOfOrNull null
+                // A unit said alone ("பாக்கெட்" = packet) is the unit, not a product that sounds like it (Bucket).
+                if (span == 1 && KaiStock.unitOf(KaiSpokenWords.normalize(run[0].value)) != null) return@firstNotNullOfOrNull null
                 // A stock question's own words ("எவ்வளவு", "ஸ்டாக்", "இருக்கு") are never part of a name.
                 if (run.any { it.value in stockAsk }) return@firstNotNullOfOrNull null
                 // Nor a number or a size said with it ("அரை இன்ச்", "முக்கால்", "ஒன்றரை"): "பிவிசி ரெடியூசர் அரை இன்ச்" keeps its half inch.
@@ -243,6 +245,8 @@ object KaiProductSound {
         val tied = scored.filter { it.second == best }.map { it.first }.let { tied ->
             if (tied.map { it.out }.distinct().size < 2) tied
             else tied.filter { wordsAgree(phrase, it.name) }.ifEmpty { tied }
+                // "ஆர்சிபிஓ" is RCBO, not RCCB: the vowels in order, when they are the same as said.
+                .let { v -> v.filter { NameSound.vowels(it.name.let(::spoken).replace(" ", "")) == NameSound.vowels(phrase.replace(" ", "")) }.ifEmpty { v } }
                 .filter { latinVowel(spoken(it.name)).intersect(vowel).isNotEmpty() }.ifEmpty { tied }
                 // "ஃப்ளஷ் போல்ட்" / "ஃப்ளஷ் பிளேட்": every word's own first vowel (bolt, not plate).
                 .let { v -> val best = v.maxOf { vowelsAgree(phrase, it.name) }; v.filter { vowelsAgree(phrase, it.name) == best } }
@@ -348,6 +352,8 @@ object KaiProductSound {
             v.startsWith("ai") || v.startsWith("ay") || v.startsWith("ei") || v.startsWith("ey") -> setOf('a', 'e', 'i')
             v.startsWith("ee") || v.startsWith("ea") || v.startsWith("ie") -> setOf('i', 'e')
             v.startsWith("oo") -> setOf('u', 'o')
+            // "Screw", "Glue": ew / ue are an oo ("ஸ்க்ரூ", "க்ளூ").
+            v == "e" && w.getOrNull(m.range.last + 1) == 'w' || v.startsWith("ue") -> setOf('u', 'e')
             v.startsWith("ou") || v.startsWith("ow") || v.startsWith("au") -> setOf('a', 'o', 'u')
             v.startsWith("oi") || v.startsWith("oy") -> setOf('o', 'a')
             v[0] == 'a' -> if (magicE) setOf('e', 'a') else setOf('a', 'e')

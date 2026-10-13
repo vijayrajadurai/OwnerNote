@@ -130,6 +130,15 @@ class KaiProductSoundTest {
         assertTrue(h("ஸ்விட்ச் 7").let { !it.contains("Jigsaw") })
         // One word that only sounds like part of another name is never that product ("ஹைட்ராலிக்" alone is not Door lock / Drawer lock).
         assertTrue(h("ஹைட்ராலிக் 7").let { !it.contains("lock") })
+        // RCBO / RCCB by their vowels in order; "ஸ்க்ரூ" is Screw (ew = oo); a unit said alone stays the unit ("பாக்கெட்" is never Bucket).
+        val shop6 = listOf("RCBO", "RCCB", "Screw", "Bucket", "Hex bolt M4", "Hex bolt M8")
+        fun h6(mic: String) = KaiSpokenWords.normalize(KaiProductSound.withProducts(mic, shop6, people))
+        assertTrue(h6("ஆர்சிபிஓ 7").startsWith("RCBO 7") && h6("ஆர்சிசிபி 7").startsWith("RCCB 7") && h6("ஸ்க்ரூ 7").startsWith("Screw 7"))
+        assertTrue(h6("10 பாக்கெட்").let { !it.contains("Bucket") } && h6("பக்கெட் 2").startsWith("Bucket 2"))
+        // A letter before a number is a size only where the shop's names have it: "எம் 4" = M4; "டி 10 பாக்கெட்" stays D, 10 packets.
+        val known = setOf("M4", "M8")
+        assertEquals("Hex bolt M4 7", KaiSpokenWords.code("Hex bolt எம் 4 7", known))
+        assertEquals("Glucon டி 10 packet", KaiSpokenWords.code("Glucon டி 10 packet", known))
     }
 
     @Test fun productNamesSaidIntoTheMic() {

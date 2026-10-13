@@ -235,9 +235,9 @@ object KaiSpokenWords {
     /** A batch code said aloud: "பி 20" / "பிசி20" → "B20" / "BC20" (only letters right before a number — nothing else changes). */
     /** [code] only where the code is one the shop's product names have ("எம் 8" = M8 for Hex bolt M8; "டி 10 பாக்கெட்" stays D, 10 packets). */
     fun code(text: String, known: Set<String>): String = spokenCode.replace(text) { m ->
-        val c = code(m.value)
         val digits = Regex("""^\s*\d+""").find(text.substring(m.range.last + 1))?.value?.trim().orEmpty()
-        if (c != m.value && (c.trim() + digits).uppercase() in known) c else m.value
+        val c = code(m.value + digits).removeSuffix(digits)
+        if (digits.isNotEmpty() && c != m.value && (c.trim() + digits).uppercase() in known) c else m.value
     }
 
     fun code(text: String): String = spokenCode.replace(text) { m ->
