@@ -1160,6 +1160,9 @@ class KaiAgent(
                     return revise(openPayment.key, other, openPayment.amount, openPayment.mode, outgoing, lang)
                 }
             }
+            // "illa" / "vera vishayam" to "idhu Kumar pathiyaa?": not about Kumar — never a cancel of the draft on screen.
+            if (conversationState.conversationTurn == topicAskedTurn + 1 && notAboutIt.matches(said.trim()))
+                topicAnswered(said, lang, openPayment)?.let { return it }
             if (KaiConversationSemantics.cancelsDraft(said) || KaiConversationCare.notNow(said)) {
                 return act(KaiAction.CancelPlan(openPayment.key), lang)!!
             }
@@ -1582,7 +1585,7 @@ class KaiAgent(
     private val unknownThing = Regex("""(?i)^(?:how\s+much\s+|how\s+many\s+)?([\p{L}][\p{L}\p{M}\s]*?)\s+(?:stock\s+)?(?:evlo|evvalavu|ewlo|eppadi)?\s*(?:irukku|iruku|irukka|irukkaa|left|in\s+stock)\s*[?.!]*$""")
 
     /** Words that make "… irukku?" a question about people, dues or money — never a product name. */
-    private val notAThing = Regex("""(?i)(?<![\p{L}])(yaar\w*|yar\w*|who|due|dues|collection|payment|payments|balance|pending|baaki|bakki|kitta|cash|panam|kaasu|bank|upi|gpay|sales|profit|kadan|enna|ethana|evlo|yevlo|innaikku|today|indha|this|month|week|reminder|reminders|kanakku|account|ellam|ellaam|total|motham|labam|laabam|gst|tax|loss|advance|discount|return|vyabaram|viyabaram|business|customers|suppliers)(?![\p{L}])""")
+    private val notAThing = Regex("""(?i)(?<![\p{L}])(adhu|athu|idhu|ithu|andha|antha|indha|intha|yaar\w*|yar\w*|who|due|dues|collection|payment|payments|balance|pending|baaki|bakki|kitta|cash|panam|kaasu|bank|upi|gpay|sales|profit|kadan|enna|ethana|evlo|yevlo|innaikku|today|indha|this|month|week|reminder|reminders|kanakku|account|ellam|ellaam|total|motham|labam|laabam|gst|tax|loss|advance|discount|return|vyabaram|viyabaram|business|customers|suppliers)(?![\p{L}])""")
 
     private val stockAsk = Regex("""(?i)(?<![\p{L}])(evlo|evvalavu|ewlo|how\s+much|how\s+many|irukk?a|irukku|iruku)(?![\p{L}])|எவ்வளவு|இருக்கா|இருக்கு""")
 
@@ -1976,12 +1979,37 @@ class KaiAgent(
      * "ama" / "payment ah pathi than" to "idhu Kumar ₹3,000 payment pathiyaa?": the same thread — the question that was open is
      * asked again (owner's phone, 12 Oct 2026: Kai asked the same thing twice, then listed everyone). "illa": the owner says what.
      */
-    private fun topicAnswered(said: String, lang: KaiLang): KaiTurn? {
+    private suspend fun topicAnswered(said: String, lang: KaiLang, openDraft: ActionPlan? = null): KaiTurn? {
         if (conversationState.conversationTurn != topicAskedTurn + 1) return null
         topicAskedTurn = -10L
         val l = conversationState.pendingLang ?: lang
-        if (notAboutIt.matches(said.trim())) return say(l, KaiMood.NEUTRAL, null,
-            ta = "சரி Owner, என்ன வேணும்-னு சொல்லுங்க.", tl = "Seri Owner, enna venum-nu sollunga.", en = "Okay Owner, tell me what you need.")
+        // "vera vishayam" / "illa": that person or product is dropped — the next line is read on its own, and Kai asks what it is
+        // about with the ways to say it (the next one-word answer gets its guided question).
+        if (notAboutIt.matches(said.trim())) {
+            personOnTopic = null
+            conversationState.lastPerson = null
+            conversationState.lastCustomer = null
+            conversationState.lastSupplier = null
+            conversationState.mentionedPeople = emptyList()
+            conversationState.lastRelevantEntity = null
+            conversationState.focusPartyId = null
+            conversationState.fragmentPerson = null
+            conversationState.fragmentAmount = null
+            conversationState.lastProduct = null
+            lastProduct = null
+            brain.forgetLastPerson()
+            nothingOpenTurn = conversationState.conversationTurn
+            clarifyLang = l
+            val kept = openDraft?.let { d ->
+                val a = KaiFormat.rupees(d.amount.toDouble())
+                pickLang(l, ta = " (${d.partyName} $a இன்னும் சேவ் ஆகல — வேணும்னா Confirm பண்ணுங்க.)",
+                    tl = " (${d.partyName} $a innum save aagala — venumna Confirm pannunga.)", en = " (${d.partyName} $a is not saved yet — Confirm it if you want it.)")
+            }.orEmpty()
+            return say(l, KaiMood.CLARIFY, "topic: something else",
+                ta = "சரி Owner, வேற விஷயம். எதைப் பத்தி — payment-ஆ, stock-ஆ, reminder-ஆ? இல்ல நேரா சொல்லுங்க: “Ramesh 300 குடுத்தான்”, “Colgate stock எவ்வளவு”.$kept",
+                tl = "Seri Owner, vera vishayam. Edha pathi — payment-aa, stock-aa, reminder-aa? Illa nera sollunga: “Ramesh 300 kuduthan”, “Colgate stock evlo”.$kept",
+                en = "Okay Owner, something else. Is it a payment, stock, or a reminder? Or just say it: “Ramesh paid 300”, “Colgate stock”.$kept")
+        }
         if (!KaiConversationSemantics.confirmsDraft(said) && !aboutIt.containsMatchIn(said)) return null
         val st = conversationState.stated
         val entity = conversationState.pendingEntity
@@ -1995,8 +2023,23 @@ class KaiAgent(
             }
             null -> Unit
         }
+        // "aamaa" with nothing half-said: what Kai knows about that product / person, and the ways to go on with it.
+        if (st == null) {
+            val product = conversationState.lastProduct?.takeIf { conversationState.lastBusinessTopic == "STOCK_QUERY" }
+            val who = conversationState.lastPerson
+            if (product != null) return withHint(askAs(l, "$product stock evlo"), pickLang(l,
+                ta = "$product பத்தி வேற என்ன? “$product 2 box வந்துச்சு”, “$product 5 வித்துச்சு”-னு சொல்லுங்க.",
+                tl = "$product pathi vera enna? “$product 2 box vandhuchu”, “$product 5 vithuchu”-nu sollunga.",
+                en = "Anything else on $product? Say “$product 2 boxes came in” or “$product 5 sold”."))
+            if (who != null) return withHint(askAs(l, "$who evlo baaki"), pickLang(l,
+                ta = "$who பத்தி என்ன பண்ணணும்? “$who 500 குடுத்தான்”, “$who-க்கு 500 கடன்”, “நாளைக்கு $who-க்கு call பண்ண remind பண்ணு”-னு சொல்லுங்க.",
+                tl = "$who pathi enna pannanum? “$who 500 kuduthan”, “$who ku 500 credit”, “naalaiku $who ku call panna remind pannu”-nu sollunga.",
+                en = "What should I do for $who? Say “$who paid 500”, “$who 500 credit”, or “remind me to call $who tomorrow”."))
+        }
         return null
     }
+
+    private fun withHint(turn: KaiTurn, hint: String) = turn.copy(reply = turn.reply.copy(text = "${turn.reply.text}\n$hint"))
 
     private val vague = Regex("""(?i)(same|same\s+thing|again|one\s+more|innoru|innoru\s+thadava|marubadiyum|thirumba|adhae|adhe|adhey|athe|repeat)[.!?]*""")
     private val unclearReply = Regex("""clear-ah sollunga|தெளிவா சொல்லுங்க|more clearly""")

@@ -245,3 +245,4 @@ ASK    | Kumar 500 adhu                           | ₹500; kuduthaara
 ASK    | rent kattanum                            | Daily Cash
 ASK    | current bill 1200 kattinen               | Daily Cash; ₹1200
 ASK    | Kumar kitta pesanum                      | Kumar
+ASK    | athu evlo irukku                         | Product   # nothing talked about: asked which, never a person called "Athu"
