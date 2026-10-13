@@ -123,9 +123,12 @@ class KaiHardwareShopTest {
 
     @Test fun everyItemSpoken() {
         val fails = mutableListOf<String>()
+        // DP MCB / TP MCB sound the same in Tamil letters: said aloud, Kai asks which (never drafts the other one).
+        val homophones = names.groupBy(::spoken).filter { it.value.size > 1 }.values.flatten().toSet()
         for (n in names) {
             val line = "${spoken(n)} 7 ஆட் பண்ணு"
             val (got, reply) = added(line)
+            if (n in homophones) { if (got != null && got != n) fails += "[$n] [$line] drafted $got"; continue }
             if (got != n) fails += "[$n] [$line] → $got — $reply"
         }
         assertTrue("${fails.size} of ${names.size} fails:\n" + fails.take(80).joinToString("\n"), fails.isEmpty())

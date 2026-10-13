@@ -105,13 +105,18 @@ class KaiProductSoundTest {
      */
     @Test fun hardwareNamesSaidIntoTheMic() {
         val shop5 = listOf("U-bolt", "Eye bolt", "PVC union", "Universal socket", "Chemical anchor", "Wedge anchor", "Wood screw", "Coach screw", "Hex screw",
-            "GI wire", "GI pipe", "House wire", "Washer", "MS angle", "MS channel", "Binding wire", "Paint thinner", "Jigsaw", "Switch box", "1-way switch", "Multi-plug")
+            "GI wire", "GI pipe", "House wire", "Washer", "MS angle", "MS channel", "Binding wire", "Paint thinner", "Jigsaw", "Switch box", "1-way switch", "Multi-plug",
+            "Wood chisel", "Chisel", "Bench vice", "Piano hinge", "Hacksaw blade", "Hex bolt", "Pipe wrench", "Hand saw", "Chalk line")
         fun h(mic: String) = KaiSpokenWords.normalize(KaiProductSound.withProducts(mic, shop5, people))
         for ((mic, want) in listOf("யூ போல்ட் 7" to "U-bolt 7", "ஐ போல்ட் 7" to "Eye bolt 7", "பிவிசி யூனியன் 7" to "PVC union 7",
                 "யுனிவர்சல் சாக்கெட் 7" to "Universal socket 7", "கெமிக்கல் ஆங்கர் 7" to "Chemical anchor 7", "வெட்ஜ் ஆங்கர் 7" to "Wedge anchor 7",
                 "கோச் ஸ்க்ரூ 7" to "Coach screw 7", "ஹெக்ஸ் ஸ்க்ரூ 7" to "Hex screw 7", "ஜிஐ வயர் 7" to "GI wire 7", "ஹவுஸ் வயர் 7" to "House wire 7",
                 "எம்எஸ் ஆங்கிள் 7" to "MS angle 7", "எம்எஸ் சேனல் 7" to "MS channel 7", "பைண்டிங் வயர் 7" to "Binding wire 7", "பெயிண்ட் தின்னர் 7" to "Paint thinner 7",
-                "ஸ்விட்ச் பாக்ஸ் 7" to "Switch box 7", "ஒன் வே ஸ்விட்ச் 7" to "1-way switch 7", "மல்டி பிளக் 7" to "Multi-plug 7", "ஜிக்சா 2" to "Jigsaw 2")) {
+                "ஸ்விட்ச் பாக்ஸ் 7" to "Switch box 7", "ஒன் வே ஸ்விட்ச் 7" to "1-way switch 7", "மல்டி பிளக் 7" to "Multi-plug 7", "ஜிக்சா 2" to "Jigsaw 2",
+                // Two words said together stay two words ("வுட் சிசல்" is not "Chisel"); "Bench" keeps its nch, "Chalk" loses its l.
+                "வுட் சிசல் 7" to "Wood chisel 7", "சிசல் 7" to "Chisel 7", "பெஞ்ச் வைஸ் 7" to "Bench vice 7", "பியானோ ஹிஞ்ச் 7" to "Piano hinge 7",
+                "ஹேக்சா பிளேடு 7" to "Hacksaw blade 7", "ஹெக்ஸ் போல்ட் 7" to "Hex bolt 7", "பைப் ரெஞ்ச் 7" to "Pipe wrench 7", "ஹேண்ட் சா 7" to "Hand saw 7",
+                "சாக் லைன் 7" to "Chalk line 7")) {
             val got = h(mic)
             assertTrue("$mic → $got", got.startsWith(want))
         }

@@ -1131,8 +1131,9 @@ class KaiAgent(
         val heard = if (!tamil) productCase(raw.trim(), runCatching { tools.products()?.map { it.name } }.getOrNull().orEmpty()) else {
             val people = runCatching { books.snapshot()?.people.orEmpty() }.getOrDefault(emptyList())
             val productNames = runCatching { tools.products()?.map { it.name } }.getOrNull().orEmpty()
-            com.shopai.app.brain.tools.KaiSpokenWords.withNames(com.shopai.app.brain.tools.KaiSpokenWords.normalize(
-                com.shopai.app.brain.tools.KaiProductSound.withProducts(tamilProductCase(productCase(raw.trim(), productNames), productNames, people), productNames, people)), people + productNames)
+            // ("எம் 8" — a letter said before a number — is the size M8, as typed.)
+            com.shopai.app.brain.tools.KaiSpokenWords.code(com.shopai.app.brain.tools.KaiSpokenWords.withNames(com.shopai.app.brain.tools.KaiSpokenWords.normalize(
+                com.shopai.app.brain.tools.KaiProductSound.withProducts(tamilProductCase(productCase(raw.trim(), productNames), productNames, people), productNames, people)), people + productNames))
         }
         // "first ketta aal evlo tharanum", "munnadi ketta aal": the person this conversation was about, by name.
         // "mudhal aal ku call pannu": the person at that place in the list just shown.
