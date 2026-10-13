@@ -1,6 +1,7 @@
 package com.shopai.app.brain.tools
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -21,6 +22,24 @@ class KaiProductSoundTest {
 
     /** As Kai reads a mic line: product names first, then the Tamil words in Tanglish. */
     private fun heard(mic: String) = KaiSpokenWords.normalize(KaiProductSound.withProducts(mic, shop, people))
+
+    /**
+     * A hardware shop (owner, 13 Oct 2026): the mic writes an English "w" before a vowel as "ஒய" ("ஒயர்" = Wire, "ஒயிட்" = White),
+     * and a short name is taken right before its quantity or a stock question about it — never "அவர்" (he) for Wire.
+     */
+    @Test fun wireAndWhiteInAHardwareShop() {
+        val hardware = listOf("Wire", "White Cement", "Washer", "Asian Paints", "Cement")
+        fun h(mic: String) = KaiSpokenWords.normalize(KaiProductSound.withProducts(mic, hardware, people))
+        for ((mic, product) in listOf("ஒயர் 10 மீட்டர்" to "Wire", "ஒயர் எவ்வளவு இருக்கு" to "Wire", "ஒயர் ஸ்டாக் எவ்வளவு" to "Wire",
+                "வயர் எவ்வளவு" to "Wire", "ஒயிட் சிமெண்ட் 2 மூட்டை" to "White Cement", "ஒயிட் சிமெண்ட் எவ்வளவு இருக்கு" to "White Cement",
+                "வாஷர் எவ்வளவு" to "Washer")) {
+            val got = h(mic)
+            assertTrue("$mic → $got", got.contains(product))
+        }
+        // Not a product: a pronoun before "how much", and a short name with no quantity or stock word after it.
+        assertTrue(h("அவர் எவ்வளவு தரணும்").let { !it.contains("Wire") })
+        assertTrue(h("ஒயர் கட் ஆயிடுச்சு").let { !it.contains("Wire") })
+    }
 
     @Test fun productNamesSaidIntoTheMic() {
         val said = mapOf(

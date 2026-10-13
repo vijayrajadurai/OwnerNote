@@ -89,7 +89,9 @@ object KaiProductSound {
     }
 
     /** The one product a Tamil phrase sounds like, or null (none, too little to tell, or two alike). */
-    private fun match(phrase: String, span: Int, products: List<Product>, parts: List<Word>, known: Boolean, beforeQty: Boolean): String? {
+    private fun match(said: String, span: Int, products: List<Product>, parts: List<Word>, known: Boolean, beforeQty: Boolean): String? {
+        // The mic writes an English "w" before a vowel as "ஒய" ("ஒயர்" = Wire, "ஒயிட்" = White): heard as "வ".
+        val phrase = said.replace(Regex("""(?<![஀-௿])ஒய"""), "வய")
         val key = NameSound.key(phrase.replace(" ", ""))
         if (key.isEmpty()) return null
         val l = loose(key)
@@ -124,11 +126,17 @@ object KaiProductSound {
     /** A Tamil name however it is spaced or joined: "பாசி பருப்பு" / "பாசிப்பருப்பு", "மிளகாய்த் தூள்" / "மிளகாய் தூள்". */
     private fun fold(phrase: String): String = phrase.replace(Regex("""[\s.\-]+"""), "").replace(Regex("""([஀-௿])்(?=\1)"""), "")
 
-    /** Right before a quantity: "2", "ஒரு", "இரண்டு" (a short name is only taken in a stock line's place for it). */
+    /**
+     * Right before a quantity — "2", "ஒரு", "இரண்டு" — or a stock question about it — "எவ்வளவு", "ஸ்டாக்", "இருக்கா", "விலை"
+     * ("ஒயர் எவ்வளவு இருக்கு"): a short name is only taken in such a place for it.
+     */
     private fun beforeQuantity(text: String, from: Int): Boolean {
         val next = text.substring(from).trimStart().split(Regex("""\s+""")).firstOrNull().orEmpty()
-        return next.firstOrNull()?.isDigit() == true || KaiSpokenWords.normalize(next).firstOrNull()?.isDigit() == true
+        return next.firstOrNull()?.isDigit() == true || KaiSpokenWords.normalize(next).firstOrNull()?.isDigit() == true ||
+            next.trimEnd('?', '.', '!') in stockAsk
     }
+
+    private val stockAsk = setOf("எவ்வளவு", "எவ்ளோ", "எவ்வளவுக்கு", "எத்தனை", "ஸ்டாக்", "ஸ்டாக்ல", "இருக்கா", "இருக்கு", "விலை", "ரேட்")
 
     private val letterNames = mapOf('a' to "e", 'b' to "bi", 'c' to "si", 'd' to "di", 'e' to "i", 'f' to "ef", 'g' to "ji", 'h' to "ech",
         'i' to "ai", 'j' to "je", 'k' to "ke", 'l' to "el", 'm' to "em", 'n' to "en", 'o' to "o", 'p' to "pi", 'q' to "kyu", 'r' to "ar",
