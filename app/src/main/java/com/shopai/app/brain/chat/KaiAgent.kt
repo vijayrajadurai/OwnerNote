@@ -3668,6 +3668,17 @@ class KaiAgent(
 
     private val bareStockLine = Regex("""^[\p{L}\p{M}][\p{L}\p{M}\s.'-]{1,40}?\s+\d+(?:\.\d+)?\s*[\p{L}\p{M}]+\s*[.!]?$""")
 
+    private fun itemAskedAgain(item: NewItem, asked: com.shopai.app.brain.tools.ItemField, said: String, text: String, lang: KaiLang): KaiTurn? {
+        if (text.trim().split(Regex("""\s+""")).size > 3) return null
+        newItem = item.copy(turn = conversationState.conversationTurn)
+        val heard = said.trim().take(30)
+        val q = com.shopai.app.brain.tools.KaiInventory.question(item.spec, asked, lang)
+        return KaiTurn(
+            ChatReply(pick(lang, ta = "ஓனர், “$heard” புரியல. $q", tl = "Owner, “$heard” puriyala. $q", en = "Owner, I didn't get “$heard”. $q"), KaiMood.CLARIFY, ChatIntent.GENERAL_BUSINESS_QUERY),
+            KaiCard(emptyList(), listOf(KaiButton(cancelLabel(lang), KaiAction.CancelStock(item.key)))),
+        )
+    }
+
     /** The next question for a new product — or, when nothing is missing, the summary with Confirm. Nothing is saved here. */
     private fun itemStep(key: String, spec: com.shopai.app.brain.tools.ItemSpec, said: String, lang: KaiLang): KaiTurn {
         val inv = com.shopai.app.brain.tools.KaiInventory
@@ -3723,7 +3734,9 @@ class KaiAgent(
             val more = inv.withDetails(item.spec, text)
             return if (more != item.spec) itemStep(item.key, more, item.said, l) else null
         }
-        val answered = inv.answer(item.spec, asked, text, now().toLocalDate()) ?: return null
+        // A short reply that doesn't answer the question ("30" to "expiry eppo?"): the same question again, with how to say it —
+        // the product stays open; a longer line is something else and goes on.
+        val answered = inv.answer(item.spec, asked, text, now().toLocalDate()) ?: return itemAskedAgain(item, asked, said, text, l)
         return itemStep(item.key, inv.withDetails(answered, text).let { if (asked == com.shopai.app.brain.tools.ItemField.PURCHASE || asked == com.shopai.app.brain.tools.ItemField.SELLING) answered else it }, item.said, l)
     }
 
