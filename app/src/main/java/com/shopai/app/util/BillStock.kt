@@ -68,6 +68,12 @@ object BillStock {
         "sqft" to "sqft", "sft" to "sqft", "can" to "can", "cans" to "can", "tin" to "can", "tins" to "can", "roll" to "roll", "rolls" to "roll",
         "pair" to "pair", "pairs" to "pair", "bundle" to "bundle", "bundles" to "bundle", "coil" to "coil", "coils" to "coil",
         "bucket" to "bucket", "buckets" to "bucket", "carton" to "carton", "cartons" to "carton",
+        // Rice mandi, building materials, medical, spare parts (owner's 10-category guide, 13 Oct 2026).
+        "quintal" to "quintal", "quintals" to "quintal", "qtl" to "quintal", "tonne" to "tonne", "tonnes" to "tonne", "ton" to "tonne",
+        "tons" to "tonne", "cft" to "cft", "strip" to "strip", "strips" to "strip", "vial" to "vial", "vials" to "vial", "tablet" to "tablet",
+        "tablets" to "tablet", "tab" to "tablet", "tabs" to "tablet", "capsule" to "tablet", "capsules" to "tablet", "sachet" to "packet",
+        "sachets" to "packet", "kit" to "kit", "kits" to "kit", "load" to "load", "loads" to "load", "length" to "length",
+        "lengths" to "length", "board" to "board", "boards" to "board", "ft" to "feet", "feet" to "feet",
     )
 
     private fun key(unit: String?): String? = unit?.trim()?.lowercase(Locale.ROOT)?.takeIf { it.isNotEmpty() }?.let { unitKeys[it] ?: it }
@@ -140,6 +146,11 @@ object BillStock {
             u == "ml" && base == "ltr" -> qty.divide(BigDecimal(1000), 3, RoundingMode.HALF_UP).stripTrailingZeros()
             u == "ltr" && base == "ml" -> qty.multiply(BigDecimal(1000))
             u == "dozen" && base == "pcs" -> qty.multiply(BigDecimal(12))
+            (u == "sheet" || u == "board") && base == "pcs" -> qty
+            // A quintal is 100 kg and a tonne 1,000 kg everywhere; a load, a length, a bag is not (the product's own conversion, else asked).
+            u == "quintal" && base == "kg" -> qty.multiply(BigDecimal(100))
+            u == "tonne" && base == "kg" -> qty.multiply(BigDecimal(1000))
+            u == "tonne" && base == "quintal" -> qty.multiply(BigDecimal(10))
             else -> null
         }
     }

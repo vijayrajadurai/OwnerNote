@@ -259,6 +259,17 @@ object KaiCommands {
             else -> null
         }
     }
+    /** "Expiry aagura medicine list kudu", "endha batch expire aagudhu", "காலாவதி ஆகுற மருந்து": a read-only expiry list. */
+    fun asksExpiry(text: String): Boolean {
+        val t = text.lowercase(java.util.Locale.ROOT)
+        if (!expiryWord.containsMatchIn(t)) return false
+        // A product being added with its expiry ("Paracetamol 10 strip, batch B1, expiry 12/2026") is not the list.
+        if (Regex("""\d""").containsMatchIn(t) && Regex("""(?<![\p{L}])(add|vandhuchu|vandhirukku|serthu|sethu|batch\s+no)(?![\p{L}])""").containsMatchIn(t)) return false
+        return expiryAsk.containsMatchIn(t)
+    }
+    private val expiryWord = Regex("""(?<![\p{L}])(expiry|expire|expired|expiring|expires|exp\s*date|kaalavadhi|kalavadhi|kaalavathi)|காலாவதி|எக்ஸ்பைரி|எக்ஸ்பையர்""")
+    private val expiryAsk = Regex("""(?<![\p{L}])(list|evlo|enna|edhu|ethu|yedhu|endha|entha|yentha|aagura|agura|aagudhu|aaguthu|agudhu|aagum|aaga|pogudhu|poguthu|pora|varudhu|varuthu|kudu|sollu|kaattu|kaatu|which|show|soon|month|maasam|week|vaaram|report|medicine|medicines|marundhu|batch|batches|items?|products?|stock)(?![\p{L}])|ஆகுற|ஆகுது|லிஸ்ட்|மருந்து|எந்த|குடு|சொல்லு""")
+
     fun asksStockReport(text: String) = stockReport.containsMatchIn(text)
     fun asksStockValue(text: String) = stockMoney.containsMatchIn(text)
 

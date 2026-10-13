@@ -333,6 +333,13 @@ class AppKaiTools(
         return com.shopai.app.brain.tools.ProductRef(p.id, p.name, p.primaryUnit, qty(s.ledger.stock(p.id)), conversions)
     }
 
+    override suspend fun expiring(until: LocalDate): List<com.shopai.app.brain.tools.BatchFact>? {
+        val s = session() ?: return null
+        return s.dao.morningExpiring(s.ctx.businessId, until.toEpochDay().toInt(), 200).map {
+            com.shopai.app.brain.tools.BatchFact(it.productName, it.batchNo, LocalDate.ofEpochDay(it.expiryDay.toLong()), qty(it.qtyMilli), it.unit)
+        }
+    }
+
     override suspend fun topProducts(from: LocalDate, to: LocalDate, limit: Int): List<ProductSalesFact>? {
         val s = session() ?: return null
         return s.dao.topSold(s.ctx.businessId, from.toEpochDay().toInt(), to.toEpochDay().toInt(), limit)

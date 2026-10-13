@@ -381,8 +381,9 @@ object KaiFeed {
         sachets = PACKET
         jar = BOTTLE
         jars = BOTTLE
-        tin = BOTTLE
-        tins = BOTTLE
+        # A tin of paint / ghee is a can, its size per product (owner's 10-category guide: "tin capacity varies").
+        tin = CAN
+        tins = CAN
     """)
 
     /** Words that are never a person's name ("Yeppa", "Innaiku", "Friday" …). */
