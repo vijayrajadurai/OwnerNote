@@ -735,7 +735,10 @@ object BillTextParser {
     // "Basmati Rice 1006 18 % 10 KG 85.00 850.00": HSN, GST rate, qty, unit, rate, amount.
     // The HSN code is followed by numbers (rate / qty), never by words ("Mixer 1000 Watt" is a name).
     private val hsnInDescription = Regex("""^(.*\p{L}.*?)\s+(\d{4}|\d{6}|\d{8})(?=\s+\d|$)(.*)$""")
-    private val itemUnits = setOf("nos", "no", "pcs", "pc", "kg", "kgs", "g", "gm", "gms", "l", "ltr", "ml", "btl", "pkt", "box", "bag", "bags", "dozen", "doz", "set", "mtr", "m", "unit", "units", "each", "ea")
+    private val itemUnits = setOf("nos", "no", "pcs", "pc", "kg", "kgs", "g", "gm", "gms", "l", "ltr", "ml", "btl", "pkt", "box", "bag", "bags", "dozen", "doz", "set", "mtr", "m", "unit", "units", "each", "ea",
+        // Hardware, plywood, tiles and spare-parts bills (owner, 13 Oct 2026).
+        "ltrs", "litre", "litres", "mtrs", "meter", "metre", "sheet", "sheets", "sqft", "sft", "can", "cans", "tin", "roll", "rolls", "pair", "pairs",
+        "bundle", "bundles", "coil", "coils", "bucket", "buckets", "carton", "cartons", "tube", "tubes", "pkts", "boxes", "sets")
 
     /**
      * Splits a GST table row: the HSN/SAC code leaves the description, and the
@@ -797,7 +800,10 @@ object BillTextParser {
     // A quantity with a space before its unit ("0.5 kg"); "5kg" glued to the name is a pack size.
     private val qtyAtEnd = Regex("""\s(\d+(?:[.,]\d+)?)\s+(${itemUnitsPattern()})\.?$""", RegexOption.IGNORE_CASE)
 
-    private fun itemUnitsPattern() = listOf("nos", "no", "pcs", "pc", "kgs", "kg", "gms", "gm", "g", "ltr", "ml", "l", "btl", "pkt", "box", "bags", "bag", "dozen", "doz", "set", "mtr", "m", "units", "unit", "each", "ea").joinToString("|")
+    private fun itemUnitsPattern() = listOf("nos", "no", "pcs", "pc", "kgs", "kg", "gms", "gm", "g", "ltrs", "litres", "litre", "ltr", "ml", "l", "btl", "pkts", "pkt",
+        "boxes", "box", "bags", "bag", "dozen", "doz", "sets", "set", "mtrs", "meter", "metre", "mtr", "m", "units", "unit", "each", "ea", "sheets", "sheet",
+        "sqft", "sft", "cans", "can", "tin", "rolls", "roll", "pairs", "pair", "bundles", "bundle", "coils", "coil", "buckets", "bucket", "cartons", "carton",
+        "tubes", "tube").joinToString("|")
 
     private fun tokenAmountOrZero(token: String): BigDecimal? {
         val plain = token.replace(",", "")

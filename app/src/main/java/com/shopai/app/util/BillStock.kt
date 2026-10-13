@@ -62,6 +62,12 @@ object BillStock {
         "l" to "ltr", "ltr" to "ltr", "litre" to "ltr", "liter" to "ltr", "ml" to "ml",
         "btl" to "bottle", "bottle" to "bottle", "bottles" to "bottle", "pkt" to "packet", "packet" to "packet", "packets" to "packet",
         "box" to "box", "boxes" to "box", "bag" to "bag", "bags" to "bag", "dozen" to "dozen", "doz" to "dozen", "mtr" to "mtr", "m" to "mtr",
+        // As the shop's products name their units (LITRE, METER, PACK, GRAM …) and the hardware / plywood / tiles / spare-parts bills.
+        "litres" to "ltr", "ltrs" to "ltr", "meter" to "mtr", "metre" to "mtr", "meters" to "mtr", "mtrs" to "mtr", "pack" to "packet", "packs" to "packet",
+        "pkts" to "packet", "dozens" to "dozen", "sets" to "set", "tube" to "pcs", "tubes" to "pcs", "sheet" to "sheet", "sheets" to "sheet",
+        "sqft" to "sqft", "sft" to "sqft", "can" to "can", "cans" to "can", "tin" to "can", "tins" to "can", "roll" to "roll", "rolls" to "roll",
+        "pair" to "pair", "pairs" to "pair", "bundle" to "bundle", "bundles" to "bundle", "coil" to "coil", "coils" to "coil",
+        "bucket" to "bucket", "buckets" to "bucket", "carton" to "carton", "cartons" to "carton",
     )
 
     private fun key(unit: String?): String? = unit?.trim()?.lowercase(Locale.ROOT)?.takeIf { it.isNotEmpty() }?.let { unitKeys[it] ?: it }
