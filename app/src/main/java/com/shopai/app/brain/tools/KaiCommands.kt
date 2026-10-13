@@ -84,7 +84,9 @@ object KaiCommands {
         }
 
         // ---- calculation ----
-        KaiCalculator.solve(text)?.let { return KaiCommand.Calculate(it) }
+        // Not "expiry 06/2027" / "batch 12/A" said with stock: a date and a batch code are never a sum.
+        val batchSaid = KaiInventory.batchIn(text) != null || KaiInventory.expirySaid(text, java.time.LocalDate.now()) != null
+        if (!batchSaid) KaiCalculator.solve(text)?.let { return KaiCommand.Calculate(it) }
 
         // ---- which stock moves, which doesn't (from the sales records) ----
         // "vikkala", "pogala", "fast-a pogudhu" alone are everyday words: they mean stock only next to a stock / item / which word.

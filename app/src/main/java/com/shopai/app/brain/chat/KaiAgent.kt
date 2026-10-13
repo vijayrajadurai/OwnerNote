@@ -378,6 +378,8 @@ class KaiAgent(
     private data class StockPlan(
         val key: String, val product: com.shopai.app.brain.tools.ProductRef, val qty: BigDecimal, val incoming: Boolean, val said: String, val unit: String,
         val conv: com.shopai.app.brain.tools.UnitResolution.Ok? = null,
+        /** New stock of a batch-tracked product: the batch / expiry the owner said (null = not said — the books' newest batch). */
+        val batch: com.shopai.app.brain.tools.StockBatch? = null,
     )
     /** "Owner, 1 box-la evlo pieces irukku?" — waiting for the number (nothing is drafted without it). */
     private data class UnitQuestion(val product: com.shopai.app.brain.tools.ProductRef, val parts: List<com.shopai.app.brain.tools.QtyPart>, val incoming: Boolean, val said: String, val unit: String, val key: String)
@@ -399,6 +401,8 @@ class KaiAgent(
     /** Kai's previous answer was the morning brief. */
     private var briefJustShown = false
     private val stockPlans = LinkedHashMap<String, StockPlan>()
+    /** The batch / expiry said with this message's stock line ("… batch B20 expiry 06/2027"), cut out of the line. */
+    private var saidBatch: com.shopai.app.brain.tools.StockBatch? = null
     /** The product just talked about ("Colgate stock low ah?" … "20 add pannu"). */
     private var lastProduct: com.shopai.app.brain.tools.ProductRef? = null
     /** "athula", "adhu", "idhula" — the product just talked about, when no product is named. */
@@ -1142,7 +1146,12 @@ class KaiAgent(
         // "Kumar innum 500 rooba tharala", "Kumarku 500 baaki iruku": an entry said in other words, read as Kai reads entries (KaiLedgerPhrases).
         val phrased = com.shopai.app.brain.tools.KaiLedgerPhrases.canonical(com.shopai.app.brain.tools.KaiInventory.joinProductWords(spelled(read)))
         // "naan" / "enakku" / "suppliers" / "customers" right after Kai asked whose money it is: the full question, that side.
-        val said = (if (brain.sideAsked) { brain.sideAsked = false; sideAnswered(phrased) } else null) ?: phrased
+        val said0 = (if (brain.sideAsked) { brain.sideAsked = false; sideAnswered(phrased) } else null) ?: phrased
+        // "… batch B20 expiry 06/2027" said with stock: kept for the stock / product draft and cut out of the line — a date or a
+        // batch code is never an amount, a quantity or a sum (typed, or spoken: "பேட்ச் பி 20").
+        val cut = com.shopai.app.brain.tools.KaiInventory.batchPart(com.shopai.app.brain.tools.KaiSpokenWords.code(said0), now().toLocalDate())
+        saidBatch = cut?.second
+        val said = cut?.first ?: said0
         ownerWords = said
         val lang = forcedLang ?: if (tamil) KaiLang.TAMIL else KaiLanguage.forChat(said)
         turnLang = lang
@@ -1268,6 +1277,8 @@ class KaiAgent(
 
         // A new product by chat: "48" / "200 gram" / "28" / "skip" / "illa 3 box dhaan" / "aama" to Kai's one question.
         if (openPayment == null) newItemAnswer(said, lang)?.let { return it }
+        // "batch B20 expiry 06/2027" right after a stock-in draft of a batch-tracked product: the same draft, as that batch.
+        if (openPayment == null) stockBatchAnswer(said, lang)?.let { return it }
         // "illa 3 box dhaan" right after a stock draft: the same draft, corrected; "venam" / "cancel" / "வேண்டாம்" drops it.
         if (openPayment == null) stockDraftCorrection(said, lang)?.let { return it }
         // "Kadaiku saman vandhuruku", "saraku vandhachu", "stock add pannalama": goods came, none named — which? asked.
@@ -3680,7 +3691,9 @@ class KaiAgent(
     }
 
     /** The next question for a new product — or, when nothing is missing, the summary with Confirm. Nothing is saved here. */
-    private fun itemStep(key: String, spec: com.shopai.app.brain.tools.ItemSpec, said: String, lang: KaiLang): KaiTurn {
+    private fun itemStep(key: String, spec0: com.shopai.app.brain.tools.ItemSpec, said: String, lang: KaiLang): KaiTurn {
+        // The batch / expiry said with the line ("… batch B12 expiry 12/2027") are this product's.
+        val spec = saidBatch?.let { b -> spec0.copy(batch = spec0.batch ?: b.batchNo, expiry = spec0.expiry ?: b.expiry) } ?: spec0
         val inv = com.shopai.app.brain.tools.KaiInventory
         val field = inv.next(spec)
         newItem = NewItem(key, spec, said, field, conversationState.conversationTurn, lang)
@@ -3751,6 +3764,28 @@ class KaiAgent(
         if (!KaiConversationSemantics.cancelsDraft(said)) return null
         lastDraft = null
         return act(KaiAction.CancelStock(plan.key), lang)
+    }
+
+    /**
+     * The batch / expiry of the new stock just drafted ("batch B20 expiry 06/2027", "B20", "06/2027", spoken too): the same
+     * draft again, as that batch. Anything else is not an answer to it (null — the message goes on as usual).
+     */
+    private fun stockBatchAnswer(said: String, lang: KaiLang): KaiTurn? {
+        val last = lastDraft?.takeIf { it.second == "STOCK" } ?: return null
+        val plan = stockPlans.values.lastOrNull { it.said == last.first }?.takeIf { it.incoming && it.product.batchTracked } ?: return null
+        val text = com.shopai.app.brain.tools.KaiSpokenWords.let { it.normalize(it.code(said)) }.trim()
+        val words = text.split(Regex("""\s+"""))
+        val answer = batchSaid(text) ?: run {
+            // A short reply with no "batch" / "expiry" word: a date is the expiry ("06/2027"), a code with a digit the batch ("B20").
+            if (words.size > 3) return null
+            val expiry = com.shopai.app.brain.tools.KaiInventory.expiryIn(text, now().toLocalDate())
+            val no = words.singleOrNull()?.takeIf { expiry == null && Regex("""(?i)[a-z]{1,4}-?\d[a-z0-9/-]{0,15}""").matches(it) }?.uppercase(Locale.ROOT)
+            if (expiry == null && no == null) return null
+            com.shopai.app.brain.tools.StockBatch(no, expiry)
+        }
+        val batch = com.shopai.app.brain.tools.StockBatch(answer.batchNo ?: plan.batch?.batchNo, answer.expiry ?: plan.batch?.expiry)
+        stockPlans.remove(plan.key)
+        return stockDraft(plan.product, plan.qty, plan.unit, plan.incoming, plan.said, lang, plan.key, plan.conv, batch = batch)
     }
 
     private fun stockDraftCorrection(said: String, lang: KaiLang): KaiTurn? {
@@ -4200,10 +4235,56 @@ class KaiAgent(
     /** The stock draft: product, quantity, before → after; Confirm / Edit / Cancel. Nothing is saved yet. */
     private fun stockDraft(
         product: com.shopai.app.brain.tools.ProductRef, qty: BigDecimal, unit: String, incoming: Boolean, said: String, lang: KaiLang, key: String = newKey(),
-        conv: com.shopai.app.brain.tools.UnitResolution.Ok? = null, learned: Boolean = false,
+        conv: com.shopai.app.brain.tools.UnitResolution.Ok? = null, learned: Boolean = false, batch: com.shopai.app.brain.tools.StockBatch? = null,
+    ): KaiTurn {
+        val newBatch = if (incoming && product.batchTracked) batch ?: saidBatch ?: batchSaid(said) else null
+        val turn = stockDraftOnly(product, qty, unit, incoming, said, lang, key, conv, learned, newBatch)
+        if (incoming && !product.batchTracked && (batch ?: saidBatch) != null) {
+            // A batch / expiry said for a product not kept by batch: said plainly — never dropped without a word.
+            return withText(turn, turn.reply.text + "\n" + pick(lang,
+                ta = "(${product.name} batch வாரியா வைக்கல — batch / expiry save ஆகாது.)",
+                tl = "(${product.name} batch-wise vaikkala — batch / expiry save aagadhu.)",
+                en = "(${product.name} isn't kept by batch — the batch / expiry won't be saved.)"))
+        }
+        return if (incoming && product.batchTracked) withBatchLines(turn, newBatch, lang) else turn
+    }
+
+    /** "batch B20", "expiry 06/2027" said with new stock of a batch-tracked product (typed or spoken); null = neither said. */
+    private fun batchSaid(said: String): com.shopai.app.brain.tools.StockBatch? {
+        val text = com.shopai.app.brain.tools.KaiSpokenWords.let { it.normalize(it.code(said)) }
+        val inv = com.shopai.app.brain.tools.KaiInventory
+        val no = inv.batchIn(text)?.takeIf { !Regex("""(?i)exp\w*|no|number|num|same|best""").matches(it) }?.uppercase(Locale.ROOT)
+        val expiry = inv.expirySaid(text, now().toLocalDate())
+        return if (no == null && expiry == null) null else com.shopai.app.brain.tools.StockBatch(no, expiry)
+    }
+
+    /**
+     * New stock of a batch-tracked product: the draft shows the batch and expiry it comes in as, or — none said — asks for
+     * them ("pazhaya batch-na Confirm"), so the expiry list and the daily alert have the new stock's own expiry.
+     */
+    private fun withBatchLines(turn: KaiTurn, batch: com.shopai.app.brain.tools.StockBatch?, lang: KaiLang): KaiTurn {
+        val card = turn.card ?: return turn
+        if (batch == null) {
+            val ask = pick(lang,
+                ta = "புது batch-னா batch number, expiry சொல்லுங்க (உதா: batch B20 expiry 06/2027). பழைய batch-லயே சேர்க்கணும்னா Confirm பண்ணுங்க.",
+                tl = "Puthu batch-na batch number, expiry sollunga (eg: batch B20 expiry 06/2027). Pazhaya batch-laye serkanum-na Confirm pannunga.",
+                en = "If it's a new batch, tell me its batch number and expiry (e.g. batch B20 expiry 06/2027). To add it to the current batch, tap Confirm.")
+            return turn.copy(reply = turn.reply.copy(text = turn.reply.text + "\n" + ask),
+                card = card.copy(lines = card.lines + pick(lang, ta = "Batch: பழைய batch", tl = "Batch: pazhaya batch", en = "Batch: current batch")))
+        }
+        val lines = listOfNotNull(
+            "Batch: " + (batch.batchNo ?: pick(lang, ta = "புது batch", tl = "puthu batch", en = "new batch")),
+            batch.expiry?.let { "Expiry: ${com.shopai.app.brain.tools.KaiInventory.expiryShown(it)}" },
+        )
+        return turn.copy(card = card.copy(lines = card.lines + lines))
+    }
+
+    private fun stockDraftOnly(
+        product: com.shopai.app.brain.tools.ProductRef, qty: BigDecimal, unit: String, incoming: Boolean, said: String, lang: KaiLang, key: String,
+        conv: com.shopai.app.brain.tools.UnitResolution.Ok?, learned: Boolean, batch: com.shopai.app.brain.tools.StockBatch?,
     ): KaiTurn {
         lastProduct = product
-        stockPlans[key] = StockPlan(key, product, qty, incoming, said, unit, conv)
+        stockPlans[key] = StockPlan(key, product, qty, incoming, said, unit, conv, batch)
         lastDraft = said to "STOCK"
         if (conv != null) return convertedDraft(product, qty, incoming, said, lang, key, conv, learned)
         val after = if (incoming) product.stock + qty else product.stock - qty
@@ -4427,7 +4508,9 @@ class KaiAgent(
         val input = plan.conv?.let { com.shopai.app.brain.tools.KaiUnits.describe(it.input, plan.product.unit) }
         val total = com.shopai.app.brain.tools.KaiStock.shown(plan.qty, plan.product.unit)
         val note = if (input != null) "$input = $total · ${plan.said}" else plan.said
-        return when (val outcome = tools.changeStock(plan.product, plan.qty, plan.incoming, note)) {
+        val saved = if (plan.incoming && plan.batch != null) tools.stockInBatch(plan.product, plan.qty, note, plan.batch)
+            else tools.changeStock(plan.product, plan.qty, plan.incoming, note)
+        return when (val outcome = saved) {
             is ActionOutcome.Done -> {
                 tools.log(intent, "inventory engine", "${plan.product.name} ${input?.let { "$it = " }.orEmpty()}${qty(plan.qty, plan.unit)} saved", ActionStatus.CONFIRMED, null, plan.said)
                 val now = outcome.balanceAfter?.let { com.shopai.app.brain.tools.KaiStock.shown(it, plan.product.unit) }
