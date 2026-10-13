@@ -130,7 +130,7 @@ object KaiSpokenWords {
         "ஷாப்" to "shop", "ஷாப்ஸ்" to "shops", "ஸ்பா" to "spa", "சலூன்" to "salon", "பார்லர்" to "parlour", "ஜிம்" to "gym", "பாரு" to "paaru",
         // ---- units, payment modes, money words, sums and small talk said in Tamil script (typed versions already understood) ----
         "கிராம்" to "gram", "இன்ச்" to "inch", "சாமான்" to "saamaan", "சரக்கு" to "saraku", "கடைக்கு" to "kadaiku", "சேர்க்கலாமா" to "serkkalama",
-        "அவ்ளோ" to "avlo", "பண்ணலாமா" to "pannalama", "அவ்வளவு" to "avvalavu", "போதும்" to "podhum", "கேட்டேன்" to "ketten", "கேட்டோம்" to "kettom", "இஞ்ச்" to "inch", "கிராமு" to "gram", "கிராம்ஸ்" to "grams", "மில்லி" to "ml", "ஸ்ட்ரிப்" to "strip", "எக்ஸ்பைர்" to "expire", "எக்ஸ்பையர்" to "expire", "எக்ஸ்பையரி" to "expiry", "காலாவதியான" to "expired", "எம்எம்" to "mm", "எம்.எம்" to "mm", "இன்ச்" to "inch", "குவிண்டால்" to "quintal", "டன்" to "tonne", "லோடு" to "load", "லோட்" to "load", "கிட்" to "kit", "சிஎஃப்டி" to "cft", "மீட்டர்" to "meter", "செட்" to "set", "ரோல்" to "roll",
+        "அவ்ளோ" to "avlo", "பண்ணலாமா" to "pannalama", "அவ்வளவு" to "avvalavu", "போதும்" to "podhum", "கேட்டேன்" to "ketten", "கேட்டோம்" to "kettom", "இஞ்ச்" to "inch", "கிராமு" to "gram", "கிராம்ஸ்" to "grams", "மில்லி" to "ml", "ஸ்ட்ரிப்" to "strip", "எக்ஸ்பைர்" to "expire", "எக்ஸ்பையர்" to "expire", "எக்ஸ்பையரி" to "expiry", "பேட்ச்" to "batch", "பேட்ச்சு" to "batch", "பேட்ச்ல" to "batch", "காலாவதியான" to "expired", "எம்எம்" to "mm", "எம்.எம்" to "mm", "இன்ச்" to "inch", "குவிண்டால்" to "quintal", "டன்" to "tonne", "லோடு" to "load", "லோட்" to "load", "கிட்" to "kit", "சிஎஃப்டி" to "cft", "மீட்டர்" to "meter", "செட்" to "set", "ரோல்" to "roll",
         "செக்" to "cheque", "செக்ல" to "cheque la", "செக்கு" to "cheque", "கார்டு" to "card", "கார்ட்" to "card", "கார்டுல" to "card la", "கார்ட்ல" to "card la",
         "டிரான்ஸ்ஃபர்" to "transfer", "ட்ரான்ஸ்ஃபர்" to "transfer", "டிரான்ஸ்பர்" to "transfer", "ட்ரான்ஸ்பர்" to "transfer",
         "போட்டான்" to "pottaan", "போட்டுட்டான்" to "pottutaan", "போட்டாங்க" to "pottaanga", "போட்டாரு" to "pottaaru", "போட்டேன்" to "potten", "போட்டுட்டேன்" to "pottuten",
@@ -223,6 +223,23 @@ object KaiSpokenWords {
         val (t, h, alone) = m.destructured
         if (alone.isNotEmpty()) hundredsMap.getValue(alone).toString()
         else (thousandsMap.getValue(t) * 1000 + (hundredsMap[h] ?: 0)).toString()
+    }
+
+    /** English letters as ta-IN speech-to-text writes them ("பி" = B) — said before a number in a batch code ("பி 20" = B20). */
+    private val codeLetters = mapOf("ஏ" to "A", "பி" to "B", "பீ" to "B", "சி" to "C", "சீ" to "C", "டி" to "D", "ஈ" to "E", "எஃப்" to "F", "ஜி" to "G",
+        "எச்" to "H", "ஹெச்" to "H", "ஐ" to "I", "ஜே" to "J", "கே" to "K", "எல்" to "L", "எம்" to "M", "என்" to "N", "ஓ" to "O", "கியூ" to "Q", "க்யூ" to "Q",
+        "ஆர்" to "R", "எஸ்" to "S", "டீ" to "T", "யூ" to "U", "வி" to "V", "எக்ஸ்" to "X", "ஒய்" to "Y", "வய்" to "Y", "இசட்" to "Z", "ஜெட்" to "Z")
+    private val spokenCode = Regex("""(?<![\p{L}\p{M}])((?:${codeLetters.keys.sortedByDescending { it.length }.joinToString("|")})(?:\s?(?:${codeLetters.keys.sortedByDescending { it.length }.joinToString("|")}))?)\s?-?\s?(?=\d)""")
+
+    /** A batch code said aloud: "பி 20" / "பிசி20" → "B20" / "BC20" (only letters right before a number — nothing else changes). */
+    fun code(text: String): String = spokenCode.replace(text) { m ->
+        var rest = m.groupValues[1].replace(" ", "")
+        val out = StringBuilder()
+        while (rest.isNotEmpty()) {
+            val k = codeLetters.keys.sortedByDescending { it.length }.firstOrNull { rest.startsWith(it) } ?: return@replace m.value
+            out.append(codeLetters.getValue(k)); rest = rest.removePrefix(k)
+        }
+        out.toString()
     }
 
     fun normalize(text: String): String {

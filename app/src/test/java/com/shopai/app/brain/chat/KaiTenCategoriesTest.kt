@@ -288,6 +288,32 @@ class KaiTenCategoriesTest {
         assertTrue("${fails.size} wrong:\n\n" + fails.joinToString("\n\n"), fails.isEmpty())
     }
 
+    /**
+     * "paracetamol 30 strip add pannu" with no Paracetamol yet (owner, 13 Oct 2026): the new product's questions — tablets per strip,
+     * batch, expiry, rates — typed and spoken; a reply that doesn't answer ("30" to "expiry eppo?") gets the same question again, and
+     * the product is saved with its batch and expiry only on Confirm.
+     */
+    @Test fun newMedicineWithBatchAndExpiry() {
+        for (first in listOf("paracetamol 30 strip add pannu", "பாராசிட்டமால் 30 ஸ்ட்ரிப் ஆட் பண்ணு")) {
+            val inv = Inventory()
+            val kai = KaiAgent(KaiBusinessBrain(Books()), Books(), inv, { now })
+            fun say(q: String) = runBlocking { kai.ask(q) }
+            assertTrue(say(first).reply.text.let { it.contains("tablets") })
+            assertTrue(say("10").reply.text.contains("Batch"))
+            assertTrue(say("B12").reply.text.contains("Expiry"))
+            // Not a date: the expiry question again, the product still open.
+            say("30").reply.text.let { assertTrue("$first → $it", (it.contains("puriyala") || it.contains("புரியல")) && it.contains("Expiry")) }
+            assertTrue(say("12/2027").reply.text.contains("purchase"))
+            assertTrue(say("skip").reply.text.contains("selling"))
+            val summary = say("skip")
+            assertTrue(inv.created.isEmpty())
+            val confirm = summary.card!!.buttons.first { it.label.contains("Confirm") || it.label.contains("உறுதி") }
+            runBlocking { kai.act(confirm.action, KaiLang.TANGLISH) }
+            val p = inv.created.single()
+            assertTrue("$p", p.batchNo == "B12" && p.expiry == LocalDate.of(2027, 12, 31) && p.openingQty?.compareTo(r("300")) == 0 && p.perSecondary?.compareTo(r("10")) == 0)
+        }
+    }
+
     @Test fun groceryKirana() = check(grocery)
     @Test fun hardware() = check(hardware)
     @Test fun electrical() = check(electrical)

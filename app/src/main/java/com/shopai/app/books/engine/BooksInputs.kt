@@ -2,6 +2,7 @@ package com.shopai.app.books.engine
 
 import com.shopai.app.books.data.TxnEntity
 import com.shopai.app.books.model.AdjustmentReason
+import com.shopai.app.books.model.BatchPick
 import com.shopai.app.books.model.CashInSource
 import com.shopai.app.books.model.PaymentMode
 import com.shopai.app.books.model.TaxType
@@ -145,7 +146,9 @@ data class StockAdjustmentInput(
     val changeQtyMilli: Long = 0,
     /** Physical count: the engine posts the difference to what the books say. */
     val countedQtyMilli: Long? = null,
+    /** The batch moved. Stock in to a batch not yet in the books creates it (with [expiryDate]); none named → [BatchPick]. */
     val batchNo: String? = null,
+    val expiryDate: LocalDate? = null,
     val note: String? = null,
     val meta: PostMeta,
 )

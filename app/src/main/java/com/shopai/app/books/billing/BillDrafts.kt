@@ -149,12 +149,12 @@ private suspend fun BillDraft.parts(s: BooksSession): List<PaymentPart> = paymen
 }
 
 suspend fun BillDraft.toSaleInput(s: BooksSession, draftId: String, source: TxnSource): SaleInput = SaleInput(
-    partyId = partyId, date = LocalDate.parse(date), items = lines.map { it.toItem() }, received = parts(s),
+    partyId = partyId, date = LocalDate.parse(date), items = s.engine.fillBatches(lines.map { it.toItem() }, forSale = true, LocalDate.parse(date)), received = parts(s),
     dueDate = dueDate?.let(LocalDate::parse), number = number, meta = meta(draftId, source, notes),
 )
 
 suspend fun BillDraft.toPurchaseInput(s: BooksSession, draftId: String, source: TxnSource): PurchaseInput = PurchaseInput(
-    partyId = partyId.orEmpty(), billNumber = number, date = LocalDate.parse(date), items = lines.map { it.toItem() }, paid = parts(s),
+    partyId = partyId.orEmpty(), billNumber = number, date = LocalDate.parse(date), items = s.engine.fillBatches(lines.map { it.toItem() }, forSale = false, LocalDate.parse(date)), paid = parts(s),
     dueDate = dueDate?.let(LocalDate::parse), meta = meta(draftId, source, notes),
 )
 

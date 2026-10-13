@@ -15,6 +15,7 @@ import com.shopai.app.books.data.StockMovementEntity
 import com.shopai.app.books.data.TxnEntity
 import com.shopai.app.books.data.TxnItemEntity
 import com.shopai.app.books.model.Account
+import com.shopai.app.books.model.BatchPick
 import com.shopai.app.books.model.BusinessType
 import com.shopai.app.books.model.CashInSource
 import com.shopai.app.books.model.CodeKind
@@ -627,7 +628,14 @@ class BooksEngine(
         if (input.reason == com.shopai.app.books.model.AdjustmentReason.OTHER && input.note.isNullOrBlank()) {
             reject(BooksErrorCode.REASON_REQUIRED, "Write why the stock is being changed", "note")
         }
-        val batchId = batchFor(product, business, input.batchNo, "batchNo")?.let { batchOf(product, it).id }
+        // A batch-tracked product: the batch named (stock in to a new batch creates it), else picked — out first-expiry-first
+        // across batches, in to the newest batch ([BatchPick]); a physical count is always of one named batch.
+        val tracked = tracksBatches(product, business)
+        val named = input.batchNo?.trim()?.takeIf { it.isNotEmpty() }
+        if (tracked && named == null && input.countedQtyMilli != null) reject(BooksErrorCode.BATCH_REQUIRED, "Choose the batch of ${product.name}", "batchNo")
+        val batchId = if (!tracked || named == null) null
+            else if (input.countedQtyMilli == null && input.changeQtyMilli > 0) receiveBatch(product, named, null, input.expiryDate).id
+            else batchOf(product, named).id
         val change = if (input.countedQtyMilli != null) {
             if (input.countedQtyMilli < 0) reject(BooksErrorCode.INVALID_QUANTITY, "Counted stock cannot be negative", "countedQtyMilli")
             val books = if (batchId != null) dao.batchStock(biz, product.id, batchId).qtyMilli else dao.stock(biz, product.id, null).qtyMilli
@@ -642,7 +650,13 @@ class BooksEngine(
             .copy(totalPaise = kotlin.math.abs(value), category = input.reason.name, notes = input.note?.trim())
         dao.insertTxn(txn)
         val type = if (change > 0) MovementType.ADJUSTMENT_IN else MovementType.ADJUSTMENT_OUT
-        dao.insertMovements(listOf(stockRow(txn, 1, product, type, change, value, batchId, listOfNotNull(input.reason.name, input.note?.trim()).joinToString(": "))))
+        val reason = listOfNotNull(input.reason.name, input.note?.trim()).joinToString(": ")
+        val parts = if (tracked && batchId == null) pickBatches(product, business, change, input.date) else listOf(batchId to change)
+        var valueLeft = value
+        dao.insertMovements(parts.mapIndexed { i, (batch, qty) ->
+            val v = if (i == parts.lastIndex) valueLeft else BatchPick.share(value, qty, change).also { valueLeft -= it }
+            stockRow(txn, i + 1, product, type, qty, v, batch, reason)
+        })
         finish(txn, "CREATE")
     }
 
@@ -855,6 +869,48 @@ class BooksEngine(
         val tracked = product != null && product.batchTracked && business.batchTracking && !product.isService
         if (!tracked) return null
         return batchNo?.trim()?.takeIf { it.isNotEmpty() } ?: reject(BooksErrorCode.BATCH_REQUIRED, "Choose the batch of ${product!!.name}", field)
+    }
+
+    private fun tracksBatches(product: ProductEntity?, business: BusinessEntity) =
+        product != null && product.batchTracked && business.batchTracking && !product.isService
+
+    /**
+     * The batches a stock change with no batch named moves ([BatchPick]): out first-expiry-first, split across batches (what
+     * they don't have stays on the last one, where the stock check catches it); in to the newest batch, or a new dated one.
+     */
+    private suspend fun pickBatches(product: ProductEntity, business: BusinessEntity, change: Long, date: LocalDate): List<Pair<String?, Long>> {
+        val batches = dao.productBatches(biz, product.id)
+        if (change > 0) return listOf((BatchPick.into(batches)?.id ?: receiveBatch(product, BatchPick.newNo(date), null, null).id) to change)
+        val out = BatchPick.out(batches, -change)
+        if (out.shortMilli > 0 && !business.allowNegativeStock) {
+            val have = com.shopai.app.books.model.Qty.toDecimal(batches.sumOf { it.qtyMilli.coerceAtLeast(0) }).toPlainString()
+            reject(BooksErrorCode.INSUFFICIENT_STOCK, "Only $have ${product.primaryUnit} of ${product.name} in its batches", "changeQtyMilli")
+        }
+        if (out.parts.isEmpty()) return listOf((BatchPick.into(batches)?.id ?: receiveBatch(product, BatchPick.newNo(date), null, null).id) to change)
+        return out.parts.mapIndexed { i, (b, qty) -> b.id to -(qty + if (i == out.parts.lastIndex) out.shortMilli else 0L) }
+    }
+
+    /**
+     * Items of a sale / purchase whose screen doesn't choose batches (the bill editor, Kai, the older screens), made ready for
+     * a batch-tracked product: a sale line with no batch is split first-expiry-first across the batches that have stock; a
+     * purchase line with no batch goes into a new batch named by the date (no expiry is guessed). The engine itself still asks
+     * for the batch of anything posted straight to it without one.
+     */
+    suspend fun fillBatches(items: List<ItemInput>, forSale: Boolean, date: LocalDate): List<ItemInput> {
+        val business = dao.business(biz) ?: return items
+        if (!business.batchTracking) return items
+        return items.flatMap { item ->
+            val product = item.productId?.takeIf { item.batchNo.isNullOrBlank() }?.let { dao.product(it) }?.takeIf { tracksBatches(it, business) }
+                ?: return@flatMap listOf(item)
+            if (!forSale) return@flatMap listOf(item.copy(batchNo = BatchPick.newNo(date)))
+            val units = ProductUnits(product.primaryUnit, product.secondaryUnit, product.conversionMilli)
+            val unit = (item.unit ?: units.primary).trim().uppercase()
+            if (!units.accepts(unit) || item.qtyMilli <= 0) return@flatMap listOf(item)
+            val factor = if (units.secondary != null && unit.equals(units.secondary, true)) units.factorMilli!! else 1000L
+            val out = BatchPick.out(dao.productBatches(biz, product.id), units.toPrimary(item.qtyMilli, unit))
+            BatchPick.splitLine(item.qtyMilli, factor, item.discountPaise, out).map { item.copy(qtyMilli = it.qtyMilli, discountPaise = it.discountPaise, batchNo = it.batchNo) }
+                .ifEmpty { listOf(item) }
+        }
     }
 
     private suspend fun batchOf(product: ProductEntity, batchNo: String): BatchEntity =

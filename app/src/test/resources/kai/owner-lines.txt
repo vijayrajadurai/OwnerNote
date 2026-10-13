@@ -27,6 +27,7 @@ STOCK  | Oil 2 bottle udanjiduchu                       | Oil 238
 STOCK  | Lux soap 5 kettupochu                          | Lux Soap 55
 STOCK  | Baniyan 10 vithuchu                            | Baniyan 40
 STOCK  | ennai 1 box vandhuchu                          | Oil 252
+STOCK  | Colgate 1 box vandhuchu batch B7 expiry 06/2027  | Colgate 288    # a batch code / expiry date is never the quantity
 STOCK  | Maggi 10 pottalam vandhuchu                    | Maggi 120    # Kai asks pieces per packet; the test answers 12
 STOCK  | Colgate 2 box stock add pannu                  | Colgate 336  # one product: the old stock flow, not the goods question
 

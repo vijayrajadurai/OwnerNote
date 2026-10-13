@@ -53,6 +53,8 @@ class KaiInventoryChatTest {
         data class Item(
             val id: String, val name: String, val unit: String, var stock: BigDecimal, val conversions: Map<String, BigDecimal>,
             var purchase: BigDecimal?, var selling: BigDecimal?, val category: String, val size: String?, var minimum: BigDecimal? = null,
+            /** Kept by batch in the books (a batch / expiry was said when it was added). */
+            var batchTracked: Boolean = false,
         )
         data class Move(val itemId: String, val qty: BigDecimal, val type: String, val said: String)
 
@@ -72,7 +74,34 @@ class KaiInventoryChatTest {
         val batches = mutableListOf<com.shopai.app.brain.tools.BatchFact>()
         override suspend fun expiring(until: java.time.LocalDate) = batches.filter { !it.expiry.isAfter(until) && it.qty.signum() > 0 }
 
-        override suspend fun products() = items.map { ProductRef(it.id, it.name, it.unit, it.stock, it.conversions, it.purchase, it.selling, it.minimum, it.category) }
+        override suspend fun products() = items.map { ProductRef(it.id, it.name, it.unit, it.stock, it.conversions, it.purchase, it.selling, it.minimum, it.category, it.batchTracked) }
+        /** The batch / expiry Kai passed with new stock (stockInBatch). */
+        val batchIns = mutableListOf<Pair<String, com.shopai.app.brain.tools.StockBatch>>()
+
+        /** As the books do for a batch-tracked product: out first-expiry-first across its batches, in to the newest batch. */
+        private fun moveBatches(i: Item, qty: BigDecimal, incoming: Boolean) {
+            if (!i.batchTracked) return
+            val mine = batches.withIndex().filter { it.value.product == i.name }
+            if (incoming) { mine.lastOrNull()?.let { (n, b) -> batches[n] = b.copy(qty = b.qty + qty) }; return }
+            val stock = mine.map { (n, b) -> com.shopai.app.books.model.BatchStock("$n", b.batchNo, b.expiry.toEpochDay().toInt(), n.toLong(), b.qty.movePointRight(3).toLong()) }
+            com.shopai.app.books.model.BatchPick.out(stock, qty.movePointRight(3).toLong()).parts.forEach { (b, take) ->
+                val n = b.id.toInt()
+                batches[n] = batches[n].copy(qty = batches[n].qty - BigDecimal.valueOf(take, 3))
+            }
+        }
+
+        override suspend fun stockInBatch(product: ProductRef, qty: BigDecimal, said: String, batch: com.shopai.app.brain.tools.StockBatch): ActionOutcome {
+            val i = items.first { it.id == product.id }
+            batchIns += i.name to batch
+            i.stock += qty
+            moves += Move(i.id, qty, "IN", said)
+            val n = batches.indexOfFirst { it.product == i.name && it.batchNo == batch.batchNo }
+            when {
+                n >= 0 -> batches[n] = batches[n].copy(qty = batches[n].qty + qty)
+                batch.expiry != null -> batches += com.shopai.app.brain.tools.BatchFact(i.name, batch.batchNo ?: "B-NEW", batch.expiry!!, qty, i.unit)
+            }
+            return ActionOutcome.Done(i.name, i.stock)
+        }
         override suspend fun parties(name: String) = parties.filter { it.name.contains(name, true) }
         override suspend fun updateProduct(productId: String, change: ProductChange): ActionOutcome {
             val i = items.first { it.id == productId }
@@ -105,6 +134,7 @@ class KaiInventoryChatTest {
             val i = items.first { it.id == product.id }
             if (!incoming && i.stock < qty) return ActionOutcome.Failed("only ${i.stock.toPlainString()} ${i.unit} in stock")
             i.stock = if (incoming) i.stock + qty else i.stock - qty
+            moveBatches(i, qty, incoming)
             moves += Move(i.id, if (incoming) qty else qty.negate(), if (incoming) "IN" else "OUT", said)
             return ActionOutcome.Done(i.name, i.stock)
         }
@@ -115,9 +145,13 @@ class KaiInventoryChatTest {
             val conv = if (product.secondaryUnit != null && product.perSecondary != null) mapOf(product.secondaryUnit!! to product.perSecondary!!) else emptyMap()
             val i = Item("n${items.size + 1}", product.name, product.unit, product.openingQty ?: BigDecimal.ZERO, conv,
                 product.purchasePrice, product.sellingPrice, product.category, product.weight ?: product.packSize)
+            // A batch / expiry said: batch-tracked, the opening stock is that batch's record (what the expiry list reads).
+            i.batchTracked = product.batchNo != null || product.expiry != null
             items += i
             if ((product.openingQty?.signum() ?: 0) > 0) moves += Move(i.id, product.openingQty!!, "OPENING", "")
-            return ProductRef(i.id, i.name, i.unit, i.stock, conv)
+            if (product.expiry != null && (product.openingQty?.signum() ?: 0) > 0)
+                batches += com.shopai.app.brain.tools.BatchFact(i.name, product.batchNo ?: "B-NEW", product.expiry!!, product.openingQty!!, i.unit)
+            return ProductRef(i.id, i.name, i.unit, i.stock, conv, batchTracked = i.batchTracked)
         }
         override fun log(intent: String, tool: String, result: String, status: ActionStatus, reference: String?, input: String?): String {
             logs += intent to status
