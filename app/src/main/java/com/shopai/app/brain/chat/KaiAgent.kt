@@ -1067,7 +1067,7 @@ class KaiAgent(
     /** [text] without the shop's product names said in it as whole names. */
     private suspend fun withoutShopProducts(text: String): String = runCatching { tools.products() }.getOrNull().orEmpty()
         .filter { it.name.count(Char::isLetter) >= 3 }.sortedByDescending { it.name.length }
-        .fold(text) { t, p -> t.replace(Regex("""(?i)(?<![\p{L}])${Regex.escape(p.name)}(?![\p{L}])"""), " ") }
+        .fold(text) { t, p -> if (!t.contains(p.name, ignoreCase = true)) t else t.replace(Regex("""(?i)(?<![\p{L}])${Regex.escape(p.name)}(?![\p{L}])"""), " ") }
 
     /** Weather, cricket, news, jokes, online orders, loans, staff salary: said plainly — not something Kai does. */
     private fun beyond(topic: KaiConversationCare.Beyond, lang: KaiLang): KaiTurn {
@@ -3511,7 +3511,7 @@ class KaiAgent(
     private fun productsByPhrase(line: String, products: List<com.shopai.app.brain.tools.ProductRef>): Pair<List<com.shopai.app.brain.tools.ProductRef>, String>? {
         val st = com.shopai.app.brain.tools.KaiStock
         val words = st.sizeKey(line).trim().split(' ').filter { it.isNotEmpty() }
-        val names = products.map { it to " " + st.sizeKey(it.name).trim() + " " }
+        val names = products.zip(st.sizeKeys(products.map { it.name })).map { (p, k) -> p to " $k " }
         for (n in minOf(6, words.size) downTo 1) for (i in 0..words.size - n) {
             val w = words.subList(i, i + n)
             if (w.none { it.length >= 2 && it.any(Char::isLetter) && st.unitOf(it) == null && !st.isStockWord(it) && it !in setOf("add", "stock", "pannu") }) continue
