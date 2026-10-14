@@ -1075,6 +1075,9 @@ class KaiAgent(
         val names = products.map { " " + it.name.lowercase(Locale.ROOT).replace(Regex("""\s+"""), " ") + " " }
         val words = Regex("""\S+""").findAll(whole).toList()
         var out = whole
+        // ("Football chinna pack 7": a one-word name the shop keeps in packs is its own too — not a talk about football)
+        val oneWord = products.mapNotNull { p -> Regex("""^(\p{L}{4,})\s+(?:(?:small|medium|large|family)\s+pack|\d[\d.]*\s*\p{L}*)$""", RegexOption.IGNORE_CASE).find(p.name.trim())?.groupValues?.get(1)?.lowercase(Locale.ROOT) }.toSet()
+        for (w in words) if (w.value.lowercase(Locale.ROOT) in oneWord) out = out.replaceRange(w.range.first, w.range.last + 1, " ".repeat(w.value.length))
         var i = 0
         while (i < words.size) {
             val n = (minOf(6, words.size - i) downTo 2).firstOrNull { n ->
@@ -1417,7 +1420,8 @@ class KaiAgent(
         // Not understood, then one word ("payment", "kadan", "stock", "balance"): the question for that, so the flow goes on.
         if (plans.isEmpty()) guidedTopic(said, lang)?.let { return it }
         // "current bill 1200 kattinen", "rent kattanum": an expense, not a person's entry — said plainly, with where it goes.
-        if (plans.isEmpty() && products?.let { productIn(spoken, it) } == null) expenseLine(spoken, lang, people)?.let { return it }
+        // ("Gas lighter 7 add pannu" with Gas lighter packs kept: the gas is the product's, not an expense)
+        if (plans.isEmpty() && products?.let { productIn(spoken, it) } == null) expenseLine(withoutShopProducts(spoken), lang, people)?.let { return it }
         // "Colgate", "Colgate 2": a product of the shop alone, or with a count — its details, or which way the stock went.
         if (plans.isEmpty() && products != null) productHalfStep(spoken, lang, products)?.let { return it }
         if (plans.isEmpty() && products != null) newStockLine(spoken, said, lang, products, people)?.let { return it }
@@ -1615,7 +1619,9 @@ class KaiAgent(
             }
             // SCAN_STOCK: "Colgate photo edu", "stock photo edu" → the product camera at once (the owner asked for a photo).
             // "new stock add pannu" (no product, no photo): Kai asks which product and how much — the camera is only a button.
-            com.shopai.app.brain.tools.KaiStock.scanRequest(text, products)?.let { name ->
+            // ("Photo frame 7 add pannu": the photo is the product's name, not a camera request)
+            val photoInName = photoAsked.containsMatchIn(text) && !photoAsked.containsMatchIn(withoutShopProducts(text))
+            if (!photoInName) com.shopai.app.brain.tools.KaiStock.scanRequest(text, products)?.let { name ->
                 return if (name.isEmpty() && !photoAsked.containsMatchIn(text)) askStockLine(said, lang) else stockCamera(name, said, lang, products)
             }
             stockChange(text, said, lang, products, people)?.let { return it }
@@ -3552,7 +3558,8 @@ class KaiAgent(
         val names = products.zip(st.sizeKeys(products.map { it.name })).map { (p, k) -> p to " $k " }
         for (n in minOf(6, words.size) downTo 1) for (i in 0..words.size - n) {
             val w = words.subList(i, i + n)
-            if (w.none { it.length >= 2 && it.any(Char::isLetter) && st.unitOf(it) == null && !st.isStockWord(it) && it !in setOf("add", "stock", "pannu") }) continue
+            // (a unit word that starts the shop's names is a name word: "Bucket" of Bucket Small pack, "Carton box")
+            if (w.none { it.length >= 2 && it.any(Char::isLetter) && (st.unitOf(it) == null || names.any { n -> n.second.startsWith(" $it ") }) && !st.isStockWord(it) && it !in setOf("add", "stock", "pannu") }) continue
             val phrase = " " + w.joinToString(" ") + " "
             val hits = names.filter { it.second.contains(phrase) }.map { it.first }
             if (hits.isNotEmpty()) return hits to phrase.trim()
@@ -3571,8 +3578,10 @@ class KaiAgent(
      * [name] isn't a product, but is part of the names of some: two or more → Kai asks which one, and the owner's answer ("12mm",
      * "Emulsion", "first") runs the same line for it; exactly one → the line runs for that product (its draft names it for Confirm).
      */
-    private suspend fun oneOfMany(name: String, line: String, lang: KaiLang, products: List<com.shopai.app.brain.tools.ProductRef>): KaiTurn? {
+    private suspend fun oneOfMany(name: String, ownerLine: String, lang: KaiLang, products: List<com.shopai.app.brain.tools.ProductRef>): KaiTurn? {
         if (choiceRerun) return null
+        // "nandu 7 add pannu" with Crab kept in packs: read as "crab 7 add pannu" — the packs are asked about, the answer runs that line.
+        val line = com.shopai.app.brain.tools.KaiStock.withGoodsFamilies(ownerLine, products)
         // The whole phrase said first ("1-way switch 7" is never a 2-way switch), else the name's words.
         val byPhrase = productsByPhrase(line, products)?.takeIf { (hits, phrase) -> hits.size >= 2 || phrase.split(' ').size > 1 }
         val found = byPhrase?.first ?: productsNamed(name, products)
@@ -3653,6 +3662,8 @@ class KaiAgent(
     private fun productWordWithKu(text: String, products: List<com.shopai.app.brain.tools.ProductRef>?): Boolean {
         val said = text.lowercase(Locale.ROOT).split(Regex("""[^\p{L}\p{M}]+""")).filter { it.length > 4 && it.endsWith("ku") }
         if (said.isEmpty() || products == null) return false
+        // (or of a goods name the owner says: "sanal saakku 7" is Jute sack, not "to Saak")
+        if (said.any { com.shopai.app.brain.tools.KaiStock.isGoodsWord(it) }) return true
         return products.any { p -> p.name.lowercase(Locale.ROOT).split(Regex("""\s+""")).any { it in said } }
     }
 
@@ -3795,7 +3806,8 @@ class KaiAgent(
         val namesKnown = products.any { p -> p.name.isNotBlank() && Regex("""(?i)(?<![\p{L}])${Regex.escape(p.name)}(?![\p{L}])""").containsMatchIn(text) }
         // "500 kattu" at the end is "pay 500" (kattu = pay / bundle): with no stock word it is never taken as a bundle.
         val endsWithPay = Regex("""(?i)(?:kattu|கட்டு)\s*[.!]?$""").containsMatchIn(text.trim())
-        val bareNewLine = product == null && !namesKnown && unit != null && !endsWithPay &&
+        // ("Carton box 7" with Carton box kept in packs: the shop's packs, asked which — not a new product)
+        val bareNewLine = product == null && !namesKnown && unit != null && !endsWithPay && (productsByPhrase(text, products)?.first?.size ?: 0) < 2 &&
             !com.shopai.app.brain.tools.KaiStock.moneyOrQuestion(text) && bareStockLine.matches(text.trim())
         if (!asked && !bareNewLine && !com.shopai.app.brain.tools.KaiInventory.hasDetails(text, spec)) return null
         stockLineAskedTurn = -10L

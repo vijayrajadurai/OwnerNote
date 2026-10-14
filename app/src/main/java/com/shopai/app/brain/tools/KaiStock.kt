@@ -473,6 +473,63 @@ object KaiStock {
         }
     }
 
+    /**
+     * The thing a goods name means when the shop keeps it only in packs (owner's catalogue 11-15, 14 Oct 2026): "crab" with Crab
+     * Small pack and Crab Medium pack kept → "Crab" (the packs' own name, not a product); null when the names holding it are not
+     * one thing's packs.
+     */
+    fun familyOf(english: List<String>, names: List<String>): String? {
+        val es = english.map { nameWords(it).map(::plainWord) }.filter { it.isNotEmpty() }
+        if (es.isEmpty()) return null
+        val plainOf = indexFor(names).plain
+        val holders = names.withIndex().filter { (k, _) -> es.any { e -> holds(plainOf[k], e) } }.map { it.value }.distinctBy { it.lowercase(Locale.ROOT) }
+        if (holders.size < 2) return null
+        val bases = holders.map { h -> packBase.find(h.trim())?.groupValues?.get(1) ?: return null }
+        return bases.distinctBy { it.lowercase(Locale.ROOT) }.singleOrNull()
+    }
+
+    /** A name and its pack: "Crab Small pack", "Tomato 250 g", "Garbage bag XL" → the name before it. */
+    private val packBase = Regex("""^(.*?\S)\s+(?:\d[\d.]*\s*\p{L}*|(?:small|medium|large|family|xs|xl|xxl|mini|jumbo|regular)(?:\s+pack)?)$""", RegexOption.IGNORE_CASE)
+
+    /** [text] with a goods name read as the thing the shop keeps in packs ([familyOf]): "nandu 7 add pannu" → "crab 7 add pannu". */
+    fun withGoodsFamilies(text: String, products: List<ProductRef>): String = lowerOf(KaiSpokenWords.normalize(text)).let { l ->
+        goodsFamilies(l, products).takeIf { it != l }?.trim() ?: text
+    }
+
+    private fun goodsFamilies(lower: String, products: List<ProductRef>): String {
+        if (products.isEmpty()) return lower
+        val names = products.map { it.name }
+        val words = Regex("""\S+""").findAll(lower).toList()
+        val sizes = goods.map { it.words.size }.distinct().sortedDescending()
+        var out = lower
+        var shift = 0
+        var i = 0
+        while (i < words.size) {
+            val hit = sizes.firstNotNullOfOrNull { size ->
+                if (i + size > words.size) return@firstNotNullOfOrNull null
+                val said = words.subList(i, i + size).map { plainWord(it.value) }
+                val meant = goods.filter { g -> g.words.size == size && g.words == said }
+                if (meant.isEmpty()) return@firstNotNullOfOrNull null
+                val es = meant.flatMap { it.names }.distinct()
+                if (shopNameFor(es, names) != null) null else familyOf(es, names)?.let { size to it }
+            }
+            if (hit == null) { i++; continue }
+            val (size, family) = hit
+            val from = words[i].range.first + shift
+            val to = words[i + size - 1].range.last + shift
+            val put = lowerOf(family).trim()
+            // ("zip lock bag small", "whole wheat bread" said in full: the goods word is already inside that name — nothing to read again)
+            if (Regex("""(?<![\p{L}])${Regex.escape(put)}(?![\p{L}])""").findAll(out).any { m -> m.range.first <= to && m.range.last >= from }) { i += size; continue }
+            out = out.replaceRange(from, to + 1, put)
+            shift += put.length - (to - from + 1)
+            i += size
+        }
+        return out
+    }
+
+    /** A word of a goods name the owner says ("saakku" of "sanal saakku", "vilakku" of "min vilakku"). */
+    fun isGoodsWord(word: String): Boolean = plainWord(word.lowercase(Locale.ROOT)).let { w -> goods.any { w in it.words } }
+
     /** The common Tamil names of grocery goods, for a shop that keeps them in English ("arisi" = Rice). */
     private val tamilNames get() = KaiFeed.productNames
 
@@ -566,8 +623,9 @@ object KaiStock {
     }
 
     fun understand(text: String, products: List<ProductRef>): StockRequest? {
-        // "5inch tape" is said and written "5 inch tape": the same product.
-        val lower = inNameOrder(lowerOf(text).replace(Regex("""(?<![\p{L}\d.])(\d+(?:\.\d+)?)(inch|inches|mm|cm|ft|feet|sqmm|watt|watts|volt|volts|amp|amps|hp)(?![\p{L}])"""), "$1 $2"), products)
+        // "5inch tape" is said and written "5 inch tape": the same product. "nandu small pack 7": the goods name of a thing kept
+        // only in packs, read as that thing ("crab small pack 7").
+        val lower = inNameOrder(goodsFamilies(lowerOf(text), products).replace(Regex("""(?<![\p{L}\d.])(\d+(?:\.\d+)?)(inch|inches|mm|cm|ft|feet|sqmm|watt|watts|volt|volts|amp|amps|hp)(?![\p{L}])"""), "$1 $2"), products)
         if (notStock.containsMatchIn(lower) || timeAfterNumber.containsMatchIn(lower)) return null
         val found = productSaid(lower, products)
         val product = found?.first
@@ -578,7 +636,13 @@ object KaiStock {
         val rest = sized?.second ?: named
         val words = rest.split(' ').filter { it.isNotEmpty() }
         val (qty, saidUnit) = quantityIn(rest) ?: (null to words.firstNotNullOfOrNull { units[it] })
-        val spoken = product?.name ?: spokenName(rest).let { n -> if (sized != null && n.isNotEmpty()) "${sized.first} $n" else n }
+        val spoken = product?.name ?: spokenName(rest).let { n -> if (sized != null && n.isNotEmpty()) "${sized.first} $n" else n }.ifEmpty {
+            // "Bucket 7", "Carton box 7" with Bucket / Carton box kept in packs: unit words before the number that start the shop's names
+            // are the name (Kai asks which pack), not the unit.
+            val lead = rest.trim().split(' ').filter { it.isNotEmpty() }.takeWhile { w -> !w.first().isDigit() && w !in numberWords && w.first().isLetter() }
+                .joinToString(" ")
+            lead.takeIf { l -> l.isNotEmpty() && products.any { p -> lowerOf(p.name).trim().startsWith("$l ") } }.orEmpty()
+        }
         if (spoken.isEmpty()) return null
         if (product == null) {
             // A name Kai doesn't have: only when it clearly is stock ("Pepsodent stock vandhiruku", "2 Pepsodent box pochu").
