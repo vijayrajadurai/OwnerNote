@@ -98,6 +98,54 @@ class KaiProductSoundTest {
         h("ஸ்பா 5 பீஸ்").let { got -> assertTrue(got, shop4.none { got.contains(it) }) }
     }
 
+    /**
+     * Hardware names (owner's stock master, 13 Oct 2026): "U-bolt" = yu bolt, "Union" = yunion, "Chemical" = kemical, "GI wire" in two
+     * words, "House" with its ou (வு), "Wedge" (ட்ஜ), "Anchor" / "Angle" with the n-k of ங்க — and "ஸ்விட்ச்" is always Switch, never
+     * Jigsaw; "எம்எஸ் ஆங்கிள்" is MS angle, not MS channel; "பைண்டிங் வயர்" is Binding wire, not Paint thinner.
+     */
+    @Test fun hardwareNamesSaidIntoTheMic() {
+        val shop5 = listOf("U-bolt", "Eye bolt", "PVC union", "Universal socket", "Chemical anchor", "Wedge anchor", "Wood screw", "Coach screw", "Hex screw",
+            "GI wire", "GI pipe", "House wire", "Washer", "MS angle", "MS channel", "Binding wire", "Paint thinner", "Jigsaw", "Switch box", "1-way switch", "Multi-plug",
+            "Wood chisel", "Chisel", "Bench vice", "Piano hinge", "Hacksaw blade", "Hex bolt", "Pipe wrench", "Hand saw", "Chalk line",
+            "Flush bolt", "Flush plate", "Hydraulic hinge", "Door lock", "Drawer lock", "Silica gel", "Mop", "Ear muff", "Ear plug", "Watering can",
+            "Two-piece closet", "One-piece closet", "WD-type penetrating spray", "2-way switch", "Emergency sign", "Emergency light")
+        fun h(mic: String) = KaiSpokenWords.normalize(KaiProductSound.withProducts(mic, shop5, people))
+        for ((mic, want) in listOf("யூ போல்ட் 7" to "U-bolt 7", "ஐ போல்ட் 7" to "Eye bolt 7", "பிவிசி யூனியன் 7" to "PVC union 7",
+                "யுனிவர்சல் சாக்கெட் 7" to "Universal socket 7", "கெமிக்கல் ஆங்கர் 7" to "Chemical anchor 7", "வெட்ஜ் ஆங்கர் 7" to "Wedge anchor 7",
+                "கோச் ஸ்க்ரூ 7" to "Coach screw 7", "ஹெக்ஸ் ஸ்க்ரூ 7" to "Hex screw 7", "ஜிஐ வயர் 7" to "GI wire 7", "ஹவுஸ் வயர் 7" to "House wire 7",
+                "எம்எஸ் ஆங்கிள் 7" to "MS angle 7", "எம்எஸ் சேனல் 7" to "MS channel 7", "பைண்டிங் வயர் 7" to "Binding wire 7", "பெயிண்ட் தின்னர் 7" to "Paint thinner 7",
+                "ஸ்விட்ச் பாக்ஸ் 7" to "Switch box 7", "ஒன் வே ஸ்விட்ச் 7" to "1-way switch 7", "மல்டி பிளக் 7" to "Multi-plug 7", "ஜிக்சா 2" to "Jigsaw 2",
+                // Two words said together stay two words ("வுட் சிசல்" is not "Chisel"); "Bench" keeps its nch, "Chalk" loses its l.
+                "வுட் சிசல் 7" to "Wood chisel 7", "சிசல் 7" to "Chisel 7", "பெஞ்ச் வைஸ் 7" to "Bench vice 7", "பியானோ ஹிஞ்ச் 7" to "Piano hinge 7",
+                "ஹேக்சா பிளேடு 7" to "Hacksaw blade 7", "ஹெக்ஸ் போல்ட் 7" to "Hex bolt 7", "பைப் ரெஞ்ச் 7" to "Pipe wrench 7", "ஹேண்ட் சா 7" to "Hand saw 7",
+                "சாக் லைன் 7" to "Chalk line 7",
+                // Every word's own vowel (bolt / plate), a y between consonants (hydraulic), a soft g (gel), a long ா (Mop, not muff).
+                "ஃப்ளஷ் போல்ட் 7" to "Flush bolt 7", "ஃப்ளஷ் பிளேட் 7" to "Flush plate 7", "ஹைட்ராலிக் ஹிஞ்ச் 7" to "Hydraulic hinge 7",
+                "சிலிக்கா ஜெல் 7" to "Silica gel 7", "மாப் 7" to "Mop 7", "இயர் மஃப் 7" to "Ear muff 7", "இயர் பிளக் 7" to "Ear plug 7",
+                "வாட்டரிங் கேன் 7" to "Watering can 7", "டூ பீஸ் க்ளோசெட் 7" to "Two-piece closet 7", "டபிள்யூடி டைப் பெனட்ரேட்டிங் ஸ்ப்ரே 7" to "WD-type penetrating spray 7",
+                "டூ வே ஸ்விட்ச் 7" to "2-way switch 7", "எமர்ஜென்சி சைன் 7" to "Emergency sign 7")) {
+            val got = h(mic)
+            assertTrue("$mic → $got", got.startsWith(want))
+        }
+        assertTrue(h("ஸ்விட்ச் 7").let { !it.contains("Jigsaw") })
+        // One word that only sounds like part of another name is never that product ("ஹைட்ராலிக்" alone is not Door lock / Drawer lock).
+        assertTrue(h("ஹைட்ராலிக் 7").let { !it.contains("lock") })
+        // RCBO / RCCB by their vowels in order; "ஸ்க்ரூ" is Screw (ew = oo); a unit said alone stays the unit ("பாக்கெட்" is never Bucket).
+        val shop6 = listOf("RCBO", "RCCB", "Screw", "Bucket", "Hex bolt M4", "Hex bolt M8")
+        fun h6(mic: String) = KaiSpokenWords.normalize(KaiProductSound.withProducts(mic, shop6, people))
+        assertTrue(h6("ஆர்சிபிஓ 7").startsWith("RCBO 7") && h6("ஆர்சிசிபி 7").startsWith("RCCB 7") && h6("ஸ்க்ரூ 7").startsWith("Screw 7"))
+        assertTrue(h6("10 பாக்கெட்").let { !it.contains("Bucket") } && h6("பக்கெட் 2").startsWith("Bucket 2"))
+        // Letters said one by one, one syllable each: "எம்சிபி" (MCB) is never MCCB; DP / TP MCB sound the same — neither is picked.
+        val shop7 = listOf("MCCB 6A", "SP MCB 6A", "DP MCB 6A", "TP MCB 6A", "Gypsum board")
+        fun h7(mic: String) = KaiSpokenWords.normalize(KaiProductSound.withProducts(mic, shop7, people))
+        assertTrue(h7("டிபி எம்சிபி 6 ஆம்ப் 7").let { !it.contains("MCCB") && !it.contains("DP MCB") && !it.contains("TP MCB") })
+        assertTrue(h7("எம்சிசிபி 6 ஆம்ப் 7").startsWith("MCCB") && h7("எஸ்பி எம்சிபி 6 ஆம்ப் 7").startsWith("SP MCB") && h7("ஜிப்சம் போர்டு 7").startsWith("Gypsum board"))
+        // A letter before a number is a size only where the shop's names have it: "எம் 4" = M4; "டி 10 பாக்கெட்" stays D, 10 packets.
+        val known = setOf("M4", "M8")
+        assertEquals("Hex bolt M4 7", KaiSpokenWords.code("Hex bolt எம் 4 7", known))
+        assertEquals("Glucon டி 10 packet", KaiSpokenWords.code("Glucon டி 10 packet", known))
+    }
+
     @Test fun productNamesSaidIntoTheMic() {
         val said = mapOf(
             "பிரிட்டானியா பிஸ்கட்" to "Britannia Biscuit", "குட் டே" to "Good Day", "பார்லே ஜி" to "Parle G", "சன்ஃபீஸ்ட் மேரி" to "Sunfeast Marie",

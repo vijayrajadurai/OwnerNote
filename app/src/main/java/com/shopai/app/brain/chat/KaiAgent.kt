@@ -741,7 +741,8 @@ class KaiAgent(
                     return takeBack(saved, Regex("""\d[\d,]*""").findAll(said).map { it.value.replace(",", "") }.firstOrNull { it != amount }, lang)
                 null -> Unit
             }
-            if (KaiConversationCare.kaiGotItWrong(said)) return gotItWrong(saved, lang)
+            // ("Cotton waste 7 add pannu": a product the shop keeps, not "waste" said of Kai.)
+            if (KaiConversationCare.kaiGotItWrong(withoutShopProducts(said))) return gotItWrong(saved, lang)
         }
         // "adha cancel pannu" a few turns after the save (a stock or small-talk question in between): still that entry,
         // when it is pointed at and no reminder was set since.
@@ -816,7 +817,7 @@ class KaiAgent(
                 tl = "Owner, neenga kadaisiya kettadhu:\n" + asked.mapIndexed { i, q -> "${i + 1}. $q" }.joinToString("\n"),
                 en = "Owner, you last asked:\n" + asked.mapIndexed { i, q -> "${i + 1}. $q" }.joinToString("\n"))
         }
-        if (KaiConversationCare.kaiGotItWrong(said)) return gotItWrong(null, lang, recordFact(lang))
+        if (KaiConversationCare.kaiGotItWrong(withoutShopProducts(said))) return gotItWrong(null, lang, recordFact(lang))
         if (KaiConversationCare.ownerDidNotFollow(said)) explainAgain(lang)?.let { return it }
         if (KaiConversationCare.disputesBalance(said)) disputed(said, named, lang)?.let { return it }
         // "Kumar balance 0 dhaan, adha nyabagam vechuko": a balance is never learned from chat (principles 4 and 7) — the records,
@@ -1130,8 +1131,10 @@ class KaiAgent(
         val heard = if (!tamil) productCase(raw.trim(), runCatching { tools.products()?.map { it.name } }.getOrNull().orEmpty()) else {
             val people = runCatching { books.snapshot()?.people.orEmpty() }.getOrDefault(emptyList())
             val productNames = runCatching { tools.products()?.map { it.name } }.getOrNull().orEmpty()
-            com.shopai.app.brain.tools.KaiSpokenWords.withNames(com.shopai.app.brain.tools.KaiSpokenWords.normalize(
-                com.shopai.app.brain.tools.KaiProductSound.withProducts(tamilProductCase(productCase(raw.trim(), productNames), productNames, people), productNames, people)), people + productNames)
+            // ("எம் 8" — a letter said before a number — is the size M8, as typed.)
+            com.shopai.app.brain.tools.KaiSpokenWords.code(com.shopai.app.brain.tools.KaiSpokenWords.withNames(com.shopai.app.brain.tools.KaiSpokenWords.normalize(
+                com.shopai.app.brain.tools.KaiProductSound.withProducts(tamilProductCase(productCase(raw.trim(), productNames), productNames, people), productNames, people)), people + productNames),
+                productNames.flatMap { it.uppercase().split(Regex("""[\s-]+""")) }.filter { t -> t.any(Char::isLetter) && t.any(Char::isDigit) }.toSet())
         }
         // "first ketta aal evlo tharanum", "munnadi ketta aal": the person this conversation was about, by name.
         // "mudhal aal ku call pannu": the person at that place in the list just shown.
@@ -3501,8 +3504,27 @@ class KaiAgent(
     private var choiceRerun = false
 
     /** The shop's products whose name has every word of [name] ("Plywood" → Plywood 12mm, Plywood 18mm; "paint" → Emulsion Paint …). */
+    /**
+     * The longest run of the owner's words that some product names hold, as a phrase ("1-way switch", "GI sheet", "Paint bucket",
+     * "6A socket" — a size read however said): those products and the phrase (canonical). Null when no run of words names any.
+     */
+    private fun productsByPhrase(line: String, products: List<com.shopai.app.brain.tools.ProductRef>): Pair<List<com.shopai.app.brain.tools.ProductRef>, String>? {
+        val st = com.shopai.app.brain.tools.KaiStock
+        val words = st.sizeKey(line).trim().split(' ').filter { it.isNotEmpty() }
+        val names = products.map { it to " " + st.sizeKey(it.name).trim() + " " }
+        for (n in minOf(6, words.size) downTo 1) for (i in 0..words.size - n) {
+            val w = words.subList(i, i + n)
+            if (w.none { it.length >= 2 && it.any(Char::isLetter) && st.unitOf(it) == null && !st.isStockWord(it) && it !in setOf("add", "stock", "pannu") }) continue
+            val phrase = " " + w.joinToString(" ") + " "
+            val hits = names.filter { it.second.contains(phrase) }.map { it.first }
+            if (hits.isNotEmpty()) return hits to phrase.trim()
+        }
+        return null
+    }
+
     private fun productsNamed(name: String, products: List<com.shopai.app.brain.tools.ProductRef>): List<com.shopai.app.brain.tools.ProductRef> {
-        val words = KaiPrivateMemory.normalize(name).split(' ').filter { w -> w.length >= 3 && w.none(Char::isDigit) && com.shopai.app.brain.tools.KaiStock.unitOf(w) == null }
+        // Every word of the name said counts — "GI elbow" is not PVC elbow, "FR wire" not Wire nail, "Cat6 cable" not Cable tie.
+        val words = KaiPrivateMemory.normalize(name).split(' ').filter { w -> w.length >= 2 && w.any(Char::isLetter) && com.shopai.app.brain.tools.KaiStock.unitOf(w) == null }
         if (words.isEmpty()) return emptyList()
         return products.filter { p -> KaiPrivateMemory.normalize(p.name).split(' ').let { pw -> words.all { it in pw } } }
     }
@@ -3513,12 +3535,15 @@ class KaiAgent(
      */
     private suspend fun oneOfMany(name: String, line: String, lang: KaiLang, products: List<com.shopai.app.brain.tools.ProductRef>): KaiTurn? {
         if (choiceRerun) return null
-        val found = productsNamed(name, products)
-        if (found.size == 1) return withProduct(line, name, found.single(), lang)
+        // The whole phrase said first ("1-way switch 7" is never a 2-way switch), else the name's words.
+        val byPhrase = productsByPhrase(line, products)?.takeIf { (hits, phrase) -> hits.size >= 2 || phrase.split(' ').size > 1 }
+        val found = byPhrase?.first ?: productsNamed(name, products)
+        val said = byPhrase?.second ?: name
+        if (found.size == 1) return withProduct(line, said, found.single(), lang)
         if (found.size < 2) return null
-        productChoice = ProductChoice(found.take(6), line, name, conversationState.conversationTurn, lang)
-        val n = name.trim().lowercase(Locale.ROOT)
-        val list = found.take(6).map { it.name }
+        productChoice = ProductChoice(found.take(8), line, said, conversationState.conversationTurn, lang)
+        val n = said.trim().lowercase(Locale.ROOT)
+        val list = found.take(8).map { it.name }
         return say(lang, KaiMood.CLARIFY, "which product: $n",
             ta = "எந்த $n ஓனர்? ${list.joinToString("-ஆ, ")}-ஆ?",
             tl = "Endha $n Owner? ${list.joinToString("-aa, ")}-aa?",
@@ -3527,8 +3552,13 @@ class KaiAgent(
 
     /** The owner's line with the product's full name in place of the name said, read again (once). */
     private suspend fun withProduct(line: String, name: String, product: com.shopai.app.brain.tools.ProductRef, lang: KaiLang): KaiTurn? {
-        val m = Regex("""(?i)(?<![\p{L}])${Regex.escape(name.trim())}(?![\p{L}])""").find(line) ?: return null
-        val again = line.replaceRange(m.range, product.name)
+        val m = Regex("""(?i)(?<![\p{L}])${Regex.escape(name.trim())}(?![\p{L}])""").find(line)
+        val again = if (m != null) line.replaceRange(m.range, product.name) else {
+            // The name as read ("6 amp socket" for "6A socket", or from the mic): the line read the same way, with the product put in.
+            val key = " " + com.shopai.app.brain.tools.KaiStock.sizeKey(line).trim() + " "
+            val at = key.indexOf(" ${name.trim()} ").takeIf { it >= 0 } ?: return null
+            key.replaceRange(at + 1, at + 1 + name.trim().length, product.name).trim()
+        }
         val keep = forcedLang
         forcedLang = lang
         choiceRerun = true
@@ -3549,6 +3579,10 @@ class KaiAgent(
             val own = KaiPrivateMemory.normalize(p.name).replace(Regex("""(\d)\s*(mm|cm|inch|ft)\b"""), "$1$2").split(' ').filter { it !in asked }
             own.isNotEmpty() && own.all { w -> answer.contains(" $w ") }
         }.singleOrNull()
+            // A size however said ("16A" / "16 amp", "half inch" / "1/2 inch"): the one candidate whose size it is.
+            ?: com.shopai.app.brain.tools.KaiStock.sizeKey(said).trim().takeIf { it.any(Char::isDigit) }?.let { k ->
+                c.candidates.filter { p -> com.shopai.app.brain.tools.KaiStock.sizeKey(p.name).trimEnd().endsWith(" $k") }.singleOrNull()
+            }
             ?: com.shopai.app.brain.tools.KaiStock.productNamedIn(said, c.candidates)
             ?: c.candidates.getOrNull(0)?.takeIf { firstWord.containsMatchIn(said) }
             ?: c.candidates.getOrNull(1)?.takeIf { secondWord.containsMatchIn(said) }
@@ -4319,7 +4353,7 @@ class KaiAgent(
         val n = shown(qty, unit)
         tools.log(if (incoming) com.shopai.app.brain.tools.KaiIntents.STOCK_IN else com.shopai.app.brain.tools.KaiIntents.STOCK_OUT, "draft", "${product.name} $n draft=$key", ActionStatus.DRAFT, null, said)
         // "Oil 3 bottle damage", "Colgate actual 230": why it changed — kept with the movement (the books' adjustment reason).
-        val why = com.shopai.app.brain.tools.KaiStock.reasonOf(said) ?: "Physical count".takeIf { said.startsWith(physicalNote) }
+        val why = com.shopai.app.brain.tools.KaiStock.reasonOf(said.replace(Regex("(?i)" + Regex.escape(product.name)), " ")) ?: "Physical count".takeIf { said.startsWith(physicalNote) }
         val reply = if (why != null && !short) pick(lang,
             ta = "சரி ஓனர். ${product.name} — $n ${if (incoming) "stock-in" else "stock-out"} ($why). ${if (incoming) "இப்போ" else "மீதம்"}: ${shown(after, product.unit)}.",
             tl = "Seri Owner. ${product.name} — $n ${if (incoming) "stock-in" else "stock-out"} ($why). ${if (incoming) "Ippo stock" else "Remaining"}: ${shown(after, product.unit)}.",
@@ -4395,7 +4429,7 @@ class KaiAgent(
         }
         val sign = if (incoming) "+" else "−"
         // "Colgate 1 box supplier return": why it changed, said in the reply and kept with the movement.
-        val why = com.shopai.app.brain.tools.KaiStock.reasonOf(said) ?: "Physical count".takeIf { said.startsWith(physicalNote) }
+        val why = com.shopai.app.brain.tools.KaiStock.reasonOf(said.replace(Regex("(?i)" + Regex.escape(product.name)), " ")) ?: "Physical count".takeIf { said.startsWith(physicalNote) }
         val lines = listOfNotNull(
             product.name,
             pick(lang, ta = "நீங்க சொன்னது: ", tl = "Input: ", en = "Input: ") + input,

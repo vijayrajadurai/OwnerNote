@@ -23,7 +23,10 @@ object KaiProductSound {
     private val tamilWord = Regex("""[஀-௿]+""")
 
     /** [out]: the shop's own name put in its place — a goods name (KaiFeed: "kathavu keel") stands for the product it names. */
-    private class Product(val name: String, val key: String, val loose: String, val words: Int, val vowelFirst: Boolean, val out: String = name)
+    private class Product(val name: String, val key: String, val loose: String, val words: Int, val vowelFirst: Boolean, val out: String = name) {
+        /** As few words as the mic may write it in: "GI wire" is "ஜிஐ வயர்" (two) as well as "ஜி ஐ வயர்" (three). */
+        val minWords: Int get() = name.trim().split(Regex("""[\s-]+""")).count { it.isNotEmpty() }
+    }
 
     /** Every single word of the shop's product names, by sound ("Dal" of Toor Dal, "Tea" of Tea Powder). */
     private class Word(val text: String, val loose: String)
@@ -44,7 +47,9 @@ object KaiProductSound {
         // picks the product (KaiStock), or Kai asks which.
         val sizeless = products.mapNotNull { p ->
             val ws = p.name.split(Regex("""\s+"""))
-            ws.filterNot { w -> w.any(Char::isDigit) }.takeIf { it.isNotEmpty() && it.size < ws.size }?.joinToString(" ")
+            // "Braided hose 1/2 inch" → "Braided hose" (the size and its unit both go); "1-way switch 6A" → "1-way switch".
+            val cut = ws.withIndex().indexOfFirst { (i, w) -> i > 0 && w.any(Char::isDigit) }
+            (if (cut > 0) ws.take(cut) else ws.filterNot { w -> w.any(Char::isDigit) }).takeIf { it.isNotEmpty() && it.size < ws.size }?.joinToString(" ")
         // ("டோலோ 650" is Dolo 650 — a short name too, then heard only right before its quantity, as short names are.)
         }.distinct().filter { b -> products.none { it.name.equals(b, ignoreCase = true) } && b.count(Char::isLetter) >= 3 }.mapNotNull { b ->
             val key = NameSound.key(spoken(b)).takeIf { it.isNotEmpty() } ?: return@mapNotNull null
@@ -63,6 +68,11 @@ object KaiProductSound {
         val parts = products.flatMap { p -> p.name.split(Regex("""\s+""")).map { w -> Word(w, NameSound.key(spoken(w)).let { if (it.isEmpty()) it else loose(it) }) } }
         val words = tamilWord.findAll(text).toList()
         if (words.isEmpty()) return text
+        // "கேட் 6 கேபிள்" for Cat6 Cable: a name's letters-and-number word, said as a word and the number.
+        productNames.flatMap { it.split(Regex("""\s+""")) }.mapNotNull { w -> Regex("""^([A-Za-z]{2,})(\d+)$""").find(w)?.let { w to it } }.distinct()
+            .fold(text) { t, (w, m) ->
+                Regex("""([஀-௿]+)\s*${m.groupValues[2]}(?!\d)""").replace(t) { r -> if (sameWord(r.groupValues[1], m.groupValues[1]) || NameSound.same(r.groupValues[1], m.groupValues[1])) w else r.value }
+            }.takeIf { it != text }?.let { return withProducts(it, productNames, people) }
         val out = StringBuilder()
         var copied = 0
         var i = 0
@@ -73,6 +83,15 @@ object KaiProductSound {
                 // "டி-ஷர்ட்", "எம்.டி.எஃப். பலகை": a hyphen or the dots of letters said one by one join words too.
                 if ((1 until span).any { j -> !joiner.matches(text.substring(run[j - 1].range.last + 1, run[j].range.first)) }) return@firstNotNullOfOrNull null
                 if (run.any { w -> people.any { p -> p.split(Regex("""\s+""")).any { NameSound.same(w.value, it) } } }) return@firstNotNullOfOrNull null
+                // A unit said after its number ("10 பாக்கெட்" = 10 packets) is the unit, not a product that sounds like it (Bucket); said
+                // as the item itself ("பக்கெட் 7"), it may be the product.
+                if (span == 1 && KaiStock.unitOf(KaiSpokenWords.normalize(run[0].value)) != null &&
+                    Regex("""(\d|${KaiSpokenWords.numberWordsPattern})\s*$""").containsMatchIn(KaiSpokenWords.normalize(text.substring(0, run[0].range.first))))
+                    return@firstNotNullOfOrNull null
+                // A stock question's own words ("எவ்வளவு", "ஸ்டாக்", "இருக்கு") are never part of a name.
+                if (run.any { it.value in stockAsk }) return@firstNotNullOfOrNull null
+                // Nor a number or a size said with it ("அரை இன்ச்", "முக்கால்", "ஒன்றரை"): "பிவிசி ரெடியூசர் அரை இன்ச்" keeps its half inch.
+                if (run.any { w -> KaiSpokenWords.normalize(w.value).let { n -> n in sizeWords } }) return@firstNotNullOfOrNull null
                 // "6 எம்.எம். ஜல்லி": a goods name that starts with its size takes the number said before it.
                 val said = run.joinToString(" ") { it.value }
                 goodsWritten[fold(said)]?.let { return@firstNotNullOfOrNull Triple(span, it, run.first().range.first) }
@@ -120,30 +139,86 @@ object KaiProductSound {
         val sp = spoken(english)
         val en = NameSound.key(sp).takeIf { it.length >= 3 } ?: return null
         if (loose(key) != loose(en) || (phrase.first() in 'அ'..'ஔ') != (sp.first() in "aeiou")) return null
-        // "சிரப்" is syrup, not surf: the first vowel is heard too — after the vowel Tamil puts inside "dr", "gl", "pl" ("டிராப்ஸ்" = drops).
-        val cluster = Regex("""^[^aeiouy]{2}""").containsMatchIn(sp) && !sp.startsWith("ch") && !sp.startsWith("sh") && !sp.startsWith("th")
-        val rest = phrase.drop(2)
-        val heard = when {
-            !cluster || rest.isEmpty() -> tamilVowel(phrase)
-            // "கிளவுஸ்": the ள after the cluster carries its own "a".
-            rest.length > 1 && rest[0] in '\u0B95'..'\u0BB9' && rest[1] !in '\u0BBE'..'\u0BCD' -> setOf('a')
-            else -> tamilVowel(rest)
-        }
-        if (heard.intersect(latinVowel(sp)).isEmpty()) return null
+        // "சிரப்" is syrup, not surf: the first vowel is heard too.
+        if (!firstVowelHeard(phrase, sp)) return null
         // "கிளவுஸ்" is gloves (its v heard), not glass.
         return shapeGap(phrase, english) + if (key.replace("y", "") == en.replace("y", "")) 0 else 1
     }
 
     /** The one product a Tamil phrase sounds like, or null (none, too little to tell, or two alike). */
     private fun match(said: String, span: Int, products: List<Product>, parts: List<Word>, known: Boolean, beforeQty: Boolean): String? {
-        // "ட்ச" is the "tch" of Switch (the t not heard) — or a real "tz" / "dc" (Cetzine, Gudcef): read both ways.
-        return matchSaid(said.replace("ட்ச", "ச"), span, products, parts, known, beforeQty)
-            ?: if (said.contains("ட்ச")) matchSaid(said.replace("ட்ச", "ட்ஸ"), span, products, parts, known, beforeQty) else null
+        // "ட்ச" is the "tch" of Switch (the t not heard) — or a real "tz" / "dc" (Cetzine, Gudcef); "ங்க" the ng of Zinco — or the
+        // n-k of Anchor / Angle ("ஆங்கர்", "ஆங்கிள்"): read every way. "ட்ஜ" is the dge of Wedge; "ஹவுஸ்" the ou of House.
+        // (The ou only before another consonant: "ஹவுஸ்", never the end of "எவ்வளவு".)
+        val heard = said.replace("ட்ஜ", "ஜ").replace(Regex("""([க-ஹ])வு(?=[க-ஹ])"""), "$1ு")
+        // (Each reading changes one thing: "ஸ்விட்ச்" read for its ங்க is still Switch, never "ஸ்விக்ச்" = Jigsaw.)
+        val usual = heard.replace("ட்ச", "ச")
+        val readings = listOf(usual, heard.replace("ட்ச", "ட்ஸ"), usual.replace("ங்க", "ன்க"), said.replace("ட்ச", "ச")).distinct()
+        val found = readings
+            .mapNotNull { matchSaid(it, span, products, parts, known, beforeQty, relaxed = false) }
+            .ifEmpty { readings.mapNotNull { matchSaid(it, span, products, parts, known, beforeQty, relaxed = true) } }
+        if (found.map { it.out }.distinct().size <= 1) return found.firstOrNull()?.out
+        // Two readings, two products ("எம்எஸ் ஆங்கிள்": MS channel by one, MS angle by the other): the closer, then the one whose words
+        // start as said (a vowel word for a vowel word), then the usual reading.
+        val best = found.minOf { it.d }
+        val close = found.filter { it.d == best }
+        return (close.filter { it.agrees }.ifEmpty { close }).first().out
     }
 
-    private fun matchSaid(said: String, span: Int, products: List<Product>, parts: List<Word>, known: Boolean, beforeQty: Boolean): String? {
+    private class Found(val out: String, val d: Int, val agrees: Boolean)
+
+    /**
+     * A Tamil word's first vowel is the English word's ([sp], as said) — after the vowel Tamil puts inside "dr", "gl", "pl", "fl"
+     * ("டிராப்ஸ்" = drops, "ஃபிளாஜில்" = Flagyl, "பிளேட்" = plate).
+     */
+    private fun firstVowelHeard(phrase: String, sp: String): Boolean {
+        val word = phrase.trim().substringBefore(' ').removePrefix("ஃ")
+        // Only where the Tamil word itself is written with that vowel inside (பி-ளே, டி-ரா) or the pulli (ப்-ள) — "போல்ட்" is bolt, never plate.
+        val split = word.length > 2 && (word[1] == '்' || word[1] == 'ி' || word[1] == 'ு') && word[2] in '\u0B95'..'\u0BB9'
+        val cluster = split && Regex("""^[^aeiouy]{2}""").containsMatchIn(sp) && !sp.startsWith("ch") && !sp.startsWith("sh") && !sp.startsWith("th")
+        val rest = word.drop(2)
+        val heard = when {
+            !cluster || rest.isEmpty() -> tamilVowel(word)
+            // "கிளவுஸ்": the ள after the cluster carries its own "a".
+            rest.length > 1 && rest[0] in '\u0B95'..'\u0BB9' && rest[1] !in '\u0BBE'..'\u0BCD' -> setOf('a')
+            else -> tamilVowel(rest)
+        }
+        return heard.intersect(latinVowel(sp)).isNotEmpty()
+    }
+
+    /** Syllables of a Tamil word: its vowels and the consonants that carry one (not those with the pulli). */
+    private fun syllables(word: String): Int = word.indices.count { i ->
+        val c = word[i]
+        c in '\u0B85'..'\u0B94' || c in '\u0B95'..'\u0BB9' && word.getOrNull(i + 1) != '்'
+    }
+
+    /** The phrase's first vowel is a long ஆ / ா. */
+    private fun longA(phrase: String): Boolean = phrase.firstOrNull { it in '\u0B85'..'\u0B94' || it in '\u0BBE'..'\u0BCC' }.let { it == 'ா' || it == 'ஆ' }
+
+    /** How many words' first vowels are heard the same, word by word (0 when the words don't line up). */
+    private fun vowelsAgree(phrase: String, name: String): Int {
+        val ta = phrase.trim().split(Regex("""\s+"""))
+        val en = spoken(name).trim().split(Regex("""\s+"""))
+        if (ta.size != en.size) return 0
+        return ta.zip(en).count { (t, e) -> firstVowelHeard(t, e) }
+    }
+
+    /** Each word of the Tamil phrase starts with a vowel where the English word does ("ஆங்கிள்" angle, not "channel"). */
+    private fun wordsAgree(phrase: String, name: String): Boolean {
+        val ta = phrase.trim().split(Regex("""\s+"""))
+        val en = spoken(name).trim().split(Regex("""\s+"""))
+        if (ta.size != en.size) return true
+        return ta.zip(en).all { (t, e) -> (t.first() in 'அ'..'ஔ') == (e.first() in "aeiou") }
+    }
+
+    private fun matchSaid(said: String, span: Int, products: List<Product>, parts: List<Word>, known: Boolean, beforeQty: Boolean, relaxed: Boolean): Found? {
         // The mic writes an English "w" before a vowel as "ஒய" ("ஒயர்" = Wire, "ஒயிட்" = White): heard as "வ".
         val phrase = said.replace(Regex("""(?<![஀-௿])ஒய"""), "வய")
+            // Two words said together are two words: the ட் ending one and the ச starting the next ("வுட் சிசல்" = Wood chisel) are
+            // not the "ட்ச" of Lakshmi.
+            .replace(Regex("""ட்\s+ச"""), "ட் ஸ").replace(Regex("""ங்\s+க"""), "ன் க")
+            // "இயர்" is ear: the ய after a starting இ is a glide.
+            .replace(Regex("""(?<![஀-௿])([இஈ])ய"""), "$1")
             // An English "oi" / "ai" at the start of a word is written with a gliding ய ("ஆயின்மென்ட்" = Ointment): no consonant of its own.
             .replace(Regex("""(?<![஀-௿])([அஆஒஓ])யி"""), "$1இ")
         val key = NameSound.key(phrase.replace(" ", ""))
@@ -152,14 +227,25 @@ object KaiProductSound {
         val vowelFirst = phrase.first() in 'அ'..'ஔ'
         val scored = products.mapNotNull { p ->
             if (p.vowelFirst != vowelFirst || p.key.first() != key.first()) return@mapNotNull null
-            val d = distance(l, p.loose)
+            val d = if (relaxed) distance(once(l), once(p.loose)) else distance(l, p.loose)
+            val words = span in minOf(p.minWords, p.words)..p.words
+            // Capitals said letter by letter ("MCCB" = em-si-si-bi): one syllable a letter, so "எம்சிபி" (three) is never MCCB (four).
+            // (only where the letters are written as one word: "எச்.டி.எச்.எம்.ஆர்." said one by one is counted by its words)
+            p.name.trim().split(Regex("""\s+""")).first().takeIf { w -> w.length in 2..6 && w.all { it in 'A'..'Z' } && 'W' !in w && span <= p.minWords }?.let { caps ->
+                if (syllables(phrase.trim().split(' ').first()) != caps.length) return@mapNotNull null
+            }
             val ok = when {
-                known -> d == 0 && l.length >= 3 && span == p.words && NameSound.same(phrase.replace(" ", ""), spoken(p.name).replace(" ", ""))
-                d == 0 && l.length >= 3 -> span <= p.words + 1
+                known -> d == 0 && l.length >= 3 && words && NameSound.same(phrase.replace(" ", ""), spoken(p.name).replace(" ", ""))
+                // (relaxed — sounds said twice heard once — only for a whole name of two words or more: "பிவிசி யூனியன்", never one word)
+                relaxed && (span < 2 || span !in minOf(p.minWords, p.words)..p.words) -> false
+                d == 0 && l.length >= 3 -> span <= p.words + 1 && (span > 1 || firstVowelHeard(phrase, spoken(p.name)))
                 // A short name (Tide, Pepsi, Maida): right before its quantity, its first vowel heard the same, and no word of another
                 // product as close ("தூள்" is not Dal; "டெட்டால்" is Dettol, not the Dal of Toor Dal; "டைட்" is Tide, not Tea).
-                d == 0 -> beforeQty && span == p.words && tamilVowel(phrase).intersect(latinVowel(spoken(p.name))).isNotEmpty() &&
-                    shapeGap(phrase, p.name).let { gap -> gap <= 1 && parts.none { w -> w.loose == l && (spoken(w.text).first() in "aeiou") == vowelFirst && p.name.split(Regex("""\s+""")).none { it.equals(w.text, ignoreCase = true) } &&
+                d == 0 -> beforeQty && words && tamilVowel(phrase).intersect(latinVowel(spoken(p.name))).isNotEmpty() &&
+                    // (a name of two words or more may be a syllable longer said: "ஜிஐ வயர்" = GI wire)
+                    shapeGap(phrase, p.name).let { gap -> gap <= (if (relaxed) maxOf(1, span) else 1) && parts.none { w -> w.loose == l && (spoken(w.text).first() in "aeiou") == vowelFirst && p.name.split(Regex("""\s+""")).none { it.equals(w.text, ignoreCase = true) } &&
+                        // (a long "ா" is not an English short u: "மாப்" is Mop, not the muff of Ear muff — that is "மஃப்")
+                        !(longA(phrase) && Regex("""[aeiou]""").find(spoken(w.text))?.value == "u") &&
                         tamilVowel(phrase).intersect(latinVowel(spoken(w.text))).isNotEmpty() && shapeGap(phrase, w.text) <= gap } }
                 d == 1 && minOf(l.length, p.loose.length) >= 5 -> span == p.words || span == 1
                 else -> false
@@ -167,13 +253,28 @@ object KaiProductSound {
             if (ok) p to d else null
         }
         val best = scored.minOfOrNull { it.second } ?: return null
+        // "கோச் ஸ்க்ரூ" / "ஹெக்ஸ் ஸ்க்ரூ" sound alike by consonants (the h isn't heard): the one whose words start as said, whose first
+        // vowel and shape are heard.
+        val vowel = tamilVowel(phrase)
+        val tied = scored.filter { it.second == best }.map { it.first }.let { tied ->
+            if (tied.map { it.out }.distinct().size < 2) tied
+            else tied.filter { wordsAgree(phrase, it.name) }.ifEmpty { tied }
+                // "ஆர்சிபிஓ" is RCBO, not RCCB: the vowels in order, when they are the same as said.
+                .let { v -> v.filter { NameSound.vowels(it.name.let(::spoken).replace(" ", "")) == NameSound.vowels(phrase.replace(" ", "")) }.ifEmpty { v } }
+                .filter { latinVowel(spoken(it.name)).intersect(vowel).isNotEmpty() }.ifEmpty { tied }
+                // "ஃப்ளஷ் போல்ட்" / "ஃப்ளஷ் பிளேட்": every word's own first vowel (bolt, not plate).
+                .let { v -> val best = v.maxOf { vowelsAgree(phrase, it.name) }; v.filter { vowelsAgree(phrase, it.name) == best } }
+                .let { v -> val g = v.minOf { shapeGap(phrase, it.name) }; v.filter { shapeGap(phrase, it.name) == g } }
+                // Still alike: "பைண்டிங் வயர்" keeps its w (Binding wire), "Paint thinner" has none — the whole sound, glides and all.
+                .let { v -> v.filter { it.key.replace("y", "") == key.replace("y", "") }.ifEmpty { v } }
+        }
         // "ஹெட்லைட்" / "டெயில் லைட்" sound alike (Headlight, Tail light): the one said in as many words.
-        return scored.filter { it.second == best }.map { it.first }.let { alike -> alike.takeIf { a -> a.map { it.out }.distinct().size == 1 } ?: alike.filter { it.words == span } }
-            .map { it.out }.distinct().singleOrNull()
+        val out = (tied.takeIf { a -> a.map { it.out }.distinct().size == 1 } ?: tied.filter { it.words == span }).map { it.out }.distinct().singleOrNull() ?: return null
+        return Found(out, best, tied.filter { it.out == out }.any { wordsAgree(phrase, it.name) })
     }
 
     /** How many words the mic writes for a name: "HDHMR Board" is six ("எச்.டி.எச்.எம்.ஆர். போர்டு") — letters said one by one. */
-    private fun saidWords(name: String): Int = name.trim().split(Regex("""\s+""")).sumOf { w -> if (w.length in 2..6 && w.all { it in 'A'..'Z' }) w.length else 1 }
+    private fun saidWords(name: String): Int = name.trim().split(Regex("""[\s-]+""")).filter { it.isNotEmpty() }.sumOf { w -> if (w.length in 2..6 && w.all { it in 'A'..'Z' }) w.length else 1 }
 
     private val joiner = Regex("""\s+|-|\.\s*""")
 
@@ -190,6 +291,8 @@ object KaiProductSound {
             next.trimEnd('?', '.', '!') in stockAsk
     }
 
+    private val sizeWords = setOf("half", "mukkal", "onnara", "onnekaal", "into", "inch", "mm", "ml", "amp", "amps")
+
     private val stockAsk = setOf("எவ்வளவு", "எவ்ளோ", "எவ்வளவுக்கு", "எத்தனை", "ஸ்டாக்", "ஸ்டாக்ல", "இருக்கா", "இருக்கு", "விலை", "ரேட்")
 
     private val letterNames = mapOf('a' to "e", 'b' to "bi", 'c' to "si", 'd' to "di", 'e' to "i", 'f' to "ef", 'g' to "ji", 'h' to "ech",
@@ -197,7 +300,12 @@ object KaiProductSound {
         's' to "es", 't' to "ti", 'u' to "yu", 'v' to "vi", 'w' to "dabilyu", 'x' to "eks", 'y' to "vai", 'z' to "zed")
 
     /** An English product name as it is said (and as the mic hears it): silent letters out, soft c, x = ks, a lone letter by its name. */
-    private fun spoken(name: String): String = name.trim().split(Regex("""\s+""")).joinToString(" ") { w ->
+    private fun spoken(name: String): String = name.trim().split(Regex("""\s+""")).joinToString(" ") { w0 ->
+        // "WD-type", "U-bolt", "1-way", "Multi-plug": each part as it is said ("dabilyudi type", "yu bolt", "one way").
+        if (w0.contains('-') && w0.length > 2) return@joinToString w0.split('-').filter { it.isNotEmpty() }.joinToString(" ") { part ->
+            when (part) { "1" -> "one"; "2" -> "tu"; "3" -> "three"; else -> spoken(part) }
+        }
+        val w = w0
         when {
             w.length == 1 && w[0].isLetter() -> letterNames[w[0].lowercaseChar()] ?: w
             w.length in 2..6 && w.all { it in 'A'..'Z' } -> w.lowercase().map { letterNames[it] ?: "$it" }.joinToString("")
@@ -209,7 +317,15 @@ object KaiProductSound {
                 // "Bandage" = bendej, "Syringe" = sirinj, "Bridge" = brij; "Ointment" = oinment (the t isn't heard); "Eye" = ai.
                 .replace(Regex("""d?ge$"""), "j").replace("ntm", "nm").replace(Regex("""^eye$"""), "ai")
                 // "Dr Trust" = doctor trust ("டாக்டர்"), "Head & Shoulders" = and; "Flagyl" = flajil; "Zincovit" = zingovit ("சிங்கோவிட்").
-                .replace(Regex("""^dr\.?$"""), "doktar").replace(Regex("""^&$"""), "and").replace(Regex("""g(?=y)"""), "j").replace(Regex("""n[ck]"""), "ng")
+                // "U-bolt" = yu bolt, "D-shackle" = di shackle; "Union", "Universal", "Utility" = yu…; "Chemical" = kemical, "Chrome" = krome.
+                .replace(Regex("""^u(?=ni|ti|ri|sa|se|su|ro)"""), "yu").replace(Regex("""^chem"""), "kem").replace(Regex("""^chr"""), "kr")
+                .replace("sch", "sk").replace(Regex("""^(te|me)ch"""), "$1k")
+                // "Hydraulic" = haidraulic, "Nylon" = nailon: a y between consonants is a vowel; "Gel", "Emergency", "Agent": a soft g.
+                .replace(Regex("""^gy"""), "jy").replace(Regex("""(?<=^[^aeiouy]{1,2})y(?=[^aeiouy])"""), "i").replace(Regex("""^ge(?=[lmnr])"""), "je")
+                .replace(Regex("""(?<=[aeiour])g(?=en)"""), "j")
+                .replace(Regex("""^dr\.?$"""), "doktar").replace(Regex("""^&$"""), "and").replace(Regex("""g(?=y)"""), "j").replace(Regex("""n(?:c(?!h)|k)"""), "ng")
+                // "Chalk" = chak ("சாக்"): the l of -alk isn't heard.
+                .replace(Regex("""(?<=[^aeiou])alk"""), "ak")
         }
     }
 
@@ -250,6 +366,8 @@ object KaiProductSound {
             v.startsWith("ai") || v.startsWith("ay") || v.startsWith("ei") || v.startsWith("ey") -> setOf('a', 'e', 'i')
             v.startsWith("ee") || v.startsWith("ea") || v.startsWith("ie") -> setOf('i', 'e')
             v.startsWith("oo") -> setOf('u', 'o')
+            // "Screw", "Glue": ew / ue are an oo ("ஸ்க்ரூ", "க்ளூ").
+            v == "e" && w.getOrNull(m.range.last + 1) == 'w' || v.startsWith("ue") -> setOf('u', 'e')
             v.startsWith("ou") || v.startsWith("ow") || v.startsWith("au") -> setOf('a', 'o', 'u')
             v.startsWith("oi") || v.startsWith("oy") -> setOf('o', 'a')
             v[0] == 'a' -> if (magicE) setOf('e', 'a') else setOf('a', 'e')
@@ -262,6 +380,9 @@ object KaiProductSound {
 
     /** The key without the gliding sounds the mic adds or drops (ய, a ல் + அவு's வ) — the first sound always counts. */
     private fun loose(key: String) = key.first() + key.drop(1).filter { it != 'y' && it != 'v' }
+
+    /** [loose] with sounds said twice heard once ("யூனியன்" = union) — only when nothing matched without it. */
+    private fun once(key: String) = key.replace(Regex("""(.)\1+"""), "$1")
 
     private fun distance(a: String, b: String): Int {
         if (a == b) return 0
