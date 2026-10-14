@@ -75,6 +75,17 @@ class KaiSupermarketNamesTest {
         assertEquals("nookal 7 add pannu", KaiStock.withGoodsFamilies("nookal 7 add pannu", cat))
     }
 
+    @Test fun aStockWordInTheShopsOwnName() {
+        // Catalogue 21-25 (14 Oct 2026): "Pet waste scoop 7 add pannu" with only its packs kept is stock in — "waste" is the name's own
+        // word (Kai asks which pack); "waste aachu" after it is still stock going out.
+        val cat = listOf("Pet waste scoop Small pack", "Pet waste scoop Medium pack", "Pet shampoo Small pack").mapIndexed { i, n -> ProductRef("w$i", n, "PCS", BigDecimal("50")) }
+        KaiStock.understand("Pet waste scoop 7 add pannu", cat).let { r ->
+            assertNotNull(r); assertNull(r!!.product); assertEquals(true, r.incoming); assertEquals("Pet Waste Scoop", r.spokenName); assertEquals(BigDecimal("7"), r.qty)
+        }
+        assertEquals(false, KaiStock.understand("Pet waste scoop 2 waste aachu", cat)?.incoming)
+        assertEquals("Pet waste scoop Small pack", KaiStock.understand("Pet waste scoop small 7 add pannu", cat)?.product?.name)
+    }
+
     @Test fun goodsByTheirTamilName() {
         assertEquals("Papad", typed("appalam 7 add pannu")?.product?.name)
         assertEquals("Papad", spoken("அப்பளம் 7 ஆட் பண்ணு")?.product?.name)

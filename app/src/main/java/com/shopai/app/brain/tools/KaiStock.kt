@@ -646,12 +646,18 @@ object KaiStock {
         val product = found?.first
         val named = found?.let { lower.replace(it.second, " ") } ?: lower
         // In or out from the words around the name: "Cotton waste 7 add pannu" is stock in (waste is the product's own word).
-        val isIn = direction(named, product) ?: return null
+        // ("Pet waste scoop 7" with only its packs kept: the shop's own name said without its pack — its "waste" is not stock going out.)
+        val inName = if (product != null) null else products.asSequence().flatMap { p -> lowerOf(p.name).trim().split(' ').let { w -> (2..w.size).map { k -> w.take(k).joinToString(" ") } } }
+            .filter { " $named ".contains(" $it ") }.maxByOrNull { it.length }
+        val isIn = direction(inName?.let { " $named ".replace(" $it ", " ") } ?: named, product) ?: return null
         val sized = if (product == null) sizeInName(named) else null
         val rest = sized?.second ?: named
         val words = rest.split(' ').filter { it.isNotEmpty() }
         val (qty, saidUnit) = quantityIn(rest) ?: (null to words.firstNotNullOfOrNull { units[it] })
-        val spoken = product?.name ?: spokenName(rest).let { n -> if (sized != null && n.isNotEmpty()) "${sized.first} $n" else n }.ifEmpty {
+        val spoken = product?.name ?: spokenName(rest).let { n ->
+            // (the shop's own name said whole, its "waste" kept: "Pet waste scoop", never "Pet scoop")
+            if (inName != null && sized == null && n.isNotEmpty() && n.lowercase(Locale.ROOT).split(' ').all { it in inName.split(' ') }) inName else n
+        }.let { n -> if (sized != null && n.isNotEmpty()) "${sized.first} $n" else n }.ifEmpty {
             // "Bucket 7", "Carton box 7" with Bucket / Carton box kept in packs: unit words before the number that start the shop's names
             // are the name (Kai asks which pack), not the unit.
             val lead = rest.trim().split(' ').filter { it.isNotEmpty() }.takeWhile { w -> !w.first().isDigit() && w !in numberWords && w.first().isLetter() }

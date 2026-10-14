@@ -576,8 +576,8 @@ object KaiProductSound {
                 .replace(Regex("""(?<=a)ges$"""), "jes").replace(Regex("""(?<=[aeiou])tula"""), "chula")
                 // "Statue" = stachu ("ஸ்டேச்சு"); "Hacksaw", "Straw", "Prawns": the w of "aw" is the vowel's ("ஹேக்சா", "ஸ்ட்ரா").
                 .replace(Regex("""(?<=[aeiou])tue$"""), "chu").replace(Regex("""aw(?![aeiouy])"""), "a").replace("ture", "chur").replace("x", "ks").replace(Regex("""c(?=[eiy])"""), "s")
-                // "Bandage" = bendej, "Syringe" = sirinj, "Bridge" = brij; "Ointment" = oinment (the t isn't heard); "Eye" = ai.
-                .replace(Regex("""d?ge$"""), "j").replace("ntm", "nm").replace(Regex("""^eye$"""), "ai")
+                // "Bandage" = bendej, "Syringe" = sirinj, "Bridge" = brij; "Ointment" = oinment (the t isn't heard); "Eye", "Eyewear" = ai….
+                .replace(Regex("""d?ge$"""), "j").replace("ntm", "nm").replace(Regex("""^eye"""), "ai")
                 // "Dr Trust" = doctor trust ("டாக்டர்"), "Head & Shoulders" = and; "Flagyl" = flajil; "Zincovit" = zingovit ("சிங்கோவிட்").
                 // "U-bolt" = yu bolt, "D-shackle" = di shackle; "Union", "Universal", "Utility" = yu…; "Chemical" = kemical, "Chrome" = krome.
                 .replace(Regex("""^u(?=ni|ti|ri|sa|se|su|ro)"""), "yu").replace(Regex("""^chem"""), "kem").replace(Regex("""^chr"""), "kr")
@@ -595,6 +595,8 @@ object KaiProductSound {
                 .replace(Regex("""^gy"""), "jy").replace(Regex("""(?<=^[^aeiouy]{1,2})y(?=[^aeiouy])"""), "i").replace(Regex("""^ge(?=[lmnr])"""), "je")
                 .replace(Regex("""(?<=[aeiour])g(?=en)"""), "j")
                 .replace(Regex("""^dr\.?$"""), "doktar").replace(Regex("""^&$"""), "and").replace(Regex("""g(?=y)"""), "j").replace(Regex("""n(?:c(?!h)|k)"""), "ng")
+                // "Sunglasses" = sun-glasses ("சன்கிளாசஸ்"): the g of glass is heard, not an ng.
+                .replace(Regex("""(?<=[aeiou])nglass"""), "nklass")
                 // "Chalk" = chak ("சாக்"): the l of -alk isn't heard.
                 .replace(Regex("""(?<=[^aeiou])alk"""), "ak")
         }
