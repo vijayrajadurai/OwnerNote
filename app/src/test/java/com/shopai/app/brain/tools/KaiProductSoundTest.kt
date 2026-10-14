@@ -189,6 +189,26 @@ class KaiProductSoundTest {
         assertTrue(h("நூக்கல் 5 கிலோ").startsWith("நூக்கல் 5"))
     }
 
+    /**
+     * The expanded catalogue (14 Oct 2026): names that share their consonants are told apart by what the mic writes — an f (ஃப)
+     * and an sh (ஷ) of their own (Frozen fish / peas / pizza), each word's last vowel (Toffee / Tofu, Coffee premix / Cake premix,
+     * Squash / Squeegee); a name's sound is read word by word ("Hydraulic hose" keeps its k); "pn" is n (Pneumatic), "qu" kw;
+     * a pack named by its size word ("சின்ன பேக்", "ஸ்மால் பேக்") is a place a short name is said.
+     */
+    @Test fun catalogueNamesSaidIntoTheMic() {
+        val shop10 = listOf("Frozen fish Small pack", "Frozen peas Small pack", "Frozen pizza Small pack", "Toffee Small pack", "Tofu Small pack",
+            "Coffee premix Small pack", "Cake premix Small pack", "Squash Small pack", "Squeegee Small pack", "Pneumatic tube Small pack",
+            "Hydraulic hose Small pack", "Veg puff Small pack", "Car wash shampoo Small pack", "Iced tea Small pack", "Green tea Small pack")
+        fun h(mic: String) = KaiSpokenWords.normalize(KaiProductSound.withProducts(mic, shop10, people))
+        for ((mic, want) in listOf("ஃப்ரோசன் ஃபிஷ் 7" to "Frozen fish 7", "ஃப்ரோசன் பீஸ் 7" to "Frozen peas 7", "ஃப்ரோசன் பீட்சா 7" to "Frozen pizza 7",
+                "டாஃபி ஸ்மால் பேக் 7" to "Toffee Small pack 7", "டோஃபு 7" to "Tofu 7", "காபி பிரீமிக்ஸ் ஸ்மால் பேக் 7" to "Coffee premix Small pack 7",
+                "ஸ்குவாஷ் 7" to "Squash 7", "ஸ்க்வீஜி 7" to "Squeegee 7", "நியூமேட்டிக் டியூப் 7" to "Pneumatic tube 7", "ஹைட்ராலிக் ஹோஸ் 7" to "Hydraulic hose 7",
+                "வெஜ் பஃப் 7" to "Veg puff 7", "ஐஸ்டு டீ சின்ன பேக் 7" to "Iced tea chinna")) {
+            val got = h(mic)
+            assertTrue("$mic → $got", got.startsWith(want))
+        }
+    }
+
     @Test fun productNamesSaidIntoTheMic() {
         val said = mapOf(
             "பிரிட்டானியா பிஸ்கட்" to "Britannia Biscuit", "குட் டே" to "Good Day", "பார்லே ஜி" to "Parle G", "சன்ஃபீஸ்ட் மேரி" to "Sunfeast Marie",

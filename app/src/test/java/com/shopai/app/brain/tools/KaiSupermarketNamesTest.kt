@@ -39,6 +39,21 @@ class KaiSupermarketNamesTest {
         assertNull(typed("India Gate Golden Basmati special rice 7 add pannu")?.product)
     }
 
+    @Test fun aPackNamedByItsSizeWord() {
+        // The expanded catalogue (14 Oct 2026): "Small pack" said "small", "chinna pack", or as the mic writes it ("சின்ன பேக்" = chinna bag).
+        val cat = listOf("Fruit juice Small pack", "Fruit juice Medium pack", "Mixed fruit juice Small pack", "Cola soft drink Large pack", "Cola soft drink Small pack")
+            .mapIndexed { i, n -> ProductRef("c$i", n, "PCS", BigDecimal("50")) }
+        for ((line, want) in listOf("Fruit juice small 7 add pannu" to "Fruit juice Small pack", "Fruit juice chinna pack 7 add pannu" to "Fruit juice Small pack",
+                "Fruit juice chinna bag 7 add pannu" to "Fruit juice Small pack", "Cola soft drink periya pack 7 add pannu" to "Cola soft drink Large pack",
+                "Mixed fruit juice small pack 7 add pannu" to "Mixed fruit juice Small pack")) {
+            val r = KaiStock.understand(line, cat)
+            assertEquals(line, want, r?.product?.name)
+            assertEquals(line, BigDecimal("7"), r?.qty)
+        }
+        // Without its pack: no product taken (Kai asks which pack).
+        assertNull(KaiStock.understand("Fruit juice 7 add pannu", cat)?.product)
+    }
+
     @Test fun goodsByTheirTamilName() {
         assertEquals("Papad", typed("appalam 7 add pannu")?.product?.name)
         assertEquals("Papad", spoken("அப்பளம் 7 ஆட் பண்ணு")?.product?.name)
