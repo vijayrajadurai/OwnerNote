@@ -146,6 +146,30 @@ class KaiProductSoundTest {
         assertEquals("Glucon டி 10 packet", KaiSpokenWords.code("Glucon டி 10 packet", known))
     }
 
+    /**
+     * Supermarket names (owner's stock master, 14 Oct 2026): "கீ" is ghee (gh said at the start of a word), "மிக்சர்" is Mixture (sch is
+     * sk only at the start), "பொன்னி ரா ரைஸ்" in three words is Ponni Raw rice (not Ponni rice), "சாமை" is the shop's own Samai before the
+     * Little millet it also means, "பாமோலின்" is Palmolein (the l isn't heard), "அயோடைஸ்டு" is Iodized, and a name led by its code
+     * ("24 Mantra", "A1 Chips") takes the code said before it once — never as a quantity.
+     */
+    @Test fun supermarketNamesSaidIntoTheMic() {
+        val shop8 = listOf("Amul Buffalo ghee 200 ml", "Mixture 100 g", "Ponni rice 1 kg", "Ponni Raw rice 1 kg", "Samai", "Little millet",
+            "Fortune Palmolein oil 1 L", "Iodized salt", "24 Mantra Red rice 500 g", "A1 Chips Banana chips 50 g", "Cooking oil", "Semolina")
+        fun h(mic: String) = KaiSpokenWords.normalize(KaiProductSound.withProducts(mic, shop8, people))
+        for ((mic, want) in listOf("அமுல் பஃபலோ கீ 200 எம்எல் 7" to "Amul Buffalo ghee 200 ml 7", "மிக்சர் 100 கிராம் 7" to "Mixture 100",
+                "பொன்னி ரா ரைஸ் 1 கிலோ 7" to "Ponni Raw rice 1", "பொன்னி ரைஸ் 1 கிலோ 7" to "Ponni rice 1", "சாமை 7" to "Samai 7",
+                "லிட்டில் மில்லட் 7" to "Little millet 7", "பார்ச்சூன் பாமோலின் ஆயில் 1 லிட்டர் 7" to "Fortune Palmolein oil 1",
+                "அயோடைஸ்டு சால்ட் 7" to "Iodized salt 7", "24 மந்த்ரா ரெட் ரைஸ் 500 கிராம் 7" to "24 Mantra Red rice 500",
+                "ஏ1 சிப்ஸ் பனானா சிப்ஸ் 50 கிராம் 7" to "A1 Chips Banana chips 50", "மந்த்ரா ரெட் ரைஸ் 500 கிராம் 7" to "24 Mantra Red rice 500",
+                // A goods name said in Tamil is its product unless a kept name sounds exactly like it: "சமையல் எண்ணெய்" is Cooking oil, not Semolina.
+                "சமையல் எண்ணெய் 5 லிட்டர்" to "Cooking oil 5")) {
+            val got = h(mic)
+            assertTrue("$mic → $got", got.startsWith(want))
+        }
+        // A word Kai can't place is left as said, never turned into the nearest name ("ஸ்பா" is not Samai).
+        assertTrue(h("ஸ்பா 7").let { it.startsWith("spa 7") && !it.contains("Samai") && !it.contains("millet") })
+    }
+
     @Test fun productNamesSaidIntoTheMic() {
         val said = mapOf(
             "பிரிட்டானியா பிஸ்கட்" to "Britannia Biscuit", "குட் டே" to "Good Day", "பார்லே ஜி" to "Parle G", "சன்ஃபீஸ்ட் மேரி" to "Sunfeast Marie",

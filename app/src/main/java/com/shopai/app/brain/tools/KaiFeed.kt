@@ -268,6 +268,8 @@ object KaiFeed {
         காபித் தூள் / coffee thool = coffee powder
         பால் / paal = milk
         தயிர் / thayir = curd
+        அப்பளம் / appalam = papad
+        தேன் / thaen = honey
         பற்பசை / parpasaai = toothpaste
         துணி துவைக்கும் தூள் / thuni thuvaikkum thool = detergent powder
         பாத்திரம் கழுவும் திரவம் / paathiram kazhuvum thiravam = dishwashing liquid
