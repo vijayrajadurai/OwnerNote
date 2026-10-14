@@ -13,7 +13,8 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 /**
- * The owner's expanded stock catalogues (14 Oct 2026), five business categories each — 21-25: jewellery and watches, optical and
+ * The owner's expanded stock catalogues (14 Oct 2026), five business categories each — 06-10: electronics and mobile accessories,
+ * beauty and personal care, stationery and office supplies, automobile and spare parts, agriculture supplies; 21-25: jewellery and watches, optical and
  * eyewear, pet supplies, footwear and leather goods, electrical and lighting; 16-20: beverages and water, bakery and
  * confectionery, dairy and frozen foods, industrial supplies and machinery, chemicals and cleaning supplies; 11-15: meat, fish
  * and poultry, home and kitchen, furniture and furnishings, toys, gifts and sports goods, packaging and disposables. Each item in
@@ -138,11 +139,18 @@ abstract class KaiCatalogueShopTest {
                 val confirm = t.card?.buttons?.any { it.label.contains("Confirm") || it.label.contains("உறுதி") } == true
                 if (confirm || packs.count { all(t).contains(it) } < 2) { fails += "ASK [$line] → ${all(t)}"; continue }
                 // The pack said next goes on to that pack's draft.
-                val d = runBlocking { kai.ask(answer) }
+                var d = runBlocking { kai.ask(answer) }
+                // Two items of the very same name (06-10: Car charger under Electronics and under Automobile): Kai asks which — never
+                // guesses — and the category said picks it, typed or into the mic.
+                if (names.count { it == pick } > 1) {
+                    val cat = rows.first { it[0] == pick }[2].split(' ').first()
+                    if (d.card?.buttons?.any { it.label.contains("Confirm") || it.label.contains("உறுதி") } == true || !all(d).contains(cat)) { fails += "SAME NAME [$line → $answer] → ${all(d)}"; continue }
+                    d = runBlocking { kai.ask(if (line.startsWith(item)) cat else spoken(cat)) }
+                }
                 val c = d.card?.buttons?.firstOrNull { it.label.contains("Confirm") || it.label.contains("உறுதி") }
                 if (c == null) { fails += "PICK [$line → $answer] → ${all(d)}"; continue }
                 runBlocking { kai.act(c.action, KaiLang.TANGLISH) }
-                if (inv.item(pick).stock.compareTo(BigDecimal("57")) != 0) fails += "PICK [$line → $answer] moved ${inv.items.filter { it.stock.compareTo(BigDecimal("50")) != 0 }.map { it.name }}"
+                if (inv.items.first { it.name == pick }.stock.compareTo(BigDecimal("57")) != 0) fails += "PICK [$line → $answer] moved ${inv.items.filter { it.stock.compareTo(BigDecimal("50")) != 0 }.map { it.name }}"
             }
         }
         assertTrue("${fails.size} fails:\n" + fails.take(80).joinToString("\n"), fails.isEmpty())
@@ -171,6 +179,10 @@ abstract class KaiCatalogueShopTest {
 
 class KaiCatalogue0105ShopTest : KaiCatalogueShopTest() {
     override val catalogue = "catalogue-01-05"
+}
+
+class KaiCatalogue0610ShopTest : KaiCatalogueShopTest() {
+    override val catalogue = "catalogue-06-10"
 }
 
 class KaiCatalogue1620ShopTest : KaiCatalogueShopTest() {

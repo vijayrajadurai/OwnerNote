@@ -54,7 +54,7 @@ object KaiProductSound {
                     Regex("""^([A-Z])\1{1,2}$""").find(w)?.let { (if (w.length == 3) "triple " else "double ") + w[0] } ?: w
                 }
                 (listOfNotNull(n, asWord.takeIf { it != n }, repeated.takeIf { it != n }) + othersOf(n).filter { o -> productNames.none { it.trim().equals(o, ignoreCase = true) } }).mapNotNull { said ->
-                    val key = keyOf(spoken(said)).takeIf { it.isNotEmpty() } ?: return@mapNotNull null
+                    val key = nameKey(spoken(said)).takeIf { it.isNotEmpty() } ?: return@mapNotNull null
                     Product(said, key, loose(key), saidWords(said), spoken(said).first() in "aeiou", n)
                 }
             }
@@ -76,7 +76,7 @@ object KaiProductSound {
         val sizeless = products.mapNotNull { p -> cutOf(p.name)?.let { b -> b to (cutOf(p.out) ?: b) } }
         // ("டோலோ 650" is Dolo 650 — a short name too, then heard only right before its quantity, as short names are.)
             .distinctBy { it.first }.filter { (b, _) -> products.none { it.name.equals(b, ignoreCase = true) } && b.count(Char::isLetter) >= 3 }.mapNotNull { (b, out) ->
-                val key = keyOf(spoken(b)).takeIf { it.isNotEmpty() } ?: return@mapNotNull null
+                val key = nameKey(spoken(b)).takeIf { it.isNotEmpty() } ?: return@mapNotNull null
                 Product(b, key, loose(key), saidWords(b), spoken(b).first() in "aeiou", out, family = true)
             }
         // Goods by the name the owner says (KaiFeed): "கதவு கீல்" written as it is in the list, or heard like "kathavu keel".
@@ -106,6 +106,9 @@ object KaiProductSound {
      * A name's sound key word by word, then joined: "Hydraulic hose" keeps its k — read as one run of letters, the c of
      * "hydraulic" and the h of "hose" would be a "ch".
      */
+    /** A name's key — and a one-word name of only an h and its vowel ("Hoe") heard by its h. */
+    private fun nameKey(spoken: String): String = keyOf(spoken).ifEmpty { if (spoken.startsWith("h") && ' ' !in spoken.trim()) "h" else "" }
+
     private fun keyOf(spoken: String): String =
         spoken.split(' ').filter { it.isNotEmpty() }.joinToString("") { NameSound.key(it) }.replace(Regex("""(.)\1+"""), "$1")
 
@@ -324,7 +327,8 @@ object KaiProductSound {
                 // (short ெ for the e of "pepper" / "bed" and the ai of "chains"; long ே for the a of "rack" / "paper" / "cake")
                 "e" -> v == "e" || v.startsWith("ai") || v.startsWith("ay")
                 "E" -> v == "a" && (closed || magicE) || v.startsWith("ai") || v.startsWith("ay") || v.startsWith("ea") || v == "e" && magicE
-                "ai" -> (v == "i" || v == "y") && (magicE || after.startsWith("gh")) || v.startsWith("ie") && after.isEmpty()
+                // (and the "ia" of "diary", "diamond" after one consonant: "டைரி", "டைமண்ட்")
+                "ai" -> (v == "i" || v == "y") && (magicE || after.startsWith("gh")) || v.startsWith("ie") && after.isEmpty() || v.startsWith("ia") && m.range.first == 1
                 "A" -> v == "a" && (after.isEmpty() || after.startsWith("r") || after.startsWith("nk") || after.startsWith("ng")) || v == "o" && closed || v.startsWith("au") || v.startsWith("aw")
                 "i" -> v == "i" && closed || v.startsWith("ee") || v.startsWith("ea") || v.startsWith("ie")
                 "u" -> v.startsWith("oo") || v == "u" && !closed || v.startsWith("ew")
@@ -430,7 +434,10 @@ object KaiProductSound {
             .replace(Regex("""(?<![஀-௿])([அஆஒஓ])யி"""), "$1இ")
             // "அயர்னிங்" = ironing: the "அய" before ர் is the English "i" (ai) — no y of its own.
             .replace(Regex("""(?<![஀-௿])அய(?=ர்)"""), "ஐ")
-        val key = NameSound.key(phrase.replace(" ", ""))
+            // "ஃபியூஸ்" = Fuse, "டியூப்" = Tube: the "இயூ" the mic writes for an English "u" (yu) at a word's start is one vowel, that u.
+            .replace(Regex("""(?<![஀-௿])(ஃ?[க-ஹ])ியூ"""), "$1ூ")
+        // ("ஹோ" = Hoe: a word of only an h and its vowel is heard by its h)
+        val key = NameSound.key(phrase.replace(" ", "")).ifEmpty { if (phrase.startsWith("ஹ") && ' ' !in phrase.trim()) "h" else "" }
         if (key.isEmpty()) return null
         val l = loose(key)
         val vowelFirst = phrase.first() in 'அ'..'ஔ'
@@ -579,8 +586,8 @@ object KaiProductSound {
                 // "Bandage" = bendej, "Syringe" = sirinj, "Bridge" = brij; "Ointment" = oinment (the t isn't heard); "Eye", "Eyewear" = ai….
                 .replace(Regex("""d?ge$"""), "j").replace("ntm", "nm").replace(Regex("""^eye"""), "ai")
                 // "Dr Trust" = doctor trust ("டாக்டர்"), "Head & Shoulders" = and; "Flagyl" = flajil; "Zincovit" = zingovit ("சிங்கோவிட்").
-                // "U-bolt" = yu bolt, "D-shackle" = di shackle; "Union", "Universal", "Utility" = yu…; "Chemical" = kemical, "Chrome" = krome.
-                .replace(Regex("""^u(?=ni|ti|ri|sa|se|su|ro)"""), "yu").replace(Regex("""^chem"""), "kem").replace(Regex("""^chr"""), "kr")
+                // "U-bolt" = yu bolt, "D-shackle" = di shackle; "Union", "Universal", "Utility", "Urea" = yu…; "Chemical" = kemical, "Chrome" = krome.
+                .replace(Regex("""^u(?=ni|ti|ri|re|sa|se|su|ro)"""), "yu").replace(Regex("""^chem"""), "kem").replace(Regex("""^chr"""), "kr")
                 .replace(Regex("""^sch"""), "sk").replace(Regex("""^(te|me)ch"""), "$1k")
                 // "Palmolein" / "Balm" = pamolin / bam (the l isn't heard); "Iodized" = ayodized ("அயோடைஸ்டு").
                 .replace(Regex("""(?<=[^aeiou])alm"""), "am").replace(Regex("""^io"""), "ayo")
@@ -597,6 +604,8 @@ object KaiProductSound {
                 .replace(Regex("""^dr\.?$"""), "doktar").replace(Regex("""^&$"""), "and").replace(Regex("""g(?=y)"""), "j").replace(Regex("""n(?:c(?!h)|k)"""), "ng")
                 // "Sunglasses" = sun-glasses ("சன்கிளாசஸ்"): the g of glass is heard, not an ng.
                 .replace(Regex("""(?<=[aeiou])nglass"""), "nklass")
+                // "Urea", "Area" = yuriya, eriya ("யூரியா"): the e and a of a last -ea are two vowels, a y between.
+                .replace(Regex("""(?<=r)ea$"""), "iya")
                 // "Chalk" = chak ("சாக்"): the l of -alk isn't heard.
                 .replace(Regex("""(?<=[^aeiou])alk"""), "ak")
         }
