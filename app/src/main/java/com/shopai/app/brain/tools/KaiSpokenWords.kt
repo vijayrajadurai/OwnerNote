@@ -75,7 +75,7 @@ object KaiSpokenWords {
         "மே" to "may", "ஜூன்" to "june", "ஜுன்" to "june", "ஜூலை" to "july", "ஜுலை" to "july", "ஆகஸ்ட்" to "august", "ஆகஸ்டு" to "august",
         "செப்டம்பர்" to "september", "செப்டெம்பர்" to "september", "அக்டோபர்" to "october", "நவம்பர்" to "november", "டிசம்பர்" to "december", "புது" to "pudhu", "புதுசா" to "pudhusa",
         "அவுட்" to "out", "போச்சு" to "pochu", "சேல்" to "sale", "ஆச்சு" to "aachu", "எடுத்துட்டாங்க" to "eduthutanga",
-        "பீஸ்" to "pieces", "பீசஸ்" to "pieces", "பாக்ஸ்" to "box", "பாக்கெட்" to "packet", "பாக்கெட்டு" to "packet", "பாக்கெட்டுக்கு" to "packetku", "பாக்கெடுக்கு" to "packetku", "பாக்ஸுக்கு" to "boxku", "அரைக்கிலோ" to "arakilo", "அரைகிலோ" to "arakilo", "கால்கிலோ" to "kaalkilo", "முக்கால்கிலோ" to "mukkaalkilo", "கிலோ" to "kg",
+        "பீஸ்" to "pieces", "பீசஸ்" to "pieces", "பாக்ஸ்" to "box", "பாக்கெட்" to "packet", "பாக்கெட்டு" to "packet", "பாக்கெட்டுக்கு" to "packetku", "பாக்கெடுக்கு" to "packetku", "பாக்ஸுக்கு" to "boxku", "ஸ்மால்" to "small", "மீடியம்" to "medium", "லார்ஜ்" to "large", "ஃபேமிலி" to "family", "சின்ன" to "chinna", "பெரிய" to "periya", "அரைக்கிலோ" to "arakilo", "அரைகிலோ" to "arakilo", "கால்கிலோ" to "kaalkilo", "முக்கால்கிலோ" to "mukkaalkilo", "கிலோ" to "kg",
         // ---- bills / camera ----
         "பில்" to "bill", "பில்லு" to "bill", "ஸ்கேன்" to "scan", "போட்டோ" to "photo", "கேமரா" to "camera", "ஓபன்" to "open",
         "எடு" to "edu", "எடுங்க" to "edunga", "இந்த" to "indha", "பர்ச்சேஸ்" to "purchase",
