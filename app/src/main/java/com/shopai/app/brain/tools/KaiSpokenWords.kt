@@ -75,7 +75,7 @@ object KaiSpokenWords {
         "மே" to "may", "ஜூன்" to "june", "ஜுன்" to "june", "ஜூலை" to "july", "ஜுலை" to "july", "ஆகஸ்ட்" to "august", "ஆகஸ்டு" to "august",
         "செப்டம்பர்" to "september", "செப்டெம்பர்" to "september", "அக்டோபர்" to "october", "நவம்பர்" to "november", "டிசம்பர்" to "december", "புது" to "pudhu", "புதுசா" to "pudhusa",
         "அவுட்" to "out", "போச்சு" to "pochu", "சேல்" to "sale", "ஆச்சு" to "aachu", "எடுத்துட்டாங்க" to "eduthutanga",
-        "பீஸ்" to "pieces", "பீசஸ்" to "pieces", "பாக்ஸ்" to "box", "பாக்கெட்" to "packet", "பாக்கெட்டு" to "packet", "அரைக்கிலோ" to "arakilo", "அரைகிலோ" to "arakilo", "கால்கிலோ" to "kaalkilo", "முக்கால்கிலோ" to "mukkaalkilo", "கிலோ" to "kg",
+        "பீஸ்" to "pieces", "பீசஸ்" to "pieces", "பாக்ஸ்" to "box", "பாக்கெட்" to "packet", "பாக்கெட்டு" to "packet", "பாக்கெட்டுக்கு" to "packetku", "பாக்கெடுக்கு" to "packetku", "பாக்ஸுக்கு" to "boxku", "அரைக்கிலோ" to "arakilo", "அரைகிலோ" to "arakilo", "கால்கிலோ" to "kaalkilo", "முக்கால்கிலோ" to "mukkaalkilo", "கிலோ" to "kg",
         // ---- bills / camera ----
         "பில்" to "bill", "பில்லு" to "bill", "ஸ்கேன்" to "scan", "போட்டோ" to "photo", "கேமரா" to "camera", "ஓபன்" to "open",
         "எடு" to "edu", "எடுங்க" to "edunga", "இந்த" to "indha", "பர்ச்சேஸ்" to "purchase",
@@ -182,7 +182,7 @@ object KaiSpokenWords {
         // ---- stock (what typed Tanglish already says) ----
         "வித்துச்சு" to "vithuchu", "வித்துடுச்சு" to "vithiruchu", "வித்துட்டேன்" to "vithutten", "வித்தேன்" to "vithen", "விக்கல" to "vikkala",
         "ஆயிடுச்சு" to "aagiduchu", "ஆகிடுச்சு" to "aagiduchu", "ஆயிருச்சு" to "aagiduchu", "உடைஞ்சிடுச்சு" to "udanjiduchu", "உடைஞ்சுச்சு" to "udanjuchu",
-        "கெட்டுப்போச்சு" to "kettupochu", "போயிடுச்சு" to "poiduchu", "போயிருச்சு" to "poiruchu", "போயிருச்சி" to "poiruchu", "போயிடுச்சி" to "poiduchu", "சேர்த்துக்கோ" to "add pannu", "சேர்த்துடு" to "add pannu", "ஸ்டாக்ல" to "stock la",
+        "கெட்டுப்போச்சு" to "kettupochu", "அழுகிடுச்சு" to "azhugiduchu", "அழுகிப்போச்சு" to "azhugipochu", "அழுகுச்சு" to "azhuguchu", "வாடிடுச்சு" to "vaadiduchu", "போயிடுச்சு" to "poiduchu", "போயிருச்சு" to "poiruchu", "போயிருச்சி" to "poiruchu", "போயிடுச்சி" to "poiduchu", "சேர்த்துக்கோ" to "add pannu", "சேர்த்துடு" to "add pannu", "ஸ்டாக்ல" to "stock la",
         "டேமேஜ்" to "damage", "ரிட்டர்ன்" to "return", "எக்ஸ்பைரி" to "expiry", "லோ" to "low", "ஃபாஸ்ட்" to "fast", "ஸ்லோ" to "slow", "மூவ்" to "move",
         "ஆகுது" to "aagudhu", "ஆகல" to "agala", "சேல்ஸ்" to "sales", "இருப்பு" to "iruppu", "கையில" to "kaila",
         "மூட்டை" to "moota", "பாட்டில்" to "bottle", "லிட்டர்" to "litre", "டஜன்" to "dozen", "பீஸ்கள்" to "pieces",
