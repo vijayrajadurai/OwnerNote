@@ -16,7 +16,7 @@ internal object KaiConversationCare {
     // ------------------------------------------------------------ push-back
 
     /** "illa", "thappu", "wrong", "no": the owner says what Kai has is not right. */
-    private val negation = Regex("""(?i)(?<![\p{L}])(illa|illai|ille|thappu|thapu|wrong|no|nope|illaye)(?![\p{L}])|இல்ல|தப்பு""")
+    private val negation = Regex("""(?i)(?<![\p{L}])(illa|illai|ille|thappu|thapu|wrong|no|nope|illaye)(?![\p{L}])|இல்ல|தப்பு|(?<![\p{L}\p{M}])நோ(?![\p{L}\p{M}])""")
     fun negates(text: String) = negation.containsMatchIn(text)
 
     /** "adha cancel pannu", "delete pannu", "undo", "thappa pottutta": take back the entry just saved. */
@@ -131,9 +131,16 @@ internal object KaiConversationCare {
     fun withoutMessageApp(text: String) = Regex("""(?i)(?<![\p{L}])(whatsapp|whats\s*app|watsapp|sms|text\s*message)\s*(-?\s*(la|le|il|lla|via|on|through))?(?![\p{L}])""")
         .replace(text, " ").replace(Regex("""\s+"""), " ").trim()
 
-    enum class Beyond { WEATHER, SPORTS, NEWS, FUN, ONLINE_ORDER, LOAN, STAFF, MARKET_PRICE, TRAVEL, ASTROLOGY, RECIPE }
+    enum class Beyond { WEATHER, SPORTS, NEWS, FUN, ONLINE_ORDER, LOAN, STAFF, MARKET_PRICE, TRAVEL, ASTROLOGY, RECIPE, ADVICE, SHOP_CLOSED }
 
     private val beyond = listOf(
+        // "enna business pannalam", "sales jaasthi aaga idea sollu" (owner, 14 Oct 2026: answered with the balances): advice Kai can't
+        // give — said plainly, never another answer in its place.
+        Beyond.ADVICE to Regex("""(?i)(?<![\p{L}])(idea|ideas|yosanai|yosana|suggestion|suggest|advice|tips)(?![\p{L}])|(?<![\p{L}])enna\s+(?:business|vyabaram|viyabaram|thozhil)\s+(?:pannalam|panlam|seiyalam|start\s+pannalam)(?![\p{L}])|""" +
+            """(?<![\p{L}])(?:eppadi|epdi|how\s+to)\s+(?:increase|jaasthi|athigam|adhigam|improve|develop|valarkka|valara)\p{L}*|யோசனை|ஐடியா"""),
+        // "naalaiku kadai leave", "Sunday kadai moodiruppen": the shop shut — not a balance question; Kai offers a reminder.
+        Beyond.SHOP_CLOSED to Regex("""(?i)(?<![\p{L}])(?:kadai|kada|shop|kadaiku|kadaikku)\s+(?:leave|lieve|leevu|holiday|vidumurai|moodi\p{L}*|close\p{L}*|thirakka\s*maatt\p{L}*|thirakkala)(?![\p{L}])|""" +
+            """(?<![\p{L}])(?:leave|holiday)\s+(?:kadai|shop)(?![\p{L}])|கடை\s*(?:லீவு|லீவ்|விடுமுறை|மூடி\p{L}*)"""),
         Beyond.WEATHER to Regex("""(?i)(?<![\p{L}])(mazhai|mazha|weather|veyil|kulir|rain|climate|temperature|puyal)(?![\p{L}])|மழை|வெயில்|புயல்"""),
         Beyond.SPORTS to Regex("""(?i)(?<![\p{L}])(cricket|ipl|score|match|kabaddi|football|world\s*cup)(?![\p{L}])|கிரிக்கெட்|ஸ்கோர்"""),
         // "cm yaaru", "who is the pm" — never the "pm" of "5 pm".
@@ -155,7 +162,7 @@ internal object KaiConversationCare {
     fun beyondBooks(text: String): Beyond? {
         val hit = beyond.firstOrNull { it.second.containsMatchIn(text) }?.first ?: return null
         val amount = Regex("""\d""").containsMatchIn(text)
-        return hit.takeIf { !amount || it in setOf(Beyond.WEATHER, Beyond.SPORTS, Beyond.NEWS, Beyond.FUN, Beyond.ONLINE_ORDER, Beyond.ASTROLOGY, Beyond.RECIPE) }
+        return hit.takeIf { !amount || it in setOf(Beyond.WEATHER, Beyond.SPORTS, Beyond.NEWS, Beyond.FUN, Beyond.ONLINE_ORDER, Beyond.ASTROLOGY, Beyond.RECIPE, Beyond.ADVICE) }
     }
 
     /** "4773.13 yar tharanum", "4000 yaarukku kudukkanum": who owes (or is owed) that amount — the amount, or null. */

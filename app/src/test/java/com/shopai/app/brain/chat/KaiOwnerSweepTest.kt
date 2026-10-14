@@ -557,10 +557,28 @@ class KaiOwnerSweepTest {
         talk("WhatsApp: can't send, can remind", listOf("Kumar ku whatsapp la payment reminder anuppu"), check = said("WhatsApp", "mudiyaadhu", "remind"))
         // Kai's Tamil reply keeps these words as they are (cricket, news, joke …) — checked as they are, typed and spoken.
         for ((ask, word) in listOf("naalaiku mazhai varuma" to "weather", "ipl score enna" to "cricket", "tamil nadu cm yaaru" to "news", "oru joke sollu" to "joke",
-                "enakku loan venum" to "loan", "employee salary kanakku podu" to "salary", "amazon la 10 kg rice order pannu" to "Amazon", "நாளைக்கு மழை வருமா" to "வானிலை"))
+                "enakku loan venum" to "loan", "employee salary kanakku podu" to "salary", "amazon la 10 kg rice order pannu" to "Amazon", "நாளைக்கு மழை வருமா" to "வானிலை",
+                // Advice and a shop holiday (owner, 14 Oct 2026: both were answered with the balances): said plainly, the way back offered.
+                "enna business pannalam" to "business", "sales jaasthi aaga idea sollu" to "business", "naalaiku kadai leave" to "remind"))
             talk("not Kai's work: $ask", listOf(ask), check = { s ->
                 val w = if (mic && word == "weather") "வானிலை" else word
                 lastTurn?.reply?.text.orEmpty().let { t -> if (t.contains(w)) null else "said: $t" } ?: if (s.nothingWritten()) null else "wrote something" })
+        // Not understood → Kai names its three flows the owner's way (credit / debit = kudukkal vaangal, stock = the goods in the shop,
+        // reminder); the answer, typed or said, goes into that flow — and "ama" / "illa" to the question are understood (owner, 14 Oct 2026).
+        for ((answer, word) in listOf("stock ah pathi" to "Colgate 2 box", "kadaila irukura porul pathi" to "Colgate 2 box", "porul" to "Colgate 2 box",
+                "credit debit pathi" to "Kumar 500", "kudukal vangal" to "Kumar 500", "debit" to "Kumar 500", "ama" to "Credit / debit", "yes" to "Credit / debit",
+                "illa" to "Colgate stock", "no" to "Colgate stock", "கடையில இருக்கிற பொருள்" to "Colgate 2 box", "கொடுக்கல் வாங்கல் பத்தி" to "Kumar 500",
+                "ஆமாம்" to "Credit / debit", "எஸ்" to "Credit / debit", "நோ" to "Colgate stock"))
+            talk("not understood, then «$answer»", listOf("blah blah", answer), check = { s ->
+                lastTurn?.reply?.text.orEmpty().let { t -> if (t.contains(word)) null else "said: $t" } ?: if (s.nothingWritten()) null else "wrote something" })
+        // …and the line said next is that flow's: the stock draft, saved only on Confirm.
+        talk("not understood, stock, then the line", listOf("blah blah", "stock pathi", "Colgate 1 box vandhuchu", "TAP"), check = { s ->
+            if (s.inv.moves.isNotEmpty()) null else "no stock moved: ${lastTurn?.reply?.text}" })
+        talk("not understood, kudukkal vaangal, then the line", listOf("blah blah", "kudukal vangal", "Kumar 2000 kuduthan", "TAP"), check = { s ->
+            if (s.tools.saved.size == 1) null else "saved ${s.tools.saved.size}: ${lastTurn?.reply?.text}" })
+        // "kadai" said in passing is not a question about the books: never the balances in its place (a word not in any list).
+        talk("kadai said in passing", listOf("kadai la light poyiduchu"), check = { s ->
+            lastTurn?.reply?.text.orEmpty().let { t -> if (t.contains("vendiyadhu") || t.contains("வேண்டியது")) "said: $t" else null } ?: if (s.nothingWritten()) null else "wrote something" })
         talk("a date", listOf("1 varusham kalichi enna date"), check = said("October 8, 2027"))
         // Paid more than owed (owner's conversation, 10 Oct 2026): the extra is said before Confirm and after, and
         // "ippa evlo tharanum" is about the person just talked about.
@@ -1177,6 +1195,11 @@ class KaiOwnerSweepTest {
         conv("small talk in between", listOf("Kumar 3000 tharanum", "saptiya", "naalaiku"), check = draft("Kumar", "₹3,000"))
         // ---- a payment draft card
         conv("card seri", listOf("Kumar 2000 kuduthan", "seri"), check = saved(1))
+        // Yes said any way, typed or into the mic ("ama", "yes", "ஆமாம்", "எஸ்"): the open draft is the owner's — saved by the engine.
+        conv("card ama", listOf("Kumar 2000 kuduthan", "ama"), check = saved(1))
+        conv("card yes", listOf("Kumar 2000 kuduthan", "yes"), check = saved(1))
+        conv("card ஆமாம்", listOf("குமார் 2000 குடுத்தான்", "ஆமாம்"), check = saved(1))
+        conv("card எஸ்", listOf("குமார் 2000 குடுத்தான்", "எஸ்"), check = saved(1))
         conv("card save pannu", listOf("Kumar 2000 kuduthan", "save pannu"), check = saved(1))
         conv("card venam", listOf("Kumar 2000 kuduthan", "venam"), check = none)
         conv("card amount 2500", listOf("Kumar 2000 kuduthan", "2000 illa 2500"), check = draft("Kumar", "₹2,500"))

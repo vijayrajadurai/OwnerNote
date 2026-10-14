@@ -320,6 +320,8 @@ internal object KaiConversationSemantics {
     private val yesWords = setOf(
         "ama", "aama", "aamaa", "amaa", "aam", "yes", "yeah", "yep", "seri", "sari", "correct", "correct dhaan", "ok", "okay", "okey", "ok seri", "seri ok",
         "confirm", "confirm pannu", "confirm pannunga", "podu", "done", "ஆமா", "ஆம்", "சரி", "ஓகே", "உறுதி",
+        // (said into the mic as a whole answer: "ஆமாம்", "எஸ்" = yes — owner, 14 Oct 2026)
+        "aamam", "amam", "ஆமாம்", "எஸ்", "யெஸ்", "ஓகே சரி", "சரி ஓகே",
     )
 
     fun savesDraft(text: String): Boolean = !asksIfSaved(text) && saveWords.containsMatchIn(plain(text))
@@ -337,6 +339,8 @@ internal object KaiConversationSemantics {
     fun asksIfSaved(text: String): Boolean = savedQuestion.containsMatchIn(plain(text))
     /** A bare "ama" / "seri" / "ok" / "yes" — or "seri add pannu" — said to a draft Kai just showed. */
     fun confirmsDraft(text: String): Boolean = plain(text) in yesWords || savesDraft(text)
+    /** "ama", "yes", "ஆமாம்", "எஸ்" — the whole answer a yes. */
+    fun saysYes(text: String): Boolean = plain(text) in yesWords
     /** "due venam", "due date vendaam", "date venam", "no due date": the payment stays — only its due date is not wanted. */
     private val noDueDate = Regex(
         """^(?:(?:seri|ok|okay|illa|no)\s+)?(?:due\s*date|due\s*thethi|due|date|thethi|deadline)\s*(?:-?\s*(?:um|lam|ellam))?\s*""" +
@@ -628,14 +632,41 @@ class KaiAgent(
     private var clarifyLang: KaiLang? = null
 
     private fun guidedTopic(said: String, saidLang: KaiLang): KaiTurn? {
-        val t = said.lowercase(Locale.ROOT).trim().trimEnd('?', '.', '!').replace(Regex("""\s+(?:pathi|paththi|patthi|about|vishayam|பத்தி)$"""), "")
+        // ("stock ah pathi", "ஸ்டாக் பத்தியா", "credit debit pathi dhaan": the topic word with its "about" said after it)
+        val about = Regex("""(?:\s*-?\s*(?:ah|aa|a|ஆ|ஐ))?\s+(?:pathi|paththi|patthi|pathiya|pathiyaa|pathiye|about|vishayam|பத்தி|பத்தியா|பத்தியே|விஷயம்)(?:\s+(?:dhaan|than|thaan|தான்))?$|\s*-?\s*(?:ah|aa)$""")
+        fun bare(x: String) = x.lowercase(Locale.ROOT).trim().trimEnd('?', '.', '!').replace(about, "").replace(Regex("""\s*(?:/|&|and|matrum|மற்றும்)\s*"""), " ").replace(Regex("""\s+"""), " ").trim()
+        val t = bare(said)
+        val n = bare(com.shopai.app.brain.tools.KaiSpokenWords.normalize(said))
+        fun saidOneOf(words: Set<String>) = t in words || n in words
         val afterClarify = conversationState.conversationTurn - nothingOpenTurn == 1L
         val lang = if (afterClarify && saidLang == KaiLang.ENGLISH && forcedLang == null && !t.contains(" ")) clarifyLang ?: saidLang else saidLang
-        val payment = t in setOf("payment", "payments", "panam", "kaasu", "paisa", "pana vishayam", "entry", "kanakku entry", "பேமெண்ட்", "பணம்", "காசு")
-        val credit = t in setOf("kadan", "credit", "udhaar", "udhar", "கடன்", "கிரெடிட்")
-        val stock = afterClarify && t in setOf("stock", "saamaan", "saaman", "product", "products", "item", "items", "ஸ்டாக்", "சாமான்")
-        val balance = afterClarify && t in setOf("balance", "baaki", "bakki", "pending", "kanakku", "பாக்கி", "பேலன்ஸ்", "கணக்கு")
+        val payment = saidOneOf(setOf("payment", "payments", "panam", "kaasu", "paisa", "pana vishayam", "entry", "kanakku entry", "பேமெண்ட்", "பணம்", "காசு"))
+        val credit = saidOneOf(setOf("kadan", "credit", "udhaar", "udhar", "கடன்", "கிரெடிட்"))
+        // "credit debit", "debit", "kudukkal vaangal" (money given and taken, as Kai's question names it — owner, 14 Oct 2026)
+        val giveTake = afterClarify && saidOneOf(setOf("debit", "credit debit", "debit credit", "kudukkal vaangal", "kudukal vangal", "kodukkal vaangal", "kodukal vangal",
+            "kudukkal vangal", "kodukkal vangal", "kudukal vaangal", "kodukal vaangal", "koduthal vaangal", "kuduthal vaangal", "kudukkal", "vaangal", "டெபிட்",
+            "கிரெடிட் டெபிட்", "கொடுக்கல் வாங்கல்", "குடுக்கல் வாங்கல்", "கொடுக்கல்", "வாங்கல்"))
+        // "porul", "kadaila irukkura porul" (the goods in the shop, as Kai's question names stock)
+        val stock = afterClarify && saidOneOf(setOf("stock", "saamaan", "saaman", "product", "products", "item", "items", "ஸ்டாக்", "சாமான்", "porul", "porutkal",
+            "kadai porul", "kadaila irukkura porul", "kadaila irukura porul", "kadaila irukkira porul", "kadaiyila irukkura porul", "kadai la irukkura porul",
+            "kadai la irukura porul", "பொருள்", "பொருட்கள்", "கடை பொருள்", "கடையில இருக்கிற பொருள்", "கடையில இருக்குற பொருள்", "கடைல இருக்குற பொருள்"))
+        val balance = afterClarify && saidOneOf(setOf("balance", "baaki", "bakki", "pending", "kanakku", "பாக்கி", "பேலன்ஸ்", "கணக்கு"))
+        // "ama" / "illa" to "edha pathi sollureenga?" — not one of the three: asked again in short, or let go plainly.
+        val yes = afterClarify && (KaiConversationSemantics.saysYes(said) || KaiConversationSemantics.saysYes(com.shopai.app.brain.tools.KaiSpokenWords.normalize(said)))
+        val no = afterClarify && !yes && notAboutIt.matches(said.trim()) && said.trim().split(Regex("""\s+""")).size <= 2
         return when {
+            yes -> { nothingOpenTurn = conversationState.conversationTurn; say(lang, KaiMood.CLARIFY, "guided: yes to the menu",
+                ta = "சரி ஓனர், எது? Credit / debit (கொடுக்கல் வாங்கல்)-ஆ, stock (கடையில இருக்கிற பொருள்)-ஆ, reminder-ஆ? ஒண்ணு சொல்லுங்க.",
+                tl = "Seri Owner, edhu? Credit / debit (kudukkal vaangal)-aa, stock (kadaila irukkura porul)-aa, reminder-aa? Onnu sollunga.",
+                en = "Okay Owner, which one? Credit / debit (money given or taken), stock (goods in the shop), or a reminder? Say one.") }
+            no -> say(lang, KaiMood.NEUTRAL, "guided: no to the menu",
+                ta = "சரி ஓனர். எப்போ வேணும்னாலும் நேரா சொல்லுங்க: “Kumar 2000 குடுத்தான்”, “Colgate stock எவ்வளவு”, “நாளைக்கு 10 மணிக்கு remind பண்ணு”.",
+                tl = "Seri Owner. Eppo venumnaalum nera sollunga: “Kumar 2000 kuduthan”, “Colgate stock evlo”, “naalaiku 10 manikku remind pannu”.",
+                en = "Okay Owner. Say it whenever you like: “Kumar paid 2000”, “Colgate stock”, “remind me tomorrow at 10”.")
+            giveTake -> say(lang, KaiMood.CLARIFY, "guided: credit / debit",
+                ta = "சரி ஓனர், கொடுக்கல் வாங்கல். யாரு, எவ்வளவு? வந்ததுனா “Kumar 500 குடுத்தான்”, நீங்க குடுத்ததுனா “ABC Traders-க்கு 500 குடுத்தேன்”, கடன்னா “Kumar-க்கு 500 கடன்”-னு சொல்லுங்க.",
+                tl = "Seri Owner, kudukkal vaangal. Yaaru, evlo? Vandhadhu-na “Kumar 500 kuduthan”, neenga kuduthadhu-na “ABC Traders ku 500 kuduthen”, kadan-na “Kumar ku 500 credit”-nu sollunga.",
+                en = "Okay Owner, money given or taken. Who, and how much? Received: “Kumar paid 500”; paid: “paid ABC Traders 500”; credit: “Kumar 500 credit”.")
             payment -> say(lang, KaiMood.CLARIFY, "guided: payment",
                 ta = "சரி ஓனர், payment. யாரு, எவ்வளவு? வந்ததுனா “Kumar 500 குடுத்தான்”, நீங்க குடுத்ததுனா “ABC Traders-க்கு 500 குடுத்தேன்”-னு சொல்லுங்க.",
                 tl = "Seri Owner, payment. Yaaru, evlo? Vandhadhu-na “Kumar 500 kuduthan”, neenga kuduthadhu-na “ABC Traders ku 500 kuduthen”-nu sollunga.",
@@ -656,7 +687,9 @@ class KaiAgent(
         }
     }
 
-    private val expenseWord = Regex("""(?i)(?<![\p{L}])(?:rent|vaadagai|vadagai|current\s*bill|eb\s*bill|electricity|salary|sambalam|petrol|diesel|gas\s*bill|gas|kooli|transport|selavu|selavaachu|selavu\s*aachu|expense)(?![\p{L}])|செலவு|செலவாச்சு|வாடகை|கரண்ட்\s*பில்""")
+    // ("light bill", "water bill", "wifi bill" too — owner, 14 Oct 2026: "light bill 1200 kattinen" was read as a person called "Light")
+    private val expenseWord = Regex("""(?i)(?<![\p{L}])(?:rent|vaadagai|vadagai|(?:current|eb|light|water|thanni|gas|internet|wifi|wi-fi|cable|tv|dth|maintenance)\s*bill|electricity|salary|sambalam|petrol|diesel|gas|kooli|transport|selavu|selavaachu|selavu\s*aachu|expense)(?![\p{L}])|""" +
+        """செலவு|செலவாச்சு|வாடகை|(?:கரண்ட்|லைட்|ஈபி|வாட்டர்|தண்ணி|கேஸ்|இன்டர்நெட்|வைஃபை|கேபிள்)\s*பில்""")
 
     /** "current bill 1200 kattinen", "rent kattanum", "petrol 500 selavu": an expense — never a person called "Current" / "Rent". */
     private fun expenseLine(text: String, lang: KaiLang, people: List<String>): KaiTurn? {
@@ -1111,10 +1144,16 @@ class KaiAgent(
             KaiConversationCare.Beyond.TRAVEL -> Triple("ஓனர், train / bus / ticket பத்தி எனக்கு தெரியாது.", "Owner, train / bus / ticket pathi enakku theriyaadhu.", "Owner, I don't know train, bus or ticket details.")
             KaiConversationCare.Beyond.ASTROLOGY -> Triple("ஓனர், ராசி பலன் / நல்ல நேரம் பத்தி எனக்கு தெரியாது.", "Owner, rasi palan / nalla neram pathi enakku theriyaadhu.", "Owner, I don't know horoscopes or auspicious times.")
             KaiConversationCare.Beyond.RECIPE -> Triple("ஓனர், சமையல் recipe எனக்கு தெரியாது 😄", "Owner, samayal recipe enakku theriyaadhu 😄", "Owner, I don't know recipes 😄")
+            KaiConversationCare.Beyond.ADVICE -> Triple("ஓனர், business யோசனை சொல்ல என்னால முடியாது — உங்க கணக்குல இருக்கிறதை மட்டும் சொல்லுவேன். உதா: “இந்த மாசம் sales எவ்வளவு?”, “யார் யார் பாக்கி?”",
+                "Owner, business yosanai solla ennaala mudiyaadhu — unga kanakku-la irukkuradha mattum solluven. Eg: “indha maasam sales evlo?”, “yaar yaar baaki?”",
+                "Owner, I can't give business advice — I tell you what your records say. E.g. “this month's sales?”, “who still owes?”")
+            KaiConversationCare.Beyond.SHOP_CLOSED -> Triple("சரி ஓனர், கடை லீவுக்கு Kai-ல entry கிடையாது. யாருக்காவது சொல்லணும்னா reminder போடலாம்: “நாளைக்கு 9 மணிக்கு Kumar-க்கு call பண்ண remind பண்ணு”.",
+                "Seri Owner, kadai leave-ku Kai-la entry illa. Yaarukkavadhu sollanum-na reminder podalaam: “naalaiku 9 manikku Kumar ku call panna remind pannu”.",
+                "Okay Owner, Kai has no entry for a shop holiday. To tell someone, I can set a reminder: “remind me to call Kumar tomorrow at 9”.")
             KaiConversationCare.Beyond.STAFF -> Triple("ஓனர், staff salary / attendance கணக்கு Kai-ல இன்னும் இல்ல.", "Owner, staff salary / attendance kanakku Kai-la innum illa.",
                 "Owner, staff salary / attendance isn't in Kai yet.")
         }
-        val tail = topic != KaiConversationCare.Beyond.ONLINE_ORDER
+        val tail = topic !in setOf(KaiConversationCare.Beyond.ONLINE_ORDER, KaiConversationCare.Beyond.ADVICE, KaiConversationCare.Beyond.SHOP_CLOSED)
         return say(lang, KaiMood.NEUTRAL, "beyond: ${topic.name.lowercase()}", ta = ta + (if (tail) can.first else ""), tl = tl + (if (tail) can.second else ""),
             en = en + (if (tail) can.third else ""))
     }
@@ -2088,7 +2127,7 @@ class KaiAgent(
     /** The turn Kai asked "idhu <topic> pathiyaa, illa vera vishayam pathiyaa?" — its "ama" picks the thread up again. */
     private var topicAskedTurn = -10L
     private val aboutIt = Regex("""(?i)(?<![\p{L}])(?:adhu|athu|adhe|athe|adhey)\s*(?:dhaan|than|thaan|dhan)|(?<![\p{L}])(?:payment|panam|kaasu|due|date)\s*(?:ah|a|aa|-a)?\s*(?:pathi|patthi|pathiye)?\s*(?:dhaan|than|thaan|dhan)(?![\p{L}])|பத்தி\s*தான்|அது\s*தான்""")
-    private val notAboutIt = Regex("""(?i)^\s*(?:illa|illai|illey|no|nope|vera|vera\s+vishayam|vera\s+onnu|இல்ல|இல்லை|வேற)(?:\s+.*)?$""")
+    private val notAboutIt = Regex("""(?i)^\s*(?:illa|illai|illey|no|nope|vera|vera\s+vishayam|vera\s+onnu|இல்ல|இல்லை|வேற|நோ)(?:\s+.*)?$""")
 
     /**
      * "ama" / "payment ah pathi than" to "idhu Kumar ₹3,000 payment pathiyaa?": the same thread — the question that was open is
@@ -2121,9 +2160,9 @@ class KaiAgent(
                     tl = " (${d.partyName} $a innum save aagala — venumna Confirm pannunga.)", en = " (${d.partyName} $a is not saved yet — Confirm it if you want it.)")
             }.orEmpty()
             return say(l, KaiMood.CLARIFY, "topic: something else",
-                ta = "சரி Owner, வேற விஷயம். எதைப் பத்தி — payment-ஆ, stock-ஆ, reminder-ஆ? இல்ல நேரா சொல்லுங்க: “Ramesh 300 குடுத்தான்”, “Colgate stock எவ்வளவு”.$kept",
-                tl = "Seri Owner, vera vishayam. Edha pathi — payment-aa, stock-aa, reminder-aa? Illa nera sollunga: “Ramesh 300 kuduthan”, “Colgate stock evlo”.$kept",
-                en = "Okay Owner, something else. Is it a payment, stock, or a reminder? Or just say it: “Ramesh paid 300”, “Colgate stock”.$kept")
+                ta = "சரி Owner, வேற விஷயம். எதைப் பத்தி — credit / debit (கொடுக்கல் வாங்கல்)-ஆ, stock (கடையில இருக்கிற பொருள்)-ஆ, reminder-ஆ? இல்ல நேரா சொல்லுங்க: “Ramesh 300 குடுத்தான்”, “Colgate stock எவ்வளவு”.$kept",
+                tl = "Seri Owner, vera vishayam. Edha pathi — credit / debit (kudukkal vaangal)-aa, stock (kadaila irukkura porul)-aa, reminder-aa? Illa nera sollunga: “Ramesh 300 kuduthan”, “Colgate stock evlo”.$kept",
+                en = "Okay Owner, something else. Is it credit / debit (money given or taken), stock (goods in the shop), or a reminder? Or just say it: “Ramesh paid 300”, “Colgate stock”.$kept")
         }
         if (!KaiConversationSemantics.confirmsDraft(said) && !aboutIt.containsMatchIn(said)) return null
         val st = conversationState.stated
@@ -2191,10 +2230,11 @@ class KaiAgent(
                 en = "Sorry Owner, I didn't understand that 🙏 You can say: “Kumar paid 2000”, “Colgate 2 boxes came in”, “remind me to call Ramesh tomorrow at 10”, “how much does Kumar owe”.")
         }
         nothingOpenTurn = conversationState.conversationTurn
+        // (the three flows by the owner's own words — owner, 14 Oct 2026: credit / debit = kudukkal vaangal, stock = the goods in the shop)
         return say(lang, KaiMood.CLARIFY, "clarify: nothing open",
-            ta = "Owner, எதைப் பத்தி சொல்றீங்க? Payment-ஆ, stock-ஆ, reminder-ஆ?",
-            tl = "Owner, edha pathi sollureenga? Payment-aa, stock-aa, reminder-aa?",
-            en = "Owner, what is this about — a payment, stock, or a reminder?")
+            ta = "Owner, எதைப் பத்தி சொல்றீங்க? Credit / debit (கொடுக்கல் வாங்கல்) பத்தியா, stock (கடையில இருக்கிற பொருள்) பத்தியா, reminder பத்தியா?",
+            tl = "Owner, edha pathi sollureenga? Credit / debit (kudukkal vaangal) pathiyaa, stock (kadaila irukkura porul) pathiyaa, reminder pathiyaa?",
+            en = "Owner, what is this about — credit / debit (money given or taken), stock (goods in the shop), or a reminder?")
     }
 
     /**
