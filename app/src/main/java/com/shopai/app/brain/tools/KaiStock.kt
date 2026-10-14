@@ -485,8 +485,16 @@ object KaiStock {
         val holders = names.withIndex().filter { (k, _) -> es.any { e -> holds(plainOf[k], e) } }.map { it.value }.distinctBy { it.lowercase(Locale.ROOT) }
         if (holders.size < 2) return null
         val bases = holders.map { h -> packBase.find(h.trim())?.groupValues?.get(1) ?: return null }.distinctBy { it.lowercase(Locale.ROOT) }
-        // ("candle" with Candle and Handmade candle packs kept: the thing of that very name)
-        return bases.singleOrNull() ?: bases.singleOrNull { b -> nameWords(b).map(::plainWord).let { w -> es.any { e -> w.size == e.size && w.zip(e).all { (a, c) -> sameWord(a, c) } } } }
+        // ("candle" with Candle and Handmade candle packs kept: the thing of that very name; "சுடிதார்" = churidar or salwar suit,
+        // both kept: the one that sounds like the name said)
+        bases.singleOrNull()?.let { return it }
+        val exact = bases.filter { b -> nameWords(b).map(::plainWord).let { w -> es.any { e -> w.size == e.size && w.zip(e).all { (a, c) -> sameWord(a, c) } } } }
+        exact.singleOrNull()?.let { return it }
+        val tamil = english.filter { KaiSpokenWords.hasTamil(it) }.map { com.shopai.app.util.NameSound.key(it) }.filter { it.isNotEmpty() }
+        if (exact.size < 2 || tamil.isEmpty()) return null
+        val near = exact.map { b -> b to tamil.minOf { t -> editDistance(com.shopai.app.util.NameSound.key(b), t) } }
+        val best = near.minOf { it.second }
+        return near.filter { it.second == best }.singleOrNull()?.first
     }
 
     /** A name and its pack: "Crab Small pack", "Tomato 250 g", "Garbage bag XL" → the name before it. */

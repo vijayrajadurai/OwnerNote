@@ -1,0 +1,59 @@
+# The owner's own names for the 01-05 catalogue's items (typed Tanglish | as the mic writes it) → the item (kept in packs).
+# item | typed | spoken
+Toor dal | thuvaram paruppu | துவரம் பருப்பு
+Moong dal | paasi paruppu | பாசிப்பருப்பு
+Urad dal | ulundhu | உளுந்து
+Chana dal | kadalai paruppu | கடலைப்பருப்பு
+Sugar | sarkkarai | சர்க்கரை
+Jaggery | vellam | வெல்லம்
+Salt | uppu | உப்பு
+Rava | ravai | ரவை
+Tea powder | theyilai | தேயிலை
+Coffee powder | kaapi thool | காபித் தூள்
+Cooking oil | samayal ennai | சமையல் எண்ணெய்
+Ghee | nei | நெய்
+Chilli powder | milagai thool | மிளகாய்த் தூள்
+Turmeric powder | manjal thool | மஞ்சள் தூள்
+Coriander powder | malli thool | மல்லித் தூள்
+Pepper | milagu | மிளகு
+Cumin | seeragam | சீரகம்
+Mustard seeds | kadugu | கடுகு
+Cardamom | elakkai | ஏலக்காய்
+Cloves | kirambu | கிராம்பு
+Cinnamon | lavangapattai | லவங்கப்பட்டை
+Papad | appalam | அப்பளம்
+Banana | vazhaipazham | வாழைப்பழம்
+Mango | maambazham | மாம்பழம்
+Guava | koyya | கொய்யா
+Pomegranate | maadhulai | மாதுளை
+Papaya | pappali | பப்பாளி
+Grapes | thiratchai | திராட்சை
+Watermelon | tharboosani | தர்பூசணி
+Pineapple | annasi | அன்னாசி
+Lemon | elumichai | எலுமிச்சை
+Coconut | thengai | தேங்காய்
+Tomato | thakkali | தக்காளி
+Potato | urulaikizhangu | உருளைக்கிழங்கு
+Onion | vengayam | வெங்காயம்
+Shallots | chinna vengayam | சின்ன வெங்காயம்
+Garlic | poondu | பூண்டு
+Ginger | inji | இஞ்சி
+Green chilli | pachai milagai | பச்சை மிளகாய்
+Brinjal | kathirikkai | கத்தரிக்காய்
+Ladies finger | vendakkai | வெண்டைக்காய்
+Bitter gourd | pavakkai | பாகற்காய்
+Drumstick | murungakkai | முருங்கைக்காய்
+Spinach | palak keerai | பாலக் கீரை
+Coriander leaves | kothamalli | கொத்தமல்லி
+Curry leaves | kariveppilai | கறிவேப்பிலை
+Mushroom | kaalan | காளான்
+Corn | makkacholam | மக்காச்சோளம்
+Nails | aani | ஆணி
+Hammer | suthiyal | சுத்தியல்
+Ladder | eni | ஏணி
+Dhoti | vetti | வேட்டி
+Women saree | selai | சேலை
+Towel | thundu | துண்டு
+Handkerchief | kaikuttai | கைக்குட்டை
+Blouse | ravikkai | ரவிக்கை
+Buttons | pothaan | பொத்தான்
