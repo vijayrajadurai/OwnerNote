@@ -246,6 +246,9 @@ ENTRY  | Murugan Stores ku 1500 clear aachu       | OUT Murugan Stores 1500
 ASK    | Kumar 500 adhu                           | ₹500; kuduthaara
 ASK    | rent kattanum                            | Daily Cash
 ASK    | current bill 1200 kattinen               | Daily Cash; ₹1200
+ASK    | light bill 1200 kattinen                 | Daily Cash; ₹1200   # an expense — never a person called "Light" (owner, 14 Oct 2026)
+ASK    | water bill 300 kattinen                  | Daily Cash; ₹300
+ASK    | EB bill 900 kattiten                     | Daily Cash; ₹900
 ASK    | Kumar kitta pesanum                      | Kumar
 ASK    | athu evlo irukku                         | Product   # nothing talked about: asked which, never a person called "Athu"
 

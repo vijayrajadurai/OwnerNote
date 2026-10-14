@@ -272,7 +272,10 @@ object KaiChatUnderstanding {
             payWords -> ChatIntent.TOTAL_PAYABLE
             has(" summary", " eppadi pogudhu", " epdi pogudhu", " epdi irukku", " eppadi irukku", " how is", " how's", " report", " nilamai", " status",
                 " important", " mukkiyam", " முக்கியம்", " எப்படி") -> ChatIntent.BUSINESS_SUMMARY
-            has(" business", " kadai", " shop", " kanakku", " money", " panam", " kaasu", " cash", " வியாபார", " கடை") -> ChatIntent.GENERAL_BUSINESS_QUERY
+            has(" kanakku", " money", " panam", " kaasu", " cash") -> ChatIntent.GENERAL_BUSINESS_QUERY
+            // ("kadai" / "business" said in passing — "kadai la light poyiduchu" — is not a question about the books: only asked as one)
+            has(" business", " kadai", " shop", " வியாபார", " கடை") && has(" evlo", " evvalavu", " eppadi", " epdi", " enna aachu", " sollu", " status", " nilamai",
+                " how", " what", "?", " எவ்வளவு", " எப்படி", " சொல்லு") -> ChatIntent.GENERAL_BUSINESS_QUERY
             else -> ChatIntent.UNKNOWN
         }
         return ChatQuery(intent, PersonRef.None, amount, period, side = if (intent == ChatIntent.TOTAL_PAYABLE) Direction.PAYABLE else null, fullList = listWords)
