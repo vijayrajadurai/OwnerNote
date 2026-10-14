@@ -168,6 +168,10 @@ abstract class KaiCatalogueShopTest {
     }
 }
 
+class KaiCatalogue0105ShopTest : KaiCatalogueShopTest() {
+    override val catalogue = "catalogue-01-05"
+}
+
 class KaiCatalogue1620ShopTest : KaiCatalogueShopTest() {
     override val catalogue = "catalogue-16-20"
 }
