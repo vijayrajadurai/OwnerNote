@@ -146,21 +146,16 @@ abstract class KaiCatalogueShopTest {
         }
         assertTrue("${fails.size} fails:\n" + fails.take(80).joinToString("\n"), fails.isEmpty())
     }
-}
 
-class KaiCatalogue1620ShopTest : KaiCatalogueShopTest() {
-    override val catalogue = "catalogue-16-20"
-}
+    // ------------------------------------------------------------------ the owner's own names
 
-class KaiCatalogue1115ShopTest : KaiCatalogueShopTest() {
-    override val catalogue = "catalogue-11-15"
-
+    /** `/kai/<catalogue>-tamil.txt` where the catalogue has one: item | typed Tanglish | as the mic writes it. */
     private val tamil: List<List<String>> by lazy {
-        javaClass.getResource("/kai/catalogue-11-15-tamil.txt")!!.readText().lines().filter { it.isNotBlank() && !it.startsWith("#") }
+        javaClass.getResource("/kai/$catalogue-tamil.txt")?.readText()?.lines().orEmpty().filter { it.isNotBlank() && !it.startsWith("#") }
             .map { l -> l.split('|').map { it.trim() } }
     }
 
-    /** The owner's own names (நண்டு = Crab, வஞ்சிரம் = Fresh seer fish, துடைப்பம் = Broom): the pack said goes on that pack; none said is asked. */
+    /** The owner's own names (நண்டு = Crab, ஊதுபத்தி = Agarbatti, துடைப்பம் = Broom): the pack said goes on that pack; none said is asked. */
     @Test fun theOwnersOwnNames() {
         val fails = mutableListOf<String>()
         for ((item, typed, said) in tamil) {
@@ -171,4 +166,16 @@ class KaiCatalogue1115ShopTest : KaiCatalogueShopTest() {
         }
         assertTrue("${fails.size} of ${tamil.size * 4} fails:\n" + fails.take(80).joinToString("\n"), fails.isEmpty())
     }
+}
+
+class KaiCatalogue1620ShopTest : KaiCatalogueShopTest() {
+    override val catalogue = "catalogue-16-20"
+}
+
+class KaiCatalogue1115ShopTest : KaiCatalogueShopTest() {
+    override val catalogue = "catalogue-11-15"
+}
+
+class KaiCatalogue2630ShopTest : KaiCatalogueShopTest() {
+    override val catalogue = "catalogue-26-30"
 }

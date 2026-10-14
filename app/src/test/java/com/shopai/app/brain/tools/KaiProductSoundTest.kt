@@ -228,6 +228,23 @@ class KaiProductSoundTest {
         }
     }
 
+    /**
+     * Catalogue 26-30 (14 Oct 2026): "Batteries AAA" is said "triple A" ("ட்ரிபிள் ஏ"), with or without its pack; "Statue" is stachu;
+     * "ஃபேமிலி" alone is a pack's size, never a goods name that sounds like it ("poo maalai" = Garland).
+     */
+    @Test fun catalogue2630NamesSaidIntoTheMic() {
+        val shop12 = listOf("Batteries AAA Small pack", "Batteries AAA Medium pack", "Batteries AA Small pack", "Batteries AA Family pack",
+            "Brass statue Small pack", "Bronze statue Small pack", "Beverage case Small pack", "Garland Small pack", "Kumkum Small pack", "Coconut Small pack")
+        fun h(mic: String) = KaiSpokenWords.normalize(KaiProductSound.withProducts(mic, shop12, people))
+        for ((mic, want) in listOf("பேட்டரீஸ் ட்ரிபிள் ஏ ஸ்மால் பேக் 7" to "Batteries AAA Small pack 7", "பேட்டரீஸ் ட்ரிபிள் ஏ சின்ன பேக் 7" to "Batteries AAA chinna",
+                "பேட்டரீஸ் ஏஏ ஃபேமிலி பேக் 7" to "Batteries AA Family pack 7", "பிராஸ் ஸ்டேச்சு சின்ன பேக் 7" to "Brass statue chinna",
+                "பிரான்ஸ் ஸ்டேச்சு ஸ்மால் பேக் 7" to "Bronze statue Small pack 7", "கும்கும் ஸ்மால் பேக் 7" to "Kumkum Small pack 7")) {
+            val got = h(mic)
+            assertTrue("$mic → $got", got.startsWith(want))
+        }
+        assertTrue(h("பேட்டரீஸ் ஏஏ ஃபேமிலி பேக் 7").let { !it.contains("Garland") })
+    }
+
     @Test fun productNamesSaidIntoTheMic() {
         val said = mapOf(
             "பிரிட்டானியா பிஸ்கட்" to "Britannia Biscuit", "குட் டே" to "Good Day", "பார்லே ஜி" to "Parle G", "சன்ஃபீஸ்ட் மேரி" to "Sunfeast Marie",

@@ -49,7 +49,11 @@ object KaiProductSound {
                 // "ENO", "BPL": capitals are said letter by letter ("பிபிஎல்") — or as a word when they read as one ("ஈனோ").
                 val asWord = n.split(Regex("""\s+""")).joinToString(" ") { w -> if (w.length in 3..6 && w.all { it in 'A'..'Z' } && w.any { it in "AEIOU" }) w.lowercase() else w }
                 // "Spinach / Palak 250 g": either name said alone ("ஸ்பினாச் 250 கிராம்", "பாலக் 250 கிராம்") is that product.
-                (listOfNotNull(n, asWord.takeIf { it != n }) + othersOf(n).filter { o -> productNames.none { it.trim().equals(o, ignoreCase = true) } }).mapNotNull { said ->
+                // "Batteries AAA" / "Batteries AA": said "triple A" / "double A" too ("ட்ரிபிள் ஏ").
+                val repeated = n.split(Regex("""\s+""")).joinToString(" ") { w ->
+                    Regex("""^([A-Z])\1{1,2}$""").find(w)?.let { (if (w.length == 3) "triple " else "double ") + w[0] } ?: w
+                }
+                (listOfNotNull(n, asWord.takeIf { it != n }, repeated.takeIf { it != n }) + othersOf(n).filter { o -> productNames.none { it.trim().equals(o, ignoreCase = true) } }).mapNotNull { said ->
                     val key = keyOf(spoken(said)).takeIf { it.isNotEmpty() } ?: return@mapNotNull null
                     Product(said, key, loose(key), saidWords(said), spoken(said).first() in "aeiou", n)
                 }
@@ -57,22 +61,24 @@ object KaiProductSound {
         if (products.isEmpty()) return null
         // "பிளைவுட் 12mm" for Plywood 12mm / Plywood 18mm: the name without its size is heard too ("Plywood"); the size said after it
         // picks the product (KaiStock), or Kai asks which.
-        val sizeless = products.mapNotNull { p ->
-            val ws = p.name.split(Regex("""\s+"""))
-            // "Braided hose 1/2 inch" → "Braided hose" (the size and its unit both go); "1-way switch 6A" → "1-way switch".
+        // "Braided hose 1/2 inch" → "Braided hose" (the size and its unit both go); "1-way switch 6A" → "1-way switch".
+        // "Presto Garbage bag Medium" → "Presto Garbage bag": a size word at the end goes too.
+        // ("Fresh milk Small pack" → "Fresh milk": the pack named by its size goes too.)
+        fun cutOf(name: String): String? {
+            val ws = name.split(Regex("""\s+"""))
             val cut = ws.withIndex().indexOfFirst { (i, w) -> i > 0 && w.any(Char::isDigit) }
-            // "Presto Garbage bag Medium" → "Presto Garbage bag": a size word at the end goes too.
-            // ("Fresh milk Small pack" → "Fresh milk": the pack named by its size goes too.)
-            (if (cut > 0) ws.take(cut) else ws.filterNot { w -> w.any(Char::isDigit) }.let { k ->
+            return (if (cut > 0) ws.take(cut) else ws.filterNot { w -> w.any(Char::isDigit) }.let { k ->
                 if (k.size > 2 && k.last().equals("pack", true) && k[k.size - 2].lowercase() in packSizes + "family") k.dropLast(2)
                 else if (k.size > 1 && k.last().lowercase() in packSizes) k.dropLast(1) else k
-            })
-                .takeIf { it.isNotEmpty() && it.size < ws.size }?.joinToString(" ")
-        // ("டோலோ 650" is Dolo 650 — a short name too, then heard only right before its quantity, as short names are.)
-        }.distinct().filter { b -> products.none { it.name.equals(b, ignoreCase = true) } && b.count(Char::isLetter) >= 3 }.mapNotNull { b ->
-            val key = keyOf(spoken(b)).takeIf { it.isNotEmpty() } ?: return@mapNotNull null
-            Product(b, key, loose(key), saidWords(b), spoken(b).first() in "aeiou", family = true)
+            }).takeIf { it.isNotEmpty() && it.size < ws.size }?.joinToString(" ")
         }
+        // (a reading of a name — "Batteries triple A Small pack" — is heard without its pack as the name it reads: "Batteries AAA")
+        val sizeless = products.mapNotNull { p -> cutOf(p.name)?.let { b -> b to (cutOf(p.out) ?: b) } }
+        // ("டோலோ 650" is Dolo 650 — a short name too, then heard only right before its quantity, as short names are.)
+            .distinctBy { it.first }.filter { (b, _) -> products.none { it.name.equals(b, ignoreCase = true) } && b.count(Char::isLetter) >= 3 }.mapNotNull { (b, out) ->
+                val key = keyOf(spoken(b)).takeIf { it.isNotEmpty() } ?: return@mapNotNull null
+                Product(b, key, loose(key), saidWords(b), spoken(b).first() in "aeiou", out, family = true)
+            }
         // Goods by the name the owner says (KaiFeed): "கதவு கீல்" written as it is in the list, or heard like "kathavu keel".
         val names = products.map { it.out }.distinct()
         val goods = KaiFeed.goodsNames.flatMap { (ks, e) -> ks.map { k -> k to ks + e } }.groupBy({ it.first }, { it.second }).mapValues { (_, v) -> v.flatten().distinct() }
@@ -164,6 +170,8 @@ object KaiProductSound {
                 }
                 // (a goods name may hold one — "சின்ன வெங்காயம்" — but a name heard by sound never does)
                 if (run.any { KaiSpokenWords.normalize(it.value) in packSizeSaid }) return@firstNotNullOfOrNull null
+                // ("ஃபேமிலி", "ஸ்மால்" alone are a pack's size — never a product of their own: "ஃபேமிலி" is not "poo maalai")
+                if (span == 1 && KaiSpokenWords.normalize(run[0].value).lowercase() in setOf("small", "medium", "large", "family")) return@firstNotNullOfOrNull null
                 match(said, span, products + heardGoods + sizeless, parts, known, beforeQuantity(text, run.last().range.last + 1), packAfter(text, run.last().range.last + 1))
                     ?.let { Triple(span, it, run.first().range.first) }
             }
@@ -515,7 +523,9 @@ object KaiProductSound {
                 // "Pneumatic" = numatic (the p isn't heard); "Squash", "Squeegee" = skwash, skweejee.
                 .replace(Regex("""^pn"""), "n").replace("qu", "kw").replace(Regex("""(?<=e)gee$"""), "jee")
                 // "Sausages" = sausajes ("சாசேஜஸ்"), "Spatula" = spachula ("ஸ்பேச்சுலா").
-                .replace(Regex("""(?<=a)ges$"""), "jes").replace(Regex("""(?<=[aeiou])tula"""), "chula").replace("ture", "chur").replace("x", "ks").replace(Regex("""c(?=[eiy])"""), "s")
+                .replace(Regex("""(?<=a)ges$"""), "jes").replace(Regex("""(?<=[aeiou])tula"""), "chula")
+                // "Statue" = stachu ("ஸ்டேச்சு").
+                .replace(Regex("""(?<=[aeiou])tue$"""), "chu").replace("ture", "chur").replace("x", "ks").replace(Regex("""c(?=[eiy])"""), "s")
                 // "Bandage" = bendej, "Syringe" = sirinj, "Bridge" = brij; "Ointment" = oinment (the t isn't heard); "Eye" = ai.
                 .replace(Regex("""d?ge$"""), "j").replace("ntm", "nm").replace(Regex("""^eye$"""), "ai")
                 // "Dr Trust" = doctor trust ("டாக்டர்"), "Head & Shoulders" = and; "Flagyl" = flajil; "Zincovit" = zingovit ("சிங்கோவிட்").

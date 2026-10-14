@@ -64,6 +64,13 @@ class KaiSupermarketNamesTest {
         assertEquals("Zip lock bag Medium pack", KaiStock.understand("Zip lock bag medium pack 7 add pannu", cat)?.product?.name)
         assertEquals("crab 7 add pannu", KaiStock.withGoodsFamilies("nandu 7 add pannu", cat))
         KaiStock.understand("Bucket 7 add pannu", cat).let { r -> assertNull(r?.product); assertEquals("Bucket", r?.spokenName) }
+        // "mezhuguvarthi" = candle, with Candle and Handmade candle packs kept: the thing of that very name.
+        val candles = listOf("Candle Small pack", "Candle Medium pack", "Handmade candle Small pack", "Handmade candle Medium pack")
+        assertEquals("Candle", KaiStock.familyOf(listOf("candle"), candles))
+        // A word the shop's own names have is never read as a goods name: "Mustard oil 500 ml" with Mustard seeds packs kept stays Mustard oil.
+        val oils = listOf("Mustard oil 500 ml", "Mustard oil 1 L", "Mustard seeds 100 g", "Mustard seeds 200 g").mapIndexed { i, n -> ProductRef("m$i", n, "PCS", BigDecimal("50")) }
+        assertEquals("Mustard oil 500 ml 7 add pannu", KaiStock.withGoodsFamilies("Mustard oil 500 ml 7 add pannu", oils))
+        assertEquals("Mustard oil 500 ml", KaiStock.understand("Mustard oil 500 ml 7 add pannu", oils)?.product?.name)
         // A goods name the shop has nothing for stays as said.
         assertEquals("nookal 7 add pannu", KaiStock.withGoodsFamilies("nookal 7 add pannu", cat))
     }
