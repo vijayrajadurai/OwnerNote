@@ -13,13 +13,17 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 /**
- * The owner's expanded stock catalogue (14 Oct 2026, 616 rows — beverages and water, bakery and confectionery, dairy and frozen
- * foods, industrial supplies and machinery, chemicals and cleaning supplies): each item in Small / Medium / Large / Family packs
- * ("Fresh milk Small pack"), and the catalogue's own codes for items not yet named ("ON-0151 Small pack"). Each is said typed and
- * as the ta-IN mic writes it, the pack the owner's way too ("small", "chinna pack", "periya pack"): Kai takes exactly that item
- * and pack — and a name said without its pack is asked (which pack), never guessed.
+ * The owner's expanded stock catalogues (14 Oct 2026), five business categories each — 16-20: beverages and water, bakery and
+ * confectionery, dairy and frozen foods, industrial supplies and machinery, chemicals and cleaning supplies; 11-15: meat, fish
+ * and poultry, home and kitchen, furniture and furnishings, toys, gifts and sports goods, packaging and disposables. Each item in
+ * Small / Medium / Large / Family packs ("Fresh milk Small pack"), and the catalogue's own codes for items not yet named
+ * ("ON-0151 Small pack"). Each is said typed and as the ta-IN mic writes it, the pack the owner's way too ("small", "chinna pack",
+ * "periya pack"): Kai takes exactly that item and pack — and a name said without its pack is asked (which pack), never guessed.
  */
-class KaiCatalogueShopTest {
+abstract class KaiCatalogueShopTest {
+    /** The catalogue's files: `/kai/<catalogue>-stock.txt` and `/kai/<catalogue>-mic.txt`. */
+    protected abstract val catalogue: String
+
     private val now = LocalDateTime.of(2026, 10, 14, 10, 0)
 
     private class Books : KaiBooks {
@@ -28,18 +32,19 @@ class KaiCatalogueShopTest {
         override suspend fun cashBook(from: LocalDate, to: LocalDate) = null
     }
 
-    private val rows: List<List<String>> = javaClass.getResource("/kai/catalogue-stock.txt")!!.readText().lines()
-        .filter { it.isNotBlank() && !it.startsWith("#") }.map { it.split('|') }
-    private val names = rows.map { it[0] }
-
-    private val base = Inventory().also { inv ->
-        rows.forEachIndexed { i, r -> inv.items += Inventory.Item("c$i", r[0], r[1], BigDecimal("50"), emptyMap(), null, null, r[2], null) }
+    private val rows: List<List<String>> by lazy {
+        javaClass.getResource("/kai/$catalogue-stock.txt")!!.readText().lines().filter { it.isNotBlank() && !it.startsWith("#") }.map { it.split('|') }
     }
+    protected val names by lazy { rows.map { it[0] } }
+
+    private val base by lazy { Inventory().also { inv ->
+        rows.forEachIndexed { i, r -> inv.items += Inventory.Item("c$i", r[0], r[1], BigDecimal("50"), emptyMap(), null, null, r[2], null) }
+    } }
 
     private fun all(t: KaiTurn) = (t.reply.text + " | " + t.card?.lines.orEmpty().joinToString(" | ")).replace("\n", " ")
 
     /** Plays [lines] in one chat and confirms the last one's draft: the product whose stock moved and by how much, and Kai's reply. */
-    private fun talk(vararg lines: String): Triple<String?, BigDecimal?, String> {
+    protected fun talk(vararg lines: String): Triple<String?, BigDecimal?, String> {
         val inv = Inventory().also { it.items += base.items.map { i -> i.copy(stock = BigDecimal("50")) } }
         val kai = KaiAgent(KaiBusinessBrain(Books()), Books(), inv, { now })
         var t: KaiTurn? = null
@@ -53,7 +58,7 @@ class KaiCatalogueShopTest {
         return Triple(m.name, m.stock.subtract(BigDecimal("50")), all(t))
     }
 
-    private fun check(fails: MutableList<String>, want: String, vararg lines: String) {
+    protected fun check(fails: MutableList<String>, want: String, vararg lines: String) {
         val (got, qty, reply) = talk(*lines)
         if (got != want || qty?.compareTo(BigDecimal("7")) != 0) fails += "${lines.toList()} → $got ${qty ?: ""} (want $want +7) — $reply"
     }
@@ -84,8 +89,10 @@ class KaiCatalogueShopTest {
 
     // ------------------------------------------------------------------ the mic
 
-    private val mic: Map<String, String> = javaClass.getResource("/kai/catalogue-mic.txt")!!.readText().lines()
-        .filter { it.contains('=') && !it.startsWith("#") }.associate { it.substringBefore('=') to it.substringAfter('=') }
+    private val mic: Map<String, String> by lazy {
+        javaClass.getResource("/kai/$catalogue-mic.txt")!!.readText().lines().filter { it.contains('=') && !it.startsWith("#") }
+            .associate { it.substringBefore('=') to it.substringAfter('=') }
+    }
 
     /** The item's name as the mic writes it ("ON-0151" = ஓஎன் 0151: the letters said, the number as it is). */
     private fun spoken(item: String): String = item.split(Regex("""[\s-]+""")).filter { it.isNotEmpty() }
@@ -138,5 +145,30 @@ class KaiCatalogueShopTest {
             }
         }
         assertTrue("${fails.size} fails:\n" + fails.take(80).joinToString("\n"), fails.isEmpty())
+    }
+}
+
+class KaiCatalogue1620ShopTest : KaiCatalogueShopTest() {
+    override val catalogue = "catalogue-16-20"
+}
+
+class KaiCatalogue1115ShopTest : KaiCatalogueShopTest() {
+    override val catalogue = "catalogue-11-15"
+
+    private val tamil: List<List<String>> by lazy {
+        javaClass.getResource("/kai/catalogue-11-15-tamil.txt")!!.readText().lines().filter { it.isNotBlank() && !it.startsWith("#") }
+            .map { l -> l.split('|').map { it.trim() } }
+    }
+
+    /** The owner's own names (நண்டு = Crab, வஞ்சிரம் = Fresh seer fish, துடைப்பம் = Broom): the pack said goes on that pack; none said is asked. */
+    @Test fun theOwnersOwnNames() {
+        val fails = mutableListOf<String>()
+        for ((item, typed, said) in tamil) {
+            check(fails, "$item Small pack", "$typed small pack 7 add pannu")
+            check(fails, "$item Small pack", "$said சின்ன பேக் 7 ஆட் பண்ணு")
+            check(fails, "$item Medium pack", "$typed 7 add pannu", "medium")
+            check(fails, "$item Medium pack", "$said 7 ஆட் பண்ணு", "மீடியம்")
+        }
+        assertTrue("${fails.size} of ${tamil.size * 4} fails:\n" + fails.take(80).joinToString("\n"), fails.isEmpty())
     }
 }

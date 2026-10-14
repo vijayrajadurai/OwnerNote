@@ -54,6 +54,20 @@ class KaiSupermarketNamesTest {
         assertNull(KaiStock.understand("Fruit juice 7 add pannu", cat)?.product)
     }
 
+    @Test fun aGoodsNameOfAThingKeptOnlyInPacks() {
+        // Catalogue 11-15 (14 Oct 2026): "nandu" = crab, with only Crab Small / Medium pack kept — the pack said is that pack; a goods
+        // word already inside the name said ("Whole wheat bread", "Zip lock bag") is never read again; "Bucket 7" names the packs.
+        val cat = listOf("Crab Small pack", "Crab Medium pack", "Whole wheat bread Small pack", "Whole wheat bread Medium pack", "Zip lock bag Small pack",
+            "Zip lock bag Medium pack", "Bucket Small pack", "Bucket Medium pack").mapIndexed { i, n -> ProductRef("k$i", n, "PCS", BigDecimal("50")) }
+        assertEquals("Crab Small pack", KaiStock.understand("nandu small pack 7 add pannu", cat)?.product?.name)
+        assertEquals("Whole wheat bread Small pack", KaiStock.understand("Whole wheat bread small pack 7 add pannu", cat)?.product?.name)
+        assertEquals("Zip lock bag Medium pack", KaiStock.understand("Zip lock bag medium pack 7 add pannu", cat)?.product?.name)
+        assertEquals("crab 7 add pannu", KaiStock.withGoodsFamilies("nandu 7 add pannu", cat))
+        KaiStock.understand("Bucket 7 add pannu", cat).let { r -> assertNull(r?.product); assertEquals("Bucket", r?.spokenName) }
+        // A goods name the shop has nothing for stays as said.
+        assertEquals("nookal 7 add pannu", KaiStock.withGoodsFamilies("nookal 7 add pannu", cat))
+    }
+
     @Test fun goodsByTheirTamilName() {
         assertEquals("Papad", typed("appalam 7 add pannu")?.product?.name)
         assertEquals("Papad", spoken("அப்பளம் 7 ஆட் பண்ணு")?.product?.name)
