@@ -1,0 +1,684 @@
+# Owner's expanded stock catalogue 06-10 (14 Oct 2026): 5 business categories, each item in Small / Medium / Large / Family packs.
+# name|unit|category  (ON-0051 … ON-0100 are the catalogue's own codes for items not yet named)
+Smartphone Small pack|PCS|Electronics & Mobile Accessories
+Smartphone Medium pack|PCS|Electronics & Mobile Accessories
+Smartphone Large pack|PCS|Electronics & Mobile Accessories
+Smartphone Family pack|PCS|Electronics & Mobile Accessories
+Feature phone Small pack|PCS|Electronics & Mobile Accessories
+Feature phone Medium pack|PCS|Electronics & Mobile Accessories
+Feature phone Large pack|PCS|Electronics & Mobile Accessories
+Feature phone Family pack|PCS|Electronics & Mobile Accessories
+Tablet Small pack|PCS|Electronics & Mobile Accessories
+Tablet Medium pack|PCS|Electronics & Mobile Accessories
+Tablet Large pack|PCS|Electronics & Mobile Accessories
+Tablet Family pack|PCS|Electronics & Mobile Accessories
+Laptop Small pack|PCS|Electronics & Mobile Accessories
+Laptop Medium pack|PCS|Electronics & Mobile Accessories
+Laptop Large pack|PCS|Electronics & Mobile Accessories
+Laptop Family pack|PCS|Electronics & Mobile Accessories
+Desktop computer Small pack|PCS|Electronics & Mobile Accessories
+Desktop computer Medium pack|PCS|Electronics & Mobile Accessories
+Desktop computer Large pack|PCS|Electronics & Mobile Accessories
+Desktop computer Family pack|PCS|Electronics & Mobile Accessories
+Monitor Small pack|PCS|Electronics & Mobile Accessories
+Monitor Medium pack|PCS|Electronics & Mobile Accessories
+Monitor Large pack|PCS|Electronics & Mobile Accessories
+Monitor Family pack|PCS|Electronics & Mobile Accessories
+Keyboard Small pack|PCS|Electronics & Mobile Accessories
+Keyboard Medium pack|PCS|Electronics & Mobile Accessories
+Keyboard Large pack|PCS|Electronics & Mobile Accessories
+Keyboard Family pack|PCS|Electronics & Mobile Accessories
+Mouse Small pack|PCS|Electronics & Mobile Accessories
+Mouse Medium pack|PCS|Electronics & Mobile Accessories
+Mouse Large pack|PCS|Electronics & Mobile Accessories
+Mouse Family pack|PCS|Electronics & Mobile Accessories
+USB cable Small pack|PCS|Electronics & Mobile Accessories
+USB cable Medium pack|PCS|Electronics & Mobile Accessories
+USB cable Large pack|PCS|Electronics & Mobile Accessories
+USB cable Family pack|PCS|Electronics & Mobile Accessories
+Type-C cable Small pack|PCS|Electronics & Mobile Accessories
+Type-C cable Medium pack|PCS|Electronics & Mobile Accessories
+Type-C cable Large pack|PCS|Electronics & Mobile Accessories
+Type-C cable Family pack|PCS|Electronics & Mobile Accessories
+Lightning cable Small pack|PCS|Electronics & Mobile Accessories
+Lightning cable Medium pack|PCS|Electronics & Mobile Accessories
+Charger adapter Small pack|PCS|Electronics & Mobile Accessories
+Charger adapter Medium pack|PCS|Electronics & Mobile Accessories
+Power bank Small pack|PCS|Electronics & Mobile Accessories
+Power bank Medium pack|PCS|Electronics & Mobile Accessories
+Earphones Small pack|PCS|Electronics & Mobile Accessories
+Earphones Medium pack|PCS|Electronics & Mobile Accessories
+Bluetooth earbuds Small pack|PCS|Electronics & Mobile Accessories
+Bluetooth earbuds Medium pack|PCS|Electronics & Mobile Accessories
+Headphones Small pack|PCS|Electronics & Mobile Accessories
+Headphones Medium pack|PCS|Electronics & Mobile Accessories
+Bluetooth speaker Small pack|PCS|Electronics & Mobile Accessories
+Bluetooth speaker Medium pack|PCS|Electronics & Mobile Accessories
+Memory card Small pack|PCS|Electronics & Mobile Accessories
+Memory card Medium pack|PCS|Electronics & Mobile Accessories
+USB pen drive Small pack|PCS|Electronics & Mobile Accessories
+USB pen drive Medium pack|PCS|Electronics & Mobile Accessories
+External hard disk Small pack|PCS|Electronics & Mobile Accessories
+External hard disk Medium pack|PCS|Electronics & Mobile Accessories
+SSD Small pack|PCS|Electronics & Mobile Accessories
+SSD Medium pack|PCS|Electronics & Mobile Accessories
+Router Small pack|PCS|Electronics & Mobile Accessories
+Router Medium pack|PCS|Electronics & Mobile Accessories
+Wi-Fi extender Small pack|PCS|Electronics & Mobile Accessories
+Wi-Fi extender Medium pack|PCS|Electronics & Mobile Accessories
+Webcam Small pack|PCS|Electronics & Mobile Accessories
+Webcam Medium pack|PCS|Electronics & Mobile Accessories
+Microphone Small pack|PCS|Electronics & Mobile Accessories
+Microphone Medium pack|PCS|Electronics & Mobile Accessories
+Phone case Small pack|PCS|Electronics & Mobile Accessories
+Phone case Medium pack|PCS|Electronics & Mobile Accessories
+Screen protector Small pack|PCS|Electronics & Mobile Accessories
+Screen protector Medium pack|PCS|Electronics & Mobile Accessories
+Mobile stand Small pack|PCS|Electronics & Mobile Accessories
+Mobile stand Medium pack|PCS|Electronics & Mobile Accessories
+Car charger Small pack|PCS|Electronics & Mobile Accessories
+Car charger Medium pack|PCS|Electronics & Mobile Accessories
+Power strip Small pack|PCS|Electronics & Mobile Accessories
+Power strip Medium pack|PCS|Electronics & Mobile Accessories
+Extension board Small pack|PCS|Electronics & Mobile Accessories
+Extension board Medium pack|PCS|Electronics & Mobile Accessories
+HDMI cable Small pack|PCS|Electronics & Mobile Accessories
+HDMI cable Medium pack|PCS|Electronics & Mobile Accessories
+Display cable Small pack|PCS|Electronics & Mobile Accessories
+Display cable Medium pack|PCS|Electronics & Mobile Accessories
+Printer Small pack|PCS|Electronics & Mobile Accessories
+Printer Medium pack|PCS|Electronics & Mobile Accessories
+Ink cartridge Small pack|PCS|Electronics & Mobile Accessories
+Ink cartridge Medium pack|PCS|Electronics & Mobile Accessories
+Toner cartridge Small pack|PCS|Electronics & Mobile Accessories
+Toner cartridge Medium pack|PCS|Electronics & Mobile Accessories
+Projector Small pack|PCS|Electronics & Mobile Accessories
+Projector Medium pack|PCS|Electronics & Mobile Accessories
+Remote control Small pack|PCS|Electronics & Mobile Accessories
+Remote control Medium pack|PCS|Electronics & Mobile Accessories
+Smartwatch Small pack|PCS|Electronics & Mobile Accessories
+Smartwatch Medium pack|PCS|Electronics & Mobile Accessories
+Fitness band Small pack|PCS|Electronics & Mobile Accessories
+Fitness band Medium pack|PCS|Electronics & Mobile Accessories
+Camera Small pack|PCS|Electronics & Mobile Accessories
+Camera Medium pack|PCS|Electronics & Mobile Accessories
+Tripod Small pack|PCS|Electronics & Mobile Accessories
+Tripod Medium pack|PCS|Electronics & Mobile Accessories
+Ring light Small pack|PCS|Electronics & Mobile Accessories
+Ring light Medium pack|PCS|Electronics & Mobile Accessories
+Gaming controller Small pack|PCS|Electronics & Mobile Accessories
+Gaming controller Medium pack|PCS|Electronics & Mobile Accessories
+Laptop bag Small pack|PCS|Electronics & Mobile Accessories
+Laptop bag Medium pack|PCS|Electronics & Mobile Accessories
+Cooling pad Small pack|PCS|Electronics & Mobile Accessories
+Cooling pad Medium pack|PCS|Electronics & Mobile Accessories
+ON-0051 Small pack|PCS|Electronics & Mobile Accessories
+ON-0051 Medium pack|PCS|Electronics & Mobile Accessories
+ON-0052 Small pack|PCS|Electronics & Mobile Accessories
+ON-0052 Medium pack|PCS|Electronics & Mobile Accessories
+ON-0053 Small pack|PCS|Electronics & Mobile Accessories
+ON-0053 Medium pack|PCS|Electronics & Mobile Accessories
+ON-0054 Small pack|PCS|Electronics & Mobile Accessories
+ON-0054 Medium pack|PCS|Electronics & Mobile Accessories
+ON-0055 Small pack|PCS|Electronics & Mobile Accessories
+ON-0055 Medium pack|PCS|Electronics & Mobile Accessories
+ON-0056 Small pack|PCS|Electronics & Mobile Accessories
+ON-0056 Medium pack|PCS|Electronics & Mobile Accessories
+ON-0057 Small pack|PCS|Electronics & Mobile Accessories
+ON-0057 Medium pack|PCS|Electronics & Mobile Accessories
+ON-0058 Small pack|PCS|Electronics & Mobile Accessories
+ON-0058 Medium pack|PCS|Electronics & Mobile Accessories
+ON-0059 Small pack|PCS|Electronics & Mobile Accessories
+ON-0059 Medium pack|PCS|Electronics & Mobile Accessories
+ON-0060 Small pack|PCS|Electronics & Mobile Accessories
+ON-0060 Medium pack|PCS|Electronics & Mobile Accessories
+Bath soap Small pack|PCS|Beauty & Personal Care
+Bath soap Medium pack|PCS|Beauty & Personal Care
+Bath soap Large pack|PCS|Beauty & Personal Care
+Bath soap Family pack|PCS|Beauty & Personal Care
+Body wash Small pack|PCS|Beauty & Personal Care
+Body wash Medium pack|PCS|Beauty & Personal Care
+Body wash Large pack|PCS|Beauty & Personal Care
+Body wash Family pack|PCS|Beauty & Personal Care
+Shampoo Small pack|PCS|Beauty & Personal Care
+Shampoo Medium pack|PCS|Beauty & Personal Care
+Shampoo Large pack|PCS|Beauty & Personal Care
+Shampoo Family pack|PCS|Beauty & Personal Care
+Conditioner Small pack|PCS|Beauty & Personal Care
+Conditioner Medium pack|PCS|Beauty & Personal Care
+Conditioner Large pack|PCS|Beauty & Personal Care
+Conditioner Family pack|PCS|Beauty & Personal Care
+Hair oil Small pack|PCS|Beauty & Personal Care
+Hair oil Medium pack|PCS|Beauty & Personal Care
+Hair oil Large pack|PCS|Beauty & Personal Care
+Hair oil Family pack|PCS|Beauty & Personal Care
+Hair serum Small pack|PCS|Beauty & Personal Care
+Hair serum Medium pack|PCS|Beauty & Personal Care
+Hair serum Large pack|PCS|Beauty & Personal Care
+Hair serum Family pack|PCS|Beauty & Personal Care
+Hair colour Small pack|PCS|Beauty & Personal Care
+Hair colour Medium pack|PCS|Beauty & Personal Care
+Hair colour Large pack|PCS|Beauty & Personal Care
+Hair colour Family pack|PCS|Beauty & Personal Care
+Hair gel Small pack|PCS|Beauty & Personal Care
+Hair gel Medium pack|PCS|Beauty & Personal Care
+Hair gel Large pack|PCS|Beauty & Personal Care
+Hair gel Family pack|PCS|Beauty & Personal Care
+Hair spray Small pack|PCS|Beauty & Personal Care
+Hair spray Medium pack|PCS|Beauty & Personal Care
+Hair spray Large pack|PCS|Beauty & Personal Care
+Hair spray Family pack|PCS|Beauty & Personal Care
+Face wash Small pack|PCS|Beauty & Personal Care
+Face wash Medium pack|PCS|Beauty & Personal Care
+Face wash Large pack|PCS|Beauty & Personal Care
+Face wash Family pack|PCS|Beauty & Personal Care
+Face cream Small pack|PCS|Beauty & Personal Care
+Face cream Medium pack|PCS|Beauty & Personal Care
+Moisturizer Small pack|PCS|Beauty & Personal Care
+Moisturizer Medium pack|PCS|Beauty & Personal Care
+Sunscreen Small pack|PCS|Beauty & Personal Care
+Sunscreen Medium pack|PCS|Beauty & Personal Care
+Talcum powder Small pack|PCS|Beauty & Personal Care
+Talcum powder Medium pack|PCS|Beauty & Personal Care
+Body lotion Small pack|PCS|Beauty & Personal Care
+Body lotion Medium pack|PCS|Beauty & Personal Care
+Deodorant Small pack|PCS|Beauty & Personal Care
+Deodorant Medium pack|PCS|Beauty & Personal Care
+Perfume Small pack|PCS|Beauty & Personal Care
+Perfume Medium pack|PCS|Beauty & Personal Care
+Lipstick Small pack|PCS|Beauty & Personal Care
+Lipstick Medium pack|PCS|Beauty & Personal Care
+Lip balm Small pack|PCS|Beauty & Personal Care
+Lip balm Medium pack|PCS|Beauty & Personal Care
+Kajal Small pack|PCS|Beauty & Personal Care
+Kajal Medium pack|PCS|Beauty & Personal Care
+Eyeliner Small pack|PCS|Beauty & Personal Care
+Eyeliner Medium pack|PCS|Beauty & Personal Care
+Mascara Small pack|PCS|Beauty & Personal Care
+Mascara Medium pack|PCS|Beauty & Personal Care
+Foundation Small pack|PCS|Beauty & Personal Care
+Foundation Medium pack|PCS|Beauty & Personal Care
+Compact powder Small pack|PCS|Beauty & Personal Care
+Compact powder Medium pack|PCS|Beauty & Personal Care
+Nail polish Small pack|PCS|Beauty & Personal Care
+Nail polish Medium pack|PCS|Beauty & Personal Care
+Makeup remover Small pack|PCS|Beauty & Personal Care
+Makeup remover Medium pack|PCS|Beauty & Personal Care
+Face mask Small pack|PCS|Beauty & Personal Care
+Face mask Medium pack|PCS|Beauty & Personal Care
+Scrub Small pack|PCS|Beauty & Personal Care
+Scrub Medium pack|PCS|Beauty & Personal Care
+Toothpaste Small pack|PCS|Beauty & Personal Care
+Toothpaste Medium pack|PCS|Beauty & Personal Care
+Toothbrush Small pack|PCS|Beauty & Personal Care
+Toothbrush Medium pack|PCS|Beauty & Personal Care
+Mouthwash Small pack|PCS|Beauty & Personal Care
+Mouthwash Medium pack|PCS|Beauty & Personal Care
+Dental floss Small pack|PCS|Beauty & Personal Care
+Dental floss Medium pack|PCS|Beauty & Personal Care
+Shaving cream Small pack|PCS|Beauty & Personal Care
+Shaving cream Medium pack|PCS|Beauty & Personal Care
+Razor Small pack|PCS|Beauty & Personal Care
+Razor Medium pack|PCS|Beauty & Personal Care
+Aftershave Small pack|PCS|Beauty & Personal Care
+Aftershave Medium pack|PCS|Beauty & Personal Care
+Sanitary napkins Small pack|PCS|Beauty & Personal Care
+Sanitary napkins Medium pack|PCS|Beauty & Personal Care
+Cotton buds Small pack|PCS|Beauty & Personal Care
+Cotton buds Medium pack|PCS|Beauty & Personal Care
+Wet wipes Small pack|PCS|Beauty & Personal Care
+Wet wipes Medium pack|PCS|Beauty & Personal Care
+Tissue box Small pack|PCS|Beauty & Personal Care
+Tissue box Medium pack|PCS|Beauty & Personal Care
+Comb Small pack|PCS|Beauty & Personal Care
+Comb Medium pack|PCS|Beauty & Personal Care
+Hair brush Small pack|PCS|Beauty & Personal Care
+Hair brush Medium pack|PCS|Beauty & Personal Care
+Nail cutter Small pack|PCS|Beauty & Personal Care
+Nail cutter Medium pack|PCS|Beauty & Personal Care
+Manicure kit Small pack|PCS|Beauty & Personal Care
+Manicure kit Medium pack|PCS|Beauty & Personal Care
+Talc Small pack|PCS|Beauty & Personal Care
+Talc Medium pack|PCS|Beauty & Personal Care
+Hand cream Small pack|PCS|Beauty & Personal Care
+Hand cream Medium pack|PCS|Beauty & Personal Care
+Foot cream Small pack|PCS|Beauty & Personal Care
+Foot cream Medium pack|PCS|Beauty & Personal Care
+ON-0061 Small pack|PCS|Beauty & Personal Care
+ON-0061 Medium pack|PCS|Beauty & Personal Care
+ON-0062 Small pack|PCS|Beauty & Personal Care
+ON-0062 Medium pack|PCS|Beauty & Personal Care
+ON-0063 Small pack|PCS|Beauty & Personal Care
+ON-0063 Medium pack|PCS|Beauty & Personal Care
+ON-0064 Small pack|PCS|Beauty & Personal Care
+ON-0064 Medium pack|PCS|Beauty & Personal Care
+ON-0065 Small pack|PCS|Beauty & Personal Care
+ON-0065 Medium pack|PCS|Beauty & Personal Care
+ON-0066 Small pack|PCS|Beauty & Personal Care
+ON-0066 Medium pack|PCS|Beauty & Personal Care
+ON-0067 Small pack|PCS|Beauty & Personal Care
+ON-0067 Medium pack|PCS|Beauty & Personal Care
+ON-0068 Small pack|PCS|Beauty & Personal Care
+ON-0068 Medium pack|PCS|Beauty & Personal Care
+ON-0069 Small pack|PCS|Beauty & Personal Care
+ON-0069 Medium pack|PCS|Beauty & Personal Care
+ON-0070 Small pack|PCS|Beauty & Personal Care
+ON-0070 Medium pack|PCS|Beauty & Personal Care
+Ball pen Small pack|PCS|Stationery & Office Supplies
+Ball pen Medium pack|PCS|Stationery & Office Supplies
+Ball pen Large pack|PCS|Stationery & Office Supplies
+Ball pen Family pack|PCS|Stationery & Office Supplies
+Gel pen Small pack|PCS|Stationery & Office Supplies
+Gel pen Medium pack|PCS|Stationery & Office Supplies
+Gel pen Large pack|PCS|Stationery & Office Supplies
+Gel pen Family pack|PCS|Stationery & Office Supplies
+Pencil Small pack|PCS|Stationery & Office Supplies
+Pencil Medium pack|PCS|Stationery & Office Supplies
+Pencil Large pack|PCS|Stationery & Office Supplies
+Pencil Family pack|PCS|Stationery & Office Supplies
+Mechanical pencil Small pack|PCS|Stationery & Office Supplies
+Mechanical pencil Medium pack|PCS|Stationery & Office Supplies
+Mechanical pencil Large pack|PCS|Stationery & Office Supplies
+Mechanical pencil Family pack|PCS|Stationery & Office Supplies
+Eraser Small pack|PCS|Stationery & Office Supplies
+Eraser Medium pack|PCS|Stationery & Office Supplies
+Eraser Large pack|PCS|Stationery & Office Supplies
+Eraser Family pack|PCS|Stationery & Office Supplies
+Sharpener Small pack|PCS|Stationery & Office Supplies
+Sharpener Medium pack|PCS|Stationery & Office Supplies
+Sharpener Large pack|PCS|Stationery & Office Supplies
+Sharpener Family pack|PCS|Stationery & Office Supplies
+Ruler Small pack|PCS|Stationery & Office Supplies
+Ruler Medium pack|PCS|Stationery & Office Supplies
+Ruler Large pack|PCS|Stationery & Office Supplies
+Ruler Family pack|PCS|Stationery & Office Supplies
+Geometry box Small pack|PCS|Stationery & Office Supplies
+Geometry box Medium pack|PCS|Stationery & Office Supplies
+Geometry box Large pack|PCS|Stationery & Office Supplies
+Geometry box Family pack|PCS|Stationery & Office Supplies
+Highlighter Small pack|PCS|Stationery & Office Supplies
+Highlighter Medium pack|PCS|Stationery & Office Supplies
+Highlighter Large pack|PCS|Stationery & Office Supplies
+Highlighter Family pack|PCS|Stationery & Office Supplies
+Permanent marker Small pack|PCS|Stationery & Office Supplies
+Permanent marker Medium pack|PCS|Stationery & Office Supplies
+Permanent marker Large pack|PCS|Stationery & Office Supplies
+Permanent marker Family pack|PCS|Stationery & Office Supplies
+Whiteboard marker Small pack|PCS|Stationery & Office Supplies
+Whiteboard marker Medium pack|PCS|Stationery & Office Supplies
+Chalk Small pack|PCS|Stationery & Office Supplies
+Chalk Medium pack|PCS|Stationery & Office Supplies
+Crayon Small pack|PCS|Stationery & Office Supplies
+Crayon Medium pack|PCS|Stationery & Office Supplies
+Colour pencil Small pack|PCS|Stationery & Office Supplies
+Colour pencil Medium pack|PCS|Stationery & Office Supplies
+Sketch pen Small pack|PCS|Stationery & Office Supplies
+Sketch pen Medium pack|PCS|Stationery & Office Supplies
+Watercolour set Small pack|PCS|Stationery & Office Supplies
+Watercolour set Medium pack|PCS|Stationery & Office Supplies
+Notebook Small pack|PCS|Stationery & Office Supplies
+Notebook Medium pack|PCS|Stationery & Office Supplies
+Long notebook Small pack|PCS|Stationery & Office Supplies
+Long notebook Medium pack|PCS|Stationery & Office Supplies
+Graph notebook Small pack|PCS|Stationery & Office Supplies
+Graph notebook Medium pack|PCS|Stationery & Office Supplies
+Drawing book Small pack|PCS|Stationery & Office Supplies
+Drawing book Medium pack|PCS|Stationery & Office Supplies
+Register Small pack|PCS|Stationery & Office Supplies
+Register Medium pack|PCS|Stationery & Office Supplies
+Ledger book Small pack|PCS|Stationery & Office Supplies
+Ledger book Medium pack|PCS|Stationery & Office Supplies
+Diary Small pack|PCS|Stationery & Office Supplies
+Diary Medium pack|PCS|Stationery & Office Supplies
+Planner Small pack|PCS|Stationery & Office Supplies
+Planner Medium pack|PCS|Stationery & Office Supplies
+Sticky notes Small pack|PCS|Stationery & Office Supplies
+Sticky notes Medium pack|PCS|Stationery & Office Supplies
+Index tabs Small pack|PCS|Stationery & Office Supplies
+Index tabs Medium pack|PCS|Stationery & Office Supplies
+A4 paper Small pack|PCS|Stationery & Office Supplies
+A4 paper Medium pack|PCS|Stationery & Office Supplies
+Legal paper Small pack|PCS|Stationery & Office Supplies
+Legal paper Medium pack|PCS|Stationery & Office Supplies
+Photo paper Small pack|PCS|Stationery & Office Supplies
+Photo paper Medium pack|PCS|Stationery & Office Supplies
+Envelope Small pack|PCS|Stationery & Office Supplies
+Envelope Medium pack|PCS|Stationery & Office Supplies
+File folder Small pack|PCS|Stationery & Office Supplies
+File folder Medium pack|PCS|Stationery & Office Supplies
+Box file Small pack|PCS|Stationery & Office Supplies
+Box file Medium pack|PCS|Stationery & Office Supplies
+Ring binder Small pack|PCS|Stationery & Office Supplies
+Ring binder Medium pack|PCS|Stationery & Office Supplies
+Clipboard Small pack|PCS|Stationery & Office Supplies
+Clipboard Medium pack|PCS|Stationery & Office Supplies
+Stapler Small pack|PCS|Stationery & Office Supplies
+Stapler Medium pack|PCS|Stationery & Office Supplies
+Staple pins Small pack|PCS|Stationery & Office Supplies
+Staple pins Medium pack|PCS|Stationery & Office Supplies
+Paper punch Small pack|PCS|Stationery & Office Supplies
+Paper punch Medium pack|PCS|Stationery & Office Supplies
+Paper clip Small pack|PCS|Stationery & Office Supplies
+Paper clip Medium pack|PCS|Stationery & Office Supplies
+Binder clip Small pack|PCS|Stationery & Office Supplies
+Binder clip Medium pack|PCS|Stationery & Office Supplies
+Scissors Small pack|PCS|Stationery & Office Supplies
+Scissors Medium pack|PCS|Stationery & Office Supplies
+Glue stick Small pack|PCS|Stationery & Office Supplies
+Glue stick Medium pack|PCS|Stationery & Office Supplies
+Fevicol Small pack|PCS|Stationery & Office Supplies
+Fevicol Medium pack|PCS|Stationery & Office Supplies
+Cello tape Small pack|PCS|Stationery & Office Supplies
+Cello tape Medium pack|PCS|Stationery & Office Supplies
+Double-sided tape Small pack|PCS|Stationery & Office Supplies
+Double-sided tape Medium pack|PCS|Stationery & Office Supplies
+Correction pen Small pack|PCS|Stationery & Office Supplies
+Correction pen Medium pack|PCS|Stationery & Office Supplies
+Calculator Small pack|PCS|Stationery & Office Supplies
+Calculator Medium pack|PCS|Stationery & Office Supplies
+Printer paper Small pack|PCS|Stationery & Office Supplies
+Printer paper Medium pack|PCS|Stationery & Office Supplies
+Toner Small pack|PCS|Stationery & Office Supplies
+Toner Medium pack|PCS|Stationery & Office Supplies
+Whiteboard Small pack|PCS|Stationery & Office Supplies
+Whiteboard Medium pack|PCS|Stationery & Office Supplies
+Duster Small pack|PCS|Stationery & Office Supplies
+Duster Medium pack|PCS|Stationery & Office Supplies
+ON-0071 Small pack|PCS|Stationery & Office Supplies
+ON-0071 Medium pack|PCS|Stationery & Office Supplies
+ON-0072 Small pack|PCS|Stationery & Office Supplies
+ON-0072 Medium pack|PCS|Stationery & Office Supplies
+ON-0073 Small pack|PCS|Stationery & Office Supplies
+ON-0073 Medium pack|PCS|Stationery & Office Supplies
+ON-0074 Small pack|PCS|Stationery & Office Supplies
+ON-0074 Medium pack|PCS|Stationery & Office Supplies
+ON-0075 Small pack|PCS|Stationery & Office Supplies
+ON-0075 Medium pack|PCS|Stationery & Office Supplies
+ON-0076 Small pack|PCS|Stationery & Office Supplies
+ON-0076 Medium pack|PCS|Stationery & Office Supplies
+ON-0077 Small pack|PCS|Stationery & Office Supplies
+ON-0077 Medium pack|PCS|Stationery & Office Supplies
+ON-0078 Small pack|PCS|Stationery & Office Supplies
+ON-0078 Medium pack|PCS|Stationery & Office Supplies
+ON-0079 Small pack|PCS|Stationery & Office Supplies
+ON-0079 Medium pack|PCS|Stationery & Office Supplies
+ON-0080 Small pack|PCS|Stationery & Office Supplies
+ON-0080 Medium pack|PCS|Stationery & Office Supplies
+Engine oil Small pack|PCS|Automobile & Spare Parts
+Engine oil Medium pack|PCS|Automobile & Spare Parts
+Engine oil Large pack|PCS|Automobile & Spare Parts
+Engine oil Family pack|PCS|Automobile & Spare Parts
+Gear oil Small pack|PCS|Automobile & Spare Parts
+Gear oil Medium pack|PCS|Automobile & Spare Parts
+Gear oil Large pack|PCS|Automobile & Spare Parts
+Gear oil Family pack|PCS|Automobile & Spare Parts
+Brake oil Small pack|PCS|Automobile & Spare Parts
+Brake oil Medium pack|PCS|Automobile & Spare Parts
+Brake oil Large pack|PCS|Automobile & Spare Parts
+Brake oil Family pack|PCS|Automobile & Spare Parts
+Coolant Small pack|PCS|Automobile & Spare Parts
+Coolant Medium pack|PCS|Automobile & Spare Parts
+Coolant Large pack|PCS|Automobile & Spare Parts
+Coolant Family pack|PCS|Automobile & Spare Parts
+Grease Small pack|PCS|Automobile & Spare Parts
+Grease Medium pack|PCS|Automobile & Spare Parts
+Grease Large pack|PCS|Automobile & Spare Parts
+Grease Family pack|PCS|Automobile & Spare Parts
+Oil filter Small pack|PCS|Automobile & Spare Parts
+Oil filter Medium pack|PCS|Automobile & Spare Parts
+Oil filter Large pack|PCS|Automobile & Spare Parts
+Oil filter Family pack|PCS|Automobile & Spare Parts
+Air filter Small pack|PCS|Automobile & Spare Parts
+Air filter Medium pack|PCS|Automobile & Spare Parts
+Air filter Large pack|PCS|Automobile & Spare Parts
+Air filter Family pack|PCS|Automobile & Spare Parts
+Fuel filter Small pack|PCS|Automobile & Spare Parts
+Fuel filter Medium pack|PCS|Automobile & Spare Parts
+Fuel filter Large pack|PCS|Automobile & Spare Parts
+Fuel filter Family pack|PCS|Automobile & Spare Parts
+Cabin filter Small pack|PCS|Automobile & Spare Parts
+Cabin filter Medium pack|PCS|Automobile & Spare Parts
+Cabin filter Large pack|PCS|Automobile & Spare Parts
+Cabin filter Family pack|PCS|Automobile & Spare Parts
+Spark plug Small pack|PCS|Automobile & Spare Parts
+Spark plug Medium pack|PCS|Automobile & Spare Parts
+Spark plug Large pack|PCS|Automobile & Spare Parts
+Spark plug Family pack|PCS|Automobile & Spare Parts
+Battery Small pack|PCS|Automobile & Spare Parts
+Battery Medium pack|PCS|Automobile & Spare Parts
+Headlamp bulb Small pack|PCS|Automobile & Spare Parts
+Headlamp bulb Medium pack|PCS|Automobile & Spare Parts
+Tail lamp Small pack|PCS|Automobile & Spare Parts
+Tail lamp Medium pack|PCS|Automobile & Spare Parts
+Indicator bulb Small pack|PCS|Automobile & Spare Parts
+Indicator bulb Medium pack|PCS|Automobile & Spare Parts
+Fuse Small pack|PCS|Automobile & Spare Parts
+Fuse Medium pack|PCS|Automobile & Spare Parts
+Relay Small pack|PCS|Automobile & Spare Parts
+Relay Medium pack|PCS|Automobile & Spare Parts
+Wiper blade Small pack|PCS|Automobile & Spare Parts
+Wiper blade Medium pack|PCS|Automobile & Spare Parts
+Horn Small pack|PCS|Automobile & Spare Parts
+Horn Medium pack|PCS|Automobile & Spare Parts
+Side mirror Small pack|PCS|Automobile & Spare Parts
+Side mirror Medium pack|PCS|Automobile & Spare Parts
+Rear view mirror Small pack|PCS|Automobile & Spare Parts
+Rear view mirror Medium pack|PCS|Automobile & Spare Parts
+Brake pad Small pack|PCS|Automobile & Spare Parts
+Brake pad Medium pack|PCS|Automobile & Spare Parts
+Brake shoe Small pack|PCS|Automobile & Spare Parts
+Brake shoe Medium pack|PCS|Automobile & Spare Parts
+Clutch plate Small pack|PCS|Automobile & Spare Parts
+Clutch plate Medium pack|PCS|Automobile & Spare Parts
+Clutch cable Small pack|PCS|Automobile & Spare Parts
+Clutch cable Medium pack|PCS|Automobile & Spare Parts
+Accelerator cable Small pack|PCS|Automobile & Spare Parts
+Accelerator cable Medium pack|PCS|Automobile & Spare Parts
+Brake cable Small pack|PCS|Automobile & Spare Parts
+Brake cable Medium pack|PCS|Automobile & Spare Parts
+Drive belt Small pack|PCS|Automobile & Spare Parts
+Drive belt Medium pack|PCS|Automobile & Spare Parts
+Timing belt Small pack|PCS|Automobile & Spare Parts
+Timing belt Medium pack|PCS|Automobile & Spare Parts
+Radiator hose Small pack|PCS|Automobile & Spare Parts
+Radiator hose Medium pack|PCS|Automobile & Spare Parts
+Air hose Small pack|PCS|Automobile & Spare Parts
+Air hose Medium pack|PCS|Automobile & Spare Parts
+Tyre Small pack|PCS|Automobile & Spare Parts
+Tyre Medium pack|PCS|Automobile & Spare Parts
+Tube Small pack|PCS|Automobile & Spare Parts
+Tube Medium pack|PCS|Automobile & Spare Parts
+Tubeless valve Small pack|PCS|Automobile & Spare Parts
+Tubeless valve Medium pack|PCS|Automobile & Spare Parts
+Wheel bearing Small pack|PCS|Automobile & Spare Parts
+Wheel bearing Medium pack|PCS|Automobile & Spare Parts
+Shock absorber Small pack|PCS|Automobile & Spare Parts
+Shock absorber Medium pack|PCS|Automobile & Spare Parts
+Suspension bush Small pack|PCS|Automobile & Spare Parts
+Suspension bush Medium pack|PCS|Automobile & Spare Parts
+Ball joint Small pack|PCS|Automobile & Spare Parts
+Ball joint Medium pack|PCS|Automobile & Spare Parts
+Tie rod end Small pack|PCS|Automobile & Spare Parts
+Tie rod end Medium pack|PCS|Automobile & Spare Parts
+Chain sprocket kit Small pack|PCS|Automobile & Spare Parts
+Chain sprocket kit Medium pack|PCS|Automobile & Spare Parts
+Motorcycle chain Small pack|PCS|Automobile & Spare Parts
+Motorcycle chain Medium pack|PCS|Automobile & Spare Parts
+Helmet Small pack|PCS|Automobile & Spare Parts
+Helmet Medium pack|PCS|Automobile & Spare Parts
+Seat cover Small pack|PCS|Automobile & Spare Parts
+Seat cover Medium pack|PCS|Automobile & Spare Parts
+Floor mat Small pack|PCS|Automobile & Spare Parts
+Floor mat Medium pack|PCS|Automobile & Spare Parts
+Car shampoo Small pack|PCS|Automobile & Spare Parts
+Car shampoo Medium pack|PCS|Automobile & Spare Parts
+Polish Small pack|PCS|Automobile & Spare Parts
+Polish Medium pack|PCS|Automobile & Spare Parts
+Puncture kit Small pack|PCS|Automobile & Spare Parts
+Puncture kit Medium pack|PCS|Automobile & Spare Parts
+Air pump Small pack|PCS|Automobile & Spare Parts
+Air pump Medium pack|PCS|Automobile & Spare Parts
+Jump cable Small pack|PCS|Automobile & Spare Parts
+Jump cable Medium pack|PCS|Automobile & Spare Parts
+Car charger Small pack|PCS|Automobile & Spare Parts
+Car charger Medium pack|PCS|Automobile & Spare Parts
+Number plate frame Small pack|PCS|Automobile & Spare Parts
+Number plate frame Medium pack|PCS|Automobile & Spare Parts
+ON-0081 Small pack|PCS|Automobile & Spare Parts
+ON-0081 Medium pack|PCS|Automobile & Spare Parts
+ON-0082 Small pack|PCS|Automobile & Spare Parts
+ON-0082 Medium pack|PCS|Automobile & Spare Parts
+ON-0083 Small pack|PCS|Automobile & Spare Parts
+ON-0083 Medium pack|PCS|Automobile & Spare Parts
+ON-0084 Small pack|PCS|Automobile & Spare Parts
+ON-0084 Medium pack|PCS|Automobile & Spare Parts
+ON-0085 Small pack|PCS|Automobile & Spare Parts
+ON-0085 Medium pack|PCS|Automobile & Spare Parts
+ON-0086 Small pack|PCS|Automobile & Spare Parts
+ON-0086 Medium pack|PCS|Automobile & Spare Parts
+ON-0087 Small pack|PCS|Automobile & Spare Parts
+ON-0087 Medium pack|PCS|Automobile & Spare Parts
+ON-0088 Small pack|PCS|Automobile & Spare Parts
+ON-0088 Medium pack|PCS|Automobile & Spare Parts
+ON-0089 Small pack|PCS|Automobile & Spare Parts
+ON-0089 Medium pack|PCS|Automobile & Spare Parts
+ON-0090 Small pack|PCS|Automobile & Spare Parts
+ON-0090 Medium pack|PCS|Automobile & Spare Parts
+Paddy seeds Small pack|PCS|Agriculture Supplies
+Paddy seeds Medium pack|PCS|Agriculture Supplies
+Paddy seeds Large pack|PCS|Agriculture Supplies
+Paddy seeds Family pack|PCS|Agriculture Supplies
+Maize seeds Small pack|PCS|Agriculture Supplies
+Maize seeds Medium pack|PCS|Agriculture Supplies
+Maize seeds Large pack|PCS|Agriculture Supplies
+Maize seeds Family pack|PCS|Agriculture Supplies
+Cotton seeds Small pack|PCS|Agriculture Supplies
+Cotton seeds Medium pack|PCS|Agriculture Supplies
+Cotton seeds Large pack|PCS|Agriculture Supplies
+Cotton seeds Family pack|PCS|Agriculture Supplies
+Groundnut seeds Small pack|PCS|Agriculture Supplies
+Groundnut seeds Medium pack|PCS|Agriculture Supplies
+Groundnut seeds Large pack|PCS|Agriculture Supplies
+Groundnut seeds Family pack|PCS|Agriculture Supplies
+Vegetable seeds Small pack|PCS|Agriculture Supplies
+Vegetable seeds Medium pack|PCS|Agriculture Supplies
+Vegetable seeds Large pack|PCS|Agriculture Supplies
+Vegetable seeds Family pack|PCS|Agriculture Supplies
+Flower seeds Small pack|PCS|Agriculture Supplies
+Flower seeds Medium pack|PCS|Agriculture Supplies
+Flower seeds Large pack|PCS|Agriculture Supplies
+Flower seeds Family pack|PCS|Agriculture Supplies
+Seedling tray Small pack|PCS|Agriculture Supplies
+Seedling tray Medium pack|PCS|Agriculture Supplies
+Seedling tray Large pack|PCS|Agriculture Supplies
+Seedling tray Family pack|PCS|Agriculture Supplies
+Organic manure Small pack|PCS|Agriculture Supplies
+Organic manure Medium pack|PCS|Agriculture Supplies
+Organic manure Large pack|PCS|Agriculture Supplies
+Organic manure Family pack|PCS|Agriculture Supplies
+Vermicompost Small pack|PCS|Agriculture Supplies
+Vermicompost Medium pack|PCS|Agriculture Supplies
+Vermicompost Large pack|PCS|Agriculture Supplies
+Vermicompost Family pack|PCS|Agriculture Supplies
+Neem cake Small pack|PCS|Agriculture Supplies
+Neem cake Medium pack|PCS|Agriculture Supplies
+Neem cake Large pack|PCS|Agriculture Supplies
+Neem cake Family pack|PCS|Agriculture Supplies
+Urea fertilizer Small pack|PCS|Agriculture Supplies
+Urea fertilizer Medium pack|PCS|Agriculture Supplies
+DAP fertilizer Small pack|PCS|Agriculture Supplies
+DAP fertilizer Medium pack|PCS|Agriculture Supplies
+NPK fertilizer Small pack|PCS|Agriculture Supplies
+NPK fertilizer Medium pack|PCS|Agriculture Supplies
+Potash fertilizer Small pack|PCS|Agriculture Supplies
+Potash fertilizer Medium pack|PCS|Agriculture Supplies
+Micronutrient mix Small pack|PCS|Agriculture Supplies
+Micronutrient mix Medium pack|PCS|Agriculture Supplies
+Soil conditioner Small pack|PCS|Agriculture Supplies
+Soil conditioner Medium pack|PCS|Agriculture Supplies
+Coco peat Small pack|PCS|Agriculture Supplies
+Coco peat Medium pack|PCS|Agriculture Supplies
+Grow bag Small pack|PCS|Agriculture Supplies
+Grow bag Medium pack|PCS|Agriculture Supplies
+Drip pipe Small pack|PCS|Agriculture Supplies
+Drip pipe Medium pack|PCS|Agriculture Supplies
+Drip emitter Small pack|PCS|Agriculture Supplies
+Drip emitter Medium pack|PCS|Agriculture Supplies
+Sprinkler head Small pack|PCS|Agriculture Supplies
+Sprinkler head Medium pack|PCS|Agriculture Supplies
+Hose pipe Small pack|PCS|Agriculture Supplies
+Hose pipe Medium pack|PCS|Agriculture Supplies
+Water pump Small pack|PCS|Agriculture Supplies
+Water pump Medium pack|PCS|Agriculture Supplies
+Sprayer Small pack|PCS|Agriculture Supplies
+Sprayer Medium pack|PCS|Agriculture Supplies
+Knapsack sprayer Small pack|PCS|Agriculture Supplies
+Knapsack sprayer Medium pack|PCS|Agriculture Supplies
+Nozzle Small pack|PCS|Agriculture Supplies
+Nozzle Medium pack|PCS|Agriculture Supplies
+Pruning shear Small pack|PCS|Agriculture Supplies
+Pruning shear Medium pack|PCS|Agriculture Supplies
+Sickle Small pack|PCS|Agriculture Supplies
+Sickle Medium pack|PCS|Agriculture Supplies
+Spade Small pack|PCS|Agriculture Supplies
+Spade Medium pack|PCS|Agriculture Supplies
+Hoe Small pack|PCS|Agriculture Supplies
+Hoe Medium pack|PCS|Agriculture Supplies
+Garden fork Small pack|PCS|Agriculture Supplies
+Garden fork Medium pack|PCS|Agriculture Supplies
+Shovel Small pack|PCS|Agriculture Supplies
+Shovel Medium pack|PCS|Agriculture Supplies
+Rake Small pack|PCS|Agriculture Supplies
+Rake Medium pack|PCS|Agriculture Supplies
+Hand weeder Small pack|PCS|Agriculture Supplies
+Hand weeder Medium pack|PCS|Agriculture Supplies
+Harvest knife Small pack|PCS|Agriculture Supplies
+Harvest knife Medium pack|PCS|Agriculture Supplies
+Tarpaulin Small pack|PCS|Agriculture Supplies
+Tarpaulin Medium pack|PCS|Agriculture Supplies
+Shade net Small pack|PCS|Agriculture Supplies
+Shade net Medium pack|PCS|Agriculture Supplies
+Mulch film Small pack|PCS|Agriculture Supplies
+Mulch film Medium pack|PCS|Agriculture Supplies
+Twine Small pack|PCS|Agriculture Supplies
+Twine Medium pack|PCS|Agriculture Supplies
+Crop support net Small pack|PCS|Agriculture Supplies
+Crop support net Medium pack|PCS|Agriculture Supplies
+Seed treatment product Small pack|PCS|Agriculture Supplies
+Seed treatment product Medium pack|PCS|Agriculture Supplies
+Plant growth regulator Small pack|PCS|Agriculture Supplies
+Plant growth regulator Medium pack|PCS|Agriculture Supplies
+Pesticide product Small pack|PCS|Agriculture Supplies
+Pesticide product Medium pack|PCS|Agriculture Supplies
+Fungicide product Small pack|PCS|Agriculture Supplies
+Fungicide product Medium pack|PCS|Agriculture Supplies
+Herbicide product Small pack|PCS|Agriculture Supplies
+Herbicide product Medium pack|PCS|Agriculture Supplies
+Animal feed Small pack|PCS|Agriculture Supplies
+Animal feed Medium pack|PCS|Agriculture Supplies
+Cattle feed Small pack|PCS|Agriculture Supplies
+Cattle feed Medium pack|PCS|Agriculture Supplies
+Poultry feed Small pack|PCS|Agriculture Supplies
+Poultry feed Medium pack|PCS|Agriculture Supplies
+Milking pail Small pack|PCS|Agriculture Supplies
+Milking pail Medium pack|PCS|Agriculture Supplies
+ON-0091 Small pack|PCS|Agriculture Supplies
+ON-0091 Medium pack|PCS|Agriculture Supplies
+ON-0092 Small pack|PCS|Agriculture Supplies
+ON-0092 Medium pack|PCS|Agriculture Supplies
+ON-0093 Small pack|PCS|Agriculture Supplies
+ON-0093 Medium pack|PCS|Agriculture Supplies
+ON-0094 Small pack|PCS|Agriculture Supplies
+ON-0094 Medium pack|PCS|Agriculture Supplies
+ON-0095 Small pack|PCS|Agriculture Supplies
+ON-0095 Medium pack|PCS|Agriculture Supplies
+ON-0096 Small pack|PCS|Agriculture Supplies
+ON-0096 Medium pack|PCS|Agriculture Supplies
+ON-0097 Small pack|PCS|Agriculture Supplies
+ON-0097 Medium pack|PCS|Agriculture Supplies
+ON-0098 Small pack|PCS|Agriculture Supplies
+ON-0098 Medium pack|PCS|Agriculture Supplies
+ON-0099 Small pack|PCS|Agriculture Supplies
+ON-0099 Medium pack|PCS|Agriculture Supplies
+ON-0100 Small pack|PCS|Agriculture Supplies
+ON-0100 Medium pack|PCS|Agriculture Supplies

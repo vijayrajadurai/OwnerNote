@@ -529,6 +529,23 @@ object KaiFeed {
         நாய் பெல்ட் / naai belt = dog collar
         நாய் சங்கிலி / naai sangili = dog leash
         பூனை மணல் / poonai manal = cat litter
+        அரிவாள் / arivaal / arival = sickle
+        மண்வெட்டி / manvetti = spade
+        தார்ப்பாய் / thaarpaai / tharpai = tarpaulin
+        வேப்பம் புண்ணாக்கு / veppam punnaakku = neem cake
+        இயற்கை உரம் / iyarkai uram = organic manure
+        மாட்டுத் தீவனம் / மாட்டு தீவனம் / maattu theevanam = cattle feed
+        கோழித் தீவனம் / கோழி தீவனம் / kozhi theevanam = poultry feed
+        நெல் விதை / nel vithai = paddy seeds
+        பருத்தி விதை / paruthi vithai = cotton seeds
+        வேர்க்கடலை விதை / verkadalai vithai = groundnut seeds
+        பால் வாளி / paal vaali = milking pail
+        சீப்பு / seeppu = comb
+        கண் மை / kan mai = kajal
+        தலை எண்ணெய் / thalai ennai = hair oil
+        கத்தரிக்கோல் / kathirikkol = scissors
+        ரப்பர் / rubber = eraser
+        சாக்பீஸ் / chalk piece / chalkpiece = chalk
     """)
 
     /** A unit word = Kai's unit (PCS, BOX, BAG, KG, GRAM, LITRE, ML, PACKET, BOTTLE, DOZEN, BUNDLE, METER …). */
