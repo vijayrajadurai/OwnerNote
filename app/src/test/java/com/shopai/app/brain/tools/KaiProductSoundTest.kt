@@ -170,6 +170,25 @@ class KaiProductSoundTest {
         assertTrue(h("ஸ்பா 7").let { it.startsWith("spa 7") && !it.contains("Samai") && !it.contains("millet") })
     }
 
+    /**
+     * Vegetable names (owner's stock master, 14 Oct 2026): a product the shop writes with two names ("Spinach / Palak 250 g") is
+     * either name said alone; "Ginger (tender)" is also said "டெண்டர் ஜிஞ்சர்"; "சுக்கினி" is Zucchini (cch = k), "ஜிஞ்சர்" is Ginger
+     * (soft g); a goods name in Tamil goes to the loose produce, never to its packs or another produce that holds the word.
+     */
+    @Test fun vegetableNamesSaidIntoTheMic() {
+        val shop9 = listOf("Spinach / Palak", "Spinach / Palak 250 g", "Brinjal / Eggplant", "Brinjal / Eggplant 250 g", "Native brinjal varieties",
+            "Ginger", "Ginger (tender)", "Zucchini", "Zucchini 250 g", "Radish", "Radish (red)", "Red radish", "Okra / Ladies finger", "Lettuce")
+        fun h(mic: String) = KaiSpokenWords.normalize(KaiProductSound.withProducts(mic, shop9, people))
+        for ((mic, want) in listOf("பாலக் 7 கிலோ" to "Spinach / Palak 7", "ஸ்பினாச் 250 கிராம் 7" to "Spinach / Palak 250", "கத்தரிக்காய் 5 கிலோ" to "Brinjal / Eggplant 5",
+                "ஜிஞ்சர் 7 கிலோ" to "Ginger 7", "ஜிஞ்சர் டெண்டர் 7 கிலோ" to "Ginger (tender) 7", "டெண்டர் ஜிஞ்சர் 7 கிலோ" to "Ginger (tender) 7",
+                "சுக்கினி 7 கிலோ" to "Zucchini 7", "லேடீஸ் ஃபிங்கர் 7 கிலோ" to "Okra / Ladies finger 7", "ரெட் ராடிஷ் 7 கிலோ" to "Red radish 7")) {
+            val got = h(mic)
+            assertTrue("$mic → $got", got.startsWith(want))
+        }
+        // A vegetable the shop doesn't keep stays as said ("நூக்கல்", knol-khol, is not Lettuce or Okra).
+        assertTrue(h("நூக்கல் 5 கிலோ").startsWith("நூக்கல் 5"))
+    }
+
     @Test fun productNamesSaidIntoTheMic() {
         val said = mapOf(
             "பிரிட்டானியா பிஸ்கட்" to "Britannia Biscuit", "குட் டே" to "Good Day", "பார்லே ஜி" to "Parle G", "சன்ஃபீஸ்ட் மேரி" to "Sunfeast Marie",

@@ -1,0 +1,395 @@
+# Owner's vegetable shop stock master (14 Oct 2026): each produce loose (kept in kg) and in 250 g / 500 g / 1 kg packs.
+# name|unit|category  (a "… bunch" produce is counted in bunches)
+Spinach / Palak|KG|Leafy Greens
+Spinach / Palak 250 g|PCS|Leafy Greens
+Spinach / Palak 500 g|PCS|Leafy Greens
+Spinach / Palak 1 kg|PCS|Leafy Greens
+Amaranth greens / Arai keerai|KG|Leafy Greens
+Amaranth greens / Arai keerai 250 g|PCS|Leafy Greens
+Amaranth greens / Arai keerai 500 g|PCS|Leafy Greens
+Amaranth greens / Arai keerai 1 kg|PCS|Leafy Greens
+Sirukeerai|KG|Leafy Greens
+Sirukeerai 250 g|PCS|Leafy Greens
+Sirukeerai 500 g|PCS|Leafy Greens
+Sirukeerai 1 kg|PCS|Leafy Greens
+Mulaikeerai|KG|Leafy Greens
+Mulaikeerai 250 g|PCS|Leafy Greens
+Mulaikeerai 500 g|PCS|Leafy Greens
+Mulaikeerai 1 kg|PCS|Leafy Greens
+Fenugreek leaves / Methi|KG|Leafy Greens
+Fenugreek leaves / Methi 250 g|PCS|Leafy Greens
+Fenugreek leaves / Methi 500 g|PCS|Leafy Greens
+Fenugreek leaves / Methi 1 kg|PCS|Leafy Greens
+Coriander leaves|KG|Leafy Greens
+Coriander leaves 250 g|PCS|Leafy Greens
+Coriander leaves 500 g|PCS|Leafy Greens
+Coriander leaves 1 kg|PCS|Leafy Greens
+Mint leaves|KG|Leafy Greens
+Mint leaves 250 g|PCS|Leafy Greens
+Mint leaves 500 g|PCS|Leafy Greens
+Mint leaves 1 kg|PCS|Leafy Greens
+Curry leaves|KG|Leafy Greens
+Curry leaves 250 g|PCS|Leafy Greens
+Curry leaves 500 g|PCS|Leafy Greens
+Curry leaves 1 kg|PCS|Leafy Greens
+Drumstick leaves|KG|Leafy Greens
+Drumstick leaves 250 g|PCS|Leafy Greens
+Drumstick leaves 500 g|PCS|Leafy Greens
+Drumstick leaves 1 kg|PCS|Leafy Greens
+Gongura / Pulicha keerai|KG|Leafy Greens
+Gongura / Pulicha keerai 250 g|PCS|Leafy Greens
+Gongura / Pulicha keerai 500 g|PCS|Leafy Greens
+Gongura / Pulicha keerai 1 kg|PCS|Leafy Greens
+Lettuce|KG|Leafy Greens
+Lettuce 250 g|PCS|Leafy Greens
+Lettuce 500 g|PCS|Leafy Greens
+Lettuce 1 kg|PCS|Leafy Greens
+Spring onion greens|KG|Leafy Greens
+Spring onion greens 250 g|PCS|Leafy Greens
+Spring onion greens 500 g|PCS|Leafy Greens
+Spring onion greens 1 kg|PCS|Leafy Greens
+Tomato|KG|Common Vegetables
+Tomato 250 g|PCS|Common Vegetables
+Tomato 500 g|PCS|Common Vegetables
+Tomato 1 kg|PCS|Common Vegetables
+Onion|KG|Common Vegetables
+Onion 250 g|PCS|Common Vegetables
+Onion 500 g|PCS|Common Vegetables
+Onion 1 kg|PCS|Common Vegetables
+Potato|KG|Common Vegetables
+Potato 250 g|PCS|Common Vegetables
+Potato 500 g|PCS|Common Vegetables
+Potato 1 kg|PCS|Common Vegetables
+Brinjal / Eggplant|KG|Common Vegetables
+Brinjal / Eggplant 250 g|PCS|Common Vegetables
+Brinjal / Eggplant 500 g|PCS|Common Vegetables
+Brinjal / Eggplant 1 kg|PCS|Common Vegetables
+Okra / Ladies finger|KG|Common Vegetables
+Okra / Ladies finger 250 g|PCS|Common Vegetables
+Okra / Ladies finger 500 g|PCS|Common Vegetables
+Okra / Ladies finger 1 kg|PCS|Common Vegetables
+Green chilli|KG|Common Vegetables
+Green chilli 250 g|PCS|Common Vegetables
+Green chilli 500 g|PCS|Common Vegetables
+Green chilli 1 kg|PCS|Common Vegetables
+Capsicum|KG|Common Vegetables
+Capsicum 250 g|PCS|Common Vegetables
+Capsicum 500 g|PCS|Common Vegetables
+Capsicum 1 kg|PCS|Common Vegetables
+Cabbage|KG|Common Vegetables
+Cabbage 250 g|PCS|Common Vegetables
+Cabbage 500 g|PCS|Common Vegetables
+Cabbage 1 kg|PCS|Common Vegetables
+Cauliflower|KG|Common Vegetables
+Cauliflower 250 g|PCS|Common Vegetables
+Cauliflower 500 g|PCS|Common Vegetables
+Cauliflower 1 kg|PCS|Common Vegetables
+Carrot|KG|Common Vegetables
+Carrot 250 g|PCS|Common Vegetables
+Carrot 500 g|PCS|Common Vegetables
+Carrot 1 kg|PCS|Common Vegetables
+Beetroot|KG|Common Vegetables
+Beetroot 250 g|PCS|Common Vegetables
+Beetroot 500 g|PCS|Common Vegetables
+Beetroot 1 kg|PCS|Common Vegetables
+Radish|KG|Common Vegetables
+Radish 250 g|PCS|Common Vegetables
+Radish 500 g|PCS|Common Vegetables
+Radish 1 kg|PCS|Common Vegetables
+Cucumber|KG|Common Vegetables
+Cucumber 250 g|PCS|Common Vegetables
+Cucumber 500 g|PCS|Common Vegetables
+Cucumber 1 kg|PCS|Common Vegetables
+Bottle gourd|KG|Common Vegetables
+Bottle gourd 250 g|PCS|Common Vegetables
+Bottle gourd 500 g|PCS|Common Vegetables
+Bottle gourd 1 kg|PCS|Common Vegetables
+Ridge gourd|KG|Common Vegetables
+Ridge gourd 250 g|PCS|Common Vegetables
+Ridge gourd 500 g|PCS|Common Vegetables
+Ridge gourd 1 kg|PCS|Common Vegetables
+Snake gourd|KG|Common Vegetables
+Snake gourd 250 g|PCS|Common Vegetables
+Snake gourd 500 g|PCS|Common Vegetables
+Snake gourd 1 kg|PCS|Common Vegetables
+Bitter gourd|KG|Common Vegetables
+Bitter gourd 250 g|PCS|Common Vegetables
+Bitter gourd 500 g|PCS|Common Vegetables
+Bitter gourd 1 kg|PCS|Common Vegetables
+Ash gourd|KG|Common Vegetables
+Ash gourd 250 g|PCS|Common Vegetables
+Ash gourd 500 g|PCS|Common Vegetables
+Ash gourd 1 kg|PCS|Common Vegetables
+Pumpkin|KG|Common Vegetables
+Pumpkin 250 g|PCS|Common Vegetables
+Pumpkin 500 g|PCS|Common Vegetables
+Pumpkin 1 kg|PCS|Common Vegetables
+Chow chow / Chayote|KG|Common Vegetables
+Chow chow / Chayote 250 g|PCS|Common Vegetables
+Chow chow / Chayote 500 g|PCS|Common Vegetables
+Chow chow / Chayote 1 kg|PCS|Common Vegetables
+Drumstick pods|KG|Common Vegetables
+Drumstick pods 250 g|PCS|Common Vegetables
+Drumstick pods 500 g|PCS|Common Vegetables
+Drumstick pods 1 kg|PCS|Common Vegetables
+Raw banana|KG|Common Vegetables
+Raw banana 250 g|PCS|Common Vegetables
+Raw banana 500 g|PCS|Common Vegetables
+Raw banana 1 kg|PCS|Common Vegetables
+Raw banana flower|KG|Common Vegetables
+Raw banana flower 250 g|PCS|Common Vegetables
+Raw banana flower 500 g|PCS|Common Vegetables
+Raw banana flower 1 kg|PCS|Common Vegetables
+Raw banana stem|KG|Common Vegetables
+Raw banana stem 250 g|PCS|Common Vegetables
+Raw banana stem 500 g|PCS|Common Vegetables
+Raw banana stem 1 kg|PCS|Common Vegetables
+Cluster beans|KG|Common Vegetables
+Cluster beans 250 g|PCS|Common Vegetables
+Cluster beans 500 g|PCS|Common Vegetables
+Cluster beans 1 kg|PCS|Common Vegetables
+Broad beans|KG|Common Vegetables
+Broad beans 250 g|PCS|Common Vegetables
+Broad beans 500 g|PCS|Common Vegetables
+Broad beans 1 kg|PCS|Common Vegetables
+French beans|KG|Common Vegetables
+French beans 250 g|PCS|Common Vegetables
+French beans 500 g|PCS|Common Vegetables
+French beans 1 kg|PCS|Common Vegetables
+Green peas|KG|Common Vegetables
+Green peas 250 g|PCS|Common Vegetables
+Green peas 500 g|PCS|Common Vegetables
+Green peas 1 kg|PCS|Common Vegetables
+Avarekai / Hyacinth beans|KG|Common Vegetables
+Avarekai / Hyacinth beans 250 g|PCS|Common Vegetables
+Avarekai / Hyacinth beans 500 g|PCS|Common Vegetables
+Avarekai / Hyacinth beans 1 kg|PCS|Common Vegetables
+Ivy gourd / Kovakkai|KG|Common Vegetables
+Ivy gourd / Kovakkai 250 g|PCS|Common Vegetables
+Ivy gourd / Kovakkai 500 g|PCS|Common Vegetables
+Ivy gourd / Kovakkai 1 kg|PCS|Common Vegetables
+Tindora|KG|Common Vegetables
+Tindora 250 g|PCS|Common Vegetables
+Tindora 500 g|PCS|Common Vegetables
+Tindora 1 kg|PCS|Common Vegetables
+Yam|KG|Common Vegetables
+Yam 250 g|PCS|Common Vegetables
+Yam 500 g|PCS|Common Vegetables
+Yam 1 kg|PCS|Common Vegetables
+Colocasia / Seppankizhangu|KG|Common Vegetables
+Colocasia / Seppankizhangu 250 g|PCS|Common Vegetables
+Colocasia / Seppankizhangu 500 g|PCS|Common Vegetables
+Colocasia / Seppankizhangu 1 kg|PCS|Common Vegetables
+Sweet potato|KG|Common Vegetables
+Sweet potato 250 g|PCS|Common Vegetables
+Sweet potato 500 g|PCS|Common Vegetables
+Sweet potato 1 kg|PCS|Common Vegetables
+Tapioca / Cassava|KG|Common Vegetables
+Tapioca / Cassava 250 g|PCS|Common Vegetables
+Tapioca / Cassava 500 g|PCS|Common Vegetables
+Tapioca / Cassava 1 kg|PCS|Common Vegetables
+Elephant foot yam|KG|Common Vegetables
+Elephant foot yam 250 g|PCS|Common Vegetables
+Elephant foot yam 500 g|PCS|Common Vegetables
+Elephant foot yam 1 kg|PCS|Common Vegetables
+Ginger|KG|Roots & Tubers
+Ginger 250 g|PCS|Roots & Tubers
+Ginger 500 g|PCS|Roots & Tubers
+Ginger 1 kg|PCS|Roots & Tubers
+Garlic|KG|Roots & Tubers
+Garlic 250 g|PCS|Roots & Tubers
+Garlic 500 g|PCS|Roots & Tubers
+Garlic 1 kg|PCS|Roots & Tubers
+Turmeric root|KG|Roots & Tubers
+Turmeric root 250 g|PCS|Roots & Tubers
+Turmeric root 500 g|PCS|Roots & Tubers
+Turmeric root 1 kg|PCS|Roots & Tubers
+Shallots / Small onion|KG|Roots & Tubers
+Shallots / Small onion 250 g|PCS|Roots & Tubers
+Shallots / Small onion 500 g|PCS|Roots & Tubers
+Shallots / Small onion 1 kg|PCS|Roots & Tubers
+Potato (new)|KG|Roots & Tubers
+Potato (new) 250 g|PCS|Roots & Tubers
+Potato (new) 500 g|PCS|Roots & Tubers
+Potato (new) 1 kg|PCS|Roots & Tubers
+Potato (old)|KG|Roots & Tubers
+Potato (old) 250 g|PCS|Roots & Tubers
+Potato (old) 500 g|PCS|Roots & Tubers
+Potato (old) 1 kg|PCS|Roots & Tubers
+Carrot (local)|KG|Roots & Tubers
+Carrot (local) 250 g|PCS|Roots & Tubers
+Carrot (local) 500 g|PCS|Roots & Tubers
+Carrot (local) 1 kg|PCS|Roots & Tubers
+Radish (white)|KG|Roots & Tubers
+Radish (white) 250 g|PCS|Roots & Tubers
+Radish (white) 500 g|PCS|Roots & Tubers
+Radish (white) 1 kg|PCS|Roots & Tubers
+Radish (red)|KG|Roots & Tubers
+Radish (red) 250 g|PCS|Roots & Tubers
+Radish (red) 500 g|PCS|Roots & Tubers
+Radish (red) 1 kg|PCS|Roots & Tubers
+Beetroot (small)|KG|Roots & Tubers
+Beetroot (small) 250 g|PCS|Roots & Tubers
+Beetroot (small) 500 g|PCS|Roots & Tubers
+Beetroot (small) 1 kg|PCS|Roots & Tubers
+Turnip|KG|Roots & Tubers
+Turnip 250 g|PCS|Roots & Tubers
+Turnip 500 g|PCS|Roots & Tubers
+Turnip 1 kg|PCS|Roots & Tubers
+Broccoli|KG|Exotic Vegetables
+Broccoli 250 g|PCS|Exotic Vegetables
+Broccoli 500 g|PCS|Exotic Vegetables
+Broccoli 1 kg|PCS|Exotic Vegetables
+Zucchini|KG|Exotic Vegetables
+Zucchini 250 g|PCS|Exotic Vegetables
+Zucchini 500 g|PCS|Exotic Vegetables
+Zucchini 1 kg|PCS|Exotic Vegetables
+Red cabbage|KG|Exotic Vegetables
+Red cabbage 250 g|PCS|Exotic Vegetables
+Red cabbage 500 g|PCS|Exotic Vegetables
+Red cabbage 1 kg|PCS|Exotic Vegetables
+Red/yellow capsicum|KG|Exotic Vegetables
+Red/yellow capsicum 250 g|PCS|Exotic Vegetables
+Red/yellow capsicum 500 g|PCS|Exotic Vegetables
+Red/yellow capsicum 1 kg|PCS|Exotic Vegetables
+Celery|KG|Exotic Vegetables
+Celery 250 g|PCS|Exotic Vegetables
+Celery 500 g|PCS|Exotic Vegetables
+Celery 1 kg|PCS|Exotic Vegetables
+Parsley|KG|Exotic Vegetables
+Parsley 250 g|PCS|Exotic Vegetables
+Parsley 500 g|PCS|Exotic Vegetables
+Parsley 1 kg|PCS|Exotic Vegetables
+Basil|KG|Exotic Vegetables
+Basil 250 g|PCS|Exotic Vegetables
+Basil 500 g|PCS|Exotic Vegetables
+Basil 1 kg|PCS|Exotic Vegetables
+Leek|KG|Exotic Vegetables
+Leek 250 g|PCS|Exotic Vegetables
+Leek 500 g|PCS|Exotic Vegetables
+Leek 1 kg|PCS|Exotic Vegetables
+Asparagus|KG|Exotic Vegetables
+Asparagus 250 g|PCS|Exotic Vegetables
+Asparagus 500 g|PCS|Exotic Vegetables
+Asparagus 1 kg|PCS|Exotic Vegetables
+Brussels sprouts|KG|Exotic Vegetables
+Brussels sprouts 250 g|PCS|Exotic Vegetables
+Brussels sprouts 500 g|PCS|Exotic Vegetables
+Brussels sprouts 1 kg|PCS|Exotic Vegetables
+Baby corn|KG|Exotic Vegetables
+Baby corn 250 g|PCS|Exotic Vegetables
+Baby corn 500 g|PCS|Exotic Vegetables
+Baby corn 1 kg|PCS|Exotic Vegetables
+Button mushroom|KG|Exotic Vegetables
+Button mushroom 250 g|PCS|Exotic Vegetables
+Button mushroom 500 g|PCS|Exotic Vegetables
+Button mushroom 1 kg|PCS|Exotic Vegetables
+Shiitake mushroom|KG|Exotic Vegetables
+Shiitake mushroom 250 g|PCS|Exotic Vegetables
+Shiitake mushroom 500 g|PCS|Exotic Vegetables
+Shiitake mushroom 1 kg|PCS|Exotic Vegetables
+Cherry tomato|KG|Exotic Vegetables
+Cherry tomato 250 g|PCS|Exotic Vegetables
+Cherry tomato 500 g|PCS|Exotic Vegetables
+Cherry tomato 1 kg|PCS|Exotic Vegetables
+Iceberg lettuce|KG|Exotic Vegetables
+Iceberg lettuce 250 g|PCS|Exotic Vegetables
+Iceberg lettuce 500 g|PCS|Exotic Vegetables
+Iceberg lettuce 1 kg|PCS|Exotic Vegetables
+Red radish|KG|Exotic Vegetables
+Red radish 250 g|PCS|Exotic Vegetables
+Red radish 500 g|PCS|Exotic Vegetables
+Red radish 1 kg|PCS|Exotic Vegetables
+Pak choi|KG|Exotic Vegetables
+Pak choi 250 g|PCS|Exotic Vegetables
+Pak choi 500 g|PCS|Exotic Vegetables
+Pak choi 1 kg|PCS|Exotic Vegetables
+Raw mango|KG|Seasonal & Regional Vegetables
+Raw mango 250 g|PCS|Seasonal & Regional Vegetables
+Raw mango 500 g|PCS|Seasonal & Regional Vegetables
+Raw mango 1 kg|PCS|Seasonal & Regional Vegetables
+Green jackfruit|KG|Seasonal & Regional Vegetables
+Green jackfruit 250 g|PCS|Seasonal & Regional Vegetables
+Green jackfruit 500 g|PCS|Seasonal & Regional Vegetables
+Green jackfruit 1 kg|PCS|Seasonal & Regional Vegetables
+Banana stem|KG|Seasonal & Regional Vegetables
+Banana stem 250 g|PCS|Seasonal & Regional Vegetables
+Banana stem 500 g|PCS|Seasonal & Regional Vegetables
+Banana stem 1 kg|PCS|Seasonal & Regional Vegetables
+Banana flower|KG|Seasonal & Regional Vegetables
+Banana flower 250 g|PCS|Seasonal & Regional Vegetables
+Banana flower 500 g|PCS|Seasonal & Regional Vegetables
+Banana flower 1 kg|PCS|Seasonal & Regional Vegetables
+Colocasia leaves|KG|Seasonal & Regional Vegetables
+Colocasia leaves 250 g|PCS|Seasonal & Regional Vegetables
+Colocasia leaves 500 g|PCS|Seasonal & Regional Vegetables
+Colocasia leaves 1 kg|PCS|Seasonal & Regional Vegetables
+Pumpkin leaves|KG|Seasonal & Regional Vegetables
+Pumpkin leaves 250 g|PCS|Seasonal & Regional Vegetables
+Pumpkin leaves 500 g|PCS|Seasonal & Regional Vegetables
+Pumpkin leaves 1 kg|PCS|Seasonal & Regional Vegetables
+Fresh turmeric|KG|Seasonal & Regional Vegetables
+Fresh turmeric 250 g|PCS|Seasonal & Regional Vegetables
+Fresh turmeric 500 g|PCS|Seasonal & Regional Vegetables
+Fresh turmeric 1 kg|PCS|Seasonal & Regional Vegetables
+Fresh corn|KG|Seasonal & Regional Vegetables
+Fresh corn 250 g|PCS|Seasonal & Regional Vegetables
+Fresh corn 500 g|PCS|Seasonal & Regional Vegetables
+Fresh corn 1 kg|PCS|Seasonal & Regional Vegetables
+Tender coconut|PCS|Seasonal & Regional Vegetables
+Field beans / Mochai|KG|Seasonal & Regional Vegetables
+Field beans / Mochai 250 g|PCS|Seasonal & Regional Vegetables
+Field beans / Mochai 500 g|PCS|Seasonal & Regional Vegetables
+Field beans / Mochai 1 kg|PCS|Seasonal & Regional Vegetables
+Country tomato|KG|Seasonal & Regional Vegetables
+Country tomato 250 g|PCS|Seasonal & Regional Vegetables
+Country tomato 500 g|PCS|Seasonal & Regional Vegetables
+Country tomato 1 kg|PCS|Seasonal & Regional Vegetables
+Native brinjal varieties|KG|Seasonal & Regional Vegetables
+Native brinjal varieties 250 g|PCS|Seasonal & Regional Vegetables
+Native brinjal varieties 500 g|PCS|Seasonal & Regional Vegetables
+Native brinjal varieties 1 kg|PCS|Seasonal & Regional Vegetables
+Native cucumber varieties|KG|Seasonal & Regional Vegetables
+Native cucumber varieties 250 g|PCS|Seasonal & Regional Vegetables
+Native cucumber varieties 500 g|PCS|Seasonal & Regional Vegetables
+Native cucumber varieties 1 kg|PCS|Seasonal & Regional Vegetables
+Local gourds|KG|Seasonal & Regional Vegetables
+Local gourds 250 g|PCS|Seasonal & Regional Vegetables
+Local gourds 500 g|PCS|Seasonal & Regional Vegetables
+Local gourds 1 kg|PCS|Seasonal & Regional Vegetables
+Lemon|KG|Chillies, Herbs & Garnishes
+Lemon 250 g|PCS|Chillies, Herbs & Garnishes
+Lemon 500 g|PCS|Chillies, Herbs & Garnishes
+Lemon 1 kg|PCS|Chillies, Herbs & Garnishes
+Green lime|KG|Chillies, Herbs & Garnishes
+Green lime 250 g|PCS|Chillies, Herbs & Garnishes
+Green lime 500 g|PCS|Chillies, Herbs & Garnishes
+Green lime 1 kg|PCS|Chillies, Herbs & Garnishes
+Curry leaves bunch|PCS|Chillies, Herbs & Garnishes
+Curry leaves bunch 250 g|PCS|Chillies, Herbs & Garnishes
+Curry leaves bunch 500 g|PCS|Chillies, Herbs & Garnishes
+Curry leaves bunch 1 kg|PCS|Chillies, Herbs & Garnishes
+Coriander bunch|PCS|Chillies, Herbs & Garnishes
+Coriander bunch 250 g|PCS|Chillies, Herbs & Garnishes
+Coriander bunch 500 g|PCS|Chillies, Herbs & Garnishes
+Coriander bunch 1 kg|PCS|Chillies, Herbs & Garnishes
+Mint bunch|PCS|Chillies, Herbs & Garnishes
+Mint bunch 250 g|PCS|Chillies, Herbs & Garnishes
+Mint bunch 500 g|PCS|Chillies, Herbs & Garnishes
+Mint bunch 1 kg|PCS|Chillies, Herbs & Garnishes
+Green chilli (small)|KG|Chillies, Herbs & Garnishes
+Green chilli (small) 250 g|PCS|Chillies, Herbs & Garnishes
+Green chilli (small) 500 g|PCS|Chillies, Herbs & Garnishes
+Green chilli (small) 1 kg|PCS|Chillies, Herbs & Garnishes
+Green chilli (long)|KG|Chillies, Herbs & Garnishes
+Green chilli (long) 250 g|PCS|Chillies, Herbs & Garnishes
+Green chilli (long) 500 g|PCS|Chillies, Herbs & Garnishes
+Green chilli (long) 1 kg|PCS|Chillies, Herbs & Garnishes
+Ginger (tender)|KG|Chillies, Herbs & Garnishes
+Ginger (tender) 250 g|PCS|Chillies, Herbs & Garnishes
+Ginger (tender) 500 g|PCS|Chillies, Herbs & Garnishes
+Ginger (tender) 1 kg|PCS|Chillies, Herbs & Garnishes
+Garlic (peeled)|KG|Chillies, Herbs & Garnishes
+Garlic (peeled) 250 g|PCS|Chillies, Herbs & Garnishes
+Garlic (peeled) 500 g|PCS|Chillies, Herbs & Garnishes
+Garlic (peeled) 1 kg|PCS|Chillies, Herbs & Garnishes

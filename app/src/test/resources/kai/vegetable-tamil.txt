@@ -1,0 +1,55 @@
+# The owner's own names for the vegetables (typed Tanglish | as the mic writes it) → the product the shop keeps.
+# product | typed | spoken
+Spinach / Palak | palak keerai | பாலக் கீரை
+Amaranth greens / Arai keerai | arai keerai | அரைக்கீரை
+Sirukeerai | siru keerai | சிறுகீரை
+Mulaikeerai | mulai keerai | முளைக்கீரை
+Fenugreek leaves / Methi | vendhaya keerai | வெந்தயக் கீரை
+Coriander leaves | kothamalli | கொத்தமல்லி
+Mint leaves | pudhina | புதினா
+Curry leaves | kariveppilai | கறிவேப்பிலை
+Drumstick leaves | murungai keerai | முருங்கைக் கீரை
+Gongura / Pulicha keerai | pulicha keerai | புளிச்சக்கீரை
+Spring onion greens | vengaya thaal | வெங்காயத் தாள்
+Tomato | thakkali | தக்காளி
+Onion | vengayam | வெங்காயம்
+Potato | urulaikizhangu | உருளைக்கிழங்கு
+Brinjal / Eggplant | kathirikkai | கத்தரிக்காய்
+Okra / Ladies finger | vendakkai | வெண்டைக்காய்
+Green chilli | pachai milagai | பச்சை மிளகாய்
+Capsicum | kudai milagai | குடை மிளகாய்
+Cabbage | muttaikose | முட்டைக்கோஸ்
+Radish | mullangi | முள்ளங்கி
+Cucumber | vellarikkai | வெள்ளரிக்காய்
+Bottle gourd | suraikkai | சுரைக்காய்
+Ridge gourd | peerkangai | பீர்க்கங்காய்
+Snake gourd | pudalangai | புடலங்காய்
+Bitter gourd | pavakkai | பாகற்காய்
+Ash gourd | neer poosani | நீர்ப்பூசணி
+Pumpkin | parangikkai | பரங்கிக்காய்
+Chow chow / Chayote | chow chow | சௌசௌ
+Drumstick pods | murungakkai | முருங்கைக்காய்
+Raw banana | vazhaikkai | வாழைக்காய்
+Banana flower | vazhaipoo | வாழைப்பூ
+Banana stem | vazhaithandu | வாழைத்தண்டு
+Cluster beans | kothavarangai | கொத்தவரங்காய்
+Avarekai / Hyacinth beans | avarakkai | அவரைக்காய்
+Green peas | pattani | பட்டாணி
+Ivy gourd / Kovakkai | kovakkai | கோவக்காய்
+Elephant foot yam | karunai kizhangu | கருணைக்கிழங்கு
+Colocasia / Seppankizhangu | seppankizhangu | சேப்பங்கிழங்கு
+Sweet potato | sakkaraivalli kizhangu | சர்க்கரைவள்ளிக் கிழங்கு
+Tapioca / Cassava | maravalli kizhangu | மரவள்ளிக் கிழங்கு
+Ginger | inji | இஞ்சி
+Garlic | poondu | பூண்டு
+Shallots / Small onion | chinna vengayam | சின்ன வெங்காயம்
+Raw mango | maangai | மாங்காய்
+Green jackfruit | palakkai | பலாக்காய்
+Fresh turmeric | pachai manjal | பச்சை மஞ்சள்
+Fresh corn | makkacholam | மக்காச்சோளம்
+Tender coconut | ilaneer | இளநீர்
+Field beans / Mochai | mochai | மொச்சை
+Country tomato | naattu thakkali | நாட்டுத் தக்காளி
+Native brinjal varieties | naattu kathirikkai | நாட்டுக் கத்தரிக்காய்
+Native cucumber varieties | naattu vellarikkai | நாட்டு வெள்ளரிக்காய்
+Lemon | elumichai | எலுமிச்சை

@@ -25,6 +25,7 @@ STOCK  | Rice 2 moota irakkinen                         | Rice 300
 STOCK  | Colgate 1 box maal vandhuchu                   | Colgate 288
 STOCK  | Oil 2 bottle udanjiduchu                       | Oil 238
 STOCK  | Lux soap 5 kettupochu                          | Lux Soap 55
+STOCK  | Rice 2 kg azhugiduchu                          | Rice 248       # rotted: wastage, stock out
 STOCK  | Baniyan 10 vithuchu                            | Baniyan 40
 STOCK  | ennai 1 box vandhuchu                          | Oil 252
 STOCK  | Colgate 1 box vandhuchu batch B7 expiry 06/2027  | Colgate 288    # a batch code / expiry date is never the quantity
