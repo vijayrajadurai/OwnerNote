@@ -16,7 +16,7 @@ internal object KaiConversationCare {
     // ------------------------------------------------------------ push-back
 
     /** "illa", "thappu", "wrong", "no": the owner says what Kai has is not right. */
-    private val negation = Regex("""(?i)(?<![\p{L}])(illa|illai|ille|thappu|thapu|wrong|no|nope|illaye)(?![\p{L}])|இல்ல|தப்பு""")
+    private val negation = Regex("""(?i)(?<![\p{L}])(illa|illai|ille|thappu|thapu|wrong|no|nope|illaye)(?![\p{L}])|இல்ல|தப்பு|(?<![\p{L}\p{M}])நோ(?![\p{L}\p{M}])""")
     fun negates(text: String) = negation.containsMatchIn(text)
 
     /** "adha cancel pannu", "delete pannu", "undo", "thappa pottutta": take back the entry just saved. */

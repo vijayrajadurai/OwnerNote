@@ -58,6 +58,7 @@ object KaiMicForm {
         athu=அது innoru=இன்னொரு adhe=அதே paadhi=பாதி munnadi=முன்னாடி ketten=கேட்டேன்
         business=பிசினஸ் pannalam=பண்ணலாம் idea=ஐடியா jaasthi=ஜாஸ்தி aaga=ஆக leave=லீவு light=லைட் water=வாட்டர் eb=ஈபி sales=சேல்ஸ்
         poyiduchu=போயிடுச்சு kattiten=கட்டிட்டேன்
+        pathi=பத்தி porul=பொருள் kadaila=கடையில irukura=இருக்குற kudukal=குடுக்கல் vangal=வாங்கல் ama=ஆமா
         kadaiku=கடைக்கு saman=சாமான் saraku=சரக்கு vandhuruku=வந்திருக்கு pannalama=பண்ணலாமா avlo=அவ்ளோ
         avanga=அவங்க peru=பேரு namba=நம்ம namma=நம்ம vangunan=வாங்குனான் seathuko=சேர்த்துக்கோ serthuko=சேர்த்துக்கோ vengayam=வெங்காயம்
         azhugiduchu=அழுகிடுச்சு azhugipochu=அழுகிப்போச்சு vaadiduchu=வாடிடுச்சு thakkali=தக்காளி kariveppilai=கறிவேப்பிலை loose=லூஸ் packet=பாக்கெட் kilo=கிலோ arai=அரை
