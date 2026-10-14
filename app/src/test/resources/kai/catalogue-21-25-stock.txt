@@ -1,0 +1,592 @@
+# Owner's expanded stock catalogue 21-25 (14 Oct 2026): 5 business categories, each item in Small / Medium / Large / Family packs.
+# name|unit|category  (ON-0201 … ON-0250 are the catalogue's own codes for items not yet named)
+Gold ring Small pack|PCS|Jewellery & Watches
+Gold ring Medium pack|PCS|Jewellery & Watches
+Gold ring Large pack|PCS|Jewellery & Watches
+Gold ring Family pack|PCS|Jewellery & Watches
+Gold chain Small pack|PCS|Jewellery & Watches
+Gold chain Medium pack|PCS|Jewellery & Watches
+Gold chain Large pack|PCS|Jewellery & Watches
+Gold chain Family pack|PCS|Jewellery & Watches
+Gold earrings Small pack|PCS|Jewellery & Watches
+Gold earrings Medium pack|PCS|Jewellery & Watches
+Gold earrings Large pack|PCS|Jewellery & Watches
+Gold earrings Family pack|PCS|Jewellery & Watches
+Gold bangle Small pack|PCS|Jewellery & Watches
+Gold bangle Medium pack|PCS|Jewellery & Watches
+Gold bangle Large pack|PCS|Jewellery & Watches
+Gold bangle Family pack|PCS|Jewellery & Watches
+Gold pendant Small pack|PCS|Jewellery & Watches
+Gold pendant Medium pack|PCS|Jewellery & Watches
+Gold pendant Large pack|PCS|Jewellery & Watches
+Gold pendant Family pack|PCS|Jewellery & Watches
+Silver ring Small pack|PCS|Jewellery & Watches
+Silver ring Medium pack|PCS|Jewellery & Watches
+Silver ring Large pack|PCS|Jewellery & Watches
+Silver ring Family pack|PCS|Jewellery & Watches
+Silver chain Small pack|PCS|Jewellery & Watches
+Silver chain Medium pack|PCS|Jewellery & Watches
+Silver chain Large pack|PCS|Jewellery & Watches
+Silver chain Family pack|PCS|Jewellery & Watches
+Silver anklet Small pack|PCS|Jewellery & Watches
+Silver anklet Medium pack|PCS|Jewellery & Watches
+Silver anklet Large pack|PCS|Jewellery & Watches
+Silver anklet Family pack|PCS|Jewellery & Watches
+Silver pooja item Small pack|PCS|Jewellery & Watches
+Silver pooja item Medium pack|PCS|Jewellery & Watches
+Silver pooja item Large pack|PCS|Jewellery & Watches
+Silver pooja item Family pack|PCS|Jewellery & Watches
+Diamond ring Small pack|PCS|Jewellery & Watches
+Diamond ring Medium pack|PCS|Jewellery & Watches
+Diamond ring Large pack|PCS|Jewellery & Watches
+Diamond ring Family pack|PCS|Jewellery & Watches
+Diamond earrings Small pack|PCS|Jewellery & Watches
+Diamond earrings Medium pack|PCS|Jewellery & Watches
+Gemstone ring Small pack|PCS|Jewellery & Watches
+Gemstone ring Medium pack|PCS|Jewellery & Watches
+Imitation necklace Small pack|PCS|Jewellery & Watches
+Imitation necklace Medium pack|PCS|Jewellery & Watches
+Imitation earrings Small pack|PCS|Jewellery & Watches
+Imitation earrings Medium pack|PCS|Jewellery & Watches
+Bangles set Small pack|PCS|Jewellery & Watches
+Bangles set Medium pack|PCS|Jewellery & Watches
+Bracelet Small pack|PCS|Jewellery & Watches
+Bracelet Medium pack|PCS|Jewellery & Watches
+Pendant set Small pack|PCS|Jewellery & Watches
+Pendant set Medium pack|PCS|Jewellery & Watches
+Mangalsutra Small pack|PCS|Jewellery & Watches
+Mangalsutra Medium pack|PCS|Jewellery & Watches
+Nose pin Small pack|PCS|Jewellery & Watches
+Nose pin Medium pack|PCS|Jewellery & Watches
+Toe ring Small pack|PCS|Jewellery & Watches
+Toe ring Medium pack|PCS|Jewellery & Watches
+Jewellery box Small pack|PCS|Jewellery & Watches
+Jewellery box Medium pack|PCS|Jewellery & Watches
+Jewellery pouch Small pack|PCS|Jewellery & Watches
+Jewellery pouch Medium pack|PCS|Jewellery & Watches
+Watch analog Small pack|PCS|Jewellery & Watches
+Watch analog Medium pack|PCS|Jewellery & Watches
+Watch digital Small pack|PCS|Jewellery & Watches
+Watch digital Medium pack|PCS|Jewellery & Watches
+Smartwatch strap Small pack|PCS|Jewellery & Watches
+Smartwatch strap Medium pack|PCS|Jewellery & Watches
+Watch battery Small pack|PCS|Jewellery & Watches
+Watch battery Medium pack|PCS|Jewellery & Watches
+Watch strap leather Small pack|PCS|Jewellery & Watches
+Watch strap leather Medium pack|PCS|Jewellery & Watches
+Watch strap metal Small pack|PCS|Jewellery & Watches
+Watch strap metal Medium pack|PCS|Jewellery & Watches
+Watch glass Small pack|PCS|Jewellery & Watches
+Watch glass Medium pack|PCS|Jewellery & Watches
+Watch repair kit Small pack|PCS|Jewellery & Watches
+Watch repair kit Medium pack|PCS|Jewellery & Watches
+Cufflinks Small pack|PCS|Jewellery & Watches
+Cufflinks Medium pack|PCS|Jewellery & Watches
+Tie pin Small pack|PCS|Jewellery & Watches
+Tie pin Medium pack|PCS|Jewellery & Watches
+Brooch Small pack|PCS|Jewellery & Watches
+Brooch Medium pack|PCS|Jewellery & Watches
+Anklet Small pack|PCS|Jewellery & Watches
+Anklet Medium pack|PCS|Jewellery & Watches
+Hair accessory Small pack|PCS|Jewellery & Watches
+Hair accessory Medium pack|PCS|Jewellery & Watches
+Beaded necklace Small pack|PCS|Jewellery & Watches
+Beaded necklace Medium pack|PCS|Jewellery & Watches
+Pearl earrings Small pack|PCS|Jewellery & Watches
+Pearl earrings Medium pack|PCS|Jewellery & Watches
+ON-0201 Small pack|PCS|Jewellery & Watches
+ON-0201 Medium pack|PCS|Jewellery & Watches
+ON-0202 Small pack|PCS|Jewellery & Watches
+ON-0202 Medium pack|PCS|Jewellery & Watches
+ON-0203 Small pack|PCS|Jewellery & Watches
+ON-0203 Medium pack|PCS|Jewellery & Watches
+ON-0204 Small pack|PCS|Jewellery & Watches
+ON-0204 Medium pack|PCS|Jewellery & Watches
+ON-0205 Small pack|PCS|Jewellery & Watches
+ON-0205 Medium pack|PCS|Jewellery & Watches
+ON-0206 Small pack|PCS|Jewellery & Watches
+ON-0206 Medium pack|PCS|Jewellery & Watches
+ON-0207 Small pack|PCS|Jewellery & Watches
+ON-0207 Medium pack|PCS|Jewellery & Watches
+ON-0208 Small pack|PCS|Jewellery & Watches
+ON-0208 Medium pack|PCS|Jewellery & Watches
+ON-0209 Small pack|PCS|Jewellery & Watches
+ON-0209 Medium pack|PCS|Jewellery & Watches
+ON-0210 Small pack|PCS|Jewellery & Watches
+ON-0210 Medium pack|PCS|Jewellery & Watches
+Prescription frame Small pack|PCS|Optical & Eyewear
+Prescription frame Medium pack|PCS|Optical & Eyewear
+Prescription frame Large pack|PCS|Optical & Eyewear
+Prescription frame Family pack|PCS|Optical & Eyewear
+Reading glasses Small pack|PCS|Optical & Eyewear
+Reading glasses Medium pack|PCS|Optical & Eyewear
+Reading glasses Large pack|PCS|Optical & Eyewear
+Reading glasses Family pack|PCS|Optical & Eyewear
+Sunglasses Small pack|PCS|Optical & Eyewear
+Sunglasses Medium pack|PCS|Optical & Eyewear
+Sunglasses Large pack|PCS|Optical & Eyewear
+Sunglasses Family pack|PCS|Optical & Eyewear
+Kids spectacles Small pack|PCS|Optical & Eyewear
+Kids spectacles Medium pack|PCS|Optical & Eyewear
+Kids spectacles Large pack|PCS|Optical & Eyewear
+Kids spectacles Family pack|PCS|Optical & Eyewear
+Sports sunglasses Small pack|PCS|Optical & Eyewear
+Sports sunglasses Medium pack|PCS|Optical & Eyewear
+Sports sunglasses Large pack|PCS|Optical & Eyewear
+Sports sunglasses Family pack|PCS|Optical & Eyewear
+Safety glasses Small pack|PCS|Optical & Eyewear
+Safety glasses Medium pack|PCS|Optical & Eyewear
+Safety glasses Large pack|PCS|Optical & Eyewear
+Safety glasses Family pack|PCS|Optical & Eyewear
+Blue light glasses Small pack|PCS|Optical & Eyewear
+Blue light glasses Medium pack|PCS|Optical & Eyewear
+Blue light glasses Large pack|PCS|Optical & Eyewear
+Blue light glasses Family pack|PCS|Optical & Eyewear
+Contact lenses Small pack|PCS|Optical & Eyewear
+Contact lenses Medium pack|PCS|Optical & Eyewear
+Contact lenses Large pack|PCS|Optical & Eyewear
+Contact lenses Family pack|PCS|Optical & Eyewear
+Contact lens solution Small pack|PCS|Optical & Eyewear
+Contact lens solution Medium pack|PCS|Optical & Eyewear
+Contact lens solution Large pack|PCS|Optical & Eyewear
+Contact lens solution Family pack|PCS|Optical & Eyewear
+Lens cleaning spray Small pack|PCS|Optical & Eyewear
+Lens cleaning spray Medium pack|PCS|Optical & Eyewear
+Lens cleaning spray Large pack|PCS|Optical & Eyewear
+Lens cleaning spray Family pack|PCS|Optical & Eyewear
+Microfiber lens cloth Small pack|PCS|Optical & Eyewear
+Microfiber lens cloth Medium pack|PCS|Optical & Eyewear
+Spectacle case Small pack|PCS|Optical & Eyewear
+Spectacle case Medium pack|PCS|Optical & Eyewear
+Hard lens case Small pack|PCS|Optical & Eyewear
+Hard lens case Medium pack|PCS|Optical & Eyewear
+Soft lens case Small pack|PCS|Optical & Eyewear
+Soft lens case Medium pack|PCS|Optical & Eyewear
+Nose pad Small pack|PCS|Optical & Eyewear
+Nose pad Medium pack|PCS|Optical & Eyewear
+Temple tips Small pack|PCS|Optical & Eyewear
+Temple tips Medium pack|PCS|Optical & Eyewear
+Screw kit Small pack|PCS|Optical & Eyewear
+Screw kit Medium pack|PCS|Optical & Eyewear
+Optical screwdriver Small pack|PCS|Optical & Eyewear
+Optical screwdriver Medium pack|PCS|Optical & Eyewear
+Lens cloth Small pack|PCS|Optical & Eyewear
+Lens cloth Medium pack|PCS|Optical & Eyewear
+Lens wipes Small pack|PCS|Optical & Eyewear
+Lens wipes Medium pack|PCS|Optical & Eyewear
+Magnifying glass Small pack|PCS|Optical & Eyewear
+Magnifying glass Medium pack|PCS|Optical & Eyewear
+Reading magnifier Small pack|PCS|Optical & Eyewear
+Reading magnifier Medium pack|PCS|Optical & Eyewear
+Clip-on sunglasses Small pack|PCS|Optical & Eyewear
+Clip-on sunglasses Medium pack|PCS|Optical & Eyewear
+Polarized sunglasses Small pack|PCS|Optical & Eyewear
+Polarized sunglasses Medium pack|PCS|Optical & Eyewear
+Goggles Small pack|PCS|Optical & Eyewear
+Goggles Medium pack|PCS|Optical & Eyewear
+Lensometer accessories Small pack|PCS|Optical & Eyewear
+Lensometer accessories Medium pack|PCS|Optical & Eyewear
+Eye patch Small pack|PCS|Optical & Eyewear
+Eye patch Medium pack|PCS|Optical & Eyewear
+Cord chain Small pack|PCS|Optical & Eyewear
+Cord chain Medium pack|PCS|Optical & Eyewear
+Eyewear pouch Small pack|PCS|Optical & Eyewear
+Eyewear pouch Medium pack|PCS|Optical & Eyewear
+Lens cleaner Small pack|PCS|Optical & Eyewear
+Lens cleaner Medium pack|PCS|Optical & Eyewear
+ON-0211 Small pack|PCS|Optical & Eyewear
+ON-0211 Medium pack|PCS|Optical & Eyewear
+ON-0212 Small pack|PCS|Optical & Eyewear
+ON-0212 Medium pack|PCS|Optical & Eyewear
+ON-0213 Small pack|PCS|Optical & Eyewear
+ON-0213 Medium pack|PCS|Optical & Eyewear
+ON-0214 Small pack|PCS|Optical & Eyewear
+ON-0214 Medium pack|PCS|Optical & Eyewear
+ON-0215 Small pack|PCS|Optical & Eyewear
+ON-0215 Medium pack|PCS|Optical & Eyewear
+ON-0216 Small pack|PCS|Optical & Eyewear
+ON-0216 Medium pack|PCS|Optical & Eyewear
+ON-0217 Small pack|PCS|Optical & Eyewear
+ON-0217 Medium pack|PCS|Optical & Eyewear
+ON-0218 Small pack|PCS|Optical & Eyewear
+ON-0218 Medium pack|PCS|Optical & Eyewear
+ON-0219 Small pack|PCS|Optical & Eyewear
+ON-0219 Medium pack|PCS|Optical & Eyewear
+ON-0220 Small pack|PCS|Optical & Eyewear
+ON-0220 Medium pack|PCS|Optical & Eyewear
+Dog dry food Small pack|PCS|Pet Supplies
+Dog dry food Medium pack|PCS|Pet Supplies
+Dog dry food Large pack|PCS|Pet Supplies
+Dog dry food Family pack|PCS|Pet Supplies
+Dog wet food Small pack|PCS|Pet Supplies
+Dog wet food Medium pack|PCS|Pet Supplies
+Dog wet food Large pack|PCS|Pet Supplies
+Dog wet food Family pack|PCS|Pet Supplies
+Puppy food Small pack|PCS|Pet Supplies
+Puppy food Medium pack|PCS|Pet Supplies
+Puppy food Large pack|PCS|Pet Supplies
+Puppy food Family pack|PCS|Pet Supplies
+Cat dry food Small pack|PCS|Pet Supplies
+Cat dry food Medium pack|PCS|Pet Supplies
+Cat dry food Large pack|PCS|Pet Supplies
+Cat dry food Family pack|PCS|Pet Supplies
+Cat wet food Small pack|PCS|Pet Supplies
+Cat wet food Medium pack|PCS|Pet Supplies
+Cat wet food Large pack|PCS|Pet Supplies
+Cat wet food Family pack|PCS|Pet Supplies
+Kitten food Small pack|PCS|Pet Supplies
+Kitten food Medium pack|PCS|Pet Supplies
+Kitten food Large pack|PCS|Pet Supplies
+Kitten food Family pack|PCS|Pet Supplies
+Bird seed mix Small pack|PCS|Pet Supplies
+Bird seed mix Medium pack|PCS|Pet Supplies
+Bird seed mix Large pack|PCS|Pet Supplies
+Bird seed mix Family pack|PCS|Pet Supplies
+Fish flakes Small pack|PCS|Pet Supplies
+Fish flakes Medium pack|PCS|Pet Supplies
+Fish flakes Large pack|PCS|Pet Supplies
+Fish flakes Family pack|PCS|Pet Supplies
+Fish pellets Small pack|PCS|Pet Supplies
+Fish pellets Medium pack|PCS|Pet Supplies
+Fish pellets Large pack|PCS|Pet Supplies
+Fish pellets Family pack|PCS|Pet Supplies
+Turtle food Small pack|PCS|Pet Supplies
+Turtle food Medium pack|PCS|Pet Supplies
+Turtle food Large pack|PCS|Pet Supplies
+Turtle food Family pack|PCS|Pet Supplies
+Dog treats Small pack|PCS|Pet Supplies
+Dog treats Medium pack|PCS|Pet Supplies
+Cat treats Small pack|PCS|Pet Supplies
+Cat treats Medium pack|PCS|Pet Supplies
+Chew bone Small pack|PCS|Pet Supplies
+Chew bone Medium pack|PCS|Pet Supplies
+Pet shampoo Small pack|PCS|Pet Supplies
+Pet shampoo Medium pack|PCS|Pet Supplies
+Pet conditioner Small pack|PCS|Pet Supplies
+Pet conditioner Medium pack|PCS|Pet Supplies
+Flea shampoo Small pack|PCS|Pet Supplies
+Flea shampoo Medium pack|PCS|Pet Supplies
+Tick spray Small pack|PCS|Pet Supplies
+Tick spray Medium pack|PCS|Pet Supplies
+Pet deodorizer Small pack|PCS|Pet Supplies
+Pet deodorizer Medium pack|PCS|Pet Supplies
+Pet toothpaste Small pack|PCS|Pet Supplies
+Pet toothpaste Medium pack|PCS|Pet Supplies
+Pet toothbrush Small pack|PCS|Pet Supplies
+Pet toothbrush Medium pack|PCS|Pet Supplies
+Dog collar Small pack|PCS|Pet Supplies
+Dog collar Medium pack|PCS|Pet Supplies
+Dog leash Small pack|PCS|Pet Supplies
+Dog leash Medium pack|PCS|Pet Supplies
+Harness Small pack|PCS|Pet Supplies
+Harness Medium pack|PCS|Pet Supplies
+Pet bed Small pack|PCS|Pet Supplies
+Pet bed Medium pack|PCS|Pet Supplies
+Pet blanket Small pack|PCS|Pet Supplies
+Pet blanket Medium pack|PCS|Pet Supplies
+Pet carrier Small pack|PCS|Pet Supplies
+Pet carrier Medium pack|PCS|Pet Supplies
+Litter tray Small pack|PCS|Pet Supplies
+Litter tray Medium pack|PCS|Pet Supplies
+Cat litter Small pack|PCS|Pet Supplies
+Cat litter Medium pack|PCS|Pet Supplies
+Poop bags Small pack|PCS|Pet Supplies
+Poop bags Medium pack|PCS|Pet Supplies
+Food bowl Small pack|PCS|Pet Supplies
+Food bowl Medium pack|PCS|Pet Supplies
+Water bowl Small pack|PCS|Pet Supplies
+Water bowl Medium pack|PCS|Pet Supplies
+Automatic feeder Small pack|PCS|Pet Supplies
+Automatic feeder Medium pack|PCS|Pet Supplies
+Water dispenser Small pack|PCS|Pet Supplies
+Water dispenser Medium pack|PCS|Pet Supplies
+Aquarium tank Small pack|PCS|Pet Supplies
+Aquarium tank Medium pack|PCS|Pet Supplies
+Aquarium filter Small pack|PCS|Pet Supplies
+Aquarium filter Medium pack|PCS|Pet Supplies
+Air pump Small pack|PCS|Pet Supplies
+Air pump Medium pack|PCS|Pet Supplies
+Fish net Small pack|PCS|Pet Supplies
+Fish net Medium pack|PCS|Pet Supplies
+Bird cage Small pack|PCS|Pet Supplies
+Bird cage Medium pack|PCS|Pet Supplies
+Bird perch Small pack|PCS|Pet Supplies
+Bird perch Medium pack|PCS|Pet Supplies
+Scratching post Small pack|PCS|Pet Supplies
+Scratching post Medium pack|PCS|Pet Supplies
+Pet toy Small pack|PCS|Pet Supplies
+Pet toy Medium pack|PCS|Pet Supplies
+Chew toy Small pack|PCS|Pet Supplies
+Chew toy Medium pack|PCS|Pet Supplies
+Grooming brush Small pack|PCS|Pet Supplies
+Grooming brush Medium pack|PCS|Pet Supplies
+Nail clipper Small pack|PCS|Pet Supplies
+Nail clipper Medium pack|PCS|Pet Supplies
+Pet waste scoop Small pack|PCS|Pet Supplies
+Pet waste scoop Medium pack|PCS|Pet Supplies
+ON-0221 Small pack|PCS|Pet Supplies
+ON-0221 Medium pack|PCS|Pet Supplies
+ON-0222 Small pack|PCS|Pet Supplies
+ON-0222 Medium pack|PCS|Pet Supplies
+ON-0223 Small pack|PCS|Pet Supplies
+ON-0223 Medium pack|PCS|Pet Supplies
+ON-0224 Small pack|PCS|Pet Supplies
+ON-0224 Medium pack|PCS|Pet Supplies
+ON-0225 Small pack|PCS|Pet Supplies
+ON-0225 Medium pack|PCS|Pet Supplies
+ON-0226 Small pack|PCS|Pet Supplies
+ON-0226 Medium pack|PCS|Pet Supplies
+ON-0227 Small pack|PCS|Pet Supplies
+ON-0227 Medium pack|PCS|Pet Supplies
+ON-0228 Small pack|PCS|Pet Supplies
+ON-0228 Medium pack|PCS|Pet Supplies
+ON-0229 Small pack|PCS|Pet Supplies
+ON-0229 Medium pack|PCS|Pet Supplies
+ON-0230 Small pack|PCS|Pet Supplies
+ON-0230 Medium pack|PCS|Pet Supplies
+Men formal shoes Small pack|PCS|Footwear & Leather Goods
+Men formal shoes Medium pack|PCS|Footwear & Leather Goods
+Men formal shoes Large pack|PCS|Footwear & Leather Goods
+Men formal shoes Family pack|PCS|Footwear & Leather Goods
+Men casual shoes Small pack|PCS|Footwear & Leather Goods
+Men casual shoes Medium pack|PCS|Footwear & Leather Goods
+Men casual shoes Large pack|PCS|Footwear & Leather Goods
+Men casual shoes Family pack|PCS|Footwear & Leather Goods
+Men sandals Small pack|PCS|Footwear & Leather Goods
+Men sandals Medium pack|PCS|Footwear & Leather Goods
+Men sandals Large pack|PCS|Footwear & Leather Goods
+Men sandals Family pack|PCS|Footwear & Leather Goods
+Men slippers Small pack|PCS|Footwear & Leather Goods
+Men slippers Medium pack|PCS|Footwear & Leather Goods
+Men slippers Large pack|PCS|Footwear & Leather Goods
+Men slippers Family pack|PCS|Footwear & Leather Goods
+Women sandals Small pack|PCS|Footwear & Leather Goods
+Women sandals Medium pack|PCS|Footwear & Leather Goods
+Women sandals Large pack|PCS|Footwear & Leather Goods
+Women sandals Family pack|PCS|Footwear & Leather Goods
+Women heels Small pack|PCS|Footwear & Leather Goods
+Women heels Medium pack|PCS|Footwear & Leather Goods
+Women heels Large pack|PCS|Footwear & Leather Goods
+Women heels Family pack|PCS|Footwear & Leather Goods
+Women flats Small pack|PCS|Footwear & Leather Goods
+Women flats Medium pack|PCS|Footwear & Leather Goods
+Women flats Large pack|PCS|Footwear & Leather Goods
+Women flats Family pack|PCS|Footwear & Leather Goods
+Women shoes Small pack|PCS|Footwear & Leather Goods
+Women shoes Medium pack|PCS|Footwear & Leather Goods
+Women shoes Large pack|PCS|Footwear & Leather Goods
+Women shoes Family pack|PCS|Footwear & Leather Goods
+Sports shoes Small pack|PCS|Footwear & Leather Goods
+Sports shoes Medium pack|PCS|Footwear & Leather Goods
+Sports shoes Large pack|PCS|Footwear & Leather Goods
+Sports shoes Family pack|PCS|Footwear & Leather Goods
+Running shoes Small pack|PCS|Footwear & Leather Goods
+Running shoes Medium pack|PCS|Footwear & Leather Goods
+Running shoes Large pack|PCS|Footwear & Leather Goods
+Running shoes Family pack|PCS|Footwear & Leather Goods
+School shoes Small pack|PCS|Footwear & Leather Goods
+School shoes Medium pack|PCS|Footwear & Leather Goods
+Kids sandals Small pack|PCS|Footwear & Leather Goods
+Kids sandals Medium pack|PCS|Footwear & Leather Goods
+Kids shoes Small pack|PCS|Footwear & Leather Goods
+Kids shoes Medium pack|PCS|Footwear & Leather Goods
+Rain boots Small pack|PCS|Footwear & Leather Goods
+Rain boots Medium pack|PCS|Footwear & Leather Goods
+Safety shoes Small pack|PCS|Footwear & Leather Goods
+Safety shoes Medium pack|PCS|Footwear & Leather Goods
+House slippers Small pack|PCS|Footwear & Leather Goods
+House slippers Medium pack|PCS|Footwear & Leather Goods
+Flip flops Small pack|PCS|Footwear & Leather Goods
+Flip flops Medium pack|PCS|Footwear & Leather Goods
+Leather belt Small pack|PCS|Footwear & Leather Goods
+Leather belt Medium pack|PCS|Footwear & Leather Goods
+Synthetic belt Small pack|PCS|Footwear & Leather Goods
+Synthetic belt Medium pack|PCS|Footwear & Leather Goods
+Wallet Small pack|PCS|Footwear & Leather Goods
+Wallet Medium pack|PCS|Footwear & Leather Goods
+Card holder Small pack|PCS|Footwear & Leather Goods
+Card holder Medium pack|PCS|Footwear & Leather Goods
+Leather handbag Small pack|PCS|Footwear & Leather Goods
+Leather handbag Medium pack|PCS|Footwear & Leather Goods
+Handbag Small pack|PCS|Footwear & Leather Goods
+Handbag Medium pack|PCS|Footwear & Leather Goods
+Backpack Small pack|PCS|Footwear & Leather Goods
+Backpack Medium pack|PCS|Footwear & Leather Goods
+Laptop bag Small pack|PCS|Footwear & Leather Goods
+Laptop bag Medium pack|PCS|Footwear & Leather Goods
+Travel bag Small pack|PCS|Footwear & Leather Goods
+Travel bag Medium pack|PCS|Footwear & Leather Goods
+Suitcase Small pack|PCS|Footwear & Leather Goods
+Suitcase Medium pack|PCS|Footwear & Leather Goods
+Duffel bag Small pack|PCS|Footwear & Leather Goods
+Duffel bag Medium pack|PCS|Footwear & Leather Goods
+Purse Small pack|PCS|Footwear & Leather Goods
+Purse Medium pack|PCS|Footwear & Leather Goods
+Coin pouch Small pack|PCS|Footwear & Leather Goods
+Coin pouch Medium pack|PCS|Footwear & Leather Goods
+Shoe polish Small pack|PCS|Footwear & Leather Goods
+Shoe polish Medium pack|PCS|Footwear & Leather Goods
+Shoe brush Small pack|PCS|Footwear & Leather Goods
+Shoe brush Medium pack|PCS|Footwear & Leather Goods
+Shoe insole Small pack|PCS|Footwear & Leather Goods
+Shoe insole Medium pack|PCS|Footwear & Leather Goods
+Shoe lace Small pack|PCS|Footwear & Leather Goods
+Shoe lace Medium pack|PCS|Footwear & Leather Goods
+Heel pad Small pack|PCS|Footwear & Leather Goods
+Heel pad Medium pack|PCS|Footwear & Leather Goods
+Shoe deodorizer Small pack|PCS|Footwear & Leather Goods
+Shoe deodorizer Medium pack|PCS|Footwear & Leather Goods
+Rain cover Small pack|PCS|Footwear & Leather Goods
+Rain cover Medium pack|PCS|Footwear & Leather Goods
+Leather conditioner Small pack|PCS|Footwear & Leather Goods
+Leather conditioner Medium pack|PCS|Footwear & Leather Goods
+ON-0231 Small pack|PCS|Footwear & Leather Goods
+ON-0231 Medium pack|PCS|Footwear & Leather Goods
+ON-0232 Small pack|PCS|Footwear & Leather Goods
+ON-0232 Medium pack|PCS|Footwear & Leather Goods
+ON-0233 Small pack|PCS|Footwear & Leather Goods
+ON-0233 Medium pack|PCS|Footwear & Leather Goods
+ON-0234 Small pack|PCS|Footwear & Leather Goods
+ON-0234 Medium pack|PCS|Footwear & Leather Goods
+ON-0235 Small pack|PCS|Footwear & Leather Goods
+ON-0235 Medium pack|PCS|Footwear & Leather Goods
+ON-0236 Small pack|PCS|Footwear & Leather Goods
+ON-0236 Medium pack|PCS|Footwear & Leather Goods
+ON-0237 Small pack|PCS|Footwear & Leather Goods
+ON-0237 Medium pack|PCS|Footwear & Leather Goods
+ON-0238 Small pack|PCS|Footwear & Leather Goods
+ON-0238 Medium pack|PCS|Footwear & Leather Goods
+ON-0239 Small pack|PCS|Footwear & Leather Goods
+ON-0239 Medium pack|PCS|Footwear & Leather Goods
+ON-0240 Small pack|PCS|Footwear & Leather Goods
+ON-0240 Medium pack|PCS|Footwear & Leather Goods
+LED bulb Small pack|PCS|Electrical & Lighting
+LED bulb Medium pack|PCS|Electrical & Lighting
+LED bulb Large pack|PCS|Electrical & Lighting
+LED bulb Family pack|PCS|Electrical & Lighting
+CFL bulb Small pack|PCS|Electrical & Lighting
+CFL bulb Medium pack|PCS|Electrical & Lighting
+CFL bulb Large pack|PCS|Electrical & Lighting
+CFL bulb Family pack|PCS|Electrical & Lighting
+Tube light Small pack|PCS|Electrical & Lighting
+Tube light Medium pack|PCS|Electrical & Lighting
+Tube light Large pack|PCS|Electrical & Lighting
+Tube light Family pack|PCS|Electrical & Lighting
+LED batten Small pack|PCS|Electrical & Lighting
+LED batten Medium pack|PCS|Electrical & Lighting
+LED batten Large pack|PCS|Electrical & Lighting
+LED batten Family pack|PCS|Electrical & Lighting
+Panel light Small pack|PCS|Electrical & Lighting
+Panel light Medium pack|PCS|Electrical & Lighting
+Panel light Large pack|PCS|Electrical & Lighting
+Panel light Family pack|PCS|Electrical & Lighting
+Downlight Small pack|PCS|Electrical & Lighting
+Downlight Medium pack|PCS|Electrical & Lighting
+Downlight Large pack|PCS|Electrical & Lighting
+Downlight Family pack|PCS|Electrical & Lighting
+Flood light Small pack|PCS|Electrical & Lighting
+Flood light Medium pack|PCS|Electrical & Lighting
+Flood light Large pack|PCS|Electrical & Lighting
+Flood light Family pack|PCS|Electrical & Lighting
+Street light Small pack|PCS|Electrical & Lighting
+Street light Medium pack|PCS|Electrical & Lighting
+Street light Large pack|PCS|Electrical & Lighting
+Street light Family pack|PCS|Electrical & Lighting
+Emergency light Small pack|PCS|Electrical & Lighting
+Emergency light Medium pack|PCS|Electrical & Lighting
+Emergency light Large pack|PCS|Electrical & Lighting
+Emergency light Family pack|PCS|Electrical & Lighting
+Night lamp Small pack|PCS|Electrical & Lighting
+Night lamp Medium pack|PCS|Electrical & Lighting
+Night lamp Large pack|PCS|Electrical & Lighting
+Night lamp Family pack|PCS|Electrical & Lighting
+Ceiling fan Small pack|PCS|Electrical & Lighting
+Ceiling fan Medium pack|PCS|Electrical & Lighting
+Table fan Small pack|PCS|Electrical & Lighting
+Table fan Medium pack|PCS|Electrical & Lighting
+Exhaust fan Small pack|PCS|Electrical & Lighting
+Exhaust fan Medium pack|PCS|Electrical & Lighting
+Switch Small pack|PCS|Electrical & Lighting
+Switch Medium pack|PCS|Electrical & Lighting
+Socket Small pack|PCS|Electrical & Lighting
+Socket Medium pack|PCS|Electrical & Lighting
+Plug top Small pack|PCS|Electrical & Lighting
+Plug top Medium pack|PCS|Electrical & Lighting
+Multi plug Small pack|PCS|Electrical & Lighting
+Multi plug Medium pack|PCS|Electrical & Lighting
+MCB Small pack|PCS|Electrical & Lighting
+MCB Medium pack|PCS|Electrical & Lighting
+RCCB Small pack|PCS|Electrical & Lighting
+RCCB Medium pack|PCS|Electrical & Lighting
+Distribution board Small pack|PCS|Electrical & Lighting
+Distribution board Medium pack|PCS|Electrical & Lighting
+Copper wire Small pack|PCS|Electrical & Lighting
+Copper wire Medium pack|PCS|Electrical & Lighting
+Flexible cable Small pack|PCS|Electrical & Lighting
+Flexible cable Medium pack|PCS|Electrical & Lighting
+Coaxial cable Small pack|PCS|Electrical & Lighting
+Coaxial cable Medium pack|PCS|Electrical & Lighting
+LAN cable Small pack|PCS|Electrical & Lighting
+LAN cable Medium pack|PCS|Electrical & Lighting
+Conduit pipe Small pack|PCS|Electrical & Lighting
+Conduit pipe Medium pack|PCS|Electrical & Lighting
+Junction box Small pack|PCS|Electrical & Lighting
+Junction box Medium pack|PCS|Electrical & Lighting
+Electrical tape Small pack|PCS|Electrical & Lighting
+Electrical tape Medium pack|PCS|Electrical & Lighting
+Cable tie Small pack|PCS|Electrical & Lighting
+Cable tie Medium pack|PCS|Electrical & Lighting
+Lamp holder Small pack|PCS|Electrical & Lighting
+Lamp holder Medium pack|PCS|Electrical & Lighting
+Ceiling rose Small pack|PCS|Electrical & Lighting
+Ceiling rose Medium pack|PCS|Electrical & Lighting
+Bell switch Small pack|PCS|Electrical & Lighting
+Bell switch Medium pack|PCS|Electrical & Lighting
+Door bell Small pack|PCS|Electrical & Lighting
+Door bell Medium pack|PCS|Electrical & Lighting
+Dimmer switch Small pack|PCS|Electrical & Lighting
+Dimmer switch Medium pack|PCS|Electrical & Lighting
+Fan regulator Small pack|PCS|Electrical & Lighting
+Fan regulator Medium pack|PCS|Electrical & Lighting
+LED driver Small pack|PCS|Electrical & Lighting
+LED driver Medium pack|PCS|Electrical & Lighting
+Transformer Small pack|PCS|Electrical & Lighting
+Transformer Medium pack|PCS|Electrical & Lighting
+Stabilizer Small pack|PCS|Electrical & Lighting
+Stabilizer Medium pack|PCS|Electrical & Lighting
+Inverter Small pack|PCS|Electrical & Lighting
+Inverter Medium pack|PCS|Electrical & Lighting
+UPS Small pack|PCS|Electrical & Lighting
+UPS Medium pack|PCS|Electrical & Lighting
+Rechargeable torch Small pack|PCS|Electrical & Lighting
+Rechargeable torch Medium pack|PCS|Electrical & Lighting
+Solar light Small pack|PCS|Electrical & Lighting
+Solar light Medium pack|PCS|Electrical & Lighting
+Extension board Small pack|PCS|Electrical & Lighting
+Extension board Medium pack|PCS|Electrical & Lighting
+Surge protector Small pack|PCS|Electrical & Lighting
+Surge protector Medium pack|PCS|Electrical & Lighting
+Earthing rod Small pack|PCS|Electrical & Lighting
+Earthing rod Medium pack|PCS|Electrical & Lighting
+Cable lug Small pack|PCS|Electrical & Lighting
+Cable lug Medium pack|PCS|Electrical & Lighting
+ON-0241 Small pack|PCS|Electrical & Lighting
+ON-0241 Medium pack|PCS|Electrical & Lighting
+ON-0242 Small pack|PCS|Electrical & Lighting
+ON-0242 Medium pack|PCS|Electrical & Lighting
+ON-0243 Small pack|PCS|Electrical & Lighting
+ON-0243 Medium pack|PCS|Electrical & Lighting
+ON-0244 Small pack|PCS|Electrical & Lighting
+ON-0244 Medium pack|PCS|Electrical & Lighting
+ON-0245 Small pack|PCS|Electrical & Lighting
+ON-0245 Medium pack|PCS|Electrical & Lighting
+ON-0246 Small pack|PCS|Electrical & Lighting
+ON-0246 Medium pack|PCS|Electrical & Lighting
+ON-0247 Small pack|PCS|Electrical & Lighting
+ON-0247 Medium pack|PCS|Electrical & Lighting
+ON-0248 Small pack|PCS|Electrical & Lighting
+ON-0248 Medium pack|PCS|Electrical & Lighting
+ON-0249 Small pack|PCS|Electrical & Lighting
+ON-0249 Medium pack|PCS|Electrical & Lighting
+ON-0250 Small pack|PCS|Electrical & Lighting
+ON-0250 Medium pack|PCS|Electrical & Lighting
