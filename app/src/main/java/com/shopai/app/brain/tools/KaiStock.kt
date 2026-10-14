@@ -277,7 +277,13 @@ object KaiStock {
             Regex("""(?<![\p{L}\p{N}-])${Regex.escape(own)}(?![\p{L}])""").find(words)?.takeIf { m ->
                 // "Paint bucket 7" is not Bucket when "Paint bucket …" products are kept: the word before belongs to a longer name.
                 val before = words.substring(0, m.range.first).trim().substringAfterLast(' ')
-                before.isEmpty() || !before.first().isLetter() || idx.spaced.withIndex().none { (j, o) -> j != i && o.contains(" $before $own ") }
+                // "Ragi flour 7" is not Ragi when "… Ragi flour …" products are kept: the word after belongs to a longer name too.
+                val after = words.substring(m.range.last + 1).trim().substringBefore(' ')
+                (before.isEmpty() || !before.first().isLetter() || idx.spaced.withIndex().none { (j, o) -> j != i && o.contains(" $before $own ") } &&
+                    // "பார்ச்சூன் Palmolein oil 1 L": a word the mic wrote that Kai couldn't read, right before a name other products end
+                    // with ("Fortune Palmolein oil 1 L") — not this one for sure: Kai asks.
+                    !(KaiSpokenWords.hasTamil(before) && idx.spaced.withIndex().any { (j, o) -> j != i && o.endsWith(" $own ") })) &&
+                    (after.isEmpty() || !after.first().isLetter() || idx.spaced.withIndex().none { (j, o) -> j != i && o.contains(" $own $after ") })
             }?.let { p to it.range }
         }
         val exactHit = exactAt(lower)
@@ -312,7 +318,9 @@ object KaiStock {
             val pw = idx.spaceWords[k]
             pw.size <= 3 && p.name.count(Char::isLetter) >= 5 && words.windowed(pw.size).withIndex().any { (i, w) ->
                 beforeQty(i + pw.size) && w.none { it in units || it in fillers || it in numberWords || it.first().isDigit() } &&
-                    w.zip(pw).all { (a, b) -> a == b || (a.length >= 4 && b.length >= 4 && soundsSame(a, b)) }
+                    w.zip(pw).all { (a, b) -> a == b || (a.length >= 4 && b.length >= 4 && soundsSame(a, b)) } &&
+                    // "Amul Butter 7" is not Butter when "Amul Butter …" packs are kept: the word before makes a longer name.
+                    (i == 0 || !nameWord(words[i - 1]) || idx.spaced.withIndex().none { (j, o) -> j != k && o.contains(" ${words[i - 1]} ${w.joinToString(" ")} ") })
             }
         }.map { it.value }
         sounds.singleOrNull()?.let { return it to it.name.lowercase(Locale.ROOT) }
@@ -388,6 +396,11 @@ object KaiStock {
                 if (meant.isEmpty()) continue
                 val shop = shopNameFor(meant.flatMap { it.names }.distinct(), names) ?: continue
                 val p = products.first { it.name == shop }
+                // "Aashirvaad Wheat flour 7" is not Wheat: the words around it make a longer name the shop keeps.
+                val phrase = words.subList(i, i + size).joinToString(" ") { it.value }
+                val before = words.getOrNull(i - 1)?.value?.takeIf { it.first().isLetter() }
+                val after = words.getOrNull(i + size)?.value?.takeIf { it.first().isLetter() }
+                if (indexFor(names).spaced.withIndex().any { (j, o) -> names[j] != shop && (before != null && o.contains(" $before $phrase ") || after != null && o.contains(" $phrase $after ")) }) continue
                 return p to (words[i].range.first..words[i + size - 1].range.last)
             }
         }
@@ -528,7 +541,11 @@ object KaiStock {
         if (product == null) {
             // A name Kai doesn't have: only when it clearly is stock ("Pepsodent stock vandhiruku", "2 Pepsodent box pochu").
             if (!stockContext.containsMatchIn(lower) && saidUnit == null && qty == null) return null
-            if (spoken.split(' ').size > 4) return null
+            // (a longer one only when the shop's names have every word of it: "India Gate Sona masoori rice" → Kai asks which pack)
+            if (spoken.split(' ').size > 4) {
+                val said = spoken.lowercase(Locale.ROOT).split(' ').filter { w -> w.any(Char::isLetter) }
+                if (products.none { p -> p.name.lowercase(Locale.ROOT).split(Regex("""[\s&]+""")).containsAll(said) }) return null
+            }
             // A big number with no unit is money, not pieces.
             if (qty != null && saidUnit == null && qty > BigDecimal(999) && !stockContext.containsMatchIn(lower)) return null
         }
@@ -599,7 +616,9 @@ object KaiStock {
     fun quantityIn(text: String): Pair<BigDecimal, String?>? {
         val lower = " " + text.lowercase(Locale.ROOT).replace(Regex("""[!,;]"""), " ").replace(Regex("""\s+"""), " ").trim() + " "
         val words = lower.split(' ').filter { it.isNotEmpty() }
-        val digits = Regex("""(?<![\p{L}\d.])(\d+(?:\.\d+)?)(?![\d])""").find(lower)?.groupValues?.get(1)?.toBigDecimalOrNull()
+        // ("4700BC Popcorn 7": a number written into a name's code is not the quantity — "10kg", "5pcs" are.)
+        val digits = Regex("""(?<![\p{L}\d.])(\d+(?:\.\d+)?)(?![\d])(\p{L}*)""").findAll(lower)
+            .firstOrNull { it.groupValues[2].isEmpty() || it.groupValues[2] in units }?.groupValues?.get(1)?.toBigDecimalOrNull()
         val qty = (digits ?: words.firstNotNullOfOrNull { numberWords[it] }?.toBigDecimal())?.takeIf { it.signum() > 0 } ?: return null
         return qty to words.firstNotNullOfOrNull { units[it] }
     }

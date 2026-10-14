@@ -1064,10 +1064,30 @@ class KaiAgent(
             KaiAction.OpenRecord("SALE_BILL", partyId.orEmpty()), primary = true))))
     }
 
-    /** [text] without the shop's product names said in it as whole names. */
-    private suspend fun withoutShopProducts(text: String): String = runCatching { tools.products() }.getOrNull().orEmpty()
-        .filter { it.name.count(Char::isLetter) >= 3 }.sortedByDescending { it.name.length }
-        .fold(text) { t, p -> if (!t.contains(p.name, ignoreCase = true)) t else t.replace(Regex("""(?i)(?<![\p{L}])${Regex.escape(p.name)}(?![\p{L}])"""), " ") }
+    /**
+     * [text] without the shop's product names said in it: whole names, and two words or more of one said together ("Amazon Basics
+     * Garbage bag 7 add pannu" with "Amazon Basics Garbage bag Small" kept is stock — not an online order).
+     */
+    private suspend fun withoutShopProducts(text: String): String {
+        val products = runCatching { tools.products() }.getOrNull().orEmpty()
+        val whole = products.filter { it.name.count(Char::isLetter) >= 3 }.sortedByDescending { it.name.length }
+            .fold(text) { t, p -> if (!t.contains(p.name, ignoreCase = true)) t else t.replace(Regex("""(?i)(?<![\p{L}])${Regex.escape(p.name)}(?![\p{L}])"""), " ") }
+        val names = products.map { " " + it.name.lowercase(Locale.ROOT).replace(Regex("""\s+"""), " ") + " " }
+        val words = Regex("""\S+""").findAll(whole).toList()
+        var out = whole
+        var i = 0
+        while (i < words.size) {
+            val n = (minOf(6, words.size - i) downTo 2).firstOrNull { n ->
+                val phrase = " " + words.subList(i, i + n).joinToString(" ") { it.value.lowercase(Locale.ROOT) } + " "
+                phrase.any(Char::isLetter) && names.any { it.contains(phrase) }
+            }
+            if (n == null) { i++; continue }
+            val from = words[i].range.first; val to = words[i + n - 1].range.last
+            out = out.substring(0, from) + " ".repeat(to - from + 1) + out.substring(to + 1)
+            i += n
+        }
+        return out
+    }
 
     /** Weather, cricket, news, jokes, online orders, loans, staff salary: said plainly — not something Kai does. */
     private fun beyond(topic: KaiConversationCare.Beyond, lang: KaiLang): KaiTurn {
@@ -1461,8 +1481,9 @@ class KaiAgent(
         }
         // "Lokesh-ku 500 add pannu": a new entry of 500 on Lokesh's record (no give / take verb) — drafted, saved only on Confirm.
         // "Min vilakku 5 stock add pannu" names a product the shop keeps ("vilakku" is not "to Vilak"): stock, never money.
+        // "Murukku 7 add pannu" with Aachi Murukku packs kept: a word of the shop's product names is not "to Muruk" either.
         if (isAmountAddRequest(text) && com.shopai.app.brain.tools.KaiPaymentDirection.of(text) == null && KaiCommands.route(text, at, people) !is KaiCommand.Payment &&
-            products?.let { com.shopai.app.brain.tools.KaiStock.understand(text, it)?.product } == null)
+            products?.let { com.shopai.app.brain.tools.KaiStock.understand(text, it)?.product } == null && !productWordWithKu(text, products))
             // "madhan ku 100 add panniko" with "மதன்" in the books: the person kept in Tamil letters (owner's phone, 12 Oct 2026).
             (KaiCommands.personIn(text, people) ?: com.shopai.app.brain.tools.KaiSpokenWords.bookNameIn(text, people))?.let { person ->
                 com.shopai.app.brain.KaiUnderstanding.amountsIn(text, at.toLocalDate()).filter { it > 0 }.singleOrNull()
@@ -3541,9 +3562,13 @@ class KaiAgent(
         val said = byPhrase?.second ?: name
         if (found.size == 1) return withProduct(line, said, found.single(), lang)
         if (found.size < 2) return null
-        productChoice = ProductChoice(found.take(8), line, said, conversationState.conversationTurn, lang)
+        // The names that are just the name said and a pack first ("Raw rice 1 kg", "Raw rice 5 kg" before "Ponni Raw rice 1 kg"); every
+        // one is kept for the answer, even past the eight shown.
+        val sk = com.shopai.app.brain.tools.KaiStock.sizeKey(said).trim()
+        val ordered = found.sortedBy { p -> if (packOf(com.shopai.app.brain.tools.KaiStock.sizeKey(p.name).trim(), sk)) 0 else 1 }
+        productChoice = ProductChoice(ordered, line, said, conversationState.conversationTurn, lang)
         val n = said.trim().lowercase(Locale.ROOT)
-        val list = found.take(8).map { it.name }
+        val list = ordered.take(8).map { it.name }
         return say(lang, KaiMood.CLARIFY, "which product: $n",
             ta = "எந்த $n ஓனர்? ${list.joinToString("-ஆ, ")}-ஆ?",
             tl = "Endha $n Owner? ${list.joinToString("-aa, ")}-aa?",
@@ -3565,6 +3590,18 @@ class KaiAgent(
         return try { answerOwner(again) } finally { forcedLang = keep; choiceRerun = false }
     }
 
+    /** A word ending in -ku that is a word of the shop's product names ("Murukku", "Vilakku"). */
+    private fun productWordWithKu(text: String, products: List<com.shopai.app.brain.tools.ProductRef>?): Boolean {
+        val said = text.lowercase(Locale.ROOT).split(Regex("""[^\p{L}\p{M}]+""")).filter { it.length > 4 && it.endsWith("ku") }
+        if (said.isEmpty() || products == null) return false
+        return products.any { p -> p.name.lowercase(Locale.ROOT).split(Regex("""\s+""")).any { it in said } }
+    }
+
+    /** [key] is the name [said] with only its pack after it ("raw rice 5 kg" of "raw rice"). */
+    private fun packOf(key: String, said: String) = key == said || key.startsWith("$said ") && key.removePrefix("$said ").let { rest ->
+        rest.firstOrNull()?.isDigit() == true || rest in setOf("small", "medium", "large", "xs", "xl", "xxl", "xxxl", "mini", "jumbo", "regular")
+    }
+
     private val firstWord = Regex("""(?i)(?<![\p{L}])(first|mudhal|mudhala|modhal|onnu|1st|மொதல்|முதல்)(?![\p{L}])""")
     private val secondWord = Regex("""(?i)(?<![\p{L}])(second|rendavadhu|rendavathu|rendu|2nd|ரெண்டாவது)(?![\p{L}])""")
 
@@ -3581,7 +3618,11 @@ class KaiAgent(
         }.singleOrNull()
             // A size however said ("16A" / "16 amp", "half inch" / "1/2 inch"): the one candidate whose size it is.
             ?: com.shopai.app.brain.tools.KaiStock.sizeKey(said).trim().takeIf { it.any(Char::isDigit) }?.let { k ->
-                c.candidates.filter { p -> com.shopai.app.brain.tools.KaiStock.sizeKey(p.name).trimEnd().endsWith(" $k") }.singleOrNull()
+                val sized = c.candidates.filter { p -> com.shopai.app.brain.tools.KaiStock.sizeKey(p.name).trimEnd().endsWith(" $k") }
+                // "Raw rice" asked, "5 kg" said: Raw rice 5 kg — not Ponni Raw rice 5 kg, which is another name with the same pack.
+                sized.singleOrNull() ?: com.shopai.app.brain.tools.KaiStock.sizeKey(c.name).trim().let { asked ->
+                    sized.singleOrNull { p -> com.shopai.app.brain.tools.KaiStock.sizeKey(p.name).trim() == "$asked $k" }
+                }
             }
             ?: com.shopai.app.brain.tools.KaiStock.productNamedIn(said, c.candidates)
             ?: c.candidates.getOrNull(0)?.takeIf { firstWord.containsMatchIn(said) }
