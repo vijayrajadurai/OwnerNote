@@ -13,7 +13,8 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 /**
- * The owner's expanded stock catalogues (14 Oct 2026), five business categories each — 16-20: beverages and water, bakery and
+ * The owner's expanded stock catalogues (14 Oct 2026), five business categories each — 21-25: jewellery and watches, optical and
+ * eyewear, pet supplies, footwear and leather goods, electrical and lighting; 16-20: beverages and water, bakery and
  * confectionery, dairy and frozen foods, industrial supplies and machinery, chemicals and cleaning supplies; 11-15: meat, fish
  * and poultry, home and kitchen, furniture and furnishings, toys, gifts and sports goods, packaging and disposables. Each item in
  * Small / Medium / Large / Family packs ("Fresh milk Small pack"), and the catalogue's own codes for items not yet named
@@ -178,6 +179,10 @@ class KaiCatalogue1620ShopTest : KaiCatalogueShopTest() {
 
 class KaiCatalogue1115ShopTest : KaiCatalogueShopTest() {
     override val catalogue = "catalogue-11-15"
+}
+
+class KaiCatalogue2125ShopTest : KaiCatalogueShopTest() {
+    override val catalogue = "catalogue-21-25"
 }
 
 class KaiCatalogue2630ShopTest : KaiCatalogueShopTest() {

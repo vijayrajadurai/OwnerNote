@@ -249,6 +249,17 @@ class KaiProductSoundTest {
         KaiProductSound.withProducts("ஆக்ட் டூ பாப்கார்ன் 60 கிராம் 7", pop, people).let { assertTrue(it, it.startsWith("Act II Popcorn")) }
     }
 
+    @Test fun catalogue2125NamesSaidIntoTheMic() {
+        // Catalogue 21-25 (14 Oct 2026): "சன்கிளாசஸ்" is Sunglasses (sun-glasses: the g is heard), "ஐவேர் பவுச்" is Eyewear pouch — never Purse.
+        val shop = listOf("Sunglasses Small pack", "Sports sunglasses Small pack", "Eyewear pouch Small pack", "Eyewear pouch Medium pack", "Purse Small pack",
+            "Purse Medium pack", "Jewellery pouch Small pack", "Bangles set Small pack")
+        for ((mic, want) in listOf("சன்கிளாசஸ் 7" to "Sunglasses 7", "சன்கிளாசஸ் சின்ன பேக் 7" to "Sunglasses சின்ன", "ஐவேர் பவுச் 7" to "Eyewear pouch 7",
+                "ஐவேர் பவுச் ஸ்மால் பேக் 7" to "Eyewear pouch Small pack 7", "பர்ஸ் 7" to "Purse 7", "பேங்கிள்ஸ் செட் ஸ்மால் பேக் 7" to "Bangles set Small pack 7")) {
+            val got = KaiProductSound.withProducts(mic, shop, people)
+            assertTrue("$mic → $got", got.startsWith(want))
+        }
+    }
+
     /**
      * Catalogue 01-05 (14 Oct 2026): each word's own sound (Jam, not Sauce; Kiwi, not Ghee); short ெ vs long ே (பெப்பர் Pepper, பேர்
      * Pear) and the a after "br" (பிரா Bra); ai of "chains" (செயின்ஸ்), not the ee of Jeans; "ஓஎன் 0001" left for the code ON-0001,

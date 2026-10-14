@@ -1,0 +1,21 @@
+# The owner's own names for the 21-25 catalogue's items (typed Tanglish | as the mic writes it) → the item (kept in packs).
+# item | typed | spoken
+Anklet | kolusu | கொலுசு
+Nose pin | mookuthi | மூக்குத்தி
+Mangalsutra | thaali | தாலி
+Toe ring | metti | மெட்டி
+Gold ring | thanga mothiram | தங்க மோதிரம்
+Gold chain | thanga sangili | தங்கச் சங்கிலி
+Gold bangle | thanga valaiyal | தங்க வளையல்
+Sunglasses | cooling glass | கூலிங் கிளாஸ்
+Door bell | calling bell | காலிங் பெல்
+Electrical tape | insulation tape | இன்சுலேஷன் டேப்
+Surge protector | spike buster | ஸ்பைக் பஸ்டர்
+Bird cage | paravai koondu | பறவைக் கூண்டு
+Aquarium tank | meen thotti | மீன் தொட்டி
+Fish net | meen valai | மீன் வலை
+Dog collar | naai belt | நாய் பெல்ட்
+Dog leash | naai sangili | நாய் சங்கிலி
+Cat litter | poonai manal | பூனை மணல்
+Handbag | kaippai | கைப்பை
+Wallet | panappai | பணப்பை
