@@ -1,0 +1,22 @@
+# The owner's own names for the 11-15 catalogue's items (typed Tanglish | as the mic writes it) → the item (kept in packs).
+# item | typed | spoken
+Crab | nandu | நண்டு
+Squid | kanavai | கணவாய்
+Dry fish | karuvadu | கருவாடு
+Fresh sardine | mathi meen | மத்தி மீன்
+Fresh mackerel | kanangeluthi | கானாங்கெளுத்தி
+Fresh seer fish | vanjiram | வஞ்சிரம்
+Fresh pomfret | vaaval meen | வாவல் மீன்
+Mutton | aattu kari | ஆட்டுக்கறி
+Country chicken | naattu kozhi | நாட்டுக்கோழி
+Chicken liver | kozhi eeral | கோழி ஈரல்
+Quail eggs | kaadai muttai | காடை முட்டை
+Dried prawns | eral karuvadu | இறால் கருவாடு
+Broom | thudaippam | துடைப்பம்
+Pillow | thalaiyanai | தலையணை
+Blanket | porvai | போர்வை
+Mattress | methai | மெத்தை
+Umbrella | kudai | குடை
+Bucket | vaali | வாளி
+Dustbin | kuppai thotti | குப்பைத் தொட்டி
+Jute sack | sanal saakku | சணல் சாக்கு

@@ -334,6 +334,27 @@ object KaiFeed {
         நாட்டுக் கத்தரிக்காய் / நாட்டு கத்தரிக்காய் / naattu kathirikkai / nattu kathirikkai = native brinjal varieties
         நாட்டு வெள்ளரிக்காய் / naattu vellarikkai / nattu vellarikkai = native cucumber varieties
         எலுமிச்சை / எலுமிச்சம்பழம் / elumichai / elumichampazham = lemon
+        # meat, fish, home and kitchen (owner's catalogue 11-15, 14 Oct 2026)
+        நண்டு / nandu = crab
+        கணவாய் / kanavai = squid
+        கருவாடு / karuvadu = dry fish
+        மத்தி மீன் / மத்தி / mathi meen / mathi = sardine
+        கானாங்கெளுத்தி / kanangeluthi / kaanaangeluthi = mackerel
+        வஞ்சிரம் / vanjiram = seer fish
+        வாவல் மீன் / வாவல் / vaaval meen / vaaval = pomfret
+        ஆட்டுக்கறி / ஆட்டு கறி / aattu kari / aatu kari = mutton
+        நாட்டுக்கோழி / நாட்டு கோழி / naattu kozhi / nattu kozhi = country chicken
+        கோழி ஈரல் / kozhi eeral = chicken liver
+        காடை முட்டை / kaadai muttai = quail eggs
+        இறால் கருவாடு / eral karuvadu / iraal karuvadu = dried prawns
+        துடைப்பம் / thudaippam = broom
+        தலையணை / thalaiyanai = pillow
+        போர்வை / porvai = blanket
+        மெத்தை / methai = mattress
+        குடை / kudai = umbrella
+        வாளி / vaali = bucket
+        குப்பைத் தொட்டி / குப்பை தொட்டி / kuppai thotti = dustbin
+        சணல் சாக்கு / sanal saakku = jute sack
         பற்பசை / parpasaai = toothpaste
         துணி துவைக்கும் தூள் / thuni thuvaikkum thool = detergent powder
         பாத்திரம் கழுவும் திரவம் / paathiram kazhuvum thiravam = dishwashing liquid

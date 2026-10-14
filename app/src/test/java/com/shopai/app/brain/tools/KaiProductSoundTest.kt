@@ -209,6 +209,25 @@ class KaiProductSoundTest {
         }
     }
 
+    /**
+     * Catalogue 11-15 (14 Oct 2026): the vowel as the mic writes that English vowel tells look-alikes apart — "ரக்" (short அ) is Rug,
+     * not Rack; "சைடு டேபிள்" Side table, not Study table; "ஷோபீஸ்" Showpiece, not Sofa; "பிளாங்கெட்" Blanket, not Blinds. "சின்ன" /
+     * "பெரிய" are a pack's size, never part of a name; the shop's own "Stock pot" keeps its "ஸ்டாக்"; "அயர்னிங்" is ironing.
+     */
+    @Test fun catalogue1115NamesSaidIntoTheMic() {
+        val shop11 = listOf("Rug Small pack", "Rack Small pack", "Side table Small pack", "Study table Small pack", "Showpiece Small pack", "Sofa Small pack",
+            "Blanket Small pack", "Blinds Small pack", "Beef Large pack", "Paper bag Large pack", "Stock pot Small pack", "Bucket Small pack",
+            "Ironing board Small pack", "Broom Small pack", "Sausages Small pack", "Salami Small pack", "Spatula Small pack")
+        fun h(mic: String) = KaiSpokenWords.normalize(KaiProductSound.withProducts(mic, shop11, people))
+        for ((mic, want) in listOf("ரக் சின்ன பேக் 7" to "Rug chinna", "ரேக் சின்ன பேக் 7" to "Rack chinna", "சைடு டேபிள் ஸ்மால் பேக் 7" to "Side table Small pack",
+                "ஷோபீஸ் ஸ்மால் பேக் 7" to "Showpiece Small pack", "பிளாங்கெட் ஸ்மால் பேக் 7" to "Blanket Small pack", "பீஃப் பெரிய பேக் 7" to "Beef periya",
+                "ஸ்டாக் பாட் ஸ்மால் பேக் 7" to "Stock pot Small pack", "அயர்னிங் போர்டு ஸ்மால் பேக் 7" to "Ironing board Small pack",
+                "சாசேஜஸ் ஸ்மால் பேக் 7" to "Sausages Small pack", "ஸ்பேச்சுலா ஸ்மால் பேக் 7" to "Spatula Small pack")) {
+            val got = h(mic)
+            assertTrue("$mic → $got", got.startsWith(want))
+        }
+    }
+
     @Test fun productNamesSaidIntoTheMic() {
         val said = mapOf(
             "பிரிட்டானியா பிஸ்கட்" to "Britannia Biscuit", "குட் டே" to "Good Day", "பார்லே ஜி" to "Parle G", "சன்ஃபீஸ்ட் மேரி" to "Sunfeast Marie",
