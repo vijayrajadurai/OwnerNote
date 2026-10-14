@@ -557,10 +557,15 @@ class KaiOwnerSweepTest {
         talk("WhatsApp: can't send, can remind", listOf("Kumar ku whatsapp la payment reminder anuppu"), check = said("WhatsApp", "mudiyaadhu", "remind"))
         // Kai's Tamil reply keeps these words as they are (cricket, news, joke …) — checked as they are, typed and spoken.
         for ((ask, word) in listOf("naalaiku mazhai varuma" to "weather", "ipl score enna" to "cricket", "tamil nadu cm yaaru" to "news", "oru joke sollu" to "joke",
-                "enakku loan venum" to "loan", "employee salary kanakku podu" to "salary", "amazon la 10 kg rice order pannu" to "Amazon", "நாளைக்கு மழை வருமா" to "வானிலை"))
+                "enakku loan venum" to "loan", "employee salary kanakku podu" to "salary", "amazon la 10 kg rice order pannu" to "Amazon", "நாளைக்கு மழை வருமா" to "வானிலை",
+                // Advice and a shop holiday (owner, 14 Oct 2026: both were answered with the balances): said plainly, the way back offered.
+                "enna business pannalam" to "business", "sales jaasthi aaga idea sollu" to "business", "naalaiku kadai leave" to "remind"))
             talk("not Kai's work: $ask", listOf(ask), check = { s ->
                 val w = if (mic && word == "weather") "வானிலை" else word
                 lastTurn?.reply?.text.orEmpty().let { t -> if (t.contains(w)) null else "said: $t" } ?: if (s.nothingWritten()) null else "wrote something" })
+        // "kadai" said in passing is not a question about the books: never the balances in its place (a word not in any list).
+        talk("kadai said in passing", listOf("kadai la light poyiduchu"), check = { s ->
+            lastTurn?.reply?.text.orEmpty().let { t -> if (t.contains("vendiyadhu") || t.contains("வேண்டியது")) "said: $t" else null } ?: if (s.nothingWritten()) null else "wrote something" })
         talk("a date", listOf("1 varusham kalichi enna date"), check = said("October 8, 2027"))
         // Paid more than owed (owner's conversation, 10 Oct 2026): the extra is said before Confirm and after, and
         // "ippa evlo tharanum" is about the person just talked about.

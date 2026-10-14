@@ -656,7 +656,9 @@ class KaiAgent(
         }
     }
 
-    private val expenseWord = Regex("""(?i)(?<![\p{L}])(?:rent|vaadagai|vadagai|current\s*bill|eb\s*bill|electricity|salary|sambalam|petrol|diesel|gas\s*bill|gas|kooli|transport|selavu|selavaachu|selavu\s*aachu|expense)(?![\p{L}])|செலவு|செலவாச்சு|வாடகை|கரண்ட்\s*பில்""")
+    // ("light bill", "water bill", "wifi bill" too — owner, 14 Oct 2026: "light bill 1200 kattinen" was read as a person called "Light")
+    private val expenseWord = Regex("""(?i)(?<![\p{L}])(?:rent|vaadagai|vadagai|(?:current|eb|light|water|thanni|gas|internet|wifi|wi-fi|cable|tv|dth|maintenance)\s*bill|electricity|salary|sambalam|petrol|diesel|gas|kooli|transport|selavu|selavaachu|selavu\s*aachu|expense)(?![\p{L}])|""" +
+        """செலவு|செலவாச்சு|வாடகை|(?:கரண்ட்|லைட்|ஈபி|வாட்டர்|தண்ணி|கேஸ்|இன்டர்நெட்|வைஃபை|கேபிள்)\s*பில்""")
 
     /** "current bill 1200 kattinen", "rent kattanum", "petrol 500 selavu": an expense — never a person called "Current" / "Rent". */
     private fun expenseLine(text: String, lang: KaiLang, people: List<String>): KaiTurn? {
@@ -1111,10 +1113,16 @@ class KaiAgent(
             KaiConversationCare.Beyond.TRAVEL -> Triple("ஓனர், train / bus / ticket பத்தி எனக்கு தெரியாது.", "Owner, train / bus / ticket pathi enakku theriyaadhu.", "Owner, I don't know train, bus or ticket details.")
             KaiConversationCare.Beyond.ASTROLOGY -> Triple("ஓனர், ராசி பலன் / நல்ல நேரம் பத்தி எனக்கு தெரியாது.", "Owner, rasi palan / nalla neram pathi enakku theriyaadhu.", "Owner, I don't know horoscopes or auspicious times.")
             KaiConversationCare.Beyond.RECIPE -> Triple("ஓனர், சமையல் recipe எனக்கு தெரியாது 😄", "Owner, samayal recipe enakku theriyaadhu 😄", "Owner, I don't know recipes 😄")
+            KaiConversationCare.Beyond.ADVICE -> Triple("ஓனர், business யோசனை சொல்ல என்னால முடியாது — உங்க கணக்குல இருக்கிறதை மட்டும் சொல்லுவேன். உதா: “இந்த மாசம் sales எவ்வளவு?”, “யார் யார் பாக்கி?”",
+                "Owner, business yosanai solla ennaala mudiyaadhu — unga kanakku-la irukkuradha mattum solluven. Eg: “indha maasam sales evlo?”, “yaar yaar baaki?”",
+                "Owner, I can't give business advice — I tell you what your records say. E.g. “this month's sales?”, “who still owes?”")
+            KaiConversationCare.Beyond.SHOP_CLOSED -> Triple("சரி ஓனர், கடை லீவுக்கு Kai-ல entry கிடையாது. யாருக்காவது சொல்லணும்னா reminder போடலாம்: “நாளைக்கு 9 மணிக்கு Kumar-க்கு call பண்ண remind பண்ணு”.",
+                "Seri Owner, kadai leave-ku Kai-la entry illa. Yaarukkavadhu sollanum-na reminder podalaam: “naalaiku 9 manikku Kumar ku call panna remind pannu”.",
+                "Okay Owner, Kai has no entry for a shop holiday. To tell someone, I can set a reminder: “remind me to call Kumar tomorrow at 9”.")
             KaiConversationCare.Beyond.STAFF -> Triple("ஓனர், staff salary / attendance கணக்கு Kai-ல இன்னும் இல்ல.", "Owner, staff salary / attendance kanakku Kai-la innum illa.",
                 "Owner, staff salary / attendance isn't in Kai yet.")
         }
-        val tail = topic != KaiConversationCare.Beyond.ONLINE_ORDER
+        val tail = topic !in setOf(KaiConversationCare.Beyond.ONLINE_ORDER, KaiConversationCare.Beyond.ADVICE, KaiConversationCare.Beyond.SHOP_CLOSED)
         return say(lang, KaiMood.NEUTRAL, "beyond: ${topic.name.lowercase()}", ta = ta + (if (tail) can.first else ""), tl = tl + (if (tail) can.second else ""),
             en = en + (if (tail) can.third else ""))
     }

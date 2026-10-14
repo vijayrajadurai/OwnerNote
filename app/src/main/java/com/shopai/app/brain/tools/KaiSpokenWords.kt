@@ -113,6 +113,9 @@ object KaiSpokenWords {
         "வாட்ஸ்அப்ல" to "whatsapp la", "ரெண்டு பேரும்" to "rendu perum", "பேரும்" to "perum", "ஃபர்ஸ்ட்" to "first", "முதல்ல" to "mudhalla", "அதே" to "adhe", "முன்னாடி" to "munnadi", "இவன்" to "ivan", "இவர்" to "ivar", "இவங்க" to "ivanga", "அதோட" to "adhoda", "முதல்" to "mudhal", "ரெண்டாவது" to "rendavadhu", "இரண்டாவது" to "rendavadhu", "மூணாவது" to "moonavadhu", "மூன்றாவது" to "moonavadhu", "நாலாவது" to "naalavadhu", "கடைசி" to "kadaisi",
         // An accountant's words said aloud (owner, 11 Oct 2026).
         "பர்சேஸ்" to "purchase", "செல்லிங்" to "selling", "பிரைஸ்" to "price", "மார்ஜின்" to "margin", "ப்ராஃபிட்" to "profit", "ப்ராபிட்" to "profit",
+        // (advice, a shop holiday and a utility bill said aloud — owner, 14 Oct 2026: "என்ன பிசினஸ் பண்ணலாம்", "லைட் பில் 1200 கட்டினேன்")
+        "பண்ணலாம்" to "pannalam", "ஐடியா" to "idea", "ஜாஸ்தி" to "jaasthi", "ஆக" to "aaga", "லீவு" to "leave", "லீவ்" to "leave",
+        "லைட்" to "light", "வாட்டர்" to "water", "ஈபி" to "eb",
         "லாபம்" to "labam", "பிசினஸ்" to "business", "போகுது" to "pogudhu", "வேல்யூ" to "value", "வர" to "vara", "கலெக்ஷன்" to "collection", "வேண்டியது" to "vendiyadhu",
         "டிரான்ஸாக்ஷன்" to "transaction", "டிரான்ஸாக்ஷன்ஸ்" to "transactions", "பில்ஸ்" to "bills", "லாஸ்" to "loss", "டேக்ஸ்" to "tax", "அட்வான்ஸ்" to "advance",
         "டிஸ்கவுண்ட்" to "discount", "செலவு" to "selavu", "வியாபாரம்" to "viyabaram", "சம்மரி" to "summary", "இருக்காங்க" to "irukkanga",
