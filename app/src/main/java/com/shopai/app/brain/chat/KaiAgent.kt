@@ -3680,6 +3680,7 @@ class KaiAgent(
         if (conversationState.conversationTurn != c.turn + 1) { productChoice = null; return null }
         productChoice = null
         val asked = KaiPrivateMemory.normalize(c.name).split(' ').toSet()
+        val shared = c.candidates.map { KaiPrivateMemory.normalize(it.name).split(' ').toSet() }.reduceOrNull { a, b -> a intersect b }.orEmpty()
         // ("மீடியம்" said into the mic is "medium"; "chinna pack" is small, "periya pack" large)
         val answer = " " + KaiPrivateMemory.normalize(com.shopai.app.brain.tools.KaiSpokenWords.normalize(said))
             .replace(Regex("""(?<![\p{L}])(?:chinna|siriya)\s+(?:pack|packet|bag)(?![\p{L}])"""), "small pack")
@@ -3688,7 +3689,8 @@ class KaiAgent(
         // The words that tell them apart ("12mm" of Plywood 12mm, "emulsion" of Emulsion Paint) said in the answer.
         val picked = c.candidates.filter { p ->
             // ("Medium pack": "medium" is enough — "pack" tells none of them apart)
-            val own = KaiPrivateMemory.normalize(p.name).replace(Regex("""(\d)\s*(mm|cm|inch|ft)\b"""), "$1$2").split(' ').filter { it !in asked && it !in setOf("pack", "packet") }
+            // (and a word every one of them has tells none apart: "cups" of Sambrani cups Small / Medium pack)
+            val own = KaiPrivateMemory.normalize(p.name).replace(Regex("""(\d)\s*(mm|cm|inch|ft)\b"""), "$1$2").split(' ').filter { it !in asked && it !in setOf("pack", "packet") && it !in shared }
             own.isNotEmpty() && own.all { w -> answer.contains(" $w ") }
         }.singleOrNull()
             // A size however said ("16A" / "16 amp", "half inch" / "1/2 inch"): the one candidate whose size it is.

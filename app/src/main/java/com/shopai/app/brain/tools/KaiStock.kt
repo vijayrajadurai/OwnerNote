@@ -484,8 +484,9 @@ object KaiStock {
         val plainOf = indexFor(names).plain
         val holders = names.withIndex().filter { (k, _) -> es.any { e -> holds(plainOf[k], e) } }.map { it.value }.distinctBy { it.lowercase(Locale.ROOT) }
         if (holders.size < 2) return null
-        val bases = holders.map { h -> packBase.find(h.trim())?.groupValues?.get(1) ?: return null }
-        return bases.distinctBy { it.lowercase(Locale.ROOT) }.singleOrNull()
+        val bases = holders.map { h -> packBase.find(h.trim())?.groupValues?.get(1) ?: return null }.distinctBy { it.lowercase(Locale.ROOT) }
+        // ("candle" with Candle and Handmade candle packs kept: the thing of that very name)
+        return bases.singleOrNull() ?: bases.singleOrNull { b -> nameWords(b).map(::plainWord).let { w -> es.any { e -> w.size == e.size && w.zip(e).all { (a, c) -> sameWord(a, c) } } } }
     }
 
     /** A name and its pack: "Crab Small pack", "Tomato 250 g", "Garbage bag XL" → the name before it. */
@@ -510,8 +511,14 @@ object KaiStock {
                 val said = words.subList(i, i + size).map { plainWord(it.value) }
                 val meant = goods.filter { g -> g.words.size == size && g.words == said }
                 if (meant.isEmpty()) return@firstNotNullOfOrNull null
+                val raw = " " + words.subList(i, i + size).joinToString(" ") { it.value } + " "
                 val es = meant.flatMap { it.names }.distinct()
-                if (shopNameFor(es, names) != null) null else familyOf(es, names)?.let { size to it }
+                if (shopNameFor(es, names) != null) null else familyOf(es, names)?.takeIf { family ->
+                    // (words another of the shop's names has are that name's words — "mustard" of Mustard oil is never "kadugu" =
+                    // Mustard seeds; "sambrani" of Sambrani cups only is those cups)
+                    val own = lowerOf(family).trim()
+                    indexFor(names).spaced.none { n -> n.contains(raw) && !n.startsWith(" $own ") }
+                }?.let { size to it }
             }
             if (hit == null) { i++; continue }
             val (size, family) = hit

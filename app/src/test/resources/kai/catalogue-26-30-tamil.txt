@@ -1,0 +1,29 @@
+# The owner's own names for the 26-30 catalogue's items (typed Tanglish | as the mic writes it) → the item (kept in packs).
+# item | typed | spoken
+Agarbatti | oodhubathi | ஊதுபத்தி
+Sambrani cups | sambrani | சாம்பிராணி
+Camphor tablets | karpooram | கற்பூரம்
+Cotton wicks | thiri | திரி
+Pooja bell | pooja mani | பூஜை மணி
+Kumkum | kungumam | குங்குமம்
+Sandal paste | santhanam | சந்தனம்
+Vibhuti | thiruneer | திருநீறு
+Coconut | thengai | தேங்காய்
+Betel leaves | vetrilai | வெற்றிலை
+Betel nuts | paakku | பாக்கு
+Garland | poo maalai | பூ மாலை
+Kolam powder | kolam podi | கோலப்பொடி
+Matchbox | theepetti | தீப்பெட்டி
+Candle | mezhuguvarthi | மெழுகுவர்த்தி
+Padlock | poottu | பூட்டு
+Mosquito net | kosu valai | கொசு வலை
+Needle set | oosi | ஊசி
+Thread set | nool | நூல்
+Scissors | kathirikkol | கத்தரிக்கோல்
+Plastic bucket | vaali | வாளி
+Umbrella | kudai | குடை
+Broom | thudaippam | துடைப்பம்
+Copper vessel | sembu | செம்பு
+Clay diya | agal vilakku | அகல் விளக்கு
+Terracotta pot | mann paanai | மண் பானை
+Handloom saree | kaithari selai | கைத்தறி சேலை
