@@ -1152,9 +1152,15 @@ class KaiAgent(
             val people = runCatching { books.snapshot()?.people.orEmpty() }.getOrDefault(emptyList())
             val productNames = runCatching { tools.products()?.map { it.name } }.getOrNull().orEmpty()
             // ("எம் 8" — a letter said before a number — is the size M8, as typed.)
-            com.shopai.app.brain.tools.KaiSpokenWords.code(com.shopai.app.brain.tools.KaiSpokenWords.withNames(com.shopai.app.brain.tools.KaiSpokenWords.normalize(
+            // ("ஓஎன் 0151" = ON-0151: a code the shop's names write with a hyphen, its letters said and its number.)
+            val hyphened = productNames.flatMap { n -> Regex("""(?<![\p{L}\d])[A-Za-z]{1,4}-\d+(?![\d])""").findAll(n).map { it.value.uppercase() } }.toSet()
+            val coded = com.shopai.app.brain.tools.KaiSpokenWords.code(com.shopai.app.brain.tools.KaiSpokenWords.withNames(com.shopai.app.brain.tools.KaiSpokenWords.normalize(
                 com.shopai.app.brain.tools.KaiProductSound.withProducts(tamilProductCase(productCase(raw.trim(), productNames), productNames, people), productNames, people)), people + productNames),
-                productNames.flatMap { it.uppercase().split(Regex("""[\s-]+""")) }.filter { t -> t.any(Char::isLetter) && t.any(Char::isDigit) }.toSet())
+                productNames.flatMap { it.uppercase().split(Regex("""[\s-]+""")) }.filter { t -> t.any(Char::isLetter) && t.any(Char::isDigit) }.toSet() + hyphened.map { it.replace("-", "") })
+            hyphened.fold(coded) { t, c ->
+                val (letters, digits) = c.split('-')
+                Regex("""(?i)(?<![\p{L}\d])$letters\s*-?\s*$digits(?![\d])""").replace(t, c)
+            }
         }
         // "first ketta aal evlo tharanum", "munnadi ketta aal": the person this conversation was about, by name.
         // "mudhal aal ku call pannu": the person at that place in the list just shown.
@@ -3663,10 +3669,15 @@ class KaiAgent(
         if (conversationState.conversationTurn != c.turn + 1) { productChoice = null; return null }
         productChoice = null
         val asked = KaiPrivateMemory.normalize(c.name).split(' ').toSet()
-        val answer = " " + KaiPrivateMemory.normalize(said).replace(Regex("""(\d)\s*(mm|cm|inch|ft)\b"""), "$1$2") + " "
+        // ("மீடியம்" said into the mic is "medium"; "chinna pack" is small, "periya pack" large)
+        val answer = " " + KaiPrivateMemory.normalize(com.shopai.app.brain.tools.KaiSpokenWords.normalize(said))
+            .replace(Regex("""(?<![\p{L}])(?:chinna|siriya)\s+(?:pack|packet|bag)(?![\p{L}])"""), "small pack")
+            .replace(Regex("""(?<![\p{L}])periya\s+(?:pack|packet|bag)(?![\p{L}])"""), "large pack")
+            .replace(Regex("""(\d)\s*(mm|cm|inch|ft)\b"""), "$1$2") + " "
         // The words that tell them apart ("12mm" of Plywood 12mm, "emulsion" of Emulsion Paint) said in the answer.
         val picked = c.candidates.filter { p ->
-            val own = KaiPrivateMemory.normalize(p.name).replace(Regex("""(\d)\s*(mm|cm|inch|ft)\b"""), "$1$2").split(' ').filter { it !in asked }
+            // ("Medium pack": "medium" is enough — "pack" tells none of them apart)
+            val own = KaiPrivateMemory.normalize(p.name).replace(Regex("""(\d)\s*(mm|cm|inch|ft)\b"""), "$1$2").split(' ').filter { it !in asked && it !in setOf("pack", "packet") }
             own.isNotEmpty() && own.all { w -> answer.contains(" $w ") }
         }.singleOrNull()
             // A size however said ("16A" / "16 amp", "half inch" / "1/2 inch"): the one candidate whose size it is.

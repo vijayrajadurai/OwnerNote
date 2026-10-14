@@ -178,6 +178,11 @@ object KaiStock {
     private fun sizes(t: String): String {
         val inch = """(?=\s*(?:inch|inches)(?![\p{L}]))"""
         return t
+            // A pack named by its size word, however said (owner's expanded catalogue, 14 Oct 2026): "Small pack" / "small" /
+            // "chinna pack", "Large pack" / "periya pack" — the mic writes pack as "பேக்" (bag).
+            .replace(Regex("""(?<![\p{L}])(?:chinna|chinnadhu|siriya)\s+(?:pack|packet|bag)(?![\p{L}])"""), "small")
+            .replace(Regex("""(?<![\p{L}])(?:periya|periyadhu)\s+(?:pack|packet|bag)(?![\p{L}])"""), "large")
+            .replace(Regex("""(?<![\p{L}])(small|medium|large|family)\s+(?:pack|packet|bag)(?![\p{L}])"""), "$1")
             .replace(Regex("""(?<![\p{L}\d./])(\d+)\s+1/2$inch"""), "$1.5").replace(Regex("""(?<![\p{L}\d./])(\d+)\s+1/4$inch"""), "$1.25")
             .replace(Regex("""(?<![\p{L}\d./])(\d+)\s+3/4$inch"""), "$1.75")
             .replace(Regex("""(?<![\p{L}\d./])1/2$inch"""), "0.5").replace(Regex("""(?<![\p{L}\d./])3/4$inch"""), "0.75")
