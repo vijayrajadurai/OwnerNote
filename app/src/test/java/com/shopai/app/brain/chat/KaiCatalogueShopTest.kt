@@ -139,7 +139,14 @@ abstract class KaiCatalogueShopTest {
                 val confirm = t.card?.buttons?.any { it.label.contains("Confirm") || it.label.contains("உறுதி") } == true
                 if (confirm || packs.count { all(t).contains(it) } < 2) { fails += "ASK [$line] → ${all(t)}"; continue }
                 // The pack said next goes on to that pack's draft.
-                val d = runBlocking { kai.ask(answer) }
+                var d = runBlocking { kai.ask(answer) }
+                // Two items of the very same name (06-10: Car charger under Electronics and under Automobile): Kai asks which — never
+                // guesses — and the category said picks it, typed or into the mic.
+                if (names.count { it == pick } > 1) {
+                    val cat = rows.first { it[0] == pick }[2].split(' ').first()
+                    if (d.card?.buttons?.any { it.label.contains("Confirm") || it.label.contains("உறுதி") } == true || !all(d).contains(cat)) { fails += "SAME NAME [$line → $answer] → ${all(d)}"; continue }
+                    d = runBlocking { kai.ask(if (line.startsWith(item)) cat else spoken(cat)) }
+                }
                 val c = d.card?.buttons?.firstOrNull { it.label.contains("Confirm") || it.label.contains("உறுதி") }
                 if (c == null) { fails += "PICK [$line → $answer] → ${all(d)}"; continue }
                 runBlocking { kai.act(c.action, KaiLang.TANGLISH) }

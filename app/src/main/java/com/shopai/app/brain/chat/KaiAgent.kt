@@ -1494,8 +1494,10 @@ class KaiAgent(
         // "Lokesh-ku 500 add pannu": a new entry of 500 on Lokesh's record (no give / take verb) — drafted, saved only on Confirm.
         // "Min vilakku 5 stock add pannu" names a product the shop keeps ("vilakku" is not "to Vilak"): stock, never money.
         // "Murukku 7 add pannu" with Aachi Murukku packs kept: a word of the shop's product names is not "to Muruk" either.
+        // "Feature phone 7 add pannu" with Feature phone packs kept: the shop's name said without its pack (Kai asks which) — never "Feature".
         if (isAmountAddRequest(text) && com.shopai.app.brain.tools.KaiPaymentDirection.of(text) == null && KaiCommands.route(text, at, people) !is KaiCommand.Payment &&
-            products?.let { com.shopai.app.brain.tools.KaiStock.understand(text, it)?.product } == null && !productWordWithKu(text, products))
+            products?.let { com.shopai.app.brain.tools.KaiStock.understand(text, it)?.product } == null && !productWordWithKu(text, products) &&
+            products?.let { productsByPhrase(text, it)?.second?.contains(' ') } != true)
             // "madhan ku 100 add panniko" with "மதன்" in the books: the person kept in Tamil letters (owner's phone, 12 Oct 2026).
             (KaiCommands.personIn(text, people) ?: com.shopai.app.brain.tools.KaiSpokenWords.bookNameIn(text, people))?.let { person ->
                 com.shopai.app.brain.KaiUnderstanding.amountsIn(text, at.toLocalDate()).filter { it > 0 }.singleOrNull()
@@ -3594,11 +3596,27 @@ class KaiAgent(
         val ordered = found.sortedBy { p -> if (packOf(com.shopai.app.brain.tools.KaiStock.sizeKey(p.name).trim(), sk)) 0 else 1 }
         productChoice = ProductChoice(ordered, line, said, conversationState.conversationTurn, lang)
         val n = said.trim().lowercase(Locale.ROOT)
-        val list = ordered.take(8).map { it.name }
+        val list = ordered.take(8).map { listedName(it, ordered) }
         return say(lang, KaiMood.CLARIFY, "which product: $n",
             ta = "எந்த $n ஓனர்? ${list.joinToString("-ஆ, ")}-ஆ?",
             tl = "Endha $n Owner? ${list.joinToString("-aa, ")}-aa?",
             en = "Which $n, Owner? ${list.joinToString(", ", postfix = "?")}")
+    }
+
+    /** A product's name as listed — with its category when another listed one has the very same name ("Car charger Small pack (Automobile & Spare Parts)"). */
+    private fun listedName(p: com.shopai.app.brain.tools.ProductRef, among: List<com.shopai.app.brain.tools.ProductRef>) =
+        if (!p.category.isNullOrBlank() && among.count { it.name.equals(p.name, ignoreCase = true) } > 1) "${p.name} (${p.category})" else p.name
+
+    /**
+     * Products of the very same name kept under different categories (the owner's catalogue 06-10 has Car charger under Electronics
+     * and under Automobile): the category said — typed, or into the mic ("ஆட்டோமொபைல்") — picks one; null when none is said.
+     */
+    private fun byCategory(said: String, same: List<com.shopai.app.brain.tools.ProductRef>): com.shopai.app.brain.tools.ProductRef? {
+        fun wordsOf(c: String?) = c.orEmpty().split(Regex("""[^\p{L}]+""")).filter { it.length >= 4 }
+        val words = same.flatMap { wordsOf(it.category) }.distinct()
+        if (words.isEmpty()) return null
+        val heard = " " + KaiPrivateMemory.normalize(com.shopai.app.brain.tools.KaiSpokenWords.normalize(com.shopai.app.brain.tools.KaiProductSound.withProducts(said, words))) + " "
+        return same.filter { p -> wordsOf(p.category).any { w -> heard.contains(" ${KaiPrivateMemory.normalize(w)} ") } }.singleOrNull()
     }
 
     /** The owner's line with the product's full name in place of the name said, read again (once). */
@@ -3687,12 +3705,27 @@ class KaiAgent(
             .replace(Regex("""(?<![\p{L}])periya\s+(?:pack|packet|bag)(?![\p{L}])"""), "large pack")
             .replace(Regex("""(\d)\s*(mm|cm|inch|ft)\b"""), "$1$2") + " "
         // The words that tell them apart ("12mm" of Plywood 12mm, "emulsion" of Emulsion Paint) said in the answer.
-        val picked = c.candidates.filter { p ->
+        val allSame = c.candidates.map { it.name.lowercase(Locale.ROOT) }.distinct().size == 1
+        val matches = if (allSame) c.candidates else c.candidates.filter { p ->
             // ("Medium pack": "medium" is enough — "pack" tells none of them apart)
             // (and a word every one of them has tells none apart: "cups" of Sambrani cups Small / Medium pack)
             val own = KaiPrivateMemory.normalize(p.name).replace(Regex("""(\d)\s*(mm|cm|inch|ft)\b"""), "$1$2").split(' ').filter { it !in asked && it !in setOf("pack", "packet") && it !in shared }
             own.isNotEmpty() && own.all { w -> answer.contains(" $w ") }
-        }.singleOrNull()
+        }
+        // ("medium" with Car charger Medium pack kept under two categories: the category said picks one, else Kai asks which — never guessed)
+        if (matches.size > 1 && matches.map { it.name.lowercase(Locale.ROOT) }.distinct().size == 1) {
+            byCategory(said, matches)?.let { return withProduct(c.line, c.name, it, if (lang == KaiLang.ENGLISH) c.lang else lang) }
+            if (!allSame) {
+                val shown = matches.first().name
+                productChoice = ProductChoice(matches, c.line, c.name, conversationState.conversationTurn, c.lang)
+                val cats = matches.map { it.category.orEmpty() }
+                return say(lang, KaiMood.CLARIFY, "which product: same name, two categories",
+                    ta = "ஓனர், $shown ரெண்டு இருக்கு — ${cats.joinToString("-ல இருக்கிறதா, ")}-ல இருக்கிறதா? எதுவும் சேமிக்கல.",
+                    tl = "Owner, $shown rendu irukku — ${cats.joinToString("-la irukkuradha, ")}-la irukkuradha? Edhuvum save pannala.",
+                    en = "Owner, there are two $shown — the one under ${cats.joinToString(" or under ")}? Nothing was saved.")
+            }
+        }
+        val picked = (if (allSame) null else matches.singleOrNull())
             // A size however said ("16A" / "16 amp", "half inch" / "1/2 inch"): the one candidate whose size it is.
             ?: com.shopai.app.brain.tools.KaiStock.sizeKey(said).trim().takeIf { it.any(Char::isDigit) }?.let { k ->
                 val sized = c.candidates.filter { p -> com.shopai.app.brain.tools.KaiStock.sizeKey(p.name).trimEnd().endsWith(" $k") }

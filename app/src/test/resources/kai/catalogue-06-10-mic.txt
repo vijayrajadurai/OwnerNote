@@ -309,3 +309,6 @@ whiteboard=வைட்போர்டு
 wi=வை
 wiper=வைப்பர்
 wipes=வைப்ஸ்
+stapler=ஸ்டேப்ளர்
+electronics=எலக்ட்ரானிக்ஸ்
+automobile=ஆட்டோமொபைல்
