@@ -31,8 +31,19 @@ object KaiProductSound {
     /** Every single word of the shop's product names, by sound ("Dal" of Toor Dal, "Tea" of Tea Powder). */
     private class Word(val text: String, val loose: String)
 
-    fun withProducts(text: String, productNames: List<String>, people: List<String> = emptyList()): String {
-        if (!KaiSpokenWords.hasTamil(text)) return text
+    /** The shop's names, ready to be heard: worked out once per list of names (a big shop has thousands), not for every line. */
+    private class Prepared(val products: List<Product>, val sizeless: List<Product>, val goodsWritten: Map<String, String?>, val heardGoods: List<Product>, val parts: List<Word>)
+
+    @Volatile private var cache: Pair<List<String>, Prepared?>? = null
+
+    private fun prepared(productNames: List<String>): Prepared? {
+        cache?.let { (names, prep) -> if (names == productNames) return prep }
+        val prep = prepare(productNames)
+        cache = productNames.toList() to prep
+        return prep
+    }
+
+    private fun prepare(productNames: List<String>): Prepared? {
         val products = productNames.map { it.trim() }.filter { n -> n.isNotEmpty() && !KaiSpokenWords.hasTamil(n) && n.any(Char::isLetter) }.distinct()
             .flatMap { n ->
                 // "ENO", "BPL": capitals are said letter by letter ("பிபிஎல்") — or as a word when they read as one ("ஈனோ").
@@ -42,7 +53,7 @@ object KaiProductSound {
                     Product(said, key, loose(key), saidWords(said), spoken(said).first() in "aeiou", n)
                 }
             }
-        if (products.isEmpty()) return text
+        if (products.isEmpty()) return null
         // "பிளைவுட் 12mm" for Plywood 12mm / Plywood 18mm: the name without its size is heard too ("Plywood"); the size said after it
         // picks the product (KaiStock), or Kai asks which.
         val sizeless = products.mapNotNull { p ->
@@ -66,6 +77,18 @@ object KaiProductSound {
             Product(k, key, loose(key), k.split(Regex("""\s+""")).size, spoken(k).first() in "aeiou", out)
         }
         val parts = products.flatMap { p -> p.name.split(Regex("""\s+""")).map { w -> Word(w, NameSound.key(spoken(w)).let { if (it.isEmpty()) it else loose(it) }) } }
+        return Prepared(products, sizeless, goodsWritten, heardGoods, parts)
+    }
+
+    fun withProducts(text: String, productNames: List<String>, people: List<String> = emptyList()): String {
+        if (!KaiSpokenWords.hasTamil(text)) return text
+        val prep = prepared(productNames) ?: return text
+        val products = prep.products
+        val sizeless = prep.sizeless
+        val names = products.map { it.name }
+        val goodsWritten = prep.goodsWritten
+        val heardGoods = prep.heardGoods
+        val parts = prep.parts
         val words = tamilWord.findAll(text).toList()
         if (words.isEmpty()) return text
         // "கேட் 6 கேபிள்" for Cat6 Cable: a name's letters-and-number word, said as a word and the number.

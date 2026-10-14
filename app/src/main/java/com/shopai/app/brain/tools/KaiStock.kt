@@ -190,6 +190,13 @@ object KaiStock {
             .replace(Regex("""(?<![\p{L}\d.])(\d+(?:\.\d+)?)\s*(?:m|mtr|mtrs|meter|meters|metre|metres)(?![\p{L}])"""), "$1 meter")
             .replace(Regex("""(?<![\p{L}\d.])(\d+)\s*(?:x|×|\*|by|into)\s*(\d+)(?=\s*mm(?![\p{L}]))"""), "$1x$2")
             .replace(Regex("""(?<![\p{L}])(?:sq\.?\s*mm|square\s+mm|sq\s+mm)(?![\p{L}])"""), "sqmm")
+            // Packs (supermarket stock master, 14 Oct 2026): "100 g" / "100 gram" / "100gm", "1 kg" / "1 kilo", "arai kilo" = 500 g,
+            // "kaal kilo" = 250 g, "mukkal kilo" = 750 g, "500ml" = 500 ml.
+            .replace(Regex("""(?<![\p{L}])(?:arai|half|ara)\s+(?:kilo|kg)(?![\p{L}])"""), "500 g").replace(Regex("""(?<![\p{L}])kaal\s+(?:kilo|kg)(?![\p{L}])"""), "250 g")
+            .replace(Regex("""(?<![\p{L}])(?:mukkal|mukkaal)\s+(?:kilo|kg)(?![\p{L}])"""), "750 g")
+            .replace(Regex("""(?<![\p{L}\d.])(\d+(?:\.\d+)?)\s*(?:g|gm|gms|gram|grams|grm)(?![\p{L}])"""), "$1 g")
+            .replace(Regex("""(?<![\p{L}\d.])(\d+(?:\.\d+)?)\s*(?:kg|kgs|kilo|kilos)(?![\p{L}])"""), "$1 kg")
+            .replace(Regex("""(?<![\p{L}\d.])(\d+(?:\.\d+)?)\s*ml(?![\p{L}])"""), "$1 ml")
     }
 
     /** A size in a product name: "12 mm", "4 inch" (after [lowerOf]). */
