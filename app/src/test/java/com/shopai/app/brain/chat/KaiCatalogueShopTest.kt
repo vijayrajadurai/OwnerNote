@@ -150,7 +150,7 @@ abstract class KaiCatalogueShopTest {
                 val c = d.card?.buttons?.firstOrNull { it.label.contains("Confirm") || it.label.contains("உறுதி") }
                 if (c == null) { fails += "PICK [$line → $answer] → ${all(d)}"; continue }
                 runBlocking { kai.act(c.action, KaiLang.TANGLISH) }
-                if (inv.item(pick).stock.compareTo(BigDecimal("57")) != 0) fails += "PICK [$line → $answer] moved ${inv.items.filter { it.stock.compareTo(BigDecimal("50")) != 0 }.map { it.name }}"
+                if (inv.items.first { it.name == pick }.stock.compareTo(BigDecimal("57")) != 0) fails += "PICK [$line → $answer] moved ${inv.items.filter { it.stock.compareTo(BigDecimal("50")) != 0 }.map { it.name }}"
             }
         }
         assertTrue("${fails.size} fails:\n" + fails.take(80).joinToString("\n"), fails.isEmpty())
