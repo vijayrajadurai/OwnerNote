@@ -147,6 +147,16 @@ object KaiFeed {
         keduthuchu
         kettupochu
         expiry aagiduchu
+        azhugiduchu
+        azhugipochu
+        azhugi pochu
+        azhuguchu
+        azhukiduchu
+        vaadiduchu
+        அழுகிடுச்சு
+        அழுகிப்போச்சு
+        அழுகுச்சு
+        வாடிடுச்சு
         வித்துச்சு
         வித்துடுச்சு
         உடைஞ்சிடுச்சு
@@ -270,6 +280,60 @@ object KaiFeed {
         தயிர் / thayir = curd
         அப்பளம் / appalam = papad
         தேன் / thaen = honey
+        # vegetables (owner's vegetable shop stock master, 14 Oct 2026)
+        பாலக் கீரை / palak keerai = spinach
+        அரைக்கீரை / arai keerai / araikeerai = amaranth greens
+        சிறுகீரை / சிறு கீரை / siru keerai / sirukeerai = sirukeerai
+        முளைக்கீரை / முளை கீரை / mulai keerai / mulaikeerai = mulaikeerai
+        வெந்தயக் கீரை / வெந்தய கீரை / vendhaya keerai / venthaya keerai = fenugreek leaves
+        கொத்தமல்லி / கொத்தமல்லி இலை / kothamalli / kothamalli ilai = coriander leaves
+        புதினா / pudhina / puthina = mint leaves
+        கறிவேப்பிலை / கருவேப்பிலை / kariveppilai / karuveppilai = curry leaves
+        முருங்கைக் கீரை / முருங்கை கீரை / murungai keerai = drumstick leaves
+        புளிச்சக்கீரை / புளிச்ச கீரை / pulicha keerai / pulichakeerai = gongura
+        வெங்காயத் தாள் / வெங்காய தாள் / vengaya thaal / vengaya thal = spring onion greens
+        தக்காளி / thakkali = tomato
+        வெங்காயம் / பெரிய வெங்காயம் / vengayam / periya vengayam = onion
+        உருளைக்கிழங்கு / உருளை கிழங்கு / urulaikizhangu / urulai kizhangu / urulaikilangu = potato
+        கத்தரிக்காய் / கத்திரிக்காய் / kathirikkai / kathirikai = brinjal
+        வெண்டைக்காய் / vendakkai / vendaikkai / vendakai = okra
+        பச்சை மிளகாய் / pachai milagai / pachchai milagai = green chilli
+        குடை மிளகாய் / kudai milagai = capsicum
+        முட்டைக்கோஸ் / முட்டைகோஸ் / muttaikose / muttaikos / muttai kose = cabbage
+        முள்ளங்கி / mullangi = radish
+        வெள்ளரிக்காய் / vellarikkai / vellarikai = cucumber
+        சுரைக்காய் / suraikkai / suraikai = bottle gourd
+        பீர்க்கங்காய் / peerkangai / peerkankai = ridge gourd
+        புடலங்காய் / pudalangai = snake gourd
+        பாகற்காய் / பாவக்காய் / pavakkai / paavakkai / pagarkai = bitter gourd
+        நீர்ப்பூசணி / வெள்ளைப் பூசணி / neer poosani / vellai poosani = ash gourd
+        பரங்கிக்காய் / மஞ்சள் பூசணி / parangikkai / manjal poosani = pumpkin
+        சௌசௌ / சௌ சௌ / chow chow / chowchow = chow chow
+        முருங்கைக்காய் / murungakkai / murungaikkai = drumstick pods
+        வாழைக்காய் / vazhaikkai / vazhakkai = raw banana
+        வாழைப்பூ / vazhaipoo / vazhapoo = banana flower
+        வாழைத்தண்டு / vazhaithandu / vazhathandu = banana stem
+        கொத்தவரங்காய் / kothavarangai = cluster beans
+        அவரைக்காய் / avarakkai / avaraikkai = avarekai
+        பட்டாணி / pattani = green peas
+        கோவக்காய் / kovakkai = ivy gourd
+        கருணைக்கிழங்கு / karunai kizhangu / karunaikizhangu = elephant foot yam
+        சேப்பங்கிழங்கு / seppankizhangu / seppan kizhangu = colocasia
+        சர்க்கரைவள்ளிக் கிழங்கு / சர்க்கரைவள்ளி கிழங்கு / sakkaraivalli kizhangu / sakkaravalli kizhangu = sweet potato
+        மரவள்ளிக் கிழங்கு / மரவள்ளி கிழங்கு / maravalli kizhangu = tapioca
+        இஞ்சி / inji = ginger
+        பூண்டு / poondu = garlic
+        சின்ன வெங்காயம் / chinna vengayam = small onion
+        மாங்காய் / maangai / mangai = raw mango
+        பலாக்காய் / palakkai = green jackfruit
+        பச்சை மஞ்சள் / pachai manjal = fresh turmeric
+        மக்காச்சோளம் / makkacholam / makka cholam = fresh corn
+        இளநீர் / ilaneer / elaneer = tender coconut
+        மொச்சை / mochai = field beans
+        நாட்டுத் தக்காளி / நாட்டு தக்காளி / naattu thakkali / nattu thakkali = country tomato
+        நாட்டுக் கத்தரிக்காய் / நாட்டு கத்தரிக்காய் / naattu kathirikkai / nattu kathirikkai = native brinjal varieties
+        நாட்டு வெள்ளரிக்காய் / naattu vellarikkai / nattu vellarikkai = native cucumber varieties
+        எலுமிச்சை / எலுமிச்சம்பழம் / elumichai / elumichampazham = lemon
         பற்பசை / parpasaai = toothpaste
         துணி துவைக்கும் தூள் / thuni thuvaikkum thool = detergent powder
         பாத்திரம் கழுவும் திரவம் / paathiram kazhuvum thiravam = dishwashing liquid

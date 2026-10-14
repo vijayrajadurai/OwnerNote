@@ -1280,6 +1280,8 @@ class KaiAgent(
         if (openPayment == null) billStockAnswered(said, lang)?.let { return it }
         // The answer to "Endha plywood? Plywood 12mm-aa, Plywood 18mm-aa?": the line said before, for that product.
         if (openPayment == null) productChoiceAnswered(said, lang)?.let { return it }
+        // The answer to "Tomato loose-aa 0.5 kg-aa, illa Tomato 500 g pack-aa?".
+        if (openPayment == null) looseOrPackAnswered(said, lang)?.let { return it }
         if (openPayment == null) bareAmountAnswered(said, lang)?.let { return it }
         if (openPayment == null) statementAsk(said, lang)?.let { return it }
         if (openPayment == null) care(said, lang)?.let { return it }
@@ -1596,6 +1598,15 @@ class KaiAgent(
         if (products != null) {
             // "Colgate 2 petti vandhiruku" with a unit word Kai doesn't know: ask (box? packet?) — never guess the quantity's unit.
             learner?.unknownUnit(text, said, lang, products)?.let { return it }
+            // (no learning memory to ask through: still asked, plainly — "thakkali 5 thattu" is never 5 kg; a product kept in more
+            // than one unit is asked which one anyway: "Colgate 2 petti" → pieces or boxes)
+            if (learner == null && com.shopai.app.brain.tools.KaiStock.understand(text, products)?.product?.conversions?.isEmpty() == true)
+                com.shopai.app.brain.tools.KaiStock.unknownUnitWord(text, products)?.let { w ->
+                return say(lang, KaiMood.CLARIFY, "unknown unit: $w",
+                    ta = "ஓனர், `$w`-னா என்ன? Box-ஆ, packet-ஆ, kg-ஆ, piece-ஆ? சொல்லுங்க — எதுவும் சேமிக்கல.",
+                    tl = "Owner, `$w` na enna? Box-ah, packet-ah, kg-ah, piece-ah? Sollunga — edhuvum save pannala.",
+                    en = "Owner, what is `$w` — a box, a packet, kg, a piece? Nothing was saved.")
+            }
             // SCAN_STOCK: "Colgate photo edu", "stock photo edu" → the product camera at once (the owner asked for a photo).
             // "new stock add pannu" (no product, no photo): Kai asks which product and how much — the camera is only a button.
             com.shopai.app.brain.tools.KaiStock.scanRequest(text, products)?.let { name ->
@@ -3420,7 +3431,7 @@ class KaiAgent(
         lastProduct = product
         // Every quantity the owner said, in its own unit ("1 box 3 pieces"); converted to the product's unit below.
         val parts = req.parts.ifEmpty { req.qty?.let { listOf(com.shopai.app.brain.tools.QtyPart(it, req.unit)) }.orEmpty() }
-        if (parts.isEmpty()) return askQuantity(product, req.incoming, said, lang)
+        if (parts.isEmpty()) return looseOrPackAsk(product, req.incoming, said, lang, products) ?: askQuantity(product, req.incoming, said, lang)
         // "Colgate 5" with Colgate kept in pieces and boxes: which one? (never taken as pieces by itself)
         if (product.conversions.isNotEmpty() && parts.size == 1 && parts.single().unit == null &&
             text.lowercase(Locale.ROOT).split(Regex("""[\s,.!?]+""")).none { com.shopai.app.brain.tools.KaiInventory.unitOf(it) != null })
@@ -3588,6 +3599,48 @@ class KaiAgent(
         forcedLang = lang
         choiceRerun = true
         return try { answerOwner(again) } finally { forcedLang = keep; choiceRerun = false }
+    }
+
+    /** "Loose or pack?" asked: the loose produce, its pack, the pack's weight in the loose one's unit, in or out, the line, the turn. */
+    private data class LooseOrPack(
+        val loose: com.shopai.app.brain.tools.ProductRef, val pack: com.shopai.app.brain.tools.ProductRef, val qty: BigDecimal,
+        val incoming: Boolean, val said: String, val turn: Long,
+    )
+    private var looseOrPack: LooseOrPack? = null
+
+    /**
+     * "thakkali arai kilo vandhuchu" with Tomato kept loose (kg) and in 500 g packs, no count said (owner's vegetable shop, 14 Oct
+     * 2026): half a kilo loose, or 500 g packs? Never guessed — Kai asks; nothing is drafted until the owner says which.
+     */
+    private fun looseOrPackAsk(
+        pack: com.shopai.app.brain.tools.ProductRef, incoming: Boolean, said: String, lang: KaiLang, products: List<com.shopai.app.brain.tools.ProductRef>,
+    ): KaiTurn? {
+        val m = Regex("""^(.*\S)\s+(\d+(?:\.\d+)?)\s*(g|kg)$""", RegexOption.IGNORE_CASE).find(pack.name.trim()) ?: return null
+        val loose = products.firstOrNull { it.id != pack.id && it.name.trim().equals(m.groupValues[1], ignoreCase = true) && com.shopai.app.brain.tools.KaiUnits.canon(it.unit) == "KG" } ?: return null
+        val grams = m.groupValues[3].equals("g", ignoreCase = true)
+        val qty = BigDecimal(m.groupValues[2]).let { if (grams) it.divide(BigDecimal(1000)) else it }.stripTrailingZeros()
+        looseOrPack = LooseOrPack(loose, pack, qty, incoming, said, conversationState.conversationTurn)
+        val kg = qty.toPlainString()
+        return say(lang, KaiMood.CLARIFY, "loose or pack: asked",
+            ta = "ஓனர், ${loose.name} loose-ஆ $kg kg-ஆ, இல்ல ${pack.name} pack-ஆ? Pack-னா எத்தனை packet-னு சொல்லுங்க. எதுவும் சேமிக்கல.",
+            tl = "Owner, ${loose.name} loose-aa $kg kg-aa, illa ${pack.name} pack-aa? Pack-na evlo packet-nu sollunga. Edhuvum save pannala.",
+            en = "Owner, is that ${loose.name} loose, $kg kg — or ${pack.name} packs? For packs, say how many. Nothing was saved.")
+    }
+
+    private fun looseOrPackAnswered(said: String, lang: KaiLang): KaiTurn? {
+        val c = looseOrPack ?: return null
+        if (conversationState.conversationTurn != c.turn + 1) { looseOrPack = null; return null }
+        looseOrPack = null
+        val t = com.shopai.app.brain.tools.KaiSpokenWords.normalize(said).lowercase(Locale.ROOT)
+        val looseSaid = Regex("""(?<![\p{L}])(loose|lose|looseu)(?![\p{L}])|லூஸ்""").containsMatchIn(t)
+        val packSaid = Regex("""(?<![\p{L}])(pack|packs|packet|packets|packetu|paket)(?![\p{L}])|பாக்கெட்|பேக்""").containsMatchIn(t)
+        val count = Regex("""(?<![\p{L}\d.])\d+(?![\d.])""").find(t)?.value?.toBigDecimalOrNull()?.takeIf { it.signum() > 0 }
+        return when {
+            looseSaid && !packSaid -> draftParts(c.loose, listOf(com.shopai.app.brain.tools.QtyPart(c.qty, "KG")), c.incoming, c.said, lang)
+            count != null -> draftParts(c.pack, listOf(com.shopai.app.brain.tools.QtyPart(count, null)), c.incoming, c.said, lang)
+            packSaid -> askQuantity(c.pack, c.incoming, c.said, lang)
+            else -> null
+        }
     }
 
     /** A word ending in -ku that is a word of the shop's product names ("Murukku", "Vilakku"). */

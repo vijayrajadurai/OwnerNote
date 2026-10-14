@@ -48,7 +48,8 @@ object KaiProductSound {
             .flatMap { n ->
                 // "ENO", "BPL": capitals are said letter by letter ("பிபிஎல்") — or as a word when they read as one ("ஈனோ").
                 val asWord = n.split(Regex("""\s+""")).joinToString(" ") { w -> if (w.length in 3..6 && w.all { it in 'A'..'Z' } && w.any { it in "AEIOU" }) w.lowercase() else w }
-                listOfNotNull(n, asWord.takeIf { it != n }).mapNotNull { said ->
+                // "Spinach / Palak 250 g": either name said alone ("ஸ்பினாச் 250 கிராம்", "பாலக் 250 கிராம்") is that product.
+                (listOfNotNull(n, asWord.takeIf { it != n }) + othersOf(n).filter { o -> productNames.none { it.trim().equals(o, ignoreCase = true) } }).mapNotNull { said ->
                     val key = NameSound.key(spoken(said)).takeIf { it.isNotEmpty() } ?: return@mapNotNull null
                     Product(said, key, loose(key), saidWords(said), spoken(said).first() in "aeiou", n)
                 }
@@ -69,7 +70,7 @@ object KaiProductSound {
             Product(b, key, loose(key), saidWords(b), spoken(b).first() in "aeiou", family = true)
         }
         // Goods by the name the owner says (KaiFeed): "கதவு கீல்" written as it is in the list, or heard like "kathavu keel".
-        val names = products.map { it.name }
+        val names = products.map { it.out }.distinct()
         val goods = KaiFeed.goodsNames.flatMap { (ks, e) -> ks.map { k -> k to ks + e } }.groupBy({ it.first }, { it.second }).mapValues { (_, v) -> v.flatten().distinct() }
             .mapNotNull { (k, es) -> KaiStock.shopNameFor(es, names)?.let { k to it } }
         val goodsWritten = goods.filter { KaiSpokenWords.hasTamil(it.first) }.groupBy({ fold(it.first) }, { it.second })
@@ -88,6 +89,16 @@ object KaiProductSound {
                 Product(rest, key, loose(key), saidWords(rest), spoken(rest).first() in "aeiou", p.out)
             }
         return Prepared(products + led, sizeless, goodsWritten, heardGoods, parts)
+    }
+
+    /** The names a product goes by when the shop writes two ("Spinach / Palak 250 g" → "Spinach 250 g", "Palak 250 g"). */
+    private fun othersOf(name: String): List<String> {
+        val m = Regex("""\s\d[\d.]*\s*\p{L}*$""").find(name)
+        val base = m?.let { name.substring(0, it.range.first) } ?: name
+        // "Ginger (tender)": said the other way round too — "டெண்டர் ஜிஞ்சர்".
+        Regex("""^([\p{L} ]+?)\s*\(([\p{L} ]+)\)$""").find(base)?.let { r -> return listOf("${r.groupValues[2]} ${r.groupValues[1]}${m?.value.orEmpty()}") }
+        if (!name.contains(" / ")) return emptyList()
+        return base.split(" / ").map { it.trim() }.filter { it.any(Char::isLetter) }.map { it + m?.value.orEmpty() }
     }
 
     fun withProducts(text: String, productNames: List<String>, people: List<String> = emptyList()): String {
@@ -380,7 +391,8 @@ object KaiProductSound {
                 // "Cough" = kof, "Laugh" = laf; "Switch" / "Watch": the t of "tch" isn't heard (the mic writes "ஸ்விட்ச்" / "ஸ்விச்").
                 .replace(Regex("""(?<=[ctrnl])ough$"""), "of").replace(Regex("""augh$"""), "af").replace("tch", "ch")
                 .replace(Regex("""^kn"""), "n").replace(Regex("""^wr"""), "r").replace("ght", "t").replace(Regex("""(?<!^)gh"""), "")
-                .replace("ture", "chur").replace("x", "ks").replace(Regex("""c(?=[eiy])"""), "s")
+                // "Zucchini" = zukini; "Ginger", "Gingelly" = jinjer, jinjelly ("ஜிஞ்சர்").
+                .replace("cch", "k").replace(Regex("""^ging"""), "jinj").replace("ture", "chur").replace("x", "ks").replace(Regex("""c(?=[eiy])"""), "s")
                 // "Bandage" = bendej, "Syringe" = sirinj, "Bridge" = brij; "Ointment" = oinment (the t isn't heard); "Eye" = ai.
                 .replace(Regex("""d?ge$"""), "j").replace("ntm", "nm").replace(Regex("""^eye$"""), "ai")
                 // "Dr Trust" = doctor trust ("டாக்டர்"), "Head & Shoulders" = and; "Flagyl" = flajil; "Zincovit" = zingovit ("சிங்கோவிட்").
