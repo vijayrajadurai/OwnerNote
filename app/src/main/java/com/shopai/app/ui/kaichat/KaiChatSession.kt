@@ -83,7 +83,7 @@ class KaiChatSession(
         return when (action) {
             is KaiAction.Dial, KaiAction.OpenScanner, KaiAction.OpenAlarmSettings, KaiAction.OpenNotificationSettings, KaiAction.OpenFullScreenSettings, is KaiAction.EditPlan,
             is KaiAction.EditStock, is KaiAction.OpenStockCamera, is KaiAction.CreateProduct, is KaiAction.OpenMorningWork, is KaiAction.OpenRecord,
-            is KaiAction.ShareStatement -> action
+            is KaiAction.ShareStatement, is KaiAction.ShareCashNote -> action
             else -> {
                 close(index)
                 respond(lang) { agent.act(action, lang) ?: KaiTurn(ChatReply("…", KaiMood.NEUTRAL, ChatIntent.UNKNOWN)) }

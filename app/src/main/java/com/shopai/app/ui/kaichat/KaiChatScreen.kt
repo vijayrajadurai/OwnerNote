@@ -129,6 +129,14 @@ fun KaiChatScreen(
                     if (shared.isFailure) android.widget.Toast.makeText(context, pdfFailed(lang), android.widget.Toast.LENGTH_LONG).show()
                 }
             }
+            // "innaikku sales PDF kudu" / Day close: that day's Daily Sales Note as a PDF, made here, then the share sheet (the owner sends).
+            is com.shopai.app.brain.chat.KaiAction.ShareCashNote -> {
+                val lang = session.messages.firstOrNull { it.id == messageId }?.lang ?: com.shopai.app.brain.KaiLang.TANGLISH
+                scope.launch {
+                    val shared = runCatching { shareCashNote(container, context, action.day) }
+                    if (shared.isFailure) android.widget.Toast.makeText(context, pdfFailed(lang), android.widget.Toast.LENGTH_LONG).show()
+                }
+            }
             else -> Unit
         }
     }
