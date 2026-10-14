@@ -1,0 +1,724 @@
+# Owner's expanded stock catalogue 01-05 (14 Oct 2026): 5 business categories, each item in Small / Medium / Large / Family packs.
+# name|unit|category  (ON-0001 … ON-0050 are the catalogue's own codes for items not yet named)
+Rice varieties Small pack|PCS|Grocery & Supermarket
+Rice varieties Medium pack|PCS|Grocery & Supermarket
+Rice varieties Large pack|PCS|Grocery & Supermarket
+Rice varieties Family pack|PCS|Grocery & Supermarket
+Wheat flour Small pack|PCS|Grocery & Supermarket
+Wheat flour Medium pack|PCS|Grocery & Supermarket
+Wheat flour Large pack|PCS|Grocery & Supermarket
+Wheat flour Family pack|PCS|Grocery & Supermarket
+Maida Small pack|PCS|Grocery & Supermarket
+Maida Medium pack|PCS|Grocery & Supermarket
+Maida Large pack|PCS|Grocery & Supermarket
+Maida Family pack|PCS|Grocery & Supermarket
+Rava Small pack|PCS|Grocery & Supermarket
+Rava Medium pack|PCS|Grocery & Supermarket
+Rava Large pack|PCS|Grocery & Supermarket
+Rava Family pack|PCS|Grocery & Supermarket
+Poha Small pack|PCS|Grocery & Supermarket
+Poha Medium pack|PCS|Grocery & Supermarket
+Poha Large pack|PCS|Grocery & Supermarket
+Poha Family pack|PCS|Grocery & Supermarket
+Vermicelli Small pack|PCS|Grocery & Supermarket
+Vermicelli Medium pack|PCS|Grocery & Supermarket
+Vermicelli Large pack|PCS|Grocery & Supermarket
+Vermicelli Family pack|PCS|Grocery & Supermarket
+Toor dal Small pack|PCS|Grocery & Supermarket
+Toor dal Medium pack|PCS|Grocery & Supermarket
+Toor dal Large pack|PCS|Grocery & Supermarket
+Toor dal Family pack|PCS|Grocery & Supermarket
+Moong dal Small pack|PCS|Grocery & Supermarket
+Moong dal Medium pack|PCS|Grocery & Supermarket
+Moong dal Large pack|PCS|Grocery & Supermarket
+Moong dal Family pack|PCS|Grocery & Supermarket
+Urad dal Small pack|PCS|Grocery & Supermarket
+Urad dal Medium pack|PCS|Grocery & Supermarket
+Urad dal Large pack|PCS|Grocery & Supermarket
+Urad dal Family pack|PCS|Grocery & Supermarket
+Chana dal Small pack|PCS|Grocery & Supermarket
+Chana dal Medium pack|PCS|Grocery & Supermarket
+Chana dal Large pack|PCS|Grocery & Supermarket
+Chana dal Family pack|PCS|Grocery & Supermarket
+Rajma Small pack|PCS|Grocery & Supermarket
+Rajma Medium pack|PCS|Grocery & Supermarket
+Chickpeas Small pack|PCS|Grocery & Supermarket
+Chickpeas Medium pack|PCS|Grocery & Supermarket
+Sugar Small pack|PCS|Grocery & Supermarket
+Sugar Medium pack|PCS|Grocery & Supermarket
+Jaggery Small pack|PCS|Grocery & Supermarket
+Jaggery Medium pack|PCS|Grocery & Supermarket
+Salt Small pack|PCS|Grocery & Supermarket
+Salt Medium pack|PCS|Grocery & Supermarket
+Tea powder Small pack|PCS|Grocery & Supermarket
+Tea powder Medium pack|PCS|Grocery & Supermarket
+Coffee powder Small pack|PCS|Grocery & Supermarket
+Coffee powder Medium pack|PCS|Grocery & Supermarket
+Milk powder Small pack|PCS|Grocery & Supermarket
+Milk powder Medium pack|PCS|Grocery & Supermarket
+Cooking oil Small pack|PCS|Grocery & Supermarket
+Cooking oil Medium pack|PCS|Grocery & Supermarket
+Ghee Small pack|PCS|Grocery & Supermarket
+Ghee Medium pack|PCS|Grocery & Supermarket
+Butter Small pack|PCS|Grocery & Supermarket
+Butter Medium pack|PCS|Grocery & Supermarket
+Biscuits Small pack|PCS|Grocery & Supermarket
+Biscuits Medium pack|PCS|Grocery & Supermarket
+Cookies Small pack|PCS|Grocery & Supermarket
+Cookies Medium pack|PCS|Grocery & Supermarket
+Rusk Small pack|PCS|Grocery & Supermarket
+Rusk Medium pack|PCS|Grocery & Supermarket
+Bread Small pack|PCS|Grocery & Supermarket
+Bread Medium pack|PCS|Grocery & Supermarket
+Jam Small pack|PCS|Grocery & Supermarket
+Jam Medium pack|PCS|Grocery & Supermarket
+Honey Small pack|PCS|Grocery & Supermarket
+Honey Medium pack|PCS|Grocery & Supermarket
+Pickle Small pack|PCS|Grocery & Supermarket
+Pickle Medium pack|PCS|Grocery & Supermarket
+Papad Small pack|PCS|Grocery & Supermarket
+Papad Medium pack|PCS|Grocery & Supermarket
+Masala powders Small pack|PCS|Grocery & Supermarket
+Masala powders Medium pack|PCS|Grocery & Supermarket
+Chilli powder Small pack|PCS|Grocery & Supermarket
+Chilli powder Medium pack|PCS|Grocery & Supermarket
+Turmeric powder Small pack|PCS|Grocery & Supermarket
+Turmeric powder Medium pack|PCS|Grocery & Supermarket
+Coriander powder Small pack|PCS|Grocery & Supermarket
+Coriander powder Medium pack|PCS|Grocery & Supermarket
+Garam masala Small pack|PCS|Grocery & Supermarket
+Garam masala Medium pack|PCS|Grocery & Supermarket
+Sambar powder Small pack|PCS|Grocery & Supermarket
+Sambar powder Medium pack|PCS|Grocery & Supermarket
+Rasam powder Small pack|PCS|Grocery & Supermarket
+Rasam powder Medium pack|PCS|Grocery & Supermarket
+Pepper Small pack|PCS|Grocery & Supermarket
+Pepper Medium pack|PCS|Grocery & Supermarket
+Cumin Small pack|PCS|Grocery & Supermarket
+Cumin Medium pack|PCS|Grocery & Supermarket
+Mustard seeds Small pack|PCS|Grocery & Supermarket
+Mustard seeds Medium pack|PCS|Grocery & Supermarket
+Cardamom Small pack|PCS|Grocery & Supermarket
+Cardamom Medium pack|PCS|Grocery & Supermarket
+Cloves Small pack|PCS|Grocery & Supermarket
+Cloves Medium pack|PCS|Grocery & Supermarket
+Cinnamon Small pack|PCS|Grocery & Supermarket
+Cinnamon Medium pack|PCS|Grocery & Supermarket
+Noodles Small pack|PCS|Grocery & Supermarket
+Noodles Medium pack|PCS|Grocery & Supermarket
+Pasta Small pack|PCS|Grocery & Supermarket
+Pasta Medium pack|PCS|Grocery & Supermarket
+Sauce Small pack|PCS|Grocery & Supermarket
+Sauce Medium pack|PCS|Grocery & Supermarket
+Ketchup Small pack|PCS|Grocery & Supermarket
+Ketchup Medium pack|PCS|Grocery & Supermarket
+Breakfast cereal Small pack|PCS|Grocery & Supermarket
+Breakfast cereal Medium pack|PCS|Grocery & Supermarket
+Oats Small pack|PCS|Grocery & Supermarket
+Oats Medium pack|PCS|Grocery & Supermarket
+Peanut butter Small pack|PCS|Grocery & Supermarket
+Peanut butter Medium pack|PCS|Grocery & Supermarket
+Chocolates Small pack|PCS|Grocery & Supermarket
+Chocolates Medium pack|PCS|Grocery & Supermarket
+Chips Small pack|PCS|Grocery & Supermarket
+Chips Medium pack|PCS|Grocery & Supermarket
+Namkeen Small pack|PCS|Grocery & Supermarket
+Namkeen Medium pack|PCS|Grocery & Supermarket
+Instant mix Small pack|PCS|Grocery & Supermarket
+Instant mix Medium pack|PCS|Grocery & Supermarket
+Canned foods Small pack|PCS|Grocery & Supermarket
+Canned foods Medium pack|PCS|Grocery & Supermarket
+Mineral water Small pack|PCS|Grocery & Supermarket
+Mineral water Medium pack|PCS|Grocery & Supermarket
+Tissue paper Small pack|PCS|Grocery & Supermarket
+Tissue paper Medium pack|PCS|Grocery & Supermarket
+Foil roll Small pack|PCS|Grocery & Supermarket
+Foil roll Medium pack|PCS|Grocery & Supermarket
+Food storage bags Small pack|PCS|Grocery & Supermarket
+Food storage bags Medium pack|PCS|Grocery & Supermarket
+ON-0001 Small pack|PCS|Grocery & Supermarket
+ON-0001 Medium pack|PCS|Grocery & Supermarket
+ON-0002 Small pack|PCS|Grocery & Supermarket
+ON-0002 Medium pack|PCS|Grocery & Supermarket
+ON-0003 Small pack|PCS|Grocery & Supermarket
+ON-0003 Medium pack|PCS|Grocery & Supermarket
+ON-0004 Small pack|PCS|Grocery & Supermarket
+ON-0004 Medium pack|PCS|Grocery & Supermarket
+ON-0005 Small pack|PCS|Grocery & Supermarket
+ON-0005 Medium pack|PCS|Grocery & Supermarket
+ON-0006 Small pack|PCS|Grocery & Supermarket
+ON-0006 Medium pack|PCS|Grocery & Supermarket
+ON-0007 Small pack|PCS|Grocery & Supermarket
+ON-0007 Medium pack|PCS|Grocery & Supermarket
+ON-0008 Small pack|PCS|Grocery & Supermarket
+ON-0008 Medium pack|PCS|Grocery & Supermarket
+ON-0009 Small pack|PCS|Grocery & Supermarket
+ON-0009 Medium pack|PCS|Grocery & Supermarket
+ON-0010 Small pack|PCS|Grocery & Supermarket
+ON-0010 Medium pack|PCS|Grocery & Supermarket
+Apple Small pack|PCS|Fruits & Vegetables
+Apple Medium pack|PCS|Fruits & Vegetables
+Apple Large pack|PCS|Fruits & Vegetables
+Apple Family pack|PCS|Fruits & Vegetables
+Banana Small pack|PCS|Fruits & Vegetables
+Banana Medium pack|PCS|Fruits & Vegetables
+Banana Large pack|PCS|Fruits & Vegetables
+Banana Family pack|PCS|Fruits & Vegetables
+Orange Small pack|PCS|Fruits & Vegetables
+Orange Medium pack|PCS|Fruits & Vegetables
+Orange Large pack|PCS|Fruits & Vegetables
+Orange Family pack|PCS|Fruits & Vegetables
+Sweet lime Small pack|PCS|Fruits & Vegetables
+Sweet lime Medium pack|PCS|Fruits & Vegetables
+Sweet lime Large pack|PCS|Fruits & Vegetables
+Sweet lime Family pack|PCS|Fruits & Vegetables
+Grapes Small pack|PCS|Fruits & Vegetables
+Grapes Medium pack|PCS|Fruits & Vegetables
+Grapes Large pack|PCS|Fruits & Vegetables
+Grapes Family pack|PCS|Fruits & Vegetables
+Pomegranate Small pack|PCS|Fruits & Vegetables
+Pomegranate Medium pack|PCS|Fruits & Vegetables
+Pomegranate Large pack|PCS|Fruits & Vegetables
+Pomegranate Family pack|PCS|Fruits & Vegetables
+Guava Small pack|PCS|Fruits & Vegetables
+Guava Medium pack|PCS|Fruits & Vegetables
+Guava Large pack|PCS|Fruits & Vegetables
+Guava Family pack|PCS|Fruits & Vegetables
+Papaya Small pack|PCS|Fruits & Vegetables
+Papaya Medium pack|PCS|Fruits & Vegetables
+Papaya Large pack|PCS|Fruits & Vegetables
+Papaya Family pack|PCS|Fruits & Vegetables
+Mango Small pack|PCS|Fruits & Vegetables
+Mango Medium pack|PCS|Fruits & Vegetables
+Mango Large pack|PCS|Fruits & Vegetables
+Mango Family pack|PCS|Fruits & Vegetables
+Watermelon Small pack|PCS|Fruits & Vegetables
+Watermelon Medium pack|PCS|Fruits & Vegetables
+Watermelon Large pack|PCS|Fruits & Vegetables
+Watermelon Family pack|PCS|Fruits & Vegetables
+Muskmelon Small pack|PCS|Fruits & Vegetables
+Muskmelon Medium pack|PCS|Fruits & Vegetables
+Pineapple Small pack|PCS|Fruits & Vegetables
+Pineapple Medium pack|PCS|Fruits & Vegetables
+Pear Small pack|PCS|Fruits & Vegetables
+Pear Medium pack|PCS|Fruits & Vegetables
+Kiwi Small pack|PCS|Fruits & Vegetables
+Kiwi Medium pack|PCS|Fruits & Vegetables
+Dragon fruit Small pack|PCS|Fruits & Vegetables
+Dragon fruit Medium pack|PCS|Fruits & Vegetables
+Strawberry Small pack|PCS|Fruits & Vegetables
+Strawberry Medium pack|PCS|Fruits & Vegetables
+Lemon Small pack|PCS|Fruits & Vegetables
+Lemon Medium pack|PCS|Fruits & Vegetables
+Coconut Small pack|PCS|Fruits & Vegetables
+Coconut Medium pack|PCS|Fruits & Vegetables
+Tomato Small pack|PCS|Fruits & Vegetables
+Tomato Medium pack|PCS|Fruits & Vegetables
+Potato Small pack|PCS|Fruits & Vegetables
+Potato Medium pack|PCS|Fruits & Vegetables
+Onion Small pack|PCS|Fruits & Vegetables
+Onion Medium pack|PCS|Fruits & Vegetables
+Shallots Small pack|PCS|Fruits & Vegetables
+Shallots Medium pack|PCS|Fruits & Vegetables
+Garlic Small pack|PCS|Fruits & Vegetables
+Garlic Medium pack|PCS|Fruits & Vegetables
+Ginger Small pack|PCS|Fruits & Vegetables
+Ginger Medium pack|PCS|Fruits & Vegetables
+Green chilli Small pack|PCS|Fruits & Vegetables
+Green chilli Medium pack|PCS|Fruits & Vegetables
+Capsicum Small pack|PCS|Fruits & Vegetables
+Capsicum Medium pack|PCS|Fruits & Vegetables
+Brinjal Small pack|PCS|Fruits & Vegetables
+Brinjal Medium pack|PCS|Fruits & Vegetables
+Ladies finger Small pack|PCS|Fruits & Vegetables
+Ladies finger Medium pack|PCS|Fruits & Vegetables
+Bitter gourd Small pack|PCS|Fruits & Vegetables
+Bitter gourd Medium pack|PCS|Fruits & Vegetables
+Bottle gourd Small pack|PCS|Fruits & Vegetables
+Bottle gourd Medium pack|PCS|Fruits & Vegetables
+Ridge gourd Small pack|PCS|Fruits & Vegetables
+Ridge gourd Medium pack|PCS|Fruits & Vegetables
+Snake gourd Small pack|PCS|Fruits & Vegetables
+Snake gourd Medium pack|PCS|Fruits & Vegetables
+Pumpkin Small pack|PCS|Fruits & Vegetables
+Pumpkin Medium pack|PCS|Fruits & Vegetables
+Cucumber Small pack|PCS|Fruits & Vegetables
+Cucumber Medium pack|PCS|Fruits & Vegetables
+Carrot Small pack|PCS|Fruits & Vegetables
+Carrot Medium pack|PCS|Fruits & Vegetables
+Beetroot Small pack|PCS|Fruits & Vegetables
+Beetroot Medium pack|PCS|Fruits & Vegetables
+Radish Small pack|PCS|Fruits & Vegetables
+Radish Medium pack|PCS|Fruits & Vegetables
+Cabbage Small pack|PCS|Fruits & Vegetables
+Cabbage Medium pack|PCS|Fruits & Vegetables
+Cauliflower Small pack|PCS|Fruits & Vegetables
+Cauliflower Medium pack|PCS|Fruits & Vegetables
+Broccoli Small pack|PCS|Fruits & Vegetables
+Broccoli Medium pack|PCS|Fruits & Vegetables
+Beans Small pack|PCS|Fruits & Vegetables
+Beans Medium pack|PCS|Fruits & Vegetables
+Cluster beans Small pack|PCS|Fruits & Vegetables
+Cluster beans Medium pack|PCS|Fruits & Vegetables
+Peas Small pack|PCS|Fruits & Vegetables
+Peas Medium pack|PCS|Fruits & Vegetables
+Drumstick Small pack|PCS|Fruits & Vegetables
+Drumstick Medium pack|PCS|Fruits & Vegetables
+Raw banana Small pack|PCS|Fruits & Vegetables
+Raw banana Medium pack|PCS|Fruits & Vegetables
+Sweet potato Small pack|PCS|Fruits & Vegetables
+Sweet potato Medium pack|PCS|Fruits & Vegetables
+Yam Small pack|PCS|Fruits & Vegetables
+Yam Medium pack|PCS|Fruits & Vegetables
+Spinach Small pack|PCS|Fruits & Vegetables
+Spinach Medium pack|PCS|Fruits & Vegetables
+Amaranth leaves Small pack|PCS|Fruits & Vegetables
+Amaranth leaves Medium pack|PCS|Fruits & Vegetables
+Coriander leaves Small pack|PCS|Fruits & Vegetables
+Coriander leaves Medium pack|PCS|Fruits & Vegetables
+Mint leaves Small pack|PCS|Fruits & Vegetables
+Mint leaves Medium pack|PCS|Fruits & Vegetables
+Curry leaves Small pack|PCS|Fruits & Vegetables
+Curry leaves Medium pack|PCS|Fruits & Vegetables
+Mushroom Small pack|PCS|Fruits & Vegetables
+Mushroom Medium pack|PCS|Fruits & Vegetables
+Corn Small pack|PCS|Fruits & Vegetables
+Corn Medium pack|PCS|Fruits & Vegetables
+Avocado Small pack|PCS|Fruits & Vegetables
+Avocado Medium pack|PCS|Fruits & Vegetables
+ON-0011 Small pack|PCS|Fruits & Vegetables
+ON-0011 Medium pack|PCS|Fruits & Vegetables
+ON-0012 Small pack|PCS|Fruits & Vegetables
+ON-0012 Medium pack|PCS|Fruits & Vegetables
+ON-0013 Small pack|PCS|Fruits & Vegetables
+ON-0013 Medium pack|PCS|Fruits & Vegetables
+ON-0014 Small pack|PCS|Fruits & Vegetables
+ON-0014 Medium pack|PCS|Fruits & Vegetables
+ON-0015 Small pack|PCS|Fruits & Vegetables
+ON-0015 Medium pack|PCS|Fruits & Vegetables
+ON-0016 Small pack|PCS|Fruits & Vegetables
+ON-0016 Medium pack|PCS|Fruits & Vegetables
+ON-0017 Small pack|PCS|Fruits & Vegetables
+ON-0017 Medium pack|PCS|Fruits & Vegetables
+ON-0018 Small pack|PCS|Fruits & Vegetables
+ON-0018 Medium pack|PCS|Fruits & Vegetables
+ON-0019 Small pack|PCS|Fruits & Vegetables
+ON-0019 Medium pack|PCS|Fruits & Vegetables
+ON-0020 Small pack|PCS|Fruits & Vegetables
+ON-0020 Medium pack|PCS|Fruits & Vegetables
+Paracetamol tablets Small pack|PCS|Medical & Pharmacy
+Paracetamol tablets Medium pack|PCS|Medical & Pharmacy
+Paracetamol tablets Large pack|PCS|Medical & Pharmacy
+Paracetamol tablets Family pack|PCS|Medical & Pharmacy
+Ibuprofen tablets Small pack|PCS|Medical & Pharmacy
+Ibuprofen tablets Medium pack|PCS|Medical & Pharmacy
+Ibuprofen tablets Large pack|PCS|Medical & Pharmacy
+Ibuprofen tablets Family pack|PCS|Medical & Pharmacy
+Cetirizine tablets Small pack|PCS|Medical & Pharmacy
+Cetirizine tablets Medium pack|PCS|Medical & Pharmacy
+Cetirizine tablets Large pack|PCS|Medical & Pharmacy
+Cetirizine tablets Family pack|PCS|Medical & Pharmacy
+Antacid tablets Small pack|PCS|Medical & Pharmacy
+Antacid tablets Medium pack|PCS|Medical & Pharmacy
+Antacid tablets Large pack|PCS|Medical & Pharmacy
+Antacid tablets Family pack|PCS|Medical & Pharmacy
+ORS sachets Small pack|PCS|Medical & Pharmacy
+ORS sachets Medium pack|PCS|Medical & Pharmacy
+ORS sachets Large pack|PCS|Medical & Pharmacy
+ORS sachets Family pack|PCS|Medical & Pharmacy
+Cough syrup Small pack|PCS|Medical & Pharmacy
+Cough syrup Medium pack|PCS|Medical & Pharmacy
+Cough syrup Large pack|PCS|Medical & Pharmacy
+Cough syrup Family pack|PCS|Medical & Pharmacy
+Cold tablets Small pack|PCS|Medical & Pharmacy
+Cold tablets Medium pack|PCS|Medical & Pharmacy
+Cold tablets Large pack|PCS|Medical & Pharmacy
+Cold tablets Family pack|PCS|Medical & Pharmacy
+Antiseptic solution Small pack|PCS|Medical & Pharmacy
+Antiseptic solution Medium pack|PCS|Medical & Pharmacy
+Antiseptic solution Large pack|PCS|Medical & Pharmacy
+Antiseptic solution Family pack|PCS|Medical & Pharmacy
+Bandage roll Small pack|PCS|Medical & Pharmacy
+Bandage roll Medium pack|PCS|Medical & Pharmacy
+Bandage roll Large pack|PCS|Medical & Pharmacy
+Bandage roll Family pack|PCS|Medical & Pharmacy
+Gauze pads Small pack|PCS|Medical & Pharmacy
+Gauze pads Medium pack|PCS|Medical & Pharmacy
+Gauze pads Large pack|PCS|Medical & Pharmacy
+Gauze pads Family pack|PCS|Medical & Pharmacy
+Cotton roll Small pack|PCS|Medical & Pharmacy
+Cotton roll Medium pack|PCS|Medical & Pharmacy
+Adhesive bandages Small pack|PCS|Medical & Pharmacy
+Adhesive bandages Medium pack|PCS|Medical & Pharmacy
+Surgical gloves Small pack|PCS|Medical & Pharmacy
+Surgical gloves Medium pack|PCS|Medical & Pharmacy
+Face masks Small pack|PCS|Medical & Pharmacy
+Face masks Medium pack|PCS|Medical & Pharmacy
+Thermometer Small pack|PCS|Medical & Pharmacy
+Thermometer Medium pack|PCS|Medical & Pharmacy
+BP monitor Small pack|PCS|Medical & Pharmacy
+BP monitor Medium pack|PCS|Medical & Pharmacy
+Glucometer Small pack|PCS|Medical & Pharmacy
+Glucometer Medium pack|PCS|Medical & Pharmacy
+Glucose strips Small pack|PCS|Medical & Pharmacy
+Glucose strips Medium pack|PCS|Medical & Pharmacy
+Nebulizer Small pack|PCS|Medical & Pharmacy
+Nebulizer Medium pack|PCS|Medical & Pharmacy
+Syringes Small pack|PCS|Medical & Pharmacy
+Syringes Medium pack|PCS|Medical & Pharmacy
+IV set Small pack|PCS|Medical & Pharmacy
+IV set Medium pack|PCS|Medical & Pharmacy
+Sanitary pads Small pack|PCS|Medical & Pharmacy
+Sanitary pads Medium pack|PCS|Medical & Pharmacy
+Adult diapers Small pack|PCS|Medical & Pharmacy
+Adult diapers Medium pack|PCS|Medical & Pharmacy
+Baby diapers Small pack|PCS|Medical & Pharmacy
+Baby diapers Medium pack|PCS|Medical & Pharmacy
+Pregnancy test kit Small pack|PCS|Medical & Pharmacy
+Pregnancy test kit Medium pack|PCS|Medical & Pharmacy
+Condoms Small pack|PCS|Medical & Pharmacy
+Condoms Medium pack|PCS|Medical & Pharmacy
+Multivitamin tablets Small pack|PCS|Medical & Pharmacy
+Multivitamin tablets Medium pack|PCS|Medical & Pharmacy
+Calcium tablets Small pack|PCS|Medical & Pharmacy
+Calcium tablets Medium pack|PCS|Medical & Pharmacy
+Iron supplements Small pack|PCS|Medical & Pharmacy
+Iron supplements Medium pack|PCS|Medical & Pharmacy
+Saline nasal drops Small pack|PCS|Medical & Pharmacy
+Saline nasal drops Medium pack|PCS|Medical & Pharmacy
+Eye drops Small pack|PCS|Medical & Pharmacy
+Eye drops Medium pack|PCS|Medical & Pharmacy
+Ear drops Small pack|PCS|Medical & Pharmacy
+Ear drops Medium pack|PCS|Medical & Pharmacy
+Pain relief gel Small pack|PCS|Medical & Pharmacy
+Pain relief gel Medium pack|PCS|Medical & Pharmacy
+Burn cream Small pack|PCS|Medical & Pharmacy
+Burn cream Medium pack|PCS|Medical & Pharmacy
+Hand sanitizer Small pack|PCS|Medical & Pharmacy
+Hand sanitizer Medium pack|PCS|Medical & Pharmacy
+Medical tape Small pack|PCS|Medical & Pharmacy
+Medical tape Medium pack|PCS|Medical & Pharmacy
+Hot water bag Small pack|PCS|Medical & Pharmacy
+Hot water bag Medium pack|PCS|Medical & Pharmacy
+Walking stick Small pack|PCS|Medical & Pharmacy
+Walking stick Medium pack|PCS|Medical & Pharmacy
+Knee support Small pack|PCS|Medical & Pharmacy
+Knee support Medium pack|PCS|Medical & Pharmacy
+Ankle support Small pack|PCS|Medical & Pharmacy
+Ankle support Medium pack|PCS|Medical & Pharmacy
+Digital weighing scale Small pack|PCS|Medical & Pharmacy
+Digital weighing scale Medium pack|PCS|Medical & Pharmacy
+First aid kit Small pack|PCS|Medical & Pharmacy
+First aid kit Medium pack|PCS|Medical & Pharmacy
+ON-0021 Small pack|PCS|Medical & Pharmacy
+ON-0021 Medium pack|PCS|Medical & Pharmacy
+ON-0022 Small pack|PCS|Medical & Pharmacy
+ON-0022 Medium pack|PCS|Medical & Pharmacy
+ON-0023 Small pack|PCS|Medical & Pharmacy
+ON-0023 Medium pack|PCS|Medical & Pharmacy
+ON-0024 Small pack|PCS|Medical & Pharmacy
+ON-0024 Medium pack|PCS|Medical & Pharmacy
+ON-0025 Small pack|PCS|Medical & Pharmacy
+ON-0025 Medium pack|PCS|Medical & Pharmacy
+ON-0026 Small pack|PCS|Medical & Pharmacy
+ON-0026 Medium pack|PCS|Medical & Pharmacy
+ON-0027 Small pack|PCS|Medical & Pharmacy
+ON-0027 Medium pack|PCS|Medical & Pharmacy
+ON-0028 Small pack|PCS|Medical & Pharmacy
+ON-0028 Medium pack|PCS|Medical & Pharmacy
+ON-0029 Small pack|PCS|Medical & Pharmacy
+ON-0029 Medium pack|PCS|Medical & Pharmacy
+ON-0030 Small pack|PCS|Medical & Pharmacy
+ON-0030 Medium pack|PCS|Medical & Pharmacy
+Cement Small pack|PCS|Hardware & Building Materials
+Cement Medium pack|PCS|Hardware & Building Materials
+Cement Large pack|PCS|Hardware & Building Materials
+Cement Family pack|PCS|Hardware & Building Materials
+White cement Small pack|PCS|Hardware & Building Materials
+White cement Medium pack|PCS|Hardware & Building Materials
+White cement Large pack|PCS|Hardware & Building Materials
+White cement Family pack|PCS|Hardware & Building Materials
+Wall putty Small pack|PCS|Hardware & Building Materials
+Wall putty Medium pack|PCS|Hardware & Building Materials
+Wall putty Large pack|PCS|Hardware & Building Materials
+Wall putty Family pack|PCS|Hardware & Building Materials
+Red oxide Small pack|PCS|Hardware & Building Materials
+Red oxide Medium pack|PCS|Hardware & Building Materials
+Red oxide Large pack|PCS|Hardware & Building Materials
+Red oxide Family pack|PCS|Hardware & Building Materials
+Primer Small pack|PCS|Hardware & Building Materials
+Primer Medium pack|PCS|Hardware & Building Materials
+Primer Large pack|PCS|Hardware & Building Materials
+Primer Family pack|PCS|Hardware & Building Materials
+Emulsion paint Small pack|PCS|Hardware & Building Materials
+Emulsion paint Medium pack|PCS|Hardware & Building Materials
+Emulsion paint Large pack|PCS|Hardware & Building Materials
+Emulsion paint Family pack|PCS|Hardware & Building Materials
+Enamel paint Small pack|PCS|Hardware & Building Materials
+Enamel paint Medium pack|PCS|Hardware & Building Materials
+Enamel paint Large pack|PCS|Hardware & Building Materials
+Enamel paint Family pack|PCS|Hardware & Building Materials
+Paint brush Small pack|PCS|Hardware & Building Materials
+Paint brush Medium pack|PCS|Hardware & Building Materials
+Paint brush Large pack|PCS|Hardware & Building Materials
+Paint brush Family pack|PCS|Hardware & Building Materials
+Paint roller Small pack|PCS|Hardware & Building Materials
+Paint roller Medium pack|PCS|Hardware & Building Materials
+Paint roller Large pack|PCS|Hardware & Building Materials
+Paint roller Family pack|PCS|Hardware & Building Materials
+Sandpaper Small pack|PCS|Hardware & Building Materials
+Sandpaper Medium pack|PCS|Hardware & Building Materials
+Sandpaper Large pack|PCS|Hardware & Building Materials
+Sandpaper Family pack|PCS|Hardware & Building Materials
+Nails Small pack|PCS|Hardware & Building Materials
+Nails Medium pack|PCS|Hardware & Building Materials
+Screws Small pack|PCS|Hardware & Building Materials
+Screws Medium pack|PCS|Hardware & Building Materials
+Bolts Small pack|PCS|Hardware & Building Materials
+Bolts Medium pack|PCS|Hardware & Building Materials
+Nuts Small pack|PCS|Hardware & Building Materials
+Nuts Medium pack|PCS|Hardware & Building Materials
+Washers Small pack|PCS|Hardware & Building Materials
+Washers Medium pack|PCS|Hardware & Building Materials
+Hinges Small pack|PCS|Hardware & Building Materials
+Hinges Medium pack|PCS|Hardware & Building Materials
+Door locks Small pack|PCS|Hardware & Building Materials
+Door locks Medium pack|PCS|Hardware & Building Materials
+Tower bolts Small pack|PCS|Hardware & Building Materials
+Tower bolts Medium pack|PCS|Hardware & Building Materials
+Handles Small pack|PCS|Hardware & Building Materials
+Handles Medium pack|PCS|Hardware & Building Materials
+Padlocks Small pack|PCS|Hardware & Building Materials
+Padlocks Medium pack|PCS|Hardware & Building Materials
+Chains Small pack|PCS|Hardware & Building Materials
+Chains Medium pack|PCS|Hardware & Building Materials
+Wire mesh Small pack|PCS|Hardware & Building Materials
+Wire mesh Medium pack|PCS|Hardware & Building Materials
+GI wire Small pack|PCS|Hardware & Building Materials
+GI wire Medium pack|PCS|Hardware & Building Materials
+Binding wire Small pack|PCS|Hardware & Building Materials
+Binding wire Medium pack|PCS|Hardware & Building Materials
+PVC pipe Small pack|PCS|Hardware & Building Materials
+PVC pipe Medium pack|PCS|Hardware & Building Materials
+CPVC pipe Small pack|PCS|Hardware & Building Materials
+CPVC pipe Medium pack|PCS|Hardware & Building Materials
+UPVC pipe Small pack|PCS|Hardware & Building Materials
+UPVC pipe Medium pack|PCS|Hardware & Building Materials
+Pipe elbow Small pack|PCS|Hardware & Building Materials
+Pipe elbow Medium pack|PCS|Hardware & Building Materials
+Pipe tee Small pack|PCS|Hardware & Building Materials
+Pipe tee Medium pack|PCS|Hardware & Building Materials
+Pipe socket Small pack|PCS|Hardware & Building Materials
+Pipe socket Medium pack|PCS|Hardware & Building Materials
+Pipe clamp Small pack|PCS|Hardware & Building Materials
+Pipe clamp Medium pack|PCS|Hardware & Building Materials
+Tap Small pack|PCS|Hardware & Building Materials
+Tap Medium pack|PCS|Hardware & Building Materials
+Shower head Small pack|PCS|Hardware & Building Materials
+Shower head Medium pack|PCS|Hardware & Building Materials
+Water tank Small pack|PCS|Hardware & Building Materials
+Water tank Medium pack|PCS|Hardware & Building Materials
+Waterproofing chemical Small pack|PCS|Hardware & Building Materials
+Waterproofing chemical Medium pack|PCS|Hardware & Building Materials
+Tile adhesive Small pack|PCS|Hardware & Building Materials
+Tile adhesive Medium pack|PCS|Hardware & Building Materials
+Grout Small pack|PCS|Hardware & Building Materials
+Grout Medium pack|PCS|Hardware & Building Materials
+Ceramic tiles Small pack|PCS|Hardware & Building Materials
+Ceramic tiles Medium pack|PCS|Hardware & Building Materials
+Vitrified tiles Small pack|PCS|Hardware & Building Materials
+Vitrified tiles Medium pack|PCS|Hardware & Building Materials
+Plywood Small pack|PCS|Hardware & Building Materials
+Plywood Medium pack|PCS|Hardware & Building Materials
+MDF board Small pack|PCS|Hardware & Building Materials
+MDF board Medium pack|PCS|Hardware & Building Materials
+Flush door Small pack|PCS|Hardware & Building Materials
+Flush door Medium pack|PCS|Hardware & Building Materials
+Laminates Small pack|PCS|Hardware & Building Materials
+Laminates Medium pack|PCS|Hardware & Building Materials
+Fevicol adhesive Small pack|PCS|Hardware & Building Materials
+Fevicol adhesive Medium pack|PCS|Hardware & Building Materials
+Silicone sealant Small pack|PCS|Hardware & Building Materials
+Silicone sealant Medium pack|PCS|Hardware & Building Materials
+Drill bits Small pack|PCS|Hardware & Building Materials
+Drill bits Medium pack|PCS|Hardware & Building Materials
+Cutting wheel Small pack|PCS|Hardware & Building Materials
+Cutting wheel Medium pack|PCS|Hardware & Building Materials
+Grinding wheel Small pack|PCS|Hardware & Building Materials
+Grinding wheel Medium pack|PCS|Hardware & Building Materials
+Hacksaw blade Small pack|PCS|Hardware & Building Materials
+Hacksaw blade Medium pack|PCS|Hardware & Building Materials
+Hammer Small pack|PCS|Hardware & Building Materials
+Hammer Medium pack|PCS|Hardware & Building Materials
+Screwdriver Small pack|PCS|Hardware & Building Materials
+Screwdriver Medium pack|PCS|Hardware & Building Materials
+Pliers Small pack|PCS|Hardware & Building Materials
+Pliers Medium pack|PCS|Hardware & Building Materials
+Spanner Small pack|PCS|Hardware & Building Materials
+Spanner Medium pack|PCS|Hardware & Building Materials
+Measuring tape Small pack|PCS|Hardware & Building Materials
+Measuring tape Medium pack|PCS|Hardware & Building Materials
+Ladder Small pack|PCS|Hardware & Building Materials
+Ladder Medium pack|PCS|Hardware & Building Materials
+Safety helmet Small pack|PCS|Hardware & Building Materials
+Safety helmet Medium pack|PCS|Hardware & Building Materials
+Safety shoes Small pack|PCS|Hardware & Building Materials
+Safety shoes Medium pack|PCS|Hardware & Building Materials
+ON-0031 Small pack|PCS|Hardware & Building Materials
+ON-0031 Medium pack|PCS|Hardware & Building Materials
+ON-0032 Small pack|PCS|Hardware & Building Materials
+ON-0032 Medium pack|PCS|Hardware & Building Materials
+ON-0033 Small pack|PCS|Hardware & Building Materials
+ON-0033 Medium pack|PCS|Hardware & Building Materials
+ON-0034 Small pack|PCS|Hardware & Building Materials
+ON-0034 Medium pack|PCS|Hardware & Building Materials
+ON-0035 Small pack|PCS|Hardware & Building Materials
+ON-0035 Medium pack|PCS|Hardware & Building Materials
+ON-0036 Small pack|PCS|Hardware & Building Materials
+ON-0036 Medium pack|PCS|Hardware & Building Materials
+ON-0037 Small pack|PCS|Hardware & Building Materials
+ON-0037 Medium pack|PCS|Hardware & Building Materials
+ON-0038 Small pack|PCS|Hardware & Building Materials
+ON-0038 Medium pack|PCS|Hardware & Building Materials
+ON-0039 Small pack|PCS|Hardware & Building Materials
+ON-0039 Medium pack|PCS|Hardware & Building Materials
+ON-0040 Small pack|PCS|Hardware & Building Materials
+ON-0040 Medium pack|PCS|Hardware & Building Materials
+Men shirt Small pack|PCS|Textiles & Garments  Fashion
+Men shirt Medium pack|PCS|Textiles & Garments  Fashion
+Men shirt Large pack|PCS|Textiles & Garments  Fashion
+Men shirt Family pack|PCS|Textiles & Garments  Fashion
+Men trousers Small pack|PCS|Textiles & Garments  Fashion
+Men trousers Medium pack|PCS|Textiles & Garments  Fashion
+Men trousers Large pack|PCS|Textiles & Garments  Fashion
+Men trousers Family pack|PCS|Textiles & Garments  Fashion
+Jeans Small pack|PCS|Textiles & Garments  Fashion
+Jeans Medium pack|PCS|Textiles & Garments  Fashion
+Jeans Large pack|PCS|Textiles & Garments  Fashion
+Jeans Family pack|PCS|Textiles & Garments  Fashion
+T-shirt Small pack|PCS|Textiles & Garments  Fashion
+T-shirt Medium pack|PCS|Textiles & Garments  Fashion
+T-shirt Large pack|PCS|Textiles & Garments  Fashion
+T-shirt Family pack|PCS|Textiles & Garments  Fashion
+Polo T-shirt Small pack|PCS|Textiles & Garments  Fashion
+Polo T-shirt Medium pack|PCS|Textiles & Garments  Fashion
+Polo T-shirt Large pack|PCS|Textiles & Garments  Fashion
+Polo T-shirt Family pack|PCS|Textiles & Garments  Fashion
+Kurta Small pack|PCS|Textiles & Garments  Fashion
+Kurta Medium pack|PCS|Textiles & Garments  Fashion
+Kurta Large pack|PCS|Textiles & Garments  Fashion
+Kurta Family pack|PCS|Textiles & Garments  Fashion
+Dhoti Small pack|PCS|Textiles & Garments  Fashion
+Dhoti Medium pack|PCS|Textiles & Garments  Fashion
+Dhoti Large pack|PCS|Textiles & Garments  Fashion
+Dhoti Family pack|PCS|Textiles & Garments  Fashion
+Veshti Small pack|PCS|Textiles & Garments  Fashion
+Veshti Medium pack|PCS|Textiles & Garments  Fashion
+Veshti Large pack|PCS|Textiles & Garments  Fashion
+Veshti Family pack|PCS|Textiles & Garments  Fashion
+Lungi Small pack|PCS|Textiles & Garments  Fashion
+Lungi Medium pack|PCS|Textiles & Garments  Fashion
+Lungi Large pack|PCS|Textiles & Garments  Fashion
+Lungi Family pack|PCS|Textiles & Garments  Fashion
+Innerwear Small pack|PCS|Textiles & Garments  Fashion
+Innerwear Medium pack|PCS|Textiles & Garments  Fashion
+Innerwear Large pack|PCS|Textiles & Garments  Fashion
+Innerwear Family pack|PCS|Textiles & Garments  Fashion
+Vest Small pack|PCS|Textiles & Garments  Fashion
+Vest Medium pack|PCS|Textiles & Garments  Fashion
+Briefs Small pack|PCS|Textiles & Garments  Fashion
+Briefs Medium pack|PCS|Textiles & Garments  Fashion
+Socks Small pack|PCS|Textiles & Garments  Fashion
+Socks Medium pack|PCS|Textiles & Garments  Fashion
+Women saree Small pack|PCS|Textiles & Garments  Fashion
+Women saree Medium pack|PCS|Textiles & Garments  Fashion
+Salwar suit Small pack|PCS|Textiles & Garments  Fashion
+Salwar suit Medium pack|PCS|Textiles & Garments  Fashion
+Churidar Small pack|PCS|Textiles & Garments  Fashion
+Churidar Medium pack|PCS|Textiles & Garments  Fashion
+Leggings Small pack|PCS|Textiles & Garments  Fashion
+Leggings Medium pack|PCS|Textiles & Garments  Fashion
+Kurti Small pack|PCS|Textiles & Garments  Fashion
+Kurti Medium pack|PCS|Textiles & Garments  Fashion
+Dupatta Small pack|PCS|Textiles & Garments  Fashion
+Dupatta Medium pack|PCS|Textiles & Garments  Fashion
+Blouse Small pack|PCS|Textiles & Garments  Fashion
+Blouse Medium pack|PCS|Textiles & Garments  Fashion
+Nightwear Small pack|PCS|Textiles & Garments  Fashion
+Nightwear Medium pack|PCS|Textiles & Garments  Fashion
+Bra Small pack|PCS|Textiles & Garments  Fashion
+Bra Medium pack|PCS|Textiles & Garments  Fashion
+Panty Small pack|PCS|Textiles & Garments  Fashion
+Panty Medium pack|PCS|Textiles & Garments  Fashion
+Kids T-shirt Small pack|PCS|Textiles & Garments  Fashion
+Kids T-shirt Medium pack|PCS|Textiles & Garments  Fashion
+Kids shorts Small pack|PCS|Textiles & Garments  Fashion
+Kids shorts Medium pack|PCS|Textiles & Garments  Fashion
+School uniform Small pack|PCS|Textiles & Garments  Fashion
+School uniform Medium pack|PCS|Textiles & Garments  Fashion
+School socks Small pack|PCS|Textiles & Garments  Fashion
+School socks Medium pack|PCS|Textiles & Garments  Fashion
+School belt Small pack|PCS|Textiles & Garments  Fashion
+School belt Medium pack|PCS|Textiles & Garments  Fashion
+School tie Small pack|PCS|Textiles & Garments  Fashion
+School tie Medium pack|PCS|Textiles & Garments  Fashion
+Jacket Small pack|PCS|Textiles & Garments  Fashion
+Jacket Medium pack|PCS|Textiles & Garments  Fashion
+Sweater Small pack|PCS|Textiles & Garments  Fashion
+Sweater Medium pack|PCS|Textiles & Garments  Fashion
+Raincoat Small pack|PCS|Textiles & Garments  Fashion
+Raincoat Medium pack|PCS|Textiles & Garments  Fashion
+Scarf Small pack|PCS|Textiles & Garments  Fashion
+Scarf Medium pack|PCS|Textiles & Garments  Fashion
+Shawl Small pack|PCS|Textiles & Garments  Fashion
+Shawl Medium pack|PCS|Textiles & Garments  Fashion
+Handkerchief Small pack|PCS|Textiles & Garments  Fashion
+Handkerchief Medium pack|PCS|Textiles & Garments  Fashion
+Towel Small pack|PCS|Textiles & Garments  Fashion
+Towel Medium pack|PCS|Textiles & Garments  Fashion
+Bedsheet Small pack|PCS|Textiles & Garments  Fashion
+Bedsheet Medium pack|PCS|Textiles & Garments  Fashion
+Pillow cover Small pack|PCS|Textiles & Garments  Fashion
+Pillow cover Medium pack|PCS|Textiles & Garments  Fashion
+Curtain Small pack|PCS|Textiles & Garments  Fashion
+Curtain Medium pack|PCS|Textiles & Garments  Fashion
+Fabric cotton Small pack|PCS|Textiles & Garments  Fashion
+Fabric cotton Medium pack|PCS|Textiles & Garments  Fashion
+Fabric polyester Small pack|PCS|Textiles & Garments  Fashion
+Fabric polyester Medium pack|PCS|Textiles & Garments  Fashion
+Denim fabric Small pack|PCS|Textiles & Garments  Fashion
+Denim fabric Medium pack|PCS|Textiles & Garments  Fashion
+Thread spool Small pack|PCS|Textiles & Garments  Fashion
+Thread spool Medium pack|PCS|Textiles & Garments  Fashion
+Sewing needle Small pack|PCS|Textiles & Garments  Fashion
+Sewing needle Medium pack|PCS|Textiles & Garments  Fashion
+Buttons Small pack|PCS|Textiles & Garments  Fashion
+Buttons Medium pack|PCS|Textiles & Garments  Fashion
+Zip fastener Small pack|PCS|Textiles & Garments  Fashion
+Zip fastener Medium pack|PCS|Textiles & Garments  Fashion
+Elastic tape Small pack|PCS|Textiles & Garments  Fashion
+Elastic tape Medium pack|PCS|Textiles & Garments  Fashion
+Lace trim Small pack|PCS|Textiles & Garments  Fashion
+Lace trim Medium pack|PCS|Textiles & Garments  Fashion
+Safety pins Small pack|PCS|Textiles & Garments  Fashion
+Safety pins Medium pack|PCS|Textiles & Garments  Fashion
+ON-0041 Small pack|PCS|Textiles & Garments  Fashion
+ON-0041 Medium pack|PCS|Textiles & Garments  Fashion
+ON-0042 Small pack|PCS|Textiles & Garments  Fashion
+ON-0042 Medium pack|PCS|Textiles & Garments  Fashion
+ON-0043 Small pack|PCS|Textiles & Garments  Fashion
+ON-0043 Medium pack|PCS|Textiles & Garments  Fashion
+ON-0044 Small pack|PCS|Textiles & Garments  Fashion
+ON-0044 Medium pack|PCS|Textiles & Garments  Fashion
+ON-0045 Small pack|PCS|Textiles & Garments  Fashion
+ON-0045 Medium pack|PCS|Textiles & Garments  Fashion
+ON-0046 Small pack|PCS|Textiles & Garments  Fashion
+ON-0046 Medium pack|PCS|Textiles & Garments  Fashion
+ON-0047 Small pack|PCS|Textiles & Garments  Fashion
+ON-0047 Medium pack|PCS|Textiles & Garments  Fashion
+ON-0048 Small pack|PCS|Textiles & Garments  Fashion
+ON-0048 Medium pack|PCS|Textiles & Garments  Fashion
+ON-0049 Small pack|PCS|Textiles & Garments  Fashion
+ON-0049 Medium pack|PCS|Textiles & Garments  Fashion
+ON-0050 Small pack|PCS|Textiles & Garments  Fashion
+ON-0050 Medium pack|PCS|Textiles & Garments  Fashion

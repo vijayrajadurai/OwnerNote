@@ -237,12 +237,37 @@ class KaiProductSoundTest {
             "Brass statue Small pack", "Bronze statue Small pack", "Beverage case Small pack", "Garland Small pack", "Kumkum Small pack", "Coconut Small pack")
         fun h(mic: String) = KaiSpokenWords.normalize(KaiProductSound.withProducts(mic, shop12, people))
         for ((mic, want) in listOf("பேட்டரீஸ் ட்ரிபிள் ஏ ஸ்மால் பேக் 7" to "Batteries AAA Small pack 7", "பேட்டரீஸ் ட்ரிபிள் ஏ சின்ன பேக் 7" to "Batteries AAA chinna",
-                "பேட்டரீஸ் ஏஏ ஃபேமிலி பேக் 7" to "Batteries AA Family pack 7", "பிராஸ் ஸ்டேச்சு சின்ன பேக் 7" to "Brass statue chinna",
+                "பேட்டரீஸ் ஏஏ ஃபேமிலி பேக் 7" to "Batteries AA Family pack 7", "பேட்டரீஸ் ஏஏ ஸ்மால் பேக் 7" to "Batteries AA Small pack 7",
+                "பிராஸ் ஸ்டேச்சு சின்ன பேக் 7" to "Brass statue chinna",
                 "பிரான்ஸ் ஸ்டேச்சு ஸ்மால் பேக் 7" to "Bronze statue Small pack 7", "கும்கும் ஸ்மால் பேக் 7" to "Kumkum Small pack 7")) {
             val got = h(mic)
             assertTrue("$mic → $got", got.startsWith(want))
         }
         assertTrue(h("பேட்டரீஸ் ஏஏ ஃபேமிலி பேக் 7").let { !it.contains("Garland") })
+        // A Roman numeral is said as its number, not letter by letter: "ஆக்ட் டூ பாப்கார்ன்" is Act II Popcorn.
+        val pop = listOf("Act II Popcorn 30 g", "Act II Popcorn 60 g", "Popcorn 30 g")
+        KaiProductSound.withProducts("ஆக்ட் டூ பாப்கார்ன் 60 கிராம் 7", pop, people).let { assertTrue(it, it.startsWith("Act II Popcorn")) }
+    }
+
+    /**
+     * Catalogue 01-05 (14 Oct 2026): each word's own sound (Jam, not Sauce; Kiwi, not Ghee); short ெ vs long ே (பெப்பர் Pepper, பேர்
+     * Pear) and the a after "br" (பிரா Bra); ai of "chains" (செயின்ஸ்), not the ee of Jeans; "ஓஎன் 0001" left for the code ON-0001,
+     * never Onion; a goods name the line starts with is never a longer name heard by sound (சுடிதார் = Churidar, not Sweater).
+     */
+    @Test fun catalogue0105NamesSaidIntoTheMic() {
+        val shop13 = listOf("Jam Medium pack", "Sauce Medium pack", "Kiwi Small pack", "Ghee Small pack", "Pepper Small pack", "Pear Medium pack",
+            "Bra Small pack", "Tissue paper Small pack", "Chains Small pack", "Jeans Small pack", "Onion Small pack", "ON-0001 Small pack",
+            "Churidar Small pack", "Salwar suit Small pack", "Sweater Small pack", "Ball valve Small pack", "Milk powder carton Small pack",
+            "Papad Small pack", "Appalam flour 500 g")
+        fun h(mic: String) = KaiSpokenWords.normalize(KaiProductSound.withProducts(mic, shop13, people))
+        for ((mic, want) in listOf("ஜாம் மீடியம் பேக் 7" to "Jam Medium pack 7", "கிவி ஸ்மால் பேக் 7" to "Kiwi Small pack 7", "பெப்பர் 7" to "Pepper 7",
+                "பேர் மீடியம் பேக் 7" to "Pear Medium pack 7", "பிரா 7" to "Bra 7", "செயின்ஸ் 7" to "Chains 7", "சுடிதார் ஸ்மால் பேக் 7" to "Churidar",
+                // (a goods word that is the longer name's own first word by sound: "பால்" of Ball valve, "அப்பளம்" of Appalam flour)
+                "பால் வால்வ் ஸ்மால் பேக் 7" to "Ball valve Small pack 7", "அப்பளம் ஃப்ளோர் 500 கிராம் 7" to "Appalam flour 500")) {
+            val got = h(mic)
+            assertTrue("$mic → $got", got.startsWith(want))
+        }
+        assertTrue(h("ஓஎன் 0001 ஸ்மால் பேக் 7").let { !it.contains("Onion") })
     }
 
     @Test fun productNamesSaidIntoTheMic() {
