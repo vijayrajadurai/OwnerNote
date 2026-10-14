@@ -249,6 +249,21 @@ class KaiProductSoundTest {
         KaiProductSound.withProducts("ஆக்ட் டூ பாப்கார்ன் 60 கிராம் 7", pop, people).let { assertTrue(it, it.startsWith("Act II Popcorn")) }
     }
 
+    @Test fun catalogue0610NamesSaidIntoTheMic() {
+        // Catalogue 06-10 (14 Oct 2026): "டைரி" is Diary (its "dia" heard as டை), never Tyre; "ஃபியூஸ்" is Fuse (the இயூ the mic writes for
+        // its u is one vowel); "யூரியா" is Urea (yu-ri-ya); "ஹோ" is Hoe (a word of only an h and its vowel, heard by its h).
+        val shop = listOf("Diary Small pack", "Tyre Small pack", "Fuse Small pack", "Face wash Small pack", "Suspension bush Small pack", "Fuel filter Small pack",
+            "Urea fertilizer Small pack", "DAP fertilizer Small pack", "Hoe Small pack", "Horn Small pack", "Tube Small pack", "Rear view mirror Small pack")
+        for ((mic, want) in listOf("டைரி ஸ்மால் பேக் 7" to "Diary Small pack 7", "டயர் ஸ்மால் பேக் 7" to "Tyre Small pack 7", "ஃபியூஸ் 7" to "Fuse 7",
+                "ஃபியூஸ் ஸ்மால் பேக் 7" to "Fuse Small pack 7", "யூரியா ஃபெர்டிலைசர் ஸ்மால் பேக் 7" to "Urea fertilizer Small pack 7", "ஹோ 7" to "Hoe 7",
+                "ஹோ சின்ன பேக் 7" to "Hoe சின்ன", "ஹாரன் 7" to "Horn 7", "டியூப் 7" to "Tube 7", "ரியர் வியூ மிரர் ஸ்மால் பேக் 7" to "Rear view mirror Small pack 7")) {
+            val got = KaiProductSound.withProducts(mic, shop, people)
+            assertTrue("$mic → $got", got.startsWith(want))
+        }
+        // A word Kai has no product for stays as said: "ஹோட்டல்" is not Hoe.
+        assertTrue(KaiProductSound.withProducts("ஹோட்டல் 7", shop, people).startsWith("ஹோட்டல்"))
+    }
+
     @Test fun catalogue2125NamesSaidIntoTheMic() {
         // Catalogue 21-25 (14 Oct 2026): "சன்கிளாசஸ்" is Sunglasses (sun-glasses: the g is heard), "ஐவேர் பவுச்" is Eyewear pouch — never Purse.
         val shop = listOf("Sunglasses Small pack", "Sports sunglasses Small pack", "Eyewear pouch Small pack", "Eyewear pouch Medium pack", "Purse Small pack",

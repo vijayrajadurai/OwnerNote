@@ -156,13 +156,24 @@ object KaiStock {
         """(?i)(?<![\p{L}])(cash|panam|kaasu|rupees?|rs|money|amount|balance|salary|rent|upi|gpay|bank|payment|evlo|evvalavu|enna|how|what|which|why|""" +
             """eppo|remind|reminder|bill|loss|profit|low|reorder)(?![\p{L}])|₹|\?""",
     )
+    /** The longest run of a shop name's leading words (two or more) said in [lower] — "power bank", "pet waste scoop" — or null. */
+    private fun shopNameIn(lower: String, products: List<ProductRef>): String? = products.asSequence()
+        .flatMap { p -> lowerOf(p.name).trim().split(' ').let { w -> (2..w.size).map { k -> w.take(k).joinToString(" ") } } }
+        .filter { " $lower ".contains(" $it ") }.maxByOrNull { it.length }
+
+    /** Money or a question in [lower] — not counting the shop's own name said in it ("Power bank 7 add pannu": that bank is the product's). */
+    private fun moneyOrQuestionIn(lower: String, products: List<ProductRef>): Boolean = notStock.containsMatchIn(lower) &&
+        notStock.containsMatchIn(shopNameIn(lower, products)?.let { " $lower ".replace(" $it ", " ") } ?: lower)
+
     /** "EB bill 500 kattu", "rent 5000", "₹500" — money or a question, never a stock line. */
     fun moneyOrQuestion(text: String): Boolean = notStock.containsMatchIn(lowerOf(text))
 
     private val stockContext = Regex("""(?i)(?<![\p{L}])(stock|inventory|iruppu|product)(?![\p{L}])""")
 
     // "Plywood 18mm" and "plywood 18 mm" are one name: a size / thickness is always written apart, in the text and in the names.
-    private fun lowerOf(text: String) = " " + sizes(text.lowercase(Locale.ROOT).replace(Regex("""[!,;]|\.(?!\d)"""), " "))
+    // ("Power bank" is one word, "powerbank", in the text and in the names: KaiInventory.joinProductWords)
+    private fun lowerOf(text: String) = " " + sizes(text.lowercase(Locale.ROOT).replace(Regex("""[!,;]|\.(?!\d)"""), " ")
+        .replace(Regex("""(?<![\p{L}])power\s+(banks?)(?![\p{L}])"""), "power$1"))
         .replace(Regex("""(?<![\p{L}\d.])(\d+(?:\.\d+)?)(inch|inches|mm|cm|ft|feet|sqmm)(?![\p{L}])"""), "$1 $2")
         .replace(Regex("""\s+"""), " ").trim() + " "
 
@@ -533,8 +544,10 @@ object KaiStock {
             val from = words[i].range.first + shift
             val to = words[i + size - 1].range.last + shift
             val put = lowerOf(family).trim()
-            // ("zip lock bag small", "whole wheat bread" said in full: the goods word is already inside that name — nothing to read again)
-            if (Regex("""(?<![\p{L}])${Regex.escape(put)}(?![\p{L}])""").findAll(out).any { m -> m.range.first <= to && m.range.last >= from }) { i += size; continue }
+            // ("zip lock bag small", "whole wheat bread" said in full: the goods word is already inside that name — nothing to read again;
+            // "chalk piece" = Chalk is read: the name lies inside what was said)
+            if (Regex("""(?<![\p{L}])${Regex.escape(put)}(?![\p{L}])""").findAll(out).any { m -> m.range.first <= to && m.range.last >= from &&
+                    !(m.range.first >= from && m.range.last <= to) }) { i += size; continue }
             out = out.replaceRange(from, to + 1, put)
             shift += put.length - (to - from + 1)
             i += size
@@ -641,14 +654,13 @@ object KaiStock {
         // "5inch tape" is said and written "5 inch tape": the same product. "nandu small pack 7": the goods name of a thing kept
         // only in packs, read as that thing ("crab small pack 7").
         val lower = inNameOrder(goodsFamilies(lowerOf(text), products).replace(Regex("""(?<![\p{L}\d.])(\d+(?:\.\d+)?)(inch|inches|mm|cm|ft|feet|sqmm|watt|watts|volt|volts|amp|amps|hp)(?![\p{L}])"""), "$1 $2"), products)
-        if (notStock.containsMatchIn(lower) || timeAfterNumber.containsMatchIn(lower)) return null
+        if (moneyOrQuestionIn(lower, products) || timeAfterNumber.containsMatchIn(lower)) return null
         val found = productSaid(lower, products)
         val product = found?.first
         val named = found?.let { lower.replace(it.second, " ") } ?: lower
         // In or out from the words around the name: "Cotton waste 7 add pannu" is stock in (waste is the product's own word).
         // ("Pet waste scoop 7" with only its packs kept: the shop's own name said without its pack — its "waste" is not stock going out.)
-        val inName = if (product != null) null else products.asSequence().flatMap { p -> lowerOf(p.name).trim().split(' ').let { w -> (2..w.size).map { k -> w.take(k).joinToString(" ") } } }
-            .filter { " $named ".contains(" $it ") }.maxByOrNull { it.length }
+        val inName = if (product != null) null else shopNameIn(named, products)
         val isIn = direction(inName?.let { " $named ".replace(" $it ", " ") } ?: named, product) ?: return null
         val sized = if (product == null) sizeInName(named) else null
         val rest = sized?.second ?: named
@@ -699,7 +711,7 @@ object KaiStock {
      */
     fun unknownUnitWord(text: String, products: List<ProductRef>): String? {
         val lower = lowerOf(text)
-        if (notStock.containsMatchIn(lower) || timeAfterNumber.containsMatchIn(lower)) return null
+        if (moneyOrQuestionIn(lower, products) || timeAfterNumber.containsMatchIn(lower)) return null
         val (product, said) = productSaid(lower, products) ?: return null
         if (direction(lower, product) == null) return null
         val rest = lower.replace(said, " ")

@@ -1,0 +1,20 @@
+# The owner's own names for the 06-10 catalogue's items (typed Tanglish | as the mic writes it) → the item (kept in packs).
+# item | typed | spoken
+Sickle | arivaal | அரிவாள்
+Spade | manvetti | மண்வெட்டி
+Tarpaulin | thaarpaai | தார்ப்பாய்
+Neem cake | veppam punnaakku | வேப்பம் புண்ணாக்கு
+Organic manure | iyarkai uram | இயற்கை உரம்
+Cattle feed | maattu theevanam | மாட்டுத் தீவனம்
+Poultry feed | kozhi theevanam | கோழித் தீவனம்
+Paddy seeds | nel vithai | நெல் விதை
+Cotton seeds | paruthi vithai | பருத்தி விதை
+Groundnut seeds | verkadalai vithai | வேர்க்கடலை விதை
+Milking pail | paal vaali | பால் வாளி
+Comb | seeppu | சீப்பு
+Kajal | kan mai | கண் மை
+Hair oil | thalai ennai | தலை எண்ணெய்
+Scissors | kathirikkol | கத்தரிக்கோல்
+Eraser | rubber | ரப்பர்
+Chalk | chalk piece | சாக்பீஸ்
+Toothpaste | parpasaai | பற்பசை

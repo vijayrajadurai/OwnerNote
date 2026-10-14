@@ -86,6 +86,18 @@ class KaiSupermarketNamesTest {
         assertEquals("Pet waste scoop Small pack", KaiStock.understand("Pet waste scoop small 7 add pannu", cat)?.product?.name)
     }
 
+    @Test fun aMoneyWordInTheShopsOwnName() {
+        // Catalogue 06-10 (14 Oct 2026): "Power bank" is the shop's product — its "bank" is not money (read as one word, "Powerbank", as
+        // KaiInventory.joinProductWords does); "bank la 500 pottuten" still is.
+        val cat = listOf("Power bank Small pack", "Power bank Medium pack", "Chalk Small pack", "Chalk Medium pack").mapIndexed { i, n -> ProductRef("b$i", n, "PCS", BigDecimal("50")) }
+        assertEquals("Power bank Small pack", KaiStock.understand("Power bank small 7 add pannu", cat)?.product?.name)
+        KaiStock.understand("Power bank 7 add pannu", cat).let { r -> assertNotNull(r); assertNull(r!!.product); assertEquals("Powerbank", r.spokenName) }
+        assertNull(KaiStock.understand("bank la 500 pottuten", cat))
+        assertNull(KaiStock.understand("Power bank 500 rupees", cat))
+        // "chalk piece" = Chalk: the goods name holds the product's own name — read, the pack said after it kept.
+        assertEquals("Chalk Small pack", KaiStock.understand("chalk piece small pack 7 add pannu", cat)?.product?.name)
+    }
+
     @Test fun goodsByTheirTamilName() {
         assertEquals("Papad", typed("appalam 7 add pannu")?.product?.name)
         assertEquals("Papad", spoken("அப்பளம் 7 ஆட் பண்ணு")?.product?.name)
