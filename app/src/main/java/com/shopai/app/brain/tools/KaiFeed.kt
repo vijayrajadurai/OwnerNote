@@ -512,6 +512,23 @@ object KaiFeed {
         சிமெண்டு மூட்டை / simantu mootai = cement bag
         லாரி லோடு / lorry load = truckload
         ஜிப் / zip = zipper
+        கொலுசு / kolusu = anklet
+        மூக்குத்தி / mookuthi = nose pin
+        தாலி / thaali / thali = mangalsutra
+        மெட்டி / metti = toe ring
+        தங்க மோதிரம் / thanga mothiram = gold ring
+        தங்கச் சங்கிலி / தங்க சங்கிலி / thanga sangili = gold chain
+        தங்க வளையல் / thanga valaiyal = gold bangle
+        கூலிங் கிளாஸ் / cooling glass = sunglasses
+        காலிங் பெல் / calling bell = door bell
+        இன்சுலேஷன் டேப் / insulation tape = electrical tape
+        ஸ்பைக் பஸ்டர் / spike buster = surge protector
+        பறவைக் கூண்டு / பறவை கூண்டு / paravai koondu = bird cage
+        மீன் தொட்டி / meen thotti = aquarium tank
+        மீன் வலை / meen valai = fish net
+        நாய் பெல்ட் / naai belt = dog collar
+        நாய் சங்கிலி / naai sangili = dog leash
+        பூனை மணல் / poonai manal = cat litter
     """)
 
     /** A unit word = Kai's unit (PCS, BOX, BAG, KG, GRAM, LITRE, ML, PACKET, BOTTLE, DOZEN, BUNDLE, METER …). */
