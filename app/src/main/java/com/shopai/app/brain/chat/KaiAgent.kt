@@ -668,7 +668,10 @@ class KaiAgent(
         // "ama" / "illa" to "edha pathi sollureenga?" — not one of the three: asked again in short, or let go plainly.
         val yes = afterClarify && (KaiConversationSemantics.saysYes(said) || KaiConversationSemantics.saysYes(com.shopai.app.brain.tools.KaiSpokenWords.normalize(said)))
         val no = afterClarify && !yes && notAboutIt.matches(said.trim()) && said.trim().split(Regex("""\s+""")).size <= 2
+        // Only a line with a count is a stock line to finish ("pulungal arisi 10bgs", "அரிசி பத்து மூட்டை"); "blah blah" is not —
+        // "stock" to it gets the way to say a stock line instead.
         val kept = unclearLine?.takeIf { afterClarify && it.second == nothingOpenTurn }?.first
+            ?.takeIf { com.shopai.app.brain.tools.KaiSpokenWords.normalize(it).any(Char::isDigit) }
         return when {
             yes -> { nothingOpenTurn = conversationState.conversationTurn; unclearLine = unclearLine?.copy(second = conversationState.conversationTurn); say(lang, KaiMood.CLARIFY, "guided: yes to the menu",
                 ta = "சரி ஓனர், எது? Credit / debit (கொடுக்கல் வாங்கல்)-ஆ, stock (கடையில இருக்கிற பொருள்)-ஆ, reminder-ஆ? ஒண்ணு சொல்லுங்க.",
