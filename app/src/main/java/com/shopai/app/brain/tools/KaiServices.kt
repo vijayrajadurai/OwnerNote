@@ -175,9 +175,12 @@ object KaiServices {
         // (where the line was read up to: an amount said after one service is never the count of the next — "cutting 150 shaving")
         var cursor = 0
         for ((i, h) in found.withIndex()) {
-            val name = h.name
-            val kept = name.lowercase(Locale.ROOT) in known
             val said = lower.substring(h.start, h.end)
+            // The owner's own Menu item for what was said: "Cutting" on the Menu is the sale of "hair cutting onnu" and of the mic's
+            // "கட்டிங் ஒன்னு" — the owner's name and price, never the catalogue's.
+            val ownName = ownFor(h, said, own.keys)
+            val name = ownName ?: h.name
+            val kept = ownName != null || name.lowercase(Locale.ROOT) in known
             // (a service said in Tamil letters is the shop's product too when its English words are in a product's name: "கட்டிங் வீல்"
             // is Cutting wheel, "ஷேவிங் கிரீம்" Shaving cream, "ஹேர் கலர்" the shop's Hair colour)
             val english = if (com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(said)) h.service?.words.orEmpty().filter { w -> w.none { it in '஀'..'௿' } } else emptyList()
@@ -230,9 +233,18 @@ object KaiServices {
     }
 
     /** The service named in [text] (one only), for "cutting evlo?" / "cutting rate 200" — null when none or several are. */
-    fun serviceNamed(text: String, own: Collection<String>, kinds: Set<Kind>? = null): String? =
-        hits(" " + text.lowercase(Locale.ROOT).replace(Regex("""[,!?.]"""), " ") + " ", own)
-            .filter { h -> h.service == null || kinds == null || h.service.kind in kinds }.map { it.name }.distinct().singleOrNull()
+    fun serviceNamed(text: String, own: Collection<String>, kinds: Set<Kind>? = null): String? {
+        val lower = " " + text.lowercase(Locale.ROOT).replace(Regex("""[,!?.]"""), " ") + " "
+        return hits(lower, own).map { h -> h to ownFor(h, lower.substring(h.start, h.end), own) }
+            .filter { (h, mine) -> mine != null || h.service == null || kinds == null || h.service.kind in kinds }
+            .map { (h, mine) -> mine ?: h.name }.distinct().singleOrNull()
+    }
+
+    /** The owner's Menu name for a word said ("cutting" → their "Cutting" — or their "Hair cutting"), or null. */
+    private fun ownFor(h: Hit, said: String, own: Collection<String>): String? = own.firstOrNull { o ->
+        val ol = o.lowercase(Locale.ROOT)
+        ol == h.name.lowercase(Locale.ROOT) || said in spellings(ol) || h.service?.words?.any { w -> ol in spellings(w.lowercase(Locale.ROOT)) } == true
+    }
 
     /**
      * The services a shop of [category] sells (the owner's pick at setup): a beauty salon's salon and parlour services, a

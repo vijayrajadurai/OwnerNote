@@ -1454,4 +1454,18 @@ NewonX — Owner Note. ஆப்பில் உதவி & ஆதரவு.]]><
     <string name="bill_stock_moved">%1$d item stock மாறிடுச்சு.</string>
     <string name="bill_stock_failed">இதுக்கு stock மாறல: %1$s</string>
     <string name="expiry_notification_channel">காலாவதி அறிவிப்புகள்</string>
+    <!-- The shop's Menu (owner, 16 Oct 2026) -->
+    <string name="menu_title">மெனு</string>
+    <string name="menu_hint">நீங்க விக்கிற item-உம் உங்க விலையும் சேருங்க. Kai Chat இந்த மெனுவுல இருந்து போடும் (\"cutting onnu\").</string>
+    <string name="menu_empty">இன்னும் எதுவும் இல்ல. கீழ முதல் item-ஐ சேருங்க.</string>
+    <string name="menu_no_business">மெனு வைக்க முதல்ல உங்க business-ஐ திறங்க.</string>
+    <string name="menu_add_title">Item சேர் (இல்ல புது விலை)</string>
+    <string name="menu_item_name">Item பெயர்</string>
+    <string name="menu_item_price">விலை (₹)</string>
+    <string name="menu_add">சேர்</string>
+    <string name="menu_remove">நீக்கு</string>
+    <string name="menu_done">முடிஞ்சது</string>
+    <string name="menu_need_name">Item பெயர் போடுங்க</string>
+    <string name="menu_need_price">0-க்கு மேல விலை போடுங்க</string>
+    <string name="menu_save_failed">சேமிக்க முடியல. மறுபடி try பண்ணுங்க.</string>
 </resources>

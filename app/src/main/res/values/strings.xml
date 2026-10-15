@@ -1509,4 +1509,18 @@ NewonX — Owner Note. Use Help & Support in the app.]]></string>
     <string name="bill_stock_moved">Stock updated for %1$d item(s).</string>
     <string name="bill_stock_failed">Stock not changed for: %1$s</string>
     <string name="expiry_notification_channel">Expiry alerts</string>
+    <!-- The shop's Menu (owner, 16 Oct 2026) -->
+    <string name="menu_title">Menu</string>
+    <string name="menu_hint">Add the items you sell and your own price. Kai Chat sells from this Menu (\"cutting onnu\").</string>
+    <string name="menu_empty">No items yet. Add your first item below.</string>
+    <string name="menu_no_business">Open your business first to keep a Menu.</string>
+    <string name="menu_add_title">Add an item (or a new price)</string>
+    <string name="menu_item_name">Item name</string>
+    <string name="menu_item_price">Price (₹)</string>
+    <string name="menu_add">Add</string>
+    <string name="menu_remove">Remove</string>
+    <string name="menu_done">Done</string>
+    <string name="menu_need_name">Type the item name</string>
+    <string name="menu_need_price">Type a price above 0</string>
+    <string name="menu_save_failed">Could not save. Try again.</string>
 </resources>
