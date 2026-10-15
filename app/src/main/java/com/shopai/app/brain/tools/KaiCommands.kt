@@ -247,7 +247,34 @@ object KaiCommands {
     private val shopWords = setOf("store", "stores", "traders", "trader", "agencies", "agency", "mart", "enterprises", "enterprise", "distributors",
         "distributor", "agency", "supermarket", "hardwares", "hardware", "textiles", "medicals", "medical", "bakery", "sweets", "provisions", "centre",
         "center", "brothers", "bros", "and sons", "company", "co", "industries", "ஸ்டோர்", "ஸ்டோர்ஸ்", "டிரேடர்ஸ்", "ட்ரேடர்ஸ்", "ஏஜென்சீஸ்", "ஏஜென்சி", "மார்ட்",
-        "என்டர்பிரைசஸ்", "டிஸ்ட்ரிபியூட்டர்ஸ்", "சூப்பர்மார்க்கெட்", "ஹார்டுவேர்ஸ்", "டெக்ஸ்டைல்ஸ்", "மெடிக்கல்ஸ்", "பேக்கரி", "ஸ்வீட்ஸ்", "பிரதர்ஸ்")
+        "என்டர்பிரைசஸ்", "டிஸ்ட்ரிபியூட்டர்ஸ்", "சூப்பர்மார்க்கெட்", "ஹார்டுவேர்ஸ்", "டெக்ஸ்டைல்ஸ்", "மெடிக்கல்ஸ்", "பேக்கரி", "ஸ்வீட்ஸ்", "பிரதர்ஸ்",
+        // ("Kumar Hotel", "குமார் ஓட்டல்" — owner's phone, 15 Oct 2026)
+        "hotel", "hotels", "mess", "bhavan", "restaurant", "cafe", "stall", "ஹோட்டல்", "ஓட்டல்", "மெஸ்", "பவன்", "ரெஸ்டாரண்ட்", "கஃபே", "ஸ்டால்")
+
+    /**
+     * "குமார் ஓட்டல்-ku 2000 tharanum" with only Kumar in the books: the owner named Kumar's hotel — "குமார் ஓட்டல்", as said — not
+     * Kumar (never merged into the person the name starts with). Null when no shop's last word follows [person] with "-ku" / "kitta",
+     * or that whole name is in the books (then [KaiUnderstanding.knownPerson] already found it).
+     */
+    private val englishShopWord = mapOf("ஸ்டோர்" to "Store", "ஸ்டோர்ஸ்" to "Stores", "டிரேடர்ஸ்" to "Traders", "ட்ரேடர்ஸ்" to "Traders",
+        "ஏஜென்சீஸ்" to "Agencies", "ஏஜென்சி" to "Agency", "மார்ட்" to "Mart", "என்டர்பிரைசஸ்" to "Enterprises", "டிஸ்ட்ரிபியூட்டர்ஸ்" to "Distributors",
+        "சூப்பர்மார்க்கெட்" to "Supermarket", "ஹார்டுவேர்ஸ்" to "Hardwares", "டெக்ஸ்டைல்ஸ்" to "Textiles", "மெடிக்கல்ஸ்" to "Medicals",
+        "பேக்கரி" to "Bakery", "ஸ்வீட்ஸ்" to "Sweets", "பிரதர்ஸ்" to "Brothers", "ஹோட்டல்" to "Hotel", "ஓட்டல்" to "Hotel", "மெஸ்" to "Mess",
+        "பவன்" to "Bhavan", "ரெஸ்டாரண்ட்" to "Restaurant", "கஃபே" to "Cafe", "ஸ்டால்" to "Stall")
+
+    private fun shopNamedAfter(text: String, person: String, known: List<String>): String? {
+        val m = Regex("""(?<![\p{L}\p{M}])([\p{L}][\p{L}\p{M}.']*)\s+([\p{L}][\p{L}\p{M}]*?)\s*-?\s*(?:ku|kku|ukku|kitta|kita|kitte|க்கு|கிட்ட)(?![\p{L}\p{M}])""", RegexOption.IGNORE_CASE)
+            .findAll(text).firstOrNull { m ->
+                val shop = m.groupValues[2]
+                (shop.lowercase(Locale.ROOT) in shopWords || shop in shopWords) &&
+                    (m.groupValues[1].equals(person, ignoreCase = true) || com.shopai.app.util.NameSound.same(m.groupValues[1], person))
+            } ?: return null
+        val said = m.groupValues[2]
+        // (the mic's "ஓட்டல்" after a name the books keep in English letters: that record's way — "Kumar Hotel", typed or said)
+        val shop = if (!com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(person)) englishShopWord[said] ?: said else said
+        val name = "$person ${shop.replaceFirstChar { it.titlecase(Locale.ROOT) }}"
+        return name.takeIf { n -> known.none { it.equals(n, ignoreCase = true) } }
+    }
 
     /** "theerapoguthu", "theera pogudhu", "mudiya pogudhu": stock running out ("thira" is "open" — never this). */
     private val runningOut = Regex("""(?i)(?<![\p{L}])(?:theera|theeru|mudiya)\s*-?\s*po\p{L}*|தீரப்போ\p{L}*|தீர\s+போ\p{L}*""")
@@ -317,7 +344,7 @@ object KaiCommands {
 
     /** A known party in the text, else the word before -ku / kitta ("Ramesh ku", "Kumar kitta"), or after "call / to / from". */
     fun personIn(text: String, known: List<String>): String? {
-        KaiUnderstanding.knownPerson(text, known)?.let { return it }
+        KaiUnderstanding.knownPerson(text, known)?.let { return shopNamedAfter(text, it, known) ?: it }
         // Letters include Tamil vowel signs (\p{M}), so a Tamil-script name stays one word.
         val patterns = listOf(
             Regex("""(?<![\p{L}\p{M}])([\p{L}][\p{L}\p{M}.']{1,})\s*-?\s*(?:ku|kku|ukku|kitta|kita|kitte|kittae|kitaa|idam|oda)(?![\p{L}])""", RegexOption.IGNORE_CASE),
@@ -331,11 +358,13 @@ object KaiCommands {
             for (m in p.findAll(text)) {
                 val word = m.groupValues[1].trim('.', '\'')
                 val key = word.lowercase(Locale.ROOT)
-                if (key in notNames || key.length < 2 || key.any(Char::isDigit)) continue
+                // (a shop's last word is read before the words that are never a name alone — "hotel", "mess" are those too)
+                val shop = p !== patterns[1] && (key in shopWords || word in shopWords)
+                if (!shop && key in notNames || key.length < 2 || key.any(Char::isDigit)) continue
                 // "Sujithukku" read as "Sujithuk" + "ku": the name is "Sujith" (+ "ukku").
                 val name = if (p === patterns[0] && key.endsWith("uk") && key.length >= 6) word.dropLast(2) else word
                 // "Vijayalakshmi Store-ku", "Sri Balaji Agencies kitta": a shop's last word — its name is the words before it too.
-                if (p !== patterns[1] && (key in shopWords || word in shopWords)) {
+                if (shop) {
                     val before = text.substring(0, m.range.first).trimEnd().split(Regex("""\s+""")).filter { it.isNotEmpty() }
                         .takeLastWhile { w -> w.lowercase(Locale.ROOT) !in notNames && w.none(Char::isDigit) && w.any(Char::isLetter) }.takeLast(2)
                     if (before.isNotEmpty()) return (before + name).joinToString(" ") { it.replaceFirstChar { c -> c.titlecase(Locale.ROOT) } }
