@@ -62,6 +62,8 @@ class KaiDailySales(
     private data class CloseAsked(val day: LocalDate) : Waiting
     /** A service's price to keep (changed, or a new service): waiting for Confirm. */
     private data class PriceToKeep(val key: String, val name: String, val price: BigDecimal, val old: BigDecimal?) : Waiting
+    /** Menu items said in chat ("menu: cutting 100, shaving 80"): waiting for Confirm. */
+    private data class MenuToKeep(val key: String, val items: List<Pair<String, BigDecimal>>) : Waiting
 
     private var waiting: Waiting? = null
     /** Prices confirmed in this conversation, for a phone with no business memory open. */
@@ -73,17 +75,17 @@ class KaiDailySales(
 
     // ------------------------------------------------------------ prices (the owner's own memory)
 
+    /** The shop's Menu ([KaiMenu]: what the owner added, on the Menu screen or in chat) — name → price. */
     private suspend fun prices(): Map<String, BigDecimal> {
-        val kept = runCatching { memory?.current()?.usable() }.getOrNull().orEmpty()
-            .filter { it.memoryType == MemoryType.PREFERENCE && it.meaningType == PRICE_KIND }
-            .mapNotNull { m -> m.meaningValue.split('|').takeIf { it.size == 2 }?.let { (n, p) -> p.toBigDecimalOrNull()?.let { n to it } } }
-            .toMap()
-        return kept + sessionPrices
+        // (the Menu itself when the business memory is open — an item removed on the Menu screen is gone here too; this
+        // conversation's prices only for a phone with no business memory open)
+        val open = runCatching { memory?.current() }.getOrNull() ?: return sessionPrices.toMap()
+        return KaiMenu.items(open).associate { it.name to it.price }
     }
 
     private suspend fun keepPrice(name: String, price: BigDecimal) {
-        sessionPrices[name] = price
-        runCatching { memory?.current()?.savePreference("service price ${name.lowercase(Locale.ROOT)}", PRICE_KIND, "$name|${price.stripTrailingZeros().toPlainString()}") }
+        val saved = runCatching { memory?.current()?.let { KaiMenu.save(it, name, price); true } }.getOrNull() == true
+        if (!saved) sessionPrices[name] = price
     }
 
     private fun priceOf(prices: Map<String, BigDecimal>, name: String) = prices.entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
@@ -106,6 +108,8 @@ class KaiDailySales(
     private val stockAsk = Regex("""(?i)(?<![\p{L}])(stock|iruppu|irupu|irukku|iruku|kaila|kaiyila|left)(?![\p{L}])|ஸ்டாக்|இருப்பு|இருக்கு|கையில""")
     private val rateWord = Regex("""(?i)(?<![\p{L}])(rate|price|vilai|vilaiya|vela|charge|charges|amount)(?![\p{L}])|ரேட்|விலை""")
     private val changeWord = Regex("""(?i)(?<![\p{L}])(maathu|mathu|maathidu|change|ippo|ini|inimel|update|vachuko|vechuko|set)(?![\p{L}])|மாத்து|இனி|இப்போ""")
+    /** "menu", "menu kaattu", "en menu enna", "மெனு காட்டு": the Menu itself. */
+    private val menuAsk = Regex("""(?i)(?:en\s+|unga\s+|my\s+)?(?:menu|மெனு)\s*(?:list|kaattu|kaatu|sollu|enna|paaru|paakanum|show|காட்டு|சொல்லு|என்ன)?\s*[?.!]*""")
     private val rateList = Regex("""(?i)(?<![\p{L}])(rate|price|vilai|service|services)\s*(list|lists|ellam|ellaam|motham)(?![\p{L}])|(?<![\p{L}])(enna\s*enna|ella)\s*(service|services|rate|vilai)(?![\p{L}])|ரேட் லிஸ்ட்|விலை பட்டியல்""")
 
     private fun amountsIn(text: String): List<BigDecimal> {
@@ -199,6 +203,11 @@ class KaiDailySales(
                 }
                 else -> { waiting = null; null }
             }
+            is MenuToKeep -> when {
+                yes.matches(text) -> confirmPrice(w.key, lang)
+                no.matches(text) -> { waiting = null; turn(lang, KaiMood.NEUTRAL, ta = "சரி ஓனர், மெனுவுல எதுவும் சேர்க்கல.", tl = "Seri Owner, menu-la edhuvum serkala.", en = "Okay Owner, nothing was added to the Menu.") }
+                else -> { waiting = null; null }
+            }
             is PriceToKeep -> when {
                 yes.matches(text) -> confirmPrice(w.key, lang)
                 no.matches(text) -> { waiting = null; turn(lang, KaiMood.NEUTRAL, ta = "சரி ஓனர், விலை மாத்தல.", tl = "Seri Owner, vilai maathala.", en = "Okay Owner, the price stays as it was.") }
@@ -227,8 +236,10 @@ class KaiDailySales(
         val sounded = ownBySound(raw, prices.keys)
         val namesPerson = people.any { p -> p.isNotBlank() && Regex("""(?i)(?<![\p{L}])${Regex.escape(p)}(?![\p{L}])""").containsMatchIn(text) }
 
-        // The rate list: the prices the owner gave.
-        if (rateList.containsMatchIn(text) && !namesPerson) return rateListTurn(prices, lang)
+        // The Menu said in chat: "menu: cutting 100, shaving 80, facial 110" — kept only on Confirm.
+        KaiMenu.parse(text, com.shopai.app.brain.tools.KaiSpokenWords.normalize(raw))?.let { return menuToKeep(it, prices, lang) }
+        // The rate list / the Menu: the prices the owner gave.
+        if ((rateList.containsMatchIn(text) || menuAsk.matches(text.trim())) && !namesPerson) return rateListTurn(prices, lang)
 
         // The day's PDF: "innaikku sales pdf kudu", "nethu report", "Oct 10 daily note pdf".
         if (pdfWord.containsMatchIn(text) && noteWord.containsMatchIn(text) && !namesPerson && Regex("""(?i)pdf|report|ரிப்போர்ட்|பிடிஎஃப்""").containsMatchIn(text))
@@ -293,9 +304,9 @@ class KaiDailySales(
         val first = services.first().name
         waiting = null
         return turn(lang, KaiMood.CLARIFY,
-            ta = "ஓனர், $n உங்க கடையோட service list-ல இல்ல — Daily Sales Note-ல எதுவும் போடல. நீங்க $n பண்றீங்கன்னா “புது service $first 150” மாதிரி விலையோட சொல்லுங்க, சேர்த்துடுறேன்.",
-            tl = "Owner, $n unga kadaiyoda service list-la illa — Daily Sales Note-la edhuvum podala. Neenga $n pannureenga-na “pudhu service $first 150” maadhiri vilaiyoda sollunga, serthudren.",
-            en = "Owner, $n isn't one of your shop's services — nothing went into the Daily Sales Note. If you do offer it, say “new service $first 150” with its price and I'll add it.")
+            ta = "ஓனர், $n உங்க மெனுவுல இல்ல — Daily Sales Note-ல எதுவும் போடல. நீங்க $n பண்றீங்கன்னா “மெனு: $first 150” மாதிரி விலையோட சொல்லுங்க, இல்ல Daily Sales Note → Menu-ல சேருங்க.",
+            tl = "Owner, $n unga menu-la illa — Daily Sales Note-la edhuvum podala. Neenga $n pannureenga-na “menu: $first 150” maadhiri vilaiyoda sollunga, illa Daily Sales Note → Menu-la serunga.",
+            en = "Owner, $n isn't on your Menu — nothing went into the Daily Sales Note. If you do offer it, say “menu: $first 150” with its price, or add it in Daily Sales Note → Menu.")
     }
 
     /** [raw] with the owner's own service names put in where the mic wrote them in Tamil letters (only theirs — Kai's words are listed). */
@@ -359,9 +370,9 @@ class KaiDailySales(
         val per = when (d.items[index].per) { "hour" -> pick(lang, " ஒரு மணி நேரத்துக்கு", " oru manineram-ku", " an hour"); "day" -> pick(lang, " ஒரு நாளுக்கு", " oru naal-ku", " a day"); else -> "" }
         return if (again) turn(lang, KaiMood.CLARIFY, ta = "ஓனர், $name$per விலை மட்டும் சொல்லுங்க — உதா: “150”.",
             tl = "Owner, $name$per vilai mattum sollunga — eg: “150”.", en = "Owner, just the price of $name$per — e.g. “150”.")
-        else turn(lang, KaiMood.CLARIFY, ta = "ஓனர், $name$per எவ்வளவு? ஒரு தடவை சொன்னா போதும் — அடுத்த தடவை நானே போடுறேன்.",
-            tl = "Owner, $name$per evlo? Oru thadava sonna podhum — adutha thadava naane podren.",
-            en = "Owner, how much is $name$per? Tell me once — next time I'll fill it in.")
+        else turn(lang, KaiMood.CLARIFY, ta = "ஓனர், $name உங்க மெனுவுல இல்ல — $name$per எவ்வளவு? சொன்னா மெனுவுல சேர்த்துடுறேன்.",
+            tl = "Owner, $name unga menu-la illa — $name$per evlo? Sonna menu-la serthudren.",
+            en = "Owner, $name isn't on your Menu — how much is $name$per? Tell me and I'll add it.")
     }
 
     private fun askOpening(d: Draft, lang: KaiLang, again: Boolean = false): KaiTurn {
@@ -415,6 +426,10 @@ class KaiDailySales(
     }
 
     private suspend fun cancelSale(key: String, lang: KaiLang): KaiTurn {
+        if ((waiting as? MenuToKeep)?.key == key || (waiting as? PriceToKeep)?.key == key) {
+            waiting = null
+            return turn(lang, KaiMood.NEUTRAL, ta = "சரி ஓனர், மெனுவுல எதுவும் மாத்தல.", tl = "Seri Owner, menu-la edhuvum maathala.", en = "Okay Owner, the Menu stays as it was.")
+        }
         if ((waiting as? Shown)?.draft?.key == key) waiting = null
         tools.log("daily_sales", "chat", "sale draft cancelled", ActionStatus.CANCELLED, null, null)
         return dropped(lang)
@@ -483,7 +498,29 @@ class KaiDailySales(
             tl = "Owner, $name — ${rupees(price)}-nu nyabagam vechukkava? Confirm pannunga.", en = "Owner, keep $name at ${rupees(price)}? Confirm it.", card = card)
     }
 
+    /** "menu: cutting 100, shaving 80": the items (and any price changed) shown for Confirm — nothing kept before it. */
+    private fun menuToKeep(items: List<Pair<String, BigDecimal>>, prices: Map<String, BigDecimal>, lang: KaiLang): KaiTurn {
+        val key = java.util.UUID.randomUUID().toString().take(8)
+        waiting = MenuToKeep(key, items)
+        val lines = items.map { (n, p) -> priceOf(prices, n)?.takeIf { it.compareTo(p) != 0 }?.let { "$n: ${rupees(it)} → ${rupees(p)}" } ?: "$n — ${rupees(p)}" }
+        val card = KaiCard(lines, listOf(
+            KaiButton(pick(lang, "உறுதி செய்", "Confirm", "Confirm"), KaiAction.ConfirmServicePrice(key), primary = true),
+            KaiButton(pick(lang, "ரத்து", "Cancel", "Cancel"), KaiAction.CancelSale(key)),
+        ))
+        return turn(lang, KaiMood.CLARIFY, ta = "ஓனர், இதை உங்க மெனுவுல சேர்க்கவா? உறுதி செய்யுங்க.", tl = "Owner, idha unga menu-la serkava? Confirm pannunga.",
+            en = "Owner, add these to your Menu? Confirm it.", card = card)
+    }
+
     private suspend fun confirmPrice(key: String, lang: KaiLang): KaiTurn? {
+        (waiting as? MenuToKeep)?.takeIf { it.key == key }?.let { m ->
+            waiting = null
+            m.items.forEach { (n, p) -> keepPrice(n, p) }
+            tools.log("daily_sales", "kai memory", "menu: ${m.items.joinToString { "${it.first} ${it.second.toPlainString()}" }}", ActionStatus.CONFIRMED, null, null)
+            val list = m.items.joinToString(", ") { "${it.first} ${rupees(it.second)}" }
+            return turn(lang, KaiMood.HAPPY, ta = "சரி ஓனர் ✅ மெனுவுல: $list. இனி “ஒரு ${m.items.first().first}”-னு சொன்னா நேரா draft காட்டுறேன்.",
+                tl = "Seri Owner ✅ Menu-la: $list. Ini “oru ${m.items.first().first}”-nu sonna nera draft kaatren.",
+                en = "Done Owner ✅ On your Menu: $list. Say “one ${m.items.first().first}” and I'll show the draft straight away.")
+        }
         val w = (waiting as? PriceToKeep)?.takeIf { it.key == key } ?: return null
         waiting = null
         keepPrice(w.name, w.price)
@@ -494,12 +531,12 @@ class KaiDailySales(
     }
 
     private fun rateListTurn(prices: Map<String, BigDecimal>, lang: KaiLang): KaiTurn =
-        if (prices.isEmpty()) turn(lang, KaiMood.NEUTRAL, ta = "ஓனர், இன்னும் எந்த service விலையும் சொல்லல. “ஒரு hair cutting”-னு sale சொல்லுங்க — விலை கேட்டுக்கிறேன்.",
-            tl = "Owner, innum endha service vilaiyum sollala. “Oru hair cutting”-nu sale sollunga — vilai kettukkiren.",
-            en = "Owner, no service prices yet. Tell me a sale like “one hair cutting” — I'll ask the price.")
+        if (prices.isEmpty()) turn(lang, KaiMood.NEUTRAL, ta = "ஓனர், உங்க மெனுவுல இன்னும் எதுவும் இல்ல. “மெனு: cutting 100, shaving 80”-னு சொல்லுங்க, இல்ல Daily Sales Note → Menu-ல சேருங்க.",
+            tl = "Owner, unga menu-la innum edhuvum illa. “menu: cutting 100, shaving 80”-nu sollunga, illa Daily Sales Note → Menu-la serunga.",
+            en = "Owner, your Menu is empty. Say “menu: cutting 100, shaving 80”, or add items in Daily Sales Note → Menu.")
         else {
             val list = prices.entries.sortedBy { it.key }.joinToString(", ") { "${it.key} ${rupees(it.value)}" }
-            turn(lang, KaiMood.EXPLAINING, ta = "ஓனர், உங்க விலை: $list.", tl = "Owner, unga vilai: $list.", en = "Owner, your prices: $list.",
+            turn(lang, KaiMood.EXPLAINING, ta = "ஓனர், உங்க மெனு: $list.", tl = "Owner, unga menu: $list.", en = "Owner, your Menu: $list.",
                 card = KaiCard(prices.entries.sortedBy { it.key }.map { "${it.key} — ${rupees(it.value)}" }, emptyList()))
         }
 
