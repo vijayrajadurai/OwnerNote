@@ -97,7 +97,7 @@ class KaiCategoryMatrixTest {
     /**
      * "hair cutting onnu" in a grocery (owner's phone, 15 Oct 2026) got "idhu Kumar ₹2,000 payment pathiyaa?". A plain service of
      * another kind of shop is said plainly — not this shop's, nothing written, how to add it — and never another topic. "tea" (a
-     * grocery's goods too) is not told off that way. The owner adds the service ("pudhu service hair cutting 150") and it sells.
+     * grocery's goods too) is not told off that way. The owner adds it to the Menu ("pudhu service hair cutting 150") and it sells.
      */
     @Test fun anotherShopsServiceIsSaidPlainly() {
         val fails = mutableListOf<String>()
@@ -105,14 +105,14 @@ class KaiCategoryMatrixTest {
             val (kai, tools) = kai(category)
             val t = runBlocking { kai.ask(said) }
             val text = t.reply.text
-            if (!(text.contains("service list") && (text.contains("pudhu service") || text.contains("புது service")))) fails += "[$category] «$said» not said plainly: $text"
+            if (!((text.contains("menu-la illa") || text.contains("மெனுவுல இல்ல")) && (text.contains("menu:") || text.contains("மெனு:")))) fails += "[$category] «$said» not said plainly: $text"
             if (startedSale(t, if (said.contains("acial") || said.contains("ஃபேஷியல்")) "Facial" else "Hair cutting")) fails += "[$category] «$said» became a sale: $text"
             if (tools.sales.isNotEmpty()) fails += "[$category] «$said» wrote something"
         }
         for (said in listOf("2 tea", "2 டீ")) {
             val (kai, _) = kai("GROCERY")
             val text = runBlocking { kai.ask(said) }.reply.text
-            if (text.contains("service list")) fails += "[GROCERY] «$said» (a grocery's goods too) told off as a service: $text"
+            if (text.contains("menu-la illa") || text.contains("மெனுவுல இல்ல")) fails += "[GROCERY] «$said» (a grocery's goods too) told off as a service: $text"
         }
         assertTrue(fails.joinToString("\n"), fails.isEmpty())
 

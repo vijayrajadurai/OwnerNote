@@ -99,6 +99,7 @@ fun DailyCashNoteScreen(
     var showOpeningSheet by remember { mutableStateOf(false) }
     var openingDraft by remember { mutableStateOf("") }
     var sharing by remember { mutableStateOf(false) }
+    var showMenu by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val shareFailed = stringResource(R.string.cash_note_share_failed)
     val scope = rememberCoroutineScope()
@@ -135,6 +136,8 @@ fun DailyCashNoteScreen(
         title = stringResource(R.string.cash_note_title),
         onBack = onBack,
         actions = {
+            // The shop's Menu: items and prices the owner adds (Kai Chat sells from it).
+            TextButton(onClick = { showMenu = true }) { Text(stringResource(R.string.menu_title), fontWeight = FontWeight.SemiBold) }
             IconButton(
                 enabled = !sharing && (cashBoxReady || entries.isNotEmpty()),
                 onClick = {
@@ -308,6 +311,10 @@ fun DailyCashNoteScreen(
             },
             onDismiss = { if (!isSaving) sheetMode = null },
         )
+    }
+
+    if (showMenu) {
+        com.shopai.app.ui.components.MenuDialog(container = container, onDismiss = { showMenu = false })
     }
 
     if (showTotals) {

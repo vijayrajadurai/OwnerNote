@@ -1274,6 +1274,16 @@ class KaiAgent(
         val lang = forcedLang ?: if (tamil) KaiLang.TAMIL else KaiLanguage.forChat(said)
         previousTurnLang = turnLang
         turnLang = lang
+        // Expiry / batch is a medical shop's (owner, 16 Oct 2026): in a shop of another category it is said plainly and nothing
+        // is kept — never a batch-tracked product made from a grocery's line.
+        if (cut != null && !expiryShop()) {
+            saidBatch = null
+            val rest = cut.first.trim()
+            return say(lang, KaiMood.CLARIFY, "expiry: not this shop's",
+                ta = "ஓனர், expiry / batch Medical shop-க்கு மட்டும் தான் — உங்க கடை category-ல இல்ல. எதுவும் சேமிக்கல." + (if (rest.isNotEmpty()) " Expiry இல்லாம சொல்லுங்க: “$rest”." else ""),
+                tl = "Owner, expiry / batch Medical shop-ku mattum dhaan — unga kadai category-la illa. Edhuvum save pannala." + (if (rest.isNotEmpty()) " Expiry illaama sollunga: “$rest”." else ""),
+                en = "Owner, expiry / batch is for a medical shop only — not your shop's category. Nothing was saved." + (if (rest.isNotEmpty()) " Say it without the expiry: “$rest”." else ""))
+        }
         brain.spokenLang = forcedLang ?: if (tamil) KaiLang.TAMIL else null
         val scope = runCatching { memory?.current()?.let { "${it.businessId.orEmpty()}:${it.ownerId.orEmpty()}" } }.getOrNull()
         if (scope != null && conversationScope != null && scope != conversationScope) {
@@ -1541,7 +1551,9 @@ class KaiAgent(
             productIn(spoken, products)?.let { p -> return productMovement(p, lang, now().toLocalDate()) }
         }
         // "Expiry aagura medicine list kudu": the batches expiring soon (and expired), read-only from the batch records.
-        if (plans.isEmpty() && KaiCommands.asksExpiry(spoken)) return expiryList(spoken, lang, products.orEmpty(), now().toLocalDate())
+        if (plans.isEmpty() && KaiCommands.asksExpiry(spoken)) return if (expiryShop()) expiryList(spoken, lang, products.orEmpty(), now().toLocalDate())
+            else say(lang, KaiMood.NEUTRAL, "expiry: not this shop's", ta = "ஓனர், expiry list Medical shop-க்கு மட்டும் தான் — உங்க கடை category-ல expiry வைக்கல.",
+                tl = "Owner, expiry list Medical shop-ku mattum dhaan — unga kadai category-la expiry vaikkala.", en = "Owner, the expiry list is for a medical shop only — your shop's category keeps no expiry.")
         // "Stock report", "stock value evlo", "stock-la evlo panam mudangi irukku": the report / the money in stock — not the item list.
         if (plans.isEmpty() && products != null && KaiCommands.asksStockReport(spoken)) return stockReport(lang, now().toLocalDate())
         if (plans.isEmpty() && products != null && KaiCommands.asksStockValue(spoken)) return stockValue(spoken, lang, products)
@@ -2981,6 +2993,10 @@ class KaiAgent(
      * (KaiTime), "10" (then this month or next is asked, never guessed), "adutha maasam" (then the day is asked).
      */
     /** "innaikku yaar tharanum?", "Murugan evlo?" while a due date is awaited: a new question, not the date. */
+    /** The shop keeps expiry / batches: a medical shop (or no category / "OTHER" — every feature, as before). */
+    private suspend fun expiryShop(): Boolean = runCatching { tools.businessCategory() }.getOrNull()?.trim()?.uppercase(Locale.ROOT)
+        .let { it.isNullOrEmpty() || it == "PHARMACY" || it == "OTHER" }
+
     /** A reminder said in its own words — never the answer to another question. */
     private val reminderSaid = Regex("""(?i)(?<![\p{L}])(remind\p{L}*|reminder|nyabagam|gnabagam|ninaivu\p{L}*|alarm)(?![\p{L}])|ரிமைண்ட்|ஞாபக|நினைவு""")
     /** "adha", "avan", "அது": the one already talked about — never a new name. */

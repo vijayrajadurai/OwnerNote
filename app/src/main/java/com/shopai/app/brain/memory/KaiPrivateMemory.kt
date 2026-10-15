@@ -153,6 +153,17 @@ class KaiPrivateMemory(
         removed
     }
 
+    /** Removes the one setting of [kind] saved under [key] (a Menu item) — others of that kind stay. */
+    suspend fun forgetPreferenceNamed(kind: String, key: String): KaiMemory? = lock.withLock {
+        val b = book ?: return@withLock null
+        val n = normalize(key)
+        val target = b.memories.firstOrNull { it.status != MemoryStatus.DELETED && it.memoryType == MemoryType.PREFERENCE && it.meaningType == kind && n in it.phrases }
+            ?: return@withLock null
+        val removed = target.copy(status = MemoryStatus.DELETED, learningState = LearningState.DISABLED, updatedAt = clock())
+        persist(b.copy(memories = b.memories.map { if (it.id == target.id) removed else it }))
+        removed
+    }
+
     /** An approved extra spelling for an existing meaning ("thooki kudunga" for "thooki kudu"). */
     suspend fun addVariant(memoryId: String, variant: String): KaiMemory? = lock.withLock {
         val b = bookOf(memoryId) ?: return@withLock null
