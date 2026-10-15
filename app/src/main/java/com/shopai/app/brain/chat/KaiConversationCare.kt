@@ -231,6 +231,21 @@ internal object KaiConversationCare {
     private val monthTa = listOf("ஜனவரி", "பிப்ரவரி", "மார்ச்", "ஏப்ரல்", "மே", "ஜூன்", "ஜூலை", "ஆகஸ்ட்", "செப்டம்பர்", "அக்டோபர்", "நவம்பர்", "டிசம்பர்")
 
     /** "October 10, 2027 (Sunday)" / "அக்டோபர் 10, 2027 (ஞாயிறு)". */
+    /**
+     * "ippo time enna", "mani evlo aachu", "ethana mani", "இப்போ டைம் என்ன", "what time is it": the phone's time now (owner,
+     * 16 Oct 2026: it got "idhu Selvam payment pathiyaa?"). The whole line asks only that — "10 manikku remind" never.
+     */
+    fun timeAsked(text: String): Boolean = timeAsk.matches(text.trim().trimEnd('?', '.', '!').trim())
+
+    private val timeAsk = Regex(
+        """(?i)(?:(?:ippo|ippa|ipo|ipa|ippothu|ippodhu|now|kai|owner|sir|anna|இப்போ|இப்ப|இப்போது)\s+)*""" +
+            """(?:(?:time|mani|neram|டைம்|மணி|நேரம்)\s*(?:enna|ennachu|ethana|ethanai|evlo|evvalavu|aachu|aagudhu|என்ன|எத்தனை|எவ்வளவு|ஆச்சு)""" +
+            """|(?:ethana|ethanai|evlo|எத்தனை|எவ்வளவு)\s*(?:mani|மணி)|what\s+(?:is\s+the\s+)?time(?:\s+is\s+it)?|time\s+please)""" +
+            """(?:\s+(?:ippo|ippa|aachu|aagudhu|now|ஆச்சு|இப்போ))?""")
+
+    /** The time as Kai says it: "12:05 AM". */
+    fun clockText(t: java.time.LocalDateTime): String = t.format(java.time.format.DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH))
+
     fun dateText(d: LocalDate, tamil: Boolean): String =
         if (tamil) "${monthTa[d.monthValue - 1]} ${d.dayOfMonth}, ${d.year} (${weekdayTa.getValue(d.dayOfWeek)})"
         else "${d.month.name.lowercase(Locale.ROOT).replaceFirstChar { it.uppercase() }} ${d.dayOfMonth}, ${d.year} " +
