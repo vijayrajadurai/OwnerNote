@@ -103,6 +103,7 @@ class KaiDailySales(
     private val todayWord = Regex("""(?i)(?<![\p{L}])(innaikku|innaiku|inniki|inniku|innikku|today|indru|innaikkuu)(?![\p{L}])|இன்னைக்கு|இன்று""")
     private val pdfWord = Regex("""(?i)(?<![\p{L}])(pdf|report|share|anuppu|whatsapp)(?![\p{L}])|பிடிஎஃப்|ரிப்போர்ட்|வாட்ஸ்அப்""")
     private val noteWord = Regex("""(?i)(?<![\p{L}])(sales|sale|daily|note|cash\s*note|sales\s*note|day|innaikku|innaiku|inniki|nethu|vyabaram|kanakku)(?![\p{L}])|சேல்ஸ்|இன்னைக்கு|நேத்து""")
+    private val stockAsk = Regex("""(?i)(?<![\p{L}])(stock|iruppu|irupu|irukku|iruku|kaila|kaiyila|left)(?![\p{L}])|ஸ்டாக்|இருப்பு|இருக்கு|கையில""")
     private val rateWord = Regex("""(?i)(?<![\p{L}])(rate|price|vilai|vilaiya|vela|charge|charges|amount)(?![\p{L}])|ரேட்|விலை""")
     private val changeWord = Regex("""(?i)(?<![\p{L}])(maathu|mathu|maathidu|change|ippo|ini|inimel|update|vachuko|vechuko|set)(?![\p{L}])|மாத்து|இனி|இப்போ""")
     private val rateList = Regex("""(?i)(?<![\p{L}])(rate|price|vilai|service|services)\s*(list|lists|ellam|ellaam|motham)(?![\p{L}])|(?<![\p{L}])(enna\s*enna|ella)\s*(service|services|rate|vilai)(?![\p{L}])|ரேட் லிஸ்ட்|விலை பட்டியல்""")
@@ -219,10 +220,8 @@ class KaiDailySales(
         val today = now().toLocalDate()
         val prices = prices()
         val names = products.map { it.name }
-        // As the mic writes a service's English name ("ஹேர் போட்டாக்ஸ்" = the owner's Hair botox): matched by sound, as product names are.
-        val sounded = if (com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(raw))
-            com.shopai.app.brain.tools.KaiSpokenWords.normalize(com.shopai.app.brain.tools.KaiProductSound.withProducts(raw, prices.keys.toList() + KaiServices.catalogue.map { it.name }))
-        else raw
+        // As the mic writes the name of a service the owner added ("ஹேர் போட்டாக்ஸ்" = their Hair botox): that name, by its sound.
+        val sounded = ownBySound(raw, prices.keys)
         val namesPerson = people.any { p -> p.isNotBlank() && Regex("""(?i)(?<![\p{L}])${Regex.escape(p)}(?![\p{L}])""").containsMatchIn(text) }
 
         // The rate list: the prices the owner gave.
@@ -249,7 +248,10 @@ class KaiDailySales(
         (KaiServices.newServiceName(text) ?: KaiServices.newServiceName(sounded))?.takeIf { KaiServices.serviceNamed(text, prices.keys) == null || Regex("""(?i)pudhu|puthu|new|புது""").containsMatchIn(text) }?.let { name ->
             amountsIn(text).lastOrNull()?.takeIf { it.signum() > 0 }?.let { return priceToKeep(name, it, priceOf(prices, name), lang) }
         }
-        val one = KaiServices.serviceNamed(text, prices.keys) ?: KaiServices.serviceNamed(raw, prices.keys) ?: KaiServices.serviceNamed(sounded, prices.keys)
+        // (never the shop's own product — "Horlicks stock evlo" is its stock — nor a stock question: only a service's price)
+        val one = (KaiServices.serviceNamed(text, prices.keys) ?: KaiServices.serviceNamed(raw, prices.keys) ?: KaiServices.serviceNamed(sounded, prices.keys))
+            ?.takeIf { n -> priceOf(prices, n) != null || names.none { p -> Regex("""(?i)(?<![\p{L}])${Regex.escape(n)}(?![\p{L}])""").containsMatchIn(p) } }
+            ?.takeIf { !stockAsk.containsMatchIn(text) }
         if (one != null && rateWord.containsMatchIn(text) && !namesPerson) {
             val amount = amountsIn(text).lastOrNull()?.takeIf { it.signum() > 0 }
             if (amount != null && (changeWord.containsMatchIn(text) || Regex("""(?i)(rate|price|vilai)\s*(?:₹|rs\.?\s*)?\d""").containsMatchIn(text)))
@@ -259,12 +261,28 @@ class KaiDailySales(
         if (one != null && amountsIn(text).isEmpty() && Regex("""(?i)^\s*\S+(\s+\S+)?\s+(evlo|evvalavu|rate\s+enna|vilai\s+enna|price\s+enna|எவ்வளவு)\s*\??\s*$""").matches(text) && !namesPerson)
             return priceTurn(one, priceOf(prices, one), lang)
 
-        // A sale.
-        if (namesPerson) return null
+        // A sale — never a line about what Kai doesn't do ("biryani recipe sollu").
+        if (namesPerson || KaiConversationCare.beyondBooks(text) != null) return null
         val serviceShop = runCatching { tools.sellsServices() }.getOrNull() == true
         val sale = KaiServices.saleIn(text, prices, names, serviceShop) ?: KaiServices.saleIn(raw, prices, names, serviceShop)
             ?: KaiServices.saleIn(sounded, prices, names, serviceShop) ?: return null
         return startSale(sale, said, prices, lang)
+    }
+
+    /** [raw] with the owner's own service names put in where the mic wrote them in Tamil letters (only theirs — Kai's words are listed). */
+    private fun ownBySound(raw: String, own: Collection<String>): String {
+        val names = own.filter { n -> !com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(n) && KaiServices.catalogue.none { it.name.equals(n, ignoreCase = true) } }
+        if (names.isEmpty() || !com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(raw)) return raw
+        val words = raw.trim().split(Regex("""\s+"""))
+        for (n in names) {
+            val size = n.trim().split(Regex("""\s+""")).size
+            for (i in 0..words.size - size) {
+                val span = words.subList(i, i + size).joinToString("")
+                if (com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(span) && com.shopai.app.util.NameSound.same(span, n.replace(" ", "")))
+                    return (words.take(i) + n + words.drop(i + size)).joinToString(" ")
+            }
+        }
+        return raw
     }
 
     private fun recentSale() = lastSaleAt?.let { java.time.Duration.between(it, now()).toHours() < 18 } == true

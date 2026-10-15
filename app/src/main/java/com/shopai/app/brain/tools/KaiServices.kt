@@ -29,7 +29,8 @@ object KaiServices {
         Service("Kids cutting", Kind.SALON, listOf("kids cutting", "kids haircut", "baby cutting", "kuzhandhai cutting", "pasanga cutting", "கிட்ஸ் கட்டிங்", "பேபி கட்டிங்", "குழந்தை கட்டிங்")),
         Service("Shaving", Kind.SALON, listOf("shaving", "shave", "savaram", "savarum", "ஷேவிங்", "சேவிங்", "ஷேவ்", "சவரம்")),
         Service("Beard trim", Kind.SALON, listOf("beard trim", "beard trimming", "beard", "thaadi trim", "thadi trim", "thaadi", "trimming", "பியர்ட் ட்ரிம்", "பியர்ட்", "தாடி ட்ரிம்", "தாடி", "ட்ரிம்மிங்")),
-        Service("Hair dye", Kind.SALON, listOf("hair dye", "hair colour", "hair color", "hair coloring", "dye", "ஹேர் டை", "ஹேர் கலர்", "டை")),
+        // (never "டை" alone: the mic writes "tie" the same — School tie, Tie rod end)
+        Service("Hair dye", Kind.SALON, listOf("hair dye", "hair colour", "hair color", "hair coloring", "dye", "ஹேர் டை", "ஹேர் கலர்")),
         Service("Head massage", Kind.SALON, listOf("head massage", "thalai massage", "massage", "ஹெட் மசாஜ்", "தலை மசாஜ்", "மசாஜ்")),
         Service("Hair wash", Kind.SALON, listOf("hair wash", "head wash", "ஹேர் வாஷ்", "ஹெட் வாஷ்")),
         Service("Hair spa", Kind.SALON, listOf("hair spa", "ஹேர் ஸ்பா")),
@@ -100,7 +101,9 @@ object KaiServices {
     private val rentWord = Regex("""(?i)(?<![\p{L}\p{M}])(rent|rental|vaadagai|vadagai|vaadagaiku|vaadagaikku|vadagaiku|bhaadagai|வாடகை\p{M}*\p{L}*)""")
     private val upiWord = Regex("""(?i)(?<![\p{L}\p{M}])(gpay|g\s*pay|google\s*pay|phonepe|phone\s*pe|paytm|upi|online|qr|scan)(?![\p{L}\p{M}])|ஜிபே|ஜி பே|போன்பே|யுபிஐ|பேடிஎம்""")
     private val cashWord = Regex("""(?i)(?<![\p{L}\p{M}])(cash|kaasu|rokkam|ready\s*cash)(?![\p{L}\p{M}])|கேஷ்|ரொக்கம்|காசு""")
-    private val stockWord = Regex("""(?i)(?<![\p{L}\p{M}])(vandhuchu|vanthuchu|vandhiruku|vandhirukku|stock|irakkinen|irakkunen|vaanginen|vanginen|purchase|kammi|minus|damage|udanjiduchu|kettupochu)(?![\p{L}\p{M}])|வந்துச்சு|ஸ்டாக்|வாங்கினேன்""")
+    private val stockWord = Regex("""(?i)(?<![\p{L}\p{M}])(vandhuchu|vanthuchu|vandhadhu|vanthathu|vandhiruku|vandhirukku|stock|irakkinen|irakkunen|vaanginen|vanginen|purchase|purchased|received|recieved|arrived|delivered|came|kammi|minus|damage|udanjiduchu|kettupochu|iruppu)(?![\p{L}\p{M}])|வந்துச்சு|வந்தது|ஸ்டாக்|வாங்கினேன்|இருப்பு""")
+    /** A thing named after the service, not the service: "cutting tool", "cutting wheel", "shaving cream", "massage oil", "dye bottle". */
+    private val thingAfter = Regex("""^\s*(tool|tools|wheel|wheels|blade|blades|disc|disk|board|kit|cream|oil|powder|gel|brush|set|plier|pliers|scissor|scissors|machine|mat|chair|cape|cloth|spray|comb|razor|trimmer|liquid|soap|paper|bottle|bottles|pack|packet|stand|box|tray|bag|cup|cups|glass|plate|flask|maker|stove|vessel|கருவி|மெஷின்|கிரீம்|ஆயில்|கிட்|வீல்|பிளேடு)(?![\p{L}\p{M}])""")
     /** Words that say a sale was made — enough to read a grocery's "tea" as a tea shop's sale. */
     private val saleWord = Regex("""(?i)(?<![\p{L}\p{M}])(sale|sales|sold|vithuchu|vithen|vithom|vithutten|vitthen|serve|served|order|parcel)(?![\p{L}\p{M}])|வித்துச்சு|வித்தேன்|பார்சல்""")
 
@@ -156,7 +159,10 @@ object KaiServices {
             val name = h.name
             val kept = name.lowercase(Locale.ROOT) in known
             val said = lower.substring(h.start, h.end)
-            val isProduct = productWords.any { it.contains(" $said ") }
+            // (a service said in Tamil letters is the shop's product too when its English words are in a product's name: "கட்டிங் வீல்"
+            // is Cutting wheel, "ஷேவிங் கிரீம்" Shaving cream, "ஹேர் கலர்" the shop's Hair colour)
+            val english = if (com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(said)) h.service?.words.orEmpty().filter { w -> w.none { it in '஀'..'௿' } } else emptyList()
+            val isProduct = productWords.any { p -> p.contains(" $said ") || english.any { w -> p.contains(" $w ") } } || thingAfter.containsMatchIn(lower.substring(h.end))
             val afterEnd = found.getOrNull(i + 1)?.start ?: lower.length
             val after = lower.substring(h.end, afterEnd)
             val dur = if (h.service?.kind == Kind.RENTAL) duration.find(after) else null
