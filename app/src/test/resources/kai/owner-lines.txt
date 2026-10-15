@@ -272,3 +272,10 @@ ASK    | pogadha item enna                        | Oil
 ASK    | Colgate nalla pogudhu                    | 90; ₹4,500
 ASK    | Oil nikkudhu                             | Oil; 240
 ASK    | எந்த ஐட்டம் நிக்குது                       | Oil; Baniyan
+
+# Owner's phone (15 Oct 2026): "na yar yaruku tharanum" → "sri balaji ku 786 kuduthutan" was drafted as a new ₹786 Debit
+# (balance 786 → 1,572). "-ku" says the owner paid them: a payment out, the balance down.
+ENTRY  | ABC Traders ku 3000 kuduthutan                 | OUT ABC Traders 3000
+ENTRY  | abc traders ku 3000 kuduthuttan                | OUT ABC Traders 3000
+ENTRY  | Murugan Stores ku 1000 kuduthutaan             | OUT Murugan Stores 1000
+ENTRY  | naan Murugan Stores ku 1000 koduthuttan        | OUT Murugan Stores 1000
