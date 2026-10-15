@@ -220,6 +220,9 @@ class KaiDailySales(
         val today = now().toLocalDate()
         val prices = prices()
         val names = products.map { it.name }
+        // The shop's category (the owner's pick at setup): only its kind of services — a salon's cutting, a restaurant's idli.
+        val category = runCatching { tools.businessCategory() }.getOrNull()
+        val kinds = KaiServices.kindsFor(category)
         // As the mic writes the name of a service the owner added ("ஹேர் போட்டாக்ஸ்" = their Hair botox): that name, by its sound.
         val sounded = ownBySound(raw, prices.keys)
         val namesPerson = people.any { p -> p.isNotBlank() && Regex("""(?i)(?<![\p{L}])${Regex.escape(p)}(?![\p{L}])""").containsMatchIn(text) }
@@ -249,7 +252,7 @@ class KaiDailySales(
             amountsIn(text).lastOrNull()?.takeIf { it.signum() > 0 }?.let { return priceToKeep(name, it, priceOf(prices, name), lang) }
         }
         // (never the shop's own product — "Horlicks stock evlo" is its stock — nor a stock question: only a service's price)
-        val one = (KaiServices.serviceNamed(text, prices.keys) ?: KaiServices.serviceNamed(raw, prices.keys) ?: KaiServices.serviceNamed(sounded, prices.keys))
+        val one = (KaiServices.serviceNamed(text, prices.keys, kinds) ?: KaiServices.serviceNamed(raw, prices.keys, kinds) ?: KaiServices.serviceNamed(sounded, prices.keys, kinds))
             ?.takeIf { n -> priceOf(prices, n) != null || names.none { p -> Regex("""(?i)(?<![\p{L}])${Regex.escape(n)}(?![\p{L}])""").containsMatchIn(p) } }
             ?.takeIf { !stockAsk.containsMatchIn(text) }
         if (one != null && rateWord.containsMatchIn(text) && !namesPerson) {
@@ -263,12 +266,12 @@ class KaiDailySales(
 
         // A sale — never a line about what Kai doesn't do ("biryani recipe sollu").
         if (namesPerson || KaiConversationCare.beyondBooks(text) != null) return null
-        val serviceShop = runCatching { tools.sellsServices() }.getOrNull() == true
+        val serviceShop = KaiServices.serviceCategory(category) || runCatching { tools.sellsServices() }.getOrNull() == true
         // (the mic's own words only when Kai didn't already read them as the shop's product — "ஃப்ரோசன் பரோட்டா" is Frozen paratha)
         val lower = " " + text.lowercase(Locale.ROOT) + " "
         val productSaid = names.any { n -> n.lowercase(Locale.ROOT).split(Regex("""\s+""")).take(2).joinToString(" ").let { head -> head.length >= 3 && lower.contains(" $head ") } }
-        val sale = KaiServices.saleIn(text, prices, names, serviceShop)
-            ?: (if (productSaid) null else KaiServices.saleIn(raw, prices, names, serviceShop) ?: KaiServices.saleIn(sounded, prices, names, serviceShop))
+        val sale = KaiServices.saleIn(text, prices, names, serviceShop, kinds)
+            ?: (if (productSaid) null else KaiServices.saleIn(raw, prices, names, serviceShop, kinds) ?: KaiServices.saleIn(sounded, prices, names, serviceShop, kinds))
             ?: return null
         return startSale(sale, said, prices, lang)
     }

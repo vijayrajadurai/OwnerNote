@@ -144,7 +144,7 @@ object KaiServices {
      * own product is that product, not a service, unless the owner keeps a price for it as a service.
      * [serviceShop]: the shop sells services (a word a grocery sells too, "tea", is then a sale).
      */
-    fun saleIn(text: String, own: Map<String, BigDecimal>, products: List<String>, serviceShop: Boolean): SaleLine? {
+    fun saleIn(text: String, own: Map<String, BigDecimal>, products: List<String>, serviceShop: Boolean, kinds: Set<Kind>? = null): SaleLine? {
         val lower = " " + text.lowercase(Locale.ROOT).replace(Regex("""[,!?.]"""), " ").replace(Regex("""\s+"""), " ").trim() + " "
         val found = hits(lower, own.keys)
         if (found.isEmpty()) return null
@@ -169,6 +169,8 @@ object KaiServices {
             val ok = when {
                 kept -> true
                 isProduct -> false
+                // (the services of the shop's own kind only: a salon's "cutting", a hotel's "idli" — never a grocery's "tea" sale)
+                h.service != null && kinds != null && h.service.kind !in kinds -> false
                 h.service == null -> true
                 h.service.kind == Kind.RENTAL -> rent || dur != null || serviceShop || anyKept
                 h.service.clear -> true
@@ -203,8 +205,25 @@ object KaiServices {
     }
 
     /** The service named in [text] (one only), for "cutting evlo?" / "cutting rate 200" — null when none or several are. */
-    fun serviceNamed(text: String, own: Collection<String>): String? =
-        hits(" " + text.lowercase(Locale.ROOT).replace(Regex("""[,!?.]"""), " ") + " ", own).map { it.name }.distinct().singleOrNull()
+    fun serviceNamed(text: String, own: Collection<String>, kinds: Set<Kind>? = null): String? =
+        hits(" " + text.lowercase(Locale.ROOT).replace(Regex("""[,!?.]"""), " ") + " ", own)
+            .filter { h -> h.service == null || kinds == null || h.service.kind in kinds }.map { it.name }.distinct().singleOrNull()
+
+    /**
+     * The services a shop of [category] sells (the owner's pick at setup): a beauty salon's salon and parlour services, a
+     * restaurant's / tea shop's food, a hardware / electrical shop's tool rental; any other shop's none (only the services the
+     * owner adds). Null — no category, or "OTHER": every kind, read as before.
+     */
+    fun kindsFor(category: String?): Set<Kind>? = when (category?.trim()?.uppercase(Locale.ROOT)) {
+        null, "", "OTHER" -> null
+        "BEAUTY_SALON" -> setOf(Kind.SALON, Kind.PARLOUR)
+        "RESTAURANT_FOOD" -> setOf(Kind.TEA, Kind.HOTEL)
+        "HARDWARE", "ELECTRICAL" -> setOf(Kind.RENTAL)
+        else -> emptySet()
+    }
+
+    /** A shop of [category] that sells services by the piece (its "tea" is a sale). */
+    fun serviceCategory(category: String?) = category?.trim()?.uppercase(Locale.ROOT) in setOf("BEAUTY_SALON", "RESTAURANT_FOOD")
 
     /** A service's name as the owner says it when Kai has no word for it ("hair botox"), cut from "pudhu service hair botox 1500". */
     fun newServiceName(text: String): String? {

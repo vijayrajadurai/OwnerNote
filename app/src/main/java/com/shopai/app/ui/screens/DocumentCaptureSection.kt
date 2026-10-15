@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.UploadFile
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -84,6 +85,61 @@ private fun capturePhotoUri(context: Context): Uri {
     val dir = File(context.cacheDir, "capture").apply { mkdirs() }
     return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", File(dir, "document.jpg"))
 }
+
+/** A bill PDF's first pages, each drawn as a photo (white paper, ~2000 px wide), read and let go before the next. */
+private suspend fun readPdfPages(context: Context, uri: Uri, recognizer: DeviceTextRecognizer): List<com.shopai.app.util.OcrRecognitionResult> =
+    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        context.contentResolver.openFileDescriptor(uri, "r")?.use { fd ->
+            android.graphics.pdf.PdfRenderer(fd).use { pdf ->
+                (0 until minOf(pdf.pageCount, MAX_PDF_PAGES)).map { i ->
+                    val bitmap = pdf.openPage(i).use { page ->
+                        val scale = (PDF_PAGE_WIDTH_PX.toFloat() / page.width).coerceIn(1f, 4f)
+                        android.graphics.Bitmap.createBitmap(
+                            (page.width * scale).toInt(), (page.height * scale).toInt(), android.graphics.Bitmap.Config.ARGB_8888,
+                        ).also {
+                            it.eraseColor(android.graphics.Color.WHITE)
+                            page.render(it, null, null, android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                        }
+                    }
+                    try { recognizer.recognizeFromBitmap(bitmap) } finally { bitmap.recycle() }
+                }
+            }
+        }.orEmpty()
+    }
+
+/** An Excel (.xlsx) or CSV bill's cells as text lines (null when it can't be read); files over 10 MB are not bills. */
+private fun readSheetText(context: Context, uri: Uri, name: String?, mime: String?): String? {
+    val bytes = context.contentResolver.openInputStream(uri)?.use { input ->
+        val out = java.io.ByteArrayOutputStream()
+        val buffer = ByteArray(64 * 1024)
+        while (true) {
+            val n = input.read(buffer)
+            if (n < 0) break
+            out.write(buffer, 0, n)
+            if (out.size() > MAX_SHEET_BYTES) return null
+        }
+        out.toByteArray()
+    } ?: return null
+    val rows = when (com.shopai.app.util.BillSheet.kindOf(mime, name)) {
+        com.shopai.app.util.BillSheet.Kind.XLSX -> com.shopai.app.util.BillSheet.xlsxRows(bytes)
+        else -> com.shopai.app.util.BillSheet.csvRows(String(bytes, Charsets.UTF_8))
+    } ?: return null
+    return com.shopai.app.util.BillSheet.text(rows)
+}
+
+private const val MAX_PDF_PAGES = 3
+private const val PDF_PAGE_WIDTH_PX = 2000
+private const val MAX_SHEET_BYTES = 10 * 1024 * 1024
+
+/** What the file picker offers for a bill: photos, PDFs, Excel and CSV sheets. */
+private val BILL_FILE_TYPES = arrayOf(
+    "image/*",
+    "application/pdf",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.ms-excel",
+    "text/csv",
+    "text/comma-separated-values",
+)
 
 // ---- Labels shown in the dropdowns ----
 
@@ -233,6 +289,58 @@ fun DocumentCaptureSection(
 
     val galleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) runOcr(uri)
+    }
+
+    val errorXls = stringResource(R.string.bill_upload_xls)
+    val errorFileKind = stringResource(R.string.bill_upload_unsupported)
+
+    /**
+     * A bill uploaded as a file (owner, 15 Oct 2026: "photo or PDF or Excel upload"): a photo is read as from the gallery; a PDF's
+     * pages are drawn and read like photos; an Excel (.xlsx) or CSV sheet's cells are read as they are (no OCR). All of it goes
+     * to the same review — party, total, items and the stock they move — and nothing is saved before the owner saves it.
+     */
+    fun runFile(uri: Uri) {
+        val resolver = context.contentResolver
+        val name = runCatching {
+            resolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
+                if (c.moveToFirst()) c.getString(0) else null
+            }
+        }.getOrNull()
+        when (com.shopai.app.util.BillSheet.kindOf(resolver.getType(uri), name)) {
+            com.shopai.app.util.BillSheet.Kind.IMAGE -> runOcr(uri)
+            com.shopai.app.util.BillSheet.Kind.XLS -> error = errorXls
+            com.shopai.app.util.BillSheet.Kind.OTHER -> error = errorFileKind
+            com.shopai.app.util.BillSheet.Kind.PDF -> scope.launch {
+                processing = true
+                error = null
+                info = null
+                runCatching {
+                    val pages = readPdfPages(context, uri, recognizer)
+                    val text = pages.joinToString("\n") { it.text }.trim()
+                    if (text.isBlank()) {
+                        error = errorOcrEmpty
+                    } else {
+                        val known = pages.map { it.meanConfidence }.filter { it >= 0 }
+                        fillBillFromText(text, if (known.isEmpty()) -1 else known.sum() / known.size)
+                    }
+                }.onFailure { error = errorOcrFailed }
+                processing = false
+            }
+            com.shopai.app.util.BillSheet.Kind.XLSX, com.shopai.app.util.BillSheet.Kind.CSV -> scope.launch {
+                processing = true
+                error = null
+                info = null
+                runCatching {
+                    val text = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { readSheetText(context, uri, name, resolver.getType(uri)) }
+                    // A sheet's cells are exact (nothing guessed by OCR): read as sure.
+                    if (text.isNullOrBlank()) error = errorOcrEmpty else fillBillFromText(text, 100)
+                }.onFailure { error = errorOcrFailed }
+                processing = false
+            }
+        }
+    }
+    val fileLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) runFile(uri)
     }
     // Full-size photo into a fixed cache file (a preview thumbnail is too
     // small to read). Fixed path, so it survives the screen being recreated.
@@ -480,6 +588,17 @@ fun DocumentCaptureSection(
                 Icon(Icons.Default.Photo, contentDescription = null)
                 Text(stringResource(R.string.ocr_gallery), modifier = Modifier.padding(start = 6.dp))
             }
+        }
+        // A bill as a file: a photo, a PDF, or an Excel / CSV sheet from the supplier.
+        OutlinedButton(
+            onClick = { runCatching { fileLauncher.launch(BILL_FILE_TYPES) }.onFailure { error = errorFileKind } },
+            enabled = !processing,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+        ) {
+            Icon(Icons.Default.UploadFile, contentDescription = null)
+            Text(stringResource(R.string.bill_upload_file), modifier = Modifier.padding(start = 6.dp))
         }
     }
 

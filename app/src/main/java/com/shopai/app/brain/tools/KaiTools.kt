@@ -239,6 +239,8 @@ interface KaiTools {
     suspend fun closeCashDay(day: LocalDate): ActionOutcome = ActionOutcome.Failed("unavailable")
     /** The shop sells services (the books' business type is service / product and service); null = unknown. */
     suspend fun sellsServices(): Boolean? = null
+    /** The business category the owner picked at setup ("GROCERY", "BEAUTY_SALON", "RESTAURANT_FOOD" …); null = unknown. */
+    suspend fun businessCategory(): String? = null
 
     // ---- audit ----
     /** [input]: the owner's words (text). Returns the reference id. */
