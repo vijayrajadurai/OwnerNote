@@ -82,6 +82,9 @@ class RepositoryKaiBooks(
             opening = box?.opening,
             kallapetti = box?.current,
             dayClosed = dailyCash.getDayStatus(key) == DailyCashDayStatus.SUBMITTED,
+            lines = entries.sortedBy { it.createdAt }.map { e ->
+                CashLine(e.type == DailyCashEntryType.IN, e.amount, e.paymentMode == com.shopai.app.data.model.DailyCashPaymentMode.UPI, e.note, e.createdAt)
+            },
         )
     }.getOrNull()
 
