@@ -50,6 +50,8 @@ ENTRY  | innaiku ABC Traders ku 3000 kudukkanum         | DEBIT ABC Traders 3000
 ENTRY  | Murugan Stores ku 10000 naan tharanum          | DEBIT Murugan Stores 10000
 # Owner's phone (15 Oct 2026): "குமார் ஓட்டலுக்கு 2000 தரணும்" with Kumar in the books — Kumar's hotel, not Kumar (KaiShopNameTest).
 ENTRY  | naan Kumar Hotel ku 2000 tharanum              | DEBIT Kumar Hotel 2000
+# Owner (16 Oct 2026): a new shop name without "-ku" — "Sruthi" alone was drafted (KaiShopNameTest).
+ENTRY  | sruthi store enakku 10000 tharanum             | CREDIT Sruthi Store 10000
 ENTRY  | innaiku ABC Traders ku 1500 pay pannen         | OUT ABC Traders 1500
 ENTRY  | ippo லட்சுமி enakku 750 tharanum               | CREDIT Lakshmi 750
 ASK    | லட்சுமி evlo tharanum                          | ₹1,000

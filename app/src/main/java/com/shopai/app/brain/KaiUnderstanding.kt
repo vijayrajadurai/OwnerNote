@@ -350,6 +350,11 @@ object KaiUnderstanding {
      */
     fun personPhraseIn(text: String): String? {
         val first = personIn(text) ?: return null
+        // "sruthi store 10000 tharanum", "ஸ்ருதி ஸ்டோர் பத்தாயிரம் தரணும்": a shop's last word after the name is part of it, whatever
+        // its letters (owner, 16 Oct 2026: "Sruthi" alone was drafted as a new customer).
+        Regex("""(?<![\p{L}])${Regex.escape(first)}\s+([\p{L}][\p{L}\p{M}]*)(?![\p{L}\p{M}])""", RegexOption.IGNORE_CASE).find(text)?.groupValues?.get(1)
+            ?.takeIf { com.shopai.app.brain.tools.KaiCommands.isShopWord(it) }
+            ?.let { return "$first ${com.shopai.app.brain.tools.KaiCommands.shopWordFor(first, it)}" }
         val m = Regex("""(?<![\p{L}])${Regex.escape(first)}\s+(\p{Lu}[\p{L}\p{M}]+)""").find(text) ?: return first
         val second = m.groupValues[1]
         val base = stripSuffix(second.lowercase(Locale.ROOT))

@@ -262,6 +262,13 @@ object KaiCommands {
         "பேக்கரி" to "Bakery", "ஸ்வீட்ஸ்" to "Sweets", "பிரதர்ஸ்" to "Brothers", "ஹோட்டல்" to "Hotel", "ஓட்டல்" to "Hotel", "மெஸ்" to "Mess",
         "பவன்" to "Bhavan", "ரெஸ்டாரண்ட்" to "Restaurant", "கஃபே" to "Cafe", "ஸ்டால்" to "Stall")
 
+    /** A shop name's last word ("store", "ஸ்டோர்", "Hotel"…) — part of a name, never a name or a filler by itself. */
+    fun isShopWord(word: String) = word.lowercase(Locale.ROOT) in shopWords || word in shopWords
+
+    /** "ஸ்டோர்" → "Store" for a name kept in English letters; the word as said otherwise. */
+    fun shopWordFor(person: String, word: String): String =
+        (if (!com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(person)) englishShopWord[word] ?: word else word).replaceFirstChar { it.titlecase(Locale.ROOT) }
+
     private fun shopNamedAfter(text: String, person: String, known: List<String>): String? {
         val m = Regex("""(?<![\p{L}\p{M}])([\p{L}][\p{L}\p{M}.']*)\s+([\p{L}][\p{L}\p{M}]*?)\s*-?\s*(?:ku|kku|ukku|kitta|kita|kitte|க்கு|கிட்ட)(?![\p{L}\p{M}])""", RegexOption.IGNORE_CASE)
             .findAll(text).firstOrNull { m ->
@@ -367,7 +374,8 @@ object KaiCommands {
                 if (shop) {
                     val before = text.substring(0, m.range.first).trimEnd().split(Regex("""\s+""")).filter { it.isNotEmpty() }
                         .takeLastWhile { w -> w.lowercase(Locale.ROOT) !in notNames && w.none(Char::isDigit) && w.any(Char::isLetter) }.takeLast(2)
-                    if (before.isNotEmpty()) return (before + name).joinToString(" ") { it.replaceFirstChar { c -> c.titlecase(Locale.ROOT) } }
+                    // (the mic's "ஸ்டோர்" after a name in English letters is that name's way: "Vijayalakshmi Store", as typed)
+                    if (before.isNotEmpty()) return (before + shopWordFor(before.first(), name)).joinToString(" ") { it.replaceFirstChar { c -> c.titlecase(Locale.ROOT) } }
                 }
                 return name.replaceFirstChar { it.titlecase(Locale.ROOT) }
             }

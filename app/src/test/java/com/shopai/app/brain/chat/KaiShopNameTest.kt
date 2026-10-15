@@ -65,6 +65,22 @@ class KaiShopNameTest {
         assertTrue(fails.joinToString("\n"), fails.isEmpty())
     }
 
+    /** "sruthi store 10000 tharanum" (owner, 16 Oct 2026): a new name with its shop word, without "-ku" — "Sruthi" alone was drafted. */
+    @Test fun aNewShopNameKeepsItsShopWord() {
+        val fails = mutableListOf<String>()
+        for (line in listOf("sruthi store 10000 tharanum", "ஸ்ருதி ஸ்டோர் பத்தாயிரம் தரணும்", "ஸ்ருதி ஸ்டோர் 10000 தரணும்", "sruthi store enakku 10000 tharanum",
+            KaiMicForm.of("sruthi store enakku 10000 tharanum")!!)) {
+            val (kai, inv) = kai(emptyList())
+            val reply = runBlocking { kai.ask(line) }.reply.text
+            if (!Regex("(?i)sruthi store|ஸ்ருதி ஸ்டோர்").containsMatchIn(reply)) fails += "«$line» → $reply: the store is gone"
+            if (!reply.contains("10,000")) fails += "«$line» → $reply: the amount is gone"
+            if (inv.payments.isNotEmpty()) fails += "«$line»: saved before Confirm"
+        }
+        // A word after the name that is no shop's ("sruthi akka") stays out of the name, as before.
+        assertEquals("Sruthi", com.shopai.app.brain.KaiUnderstanding.personPhraseIn("sruthi akka 10000 tharanum"))
+        assertTrue(fails.joinToString("\n"), fails.isEmpty())
+    }
+
     @Test fun theWholeNameInTheBooksIsThatRecord() {
         // "Kumar Hotel" and "Kumar" both kept: the hotel, the one said.
         assertEquals("Kumar Hotel", KaiCommands.personIn("Kumar Hotel ku 2000 tharanum", listOf("Kumar", "Kumar Hotel")))

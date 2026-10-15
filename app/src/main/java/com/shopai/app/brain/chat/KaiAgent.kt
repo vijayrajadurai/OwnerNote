@@ -927,6 +927,14 @@ class KaiAgent(
         // "date sollu" right after talking about Kumar: Kumar's due date (below), not today's date (owner's test, 11 Oct 2026).
         val aboutSomeone = conversationState.lastPerson != null && conversationState.conversationTurn - conversationState.mentionedTurn <= 3 &&
             conversationState.mentionedPeople.size < 2 && bareDueQuestion.matches(said.trim())
+        // "ippo time enna": the phone's time now, with today's date.
+        if (KaiConversationCare.timeAsked(said)) {
+            val at = now()
+            val c = KaiConversationCare.clockText(at)
+            val ta = KaiConversationCare.dateText(at.toLocalDate(), tamil = true)
+            val en = KaiConversationCare.dateText(at.toLocalDate(), tamil = false)
+            return say(lang, KaiMood.EXPLAINING, "time asked", ta = "ஓனர், இப்போ மணி $c — $ta.", tl = "Owner, ippo mani $c — $en.", en = "Owner, it's $c — $en.")
+        }
         if (named == null && !aboutSomeone) KaiConversationCare.dateAsked(said, now().toLocalDate())?.let { d ->
             val ta = KaiConversationCare.dateText(d, tamil = true)
             val en = KaiConversationCare.dateText(d, tamil = false)
@@ -1362,7 +1370,10 @@ class KaiAgent(
             // "next month 5", "July 6" while a stated payment's draft is open: the draft gets that due date (still waiting for Confirm).
             // "next friday tharuvaan" to a credit / debit draft: when it will be paid — that draft's due date too.
             val owedDraft = openPayment.kind == PlanKind.CREDIT_GIVEN || openPayment.kind == PlanKind.DEBIT_TAKEN
-            if (openPayment.key == conversationState.statedDraftKey || owedDraft && promisesPayDate(said)) {
+            // (never a question — "innaiku yaar yaar tharanum", "naalaiku evlo varanum" ask the books, they don't date the draft
+            // (owner, 16 Oct 2026) — nor a line about someone else than the draft's person)
+            val asksOrOther = asksSomething(said) || KaiCommands.personIn(said, people0)?.let { !samePerson(it, openPayment.partyName) } == true
+            if (!asksOrOther && (openPayment.key == conversationState.statedDraftKey || owedDraft && promisesPayDate(said))) {
                 // "anjaam thethi" / "அஞ்சாம் தேதி" (= "5-aam thethi"): the 5th, read as "5th" is.
                 KaiTime.parse(ordinalDay.replace(said) { "${it.groupValues[1]}th" }, now())?.takeIf { it.daySpecified }?.let { t ->
                     return redraftStated(openPayment, openPayment.amount, t.at.toLocalDate(), conversationState.pendingLang ?: lang)
@@ -1889,10 +1900,17 @@ class KaiAgent(
         val followUp = Regex("(?i)\\b(eppa|eppo|when|collect|varum|tharuvaan|tharuvar|adha|adhu|athu|avan|avar|amount)\\b|எப்ப|அத")
             .containsMatchIn(text)
         if (!followUp) return null
-        val personName = KaiCommands.personIn(text, people) ?: conversationState.lastPerson!!
+        // The one the line names — a new name too ("Selvam eppa tharuvaan" with Kumar's draft on screen is Selvam, never Kumar —
+        // owner, 16 Oct 2026); only a line that names no one is about the person just talked about.
+        val namedNow = KaiCommands.personIn(text, people) ?: com.shopai.app.brain.KaiUnderstanding.personPhraseIn(text)
+            ?.takeIf { p -> p.length >= 3 && Regex("""[\p{L}\p{M} ]+""").matches(p) && !KaiEntityResolver.isFunctionWord(p) && !referenceWord.matches(p.substringBefore(' ')) }
+        val personName = namedNow ?: conversationState.lastPerson!!
         // The payment being talked about keeps its own direction and date (a draft card's cash-flow direction is not it).
         val st = conversationState.stated?.takeIf { it.person.equals(personName, ignoreCase = true) }
         val saved = conversationState.lastSaved?.takeIf { it.person.equals(personName, ignoreCase = true) }
+        // Someone else than the last person, with nothing said about them in this conversation: the books answer, never the
+        // last person's amount under their name.
+        if (namedNow != null && !samePerson(namedNow, conversationState.lastPerson!!) && st == null && saved == null) return null
         val out = when {
             st != null -> st.direction == KaiConversationPaymentDirection.PAYMENT_OUT
             saved != null -> !saved.receivable
@@ -2963,6 +2981,13 @@ class KaiAgent(
      * (KaiTime), "10" (then this month or next is asked, never guessed), "adutha maasam" (then the day is asked).
      */
     /** "innaikku yaar tharanum?", "Murugan evlo?" while a due date is awaited: a new question, not the date. */
+    /** A reminder said in its own words — never the answer to another question. */
+    private val reminderSaid = Regex("""(?i)(?<![\p{L}])(remind\p{L}*|reminder|nyabagam|gnabagam|ninaivu\p{L}*|alarm)(?![\p{L}])|ரிமைண்ட்|ஞாபக|நினைவு""")
+    /** "adha", "avan", "அது": the one already talked about — never a new name. */
+    private val referenceWord = Regex("""(?i)(?:adha|adhu|athu|atha|idhu|ithu|idha|itha|avan|aval|avar|avaru|avanga|ivan|ival|ivar|ivanga)(?:ku|kku|ukku|oda|kitta)?|அது|அத|இது|இத|அவன்|அவள்|அவர்|அவங்க|இவன்|இவர்""")
+    /** A line that asks something ("yaar yaar tharanum", "eppa tharuvaan", "evlo", "?") — never an answer or an edit. */
+    private fun asksSomething(text: String) = newQuestion.containsMatchIn(text) || askWhen.containsMatchIn(text)
+    private val askWhen = Regex("""(?i)(?<![\p{L}])(eppa|eppo|epo|yeppa|yeppo|eppadi|when)(?![\p{L}])|எப்போ|எப்ப|எப்படி""")
     private val newQuestion = Regex("""(?i)(?<![\p{L}])(yaar|yaaru|yar|yaru|who|evlo|evvalavu|ewlo|how\s+much|enna|list|details)(?![\p{L}])|\?\s*$|யார்|எவ்வளவு""")
 
     private val monthNames = listOf(
@@ -3061,8 +3086,17 @@ class KaiAgent(
             return if (offset == 1) say(lang, KaiMood.CLARIFY, null, ta = "அடுத்த மாதம் எந்த தேதி Owner?", tl = "Owner, adutha maasam endha thethi?", en = "Which day next month, Owner?")
             else say(lang, KaiMood.CLARIFY, null, ta = "இந்த மாதம் எந்த தேதி Owner?", tl = "Owner, indha maasam endha thethi?", en = "Which day this month, Owner?")
         }
-        // A full date: "next month 10", "indha month 10", "October 10", "naalaikku", "Friday" (KaiTime).
-        KaiTime.parse(text, at)?.takeIf { it.daySpecified }?.let { t ->
+        // A full date: "next month 10", "indha month 10", "October 10", "naalaikku", "Friday" (KaiTime) — right after the question,
+        // or a few lines later when the date is all the line says. Never a reminder of its own ("naalaiku 10 manikku Ravi call
+        // remind pannu") and never a line about someone else (owner, 16 Oct 2026: the reminder became Selvam's due date).
+        val heard = com.shopai.app.brain.tools.KaiSpokenWords.normalize(text)
+        val people = runCatching { books.snapshot()?.people.orEmpty() }.getOrDefault(emptyList())
+        // (someone in the books — "naalanniku" ends like "-ku" but is a day, never a person)
+        val someoneElse = (com.shopai.app.brain.KaiUnderstanding.knownPerson(heard, people) ?: com.shopai.app.brain.KaiUnderstanding.knownPerson(text, people))
+            ?.takeIf { !samePerson(it, entity) }
+        val ownLine = reminderSaid.containsMatchIn(heard) || reminderSaid.containsMatchIn(text) || KaiCommands.route(heard, at, people) is KaiCommand.Reminder
+        val onlyTheDate = heard.trim().split(Regex("""\s+""")).size <= 4
+        KaiTime.parse(text, at)?.takeIf { it.daySpecified && someoneElse == null && !ownLine && (justAsked || onlyTheDate) }?.let { t ->
             val date = t.at.toLocalDate()
             justPassed(date, text, today, amount)?.let { past ->
                 conversationState.pendingAskedTurn = conversationState.conversationTurn
