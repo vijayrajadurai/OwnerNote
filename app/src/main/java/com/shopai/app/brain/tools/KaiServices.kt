@@ -64,7 +64,7 @@ object KaiServices {
         Service("Pongal", Kind.HOTEL, listOf("pongal", "பொங்கல்")),
         Service("Poori", Kind.HOTEL, listOf("poori", "puri", "பூரி")),
         Service("Kothu parotta", Kind.HOTEL, listOf("kothu parotta", "kothu porotta", "கொத்து பரோட்டா")),
-        Service("Parotta", Kind.HOTEL, listOf("parotta", "porotta", "barotta", "பரோட்டா", "புரோட்டா")),
+        Service("Parotta", Kind.HOTEL, listOf("parotta", "porotta", "barotta", "paratha", "parota", "பரோட்டா", "புரோட்டா")),
         Service("Chapathi", Kind.HOTEL, listOf("chapathi", "chapati", "chappathi", "சப்பாத்தி")),
         Service("Meals", Kind.HOTEL, listOf("meals", "saapadu", "sappadu", "lunch meals", "மீல்ஸ்", "சாப்பாடு")),
         Service("Chicken biryani", Kind.HOTEL, listOf("chicken biryani", "சிக்கன் பிரியாணி")),

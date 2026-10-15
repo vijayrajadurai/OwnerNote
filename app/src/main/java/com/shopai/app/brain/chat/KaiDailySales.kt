@@ -264,8 +264,12 @@ class KaiDailySales(
         // A sale — never a line about what Kai doesn't do ("biryani recipe sollu").
         if (namesPerson || KaiConversationCare.beyondBooks(text) != null) return null
         val serviceShop = runCatching { tools.sellsServices() }.getOrNull() == true
-        val sale = KaiServices.saleIn(text, prices, names, serviceShop) ?: KaiServices.saleIn(raw, prices, names, serviceShop)
-            ?: KaiServices.saleIn(sounded, prices, names, serviceShop) ?: return null
+        // (the mic's own words only when Kai didn't already read them as the shop's product — "ஃப்ரோசன் பரோட்டா" is Frozen paratha)
+        val lower = " " + text.lowercase(Locale.ROOT) + " "
+        val productSaid = names.any { n -> n.lowercase(Locale.ROOT).split(Regex("""\s+""")).take(2).joinToString(" ").let { head -> head.length >= 3 && lower.contains(" $head ") } }
+        val sale = KaiServices.saleIn(text, prices, names, serviceShop)
+            ?: (if (productSaid) null else KaiServices.saleIn(raw, prices, names, serviceShop) ?: KaiServices.saleIn(sounded, prices, names, serviceShop))
+            ?: return null
         return startSale(sale, said, prices, lang)
     }
 
