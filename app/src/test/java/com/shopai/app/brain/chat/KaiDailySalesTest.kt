@@ -273,6 +273,27 @@ class KaiDailySalesTest {
         assertTrue(all(t), all(t).contains("₹150") && t.card?.buttons?.isNotEmpty() == true)
     }
 
+    /**
+     * The owner (15 Oct 2026): "hair cutting onnu" — the count said after the service, as a word ("onnu", "rendu", "moonu"), and
+     * the name said as one word ("haircutting", "ஹேர்கட்டிங்"). Typed and as the mic writes it; nothing before Confirm.
+     */
+    @Test fun aCountWordAfterTheServiceAndTheNameSaidAsOneWord() {
+        for ((typed, want) in listOf("hair cutting onnu" to "Hair cutting ×1 ₹150", "hair cutting rendu" to "Hair cutting ×2 ₹300",
+            "haircutting onnu" to "Hair cutting ×1 ₹150", "haircutting rendu" to "Hair cutting ×2 ₹300", "kids cutting moonu" to "Kids cutting ×3 ₹450")) {
+            for (line in bothWays(typed)) {
+                val s = Shop()
+                val ask = s.say(line)
+                assertTrue("$line → ${all(ask)}", ask.reply.text.contains(want.substringBefore(" ×")) && ask.card == null)
+                s.say("150")
+                val draft = s.say("0")
+                assertTrue("[$line] draft: ${all(draft)}", all(draft).contains(want.substringBefore(" ₹")))
+                assertTrue("[$line] nothing before Confirm", s.note.entries.isEmpty())
+                s.confirm()
+                assertEquals(line, want, s.note.entries.single().note)
+            }
+        }
+    }
+
     @Test fun kaiServicesReadsALine() {
         val k = com.shopai.app.brain.tools.KaiServices
         val line = k.saleIn("cutting 150 shaving 80", emptyMap(), emptyList(), false)!!
@@ -283,5 +304,14 @@ class KaiDailySalesTest {
         assertNotNull(k.saleIn("cutting machine 2 naal vaadagai", emptyMap(), emptyList(), false))
         assertEquals(listOf(Triple("Hair cutting", 1, BigDecimal("150")), Triple("Shaving", 2, BigDecimal("160"))),
             k.fromNote("Hair cutting ×1 ₹150 · Shaving ×2 ₹160"))
+        // A count word after one service, right before the next, is the next one's ("cutting rendu shaving" = 1 cutting, 2 shaving).
+        assertEquals(listOf("Hair cutting" to 1, "Shaving" to 2), k.saleIn("cutting rendu shaving", emptyMap(), emptyList(), true)!!.items.map { it.name to it.qty })
+        assertEquals(listOf("Hair cutting" to 2, "Shaving" to 1), k.saleIn("cutting rendu oru shaving", emptyMap(), emptyList(), true)!!.items.map { it.name to it.qty })
+        assertEquals(listOf("Hair cutting" to 2), k.saleIn("ஹேர்கட்டிங் ரெண்டு", emptyMap(), emptyList(), true)!!.items.map { it.name to it.qty })
+        // A word after it that is no number is not a count; a name Kai doesn't have, said as one word, is still not a service.
+        assertEquals(listOf("Hair cutting" to 1), k.saleIn("hair cutting pannunga", emptyMap(), emptyList(), true)!!.items.map { it.name to it.qty })
+        assertNull(k.saleIn("hairbotox rendu", emptyMap(), emptyList(), true))
+        // The owner's own service said as one word: "Hair botox" kept → "hairbotox 1".
+        assertEquals(listOf("Hair botox" to 1), k.saleIn("hairbotox onnu", mapOf("Hair botox" to BigDecimal("1500")), emptyList(), true)!!.items.map { it.name to it.qty })
     }
 }
