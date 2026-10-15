@@ -94,6 +94,39 @@ class KaiCategoryMatrixTest {
         assertTrue("${fails.size} of $played fail:\n" + fails.joinToString("\n"), fails.isEmpty())
     }
 
+    /**
+     * "hair cutting onnu" in a grocery (owner's phone, 15 Oct 2026) got "idhu Kumar ₹2,000 payment pathiyaa?". A plain service of
+     * another kind of shop is said plainly — not this shop's, nothing written, how to add it — and never another topic. "tea" (a
+     * grocery's goods too) is not told off that way. The owner adds the service ("pudhu service hair cutting 150") and it sells.
+     */
+    @Test fun anotherShopsServiceIsSaidPlainly() {
+        val fails = mutableListOf<String>()
+        for (category in listOf("GROCERY", "TEXTILE", "PHARMACY")) for (said in listOf("hair cutting onnu", "ஹேர் கட்டிங் ஒன்னு", "oru facial", "ஒரு ஃபேஷியல்")) {
+            val (kai, tools) = kai(category)
+            val t = runBlocking { kai.ask(said) }
+            val text = t.reply.text
+            if (!(text.contains("service list") && (text.contains("pudhu service") || text.contains("புது service")))) fails += "[$category] «$said» not said plainly: $text"
+            if (startedSale(t, if (said.contains("acial") || said.contains("ஃபேஷியல்")) "Facial" else "Hair cutting")) fails += "[$category] «$said» became a sale: $text"
+            if (tools.sales.isNotEmpty()) fails += "[$category] «$said» wrote something"
+        }
+        for (said in listOf("2 tea", "2 டீ")) {
+            val (kai, _) = kai("GROCERY")
+            val text = runBlocking { kai.ask(said) }.reply.text
+            if (text.contains("service list")) fails += "[GROCERY] «$said» (a grocery's goods too) told off as a service: $text"
+        }
+        assertTrue(fails.joinToString("\n"), fails.isEmpty())
+
+        val (kai, tools) = kai("GROCERY")
+        val keep = runBlocking { kai.ask("pudhu service hair cutting 150") }
+        assertTrue(keep.reply.text, keep.reply.text.contains("Hair cutting") && keep.reply.text.contains("150"))
+        val ok = keep.card?.buttons?.first { it.label.contains("Confirm") || it.label.contains("உறுதி") }!!
+        runBlocking { kai.act(ok.action, com.shopai.app.brain.KaiLang.TANGLISH) }
+        val sale = runBlocking { kai.ask("hair cutting onnu") }
+        assertTrue("kept, then sold: ${sale.reply.text} ${sale.card?.lines}", startedSale(sale, "Hair cutting") ||
+            sale.reply.text.contains("Kallapetti") || sale.card?.lines.orEmpty().any { it.contains("Hair cutting ×1") })
+        assertTrue("nothing before Confirm", tools.sales.isEmpty())
+    }
+
     @Test fun anUnknownCategoryReadsAsBefore() {
         // No category known (the profile not read yet): Kai's words as before — a salon's word is a sale, a grocery's "tea" is not.
         val (kai, _) = kai("")
