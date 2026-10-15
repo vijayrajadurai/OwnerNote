@@ -4,15 +4,15 @@
     "type": "APK",
     "kind": "Directory"
   },
-  "applicationId": "com.shopai.app",
+  "applicationId": "com.ownernote.app",
   "variantName": "release",
   "elements": [
     {
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 1,
-      "versionName": "0.1.0",
+      "versionCode": 12,
+      "versionName": "0.1.8",
       "outputFile": "app-release.apk"
     }
   ],
