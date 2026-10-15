@@ -111,6 +111,18 @@ sealed interface KaiAction {
     /** The owner's Morning Routine Kai proposed: [Save] is the only way it changes. */
     data class SaveRoutine(val key: String) : KaiAction
     data class RoutineNotNow(val key: String) : KaiAction
+    // ---- the Daily Sales Note (draft → Confirm → the Daily Cash Note) ----
+    data class ConfirmSale(val key: String) : KaiAction
+    data class CancelSale(val key: String) : KaiAction
+    /** The sale's draft paid the other way ([upi] true = UPI / GPay, false = cash). */
+    data class SaleMode(val key: String, val upi: Boolean) : KaiAction
+    /** "Day close pannava?" — the screen's own Close day for [day]. */
+    data class ConfirmDayClose(val day: LocalDate) : KaiAction
+    data class CancelDayClose(val day: LocalDate) : KaiAction
+    /** A service's price the owner said (changed, or a new service): kept in the owner's memory only after this. */
+    data class ConfirmServicePrice(val key: String) : KaiAction
+    /** That day's Daily Sales Note as a PDF, made on the phone — the share sheet opens; the owner presses send. */
+    data class ShareCashNote(val day: LocalDate) : KaiAction
 }
 
 /**
@@ -587,6 +599,8 @@ class KaiAgent(
     private var conversationScope: String? = null
     /** Reminders: the one reminder conversation (also used by the Speak screen). */
     private val reminders = KaiReminderAssistant(tools, books, now)
+    /** The Daily Sales Note by chat: a service sale, its price (asked once), the day's total, the day close, the PDF. */
+    private val dailySales = KaiDailySales(tools, books, memory, now)
 
     fun plan(key: String): ActionPlan? = plans[key]
 
@@ -1242,6 +1256,8 @@ class KaiAgent(
         conversationState.conversationTurn++
         val afterBrief = briefJustShown
         briefJustShown = false
+        // The Daily Sales Note's own question (a service's price, the opening Kallapetti, Confirm on a sale / the day close): its answer.
+        if (plans.isEmpty()) dailySales.answer(said, raw, lang)?.let { return it }
 
         // An open finance draft owns short replies. Resolve corrections before
         // cancellation, and both before private-memory teaching or normal routing.
@@ -1324,6 +1340,9 @@ class KaiAgent(
         // "Kumar oda credit debit history PDF kudu", "Kumar statement WhatsApp-la anuppu", "itha PDF-a kudu": a person's statement
         // as a PDF — before the conversation care that would ask what "itha" means.
         topicAnswered(said, lang)?.let { return it }
+        // A service sale ("oru cutting", "cutting plus shaving"), its price, the day's sales, the day close, the day's PDF.
+        if (openPayment == null && plans.isEmpty()) dailySales.line(said, raw, lang, runCatching { tools.products() }.getOrNull().orEmpty(), people0,
+            busy = stockPlans.isNotEmpty() || goodsOpen())?.let { return it }
         // The answer to "intha bill-oda stock-a add pannanuma, illa kammi pannanuma?" — before "add pannu" reads as a save.
         if (openPayment == null) billStockAnswered(said, lang)?.let { return it }
         // The answer to "Endha plywood? Plywood 12mm-aa, Plywood 18mm-aa?": the line said before, for that product.
@@ -5140,6 +5159,8 @@ class KaiAgent(
                 null -> null
             }
         is KaiAction.ConfirmStock -> confirmStock(action.key, lang)
+        is KaiAction.ConfirmSale, is KaiAction.CancelSale, is KaiAction.SaleMode, is KaiAction.ConfirmDayClose, is KaiAction.CancelDayClose,
+        is KaiAction.ConfirmServicePrice -> dailySales.act(action, lang)
         is KaiAction.SaveRoutine, is KaiAction.RoutineNotNow -> routine?.act(action, lang)
         is KaiAction.SaveUnitConversion -> {
             val f = action.perUnit.toBigDecimalOrNull()
@@ -5218,6 +5239,7 @@ class KaiAgent(
 
     fun reset() {
         goodsClear()
+        dailySales.reset()
         halfSaid = null
         recentAsks.clear()
         lastReminderTurn = -1L

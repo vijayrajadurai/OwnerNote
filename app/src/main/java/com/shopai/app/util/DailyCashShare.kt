@@ -32,6 +32,8 @@ fun createDailyCashNotePdf(
     cashBoxLabel: String,
     totals: DailyCashTotals,
     entries: List<DailyCashEntry>,
+    /** The day's sales by service (Kai's Daily Sales Note): "Hair cutting ×5" → "₹750"; empty: none drawn. */
+    services: List<Pair<String, String>> = emptyList(),
 ): File {
     val pageWidth = 595
     val pageHeight = 842
@@ -94,6 +96,18 @@ fun createDailyCashNotePdf(
         y = 48f
         canvas.drawText(context.getString(R.string.cash_note_title), 36f, y, headingPaint)
         y += 24f
+    }
+
+    if (services.isNotEmpty()) {
+        y += 8f
+        canvas.drawText("Services", 36f, y, headingPaint)
+        y += 18f
+        for ((what, amount) in services) {
+            if (y > pageHeight - 56f) newPage()
+            canvas.drawText(what, 36f, y, bodyPaint)
+            canvas.drawText(amount, (pageWidth - 36).toFloat(), y, inPaint)
+            y += 18f
+        }
     }
 
     y += 8f

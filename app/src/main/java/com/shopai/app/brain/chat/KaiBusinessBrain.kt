@@ -28,7 +28,12 @@ data class CashNoteView(
     /** Opening + cash movement (the existing Kallapetti figure); null without an opening. */
     val kallapetti: Double?,
     val dayClosed: Boolean,
+    /** The day's entries, oldest first (what each one was for — the services a Kai sale wrote in its note). */
+    val lines: List<CashLine> = emptyList(),
 )
+
+/** One Daily Cash Note entry as Kai reads it: in or out, its amount, UPI or cash, its note, when (ISO time). */
+data class CashLine(val incoming: Boolean, val amount: Double, val upi: Boolean, val note: String?, val at: String)
 
 /** Daily Cash Note totals for a span of days (cash + UPI). */
 data class CashBookTotals(val totalIn: Double, val totalOut: Double, val entries: Int)

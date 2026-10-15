@@ -228,6 +228,18 @@ interface KaiTools {
     /** A new product (from the owner's words / a photo the owner checked), created with no stock; null = can't. */
     suspend fun createProduct(product: NewProduct): ProductRef? = null
 
+    // ---- the Daily Sales Note (the Daily Cash Note on the phone; written only after the owner confirmed) ----
+    /** The day's opening Kallapetti amount (null = not set yet: the note takes no entry before it). */
+    suspend fun cashOpening(day: LocalDate): BigDecimal? = null
+    /** Sets the day's opening Kallapetti amount (the owner said it and confirmed). */
+    suspend fun setCashOpening(day: LocalDate, amount: BigDecimal): ActionOutcome = ActionOutcome.Failed("unavailable")
+    /** A sale as Money In: [upi] = paid by UPI / GPay (else cash), [note] = its services ("Hair cutting ×1 ₹150 · Shaving ×1 ₹80"). */
+    suspend fun addCashSale(day: LocalDate, amount: BigDecimal, upi: Boolean, note: String): ActionOutcome = ActionOutcome.Failed("unavailable")
+    /** Closes the day (the screen's "Close day": the report goes to the server; the day takes no more entries). */
+    suspend fun closeCashDay(day: LocalDate): ActionOutcome = ActionOutcome.Failed("unavailable")
+    /** The shop sells services (the books' business type is service / product and service); null = unknown. */
+    suspend fun sellsServices(): Boolean? = null
+
     // ---- audit ----
     /** [input]: the owner's words (text). Returns the reference id. */
     fun log(intent: String, tool: String, result: String, status: ActionStatus, reference: String? = null, input: String? = null): String = reference ?: "-"

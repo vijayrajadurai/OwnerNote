@@ -55,6 +55,8 @@ class AppKaiTools(
     private val actionLog: KaiActionLog,
     /** Stock in / out through the existing inventory engine (the books after the import). */
     private val inventory: com.shopai.app.data.repository.InventoryRepository? = null,
+    /** The Daily Cash Note (Kai's Daily Sales Note): a sale, the opening Kallapetti, the day close — only after the owner confirmed. */
+    private val dailyCash: com.shopai.app.data.repository.DailyCashRepository? = null,
     /** The signed-in business + owner (from the session — never from a screen); reminders are theirs only. */
     private val scope: () -> Pair<String?, String?> = { null to null },
 ) : KaiTools {
@@ -542,6 +544,44 @@ class AppKaiTools(
                 }
             }.orEmpty().distinctBy { it.id }
         }.getOrDefault(emptyList())
+    }
+
+    // ------------------------------------------------------------ the Daily Sales Note (Daily Cash Note)
+
+    override suspend fun cashOpening(day: LocalDate): BigDecimal? =
+        runCatching { dailyCash?.getOpeningBalance(com.shopai.app.util.localDateKey(day))?.let { BigDecimal.valueOf(it) } }.getOrNull()
+
+    override suspend fun setCashOpening(day: LocalDate, amount: BigDecimal): ActionOutcome {
+        val cash = dailyCash ?: return ActionOutcome.Failed("daily cash note unavailable")
+        return runCatching {
+            val box = cash.setOpeningBalance(com.shopai.app.util.localDateKey(day), amount.toDouble())
+            ActionOutcome.Done("kallapetti", BigDecimal.valueOf(box))
+        }.getOrElse { ActionOutcome.Failed(it.message ?: "could not set the opening") }
+    }
+
+    override suspend fun addCashSale(day: LocalDate, amount: BigDecimal, upi: Boolean, note: String): ActionOutcome {
+        val cash = dailyCash ?: return ActionOutcome.Failed("daily cash note unavailable")
+        return runCatching {
+            val e = cash.createDailyCashEntry(com.shopai.app.util.localDateKey(day), com.shopai.app.data.model.DailyCashEntryType.IN, amount.toDouble(),
+                if (upi) com.shopai.app.data.model.DailyCashPaymentMode.UPI else com.shopai.app.data.model.DailyCashPaymentMode.CASH, note)
+            // Read back from the note itself: saved only when the entry is there.
+            val stored = cash.listDailyCashEntries(e.date).any { it.id == e.id }
+            if (stored) ActionOutcome.Done(e.id, BigDecimal.valueOf(e.amount)) else ActionOutcome.Failed("not stored")
+        }.getOrElse { ActionOutcome.Failed(it.message ?: "could not save") }
+    }
+
+    override suspend fun closeCashDay(day: LocalDate): ActionOutcome {
+        val cash = dailyCash ?: return ActionOutcome.Failed("daily cash note unavailable")
+        return runCatching {
+            val key = com.shopai.app.util.localDateKey(day)
+            val entries = cash.submitDayReport(key)
+            if (cash.getDayStatus(key) == com.shopai.app.data.model.DailyCashDayStatus.SUBMITTED) ActionOutcome.Done(key, BigDecimal.valueOf(entries.size.toLong()))
+            else ActionOutcome.Failed("not closed")
+        }.getOrElse { ActionOutcome.Failed(it.message ?: "could not close the day") }
+    }
+
+    override suspend fun sellsServices(): Boolean? = session()?.let { s ->
+        runCatching { s.dao.business(s.ctx.businessId)?.businessType }.getOrNull()?.let { it == "SERVICE" || it == "PRODUCT_AND_SERVICE" }
     }
 
     override fun log(intent: String, tool: String, result: String, status: ActionStatus, reference: String?, input: String?): String =
