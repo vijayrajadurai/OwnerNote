@@ -19,7 +19,7 @@ object KaiMicForm {
     private val words: Map<String, String> = """
         aachu=ஆச்சு aagiduchu=ஆயிடுச்சு aayiram=ஆயிரம் abc=ஏபிசி add=ஆட் adhigama=அதிகமா agala=ஆகல aguthu=ஆகுது ah=ஆ akka=அக்கா
         anna=அண்ணா anupiten=அனுப்பிட்டேன் anuppiachu=அனுப்பியாச்சு anuppichan=அனுப்பிச்சான் anuppichen=அனுப்பிச்சேன் anuppinan=அனுப்பினான்
-        anuppinen=அனுப்பினேன் anuppitan=அனுப்பிட்டான் arisi=அரிசி baaki=பாக்கி bag=பேக் balance=பேலன்ஸ் baniya=பனியா baniyan=பனியன்
+        anuppinen=அனுப்பினேன் anuppitan=அனுப்பிட்டான் arisi=அரிசி baaki=பாக்கி bag=பேக் bgs=பேக்ஸ் balance=பேலன்ஸ் baniya=பனியா baniyan=பனியன்
         bank=பேங்க் bhaniyan=பனியன் bottle=பாட்டில் box=பாக்ஸ் boxes=பாக்ஸ் call=கால் cash=கேஷ் clear=கிளியர் colga=கோல்கா colgate=கோல்கேட்
         collection=கலெக்ஷன் correct=கரெக்ட் credit=கிரெடிட் customers=கஸ்டமர்ஸ் daily=டெய்லி damage=டேமேஜ் date=டேட் due=டியூ
         eduka=எடுக்க eduthutu=எடுத்துட்டு ellaa=எல்லா enakku=எனக்கு enaku=எனக்கு endha=எந்த enna=என்ன ennai=எண்ணெய் ennaku=எனக்கு

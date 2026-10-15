@@ -256,7 +256,8 @@ object KaiTeaching {
             t = t.replace(Regex("""(?<![\p{L}\p{M}])${Regex.escape(name)}(?![\p{L}\p{M}])"""), " ")
         }
         val tokens = t.replace(Regex("""₹?\d[\d,.]*\s*k?"""), " ").split(Regex("""\s+""")).filter { it.isNotEmpty() }
-        val unknown = tokens.filter { it !in known && it.length >= 2 }
+        // (every unit the stock rules read is known too — "10bgs" is 10 bags, never a word to teach)
+        val unknown = tokens.filter { it !in known && com.shopai.app.brain.tools.KaiStock.unitOf(it) == null && it.length >= 2 }
         if (unknown.isEmpty() || unknown.size > 3) return null
         // Must be one run of words in the original order.
         val start = tokens.indexOf(unknown.first())

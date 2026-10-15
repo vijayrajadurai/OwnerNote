@@ -279,3 +279,6 @@ ENTRY  | ABC Traders ku 3000 kuduthutan                 | OUT ABC Traders 3000
 ENTRY  | abc traders ku 3000 kuduthuttan                | OUT ABC Traders 3000
 ENTRY  | Murugan Stores ku 1000 kuduthutaan             | OUT Murugan Stores 1000
 ENTRY  | naan Murugan Stores ku 1000 koduthuttan        | OUT Murugan Stores 1000
+
+# Owner's phone (15 Oct 2026): "pulungal arisi 10bgs" — "bgs" is bags (typed shorthand), never a word to teach.
+STOCK  | Rice 2 bgs vandhuchu                           | Rice 300
