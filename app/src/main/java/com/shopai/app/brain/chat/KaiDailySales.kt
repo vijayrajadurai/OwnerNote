@@ -272,8 +272,30 @@ class KaiDailySales(
         val productSaid = names.any { n -> n.lowercase(Locale.ROOT).split(Regex("""\s+""")).take(2).joinToString(" ").let { head -> head.length >= 3 && lower.contains(" $head ") } }
         val sale = KaiServices.saleIn(text, prices, names, serviceShop, kinds)
             ?: (if (productSaid) null else KaiServices.saleIn(raw, prices, names, serviceShop, kinds) ?: KaiServices.saleIn(sounded, prices, names, serviceShop, kinds))
-            ?: return null
+            ?: return otherShopsService(text, raw, sounded, prices, names, serviceShop, kinds, productSaid, lang)
         return startSale(sale, said, prices, lang)
+    }
+
+    /**
+     * "hair cutting onnu" in a grocery (owner's phone, 15 Oct 2026): a service of another kind of shop, said plainly — it is not
+     * this shop's, nothing is written, and how to add it if the owner does sell it. Never a guess at another topic ("idhu Kumar
+     * ₹2,000 payment pathiyaa?"). Only a word that is plainly a service (not "tea", a grocery's goods too). Null otherwise.
+     */
+    private fun otherShopsService(text: String, raw: String, sounded: String, prices: Map<String, BigDecimal>, names: List<String>,
+        serviceShop: Boolean, kinds: Set<KaiServices.Kind>?, productSaid: Boolean, lang: KaiLang): KaiTurn? {
+        if (kinds == null) return null
+        val any = KaiServices.saleIn(text, prices, names, serviceShop, null)
+            ?: (if (productSaid) null else KaiServices.saleIn(raw, prices, names, serviceShop, null) ?: KaiServices.saleIn(sounded, prices, names, serviceShop, null))
+            ?: return null
+        val services = any.items.map { i -> KaiServices.catalogue.firstOrNull { it.name == i.name } ?: return null }
+        if (services.any { !it.clear || it.kind in kinds }) return null
+        val n = services.map { it.name }.distinct().joinToString(", ")
+        val first = services.first().name
+        waiting = null
+        return turn(lang, KaiMood.CLARIFY,
+            ta = "ஓனர், $n உங்க கடையோட service list-ல இல்ல — Daily Sales Note-ல எதுவும் போடல. நீங்க $n பண்றீங்கன்னா “புது service $first 150” மாதிரி விலையோட சொல்லுங்க, சேர்த்துடுறேன்.",
+            tl = "Owner, $n unga kadaiyoda service list-la illa — Daily Sales Note-la edhuvum podala. Neenga $n pannureenga-na “pudhu service $first 150” maadhiri vilaiyoda sollunga, serthudren.",
+            en = "Owner, $n isn't one of your shop's services — nothing went into the Daily Sales Note. If you do offer it, say “new service $first 150” with its price and I'll add it.")
     }
 
     /** [raw] with the owner's own service names put in where the mic wrote them in Tamil letters (only theirs — Kai's words are listed). */
