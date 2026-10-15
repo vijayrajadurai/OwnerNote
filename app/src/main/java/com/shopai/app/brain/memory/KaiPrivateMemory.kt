@@ -276,7 +276,7 @@ class KaiPrivateMemory(
 
         // 1. This conversation's instruction ("today pottudu means stock out").
         for ((phrase, meaning) in conversation.entries.sortedByDescending { it.key.length }) {
-            val r = replace(out, phrase, meaning.canonical) ?: continue
+            val r = replaceAction(out, phrase, meaning.canonical) ?: continue
             out = r
             meanings += phrase to meaning
             fromConversation += phrase
@@ -288,6 +288,7 @@ class KaiPrivateMemory(
             .sortedByDescending { it.first.length }
         for ((phrase, m) in candidates) {
             var entity: KnownEntity? = null
+            var action = false
             val replacement = when (m.memoryType) {
                 MemoryType.PRODUCT_ALIAS, MemoryType.CUSTOMER_ALIAS, MemoryType.SUPPLIER_ALIAS -> {
                     val e = m.referenceEntityId?.let(byId::get) ?: continue // the record is gone: not used
@@ -300,10 +301,11 @@ class KaiPrivateMemory(
                     val meaning = m.meaning ?: continue
                     // Context: "2 mani pochu" is a time, not stock going out — a money / stock meaning is not used there.
                     if (meaning.financial && timeBefore(out, phrase)) continue
+                    action = true
                     meaning.canonical
                 }
             }
-            val r = replace(out, phrase, replacement) ?: continue
+            val r = (if (action) replaceAction(out, phrase, replacement) else replace(out, phrase, replacement)) ?: continue
             out = r
             used += m
             // Only an alias the owner actually said this turn names an entity — not every saved alias.
@@ -424,6 +426,23 @@ class KaiPrivateMemory(
             if (tokens.isEmpty()) return null
             val pattern = Regex(
                 """(?<![\p{L}\p{M}\p{N}])""" + tokens.joinToString("""[\s\-]+""") { Regex.escape(it) } + """(?![\p{L}\p{M}])""",
+                RegexOption.IGNORE_CASE,
+            )
+            if (!pattern.containsMatchIn(text)) return null
+            return pattern.replace(text) { with }
+        }
+
+        /**
+         * [replace] for a word that means an action (payment out, stock in…): a word with "-ku" / "kitta" on it names a person —
+         * "Murugan ஸ்டோர்-ku 10000 naan tharanum" is TO Murugan Store — and an action never takes "-ku", so that one is left as
+         * said (owner's phone, 15 Oct 2026: "store" learned as payment out made the supplier "Kuduthen"). Null when no other is there.
+         */
+        fun replaceAction(text: String, phrase: String, with: String): String? {
+            val tokens = phrase.split(' ').filter { it.isNotEmpty() }
+            if (tokens.isEmpty()) return null
+            val pattern = Regex(
+                """(?<![\p{L}\p{M}\p{N}])""" + tokens.joinToString("""[\s\-]+""") { Regex.escape(it) } + """(?![\p{L}\p{M}])""" +
+                    """(?![\s\-]*(?:u?k?ku|uku|kitta|kita|kitte|kittae|idam|க்கு|கிட்ட|கிட்டே)(?![\p{L}\p{M}]))""",
                 RegexOption.IGNORE_CASE,
             )
             if (!pattern.containsMatchIn(text)) return null
