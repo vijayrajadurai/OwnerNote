@@ -11,7 +11,7 @@ package com.shopai.app.brain.tools
  *                               "Kumarku kudukka vendiya baakiya 500 kootti podu"… → "naan Kumarku 500 tharanum"
  *   the person paid             "Kumar baakila 500 kattittaaru", "Kumar kudutha 500 roobaya varavula podu" → "Kumar 500 kuduthaan"
  *   the owner paid              "Kumarku kudutha 500 roobaya selavula record pannu", "Kumarku 500 settle pannitten",
- *                               "Kumarku 500 anuppitten" → "Kumarku 500 kuduthen"
+ *                               "Kumarku 500 anuppitten", "Kumarku 500 kuduthutan" → "Kumarku 500 kuduthen"
  *
  * Typed Tanglish and the mic's Tamil (after [KaiSpokenWords.normalize]) read the same here. A sentence that matches none
  * is returned as it was.
@@ -63,7 +63,9 @@ object KaiLedgerPhrases {
         // "ABC Traders ku 2000 settle": settled to them — paid out (without "-ku", "Ramesh 2000 settle" is money in).
         rx("""$DATIVE\s+$AMT\s+(?:settle|settled|clear|cleared)(?:\s+(?:pannen|panniten|pannitten|aachu|ஆச்சு))?"""),
         rx("""$DATIVE\s+$AMT\s+anupp?itt?en"""),
-        rx("""(?:naan|nan)\s+$DATIVE\s+$AMT\s+kuduthutt?en"""),
+        // "Sri Balaji ku 786 kuduthutan" (owner, 15 Oct 2026): given TO the person — "-ku" says the owner paid, whatever the
+        // ending ("kuduthuttan" is the owner's own "I gave" in many towns; the mic's குடுத்துட்டான் reads "kuduthutaan").
+        rx("""(?:(?:naan|nan)\s+)?$DATIVE\s+$AMT\s+k[ou]duthutt?(?:en|aa?n)"""),
     )
 
     /** "Ramesh 2000 settle", "Ramesh 2000 clear aachu": with no "-ku" (read after [iPaid]), the person settled with the owner — money in. */
