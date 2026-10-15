@@ -91,6 +91,9 @@ object KaiStock {
         "pcs" to "PCS", "pc" to "PCS", "piece" to "PCS", "pieces" to "PCS", "peice" to "PCS", "peices" to "PCS", "nos" to "PCS",
         "kg" to "KG", "kgs" to "KG", "kilo" to "KG", "bag" to "BAG", "bags" to "BAG", "mootai" to "BAG", "moottai" to "BAG", "moota" to "BAG", "mootta" to "BAG",
         "sack" to "BAG", "sacks" to "BAG", "மூட்டை" to "BAG",
+        // Typed shorthand (owner's phone, 15 Oct 2026: "pulungal arisi 10bgs"): bags, boxes, bottles, cartons, dozens, litres.
+        "bg" to "BAG", "bgs" to "BAG", "bx" to "BOX", "bxs" to "BOX", "btl" to "BOTTLE", "btls" to "BOTTLE", "ctn" to "CARTON", "ctns" to "CARTON",
+        "doz" to "DOZEN", "dz" to "DOZEN", "ltrs" to "LITRE", "lts" to "LITRE",
         "box" to "BOX", "boxes" to "BOX", "packet" to "PACK", "packets" to "PACK", "pack" to "PACK", "packs" to "PACK",
         "litre" to "LITRE", "litres" to "LITRE", "liter" to "LITRE", "ltr" to "LITRE", "dozen" to "DOZEN", "bottle" to "BOTTLE", "bottles" to "BOTTLE",
         "carton" to "CARTON", "cartons" to "CARTON", "case" to "CASE", "cases" to "CASE", "bundle" to "BUNDLE", "bundles" to "BUNDLE",

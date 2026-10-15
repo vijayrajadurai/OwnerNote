@@ -668,8 +668,9 @@ class KaiAgent(
         // "ama" / "illa" to "edha pathi sollureenga?" — not one of the three: asked again in short, or let go plainly.
         val yes = afterClarify && (KaiConversationSemantics.saysYes(said) || KaiConversationSemantics.saysYes(com.shopai.app.brain.tools.KaiSpokenWords.normalize(said)))
         val no = afterClarify && !yes && notAboutIt.matches(said.trim()) && said.trim().split(Regex("""\s+""")).size <= 2
+        val kept = unclearLine?.takeIf { afterClarify && it.second == nothingOpenTurn }?.first
         return when {
-            yes -> { nothingOpenTurn = conversationState.conversationTurn; say(lang, KaiMood.CLARIFY, "guided: yes to the menu",
+            yes -> { nothingOpenTurn = conversationState.conversationTurn; unclearLine = unclearLine?.copy(second = conversationState.conversationTurn); say(lang, KaiMood.CLARIFY, "guided: yes to the menu",
                 ta = "சரி ஓனர், எது? Credit / debit (கொடுக்கல் வாங்கல்)-ஆ, stock (கடையில இருக்கிற பொருள்)-ஆ, reminder-ஆ? ஒண்ணு சொல்லுங்க.",
                 tl = "Seri Owner, edhu? Credit / debit (kudukkal vaangal)-aa, stock (kadaila irukkura porul)-aa, reminder-aa? Onnu sollunga.",
                 en = "Okay Owner, which one? Credit / debit (money given or taken), stock (goods in the shop), or a reminder? Say one.") }
@@ -689,6 +690,14 @@ class KaiAgent(
                 ta = "சரி ஓனர், கடன். யாருக்கு, எவ்வளவு? “Kumar-க்கு 500 கடன்” இல்ல “நான் ABC Traders-க்கு 500 தரணும்”-னு சொல்லுங்க.",
                 tl = "Seri Owner, kadan. Yaarukku, evlo? “Kumar ku 500 credit” illa “naan ABC Traders ku 500 tharanum”-nu sollunga.",
                 en = "Okay Owner, credit. Who, and how much? “Kumar 500 credit”, or “I owe ABC Traders 500”.")
+            // The line Kai asked about, said back: which way it went finishes it ("vandhuchu" → that line, came in).
+            stock && kept != null -> {
+                guidedLine = kept to conversationState.conversationTurn
+                say(lang, KaiMood.CLARIFY, "guided: stock, the line kept",
+                    ta = "சரி ஓனர், stock. “$kept” — வந்துச்சா, வித்துச்சா?",
+                    tl = "Seri Owner, stock. “$kept” — vandhucha, vithucha?",
+                    en = "Okay Owner, stock. “$kept” — came in, or sold?")
+            }
             stock -> say(lang, KaiMood.CLARIFY, "guided: stock",
                 ta = "சரி ஓனர், stock. எந்த product, எவ்வளவு, வந்துச்சா வித்துச்சா? “Colgate 2 box வந்துச்சு”, “Rice 10 கிலோ வித்துச்சு”, “Colgate stock எவ்வளவு”.",
                 tl = "Seri Owner, stock. Endha product, evlo, vandhucha vithucha? “Colgate 2 box vandhuchu”, “Rice 10 kg vithuchu”, “Colgate stock evlo”.",
@@ -717,6 +726,9 @@ class KaiAgent(
             en = "Owner, this looks like an expense ($what$amount). Add expenses as OUT in Daily Cash — Kai keeps customer / supplier accounts. If you paid a person, tell me their name.")
     }
 
+    /** "stock", "stock ah", "ஸ்டாக் பத்தி", "porul": the owner naming the topic — stock — and nothing more. */
+    private val stockTopicWord = Regex("""(?i)^(?:stock|stocks|ஸ்டாக்|porul|பொருள்|saamaan|சாமான்)(?:\s*-?\s*(?:ah|aa|ஆ))?(?:\s+(?:pathi|pathiya|pathiyaa|பத்தி|பத்தியா|dhaan|than|thaan|தான்))?[.!?]*$""")
+
     /** "Colgate 2" waiting for which way the stock went: (product name, the count said, the turn). */
     private var productHalf: Triple<String, String, Long>? = null
     private val stockCame = Regex("""(?i)(?<![\p{L}])(?:vandhuchu|vanthuchu|vandhudhu|vandhirukku|vaanginen|vanginen|add|in|came|irakkinen|வந்துச்சு|வந்திருக்கு|வாங்கினேன்)(?![\p{L}])""")
@@ -741,7 +753,9 @@ class KaiAgent(
         val product = productIn(text, products) ?: return null
         val rest = text.replace(Regex("""(?i)(?<![\p{L}])${Regex.escape(product.name)}(?![\p{L}])"""), " ").trim().trimEnd('?', '.', '!')
         if (rest.isEmpty()) return productDetails(product, lang)
-        if (!Regex("""(?i)^\d+(?:\.\d+)?\s*(?:box|boxes|pcs|pieces|piece|kg|kilo|bag|bags|bottle|bottles|packet|packets|litre|liter|dozen)?$""").matches(rest)) return null
+        // ("10 bags", "10bgs", "5 btl": any unit the stock rules read)
+        val counted = Regex("""(?i)^\d+(?:\.\d+)?\s*(\p{L}+)?$""").find(rest) ?: return null
+        if (counted.groupValues[1].isNotEmpty() && com.shopai.app.brain.tools.KaiStock.unitOf(counted.groupValues[1]) == null) return null
         productHalf = Triple(product.name, rest, conversationState.conversationTurn)
         return say(lang, KaiMood.CLARIFY, "product half: which way",
             ta = "ஓனர், ${product.name} $rest — வந்துச்சா (stock-ல add), இல்ல வித்துச்சா (stock-ல குறைக்கணுமா)?",
@@ -766,6 +780,8 @@ class KaiAgent(
     private var lastPlainAnswer: Pair<String, KaiLang>? = null
     /** This turn's language; [forcedLang] when the owner asked for it ("puriyala" → Tamil). */
     private var turnLang: KaiLang = KaiLang.TANGLISH
+    /** The language of the turn before this one — a one-word English answer ("stock") keeps it. */
+    private var previousTurnLang: KaiLang = KaiLang.TANGLISH
     private var forcedLang: KaiLang? = null
 
     /** The owner's spellings of Kai's words, as the feed knows them ("totel ah" = "total ah"). */
@@ -1245,6 +1261,7 @@ class KaiAgent(
         val said = cut?.first ?: said0
         ownerWords = said
         val lang = forcedLang ?: if (tamil) KaiLang.TAMIL else KaiLanguage.forChat(said)
+        previousTurnLang = turnLang
         turnLang = lang
         brain.spokenLang = forcedLang ?: if (tamil) KaiLang.TAMIL else null
         val scope = runCatching { memory?.current()?.let { "${it.businessId.orEmpty()}:${it.ownerId.orEmpty()}" } }.getOrNull()
@@ -1254,10 +1271,31 @@ class KaiAgent(
         }
         if (scope != null) conversationScope = scope
         conversationState.conversationTurn++
+        turnRaw = raw.trim()
         val afterBrief = briefJustShown
         briefJustShown = false
         // The Daily Sales Note's own question (a service's price, the opening Kallapetti, Confirm on a sale / the day close): its answer.
         if (plans.isEmpty()) dailySales.answer(said, raw, lang)?.let { return it }
+        // "pulungal arisi 10bgs" → "edha pathi?" → "stock" → "vandhuchu": the line Kai asked about, finished by this word — read as
+        // one line ("pulungal arisi 10bgs vandhuchu"), never "vandhuchu" alone as money (owner's phone, 15 Oct 2026).
+        // "Pulungal Arisi 10 bags — vandhucha, vithucha?" → "stock": yes, stock — the same question, the line kept (never a stock
+        // count of Pulungal Arisi, the line dropped, and the next "vandhuchu" read as money).
+        productHalf?.let { (name, qty, turn) ->
+            if (conversationState.conversationTurn == turn + 1 && stockTopicWord.matches(raw.trim())) {
+                productHalf = Triple(name, qty, conversationState.conversationTurn)
+                val l = if (lang == KaiLang.ENGLISH && forcedLang == null) previousTurnLang else lang
+                return say(l, KaiMood.CLARIFY, "product half: stock, which way",
+                    ta = "சரி ஓனர், stock. $name $qty — வந்துச்சா, வித்துச்சா?",
+                    tl = "Seri Owner, stock. $name $qty — vandhucha, vithucha?",
+                    en = "Okay Owner, stock. $name $qty — came in, or sold?")
+            }
+        }
+        guidedLine?.let { (line, turn) ->
+            guidedLine = null
+            val word = raw.trim()
+            if (plans.isEmpty() && conversationState.conversationTurn == turn + 1 && word.none(Char::isDigit) && word.split(Regex("""\s+""")).size <= 3 &&
+                !notAboutIt.matches(word) && !KaiConversationSemantics.cancelsDraft(word)) return askAs(lang, "$line $word")
+        }
 
         // An open finance draft owns short replies. Resolve corrections before
         // cancellation, and both before private-memory teaching or normal routing.
@@ -2143,6 +2181,12 @@ class KaiAgent(
 
     /** The turn Kai last said "edha pathi sollureenga?" with nothing open. */
     private var nothingOpenTurn = -10L
+    /** The owner's line as said this turn (Tamil letters kept) — what "edha pathi?" was asked about. */
+    private var turnRaw = ""
+    /** The line Kai asked "edha pathi sollureenga?" about (owner's phone, 15 Oct 2026: "pulungal arisi 10bgs"), and the turn. */
+    private var unclearLine: Pair<String, Long>? = null
+    /** That line once the owner said it is stock: their next short word ("vandhuchu", "vithuchu") finishes it. */
+    private var guidedLine: Pair<String, Long>? = null
     /** The turn Kai asked "idhu <topic> pathiyaa, illa vera vishayam pathiyaa?" — its "ama" picks the thread up again. */
     private var topicAskedTurn = -10L
     private val aboutIt = Regex("""(?i)(?<![\p{L}])(?:adhu|athu|adhe|athe|adhey)\s*(?:dhaan|than|thaan|dhan)|(?<![\p{L}])(?:payment|panam|kaasu|due|date)\s*(?:ah|a|aa|-a)?\s*(?:pathi|patthi|pathiye)?\s*(?:dhaan|than|thaan|dhan)(?![\p{L}])|பத்தி\s*தான்|அது\s*தான்""")
@@ -2240,6 +2284,8 @@ class KaiAgent(
             ta = "Owner, எதைப் பத்தி கேக்குறீங்க? Product பேர் சொல்லுங்க.",
             tl = "Owner, edha pathi kekkureenga? Product per sollunga.",
             en = "Owner, which one do you mean? Tell me the product.")
+        // The line itself is kept: the topic the owner names next ("stock") picks it up again — a number or a few words of a line.
+        unclearLine = turnRaw.takeIf { it.isNotBlank() && (it.any(Char::isDigit) || it.split(Regex("""\s+""")).size <= 4) }?.let { it to conversationState.conversationTurn }
         // Not understood twice in a row: never the same generic line again — what Kai can read, with examples (principle 6).
         if (conversationState.conversationTurn - nothingOpenTurn <= 1) {
             nothingOpenTurn = conversationState.conversationTurn
@@ -5241,6 +5287,8 @@ class KaiAgent(
         goodsClear()
         dailySales.reset()
         halfSaid = null
+        unclearLine = null
+        guidedLine = null
         recentAsks.clear()
         lastReminderTurn = -1L
         kaiAskedAfterDraft = false
