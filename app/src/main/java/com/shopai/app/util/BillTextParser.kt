@@ -196,14 +196,18 @@ object BillTextParser {
         val gst = gstBreakdown(lines)
         val gstins = GstinReader.findAll(lines)
         val datedText = lines.joinToString("\n").replace(Regex("""(?<=\d/)(\d) (\d)(?=/\d)"""), "$1$2")
+        // A purchase invoice that names its supplier under "SUPPLIER DETAILS" / "Supplier:" (the owner's own shop printed at the
+        // top, as its buyer — owner, 15 Oct 2026): the supplier is the party; the shop at the top is the bill's buyer.
+        val top = findMerchantName(lines)
+        val supplier = findSupplierName(lines, top)
         val read = ExtractedBill(
-            merchantName = findMerchantName(lines),
+            merchantName = supplier ?: top,
             total = total,
             totalFromLabel = labelledTotal != null || wordsTotal != null || gstTotal != null,
             amountInWords = wordsTotal,
             items = items,
             date = DocumentDates.find(datedText),
-            customerName = findCustomerName(lines),
+            customerName = findCustomerName(lines) ?: top?.takeIf { supplier != null && !it.equals(supplier, ignoreCase = true) },
             paid = findPaid(lines, total),
             invoiceNumber = findInvoiceNumber(lines),
             tax = gst.total,
@@ -502,7 +506,9 @@ object BillTextParser {
     private val explicitPaidWords = listOf("amount paid", "paid amount", "amount received", "received", "advance", "paid")
     private val paymentMethodWords = listOf("cash", "upi", "card", "gpay", "google pay", "phonepe", "paytm", "tendered", "tender", "neft", "online")
     private val balanceWords = listOf("balance due", "balance amount", "amount due", "due amount", "net due", "outstanding", "pending", "to pay", "balance", "credit")
-    private val notBalanceWords = listOf("previous balance", "opening balance", "old balance", "credit card", "due date")
+    // ("Payment Terms : Credit (15 Days)": the terms — a credit purchase, never a balance of ₹15)
+    private val notBalanceWords = listOf("previous balance", "opening balance", "old balance", "credit card", "due date", "payment terms", "terms",
+        "credit period", "credit days", "days)")
 
     /**
      * Paid part of the bill:
@@ -513,7 +519,8 @@ object BillTextParser {
      */
     // "Cash / Credit : Cash", "Payment Mode : UPI", "Mode of Payment: Credit".
     private val paymentModeField = Regex(
-        """(?:cash\s*/\s*credit|payment\s*mode|mode\s*of\s*payment|pay\s*mode|mode)\s*[:\-]\s*([a-z]+)""",
+        // (a sheet's cell has no colon after its heading: "Payment Terms | Credit (15 Days)"; a bare "mode" still needs one)
+        """(?:(?:cash\s*/\s*credit|payment\s*mode|mode\s*of\s*payment|pay\s*mode|payment\s*terms|terms\s*of\s*payment)\s*[:\-]?|mode\s*[:\-])\s*([a-z]+)""",
         RegexOption.IGNORE_CASE,
     )
 
@@ -816,6 +823,31 @@ object BillTextParser {
 
     // "SRI BALAJI  GSTIN : 33AB…" read as one line → keep "SRI BALAJI".
     private val headerNoise = Regex("""\s*\b(gstin|gst\s*no|ph|phone|mob|mobile|tel|fssai)\b.*$""", RegexOption.IGNORE_CASE)
+
+    /** "SUPPLIER DETAILS", "Supplier :", "Vendor", "Sold by" — never "Supplier Ref / GSTIN / Invoice No". */
+    private val supplierHeading = Regex(
+        """(?i)(?<![\p{L}])(?:supplier|vendor|seller|sold\s+by|supplied\s+by)(?:\s+(?:details?|name|info(?:rmation)?))?(?!\s*(?:ref|reference|code|gstin|gst|inv|invoice|no\b|#|id\b|bill\s*no))\s*[:\-]?""",
+    )
+    private const val SUPPLIER_HEADER_LINES = 20
+    private val otherHeadings = Regex("""(?i)(?<![\p{L}])(?:bill(?:ed)?\s*to|ship(?:ped)?\s*to|buyer|consignee|customer(?:\s*details)?|sold\s*to|deliver(?:y|ed)?\s*to)(?![\p{L}])\s*[:\-]?""")
+
+    /**
+     * The supplier a purchase invoice names under its supplier heading (the next line when the heading stands alone) — in the
+     * bill's header only: a sales bill's footer ("for Supplier — Authorised Signatory") never renames its shop.
+     */
+    private fun findSupplierName(lines: List<String>, top: String?): String? {
+        val at = lines.take(SUPPLIER_HEADER_LINES).indexOfFirst { supplierHeading.containsMatchIn(it) }.takeIf { it >= 0 } ?: return null
+        val heading = supplierHeading.find(lines[at])!!
+        val sameLine = lines[at].substring(heading.range.last + 1).let { otherHeadings.split(it).first() }.trim(' ', ':', '-')
+        val raw = if (sameLine.count(Char::isLetter) >= 2 && !headingWord.containsMatchIn(sameLine)) sameLine else lines.getOrNull(at + 1) ?: return null
+        // Two columns read as one line ("Kumar Traders Sri Lakshmi Super Mart"): the buyer's name (the shop at the top) is not the supplier's.
+        var value = otherHeadings.split(raw).first()
+        top?.trim()?.takeIf { it.length >= 4 }?.let { t ->
+            Regex(Regex.escape(t), RegexOption.IGNORE_CASE).find(value)?.let { m -> value = value.substring(0, m.range.first) }
+        }
+        val name = cleanCustomer(value) ?: return null
+        return name.takeUnless { top != null && it.equals(top.trim(), ignoreCase = true) }
+    }
 
     private fun findMerchantName(lines: List<String>): String? =
         lines.take(6).map { it.replace(headerNoise, "").replace(sideColumnFields, "").trim() }.firstOrNull { line ->

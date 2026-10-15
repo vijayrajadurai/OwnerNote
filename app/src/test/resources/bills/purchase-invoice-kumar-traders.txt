@@ -1,0 +1,39 @@
+SRI LAKSHMI SUPER MART
+GROCERIES | HOUSEHOLD | PERSONAL CARE | FRESH ITEMS
+123, Main Road, Gandhi Nagar, Coimbatore - 641 012, Tamil Nadu
+Phone: 98765 43210 | Email: srilakshmisupermart@gmail.com
+PURCHASE INVOICE
+Invoice No : P/2024-25/0786
+Invoice Date : 15-03-2025
+Supplier Ref : ST/2154
+Payment Terms : Credit (15 Days)
+Due Date : 30-03-2025
+SUPPLIER DETAILS BILL TO
+Kumar Traders Sri Lakshmi Super Mart
+No. 45, Wholesale Market Complex, 123, Main Road, Gandhi Nagar,
+Gandhipuram, Coimbatore - 641 012, Tamil Nadu Coimbatore - 641 012, Tamil Nadu
+GSTIN: 33ABCDE1234F1Z5 GSTIN: 33ABCDE5678G1Z9
+Phone: 98400 12345 | Email: kumartraders@gmail.com Phone: 98765 43210
+S.No Item Name Brand HSN Code Qty Unit Rate (₹) Amount (₹)
+1 Rice Ponni Aachi 100630 10 Bag (25 kg) 1,350.00 13,500.00
+2 Toor Dal Aachi 071335 20 Kg 98.00 1,960.00
+3 Urad Dal Aachi 071331 20 Kg 116.00 2,320.00
+4 Sugar Dhampure 170199 50 Kg 46.00 2,300.00
+5 Sunflower Oil Fortune 151219 10 Ltr 152.00 1,520.00
+6 Groundnut Oil Idhayam 151219 10 Ltr 168.00 1,680.00
+7 Tea Powder Tata Tea 090230 5 Kg 420.00 2,100.00
+8 Coffee Powder Nescafe 090121 2 Kg 850.00 1,700.00
+9 Wheat Flour (Atta) Aashirvaad 110100 20 Kg 38.00 760.00
+10 Maida Pillsbury 110100 20 Kg 36.00 720.00
+11 Salt Aachi 250100 50 Kg 14.00 700.00
+12 Detergent Powder Surf Excel 340220 10 Kg 110.00 1,100.00
+Amount in Words Subtotal 29,360.00
+Rupees Thirty Four Thousand Seven Hundred Forty Four Only CGST @ 9% 2,641.20
+SGST @ 9% 2,641.20
+Bank Details (for Payment) Total Amount (₹) 34,642.40
+Bank Name : Indian Bank Round Off 1.60
+Account No : 123456789012 Grand Total (₹) 34,744.00
+IFSC Code : IDIB0001234
+Account Name : Kumar Traders
+For Kumar Traders
+Authorised Signatory

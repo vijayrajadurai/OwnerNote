@@ -30,8 +30,13 @@ data class BillDirectionGuess(
 object BillDirection {
     private val buyerHeading = Regex("""(?i)\b(buyer|consignee|bill(?:ed)?\s*to|sold\s*to|customer|ship\s*to|m/s|party)\b""")
 
+    /** "PURCHASE INVOICE", "Purchase Bill", "Supplier Details": a bill the shop bought on — money to pay. */
+    private val purchaseTitle = Regex("""(?i)(?<![\p{L}])(purchase\s+(?:invoice|bill|order|entry|voucher)|supplier\s+details|goods\s+received\s+note|grn)(?![\p{L}])""")
+
     fun decide(text: String, bill: ExtractedBill, me: MyBusiness): BillDirectionGuess {
         val lines = text.lines().map { it.trim() }.filter { it.isNotEmpty() }
+        // 0. A purchase invoice says so (owner, 15 Oct 2026: "PURCHASE INVOICE", the shop as Bill To, the supplier named) — a debit.
+        if (lines.any { purchaseTitle.containsMatchIn(it) }) return guess(sellerSide = false)
         val buyerAt = lines.indexOfFirst { buyerHeading.containsMatchIn(it) }.takeIf { it >= 0 }
 
         // 1. GSTIN: the strongest signal — where on the bill is mine printed?
