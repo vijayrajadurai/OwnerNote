@@ -1223,6 +1223,120 @@ class KaiAgent(
         runCatching { books.snapshot()?.people.orEmpty() }.getOrDefault(emptyList()) +
             runCatching { tools.products()?.map { it.name } }.getOrNull().orEmpty()
 
+    /** A line about the shop's bills, expenses, products and stock — null when it is none of these (see [answerOwner]). */
+    private suspend fun shopLine(spoken: String, said: String, lang: KaiLang, people: List<String>, products: List<com.shopai.app.brain.tools.ProductRef>?): KaiTurn? {
+        if (plans.isEmpty()) com.shopai.app.brain.tools.KaiIntents.billStock(spoken)?.let { return billStockScan(it, lang, said) }
+        // Not understood, then one word ("payment", "kadan", "stock", "balance"): the question for that, so the flow goes on.
+        if (plans.isEmpty()) guidedTopic(said, lang)?.let { return it }
+        // "current bill 1200 kattinen", "rent kattanum": an expense, not a person's entry — said plainly, with where it goes.
+        // ("Gas lighter 7 add pannu" with Gas lighter packs kept: the gas is the product's, not an expense)
+        if (plans.isEmpty() && products?.let { productIn(spoken, it) } == null) expenseLine(withoutShopProducts(spoken), lang, people)?.let { return it }
+        // "Colgate", "Colgate 2": a product of the shop alone, or with a count — its details, or which way the stock went.
+        if (plans.isEmpty() && products != null) productHalfStep(spoken, lang, products)?.let { return it }
+        if (plans.isEmpty() && products != null) newStockLine(spoken, said, lang, products, people)?.let { return it }
+        if (plans.isEmpty() && products != null) newProductAdd(spoken, said, lang, products, people)?.let { return it }
+        // "Colgate nalla pogudhu?", "Colgate nikkudhu": how that one product sold lately — from the item-wise sales.
+        if (plans.isEmpty() && products != null && spoken.none(Char::isDigit)) KaiCommands.movement(spoken)?.let { _ ->
+            productIn(spoken, products)?.let { p -> return productMovement(p, lang, now().toLocalDate()) }
+        }
+        // "Expiry aagura medicine list kudu": the batches expiring soon (and expired), read-only from the batch records.
+        if (plans.isEmpty() && KaiCommands.asksExpiry(spoken)) return if (expiryShop()) expiryList(spoken, lang, products.orEmpty(), now().toLocalDate())
+            else say(lang, KaiMood.NEUTRAL, "expiry: not this shop's", ta = "ஓனர், expiry list Medical shop-க்கு மட்டும் தான் — உங்க கடை category-ல expiry வைக்கல.",
+                tl = "Owner, expiry list Medical shop-ku mattum dhaan — unga kadai category-la expiry vaikkala.", en = "Owner, the expiry list is for a medical shop only — your shop's category keeps no expiry.")
+        // "Stock report", "stock value evlo", "stock-la evlo panam mudangi irukku": the report / the money in stock — not the item list.
+        if (plans.isEmpty() && products != null && KaiCommands.asksStockReport(spoken)) return stockReport(lang, now().toLocalDate())
+        if (plans.isEmpty() && products != null && KaiCommands.asksStockValue(spoken)) return stockValue(spoken, lang, products)
+        // Inventory by chat: bills with goods, product changes / details, the inventory summary — before reminders and payments.
+        if (plans.isEmpty() && products != null) inventoryChat(spoken, said, lang, products, people)?.let { return it }
+        // "Murukku evlo irukku?", "How much Phone Cover is left?": a product of this shop named in full in a stock question is
+        // its stock — even when the name ends like "-ku" (not a person) or holds a word Kai knows for something else ("phone").
+        // Only a person who really is in the books stops it ("Murukku" is not "Muruk-ku").
+        if (plans.isEmpty() && products != null && stockAsk.containsMatchIn(spoken) && spoken.none(Char::isDigit) &&
+            KaiEntityResolver.peopleIn(spoken, people).isEmpty() &&
+            !com.shopai.app.brain.tools.KaiInventory.buys(spoken) && !com.shopai.app.brain.tools.KaiInventory.sells(spoken)) {
+            productNamed(spoken, products)?.let { p ->
+                rememberProduct(p)
+                return stock(p, lang)
+            }
+        }
+        return null
+    }
+
+    /**
+     * An open finance draft owns short replies: an amount or a way of paying corrected, the due date dropped or given, another
+     * person named, Cancel, Confirm, "add pannitiya?". Null: the line is not about the draft.
+     */
+    private suspend fun openDraftReply(openPayment: ActionPlan, said: String, lang: KaiLang, people0: List<String>): KaiTurn? {
+        conversationState.pendingDraft = openPayment
+        conversationState.pendingConfirmation = true
+        val correctedAmount = KaiConversationSemantics.correctionAmount(said)
+        if (correctedAmount != null && correctedAmount.compareTo(openPayment.amount) != 0) {
+            conversationState.pendingCorrection = true
+            // A stated payment's draft keeps its person, direction and due date; only the amount changes.
+            if (openPayment.key == conversationState.statedDraftKey) return redraftStated(openPayment, correctedAmount, openPayment.dueDate, conversationState.pendingLang ?: lang)
+                .also { conversationState.pendingCorrection = false }
+            val outgoing = openPayment.kind == PlanKind.PAYMENT_OUT || openPayment.kind == PlanKind.CREDIT_GIVEN
+            return revise(openPayment.key, openPayment.partyName, correctedAmount, openPayment.mode, outgoing, lang)
+                .also { conversationState.pendingCorrection = false }
+        }
+        // "gpay la kuduthan" / "cash dhaan" to the open draft: the same draft, paid that way (owner, 12 Oct 2026: "Evlo amount?").
+        if (correctedAmount == null && said.none(Char::isDigit) && modeWord.containsMatchIn(said) &&
+            (openPayment.kind == PlanKind.PAYMENT_IN || openPayment.kind == PlanKind.PAYMENT_OUT)) {
+            val mode = com.shopai.app.brain.tools.KaiInventory.modeOf(said)
+            if (mode != openPayment.mode) return revise(openPayment.key, openPayment.partyName, openPayment.amount, mode, openPayment.kind == PlanKind.PAYMENT_OUT, lang)
+        }
+        // "due venam" with the draft on screen: the same draft, with no due date — never a cancel, never "paid".
+        if (openPayment.key == conversationState.statedDraftKey && KaiConversationSemantics.dropsDueDate(said)) {
+            val l = shortLang(said, lang)
+            return withText(redraftStated(openPayment, openPayment.amount, null, l), noDueDateText(conversationState.stated, l))
+        }
+        // "illa thappu, Ramesh dhaan kuduthan": the same amount, for the person the owner names now — drafted again for Confirm.
+        if ((KaiConversationCare.negates(said) || personFix.containsMatchIn(said)) && KaiConversationSemantics.correctionAmount(said) == null && said.none(Char::isDigit)) {
+            val people = runCatching { books.snapshot()?.people.orEmpty() }.getOrDefault(emptyList())
+            com.shopai.app.brain.KaiUnderstanding.knownPerson(said, people)?.takeIf { !samePerson(it, openPayment.partyName) }?.let { other ->
+                val outgoing = openPayment.kind == PlanKind.PAYMENT_OUT || openPayment.kind == PlanKind.CREDIT_GIVEN
+                return revise(openPayment.key, other, openPayment.amount, openPayment.mode, outgoing, lang)
+            }
+        }
+        // "illa" / "vera vishayam" to "idhu Kumar pathiyaa?": not about Kumar — never a cancel of the draft on screen.
+        if (conversationState.conversationTurn == topicAskedTurn + 1 && notAboutIt.matches(said.trim()))
+            topicAnswered(said, lang, openPayment)?.let { return it }
+        if (KaiConversationSemantics.cancelsDraft(said) || KaiConversationCare.notNow(said)) {
+            return act(KaiAction.CancelPlan(openPayment.key), lang)!!
+        }
+        // "ama", "seri", "save pannu", "seri add pannu" to the open draft: the owner's confirmation — saved by the engine.
+        // Also after a detour whose answer asked nothing (calculator, a balance answer): the draft is still the open question.
+        // Not when Kai's last reply asked something else (a choice, a missing time, Save for a word) — "seri" answers that.
+        val draftJustShown = conversationState.conversationTurn == conversationState.draftShownTurn + 1
+        if (said.none(Char::isDigit) && !waitingForLearningAnswer &&
+            (KaiConversationSemantics.onlySave(said, openPayment.partyName) || ((draftJustShown || !kaiAskedAfterDraft) && KaiConversationSemantics.confirmsDraft(said)))) {
+            if (openPayment.problems.isNotEmpty()) return say(lang, KaiMood.CLARIFY, null,
+                ta = "ஓனர், இதை இப்போ சேமிக்க முடியாது: ${openPayment.problems.joinToString("; ")}. நான் எதுவும் சேமிக்கல.",
+                tl = "Owner, idha ippo save panna mudiyadhu: ${openPayment.problems.joinToString("; ")}. Naan edhuvum save pannala.",
+                en = "Owner, this can't be saved right now: ${openPayment.problems.joinToString("; ")}. Nothing was saved.")
+            return confirm(openPayment.key, shortLang(said, lang))!!
+        }
+        if (KaiConversationSemantics.asksIfSaved(said)) {
+            // "add pannitiya?" with a draft open: not saved — said plainly, with the same draft card again to Confirm.
+            val l = shortLang(said, lang)
+            conversationState.draftShownTurn = conversationState.conversationTurn
+            return draftTurns[openPayment.key]?.let { withText(it.copy(plan = plans[openPayment.key]), notSavedYet(l).reply.text) } ?: notSavedYet(l)
+        }
+        // "next month 5", "July 6" while a stated payment's draft is open: the draft gets that due date (still waiting for Confirm).
+        // "next friday tharuvaan" to a credit / debit draft: when it will be paid — that draft's due date too.
+        val owedDraft = openPayment.kind == PlanKind.CREDIT_GIVEN || openPayment.kind == PlanKind.DEBIT_TAKEN
+        // (never a question — "innaiku yaar yaar tharanum", "naalaiku evlo varanum" ask the books, they don't date the draft
+        // (owner, 16 Oct 2026) — nor a line about someone else than the draft's person)
+        val asksOrOther = asksSomething(said) || KaiCommands.personIn(said, people0)?.let { !samePerson(it, openPayment.partyName) } == true
+        if (!asksOrOther && (openPayment.key == conversationState.statedDraftKey || owedDraft && promisesPayDate(said))) {
+            // "anjaam thethi" / "அஞ்சாம் தேதி" (= "5-aam thethi"): the 5th, read as "5th" is.
+            KaiTime.parse(ordinalDay.replace(said) { "${it.groupValues[1]}th" }, now())?.takeIf { it.daySpecified }?.let { t ->
+                return redraftStated(openPayment, openPayment.amount, t.at.toLocalDate(), conversationState.pendingLang ?: lang)
+            }
+        }
+        return null
+    }
+
     private suspend fun answerOwner(raw: String): KaiTurn {
         // Tamil script (the phone's ta-IN speech-to-text, or typed): its words in the Tanglish Kai's rules read, the shop's own
         // names in their letters ("குமார் 2000 குடுத்தான்" = "Kumar 2000 kuduthaan") — one brain for voice and text. Kai still
@@ -1321,75 +1435,8 @@ class KaiAgent(
         // An open finance draft owns short replies. Resolve corrections before
         // cancellation, and both before private-memory teaching or normal routing.
         val openPayment = plans.values.singleOrNull()
-        if (openPayment != null) {
-            conversationState.pendingDraft = openPayment
-            conversationState.pendingConfirmation = true
-            val correctedAmount = KaiConversationSemantics.correctionAmount(said)
-            if (correctedAmount != null && correctedAmount.compareTo(openPayment.amount) != 0) {
-                conversationState.pendingCorrection = true
-                // A stated payment's draft keeps its person, direction and due date; only the amount changes.
-                if (openPayment.key == conversationState.statedDraftKey) return redraftStated(openPayment, correctedAmount, openPayment.dueDate, conversationState.pendingLang ?: lang)
-                    .also { conversationState.pendingCorrection = false }
-                val outgoing = openPayment.kind == PlanKind.PAYMENT_OUT || openPayment.kind == PlanKind.CREDIT_GIVEN
-                return revise(openPayment.key, openPayment.partyName, correctedAmount, openPayment.mode, outgoing, lang)
-                    .also { conversationState.pendingCorrection = false }
-            }
-            // "gpay la kuduthan" / "cash dhaan" to the open draft: the same draft, paid that way (owner, 12 Oct 2026: "Evlo amount?").
-            if (correctedAmount == null && said.none(Char::isDigit) && modeWord.containsMatchIn(said) &&
-                (openPayment.kind == PlanKind.PAYMENT_IN || openPayment.kind == PlanKind.PAYMENT_OUT)) {
-                val mode = com.shopai.app.brain.tools.KaiInventory.modeOf(said)
-                if (mode != openPayment.mode) return revise(openPayment.key, openPayment.partyName, openPayment.amount, mode, openPayment.kind == PlanKind.PAYMENT_OUT, lang)
-            }
-            // "due venam" with the draft on screen: the same draft, with no due date — never a cancel, never "paid".
-            if (openPayment.key == conversationState.statedDraftKey && KaiConversationSemantics.dropsDueDate(said)) {
-                val l = shortLang(said, lang)
-                return withText(redraftStated(openPayment, openPayment.amount, null, l), noDueDateText(conversationState.stated, l))
-            }
-            // "illa thappu, Ramesh dhaan kuduthan": the same amount, for the person the owner names now — drafted again for Confirm.
-            if ((KaiConversationCare.negates(said) || personFix.containsMatchIn(said)) && KaiConversationSemantics.correctionAmount(said) == null && said.none(Char::isDigit)) {
-                val people = runCatching { books.snapshot()?.people.orEmpty() }.getOrDefault(emptyList())
-                com.shopai.app.brain.KaiUnderstanding.knownPerson(said, people)?.takeIf { !samePerson(it, openPayment.partyName) }?.let { other ->
-                    val outgoing = openPayment.kind == PlanKind.PAYMENT_OUT || openPayment.kind == PlanKind.CREDIT_GIVEN
-                    return revise(openPayment.key, other, openPayment.amount, openPayment.mode, outgoing, lang)
-                }
-            }
-            // "illa" / "vera vishayam" to "idhu Kumar pathiyaa?": not about Kumar — never a cancel of the draft on screen.
-            if (conversationState.conversationTurn == topicAskedTurn + 1 && notAboutIt.matches(said.trim()))
-                topicAnswered(said, lang, openPayment)?.let { return it }
-            if (KaiConversationSemantics.cancelsDraft(said) || KaiConversationCare.notNow(said)) {
-                return act(KaiAction.CancelPlan(openPayment.key), lang)!!
-            }
-            // "ama", "seri", "save pannu", "seri add pannu" to the open draft: the owner's confirmation — saved by the engine.
-            // Also after a detour whose answer asked nothing (calculator, a balance answer): the draft is still the open question.
-            // Not when Kai's last reply asked something else (a choice, a missing time, Save for a word) — "seri" answers that.
-            val draftJustShown = conversationState.conversationTurn == conversationState.draftShownTurn + 1
-            if (said.none(Char::isDigit) && !waitingForLearningAnswer &&
-                (KaiConversationSemantics.onlySave(said, openPayment.partyName) || ((draftJustShown || !kaiAskedAfterDraft) && KaiConversationSemantics.confirmsDraft(said)))) {
-                if (openPayment.problems.isNotEmpty()) return say(lang, KaiMood.CLARIFY, null,
-                    ta = "ஓனர், இதை இப்போ சேமிக்க முடியாது: ${openPayment.problems.joinToString("; ")}. நான் எதுவும் சேமிக்கல.",
-                    tl = "Owner, idha ippo save panna mudiyadhu: ${openPayment.problems.joinToString("; ")}. Naan edhuvum save pannala.",
-                    en = "Owner, this can't be saved right now: ${openPayment.problems.joinToString("; ")}. Nothing was saved.")
-                return confirm(openPayment.key, shortLang(said, lang))!!
-            }
-            if (KaiConversationSemantics.asksIfSaved(said)) {
-                // "add pannitiya?" with a draft open: not saved — said plainly, with the same draft card again to Confirm.
-                val l = shortLang(said, lang)
-                conversationState.draftShownTurn = conversationState.conversationTurn
-                return draftTurns[openPayment.key]?.let { withText(it.copy(plan = plans[openPayment.key]), notSavedYet(l).reply.text) } ?: notSavedYet(l)
-            }
-            // "next month 5", "July 6" while a stated payment's draft is open: the draft gets that due date (still waiting for Confirm).
-            // "next friday tharuvaan" to a credit / debit draft: when it will be paid — that draft's due date too.
-            val owedDraft = openPayment.kind == PlanKind.CREDIT_GIVEN || openPayment.kind == PlanKind.DEBIT_TAKEN
-            // (never a question — "innaiku yaar yaar tharanum", "naalaiku evlo varanum" ask the books, they don't date the draft
-            // (owner, 16 Oct 2026) — nor a line about someone else than the draft's person)
-            val asksOrOther = asksSomething(said) || KaiCommands.personIn(said, people0)?.let { !samePerson(it, openPayment.partyName) } == true
-            if (!asksOrOther && (openPayment.key == conversationState.statedDraftKey || owedDraft && promisesPayDate(said))) {
-                // "anjaam thethi" / "அஞ்சாம் தேதி" (= "5-aam thethi"): the 5th, read as "5th" is.
-                KaiTime.parse(ordinalDay.replace(said) { "${it.groupValues[1]}th" }, now())?.takeIf { it.daySpecified }?.let { t ->
-                    return redraftStated(openPayment, openPayment.amount, t.at.toLocalDate(), conversationState.pendingLang ?: lang)
-                }
-            }
-        }
+        // (its own function — the JVM keeps a method under 64 KB: answerOwner is near it)
+        if (openPayment != null) openDraftReply(openPayment, said, lang, people0)?.let { return it }
 
         // "add pannitiya?": answered from what the books confirmed — never "saved" unless the engine said Done.
         if (openPayment == null && KaiConversationSemantics.asksIfSaved(said)) return savedAnswer(KaiConversationSemantics.phraseLang(said, lang))
@@ -1536,40 +1583,9 @@ class KaiAgent(
         // "Colgate 5 box, boxku 48 pieces, purchase 28, selling 35": a stock line with its details — before the calculator
         // reads "28 … 35" as a margin sum. Only with a unit and product details (or right after Kai asked which product).
         // "Intha bill la irukura stock ah add pannu / kammi pannu": the bill scanner, its items going into / out of stock (owner, 13 Oct 2026).
-        if (plans.isEmpty()) com.shopai.app.brain.tools.KaiIntents.billStock(spoken)?.let { return billStockScan(it, lang, said) }
-        // Not understood, then one word ("payment", "kadan", "stock", "balance"): the question for that, so the flow goes on.
-        if (plans.isEmpty()) guidedTopic(said, lang)?.let { return it }
-        // "current bill 1200 kattinen", "rent kattanum": an expense, not a person's entry — said plainly, with where it goes.
-        // ("Gas lighter 7 add pannu" with Gas lighter packs kept: the gas is the product's, not an expense)
-        if (plans.isEmpty() && products?.let { productIn(spoken, it) } == null) expenseLine(withoutShopProducts(spoken), lang, people)?.let { return it }
-        // "Colgate", "Colgate 2": a product of the shop alone, or with a count — its details, or which way the stock went.
-        if (plans.isEmpty() && products != null) productHalfStep(spoken, lang, products)?.let { return it }
-        if (plans.isEmpty() && products != null) newStockLine(spoken, said, lang, products, people)?.let { return it }
-        if (plans.isEmpty() && products != null) newProductAdd(spoken, said, lang, products, people)?.let { return it }
-        // "Colgate nalla pogudhu?", "Colgate nikkudhu": how that one product sold lately — from the item-wise sales.
-        if (plans.isEmpty() && products != null && spoken.none(Char::isDigit)) KaiCommands.movement(spoken)?.let { _ ->
-            productIn(spoken, products)?.let { p -> return productMovement(p, lang, now().toLocalDate()) }
-        }
-        // "Expiry aagura medicine list kudu": the batches expiring soon (and expired), read-only from the batch records.
-        if (plans.isEmpty() && KaiCommands.asksExpiry(spoken)) return if (expiryShop()) expiryList(spoken, lang, products.orEmpty(), now().toLocalDate())
-            else say(lang, KaiMood.NEUTRAL, "expiry: not this shop's", ta = "ஓனர், expiry list Medical shop-க்கு மட்டும் தான் — உங்க கடை category-ல expiry வைக்கல.",
-                tl = "Owner, expiry list Medical shop-ku mattum dhaan — unga kadai category-la expiry vaikkala.", en = "Owner, the expiry list is for a medical shop only — your shop's category keeps no expiry.")
-        // "Stock report", "stock value evlo", "stock-la evlo panam mudangi irukku": the report / the money in stock — not the item list.
-        if (plans.isEmpty() && products != null && KaiCommands.asksStockReport(spoken)) return stockReport(lang, now().toLocalDate())
-        if (plans.isEmpty() && products != null && KaiCommands.asksStockValue(spoken)) return stockValue(spoken, lang, products)
-        // Inventory by chat: bills with goods, product changes / details, the inventory summary — before reminders and payments.
-        if (plans.isEmpty() && products != null) inventoryChat(spoken, said, lang, products, people)?.let { return it }
-        // "Murukku evlo irukku?", "How much Phone Cover is left?": a product of this shop named in full in a stock question is
-        // its stock — even when the name ends like "-ku" (not a person) or holds a word Kai knows for something else ("phone").
-        // Only a person who really is in the books stops it ("Murukku" is not "Muruk-ku").
-        if (plans.isEmpty() && products != null && stockAsk.containsMatchIn(spoken) && spoken.none(Char::isDigit) &&
-            KaiEntityResolver.peopleIn(spoken, people).isEmpty() &&
-            !com.shopai.app.brain.tools.KaiInventory.buys(spoken) && !com.shopai.app.brain.tools.KaiInventory.sells(spoken)) {
-            productNamed(spoken, products)?.let { p ->
-                rememberProduct(p)
-                return stock(p, lang)
-            }
-        }
+        // The shop's own lines — bills, guided topics, expenses, products, stock (its own function: answerOwner stays under the
+        // JVM's 64 KB per method).
+        shopLine(spoken, said, lang, people, products)?.let { return it }
         if (plans.isEmpty()) brain.answerChoice(spoken)?.let { reply -> return KaiTurn(reply) }
         if (plans.isEmpty()) brain.listFollowUp(spoken)?.let { reply ->
             conversationState.currentIntent = "BUSINESS_QUERY"
