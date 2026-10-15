@@ -397,6 +397,9 @@
     <string name="bill_warn_total_guessed">No “Total” line found on the bill. Type the total from the bill.</string>
     <string name="ocr_camera">Camera</string>
     <string name="ocr_gallery">Gallery</string>
+    <string name="bill_upload_file">Upload bill (PDF / Excel / photo)</string>
+    <string name="bill_upload_xls">This is an old Excel file (.xls). Open it in Excel and save as .xlsx, or upload a PDF / photo of the bill.</string>
+    <string name="bill_upload_unsupported">This file can\'t be read as a bill. Upload a photo, PDF, Excel (.xlsx) or CSV file.</string>
     <string name="ocr_status_processing">Reading text from image…</string>
     <string name="error_ocr_empty">No text found in this image. Try a clearer photo.</string>
     <string name="error_ocr_failed">Could not read the image. Please try again.</string>

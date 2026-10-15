@@ -57,6 +57,8 @@ class AppKaiTools(
     private val inventory: com.shopai.app.data.repository.InventoryRepository? = null,
     /** The Daily Cash Note (Kai's Daily Sales Note): a sale, the opening Kallapetti, the day close — only after the owner confirmed. */
     private val dailyCash: com.shopai.app.data.repository.DailyCashRepository? = null,
+    /** The business profile's category (the backend's business, read once and kept — never on every message). */
+    private val category: (suspend () -> String?)? = null,
     /** The signed-in business + owner (from the session — never from a screen); reminders are theirs only. */
     private val scope: () -> Pair<String?, String?> = { null to null },
 ) : KaiTools {
@@ -578,6 +580,16 @@ class AppKaiTools(
             if (cash.getDayStatus(key) == com.shopai.app.data.model.DailyCashDayStatus.SUBMITTED) ActionOutcome.Done(key, BigDecimal.valueOf(entries.size.toLong()))
             else ActionOutcome.Failed("not closed")
         }.getOrElse { ActionOutcome.Failed(it.message ?: "could not close the day") }
+    }
+
+    private var categoryRead: Pair<Long, String?>? = null
+
+    override suspend fun businessCategory(): String? {
+        categoryRead?.takeIf { System.currentTimeMillis() - it.first < 30 * 60_000L }?.let { return it.second }
+        val read = runCatching { category?.invoke() }.getOrNull()
+        // (a failed read keeps the last one known — the profile doesn't change mid-day)
+        if (read != null || categoryRead == null) categoryRead = System.currentTimeMillis() to (read ?: categoryRead?.second)
+        return categoryRead?.second
     }
 
     override suspend fun sellsServices(): Boolean? = session()?.let { s ->
