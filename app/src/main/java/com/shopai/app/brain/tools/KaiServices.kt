@@ -92,7 +92,7 @@ object KaiServices {
         "oru" to 1, "onnu" to 1, "one" to 1, "orey" to 1, "rendu" to 2, "two" to 2, "moonu" to 3, "three" to 3, "naalu" to 4, "four" to 4,
         "anju" to 5, "five" to 5, "aaru" to 6, "six" to 6, "ezhu" to 7, "seven" to 7, "ettu" to 8, "eight" to 8, "ombadhu" to 9, "nine" to 9,
         "pathu" to 10, "ten" to 10,
-        "ஒரு" to 1, "ஒண்ணு" to 1, "ஒன்று" to 1, "ரெண்டு" to 2, "இரண்டு" to 2, "மூணு" to 3, "மூன்று" to 3, "நாலு" to 4, "நான்கு" to 4, "அஞ்சு" to 5,
+        "ஒரு" to 1, "ஒண்ணு" to 1, "ஒன்னு" to 1, "ஒன்று" to 1, "ரெண்டு" to 2, "இரண்டு" to 2, "மூணு" to 3, "மூன்று" to 3, "நாலு" to 4, "நான்கு" to 4, "அஞ்சு" to 5,
         "ஐந்து" to 5, "ஆறு" to 6, "ஏழு" to 7, "எட்டு" to 8, "ஒன்பது" to 9, "பத்து" to 10,
     )
 
@@ -115,21 +115,40 @@ object KaiServices {
 
     private data class Hit(val start: Int, val end: Int, val name: String, val service: Service?)
 
-    private fun aliases(own: Collection<String>): List<Pair<String, Service?>> =
-        (catalogue.flatMap { s -> s.words.map { it.lowercase(Locale.ROOT) to s } } +
-            own.map { it.lowercase(Locale.ROOT) to null as Service? })
-            .distinctBy { it.first }.sortedByDescending { it.first.length }
+    /** A name of two words and the same words said as one ("hair cutting" / "haircutting", "ஹேர் கட்டிங்" / "ஹேர்கட்டிங்"). */
+    private fun spellings(word: String): List<String> = listOf(word, word.replace(" ", "")).distinct()
+
+    private class Alias(val word: String, val service: Service?) {
+        val pattern = Regex("""(?<![\p{L}\p{M}])${Regex.escape(word)}(?![\p{L}\p{M}])""")
+    }
+
+    /** The catalogue's words, each with its pattern built once. */
+    private val catalogueAliases: List<Alias> by lazy {
+        catalogue.flatMap { s -> s.words.flatMap { w -> spellings(w.lowercase(Locale.ROOT)).map { Alias(it, s) } } }.distinctBy { it.word }
+    }
+
+    private val catalogueWords: Set<String> by lazy { catalogueAliases.map { it.word }.toSet() }
+
+    private fun aliases(own: Collection<String>): List<Alias> {
+        // (a catalogue word the owner also keeps as a name stays the catalogue's service, as before)
+        val words = catalogueWords
+        val owned = own.flatMap { o -> spellings(o.lowercase(Locale.ROOT)) }.distinct().filter { it !in words }
+        return (catalogueAliases + owned.map { Alias(it, null) }).sortedByDescending { it.word.length }
+    }
 
     /** Every service word in [text], longest first, never overlapping. [own] = services the owner added, by name. */
     private fun hits(text: String, own: Collection<String>): List<Hit> {
         val lower = text.lowercase(Locale.ROOT)
         val taken = BooleanArray(lower.length)
         val out = mutableListOf<Hit>()
-        for ((alias, s) in aliases(own)) {
-            Regex("""(?<![\p{L}\p{M}])${Regex.escape(alias)}(?![\p{L}\p{M}])""").findAll(lower).forEach { m ->
+        for (a in aliases(own)) {
+            val alias = a.word
+            val s = a.service
+            if (!lower.contains(alias)) continue
+            a.pattern.findAll(lower).forEach { m ->
                 if ((m.range.first..m.range.last).none { taken[it] }) {
                     (m.range.first..m.range.last).forEach { taken[it] = true }
-                    out += Hit(m.range.first, m.range.last + 1, s?.name ?: own.first { it.equals(alias, ignoreCase = true) }, s)
+                    out += Hit(m.range.first, m.range.last + 1, s?.name ?: own.first { alias in spellings(it.lowercase(Locale.ROOT)) }, s)
                 }
             }
         }
@@ -192,8 +211,14 @@ object KaiServices {
                 value.stripTrailingZeros().scale() <= 0 && (if (keptPrice != null) keptPrice.compareTo(value) != 0 else value < BigDecimal(5))
             val amount = if (countOfNext || countAfter) null else value
             if (amount != null) cursor = restAt + m!!.range.last + 1
+            // "hair cutting rendu", "cutting onnu": a number word after it, as typed (the mic's "ரெண்டு" is read the same) — how many,
+            // unless it is said right before the next service ("cutting rendu shaving": the next one's count).
+            val wordAfter = if (m == null && number(before) == null) Regex("""^\s*([\p{L}\p{M}]+)(?![\p{L}\p{M}])""").find(rest)
+                ?.takeIf { w -> number(w.groupValues[1]) != null && !(found.getOrNull(i + 1) != null && rest.substring(w.range.last + 1).isBlank()) } else null
+            if (wordAfter != null) cursor = restAt + wordAfter.range.last + 1
             if (!ok) continue
-            val qty = dur?.let { number(it.groupValues[1]) } ?: number(before) ?: (if (countAfter) value!!.toInt() else null) ?: 1
+            val qty = dur?.let { number(it.groupValues[1]) } ?: number(before) ?: (if (countAfter) value!!.toInt() else null)
+                ?: wordAfter?.let { number(it.groupValues[1]) } ?: 1
             val per = dur?.groupValues?.get(2)?.let { if (Regex("""(?i)mani|hour|hr|மணி""").containsMatchIn(it)) "hour" else "day" }
             items += Item(name, qty, amount, per)
         }
