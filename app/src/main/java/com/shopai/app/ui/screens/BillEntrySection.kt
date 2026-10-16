@@ -61,12 +61,23 @@ internal fun looksGarbled(name: String): Boolean {
 class BillStockRow(val line: BillStock.Line) {
     var include by mutableStateOf(line.sure)
     var qty by mutableStateOf(
-        (line.qty ?: line.billQty?.takeIf { line.problem == BillStock.Problem.NO_UNIT })?.stripTrailingZeros()?.toPlainString().orEmpty(),
+        // (a new product: the bill's own quantity, in the bill's unit it is added with)
+        (line.qty ?: line.billQty?.takeIf { line.problem == BillStock.Problem.NO_UNIT || line.problem == BillStock.Problem.NO_PRODUCT })
+            ?.stripTrailingZeros()?.toPlainString().orEmpty(),
     )
     val parsedQty: BigDecimal? get() = qty.replace(",", "").toBigDecimalOrNull()?.takeIf { it.signum() > 0 }
     /** Ticked and ready: a product and a quantity. */
     val moves: Boolean get() = include && line.product != null && parsedQty != null
+
+    /** Not in the shop's inventory: the name and unit it is added as when ticked (owner, 16 Oct 2026: "stock-a add panna mudiyala"). */
+    var newName by mutableStateOf(line.itemName)
+    var newUnit by mutableStateOf(BillStock.productUnit(line.billUnit))
+    /** Ticked, not in the inventory, with a name and a quantity: added as a new product on save, its stock in by the bill. */
+    val creates: Boolean get() = include && line.product == null && parsedQty != null && newName.isNotBlank() && newUnit.isNotBlank()
 }
+
+/** A bill item not in the inventory, as the save adds it: a new product (at the bill's rate) and its stock in. */
+data class NewBillProduct(val name: String, val unit: String, val qty: BigDecimal, val rate: BigDecimal?)
 
 /**
  * A shop bill as it becomes a ledger entry: who it's with, the bill date,
@@ -134,6 +145,12 @@ class BillEntryState {
     /** What the save moves: each ticked product and its quantity in the product's unit. */
     val stockToMove: List<Pair<com.shopai.app.brain.tools.ProductRef, BigDecimal>>
         get() = stockRows.filter { it.moves }.map { it.line.product!! to it.parsedQty!! }
+
+    /** Ticked items of a supplier bill that are not in the inventory: added as new products, their stock in (on save, never before). */
+    val productsToAdd: List<NewBillProduct>
+        get() = if (!stockIn) emptyList() else stockRows.filter { it.creates }.map {
+            NewBillProduct(it.newName.trim().replace(Regex("""\s+"""), " "), it.newUnit.trim().uppercase(), it.parsedQty!!, it.line.rate)
+        }
 
     /** The owner checked [field] (confirmed it, or typed it). */
     fun verified(field: BillField) {
@@ -203,7 +220,9 @@ class BillEntryState {
             // Nothing uncertain is saved without the owner's check.
             toVerify.isEmpty() &&
             // A ticked stock line needs its quantity.
-            stockRows.none { it.include && it.line.product != null && it.parsedQty == null }
+            stockRows.none { it.include && it.line.product != null && it.parsedQty == null } &&
+            // A ticked new product needs its name, unit and quantity.
+            (!stockIn || stockRows.none { it.include && it.line.product == null && !it.creates })
 
     fun startManual() {
         reset()
@@ -551,6 +570,8 @@ private fun VerifyNote(state: BillEntryState, field: BillField) {
 private fun BillStockRowView(row: BillStockRow, stockIn: Boolean) {
     val product = row.line.product
     fun plain(q: BigDecimal) = q.stripTrailingZeros().toPlainString()
+    // Not in the inventory, on a supplier bill: tick to add it as a new product with its stock in.
+    if (product == null && stockIn) { NewProductRowView(row); return }
     Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
         Checkbox(checked = row.include && product != null, onCheckedChange = { row.include = it }, enabled = product != null)
         Column(modifier = Modifier.weight(1f)) {
@@ -582,6 +603,40 @@ private fun BillStockRowView(row: BillStockRow, stockIn: Boolean) {
     if (product != null && row.include) {
         ShopTextField(
             stringResource(R.string.bill_stock_qty, product.unit),
+            row.qty,
+            { row.qty = it.filter { ch -> ch.isDigit() || ch == '.' } },
+            placeholder = "0",
+            error = if (row.parsedQty == null) stringResource(R.string.bill_amount_invalid) else null,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        )
+    }
+}
+
+/** A supplier bill's item that is not in the inventory: ticked, it is added as a new product (name, unit, quantity editable). */
+@Composable
+private fun NewProductRowView(row: BillStockRow) {
+    Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
+        Checkbox(checked = row.include, onCheckedChange = { row.include = it })
+        Column(modifier = Modifier.weight(1f)) {
+            Text(row.line.itemName, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+            Text(
+                if (row.include) stringResource(R.string.bill_stock_new_product) else stringResource(R.string.bill_stock_new_tick),
+                style = MaterialTheme.typography.bodySmall,
+                color = if (row.include && !row.creates) Danger else ShopAiThemeColors.onSurfaceVariant,
+            )
+        }
+    }
+    if (row.include) {
+        ShopTextField(
+            stringResource(R.string.bill_stock_new_name), row.newName, { row.newName = it },
+            error = if (row.newName.isBlank()) stringResource(R.string.bill_stock_new_name_needed) else null,
+        )
+        ShopTextField(
+            stringResource(R.string.bill_stock_new_unit), row.newUnit, { row.newUnit = it.uppercase() }, placeholder = "PCS",
+            error = if (row.newUnit.isBlank()) stringResource(R.string.bill_stock_new_unit_needed) else null,
+        )
+        ShopTextField(
+            stringResource(R.string.bill_stock_qty, row.newUnit.ifBlank { "PCS" }),
             row.qty,
             { row.qty = it.filter { ch -> ch.isDigit() || ch == '.' } },
             placeholder = "0",

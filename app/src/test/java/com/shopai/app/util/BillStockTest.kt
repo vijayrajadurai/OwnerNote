@@ -100,4 +100,50 @@ class BillStockTest {
     @Test fun summaryLinesAreNotItems() {
         assertTrue(BillStock.lines(listOf(BillLineItem("12345", r("10"))), shop).isEmpty())
     }
+
+    /**
+     * The owner's purchase bill (16 Oct 2026): every item was "Not in your inventory" and could not be ticked; the shop's
+     * address was read as an item; row numbers stayed on names. The address is no item, the names are clean, and an item not
+     * in the inventory keeps its quantity, unit and rate — to be added as a new product.
+     */
+    @Test fun aNewShopsBillItemsAreCleanAndCanBeAdded() {
+        val bill = """
+            KUMAR TRADERS
+            123, Main Road, Gandhi Nagar, Coimbatore - 641 012, Tamil Nadu | Supplier Ref ST
+            TAX INVOICE
+            Invoice No: P/2024-25/0786
+            Date: 15/03/2025
+            Bill To: SRI LAKSHMI SUPER MART
+            S.No Description Qty Rate Amount
+            1 Rice Ponni Aachi 25 kg 52.00 1300.00
+            6 _| Groundnut Oil idhayam 10 ltr 180.00 1800.00
+            Tea Powder _ Tata Tea 5 pkt 120.00 600.00
+            10 | Maida Pillsbury 10 kg 40.00 400.00
+            Grand Total 4,100.00
+        """.trimIndent()
+        // (a new shop: none of these in its inventory yet, as on the owner's phone)
+        val lines = BillStock.lines(BillTextParser.parse(bill).items, emptyList())
+        val names = lines.map { it.itemName }
+        assertTrue(names.toString(), names.none { it.contains("Main Road") || it.contains("641") })
+        assertTrue(names.toString(), "Groundnut Oil idhayam" in names && "Maida Pillsbury" in names && "Tea Powder Tata Tea" in names)
+        val oil = lines.first { it.itemName == "Groundnut Oil idhayam" }
+        assertEquals(BillStock.Problem.NO_PRODUCT, oil.problem)
+        assertEquals(0, r("10").compareTo(oil.billQty))
+        assertEquals("LITRE", BillStock.productUnit(oil.billUnit))
+        assertEquals(0, r("180").compareTo(oil.rate))
+        assertEquals("PACKET", BillStock.productUnit("pkt"))
+        assertEquals("PCS", BillStock.productUnit(null))
+    }
+
+    @Test fun anAddressIsNoItemButAPackSizeIs() {
+        assertTrue(BillStock.addressLine("123, Main Road, Gandhi Nagar, Coimbatore - 641 012, Tamil Nadu"))
+        assertTrue(BillStock.addressLine("GSTIN 33AAAAA0000A1Z5 Phone 98765 43210"))
+        assertFalse(BillStock.addressLine("Detergent Powder Surf Excel"))
+        assertFalse(BillStock.addressLine("Basmati Rice 1006"))
+        assertFalse(BillStock.addressLine("Atta 500 g"))
+        assertEquals("Groundnut Oil idhayam", BillStock.cleanName("6 _| Groundnut Oil idhayam"))
+        assertEquals("Maida Pillsbury", BillStock.cleanName("10 | Maida Pillsbury"))
+        assertEquals("Rice Ponni Aachi", BillStock.cleanName("Rice Ponni Aachi"))
+        assertEquals("Colgate 200g", BillStock.cleanName("Colgate 200g"))
+    }
 }
