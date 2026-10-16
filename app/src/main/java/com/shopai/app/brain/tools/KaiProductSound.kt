@@ -149,6 +149,9 @@ object KaiProductSound {
                 // "டி-ஷர்ட்", "எம்.டி.எஃப். பலகை": a hyphen or the dots of letters said one by one join words too.
                 if ((1 until span).any { j -> !joiner.matches(text.substring(run[j - 1].range.last + 1, run[j].range.first)) }) return@firstNotNullOfOrNull null
                 if (run.any { w -> people.any { p -> p.split(Regex("""\s+""")).any { NameSound.same(w.value, it) } } }) return@firstNotNullOfOrNull null
+                // A shop name's last word said to it ("ஷாப்புக்கு", "ஸ்டோருக்கு") is the shop's, never a product's ("Shop" is no "Soap").
+                if (span == 1 && Regex("""(க்கு|கிட்ட)$""").containsMatchIn(run[0].value) &&
+                    KaiCommands.isShopWord(run[0].value.removeSuffix("க்கு").removeSuffix("கிட்ட"))) return@firstNotNullOfOrNull null
                 // A unit said after its number ("10 பாக்கெட்" = 10 packets) is the unit, not a product that sounds like it (Bucket); said
                 // as the item itself ("பக்கெட் 7"), it may be the product.
                 if (span == 1 && KaiStock.unitOf(KaiSpokenWords.normalize(run[0].value)) != null &&
@@ -242,6 +245,8 @@ object KaiProductSound {
             val w = m.value
             // (a goods word Kai knows in Tamil — "பினாயில்" = phenyl — is read by its own name, never turned into another word)
             if (KaiSpokenWords.normalize(w) != w || w in stockAsk || w in feedGoodsWords) return@replace w
+            // (a shop name's last word, with its "-க்கு" — "ஷாப்புக்கு", "ஸ்டோருக்கு" — is never a product's: "Shop" is no "Soap")
+            if (KaiCommands.isShopWord(w) || KaiCommands.isShopWord(w.removeSuffix("க்கு").removeSuffix("கிட்ட"))) return@replace w
             if (people.any { p -> p.split(Regex("""\s+""")).any { NameSound.same(w, it) } }) return@replace w
             // A whole product name by its sound ("பினாயில்" = Phenyl) is read as that name further on — never a word of another.
             if (productNames.any { n -> !KaiSpokenWords.hasTamil(n) && NameSound.same(w, n.replace(" ", "")) }) return@replace w
