@@ -220,6 +220,39 @@ object KaiProductSound {
         return if (copied == 0) text else out.append(text, copied, text.length).toString()
     }
 
+    /**
+     * The mic's Tamil words for words of the shop's product names, put in English one by one — after [withProducts], for a part
+     * of a name said ("கிரவுண்ட்நட் ஆயில்" = "groundnut oil" of Groundnut Oil idhayam, "ஃபார்ச்சூன் ஆயில்" = "fortune oil" of
+     * Sunflower Oil Fortune — owner, 16 Oct 2026), so it is read as the typed words are. Only a word that sounds exactly like one
+     * name word (the closest when several do), never one of Kai's own words, a number, a unit or a person in the books. Whatever
+     * names the shop adds — from a bill, by hand, by chat — no word list.
+     */
+    /** Every Tamil word of the goods names Kai knows (KaiFeed) — read by those names, not by a product word's sound. */
+    private val feedGoodsWords: Set<String> by lazy {
+        KaiFeed.goodsNames.flatMap { (names, _) -> names.filter(KaiSpokenWords::hasTamil).flatMap { it.split(Regex("""\s+""")) } }.toSet()
+    }
+
+    fun withProductWords(text: String, productNames: List<String>, people: List<String> = emptyList()): String {
+        if (!KaiSpokenWords.hasTamil(text)) return text
+        val vocab = productNames.flatMap { it.split(Regex("""[\s/()\-_,.|]+""")) }
+            .filter { w -> w.length >= 3 && w.all(Char::isLetter) && !KaiSpokenWords.hasTamil(w) }
+            .map { it.lowercase() }.distinct()
+        if (vocab.isEmpty()) return text
+        return tamilWord.replace(text) { m ->
+            val w = m.value
+            // (a goods word Kai knows in Tamil — "பினாயில்" = phenyl — is read by its own name, never turned into another word)
+            if (KaiSpokenWords.normalize(w) != w || w in stockAsk || w in feedGoodsWords) return@replace w
+            if (people.any { p -> p.split(Regex("""\s+""")).any { NameSound.same(w, it) } }) return@replace w
+            // A whole product name by its sound ("பினாயில்" = Phenyl) is read as that name further on — never a word of another.
+            if (productNames.any { n -> !KaiSpokenWords.hasTamil(n) && NameSound.same(w, n.replace(" ", "")) }) return@replace w
+            // The name word with the same sound skeleton first ("phenyl", not "fennel" for "பினாயில்"), else the closest in shape.
+            vocab.filter { e -> NameSound.same(w, e) }.singleOrNull()?.let { return@replace it }
+            val gaps = vocab.mapNotNull { e -> wordGap(w, e)?.let { e to it } }
+            val best = gaps.minOfOrNull { it.second } ?: return@replace w
+            gaps.filter { it.second == best }.map { it.first }.singleOrNull() ?: w
+        }
+    }
+
     /** A name the shop keeps in Tamil letters said in English letters ("Clutch plate" for "கிளட்ச் பிளேட்"): the same name, by sound. */
     fun sameName(tamil: String, english: String): Boolean {
         if (!KaiSpokenWords.hasTamil(tamil) || KaiSpokenWords.hasTamil(english) || english.none(Char::isLetter)) return false
