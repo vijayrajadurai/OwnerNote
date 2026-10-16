@@ -204,6 +204,7 @@ fun DocumentCaptureSection(
     val billSavedMessage = stringResource(R.string.capture_bill_saved)
     val stockMovedFormat = stringResource(R.string.bill_stock_moved)
     val stockFailedFormat = stringResource(R.string.bill_stock_failed)
+    val productsAddedFormat = stringResource(R.string.bill_stock_new_added)
 
     // ---- Reading a photo ----
 
@@ -474,13 +475,28 @@ fun DocumentCaptureSection(
                 }.getOrDefault(false)
                 if (moved) stockMoved++ else stockFailed += product.name
             }
+            // Items not in the inventory that the owner ticked on a supplier bill: each added as a new product (at the bill's rate),
+            // then its stock in with this bill as the reason — only now, after the entry is saved.
+            var productsAdded = 0
+            for (item in bill.productsToAdd) {
+                val added = runCatching {
+                    val ref = container.kaiTools.createProduct(
+                        com.shopai.app.brain.tools.NewProduct(name = item.name, category = "General", unit = item.unit, purchasePrice = item.rate),
+                    ) ?: return@runCatching false
+                    productsAdded++
+                    container.inventoryRepository.stockIn(ref.id, item.qty.toDouble(), stockReason)
+                    true
+                }.getOrDefault(false)
+                if (added) stockMoved++ else stockFailed += item.name
+            }
 
             bill.reset()
             selectedBillId = savedId
             when {
                 !paymentRecorded -> error = billPaymentFailedFormat.format(BillNotesFormatter.rupees(paid))
                 savedId == null -> error = errorLocalSave
-                else -> info = billSavedMessage + if (stockMoved > 0) " " + stockMovedFormat.format(stockMoved) else ""
+                else -> info = billSavedMessage + (if (stockMoved > 0) " " + stockMovedFormat.format(stockMoved) else "") +
+                    (if (productsAdded > 0) " " + productsAddedFormat.format(productsAdded) else "")
             }
             if (stockFailed.isNotEmpty()) error = listOfNotNull(error, stockFailedFormat.format(stockFailed.joinToString())).joinToString("\n")
             // Kai: what is still pending on the saved bill (from the saved values).

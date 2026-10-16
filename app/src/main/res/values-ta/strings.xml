@@ -1468,4 +1468,12 @@ NewonX — Owner Note. ஆப்பில் உதவி & ஆதரவு.]]><
     <string name="menu_need_name">Item பெயர் போடுங்க</string>
     <string name="menu_need_price">0-க்கு மேல விலை போடுங்க</string>
     <string name="menu_save_failed">சேமிக்க முடியல. மறுபடி try பண்ணுங்க.</string>
+    <!-- A supplier bill's items not in the inventory, added as new products (owner, 16 Oct 2026) -->
+    <string name="bill_stock_new_tick">உங்க Inventory-ல இல்ல — tick பண்ணா புது product-ஆ stock-ஓட சேரும்.</string>
+    <string name="bill_stock_new_product">புது product — bill-ஐ save பண்ணும்போது Inventory-ல சேர்ந்து stock உள்ள வரும்.</string>
+    <string name="bill_stock_new_name">Product பெயர்</string>
+    <string name="bill_stock_new_unit">Unit (PCS, KG, LITRE, PACKET, BOX…)</string>
+    <string name="bill_stock_new_name_needed">Product பெயர் போடுங்க</string>
+    <string name="bill_stock_new_unit_needed">Unit போடுங்க</string>
+    <string name="bill_stock_new_added">%1$d புது product Inventory-ல சேர்ந்துடுச்சு.</string>
 </resources>
