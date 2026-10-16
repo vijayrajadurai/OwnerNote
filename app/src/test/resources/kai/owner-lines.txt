@@ -288,3 +288,14 @@ ENTRY  | naan Murugan Stores ku 1000 koduthuttan        | OUT Murugan Stores 100
 
 # Owner's phone (15 Oct 2026): "pulungal arisi 10bgs" — "bgs" is bags (typed shorthand), never a word to teach.
 STOCK  | Rice 2 bgs vandhuchu                           | Rice 300
+
+# Credit / debit for every name kind (owner, 16 Oct 2026: "kumar enaku 1000 tharanum nu sonnalum or kumar tea shop enaku 3000
+# tharanum correct note pannanum"): a person, a shop with a middle word, amounts in words — typed and by mic.
+ENTRY  | Ravi Tea Shop enakku 3000 tharanum             | CREDIT Ravi Tea Shop 3000
+ENTRY  | Ravi Tea Shop kitta moonu aayiram vaanganum    | CREDIT Ravi Tea Shop 3000
+ENTRY  | naan Ravi Tea Shop ku 2000 tharanum            | DEBIT Ravi Tea Shop 2000
+ENTRY  | Kumar enakku 1000 tharanum                     | CREDIT Kumar 1000
+
+# Stock both ways round and "kammi pannu" (owner, 16 Oct 2026: "same stock-kum — logic correct-a irukkanum").
+STOCK  | 2 pieces Lux vandhuchu                         | Lux Soap 62
+STOCK  | Rice 2 kg kammi pannu                          | Rice 248

@@ -364,6 +364,10 @@ object KaiStock {
         // Only a name said right before its quantity ("bhaniyan 20", "Lux 12 vandhuchu") — "collect in total" or "colgate paste 10"
         // (a longer name Kai doesn't have) are never taken for a product by sound or by its first word.
         fun beforeQty(end: Int) = words.getOrNull(end)?.let { n -> n.first().isDigit() || n in numberWords } == true
+        // "2 pieces Lux vandhuchu", "rendu box Colgate": the quantity (and its unit) said first — the same as "Lux 2 pieces" (owner,
+        // 16 Oct 2026: one order worked, the other was asked).
+        fun isQty(w: String?) = w != null && (w.first().isDigit() || w in numberWords)
+        fun afterQty(start: Int) = start > 0 && (isQty(words[start - 1]) || words[start - 1] in units && isQty(words.getOrNull(start - 2)))
         val sounds = named.withIndex().filter { (k, p) ->
             val pw = idx.spaceWords[k]
             pw.size <= 3 && p.name.count(Char::isLetter) >= 5 && words.windowed(pw.size).withIndex().any { (i, w) ->
@@ -379,7 +383,7 @@ object KaiStock {
         val first = named.withIndex().filter { (k, _) ->
             val head = idx.spaceWords[k].first()
             head.length >= 3 && head.first().isLetter() && head !in units && head !in fillers &&
-                words.withIndex().any { (i, w) -> w == head && beforeQty(i + 1) && wholeName(i, i + 1) }
+                words.withIndex().any { (i, w) -> w == head && (beforeQty(i + 1) || afterQty(i)) && wholeName(i, i + 1) }
         }.map { it.value }
         first.singleOrNull()?.let { return it to it.name.lowercase(Locale.ROOT) }
         // "Noodles 5" with "Instant noodles" in the shop, "Chain 2" with "Necklace / chain", "Sona Masoori 10 kg": the whole name said
@@ -395,6 +399,16 @@ object KaiStock {
             // name, in any order — the brand said first, as owners do.
             if (said.size >= 2 && said.all { it.length >= 3 }) named.withIndex().filter { (k, _) -> holdsAnyOrder(idx.words[k], said) }.map { it.value }
                 .singleOrNull()?.let { return it to said.joinToString(" ") }
+        }
+        // The same, said after its quantity: "2 pieces Lux Soap vandhuchu", "5 kg Sona Masoori vandhuchu".
+        for (start in words.indices) {
+            if (!afterQty(start)) continue
+            var to = start
+            while (to < words.size && nameWord(words[to])) to++
+            val said = words.subList(start, to)
+            if (said.isEmpty() || said.sumOf { it.length } < 3) continue
+            named.withIndex().filter { (k, _) -> holds(idx.words[k], said) || said.size >= 2 && said.all { it.length >= 3 } && holdsAnyOrder(idx.words[k], said) }
+                .map { it.value }.singleOrNull()?.let { return it to said.joinToString(" ") }
         }
         // "Suga 5", "Biscui 2 box", "Horlick 3": the one product whose first word the said word is the start of (four letters
         // or more, most of the name) — a name cut short while typing, never a new product.

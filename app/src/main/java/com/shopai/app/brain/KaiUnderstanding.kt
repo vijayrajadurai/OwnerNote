@@ -334,12 +334,14 @@ object KaiUnderstanding {
         val numberWords = tamilUnits.keys + tamilHundreds.keys + tamilScales.keys
         val months = setOf("jan", "january", "feb", "february", "mar", "march", "apr", "april", "may", "jun", "june", "jul", "july",
             "aug", "august", "sep", "sept", "september", "oct", "october", "nov", "november", "dec", "december")
-        val word = words.firstOrNull { w ->
+        // "Mani Tea Shop", "மணி டீ ஷாப்": the hour word is a name right before a shop's words (owner lines, 16 Oct 2026).
+        fun shopAfter(i: Int) = (1..2).any { k -> words.getOrNull(i + k)?.let(com.shopai.app.brain.tools.KaiCommands::isShopWord) == true }
+        val word = words.withIndex().firstOrNull { (i, w) ->
             val l = w.lowercase(Locale.ROOT)
             val base = stripSuffix(l)
-            w.count { it.isLetter() } >= 2 && base !in notNames && l !in notNames && base !in numberWords && base !in months &&
+            w.count { it.isLetter() } >= 2 && (base !in notNames && l !in notNames || l in setOf("mani", "மணி") && shopAfter(i)) && base !in numberWords && base !in months &&
                 !l.all { it in "k" } && base.length >= 2
-        } ?: return null
+        }?.value ?: return null
         val base = stripSuffix(word.lowercase(Locale.ROOT))
         return word.take(base.length).replaceFirstChar { it.titlecase(Locale.ROOT) }
     }
@@ -355,6 +357,11 @@ object KaiUnderstanding {
         Regex("""(?<![\p{L}])${Regex.escape(first)}\s+([\p{L}][\p{L}\p{M}]*)(?![\p{L}\p{M}])""", RegexOption.IGNORE_CASE).find(text)?.groupValues?.get(1)
             ?.takeIf { com.shopai.app.brain.tools.KaiCommands.isShopWord(it) }
             ?.let { return "$first ${com.shopai.app.brain.tools.KaiCommands.shopWordFor(first, it)}" }
+        // "Kumar Tea Shop", "குமார் டீ ஷாப்": two words before a shop's last word are the name too (owner, 16 Oct 2026).
+        Regex("""(?<![\p{L}])${Regex.escape(first)}\s+([\p{L}][\p{L}\p{M}]*)\s+([\p{L}][\p{L}\p{M}]*?)(?:\s*-?\s*(?:ku|kku|ukku|kitta|க்கு|கிட்ட))?(?![\p{L}\p{M}])""", RegexOption.IGNORE_CASE)
+            .find(text)?.takeIf { m -> com.shopai.app.brain.tools.KaiCommands.isShopWord(m.groupValues[2]) &&
+                m.groupValues[1].lowercase(Locale.ROOT).let { w -> w !in notNames && w.length >= 2 } }
+            ?.let { m -> return "$first ${com.shopai.app.brain.tools.KaiCommands.middleWordFor(first, m.groupValues[1])} ${com.shopai.app.brain.tools.KaiCommands.shopWordFor(first, m.groupValues[2], m.groupValues[1])}" }
         val m = Regex("""(?<![\p{L}])${Regex.escape(first)}\s+(\p{Lu}[\p{L}\p{M}]+)""").find(text) ?: return first
         val second = m.groupValues[1]
         val base = stripSuffix(second.lowercase(Locale.ROOT))
