@@ -233,7 +233,10 @@ class KaiDailySales(
         val category = runCatching { tools.businessCategory() }.getOrNull()
         val kinds = KaiServices.kindsFor(category)
         // As the mic writes the name of a service the owner added ("ஹேர் போட்டாக்ஸ்" = their Hair botox): that name, by its sound.
-        val sounded = ownBySound(raw, prices.keys)
+        // The mic's Tamil letters for the owner's own Menu names, by sound, whatever language they typed them in ("ஃபேஸ் மசாஜ்" =
+        // their "Face massage", "தலை முடி வெட்டு" = their "Thalai mudi vettu") — their Menu before Kai's own words (owner, 16 Oct 2026).
+        val sounded = ownBySound(menuBySound(raw, prices.keys, people), prices.keys)
+        val heardMenu = sounded != raw
         val namesPerson = people.any { p -> p.isNotBlank() && Regex("""(?i)(?<![\p{L}])${Regex.escape(p)}(?![\p{L}])""").containsMatchIn(text) }
 
         // The Menu said in chat: "menu: cutting 100, shaving 80, facial 110" — kept only on Confirm.
@@ -263,7 +266,8 @@ class KaiDailySales(
             amountsIn(text).lastOrNull()?.takeIf { it.signum() > 0 }?.let { return priceToKeep(name, it, priceOf(prices, name), lang) }
         }
         // (never the shop's own product — "Horlicks stock evlo" is its stock — nor a stock question: only a service's price)
-        val one = (KaiServices.serviceNamed(text, prices.keys, kinds) ?: KaiServices.serviceNamed(raw, prices.keys, kinds) ?: KaiServices.serviceNamed(sounded, prices.keys, kinds))
+        val one = ((if (heardMenu) KaiServices.serviceNamed(sounded, prices.keys, kinds) else null) ?: KaiServices.serviceNamed(text, prices.keys, kinds)
+            ?: KaiServices.serviceNamed(raw, prices.keys, kinds) ?: KaiServices.serviceNamed(sounded, prices.keys, kinds))
             ?.takeIf { n -> priceOf(prices, n) != null || names.none { p -> Regex("""(?i)(?<![\p{L}])${Regex.escape(n)}(?![\p{L}])""").containsMatchIn(p) } }
             ?.takeIf { !stockAsk.containsMatchIn(text) }
         if (one != null && rateWord.containsMatchIn(text) && !namesPerson) {
@@ -281,7 +285,8 @@ class KaiDailySales(
         // (the mic's own words only when Kai didn't already read them as the shop's product — "ஃப்ரோசன் பரோட்டா" is Frozen paratha)
         val lower = " " + text.lowercase(Locale.ROOT) + " "
         val productSaid = names.any { n -> n.lowercase(Locale.ROOT).split(Regex("""\s+""")).take(2).joinToString(" ").let { head -> head.length >= 3 && lower.contains(" $head ") } }
-        val sale = KaiServices.saleIn(text, prices, names, serviceShop, kinds)
+        val sale = (if (heardMenu && !productSaid) KaiServices.saleIn(sounded, prices, names, serviceShop, kinds)?.takeIf { l -> l.items.any { i -> priceOf(prices, i.name) != null } } else null)
+            ?: KaiServices.saleIn(text, prices, names, serviceShop, kinds)
             ?: (if (productSaid) null else KaiServices.saleIn(raw, prices, names, serviceShop, kinds) ?: KaiServices.saleIn(sounded, prices, names, serviceShop, kinds))
             ?: return otherShopsService(text, raw, sounded, prices, names, serviceShop, kinds, productSaid, lang)
         return startSale(sale, said, prices, lang)
@@ -307,6 +312,13 @@ class KaiDailySales(
             ta = "ஓனர், $n உங்க மெனுவுல இல்ல — Daily Sales Note-ல எதுவும் போடல. நீங்க $n பண்றீங்கன்னா “மெனு: $first 150” மாதிரி விலையோட சொல்லுங்க, இல்ல Daily Sales Note → Menu-ல சேருங்க.",
             tl = "Owner, $n unga menu-la illa — Daily Sales Note-la edhuvum podala. Neenga $n pannureenga-na “menu: $first 150” maadhiri vilaiyoda sollunga, illa Daily Sales Note → Menu-la serunga.",
             en = "Owner, $n isn't on your Menu — nothing went into the Daily Sales Note. If you do offer it, say “menu: $first 150” with its price, or add it in Daily Sales Note → Menu.")
+    }
+
+    /** [raw] with the owner's Menu names (English / Tanglish letters) put in where the mic wrote them in Tamil, by sound — as a whole phrase. */
+    private fun menuBySound(raw: String, own: Collection<String>, people: List<String>): String {
+        val latin = own.filter { n -> !com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(n) && n.any(Char::isLetter) }
+        if (latin.isEmpty() || !com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(raw)) return raw
+        return runCatching { com.shopai.app.brain.tools.KaiProductSound.withProducts(raw, latin, people) }.getOrDefault(raw)
     }
 
     /** [raw] with the owner's own service names put in where the mic wrote them in Tamil letters (only theirs — Kai's words are listed). */

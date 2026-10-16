@@ -99,6 +99,41 @@ class KaiMenuTest {
         }
     }
 
+    /**
+     * The owner's phone (16 Oct 2026): "facial onnu" was sold as their "Face massage" (Kai's own list calls both Facial), and the
+     * mic didn't find their items. Whatever the owner types on the Menu — English or Tanglish, a service or a product — the mic's
+     * Tamil letters for it are that item by sound, before Kai's own words; an item is never another of theirs.
+     */
+    @Test fun theOwnersMenuNamesAreHeardFromTheMic() {
+        val menu = listOf("Face massage" to "250", "Head massage" to "150", "Beard trim" to "60", "Gold facial" to "900", "Bridal makeup" to "5000",
+            "Hair spa" to "400", "Thalai mudi vettu" to "120", "Masala dosa" to "60", "Filter coffee" to "25", "Chicken biryani" to "150")
+        val sells = listOf(
+            "face massage onnu" to "Face massage ×1", "ஃபேஸ் மசாஜ் ஒன்னு" to "Face massage ×1", "ஹெட் மசாஜ் ஒன்னு" to "Head massage ×1",
+            "பியர்ட் ட்ரிம் ஒன்னு" to "Beard trim ×1", "gold facial onnu" to "Gold facial ×1", "கோல்ட் ஃபேஷியல் ஒன்னு" to "Gold facial ×1",
+            "பிரைடல் மேக்கப் ஒன்னு" to "Bridal makeup ×1", "ஹேர் ஸ்பா ரெண்டு" to "Hair spa ×2", "தலை முடி வெட்டு ஒன்னு" to "Thalai mudi vettu ×1",
+            "masala dosa rendu" to "Masala dosa ×2", "மசாலா தோசை ரெண்டு" to "Masala dosa ×2", "ஃபில்டர் காபி மூணு" to "Filter coffee ×3",
+            "சிக்கன் பிரியாணி ஒன்னு" to "Chicken biryani ×1")
+        val fails = mutableListOf<String>()
+        for (category in listOf("BEAUTY_SALON", "RESTAURANT_FOOD", "GROCERY")) {
+            val s = Shop(category)
+            runBlocking { s.memory.open("shop-1", "owner-1"); menu.forEach { (n, p) -> KaiMenu.save(s.memory, n, BigDecimal(p)) } }
+            for ((line, want) in sells) {
+                val t = s.say(line)
+                if (!all(t).contains(want)) fails += "[$category] «$line» → ${all(t)} (want $want)"
+                s.say("venam")
+            }
+            // "Facial" is not on this Menu: never sold as their Face massage or Gold facial, typed or by mic.
+            for (line in listOf("facial onnu", "ஃபேஷியல் ஒன்னு")) {
+                val t = s.say(line)
+                if (t.card?.buttons?.isNotEmpty() == true && !all(t).contains("Facial —") || all(t).contains("Face massage") || all(t).contains("Gold facial"))
+                    fails += "[$category] «$line» → ${all(t)}: another Menu item"
+                s.say("venam")
+            }
+            if (s.tools.sales.isNotEmpty()) fails += "[$category] sold before Confirm"
+        }
+        assertTrue(fails.joinToString("\n"), fails.isEmpty())
+    }
+
     @Test fun kaiNeverAddsAnItemByItself() {
         val s = Shop("GROCERY")
         // An item not on the Menu: said plainly, how to add it — nothing kept, no sale.
