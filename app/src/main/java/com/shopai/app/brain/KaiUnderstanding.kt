@@ -361,7 +361,7 @@ object KaiUnderstanding {
         Regex("""(?<![\p{L}])${Regex.escape(first)}\s+([\p{L}][\p{L}\p{M}]*)\s+([\p{L}][\p{L}\p{M}]*?)(?:\s*-?\s*(?:ku|kku|ukku|kitta|க்கு|கிட்ட))?(?![\p{L}\p{M}])""", RegexOption.IGNORE_CASE)
             .find(text)?.takeIf { m -> com.shopai.app.brain.tools.KaiCommands.isShopWord(m.groupValues[2]) &&
                 m.groupValues[1].lowercase(Locale.ROOT).let { w -> w !in notNames && w.length >= 2 } }
-            ?.let { m -> return "$first ${com.shopai.app.brain.tools.KaiCommands.middleWordFor(first, m.groupValues[1])} ${com.shopai.app.brain.tools.KaiCommands.shopWordFor(first, m.groupValues[2])}" }
+            ?.let { m -> return "$first ${com.shopai.app.brain.tools.KaiCommands.middleWordFor(first, m.groupValues[1])} ${com.shopai.app.brain.tools.KaiCommands.shopWordFor(first, m.groupValues[2], m.groupValues[1])}" }
         val m = Regex("""(?<![\p{L}])${Regex.escape(first)}\s+(\p{Lu}[\p{L}\p{M}]+)""").find(text) ?: return first
         val second = m.groupValues[1]
         val base = stripSuffix(second.lowercase(Locale.ROOT))

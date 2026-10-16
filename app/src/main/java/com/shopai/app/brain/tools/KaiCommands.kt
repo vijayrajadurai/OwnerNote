@@ -276,10 +276,13 @@ object KaiCommands {
     private fun shopKey(word: String): String = word.substringBefore('-').replace(Regex("""(\p{L})ு$"""), "$1்").replace(Regex("""(.)்\1்$"""), "$1்")
 
     /** "ஸ்டோர்" → "Store" for a name kept in English letters; the word as said otherwise. */
-    fun shopWordFor(person: String, word: String): String = shopKey(word).let { w ->
-        // (and back: the mic's "ரவி டீ ஷாப்" with "ஷாப்" already read as "shop" stays one name in Tamil letters)
-        (if (!com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(person)) englishShopWord[w] ?: w
-            else tamilShopWord[w.lowercase(Locale.ROOT)] ?: w).replaceFirstChar { it.titlecase(Locale.ROOT) }
+    fun shopWordFor(person: String, word: String, mid: String? = null): String = shopKey(word).let { w ->
+        // (and back: the mic's "ரவி டீ ஷாப்" — a Tamil name and middle word, "ஷாப்" already read as "shop" — stays one name in
+        // Tamil letters; a shop word the owner typed after a Tamil-letter name — "குமார் Hotel" — stays as typed)
+        val tamil = com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(person)
+        (if (!tamil) englishShopWord[w] ?: w
+            else if (mid != null && com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(mid)) tamilShopWord[w.lowercase(Locale.ROOT)] ?: w else w)
+            .replaceFirstChar { it.titlecase(Locale.ROOT) }
     }
 
     /** A word between a name and its shop word, in the name's letters: the mic's "டீ" in "Kumar டீ ஷாப்" is "Tea". */
@@ -306,7 +309,7 @@ object KaiCommands {
                     (m.groupValues[1].equals(person, ignoreCase = true) || com.shopai.app.util.NameSound.same(m.groupValues[1], person))
             } ?: return null
         val mid = m.groupValues[2].takeIf { it.isNotEmpty() }?.let { middleWordFor(person, it) }
-        val name = listOfNotNull(person, mid, shopWordFor(person, m.groupValues[3])).joinToString(" ")
+        val name = listOfNotNull(person, mid, shopWordFor(person, m.groupValues[3], m.groupValues[2].ifEmpty { null })).joinToString(" ")
         return name.takeIf { n -> known.none { it.equals(n, ignoreCase = true) } }
     }
 
@@ -406,7 +409,7 @@ object KaiCommands {
                     val before = all.indices.reversed().takeWhile(::nameHere).reversed().map { all[it] }.takeLast(2)
                     // (the mic's "ஸ்டோர்" after a name in English letters is that name's way: "Vijayalakshmi Store", as typed)
                     // ("ரவி டீ ஷாப்புக்கு", "Kumar டீ ஷாப்புக்கு": the word between in the name's letters — "Kumar Tea Shop")
-                    if (before.isNotEmpty()) return (listOf(before.first()) + before.drop(1).map { middleWordFor(before.first(), it) } + shopWordFor(before.first(), shopKey(name)))
+                    if (before.isNotEmpty()) return (listOf(before.first()) + before.drop(1).map { middleWordFor(before.first(), it) } + shopWordFor(before.first(), shopKey(name), before.getOrNull(1)))
                         .joinToString(" ") { it.replaceFirstChar { c -> c.titlecase(Locale.ROOT) } }
                 }
                 return name.replaceFirstChar { it.titlecase(Locale.ROOT) }

@@ -329,6 +329,9 @@ object KaiSpokenWords {
             tamilKept.filter { t -> t.length >= 3 && t.endsWith("்") && t !in KaiFeed.notNames && w.length == t.length &&
                 w.startsWith(t.dropLast(1)) && w.last() in "ாிீுூெேைொோ" }.singleOrNull()?.let { return@replace it + m.groupValues[2] }
             KaiFeed.productNames[w]?.let { english -> if (shopWords.any { it.equals(english, ignoreCase = true) }) return@replace english + m.groupValues[2] }
+            // A shop name's last word ("ஷாப்", the mic's "ஷாபு-ku") is only ever a shop word of the shop's names — never "Soap".
+            if (KaiCommands.isShopWord(w)) return@replace nameWords.filter { n -> KaiCommands.isShopWord(n) && (spelled(n) == w || sounds(w, n)) }.singleOrNull()
+                ?.let { it + m.groupValues[2] } ?: m.value
             nameWords.filter { n -> spelled(n) == w || startsAlike(w, n) && (sounds(w, n) || sounds(w, soft(n))) }.singleOrNull()
                 ?.let { return@replace it + m.groupValues[2] }
             // "ரமேஷும்" (Ramesh too): the name, then "um".

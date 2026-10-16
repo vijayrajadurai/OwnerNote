@@ -2563,7 +2563,7 @@ class KaiAgent(
         tokens.getOrNull(i + 2)?.takeIf { nextTo(i, i + 1) && nextTo(i + 1, i + 2) && KaiCommands.isShopWord(it.substringBefore('-')) }?.let { last ->
             val mid = tokens[i + 1].substringBefore('-')
             if (mid.length >= 2 && !KaiEntityResolver.isFunctionWord(mid.lowercase(Locale.ROOT)) && com.shopai.app.brain.tools.KaiPaymentDirection.of(mid) == null)
-                return mid to "$name ${KaiCommands.middleWordFor(name, mid)} ${KaiCommands.shopWordFor(name, last.substringBefore('-'))}"
+                return mid to "$name ${KaiCommands.middleWordFor(name, mid)} ${KaiCommands.shopWordFor(name, last.substringBefore('-'), mid)}"
         }
         tokens.getOrNull(i + 1)?.takeIf { nextTo(i, i + 1) }?.let(::usable)?.let { q ->
             // "Kumar Tea Shop": a shop's last word right after keeps the whole name (owner, 16 Oct 2026 — never "Kumar Tea").
