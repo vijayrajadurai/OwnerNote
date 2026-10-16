@@ -1523,4 +1523,12 @@ NewonX — Owner Note. Use Help & Support in the app.]]></string>
     <string name="menu_need_name">Type the item name</string>
     <string name="menu_need_price">Type a price above 0</string>
     <string name="menu_save_failed">Could not save. Try again.</string>
+    <!-- A supplier bill's items not in the inventory, added as new products (owner, 16 Oct 2026) -->
+    <string name="bill_stock_new_tick">Not in your inventory — tick to add it as a new product, with its stock.</string>
+    <string name="bill_stock_new_product">New product — added to Inventory and its stock goes in when you save the bill.</string>
+    <string name="bill_stock_new_name">Product name</string>
+    <string name="bill_stock_new_unit">Unit (PCS, KG, LITRE, PACKET, BOX…)</string>
+    <string name="bill_stock_new_name_needed">Type the product name</string>
+    <string name="bill_stock_new_unit_needed">Type the unit</string>
+    <string name="bill_stock_new_added">%1$d new product(s) added to Inventory.</string>
 </resources>

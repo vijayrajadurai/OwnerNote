@@ -49,6 +49,8 @@ object BillStock {
         /** The quantity in [product]'s own unit; null when it can't be worked out. */
         val qty: BigDecimal?,
         val problem: Problem?,
+        /** The bill's rate for one [billUnit] (null: not printed) — a new product's purchase price. */
+        val rate: BigDecimal? = null,
     ) {
         /** Ticked by itself only when product and quantity are both sure. */
         val sure: Boolean get() = product != null && qty != null && qty.signum() > 0 && problem == null
@@ -112,16 +114,47 @@ object BillStock {
 
     /** Every bill line, matched to a product where one has its name. */
     fun lines(items: List<BillLineItem>, products: List<ProductRef>): List<Line> =
-        items.filter { it.description.any(Char::isLetter) }.map { line(it, products) }
+        items.filter { it.description.any(Char::isLetter) && !addressLine(it.description) }
+            .map { it.copy(description = cleanName(it.description)) }
+            .filter { it.description.count(Char::isLetter) >= 2 }
+            .map { line(it, products) }
 
     fun line(item: BillLineItem, products: List<ProductRef>): Line {
         val product = match(item.description, products)
         val qty = item.quantity?.takeIf { it.signum() > 0 }
-        if (product == null) return Line(item.description, qty, item.unit, null, null, Problem.NO_PRODUCT)
-        if (qty == null) return Line(item.description, null, item.unit, product, null, Problem.NO_QUANTITY)
-        val unit = key(item.unit) ?: return Line(item.description, qty, null, product, qty, Problem.NO_UNIT)
+        val rate = item.unitPrice?.takeIf { it.signum() > 0 }
+        if (product == null) return Line(item.description, qty, item.unit, null, null, Problem.NO_PRODUCT, rate)
+        if (qty == null) return Line(item.description, null, item.unit, product, null, Problem.NO_QUANTITY, rate)
+        val unit = key(item.unit) ?: return Line(item.description, qty, null, product, qty, Problem.NO_UNIT, rate)
         val inUnit = inProductUnit(qty, unit, product)
-        return Line(item.description, qty, item.unit, product, inUnit, if (inUnit == null) Problem.UNKNOWN_UNIT else null)
+        return Line(item.description, qty, item.unit, product, inUnit, if (inUnit == null) Problem.UNKNOWN_UNIT else null, rate)
+    }
+
+    /**
+     * The shop's address, phone or reference read as an item (owner's bill, 16 Oct 2026: "123, Main Road, Gandhi Nagar,
+     * Coimbatore - 641 012, Tamil Nadu | Supplier Ref ST" was an item): a PIN code, or a street / place / reference word.
+     */
+    fun addressLine(text: String): Boolean =
+        Regex("""(?<!\d)\d{3}\s?\d{3}(?!\d)""").containsMatchIn(text) && Regex("""[\p{L}]""").containsMatchIn(text) && !Regex("""(?i)\b\d{3}\s?\d{3}\s*(?:g|gm|kg|ml|l|ltr|pcs)\b""").containsMatchIn(text) ||
+            Regex("""(?i)\b(road|rd\.|street|st\.|nagar|salai|main\s+road|cross|layout|colony|district|dist\.|taluk|tamil\s*nadu|kerala|karnataka|pin\s*code|pincode|gstin|gst\s*no|phone|ph\s*[:.]|mobile|mob\s*[:.]|email|e-mail|www\.|supplier\s+ref|ref\s*no|invoice\s*no|bill\s*no|state\s*code)\b""").containsMatchIn(text)
+
+    /**
+     * An item's name as printed, without a row number or table marks the scan kept ("6 _| Groundnut Oil idhayam" → "Groundnut
+     * Oil idhayam", "10 | Maida Pillsbury" → "Maida Pillsbury", "Tea Powder _ Tata Tea" → "Tea Powder Tata Tea").
+     */
+    fun cleanName(text: String): String = text
+        .replace(Regex("""^\s*(?:s\.?\s*no\.?\s*)?\d{1,3}\s*[_|.)\]:\-]+\s*"""), "")
+        .replace(Regex("""^\s*[_|.)\]:\-]+\s*"""), "")
+        .replace(Regex("""\s*[_|]+\s*"""), " ")
+        .replace(Regex("""\s+"""), " ")
+        .trim(' ', '-', ':', '.', '|', '_', '*')
+
+    /** A bill unit as the shop's products name it, for a new product ("kgs" → KG, "pkt" → PACKET); PCS when none was printed. */
+    fun productUnit(billUnit: String?): String = when (key(billUnit)) {
+        null, "pcs" -> "PCS"
+        "kg" -> "KG"; "g" -> "GRAM"; "ltr" -> "LITRE"; "ml" -> "ML"; "packet" -> "PACKET"; "box" -> "BOX"; "bag" -> "BAG"
+        "bottle" -> "BOTTLE"; "dozen" -> "DOZEN"; "mtr" -> "METER"; "set" -> "SET"; "can" -> "CAN"; "roll" -> "ROLL"; "pair" -> "PAIR"
+        else -> key(billUnit)!!.uppercase(Locale.ROOT)
     }
 
     /** The shop's product this bill line names, or null. */
