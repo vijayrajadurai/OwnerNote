@@ -1352,7 +1352,8 @@ class KaiAgent(
             // ("ஓஎன் 0151" = ON-0151: a code the shop's names write with a hyphen, its letters said and its number.)
             val hyphened = productNames.flatMap { n -> Regex("""(?<![\p{L}\d])[A-Za-z]{1,4}-\d+(?![\d])""").findAll(n).map { it.value.uppercase() } }.toSet()
             val coded = com.shopai.app.brain.tools.KaiSpokenWords.code(com.shopai.app.brain.tools.KaiSpokenWords.withNames(com.shopai.app.brain.tools.KaiSpokenWords.normalize(
-                com.shopai.app.brain.tools.KaiProductSound.withProducts(tamilProductCase(productCase(raw.trim(), productNames), productNames, people), productNames, people)), people + productNames),
+                com.shopai.app.brain.tools.KaiProductSound.withProductWords(com.shopai.app.brain.tools.KaiProductSound.withProducts(
+                    tamilProductCase(productCase(raw.trim(), productNames), productNames, people), productNames, people), productNames, people)), people + productNames),
                 productNames.flatMap { it.uppercase().split(Regex("""[\s-]+""")) }.filter { t -> t.any(Char::isLetter) && t.any(Char::isDigit) }.toSet() + hyphened.map { it.replace("-", "") })
             hyphened.fold(coded) { t, c ->
                 val (letters, digits) = c.split('-')

@@ -391,6 +391,10 @@ object KaiStock {
             while (from > 0 && words[from - 1].let { w -> nameWord(w) || w in units && from - 1 == 0 }) from--
             val said = words.subList(from, end)
             if (said.sumOf { it.length } >= 3) named.withIndex().filter { (k, _) -> holds(idx.words[k], said) }.map { it.value }.singleOrNull()?.let { return it to said.joinToString(" ") }
+            // "Fortune oil 5 litre" for "Sunflower Oil Fortune" (owner, 16 Oct 2026): two words or more of exactly one product's
+            // name, in any order — the brand said first, as owners do.
+            if (said.size >= 2 && said.all { it.length >= 3 }) named.withIndex().filter { (k, _) -> holdsAnyOrder(idx.words[k], said) }.map { it.value }
+                .singleOrNull()?.let { return it to said.joinToString(" ") }
         }
         // "Suga 5", "Biscui 2 box", "Horlick 3": the one product whose first word the said word is the start of (four letters
         // or more, most of the name) — a name cut short while typing, never a new product.
@@ -465,6 +469,10 @@ object KaiStock {
     private fun sameWord(a: String, b: String) = a == b || a.length >= 3 && b.length >= 3 && a.removeSuffix("s") == b.removeSuffix("s")
 
     /** [part] is a whole, shorter part of [name]: "noodles" of "instant noodles", never "shirt" of "t-shirt". */
+    private fun holdsAnyOrder(name: List<String>, part: List<String>) =
+        name.size >= part.size && part.all { b -> name.any { a -> sameWord(a, b) || sameWord(plainWord(a), plainWord(b)) } } &&
+            part.distinct().size == part.size
+
     private fun holds(name: List<String>, part: List<String>) =
         part.isNotEmpty() && name.size > part.size && name.windowed(part.size).any { w -> w.zip(part).all { (a, b) -> sameWord(a, b) || sameWord(plainWord(a), plainWord(b)) } }
 
