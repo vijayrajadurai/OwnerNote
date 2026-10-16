@@ -458,6 +458,33 @@ class KaiAgent(
         /** "Kumar 500 gpay": no give / take verb — the record decides (a customer paid in, the owner paid a supplier out). */
         val bySide: Boolean = false,
     )
+    /** "Selvi puthu per — idhu kadan-aa?": the Credit / Debit offered for a person not in the books, so "aama" said answers it. */
+    private class NewPersonAsk(val choice: KaiAction.ChoosePlan, val turn: Long)
+    private var newPersonAsk: NewPersonAsk? = null
+
+    private val yesToNewPerson = Regex("""(?i)^(?:aama|aamaa|aamam|ama|amam|haan|yes|yeah|ok|okay|seri|sari|correct|crct|kadan|kadanaa|kadan\s*dhaan|kadan\s*thaan|credit|debit|podu|note\s*pannu|add\s*pannu|save\s*pannu|ஆமா|ஆமாம்|சரி|ஓகே|கடன்|கடன்தான்|கிரெடிட்|டெபிட்|போடு)(?:\s+(?:aama|aamaa|seri|sari|kadan|dhaan|thaan|podu|pannu|owner|ஆமா|சரி|கடன்|தான்|போடு|பண்ணு))*\s*[.!]*$""")
+    private val noToNewPerson = Regex("""(?i)^(?:venam|vendam|vaendaam|illa|illai|no|cancel|vidu|வேண்டாம்|வேணாம்|இல்ல|இல்லை|ரத்து|விடு)(?:\s+\p{L}+)?\s*[.!]*$""")
+
+    /**
+     * "aama" / "kadan" / "debit" / "venam" — typed or by mic — to "Selvi puthu per — idhu kadan-aa?": the same as its buttons. "credit" /
+     * "debit" said is the owner's own word for the side; anything else is a new line (the question is dropped, nothing kept).
+     */
+    private suspend fun newPersonAnswered(said: String, lang: KaiLang): KaiTurn? {
+        val ask = newPersonAsk ?: return null
+        newPersonAsk = null
+        if (conversationState.conversationTurn - ask.turn > 2 || ask.choice.requestKey !in requests) return null
+        val text = said.trim()
+        val heard = com.shopai.app.brain.tools.KaiSpokenWords.normalize(text).trim()
+        if (noToNewPerson.matches(text) || noToNewPerson.matches(heard)) return act(KaiAction.CancelRequest(ask.choice.requestKey), lang)
+        if (!yesToNewPerson.matches(text) && !yesToNewPerson.matches(heard)) return null
+        val kind = when {
+            Regex("""(?i)credit|கிரெடிட்""").containsMatchIn(text) -> PlanKind.CREDIT_GIVEN
+            Regex("""(?i)debit|டெபிட்""").containsMatchIn(text) -> PlanKind.DEBIT_TAKEN
+            else -> ask.choice.kind
+        }
+        return act(ask.choice.copy(kind = kind), lang)
+    }
+
     /** "Endha Lokesh Owner?" for a payment: the choices, so a typed / spoken "Chennai" picks one like its button. */
     private var planChoice: List<Pair<PartyMatch, KaiAction.ChoosePlan>>? = null
 
@@ -1469,6 +1496,7 @@ class KaiAgent(
 
         // "Praba dhaan" / "vera aal" after "'Praba thambi' — Praba dhaan-aa, illa Praba-oda thambi-aa?".
         if (relationChoice != null) relationAnswered(said, lang)?.let { return it }
+        newPersonAnswered(said, lang)?.let { return it }
         // "Chennai" after "Endha Lokesh Owner?" [Chennai Lokesh] [Nagapattinam Lokesh]: the same as tapping that choice.
         planChoice?.let { options ->
             planChoice = null
@@ -2530,7 +2558,19 @@ class KaiAgent(
         val name = tokens[i].substringBefore('-').let { if (it.equals(person, ignoreCase = true)) person else it }
         tokens.getOrNull(i - 1)?.takeIf { !it.contains('-') && nextTo(i - 1, i) }?.let(::usable)?.let { return it to "$it $name" }
         if (tokens[i].contains('-')) return null // "Lokesh-ku 500": the name alone
-        tokens.getOrNull(i + 1)?.takeIf { nextTo(i, i + 1) }?.let(::usable)?.let { return it to "$name $it" }
+        // "Kumar Tea Shop", "குமார் டீ ஷாப்": one or two words ending in a shop's last word right after the name — that shop, whatever
+        // the words before it are ("tea" is goods, still the shop's name).
+        tokens.getOrNull(i + 2)?.takeIf { nextTo(i, i + 1) && nextTo(i + 1, i + 2) && KaiCommands.isShopWord(it.substringBefore('-')) }?.let { last ->
+            val mid = tokens[i + 1].substringBefore('-')
+            if (mid.length >= 2 && !KaiEntityResolver.isFunctionWord(mid.lowercase(Locale.ROOT)) && com.shopai.app.brain.tools.KaiPaymentDirection.of(mid) == null)
+                return mid to "$name ${KaiCommands.middleWordFor(name, mid)} ${KaiCommands.shopWordFor(name, last.substringBefore('-'))}"
+        }
+        tokens.getOrNull(i + 1)?.takeIf { nextTo(i, i + 1) }?.let(::usable)?.let { q ->
+            // "Kumar Tea Shop": a shop's last word right after keeps the whole name (owner, 16 Oct 2026 — never "Kumar Tea").
+            val shop = tokens.getOrNull(i + 2)?.takeIf { nextTo(i + 1, i + 2) }?.substringBefore('-')
+                ?.takeIf { KaiCommands.isShopWord(it) }?.let { KaiCommands.shopWordFor(name, it) }
+            return q to (if (shop != null) "$name $q $shop" else "$name $q")
+        }
         return null
     }
 
@@ -3013,6 +3053,9 @@ class KaiAgent(
     /** The shop keeps expiry / batches: a medical shop (or no category / "OTHER" — every feature, as before). */
     private suspend fun expiryShop(): Boolean = runCatching { tools.businessCategory() }.getOrNull()?.trim()?.uppercase(Locale.ROOT)
         .let { it.isNullOrEmpty() || it == "PHARMACY" || it == "OTHER" }
+
+    /** The owner calling it a loan: "kadan", "credit", "udhaar" (typed, or the mic's "கடன்"). */
+    private val loanWord = Regex("""(?i)(?<![\p{L}])(credit|kadan|kadanaa|kadana|kadanaga|udhaar|udhar)(?![\p{L}])|கடன்""")
 
     /** A reminder said in its own words — never the answer to another question. */
     private val reminderSaid = Regex("""(?i)(?<![\p{L}])(remind\p{L}*|reminder|nyabagam|gnabagam|ninaivu\p{L}*|alarm)(?![\p{L}])|ரிமைண்ட்|ஞாபக|நினைவு""")
@@ -3593,6 +3636,8 @@ class KaiAgent(
     private val boughtGoods = Regex("""(?i)(?<![\p{L}])(?:vaang|vang)(?:inen|ineen|itten|iten|itaen|i\s*irukk?en|i\s*irukk?een|irukk?en|iyachu|iyaachu|unen|unaen|unan|inan|anen|i\s*i?rukk?aa?n|i\s*i?rukk?aanga|i\s*i?rukk?anga|iirukk?en)(?![\p{L}])""")
     private val moneySaid = Regex("""(?i)₹|(?<![\p{L}])(rs|rupees?|rupa|ruba|rubai|roobai|amount|panam|kaasu|cash|gpay|upi|aayiram|payment|kadan|credit)(?![\p{L}])""")
 
+    private val moneyScale = Regex("""(?i)(?<![\p{L}])(aayiram|ayiram|aayirathu|lakh|lakhs|latcham|thousand)(?![\p{L}])|ஆயிரம்|வாயிரம்|லட்சம்""")
+
     private suspend fun stockChange(raw: String, said: String, lang: KaiLang, products: List<com.shopai.app.brain.tools.ProductRef>, people: List<String>): KaiTurn? {
         val text = if (boughtGoods.containsMatchIn(raw) && !moneySaid.containsMatchIn(raw) && KaiCommands.personIn(raw, people) == null &&
             KaiEntityResolver.peopleIn(raw, people).isEmpty()) boughtGoods.replace(raw, "vandhuchu") else raw
@@ -3601,6 +3646,9 @@ class KaiAgent(
         val referred = if (direct?.product != null) null else lastProduct
             ?.takeIf { KaiCommands.personIn(text, people) == null && productReference.containsMatchIn(text) }
             ?.let { p -> com.shopai.app.brain.tools.KaiStock.understand(productReference.replace(text, p.name), products)?.takeIf { it.product?.id == p.id } }
+        // "Selvi kitta irundhu moonu aayiram vandhuchu": a count of thousands / lakhs with no stock word or unit is money, for
+        // the payment path — never a product called "Selvi Kitta Irundhu" (owner, 16 Oct 2026).
+        if (direct?.product == null && moneyScale.containsMatchIn(text) && !stockSaid.containsMatchIn(text)) return null
         val req = referred ?: direct
             // "20 add pannu" after talking about Colgate — never when someone else is named (that is a payment).
             ?: lastProduct?.takeIf { KaiCommands.personIn(text, people) == null }
@@ -5465,7 +5513,7 @@ class KaiAgent(
         }
         // "Suresh 2000 kuduthan" with no Suresh in the books: Suresh, asked about as a new name — never "Yaar kitta vaanguninga?".
         if (r.name.isNullOrBlank()) com.shopai.app.brain.KaiUnderstanding.personPhraseIn(r.said)
-            ?.takeIf { p -> r.said.trimStart().startsWith(p, ignoreCase = true) && Regex("""[\p{L}\p{M} ]+""").matches(p) && !notAName(p) && p.split(' ').size <= 3 }
+            ?.takeIf { p -> r.said.trimStart().startsWith(p.substringBefore(' '), ignoreCase = true) && Regex("""[\p{L}\p{M} ]+""").matches(p) && !notAName(p) && p.split(' ').size <= 3 }
             ?.let { return payment(r.copy(name = it), lang) }
         if (r.name.isNullOrBlank()) {
             incompletePayment = r
@@ -5479,6 +5527,7 @@ class KaiAgent(
             val customerSide = tools.parties(r.name)?.let { KaiEntityResolver.sameName(r.name, it) }?.distinctBy { it.id }?.singleOrNull()?.customer
             if (customerSide != null) {
                 val kind = when {
+                    loanWord.containsMatchIn(r.said) && !r.bySide -> if (r.outgoing) PlanKind.CREDIT_GIVEN else PlanKind.DEBIT_TAKEN
                     r.outgoing && !customerSide -> PlanKind.PAYMENT_OUT
                     r.outgoing -> PlanKind.CREDIT_GIVEN
                     customerSide -> PlanKind.PAYMENT_IN
@@ -5494,8 +5543,12 @@ class KaiAgent(
         // "Lokesh" with "Lokesh" and "Madurai Lokesh" in the books: both — the owner says which.
         val exact = KaiEntityResolver.sameName(r.name, matches).distinctBy { it.id }
         val candidates = (exact.ifEmpty { matches }).take(6)
+        // "kadan kuduthen" / "kadan vaanginen": the owner said it is a loan — credit given / debit taken, whoever the person is
+        // (owner, 16 Oct 2026: "Kumar kitta 1000 kadan vaanginen" was Kumar's payment, "Sri Balaji ku 1000 kadan kuduthen" a payment out).
+        val loanSaid = loanWord.containsMatchIn(r.said)
         // Who they are decides what the money means.
         fun kindFor(p: PartyMatch) = when {
+            loanSaid && !r.addEntry && !r.bySide -> if (r.outgoing) PlanKind.CREDIT_GIVEN else PlanKind.DEBIT_TAKEN
             r.addEntry -> if (p.customer) PlanKind.CREDIT_GIVEN else PlanKind.DEBIT_TAKEN
             r.bySide -> if (p.customer) PlanKind.PAYMENT_IN else PlanKind.PAYMENT_OUT
             r.outgoing && !p.customer -> PlanKind.PAYMENT_OUT
@@ -5518,7 +5571,7 @@ class KaiAgent(
         if (candidates.isEmpty()) {
             // "Muthu ku 1500 credit kuduthen" / "Muthu kitta kadan-la vaanginen": the owner already said what it is — a draft for a
             // new person straight away (Confirm still saves it). Only a bare "kuduthen" / "vaanginen" is asked.
-            if (Regex("""(?i)(?<![\p{L}])(credit|kadan|kadanaa|kadana|udhaar|udhar)(?![\p{L}])|கடன்""").containsMatchIn(r.said))
+            if (loanSaid)
                 return prepared(r, if (r.outgoing) PlanKind.CREDIT_GIVEN else PlanKind.DEBIT_TAKEN, r.name, null, lang)
             // Not in the books: never guessed — the owner says what it is.
             val buttons = if (r.outgoing) listOf(
@@ -5528,11 +5581,19 @@ class KaiAgent(
                 KaiButton(pick(lang, ta = "Debit — நான் ${r.name}-க்கு தரணும்", tl = "Debit — naan ${r.name}-ku tharanum", en = "Debit — I owe ${r.name}"),
                     KaiAction.ChoosePlan(r.key, PlanKind.DEBIT_TAKEN, null, r.name), primary = true),
             )
+            // Said plainly — who gave whom, what Kai would note, and how to answer by voice too (the buttons are only on the screen).
+            newPersonAsk = NewPersonAsk(buttons.single().action as KaiAction.ChoosePlan, conversationState.conversationTurn)
+            val n = r.name
             return KaiTurn(
-                ChatReply(pick(lang,
-                    ta = "${r.name} பதிவுல இல்ல ஓனர். $amount ${if (r.outgoing) "கொடுத்தது" else "வாங்கியது"} — இது என்ன?",
-                    tl = "Owner, ${r.name} records-la illa. $amount ${if (r.outgoing) "kuduthadhu" else "vaangunadhu"} — idhu enna?",
-                    en = "${r.name} isn't in your records, Owner. What is this $amount?"), KaiMood.CLARIFY, ChatIntent.GENERAL_BUSINESS_QUERY),
+                ChatReply(if (r.outgoing) pick(lang,
+                    ta = "ஓனர், $n புது பேர் — பதிவுல இல்ல. நீங்க $n-க்கு $amount குடுத்தீங்க. இது கடனா — $n உங்களுக்கு $amount திருப்பி தரணுமா? 'ஆமா'-ன்னு சொல்லுங்க, இல்ல Credit பட்டனை தொடுங்க. Confirm பண்ணா தான் save ஆகும்.",
+                    tl = "Owner, $n puthu per — records-la illa. Neenga $n-ku $amount kuduthirukeenga. Idhu kadan-aa — $n ungalukku $amount thiruppi tharanum-aa? 'Aama' sollunga, illa Credit button-a thottunga. Confirm pannina dhaan save aagum.",
+                    en = "$n isn't in your records yet, Owner. You gave $n $amount — is it a loan $n has to pay back? Say 'yes' or tap Credit. Nothing is saved until you Confirm.")
+                else pick(lang,
+                    ta = "ஓனர், $n புது பேர் — பதிவுல இல்ல. $n உங்களுக்கு $amount குடுத்தாங்க. இது கடனா — நீங்க $n-க்கு $amount திருப்பி தரணுமா? 'ஆமா'-ன்னு சொல்லுங்க, இல்ல Debit பட்டனை தொடுங்க. Confirm பண்ணா தான் save ஆகும்.",
+                    tl = "Owner, $n puthu per — records-la illa. $n ungalukku $amount kuduthaanga. Idhu kadan-aa — neenga $n-ku $amount thiruppi tharanum-aa? 'Aama' sollunga, illa Debit button-a thottunga. Confirm pannina dhaan save aagum.",
+                    en = "$n isn't in your records yet, Owner. $n gave you $amount — is it a loan you have to pay back? Say 'yes' or tap Debit. Nothing is saved until you Confirm."),
+                    KaiMood.CLARIFY, ChatIntent.GENERAL_BUSINESS_QUERY),
                 KaiCard(emptyList(), buttons + KaiButton(cancelLabel(lang), KaiAction.CancelRequest(r.key))),
             )
         }

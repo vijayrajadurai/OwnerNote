@@ -160,6 +160,21 @@ object KaiFeed {
         வித்துச்சு
         வித்துடுச்சு
         உடைஞ்சிடுச்சு
+        kammi pannu
+        kammi pannidu
+        kammi panniten
+        kammi pannunga
+        kammi panna
+        kuraichidu
+        kuraichu vidu
+        korachidu
+        minus pannu
+        less pannu
+        கம்மி பண்ணு
+        கம்மி பண்ணிடு
+        கம்மி பண்ணுங்க
+        குறைச்சிடு
+        மைனஸ் பண்ணு
     """)
 
     /** A product's local name = the name the shop keeps it under (Tamil script or Tanglish → English). */

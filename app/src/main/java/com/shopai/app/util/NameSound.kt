@@ -89,6 +89,17 @@ object NameSound {
 
     private fun collapse(s: String): String = s.replace(Regex("""(.)\1+"""), "$1")
 
+    /** The sound key with "ங்க" / "nk" / "ng" + vowel all read as n + k — null when the name has none of them. */
+    private fun nkSound(name: String): String? {
+        val s = name.trim()
+        return if (s.any(::isTamil)) {
+            if (!s.contains("ங்க")) null else tamil(s.replace("ங்க", "ன்க")).first
+        } else {
+            val l = s.lowercase(Locale.ROOT)
+            if (!Regex("""n[kg]""").containsMatchIn(l)) null else latin(l.replace("ng", "nk")).first
+        }
+    }
+
     /** The vowels of a name in order (a / e / i / o / u), as [key] reads its consonants. */
     fun vowels(name: String): String = sound(name).second
 
@@ -112,6 +123,8 @@ object NameSound {
         if (startsWithVowel(x) != startsWithVowel(y)) return false
         val (kx, vx) = sound(x)
         val (ky, vy) = sound(y)
+        // "சங்கர்" = Shankar, "பங்கஜ்" = Pankaj: Tamil writes "nk" as "ங்க" too — its k heard (owner, 16 Oct 2026). Only for that pair.
+        if (kx != ky && nkSound(x) != null && nkSound(x) == nkSound(y)) return kx.length >= 2 || vx == vy
         if (kx.isEmpty() || kx != ky) return false
         // One consonant ("Abi" / "Appu") is too little to go on: the vowels must agree too.
         return kx.length >= 2 || vx == vy

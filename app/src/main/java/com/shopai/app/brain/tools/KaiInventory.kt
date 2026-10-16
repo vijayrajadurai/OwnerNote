@@ -608,6 +608,11 @@ object KaiInventory {
         val m = Regex("""^([\p{L}\p{M}][\p{L}\p{M}\s.'-]{1,40}?)\s+(\d+(?:\.\d+)?|${numberWord.keys.joinToString("|")})\s*($U)?(?=[\s,]|$)""").find(lower) ?: return null
         val name = m.groupValues[1].trim()
         if (name.split(' ').size > 4) return null
+        // "Selvi kitta irundhu moonu aayiram vandhuchu": a number word before "aayiram" / "lakh" is an amount of money, never a
+        // quantity of stock (owner, 16 Oct 2026: read as "3 pieces-aa, 3 boxes-aa?").
+        val scale = Regex("""^(?:aayiram|ayiram|aayirathu|aayirathi|lakh|lakhs|latcham|lacs?|thousand|hundred|nooru)$""")
+        if (scale.matches(m.groupValues[3]) || Regex("""^\s*(?:aayiram|ayiram|aayirathu|aayirathi|lakh|lakhs|latcham|lacs?|thousand|hundred|nooru)(?![\p{L}])""")
+                .containsMatchIn(lower.substring(m.range.last + 1))) return null
         val q = m.groupValues[2].toBigDecimalOrNull() ?: numberWord[m.groupValues[2]]?.toBigDecimal() ?: return null
         val unit = m.groupValues[3].takeIf { it.isNotEmpty() }?.let(::unitOf)
         return Triple(display(name), q, unit)

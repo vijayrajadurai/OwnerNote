@@ -242,6 +242,8 @@ object KaiProductSound {
             val w = m.value
             // (a goods word Kai knows in Tamil — "பினாயில்" = phenyl — is read by its own name, never turned into another word)
             if (KaiSpokenWords.normalize(w) != w || w in stockAsk || w in feedGoodsWords) return@replace w
+            // (a shop name's last word, with its "-க்கு" — "ஷாப்புக்கு", "ஸ்டோருக்கு" — is never a product's: "Shop" is no "Soap")
+            if (KaiCommands.isShopWord(w) || KaiCommands.isShopWord(w.removeSuffix("க்கு").removeSuffix("கிட்ட"))) return@replace w
             if (people.any { p -> p.split(Regex("""\s+""")).any { NameSound.same(w, it) } }) return@replace w
             // A whole product name by its sound ("பினாயில்" = Phenyl) is read as that name further on — never a word of another.
             if (productNames.any { n -> !KaiSpokenWords.hasTamil(n) && NameSound.same(w, n.replace(" ", "")) }) return@replace w
