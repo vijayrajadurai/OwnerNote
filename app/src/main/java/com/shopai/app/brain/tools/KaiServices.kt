@@ -241,9 +241,25 @@ object KaiServices {
     }
 
     /** The owner's Menu name for a word said ("cutting" → their "Cutting" — or their "Hair cutting"), or null. */
-    private fun ownFor(h: Hit, said: String, own: Collection<String>): String? = own.firstOrNull { o ->
-        val ol = o.lowercase(Locale.ROOT)
-        ol == h.name.lowercase(Locale.ROOT) || said in spellings(ol) || h.service?.words?.any { w -> ol in spellings(w.lowercase(Locale.ROOT)) } == true
+    /**
+     * (owner, 16 Oct 2026: "facial onnu" was sold as their "Face massage" — Kai's own list calls both Facial. The owner's Menu
+     * names are theirs: an item is the one said, never another of theirs that Kai's list counts as the same.) In order: the
+     * name as said ("face massage", "facemassage"); said in Tamil letters, the name by sound ("கோல்ட் ஃபேஷியல்" = Gold facial);
+     * the name inside what was said ("hair cutting" for their "Cutting"); their item that has Kai's own name for the service
+     * ("Hair cutting" on the Menu for "mudi vettu").
+     */
+    private fun ownFor(h: Hit, said: String, own: Collection<String>): String? {
+        val tamil = KaiSpokenWords.hasTamil(said)
+        val padded = " " + said.lowercase(Locale.ROOT).replace(Regex("""\s+"""), " ") + " "
+        return own.firstOrNull { o -> said in spellings(o.lowercase(Locale.ROOT)) }
+            ?: own.firstOrNull { o -> tamil && !KaiSpokenWords.hasTamil(o) && KaiProductSound.sameName(said, o) }
+            // (and the other way: an item the owner said into the Menu by mic, "கட்டிங்", typed later as "cutting")
+            // ("hair cutting" for a "கட்டிங்" kept: the name inside what was said, by sound)
+            ?: own.firstOrNull { o -> !tamil && KaiSpokenWords.hasTamil(o) && said.trim().split(Regex("""\s+""")).let { w ->
+                w.indices.any { i -> (i + 1..w.size).any { j -> KaiProductSound.sameName(o, w.subList(i, j).joinToString(" ")) } }
+            } }
+            ?: own.firstOrNull { o -> !tamil && padded.contains(" " + o.lowercase(Locale.ROOT).trim() + " ") }
+            ?: own.firstOrNull { o -> o.equals(h.name, ignoreCase = true) }
     }
 
     /**
