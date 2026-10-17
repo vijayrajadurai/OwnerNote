@@ -507,16 +507,17 @@ class KaiAgentTest {
     }
 
     @Test
-    fun missingAmountAsksForAmountThenDirectionWithoutDrafting() = runBlocking {
+    fun missingAmountAsksForAmountThenDraftsTheSameEntry() = runBlocking {
         val tools = FakeTools()
         val a = agent(tools)
         val missing = a.ask("Kumar-ku amount add pannu")
         assertTrue(missing.reply.text, missing.reply.text.contains("amount", ignoreCase = true) || missing.reply.text.contains("Evlo"))
         assertNull(missing.plan)
         assertTrue(tools.confirmed.isEmpty())
+        // "5000" finishes the same entry, as "Kumar-ku 5000 add pannu" said at once does (owner, 17 Oct 2026): a credit DRAFT on
+        // Kumar's record — nothing confirmed or saved.
         val amountOnly = a.ask("5000")
-        assertNull(amountOnly.plan)
-        assertTrue(amountOnly.reply.text, amountOnly.reply.text.contains("received", ignoreCase = true) || amountOnly.reply.text.contains("vandhucha"))
+        assertTrue(amountOnly.reply.text, amountOnly.plan?.kind == com.shopai.app.brain.tools.PlanKind.CREDIT_GIVEN && amountOnly.plan?.partyName == "Kumar")
         assertTrue(tools.confirmed.isEmpty())
         assertTrue(tools.discarded.isEmpty())
     }

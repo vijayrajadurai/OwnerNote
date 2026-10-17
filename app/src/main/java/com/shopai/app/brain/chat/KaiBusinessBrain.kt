@@ -1522,10 +1522,13 @@ class KaiBusinessBrain(
     /** Set by Kai Chat for one turn when the owner spoke / wrote Tamil script (the words reach here in Tanglish). */
     var spokenLang: KaiLang? = null
 
+    /** The language Kai Chat is answering this turn in — for a line of words Tanglish and English share ("Arun balance"). */
+    var chatLang: KaiLang? = null
+
     private fun chatLanguage(text: String): KaiLang {
         spokenLang?.let { return it }
         // The same reading as Kai Chat's ("Kumar correct ah pay pannuvana" is Tanglish, not English for its "pay").
-        return KaiLanguage.forChat(text)
+        return KaiLanguage.forChat(text, chatLang)
     }
 
     /** "Owner, Selvam ₹6,000 + Ramesh ₹2,500 — rendu perum mothama ₹8,500 tharanum." */
