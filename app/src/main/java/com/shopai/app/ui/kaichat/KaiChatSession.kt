@@ -67,7 +67,8 @@ class KaiChatSession(
         val question = text.trim()
         if (question.isEmpty() || thinking) return
         messages += KaiChatMessage(nextId++, fromOwner = true, text = question, voice = voice)
-        val lang = KaiLanguage.forChat(question)
+        // ("Arun balance" in a Tanglish chat stays Tanglish: the language Kai has been answering in)
+        val lang = KaiLanguage.forChat(question, messages.lastOrNull { !it.fromOwner }?.lang)
         // Everything — Morning Work included — goes through Kai's one intent router (KaiAgent).
         respond(lang) { agent.ask(question) }
     }
