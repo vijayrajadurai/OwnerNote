@@ -253,6 +253,8 @@ private fun Paper(note: KaiNote, progress: Float, state: KaiNoteState, modifier:
             val name = if (namePart >= 1f) row.name else row.name.take(ceil(row.name.length * namePart).toInt())
             val value = if (valuePart >= 1f) row.value else row.value.take(ceil(row.value.length * valuePart).toInt())
             Row(Modifier.height(33.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                if (part > 0f) Text("${i + 1}.", fontFamily = FontFamily.Cursive, fontSize = 17.sp, color = if (crossed) IosGrey else Ink,
+                    modifier = Modifier.padding(end = 6.dp))
                 Text(name, fontFamily = FontFamily.Cursive, fontSize = 17.sp, color = if (crossed) IosGrey else Ink, maxLines = 1,
                     overflow = TextOverflow.Ellipsis, textDecoration = if (crossed) TextDecoration.LineThrough else null, modifier = Modifier.weight(1f))
                 if (value.isNotEmpty()) Text(value, fontFamily = FontFamily.Cursive, fontSize = 17.sp, color = if (crossed) IosGrey else IosLabel,
