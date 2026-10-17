@@ -16,6 +16,8 @@ data class StockFact(
     val unit: String,
     /** The reorder / minimum level set on the product, if any. */
     val reorderAt: BigDecimal? = null,
+    /** The product's own photo in the books (a file the owner took), if any — shown on the stock card. */
+    val photo: String? = null,
 )
 
 /** One batch of a product with its expiry (medicines, food): what the books' batch records say. */

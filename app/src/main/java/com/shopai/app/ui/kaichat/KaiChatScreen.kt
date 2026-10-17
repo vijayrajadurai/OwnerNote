@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -43,12 +44,16 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.shopai.app.R
 import com.shopai.app.data.AppContainer
 import com.shopai.app.ui.components.DetailScaffold
@@ -201,6 +206,11 @@ fun KaiChatScreen(
     var listening by remember { mutableStateOf(false) }
     var heard by remember { mutableStateOf<String?>(null) }
     androidx.compose.runtime.DisposableEffect(Unit) { onDispose { speech.stopListening() } }
+    // Kai's hand-note follows the mic: listening only while the recognizer really records.
+    LaunchedEffect(listening) { session.listening(listening) }
+    // The owner's shop category (business profile) picks the scene behind Kai's notebook; unknown → a neutral counter.
+    var shopCategory by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) { shopCategory = runCatching { container.businessRepository.getMyBusiness()?.category }.getOrNull() }
     fun listen() {
         if (!speech.isAvailable()) return
         container.naturalTtsSpeaker.stop()
@@ -260,6 +270,35 @@ fun KaiChatScreen(
         }
     }
 
+    // Kai's hand-note, full screen while he writes and the draft waits (owner, 17 Oct 2026): closes by itself a moment after it is
+    // saved or cancelled, or with its ✕; the draft stays in the chat as before.
+    var fullNoteClosed by remember { mutableStateOf<Long?>(null) }
+    val fullNote = session.note.note?.takeIf { it.messageId != fullNoteClosed }
+    LaunchedEffect(session.note.noteState, fullNote?.messageId) {
+        val id = fullNote?.messageId ?: return@LaunchedEffect
+        if (session.note.noteState == com.shopai.app.brain.note.KaiNoteState.SAVE_SUCCESS || session.note.noteState == com.shopai.app.brain.note.KaiNoteState.CANCELLED) {
+            delay(1800)
+            fullNoteClosed = id
+        }
+    }
+    fullNote?.let { n ->
+        val m = session.messages.firstOrNull { it.id == n.messageId }
+        val card = m?.card
+        if (m != null && card != null) androidx.compose.ui.window.Dialog(
+            onDismissRequest = { fullNoteClosed = n.messageId },
+            properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
+        ) {
+            Box(Modifier.fillMaxSize().background(Color.White)) {
+                com.shopai.app.ui.kai.KaiNoteScene(
+                    flow = session.note, note = n, card = card, category = shopCategory,
+                    closed = m.cardClosed || session.thinking, onWritten = { session.noteWritten() },
+                    onTap = { tap(m.id, it) }, modifier = Modifier.fillMaxSize().padding(bottom = 16.dp),
+                    said = ownerLineOf(session.messages, m.id), fullScreen = true, onClose = { fullNoteClosed = n.messageId },
+                )
+            }
+        }
+    }
+
     DetailScaffold(title = stringResource(R.string.kai_chat_title), onBack = onBack) { contentModifier ->
         Column(modifier = contentModifier.fillMaxSize().imePadding()) {
             KaiContentCard(
@@ -315,9 +354,26 @@ fun KaiChatScreen(
                     }
                 }
                 items(session.messages, key = { it.id }) { m ->
-                    if (m.fromOwner) OwnerBubble(if (m.voice) "🎙 ${m.text}" else m.text) else {
+                    val note = session.note.note?.takeIf { it.messageId == m.id }
+                    if (m.fromOwner) OwnerBubble(if (m.voice) "🎙 ${m.text}" else m.text)
+                    // Kai asking the one thing he needs: a clear question card (owner, 17 Oct 2026).
+                    else if (note == null && m.mood == com.shopai.app.brain.KaiMood.CLARIFY) com.shopai.app.ui.kai.KaiAskCard(
+                        question = m.text, card = m.card, lang = m.lang, closed = m.cardClosed || session.thinking, onTap = { tap(m.id, it) },
+                        progress = m.ask,
+                        // The mic on the newest question: answer it by voice.
+                        onMic = if (m.id == session.messages.lastOrNull()?.id && !listening) ({ onMic() }) else null,
+                    ) else {
                         KaiBubble(m.text)
-                        m.card?.let { card -> KaiCardView(card, closed = m.cardClosed || session.thinking) { tap(m.id, it) } }
+                        m.card?.let { card ->
+                            // The draft waiting for Confirm (and how it ended): Kai's notebook in the shop; older cards as before.
+                            if (note != null) com.shopai.app.ui.kai.KaiNoteScene(
+                                flow = session.note, note = note, card = card, category = shopCategory,
+                                closed = m.cardClosed || session.thinking, onWritten = { session.noteWritten() },
+                                onTap = { tap(m.id, it) }, modifier = Modifier.padding(top = 4.dp),
+                                said = ownerLineOf(session.messages, m.id),
+                            ) else if (card.stock != null) com.shopai.app.ui.kai.KaiStockCard(card.stock, m.lang, shopCategory)
+                            else KaiCardView(card, closed = m.cardClosed || session.thinking) { tap(m.id, it) }
+                        }
                     }
                 }
                 if (session.thinking) item { KaiBubble("…") }
@@ -368,29 +424,63 @@ fun KaiChatScreen(
     }
 }
 
-/** The details of a draft / action under Kai's message, with its buttons. */
+/**
+ * The owner's line a draft came from: the first of the owner's lines since Kai last answered without a question ("vengayam
+ * 10kg" → "50" → "60" is "vengayam 10kg", not the last answer "60").
+ */
+private fun ownerLineOf(messages: List<KaiChatMessage>, kaiMessageId: Long): String? {
+    var j = messages.indexOfFirst { it.id == kaiMessageId } - 1
+    var first: String? = null
+    while (j >= 0) {
+        val x = messages[j]
+        if (x.fromOwner) first = x.text else if (x.mood != com.shopai.app.brain.KaiMood.CLARIFY) break
+        j--
+    }
+    return first
+}
+
+/**
+ * The details of a draft / action under Kai's message, with its buttons — iPhone style (owner, 18 Oct 2026): a white card, each line a
+ * row ("Colgate — 1150 PCS" → the name left, the value right, bold), the main button a black pill, Cancel in red, any other in blue.
+ */
 @Composable
 private fun KaiCardView(card: com.shopai.app.brain.chat.KaiCard, closed: Boolean, onTap: (com.shopai.app.brain.chat.KaiAction) -> Unit) {
     Box(Modifier.fillMaxWidth().padding(top = 4.dp), contentAlignment = Alignment.CenterStart) {
         Column(
             modifier = Modifier
-                .widthIn(max = 320.dp)
-                .background(Primary.copy(alpha = 0.06f), RoundedCornerShape(14.dp))
-                .border(1.dp, Primary.copy(alpha = 0.25f), RoundedCornerShape(14.dp))
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+                .widthIn(max = 340.dp)
+                .shadow(10.dp, RoundedCornerShape(18.dp), ambientColor = Color.Black.copy(alpha = 0.08f), spotColor = Color.Black.copy(alpha = 0.08f))
+                .clip(RoundedCornerShape(18.dp))
+                .background(Color.White)
+                .padding(vertical = 4.dp),
         ) {
             card.lines.forEachIndexed { i, line ->
-                Text(line, style = if (i == 0) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
-                    fontWeight = if (i == 0) FontWeight.SemiBold else FontWeight.Normal, color = ShopAiThemeColors.onSurface)
+                if (i > 0) Box(Modifier.padding(start = 16.dp).fillMaxWidth().height(0.5.dp).background(com.shopai.app.ui.kai.IosSeparator))
+                val parts = line.split(" — ", limit = 2)
+                Row(Modifier.padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    if (parts.size == 2) {
+                        Text(parts[0], fontSize = 15.sp, color = com.shopai.app.ui.kai.IosLabel, fontWeight = FontWeight.Medium,
+                            modifier = Modifier.weight(1f).padding(end = 12.dp))
+                        Text(parts[1], fontSize = 15.sp, color = com.shopai.app.ui.kai.IosLabel, fontWeight = FontWeight.SemiBold)
+                    } else Text(line, fontSize = 15.sp, color = com.shopai.app.ui.kai.IosLabel)
+                }
             }
-            card.warning?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = com.shopai.app.ui.theme.Danger) }
-            card.buttons.forEach { b ->
-                val enabled = b.enabled && !closed
-                if (b.primary) {
-                    androidx.compose.material3.Button(onClick = { onTap(b.action) }, enabled = enabled, modifier = Modifier.fillMaxWidth()) { Text(b.label) }
-                } else {
-                    androidx.compose.material3.OutlinedButton(onClick = { onTap(b.action) }, enabled = enabled, modifier = Modifier.fillMaxWidth()) { Text(b.label) }
+            card.warning?.let { Text(it, fontSize = 13.sp, color = com.shopai.app.ui.kai.IosRed, modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) }
+            if (card.buttons.isNotEmpty()) Column(Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                card.buttons.forEach { b ->
+                    val enabled = b.enabled && !closed
+                    if (b.primary) Box(
+                        Modifier.fillMaxWidth().height(48.dp).alpha(if (enabled) 1f else 0.3f).clip(RoundedCornerShape(14.dp)).background(Color.Black)
+                            .clickable(enabled = enabled) { onTap(b.action) },
+                        contentAlignment = Alignment.Center,
+                    ) { Text(b.label, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold) }
+                    else Text(
+                        b.label,
+                        color = when { !enabled -> com.shopai.app.ui.kai.IosGrey; com.shopai.app.ui.kai.isCancel(b.action) -> com.shopai.app.ui.kai.IosRed; else -> Color(0xFF007AFF) },
+                        fontSize = 16.sp,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable(enabled = enabled) { onTap(b.action) }.padding(vertical = 10.dp),
+                    )
                 }
             }
         }
