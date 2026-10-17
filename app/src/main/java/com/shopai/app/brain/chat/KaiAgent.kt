@@ -5051,6 +5051,19 @@ class KaiAgent(
         }
     }
 
+    /**
+     * What Kai has so far and is asking now — a new product being added, or a pack size for a stock line — for the question card
+     * (read only; null when Kai is asking nothing of these).
+     */
+    fun askProgress(lang: KaiLang): com.shopai.app.brain.note.KaiAskProgress? {
+        newItem?.let { n -> n.asked?.let { f -> return com.shopai.app.brain.note.KaiAsks.ofItem(n.spec, f, lang) } }
+        unitQuestion?.let { u ->
+            val part = u.parts.firstOrNull { it.unit != null } ?: u.parts.firstOrNull()
+            return com.shopai.app.brain.note.KaiAsks.ofUnit(u.product.name, part?.qty, part?.unit ?: u.unit, u.product.unit, lang)
+        }
+        return null
+    }
+
     /** The service sale waiting for Confirm, by its key (read only). */
     fun saleDraftOpen(key: String): Boolean = dailySales.shownKey() == key
 

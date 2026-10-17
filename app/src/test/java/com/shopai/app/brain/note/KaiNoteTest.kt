@@ -273,6 +273,37 @@ class KaiNoteTest {
         }
     }
 
+    /** Kai's question card: what the owner said so far, and the one thing asked — from Kai's own pending item, typed or by mic. */
+    @Test fun theQuestionCardShowsWhatIsKnownAndWhatIsAsked() {
+        for ((line, lang) in listOf("Lux Soap 2 box vandhuchu" to KaiLang.TANGLISH, "லக்ஸ் சோப் 2 பாக்ஸ் வந்துச்சு" to KaiLang.TAMIL)) {
+            val (agent, _) = kai()
+            val t = runBlocking { agent.ask(line) }
+            assertEquals("«$line» ${t.reply.text}", KaiMood.CLARIFY, t.reply.mood)
+            val p = agent.askProgress(lang)
+            assertTrue("«$line» no progress: ${t.reply.text}", p != null)
+            assertEquals(listOf("Lux Soap", "2 box"), p!!.known)
+            assertEquals("1 box = ? pcs", p.asking)
+        }
+        // A new product: its name and quantity known, a price asked; the count of questions never shrinks below this one.
+        val (agent, _) = kai()
+        var t = runBlocking { agent.ask("Basmati Rice 2 bag vandhuchu") }
+        var seen = 0
+        val answers = ArrayDeque(listOf("25", "1500", "70", "80", "1000"))
+        while (t.reply.mood == KaiMood.CLARIFY && answers.isNotEmpty()) {
+            val p = agent.askProgress(KaiLang.TANGLISH)
+            if (p != null) {
+                seen++
+                assertTrue(p.known.first(), p.known.first().contains("Basmati", ignoreCase = true))
+                assertTrue("${p.step}/${p.steps}", p.step in 1..p.steps)
+                assertTrue(p.asking, p.asking.endsWith("?"))
+            }
+            t = runBlocking { agent.ask(answers.removeFirst()) }
+        }
+        assertTrue("no question card for the new product", seen > 0)
+        // Nothing pending: no card.
+        assertNull(kai().first.askProgress(KaiLang.TANGLISH))
+    }
+
     @Test fun aServiceSaleCardIsWrittenRowByRow() {
         val note = KaiNotes.fromCard(3, KaiNoteKind.SALE, listOf("Hair cutting ×3 — ₹450", "Mothama ₹450 · Cash"),
             listOf(KaiNoteKey(KaiNoteKey.Source.SALE, "s")), KaiLang.TANGLISH, today)!!

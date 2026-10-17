@@ -14,6 +14,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -113,6 +114,9 @@ fun KaiNoteScene(
     modifier: Modifier = Modifier,
     /** The owner's own words this draft came from (typed or by mic), shown in a bubble as in the shop. */
     said: String? = null,
+    /** Full screen (the scene over the chat while Kai notes): the scene takes the height; [onClose] puts a close button on it. */
+    fullScreen: Boolean = false,
+    onClose: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val reducedMotion = remember { reducedMotion(context) }
@@ -141,8 +145,8 @@ fun KaiNoteScene(
         Box(
             Modifier
                 .fillMaxWidth()
-                .height((470 + 40 * (rows - 1).coerceIn(0, 5)).dp)
-                .clip(RoundedCornerShape(24.dp)),
+                .then(if (fullScreen) Modifier.weight(1f) else Modifier.height((470 + 40 * (rows - 1).coerceIn(0, 5)).dp))
+                .clip(RoundedCornerShape(if (fullScreen) 0.dp else 24.dp)),
         ) {
             ShopBackdrop(scene, Modifier.matchParentSize())
             if (dark) Box(Modifier.matchParentSize().background(Color.Black.copy(alpha = 0.35f)))
@@ -189,9 +193,32 @@ fun KaiNoteScene(
 
             // The "Kai noting…" card: the same rows as they are written.
             DigitalCard(note, progress, noteState, writing, beat, scene,
-                Modifier.align(Alignment.TopEnd).padding(top = 12.dp, end = 10.dp).fillMaxWidth(0.56f))
+                Modifier.align(Alignment.TopEnd).padding(top = if (onClose != null) 56.dp else 12.dp, end = 10.dp).fillMaxWidth(0.56f))
+            onClose?.let { close ->
+                Box(
+                    Modifier.align(Alignment.TopEnd).padding(10.dp).size(36.dp).shadow(6.dp, CircleShape).background(Color.White, CircleShape)
+                        .clickable { close() },
+                    contentAlignment = Alignment.Center,
+                ) { Icon(Icons.Filled.Close, contentDescription = null, tint = TextDark, modifier = Modifier.size(20.dp)) }
+            }
 
-            // Noted: said once the books confirmed it (or that it wasn't saved).
+            // Noted: said once the books confirmed it (or that it wasn't saved) — with a little burst of light when saved.
+            if (noteState == KaiNoteState.SAVE_SUCCESS && !reducedMotion) {
+                val burst = remember(note.messageId) { Animatable(0f) }
+                LaunchedEffect(note.messageId, noteState) { burst.animateTo(1f, tween(900)) }
+                Canvas(Modifier.align(Alignment.TopStart).padding(start = 10.dp, top = 6.dp).fillMaxWidth(0.42f).height(80.dp)) {
+                    val c = Offset(size.width * 0.18f, size.height * 0.5f)
+                    val r1 = size.height * (0.35f + 0.35f * burst.value)
+                    val r2 = r1 + size.height * 0.18f
+                    for (k in 0 until 10) {
+                        val a = Math.toRadians(k * 36.0)
+                        val cos = kotlin.math.cos(a).toFloat()
+                        val sin = kotlin.math.sin(a).toFloat()
+                        drawLine(Gold.copy(alpha = 1f - burst.value * 0.6f), Offset(c.x + cos * r1, c.y + sin * r1), Offset(c.x + cos * r2, c.y + sin * r2),
+                            strokeWidth = 4f, cap = StrokeCap.Round)
+                    }
+                }
+            }
             if (finished) {
                 Row(
                     Modifier
@@ -217,14 +244,16 @@ fun KaiNoteScene(
             }
         }
 
-        card.warning?.let { Text(it, color = Danger, fontSize = 13.sp) }
-        val ready = noteState == KaiNoteState.REVIEWING && !closed
-        if (noteState in setOf(KaiNoteState.DRAFT_READY, KaiNoteState.REVIEWING, KaiNoteState.SAVING)) card.buttons.forEach { b ->
-            if (b.primary) {
-                Button(onClick = { onTap(b.action) }, enabled = ready && b.enabled, modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = Emerald)) { Text(b.label) }
-            } else {
-                OutlinedButton(onClick = { onTap(b.action) }, enabled = ready && b.enabled, modifier = Modifier.fillMaxWidth()) { Text(b.label, color = Emerald) }
+        Column(Modifier.fillMaxWidth().padding(horizontal = if (fullScreen) 16.dp else 0.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            card.warning?.let { Text(it, color = Danger, fontSize = 13.sp) }
+            val ready = noteState == KaiNoteState.REVIEWING && !closed
+            if (noteState in setOf(KaiNoteState.DRAFT_READY, KaiNoteState.REVIEWING, KaiNoteState.SAVING)) card.buttons.forEach { b ->
+                if (b.primary) {
+                    Button(onClick = { onTap(b.action) }, enabled = ready && b.enabled, modifier = Modifier.fillMaxWidth().height(52.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Emerald)) { Text(b.label, fontSize = 16.sp, fontWeight = FontWeight.Bold) }
+                } else {
+                    OutlinedButton(onClick = { onTap(b.action) }, enabled = ready && b.enabled, modifier = Modifier.fillMaxWidth()) { Text(b.label, color = Emerald) }
+                }
             }
         }
     }
@@ -235,9 +264,12 @@ fun KaiNoteScene(
 private fun DigitalCard(note: KaiNote, progress: Float, state: KaiNoteState, writing: Boolean, beat: Float, scene: KaiShopScene, modifier: Modifier) {
     Column(
         modifier
+            // Light glass: a soft mint halo, then the white card with its mint edge.
+            .background(Mint.copy(alpha = 0.22f), RoundedCornerShape(24.dp))
+            .padding(4.dp)
             .shadow(14.dp, RoundedCornerShape(20.dp), ambientColor = Emerald, spotColor = Emerald)
-            .background(Color.White.copy(alpha = 0.96f), RoundedCornerShape(20.dp))
-            .border(1.5.dp, Mint.copy(alpha = 0.8f), RoundedCornerShape(20.dp)),
+            .background(Color.White.copy(alpha = 0.97f), RoundedCornerShape(20.dp))
+            .border(1.5.dp, Mint, RoundedCornerShape(20.dp)),
     ) {
         Row(
             Modifier.fillMaxWidth()
@@ -365,7 +397,7 @@ private fun Pen(modifier: Modifier) {
 @Composable
 private fun RowMark(state: KaiNoteState) {
     when (state) {
-        KaiNoteState.SAVE_SUCCESS -> Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = Emerald, modifier = Modifier.size(18.dp))
+        KaiNoteState.SAVE_SUCCESS -> Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = Emerald, modifier = Modifier.size(22.dp))
         KaiNoteState.SAVE_ERROR -> Icon(Icons.Filled.ErrorOutline, contentDescription = null, tint = Danger, modifier = Modifier.size(18.dp))
         KaiNoteState.CANCELLED -> Icon(Icons.Filled.Close, contentDescription = null, tint = TextSoft, modifier = Modifier.size(16.dp))
         else -> Box(Modifier.padding(top = 3.dp).size(8.dp).background(Gold, CircleShape))

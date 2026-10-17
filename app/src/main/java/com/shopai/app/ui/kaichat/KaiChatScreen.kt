@@ -265,6 +265,35 @@ fun KaiChatScreen(
         }
     }
 
+    // Kai's hand-note, full screen while he writes and the draft waits (owner, 17 Oct 2026): closes by itself a moment after it is
+    // saved or cancelled, or with its ✕; the draft stays in the chat as before.
+    var fullNoteClosed by remember { mutableStateOf<Long?>(null) }
+    val fullNote = session.note.note?.takeIf { it.messageId != fullNoteClosed }
+    LaunchedEffect(session.note.noteState, fullNote?.messageId) {
+        val id = fullNote?.messageId ?: return@LaunchedEffect
+        if (session.note.noteState == com.shopai.app.brain.note.KaiNoteState.SAVE_SUCCESS || session.note.noteState == com.shopai.app.brain.note.KaiNoteState.CANCELLED) {
+            delay(1800)
+            fullNoteClosed = id
+        }
+    }
+    fullNote?.let { n ->
+        val m = session.messages.firstOrNull { it.id == n.messageId }
+        val card = m?.card
+        if (m != null && card != null) androidx.compose.ui.window.Dialog(
+            onDismissRequest = { fullNoteClosed = n.messageId },
+            properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
+        ) {
+            Box(Modifier.fillMaxSize().background(Color.White)) {
+                com.shopai.app.ui.kai.KaiNoteScene(
+                    flow = session.note, note = n, card = card, category = shopCategory,
+                    closed = m.cardClosed || session.thinking, onWritten = { session.noteWritten() },
+                    onTap = { tap(m.id, it) }, modifier = Modifier.fillMaxSize().padding(bottom = 16.dp),
+                    said = ownerLineOf(session.messages, m.id), fullScreen = true, onClose = { fullNoteClosed = n.messageId },
+                )
+            }
+        }
+    }
+
     DetailScaffold(title = stringResource(R.string.kai_chat_title), onBack = onBack) { contentModifier ->
         Column(modifier = contentModifier.fillMaxSize().imePadding()) {
             KaiContentCard(
@@ -325,6 +354,9 @@ fun KaiChatScreen(
                     // Kai asking the one thing he needs: a clear question card (owner, 17 Oct 2026).
                     else if (note == null && m.mood == com.shopai.app.brain.KaiMood.CLARIFY) com.shopai.app.ui.kai.KaiAskCard(
                         question = m.text, card = m.card, lang = m.lang, closed = m.cardClosed || session.thinking, onTap = { tap(m.id, it) },
+                        progress = m.ask,
+                        // The mic on the newest question: answer it by voice.
+                        onMic = if (m.id == session.messages.lastOrNull()?.id && !listening) ({ onMic() }) else null,
                     ) else {
                         KaiBubble(m.text)
                         m.card?.let { card ->

@@ -30,6 +30,8 @@ data class KaiChatMessage(
     val lang: KaiLang = KaiLang.TANGLISH,
     /** The owner spoke this (speech-to-text): shown with 🎙, and Kai's answer is spoken too. */
     val voice: Boolean = false,
+    /** Kai asking: what he has so far and the one thing asked (the question card's chips), null otherwise. */
+    val ask: com.shopai.app.brain.note.KaiAskProgress? = null,
 )
 
 /**
@@ -181,7 +183,8 @@ class KaiChatSession(
         kotlinx.coroutines.delay((650 - (System.currentTimeMillis() - started)).coerceAtLeast(0))
         closeSpentDrafts()
         val id = nextId++
-        messages += KaiChatMessage(id, fromOwner = false, text = result.reply.text, mood = result.reply.mood, card = result.card, lang = lang)
+        val ask = if (result.reply.mood == KaiMood.CLARIFY) runCatching { agent.askProgress(lang) }.getOrNull() else null
+        messages += KaiChatMessage(id, fromOwner = false, text = result.reply.text, mood = result.reply.mood, card = result.card, lang = lang, ask = ask)
         // The notebook follows the real draft: the open one spent (saved / dropped / failed), and this answer's new draft.
         note = note.answered(result.reply.mood, spent = note.note?.let { com.shopai.app.brain.note.KaiNoteReader.spent(agent, it) } == true,
             newNote = runCatching { com.shopai.app.brain.note.KaiNoteReader.noteFor(agent, id, result.card, lang, java.time.LocalDate.now()) }.getOrNull())
