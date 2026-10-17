@@ -44,8 +44,10 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -64,6 +66,9 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
@@ -140,10 +145,15 @@ fun KaiNoteScene(
     // While writing, Kai's whole body follows his hand across the line, a little.
     val lineSway = if (writing && !reducedMotion) ((progress % 1f) - 0.5f) * 10f else 0f
 
+    // Where the ink ends (in the window), so Kai's hand can hold the pen there.
+    var sceneOrigin by remember { mutableStateOf(Offset.Zero) }
+    var penAt by remember(note.messageId) { mutableStateOf<Offset?>(null) }
+
     val rows = note.rows.size
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Box(
             Modifier
+                .onGloballyPositioned { sceneOrigin = it.positionInRoot() }
                 .fillMaxWidth()
                 .then(if (fullScreen) Modifier.weight(1f) else Modifier.height((470 + 40 * (rows - 1).coerceIn(0, 5)).dp))
                 .clip(RoundedCornerShape(if (fullScreen) 0.dp else 24.dp)),
@@ -166,7 +176,28 @@ fun KaiNoteScene(
 
             // The notebook, open on the counter, the pen at the end of the ink.
             Notebook(note, progress, noteState, reducedMotion, bob, scene,
-                Modifier.align(Alignment.BottomEnd).padding(end = 10.dp, bottom = 16.dp).fillMaxWidth(0.70f).graphicsLayer { rotationZ = -4f })
+                Modifier.align(Alignment.BottomEnd).padding(end = 10.dp, bottom = 16.dp).fillMaxWidth(0.70f).graphicsLayer { rotationZ = -4f },
+                onPen = { at -> if (at != null) penAt = at })
+
+            // Kai's hand, holding the pen where the ink ends: it moves along the line as he writes, and rests there after.
+            val pen = penAt
+            if (pen != null && !finished && noteState != KaiNoteState.CANCELLED) {
+                val wobble = if (writing && !reducedMotion) kotlin.math.sin(beat * 2f * Math.PI.toFloat()) * 3f else 0f
+                Image(
+                    painter = painterResource(R.drawable.kai_hand_pen),
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .offset {
+                            val h = 84.dp.toPx()
+                            val w = h * 192f / 223f
+                            // Done writing: the hand rests just below the last line, so the note can be read.
+                            val rest = if (writing) 0f else 26.dp.toPx()
+                            IntOffset((pen.x - sceneOrigin.x - w * 0.90f + wobble).roundToInt(), (pen.y - sceneOrigin.y - h * 0.66f - wobble + rest).roundToInt())
+                        }
+                        .height(84.dp),
+                )
+            }
 
             // The owner's words, as said (mic waves while Kai writes).
             if (!finished) said?.takeIf { it.isNotBlank() }?.let { words ->
@@ -174,7 +205,7 @@ fun KaiNoteScene(
                     Modifier
                         .align(Alignment.TopStart)
                         .padding(start = 10.dp, top = 12.dp)
-                        .fillMaxWidth(0.38f)
+                        .fillMaxWidth(if (fullScreen) 0.33f else 0.38f)
                         .shadow(6.dp, RoundedCornerShape(18.dp))
                         .background(Color.White, RoundedCornerShape(18.dp))
                         .padding(horizontal = 8.dp, vertical = 8.dp),
@@ -193,7 +224,7 @@ fun KaiNoteScene(
 
             // The "Kai noting…" card: the same rows as they are written.
             DigitalCard(note, progress, noteState, writing, beat, scene,
-                Modifier.align(Alignment.TopEnd).padding(top = if (onClose != null) 56.dp else 12.dp, end = 10.dp).fillMaxWidth(0.56f))
+                Modifier.align(Alignment.TopEnd).padding(top = if (onClose != null) 56.dp else 12.dp, end = 10.dp).fillMaxWidth(if (fullScreen) 0.64f else 0.58f))
             onClose?.let { close ->
                 Box(
                     Modifier.align(Alignment.TopEnd).padding(10.dp).size(36.dp).shadow(6.dp, CircleShape).background(Color.White, CircleShape)
@@ -259,54 +290,63 @@ fun KaiNoteScene(
     }
 }
 
-/** The "Kai noting…" card: each row as soon as the pen has written it — a dot while it waits, a tick only once saved. */
+/**
+ * The "Kai noting…" card, as in the owner's picture: a dark emerald header with its notepad and dots, then one big row per item —
+ * its picture, name, "Stock add ready", the quantity, and a ring that fills with a tick only once the books saved it.
+ */
 @Composable
 private fun DigitalCard(note: KaiNote, progress: Float, state: KaiNoteState, writing: Boolean, beat: Float, scene: KaiShopScene, modifier: Modifier) {
     Column(
         modifier
-            // Light glass: a soft mint halo, then the white card with its mint edge.
-            .background(Mint.copy(alpha = 0.22f), RoundedCornerShape(24.dp))
+            // Light glass: a soft mint halo, then the card with its mint edge.
+            .background(Mint.copy(alpha = 0.25f), RoundedCornerShape(26.dp))
             .padding(4.dp)
-            .shadow(14.dp, RoundedCornerShape(20.dp), ambientColor = Emerald, spotColor = Emerald)
-            .background(Color.White.copy(alpha = 0.97f), RoundedCornerShape(20.dp))
-            .border(1.5.dp, Mint, RoundedCornerShape(20.dp)),
+            .shadow(16.dp, RoundedCornerShape(22.dp), ambientColor = Emerald, spotColor = Emerald)
+            .background(Color(0xFFF7FBF9).copy(alpha = 0.97f), RoundedCornerShape(22.dp))
+            .border(1.5.dp, Mint, RoundedCornerShape(22.dp)),
     ) {
         Row(
             Modifier.fillMaxWidth()
-                .background(Brush.horizontalGradient(listOf(EmeraldDark, Emerald)), RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
-                .padding(horizontal = 10.dp, vertical = 9.dp),
+                .background(Brush.verticalGradient(listOf(EmeraldDark, Color(0xFF0A4A34))), RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
+                .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(Icons.Filled.EditNote, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
-            Spacer(Modifier.width(6.dp))
+            Icon(Icons.Filled.EditNote, contentDescription = null, tint = Color.White, modifier = Modifier.size(26.dp))
+            Spacer(Modifier.width(8.dp))
             Column(Modifier.weight(1f)) {
-                Text(if (writing) KaiNotes.status(KaiNoteState.DRAFT_READY, note.lang) else note.title, color = Color.White,
-                    fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                if (writing) Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(top = 3.dp)) {
-                    repeat(3) { i -> Box(Modifier.size(5.dp).background(Mint.copy(alpha = if ((beat * 3).toInt() == i) 1f else 0.35f), CircleShape)) }
+                Text(
+                    if (state == KaiNoteState.DRAFT_READY || state == KaiNoteState.REVIEWING || state == KaiNoteState.SAVING) when (note.lang) {
+                        com.shopai.app.brain.KaiLang.TAMIL -> "Kai எழுதுறார்…"
+                        com.shopai.app.brain.KaiLang.TANGLISH -> "Kai noting…"
+                        com.shopai.app.brain.KaiLang.ENGLISH -> "Kai noting…"
+                    } else note.title,
+                    color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                )
+                if (writing || state == KaiNoteState.SAVING) Row(horizontalArrangement = Arrangement.spacedBy(5.dp), modifier = Modifier.padding(top = 4.dp)) {
+                    repeat(3) { i -> Box(Modifier.size(6.dp).background(Color(0xFF3DDC97).copy(alpha = if ((beat * 3).toInt() == i) 1f else 0.4f), CircleShape)) }
                 } else Text(KaiNotes.status(state, note.lang), color = Color.White.copy(alpha = 0.85f), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
-        Column(Modifier.padding(7.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
             note.rows.forEachIndexed { i, row ->
                 if (progress > i) {
                     Row(
-                        Modifier.fillMaxWidth().background(Color(0xFFF5F8F6), RoundedCornerShape(12.dp)).padding(5.dp),
+                        Modifier.fillMaxWidth()
+                            .shadow(2.dp, RoundedCornerShape(14.dp))
+                            .background(Color.White, RoundedCornerShape(14.dp))
+                            .padding(horizontal = 8.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Box(Modifier.size(32.dp).background(Color(0xFFFFF3D6), RoundedCornerShape(9.dp)), contentAlignment = Alignment.Center) {
-                            Text(KaiNotes.icon(note.kind, row.name, scene), fontSize = 17.sp, color = Emerald, fontWeight = FontWeight.Bold)
-                        }
-                        Spacer(Modifier.width(6.dp))
+                        Text(KaiNotes.icon(note.kind, row.name, scene), fontSize = 28.sp, color = Emerald, fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.width(8.dp))
                         Column(Modifier.weight(1f)) {
-                            Text(row.name, color = TextDark, fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            Text(row.name, color = TextDark, fontWeight = FontWeight.Bold, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
                                 textDecoration = if (state == KaiNoteState.CANCELLED) TextDecoration.LineThrough else null)
-                            Text(KaiNotes.rowStatus(note.kind, state, note.lang), color = TextSoft, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(KaiNotes.rowStatus(note.kind, state, note.lang), color = TextSoft, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
-                        Column(horizontalAlignment = Alignment.End) {
-                            if (row.value.isNotEmpty()) Text(row.value, color = TextDark, fontWeight = FontWeight.Bold, fontSize = 12.sp, maxLines = 1)
-                            RowMark(state)
-                        }
+                        if (row.value.isNotEmpty()) Text(row.value, color = TextDark, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1,
+                            modifier = Modifier.padding(horizontal = 6.dp))
+                        RowMark(state)
                     }
                 }
             }
@@ -317,7 +357,8 @@ private fun DigitalCard(note: KaiNote, progress: Float, state: KaiNoteState, wri
 
 /** The leather-bound notebook on the counter: title, date, numbered rows in Kai's hand, the pen at the end of the ink. */
 @Composable
-private fun Notebook(note: KaiNote, progress: Float, state: KaiNoteState, reducedMotion: Boolean, bob: Float, scene: KaiShopScene, modifier: Modifier) {
+private fun Notebook(note: KaiNote, progress: Float, state: KaiNoteState, reducedMotion: Boolean, bob: Float, scene: KaiShopScene, modifier: Modifier,
+                     onPen: (Offset?) -> Unit = {}) {
     val crossed = state == KaiNoteState.CANCELLED
     Row(
         modifier
@@ -359,19 +400,28 @@ private fun Notebook(note: KaiNote, progress: Float, state: KaiNoteState, reduce
                 val name = if (namePart >= 1f) row.name else row.name.take(ceil(row.name.length * namePart).toInt())
                 val value = if (valuePart >= 1f) row.value else row.value.take(ceil(row.value.length * valuePart).toInt())
                 var penX by remember { mutableFloatStateOf(0f) }
+                var nameAt by remember { mutableStateOf<LayoutCoordinates?>(null) }
+                var valueAt by remember { mutableStateOf<LayoutCoordinates?>(null) }
+                // The pen is on this line while it is written — at the end of the name, then of the value; on the last line after.
+                val onThisLine = (part > 0f && part < 1f) || (part >= 1f && i == note.rows.size - 1)
+                SideEffect {
+                    if (onThisLine) {
+                        val v = valueAt?.takeIf { it.isAttached && valuePart > 0f }
+                        val n = nameAt?.takeIf { it.isAttached }
+                        onPen(v?.localToRoot(Offset(v.size.width.toFloat(), v.size.height * 0.8f)) ?: n?.localToRoot(Offset(penX, n.size.height * 0.8f)))
+                    }
+                }
                 Row(Modifier.height(30.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text("${i + 1}.", fontFamily = FontFamily.Cursive, fontSize = 17.sp, color = TextSoft, modifier = Modifier.width(22.dp))
                     if (part > 0f) Text(KaiNotes.icon(note.kind, row.name, scene), fontSize = 14.sp, modifier = Modifier.padding(end = 4.dp))
-                    Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                    Box(Modifier.weight(1f).onGloballyPositioned { nameAt = it }, contentAlignment = Alignment.CenterStart) {
                         Text(name, fontFamily = FontFamily.Cursive, fontSize = 18.sp, color = if (crossed) TextSoft else TextDark,
                             textDecoration = if (crossed) TextDecoration.LineThrough else null, maxLines = 1, overflow = TextOverflow.Ellipsis,
                             onTextLayout = { if (valuePart <= 0f) penX = it.getLineRight(0) })
-                        if (!reducedMotion && part > 0f && part < 1f && valuePart <= 0f) Pen(Modifier.offset { IntOffset(penX.roundToInt(), (-14 - bob * 3).roundToInt()) })
                     }
-                    Box(contentAlignment = Alignment.CenterEnd) {
+                    Box(Modifier.onGloballyPositioned { valueAt = it }, contentAlignment = Alignment.CenterEnd) {
                         Text(value, fontFamily = FontFamily.Cursive, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = if (crossed) TextSoft else Ink,
                             textDecoration = if (crossed) TextDecoration.LineThrough else TextDecoration.Underline, maxLines = 1)
-                        if (!reducedMotion && valuePart > 0f && valuePart < 1f) Pen(Modifier.offset(x = 10.dp, y = (-14f - bob * 3f).dp))
                     }
                 }
             }
@@ -397,10 +447,11 @@ private fun Pen(modifier: Modifier) {
 @Composable
 private fun RowMark(state: KaiNoteState) {
     when (state) {
-        KaiNoteState.SAVE_SUCCESS -> Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = Emerald, modifier = Modifier.size(22.dp))
+        KaiNoteState.SAVE_SUCCESS -> Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = EmeraldDark, modifier = Modifier.size(24.dp))
         KaiNoteState.SAVE_ERROR -> Icon(Icons.Filled.ErrorOutline, contentDescription = null, tint = Danger, modifier = Modifier.size(18.dp))
         KaiNoteState.CANCELLED -> Icon(Icons.Filled.Close, contentDescription = null, tint = TextSoft, modifier = Modifier.size(16.dp))
-        else -> Box(Modifier.padding(top = 3.dp).size(8.dp).background(Gold, CircleShape))
+        // Waiting: an empty ring — it fills with the tick only once the books saved the entry.
+        else -> Box(Modifier.size(22.dp).border(2.dp, Emerald.copy(alpha = 0.55f), CircleShape))
     }
 }
 
@@ -506,6 +557,8 @@ private fun kaiPose(context: Context, state: KaiNoteState, writing: Boolean): In
         KaiNoteState.SAVE_ERROR -> R.drawable.kai_nervous
         KaiNoteState.SAVING -> R.drawable.kai_thoughtful
         KaiNoteState.CANCELLED -> R.drawable.kai_curious
+        // His hand writes in the notebook; the rest of him stands calm.
+        KaiNoteState.DRAFT_READY, KaiNoteState.REVIEWING -> R.drawable.kai_full
         else -> R.drawable.kai_point
     }
 }
