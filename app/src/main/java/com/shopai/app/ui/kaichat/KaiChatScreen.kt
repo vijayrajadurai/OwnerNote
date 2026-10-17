@@ -276,7 +276,8 @@ fun KaiChatScreen(
     val fullNote = session.note.note?.takeIf { it.messageId != fullNoteClosed }
     LaunchedEffect(session.note.noteState, fullNote?.messageId) {
         val id = fullNote?.messageId ?: return@LaunchedEffect
-        if (session.note.noteState == com.shopai.app.brain.note.KaiNoteState.SAVE_SUCCESS || session.note.noteState == com.shopai.app.brain.note.KaiNoteState.CANCELLED) {
+        if (session.note.noteState == com.shopai.app.brain.note.KaiNoteState.SAVE_SUCCESS || session.note.noteState == com.shopai.app.brain.note.KaiNoteState.CANCELLED ||
+            session.note.noteState == com.shopai.app.brain.note.KaiNoteState.LISTED) {
             delay(1800)
             fullNoteClosed = id
         }

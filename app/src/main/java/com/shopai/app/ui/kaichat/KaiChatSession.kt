@@ -187,7 +187,8 @@ class KaiChatSession(
         messages += KaiChatMessage(id, fromOwner = false, text = result.reply.text, mood = result.reply.mood, card = result.card, lang = lang, ask = ask)
         // The notebook follows the real draft: the open one spent (saved / dropped / failed), and this answer's new draft.
         note = note.answered(result.reply.mood, spent = note.note?.let { com.shopai.app.brain.note.KaiNoteReader.spent(agent, it) } == true,
-            newNote = runCatching { com.shopai.app.brain.note.KaiNoteReader.noteFor(agent, id, result.card, lang, java.time.LocalDate.now()) }.getOrNull())
+            newNote = runCatching { com.shopai.app.brain.note.KaiNoteReader.noteFor(agent, id, result.card, lang, java.time.LocalDate.now()) }.getOrNull(),
+            listed = note.note?.let { com.shopai.app.brain.note.KaiNoteReader.listed(agent, it) } == true)
         result.direct?.let { pendingDirect = id to it }
         lastMood = result.reply.mood
         lastReplyAt = System.currentTimeMillis()
