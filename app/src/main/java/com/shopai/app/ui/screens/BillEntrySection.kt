@@ -77,7 +77,14 @@ class BillStockRow(val line: BillStock.Line) {
 }
 
 /** A bill item not in the inventory, as the save adds it: a new product (at the bill's rate) and its stock in. */
-data class NewBillProduct(val name: String, val unit: String, val qty: BigDecimal, val rate: BigDecimal?)
+data class NewBillProduct(
+    val name: String, val unit: String, val qty: BigDecimal, val rate: BigDecimal?,
+    /** The row's batch and expiry (medical / grocery bills) — the stock comes in as that batch. */
+    val batchNo: String? = null, val expiry: java.time.LocalDate? = null,
+)
+
+/** A ticked product of the bill and its quantity in the product's unit, with the row's batch / expiry when printed. */
+data class BillStockMove(val product: com.shopai.app.brain.tools.ProductRef, val qty: BigDecimal, val batchNo: String? = null, val expiry: java.time.LocalDate? = null)
 
 /**
  * A shop bill as it becomes a ledger entry: who it's with, the bill date,
@@ -143,13 +150,14 @@ class BillEntryState {
     }
 
     /** What the save moves: each ticked product and its quantity in the product's unit. */
-    val stockToMove: List<Pair<com.shopai.app.brain.tools.ProductRef, BigDecimal>>
-        get() = stockRows.filter { it.moves }.map { it.line.product!! to it.parsedQty!! }
+    val stockToMove: List<BillStockMove>
+        get() = stockRows.filter { it.moves }.map { BillStockMove(it.line.product!!, it.parsedQty!!, it.line.batchNo, it.line.expiry) }
 
     /** Ticked items of a supplier bill that are not in the inventory: added as new products, their stock in (on save, never before). */
     val productsToAdd: List<NewBillProduct>
         get() = if (!stockIn) emptyList() else stockRows.filter { it.creates }.map {
-            NewBillProduct(it.newName.trim().replace(Regex("""\s+"""), " "), it.newUnit.trim().uppercase(), it.parsedQty!!, it.line.rate)
+            NewBillProduct(it.newName.trim().replace(Regex("""\s+"""), " "), it.newUnit.trim().uppercase(), it.parsedQty!!, it.line.rate,
+                it.line.batchNo, it.line.expiry)
         }
 
     /** The owner checked [field] (confirmed it, or typed it). */

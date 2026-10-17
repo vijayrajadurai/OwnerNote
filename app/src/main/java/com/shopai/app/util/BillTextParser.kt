@@ -15,6 +15,10 @@ data class BillLineItem(
     val quantity: BigDecimal? = null,
     val unit: String? = null,
     val unitPrice: BigDecimal? = null,
+    /** The batch printed on the row (a medical / grocery bill's "Batch No" column), null when none. */
+    val batchNo: String? = null,
+    /** The row's expiry ("12/2026" → 31 Dec 2026, the month's last day), null when none. */
+    val expiry: java.time.LocalDate? = null,
 )
 
 /** CGST / SGST (or UTGST) / IGST as printed; [suspect] when the lines disagree with each other. */
@@ -589,6 +593,8 @@ object BillTextParser {
                 if (!keys[index].contains(labelKey)) continue
                 if (label == "total" && isNotTheBillTotal(keys[index])) continue
                 if ((label == "total" || label == "total amount") && isTaxSummaryRow(lines[index])) continue
+                // The items table's column header ("HSN Code | Rate (₹) | Amount (₹) | Total (₹)" — the "₹" read as "2") is no total.
+                if (isColumnHeader(lines[index])) continue
                 // OCR often splits a table row: the amount can land on the next line or two.
                 val next = lines.getOrNull(index + 1)
                 val amount = lastAmount(lines[index])
@@ -679,6 +685,12 @@ object BillTextParser {
     private val moneyWithPaise = Regex("""(?<![\d.,])\d[\d,]*[.,]\d{2}(?![\d])(?!\s*%)""")
 
     // "Sub Total", "Total Qty", "Total Items", "Total Tax" are not the bill total.
+    private fun isColumnHeader(line: String): Boolean =
+        !moneyWithPaise.containsMatchIn(line) && columnWords.findAll(line).map { it.value.lowercase() }.toSet().size >= 3
+
+    /** The words of an items table's header row ("Product Name | Brand | HSN Code | Batch No | Expiry Date | Qty | Rate | Total"). */
+    private val columnWords = Regex("""(?i)(?<![\p{L}])(description|particulars|item|product|brand|composition|hsn|sac|batch|expiry|qty|quantity|unit|rate|mrp|amount|amt|gst|total)(?![\p{L}])""")
+
     private fun isNotTheBillTotal(key: String): Boolean =
         listOf("subtotal", "totalqty", "totalquantity", "totalitem", "totaltax", "totalgst",
             "totaldiscount", "totalsavings", "totalpaid", "totaldue", "totalbalance").any { key.contains(it) }
@@ -711,7 +723,9 @@ object BillTextParser {
 
     private fun findItems(lines: List<String>, endExclusive: Int): List<BillLineItem> {
         val items = mutableListOf<BillLineItem>()
-        for (index in 0 until endExclusive.coerceAtMost(lines.size)) {
+        // The rows start under the table's header: the shop's banner above it ("GROCERIES | FMCG | HOUSEHOLD …") is no item.
+        val header = (0 until endExclusive.coerceAtMost(lines.size)).lastOrNull { isColumnHeader(lines[it]) }
+        for (index in (header?.plus(1) ?: 0) until endExclusive.coerceAtMost(lines.size)) {
             val line = lines[index]
             val lower = line.lowercase()
             // "Dated: 4-Oct-2026": a date with its month in letters is never an item (only here: a buyer line can end in one).
@@ -748,7 +762,9 @@ object BillTextParser {
         "bundle", "bundles", "coil", "coils", "bucket", "buckets", "carton", "cartons", "tube", "tubes", "pkts", "boxes", "sets",
         // Rice mandi, building materials, medical, spare parts (owner's 10-category guide, 13 Oct 2026).
         "quintal", "quintals", "qtl", "tonne", "tonnes", "ton", "tons", "cft", "strip", "strips", "vial", "vials", "tablet", "tablets", "tab", "tabs",
-        "capsule", "capsules", "sachet", "sachets", "kit", "kits", "load", "loads", "length", "lengths", "board", "boards", "ft", "feet", "bottle", "bottles")
+        "capsule", "capsules", "sachet", "sachets", "kit", "kits", "load", "loads", "length", "lengths", "board", "boards", "ft", "feet", "bottle", "bottles",
+        // A lorry of sand, a drum of paint (owner's bills, 17 Oct 2026) — and the scan's slips for "Pcs" ("Pes", "Pce").
+        "lorry", "lorries", "drum", "drums", "pes", "pce", "pcs.")
 
     /**
      * Splits a GST table row: the HSN/SAC code leaves the description, and the
@@ -756,8 +772,27 @@ object BillTextParser {
      * amount (within a paisa per unit). A leading serial number ("1 ", "2.")
      * is dropped when the row has an HSN code.
      */
-    private fun itemColumns(line: String, description: String, amount: BigDecimal): BillLineItem {
-        var desc = description
+    private fun itemColumns(line0: String, description0: String, amount: BigDecimal): BillLineItem {
+        // Table borders and specks the scan kept between columns ("20 | Pcs", "5208 i 50", "12/2026 +=: 30049099") are spaces — a
+        // lone letter that is a unit ("1000 g 0.50") stays, unless a quantity with its own unit follows ("070310 l 50 Kg").
+        fun tidy(t: String) = t.replace(Regex("""\s*[|¦]\s*"""), " ").replace(Regex("""(?<=\s)[^\p{L}\p{N}\s(),.%₹/]+(?=\s|$)"""), " ")
+            .replace(Regex("""(?<=\d)\s+(?:[a-fh-kn-z](?=\s+\d)|[glm](?=\s+\d+\s+\p{L}))"""), " ").replace(Regex("""\s+"""), " ").trim()
+        var line = tidy(line0)
+        var desc = tidy(description0)
+        // A "Batch No" / "Expiry Date" column (medical, grocery bills): "PT2501 12/2026" — out of the name, kept for the stock.
+        var batchNo: String? = null
+        var expiry: java.time.LocalDate? = null
+        rowExpiry.find(desc)?.let { m ->
+            val month = m.groupValues[2].toInt()
+            val year = m.groupValues[3].toInt().let { if (it < 100) 2000 + it else it }
+            if (month in 1..12 && year in 2000..2099) {
+                expiry = java.time.YearMonth.of(year, month).atEndOfMonth()
+                batchNo = m.groupValues[1].takeIf { it.isNotBlank() }?.trim()?.replace('$', 'S')
+                desc = (desc.substring(0, m.range.first) + " " + desc.substring(m.range.last + 1)).replace(Regex("""\s+"""), " ").trim()
+                line = line.replace(m.value.trim(), " ").replace(Regex("""\s+"""), " ").trim()
+            }
+        }
+        val description = desc.takeIf { line.contains(it) } ?: tidy(description0).trimEnd(' ', 'i', 'l', '|')
         var hsn: String? = null
         hsnInDescription.find(desc)?.let { m ->
             hsn = m.groupValues[2]
@@ -778,12 +813,16 @@ object BillTextParser {
         var unitPrice: BigDecimal? = null
         var unit: String? = null
         val before = values.dropLast(1).filter { (m, v) -> v != null && m.groupValues[1] != hsn }
+        // qty × rate = the line amount — or, on a GST bill, its taxable amount column before the GST and the total ("50 Pcs 40.00
+        // 2,000.00 12% 240.00 2,240.00": 50 × 40 = 2,000).
+        val later = values.mapNotNull { it.second }
         loop@ for (i in before.indices) for (j in i + 1 until before.size) {
             val q = before[i].second!!
             val p = before[j].second!!
             if (q.signum() <= 0 || p.signum() <= 0) continue
             val tolerance = BigDecimal("0.01").max(q.multiply(BigDecimal("0.01")))
-            if ((q.multiply(p) - amount).abs() <= tolerance) {
+            val product = q.multiply(p)
+            if ((product - amount).abs() <= tolerance || later.drop(j + 1).any { (product - it).abs() <= tolerance && it.signum() > 0 }) {
                 quantity = q.stripTrailingZeros().let { if (it.scale() < 0) it.setScale(0) else it }
                 unitPrice = p
                 unit = tail.substring(before[i].first.range.last + 1).trim().split(' ').firstOrNull()
@@ -804,8 +843,11 @@ object BillTextParser {
                 desc = desc.substring(0, m.range.first).trim()
             }
         }
-        return BillLineItem(desc, amount, hsn, quantity, unit, unitPrice)
+        return BillLineItem(desc, amount, hsn, quantity, unit, unitPrice, batchNo, expiry)
     }
+
+    /** "PT2501 12/2026", "$02503 03/2026", "12/2026": a row's batch code (letters and digits) and its expiry month / year. */
+    private val rowExpiry = Regex("""(?:(?<=\s)([A-Za-z$][A-Za-z0-9$]{0,3}\d{2,6}[A-Za-z0-9]{0,3})\s+)?(?<![\d/])(0?[1-9]|1[0-2])\s*/\s*(20\d{2})(?![\d/])""")
 
     // A quantity with a space before its unit ("0.5 kg"); "5kg" glued to the name is a pack size.
     private val qtyAtEnd = Regex("""\s(\d+(?:[.,]\d+)?)\s+(${itemUnitsPattern()})\.?$""", RegexOption.IGNORE_CASE)
@@ -814,7 +856,8 @@ object BillTextParser {
         "boxes", "box", "bags", "bag", "dozen", "doz", "sets", "set", "mtrs", "meter", "metre", "mtr", "m", "units", "unit", "each", "ea", "sheets", "sheet",
         "sqft", "sft", "cans", "can", "tin", "rolls", "roll", "pairs", "pair", "bundles", "bundle", "coils", "coil", "buckets", "bucket", "cartons", "carton",
         "tubes", "tube", "quintals", "quintal", "qtl", "tonnes", "tonne", "tons", "ton", "cft", "strips", "strip", "vials", "vial", "tablets", "tablet",
-        "tabs", "tab", "capsules", "capsule", "sachets", "sachet", "kits", "kit", "loads", "load", "lengths", "length", "boards", "board", "feet", "ft", "bottles", "bottle").joinToString("|")
+        "tabs", "tab", "capsules", "capsule", "sachets", "sachet", "kits", "kit", "loads", "load", "lengths", "length", "boards", "board", "feet", "ft", "bottles", "bottle",
+        "lorries", "lorry", "drums", "drum", "pes", "pce").joinToString("|")
 
     private fun tokenAmountOrZero(token: String): BigDecimal? {
         val plain = token.replace(",", "")

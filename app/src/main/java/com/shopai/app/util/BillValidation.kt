@@ -170,6 +170,9 @@ object OcrResultChooser {
         if (bill.merchantName != null) s += 5
         // Items that add up to the bill: the rows were read, not just the column of amounts.
         if (bill.items.size >= 2 && !bill.check.has(BillIssue.ITEMS_MISMATCH)) s += 3 * minOf(bill.items.size, 10)
+        // Rows read whole — quantity × rate = amount — even when the bill's own totals disagree (owner's hardware bill, 17 Oct
+        // 2026: a pass with no rows at all tied the pass with all 12, and the empty one would have been kept).
+        s += minOf(bill.items.count { it.quantity != null && it.unitPrice != null }, 30)
         s -= 3 * mixedScriptWords(text)
         return s
     }
