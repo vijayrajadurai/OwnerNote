@@ -314,3 +314,19 @@ ENTRY  | Sri Murugan Agro Centre ku 5000 kudukkanum     | DEBIT Sri Murugan Agro
 ENTRY  | Kumar ku 1500 note pannu                       | CREDIT Kumar 1500
 ENTRY  | Kumar 1500 ezhudhu                             | CREDIT Kumar 1500
 ENTRY  | ABC Traders ku 3000 entry podu                 | DEBIT ABC Traders 3000
+
+# A word or two said alone is a topic, not a report to show: Kai asks which, and answers what the records have (owner, 17 Oct
+# 2026: "report" / "cash" showed the money-to-collect report, "sales" was answered in English, "selavu evlo" was told to add an
+# expense, "Lux" got an amount question, "nalla irukku" was looked up as a product).
+ASK    | report                                         | Endha report;Sales;expiry
+ASK    | report kudu                                    | Endha report
+ASK    | cash                                           | cash;paakkanum
+ASK    | UPI                                            | UPI;paakkanum
+ASK    | indha maasam                                   | Indha maasam;Sales;selavu
+ASK    | Lux                                            | Lux Soap;vandhuchu
+ASK    | Kumar kanakku                                  | ₹4,000
+ASK    | low stock                                      | Maggi
+ASK    | sales                                          | sales;Daily Cash Note
+ASK    | Intha masam Selavu evlo                        | selavu;Daily Cash Note
+ASK    | indha maasam selavu evlo                       | selavu;Daily Cash Note
+ASK    | nalla irukku                                   | 😄

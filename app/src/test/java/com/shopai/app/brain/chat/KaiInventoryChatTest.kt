@@ -73,6 +73,9 @@ class KaiInventoryChatTest {
         /** Batches with expiry (medical shop): what [expiring] reads. */
         val batches = mutableListOf<com.shopai.app.brain.tools.BatchFact>()
         override suspend fun expiring(until: java.time.LocalDate) = batches.filter { !it.expiry.isAfter(until) && it.qty.signum() > 0 }
+        /** Products at or below their minimum, as the books' low-stock list reads them. */
+        override suspend fun lowStock() = items.filter { it.minimum != null && it.stock <= it.minimum!! }
+            .map { com.shopai.app.brain.tools.StockFact(it.name, it.stock, it.unit, it.minimum!!) }
 
         override suspend fun products() = items.map { ProductRef(it.id, it.name, it.unit, it.stock, it.conversions, it.purchase, it.selling, it.minimum, it.category, it.batchTracked) }
         /** The batch / expiry Kai passed with new stock (stockInBatch). */
