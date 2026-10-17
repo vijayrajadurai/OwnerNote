@@ -1,4 +1,4 @@
-# Kai's hand-note — shop scenes
+# Kai's hand-note — shop scenes and Kai's writing pose
 
 Kai writes each draft into a notebook while the digital card follows (`ui/kai/KaiNoteScene.kt`). The picture behind them is the
 owner's own kind of shop, picked from the business profile's category (`brain/note/KaiShopScene.kt`). Nothing is downloaded: each
@@ -28,3 +28,26 @@ Each picture:
 - busy detail away from the centre, because the app blurs it and lays a light veil on top so the notebook and the card stay readable.
 
 The file name must be exactly as above. A missing or misspelt one simply shows the gradient.
+
+## Kai writing — `app/src/main/res/drawable-nodpi/kai_writing.png`
+
+While the notebook is being written, the app shows this picture of Kai. Until it is added, his pointing picture (`kai_point.png`) shows.
+
+- Same Kai as `kai_full.png`: chubby, smiling, white shirt with a pen in the pocket, green towel with a gold border on the left shoulder, black hair.
+- Upper body, seen from the front, slightly turned to his left. He looks down at his hands, smiling.
+- His right hand holds a black fountain pen, writing at the bottom right of the picture, as if on a desk just below the frame.
+- No desk, no notebook, no text. **Transparent background** (PNG with alpha).
+- 1024 × 1024 px; Kai fills the frame from the waist up.
+
+Prompt to generate it (same tool as the owner's reference picture):
+
+> 3D Pixar-style render of the same chubby smiling Tamil shopkeeper mascot "Kai" (black hair, white half-sleeve shirt with a pen in
+> the pocket, green towel with gold border on his left shoulder), upper body from the waist up, looking down happily, his right
+> hand holding a black fountain pen as if writing on a desk just below the frame, no desk, no notebook, no text, isolated on a fully
+> transparent background, soft studio light, 1024×1024.
+
+Prompt for a shop picture (change the shop for each category):
+
+> Photorealistic interior of a small Indian grocery / kirana shop, warm evening light, wooden shelves full of rice bags, dal and
+> biscuit packets, oil bottles, steel weighing scale, shallow depth of field (background softly blurred), no people, no text,
+> no logos, landscape 1080×1350.
