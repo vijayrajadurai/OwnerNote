@@ -2481,7 +2481,10 @@ class KaiAgent(
         kind: PlanKind = if (receivable) PlanKind.CREDIT_GIVEN else PlanKind.DEBIT_TAKEN, outgoing: Boolean = receivable, mode: PaymentMode = PaymentMode.CASH,
     ): KaiTurn? {
         val all = runCatching { tools.parties(person) }.getOrNull() ?: return null
-        val record = KaiEntityResolver.sameName(person, all).filter { it.customer == receivable }.distinctBy { it.id }.singleOrNull() ?: return null
+        // (on the side the money is on; else the one record of that name — "naan Kumar Mandi-ku tharanum" with Kumar a customer is
+        // still asked: the same Kumar, or a new supplier?)
+        val record = KaiEntityResolver.sameName(person, all).filter { it.customer == receivable }.distinctBy { it.id }.singleOrNull()
+            ?: KaiEntityResolver.sameName(person, all).distinctBy { it.id }.singleOrNull() ?: return null
         val relation = Regex("""(?i)(?<![\p{L}\p{M}])${Regex.escape(person)}\s+([\p{L}\p{M}]+)""").find(text)
             ?.groupValues?.get(1)?.lowercase(Locale.ROOT)?.replace(Regex("""(?i)(kitta|kita|ukku|kku|ku|oda|-)+$"""), "")?.takeIf { it in relationWords }
         val (word, phrase) = relation?.let { it to "$person ${it.replaceFirstChar { c -> c.titlecase(Locale.ROOT) }}" }
@@ -2509,21 +2512,8 @@ class KaiAgent(
         )
     }
 
-    /** Words said next to a name that are never who it is: time, money ways, fillers, the owner, roles. */
-    private val notQualifiers = setOf(
-        "hmm", "hmmm", "umm", "ahh", "aah", "haan", "ohh", "ayyo", "ayyoo", "illa", "illai", "thappu", "wrong", "late", "lateaa", "latea", "correct", "early", "seekiram", "sikkiram", "usually", "eppavum", "eppavume",
-        "inniku", "innikku", "innaiku", "innaikku", "indru", "naalaikku", "nalaikku", "naalaiku", "nalaiku", "nethu", "nethiku", "today", "tomorrow",
-        "yesterday", "ippo", "ipo", "ippa", "ipa", "appo", "seri", "sari", "ok", "okay", "bro", "boss", "owner", "sir", "madam", "kanakku", "kanakkula",
-        "account", "entry", "credit", "debit", "gpay", "phonepe", "paytm", "upi", "online", "bank", "card", "cheque", "mattum", "dhaan", "than",
-        "thaan", "pudhu", "puthu", "new", "old", "pazhaya", "total", "full", "fulla", "motham", "amount", "rupa", "rupai", "rooba", "ruba", "roobai",
-        "advance", "bill", "kadan", "baaki", "bakki", "paakki", "settle", "clear", "reminder", "phone", "message", "whatsapp", "kai", "hello", "please",
-        "pls", "also", "innoru", "marupadi", "again", "ini", "inimel", "yen", "what", "who", "when", "where", "which", "endha", "entha", "andha",
-        "indha", "intha", "rendu", "moonu", "customer", "supplier", "oda", "ode", "kooda", "kitta", "irukku", "iruku", "gave", "given", "give",
-        "returned", "sent", "send", "transferred", "will", "should", "needs", "need", "must", "took", "bought", "borrowed", "lent", "received",
-        "collected", "settled", "cleared", "owed", "for", "with", "by", "at", "on", "in", "of", "this", "that", "money", "loan", "eduthaan",
-        "return", "refund", "ivlo", "ivvalavu", "evalo", "evvalo", "ewlo", "yevlo", "ethana", "evlavu", "full", "partial", "konjam", "mothama",
-        "எனக்கு", "நான்", "கிட்ட", "இருந்து", "இன்னைக்கு", "நாளைக்கு", "ரூபாய்", "பணம்", "பாக்கி", "கணக்கு", "புது", "பழைய",
-    )
+    /** Words said next to a name that are never who it is (KaiCommands.notQualifiers). */
+    private val notQualifiers get() = KaiCommands.notQualifiers
     private val verbEnding = Regex("""(aan|an|aaru|aru|aanga|anga|nga|inen|en|anum|num|chu|dhu|thu|tha|dha|ttu|tten|ten|rom|vom|kku|ணும்|ான்|ார்|ாங்க|ேன்|து|சு|க்கு)$""")
 
     /**
@@ -2558,19 +2548,23 @@ class KaiAgent(
         val name = tokens[i].substringBefore('-').let { if (it.equals(person, ignoreCase = true)) person else it }
         tokens.getOrNull(i - 1)?.takeIf { !it.contains('-') && nextTo(i - 1, i) }?.let(::usable)?.let { return it to "$it $name" }
         if (tokens[i].contains('-')) return null // "Lokesh-ku 500": the name alone
-        // "Kumar Tea Shop", "குமார் டீ ஷாப்": one or two words ending in a shop's last word right after the name — that shop, whatever
-        // the words before it are ("tea" is goods, still the shop's name).
-        tokens.getOrNull(i + 2)?.takeIf { nextTo(i, i + 1) && nextTo(i + 1, i + 2) && KaiCommands.isShopWord(it.substringBefore('-')) }?.let { last ->
-            val mid = tokens[i + 1].substringBefore('-')
-            if (mid.length >= 2 && !KaiEntityResolver.isFunctionWord(mid.lowercase(Locale.ROOT)) && com.shopai.app.brain.tools.KaiPaymentDirection.of(mid) == null)
-                return mid to "$name ${KaiCommands.middleWordFor(name, mid)} ${KaiCommands.shopWordFor(name, last.substringBefore('-'), mid)}"
+        // "Kumar Tea Shop", "Lokesh Madurai", "Kumar Agro Mandi", "குமார் டீ ஷாப்": the words right after the name that can be a name's
+        // — up to a shop's last word, or three — are who the owner named, whatever they are (owner, 17 Oct 2026: never a list).
+        // Before a shop's last word any word but grammar counts ("tea" is goods, still the shop's name).
+        val tail = mutableListOf<String>()
+        var j = i + 1
+        while (tail.size < 3 && j in tokens.indices && nextTo(j - 1, j)) {
+            val w = tokens[j].substringBefore('-')
+            val k = w.lowercase(Locale.ROOT)
+            if (w.length < 2 || KaiEntityResolver.isFunctionWord(k) || com.shopai.app.brain.tools.KaiPaymentDirection.of(w) != null || k in notQualifiers) break
+            tail += w
+            if (KaiCommands.isShopWord(w) || tokens[j].contains('-')) break
+            j++
         }
-        tokens.getOrNull(i + 1)?.takeIf { nextTo(i, i + 1) }?.let(::usable)?.let { q ->
-            // "Kumar Tea Shop": a shop's last word right after keeps the whole name (owner, 16 Oct 2026 — never "Kumar Tea").
-            val shop = tokens.getOrNull(i + 2)?.takeIf { nextTo(i + 1, i + 2) }?.substringBefore('-')
-                ?.takeIf { KaiCommands.isShopWord(it) }?.let { KaiCommands.shopWordFor(name, it) }
-            return q to (if (shop != null) "$name $q $shop" else "$name $q")
-        }
+        val toShop = tail.isNotEmpty() && KaiCommands.isShopWord(tail.last())
+        val named = if (toShop) tail else tail.withIndex().takeWhile { (n, w) -> if (n == 0) usable(w) != null else KaiCommands.nameWord(w) }.map { it.value }
+        if (named.isEmpty()) return null
+        return named.first().replaceFirstChar { it.titlecase(Locale.ROOT) } to KaiCommands.nameOf(name, named, toShop, headKnown = true)
         return null
     }
 
@@ -5513,7 +5507,8 @@ class KaiAgent(
         }
         // "Suresh 2000 kuduthan" with no Suresh in the books: Suresh, asked about as a new name — never "Yaar kitta vaanguninga?".
         if (r.name.isNullOrBlank()) com.shopai.app.brain.KaiUnderstanding.personPhraseIn(r.said)
-            ?.takeIf { p -> r.said.trimStart().startsWith(p.substringBefore(' '), ignoreCase = true) && Regex("""[\p{L}\p{M} ]+""").matches(p) && !notAName(p) && p.split(' ').size <= 3 }
+            ?.takeIf { p -> r.said.trimStart().substringBefore(' ').let { w -> w.equals(p.substringBefore(' '), ignoreCase = true) || samePerson(w, p.substringBefore(' ')) } &&
+                Regex("""[\p{L}\p{M} ]+""").matches(p) && !notAName(p) && p.split(' ').size <= 5 }
             ?.let { return payment(r.copy(name = it), lang) }
         if (r.name.isNullOrBlank()) {
             incompletePayment = r
