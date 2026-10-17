@@ -153,7 +153,13 @@ data class ProductForm(
 )
 
 /** A card under a Kai message: the details of a draft / action, and its buttons. */
-data class KaiCard(val lines: List<String>, val buttons: List<KaiButton>, val warning: String? = null)
+/** [stock]: the same products as [lines], for the screen's stock card (name, quantity, reorder level) — nothing more is said. */
+data class KaiCard(
+    val lines: List<String>,
+    val buttons: List<KaiButton>,
+    val warning: String? = null,
+    val stock: List<com.shopai.app.brain.note.KaiStockRow>? = null,
+)
 
 /**
  * One Kai turn: the reply, and a card when there is something to confirm or do.
@@ -6178,7 +6184,8 @@ class KaiAgent(
         }
         return KaiTurn(
             ChatReply(pick(lang, ta = "Stock விவரம் ஓனர்:", tl = "Owner, stock details:", en = "Stock, Owner:"), KaiMood.EXPLAINING, ChatIntent.GENERAL_BUSINESS_QUERY),
-            KaiCard(facts.take(10).map { "${it.name} — ${qty(it.qty, it.unit)}" }, emptyList()),
+            KaiCard(facts.take(10).map { "${it.name} — ${qty(it.qty, it.unit)}" }, emptyList(),
+                stock = com.shopai.app.brain.note.KaiStockView.rows(facts.take(10), ::qty)),
         )
     }
 
@@ -6239,7 +6246,8 @@ class KaiAgent(
             ta = "எந்த பொருளும் reorder அளவுக்கு கீழ இல்ல ஓனர்.", tl = "Owner, endha product-um reorder level-ku keezha illa.", en = "Nothing is below its reorder level, Owner.")
         return KaiTurn(
             ChatReply(pick(lang, ta = "குறைவான stock ஓனர் (${low.size}):", tl = "Owner, low stock (${low.size}):", en = "Low stock, Owner (${low.size}):"), KaiMood.CONCERNED, ChatIntent.GENERAL_BUSINESS_QUERY),
-            KaiCard(low.take(10).map { f -> "${f.name} — ${qty(f.qty, f.unit)}" + (f.reorderAt?.let { " (reorder ${qty(it, f.unit)})" } ?: "") }, emptyList()),
+            KaiCard(low.take(10).map { f -> "${f.name} — ${qty(f.qty, f.unit)}" + (f.reorderAt?.let { " (reorder ${qty(it, f.unit)})" } ?: "") }, emptyList(),
+                stock = com.shopai.app.brain.note.KaiStockView.rows(low.take(10), ::qty)),
         )
     }
 

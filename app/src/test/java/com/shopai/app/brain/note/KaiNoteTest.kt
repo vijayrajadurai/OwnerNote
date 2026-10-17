@@ -312,4 +312,37 @@ class KaiNoteTest {
         assertEquals(KaiNoteRow("Hair cutting ×3", "₹450"), note.rows[0])
         assertEquals(KaiNoteRow("Mothama ₹450 · Cash", ""), note.rows[1])
     }
+
+    /** "Stock evlo iruku" (owner, 18 Oct 2026): the stock card shows the same products and numbers as Kai's lines, typed or by mic. */
+    @Test fun stockCardIsTheBooksOwnNumbers() {
+        for (line in listOf("stock evlo iruku", "ஸ்டாக் எவ்வளவு இருக்கு")) {
+            val (agent, inv) = kai()
+            inv.items.first { it.name == "Lux Soap" }.minimum = BigDecimal("80")
+            val t = runBlocking { agent.ask(line) }
+            val card = t.card!!
+            val rows = card.stock!!
+            assertEquals(line, card.lines.size, rows.size)
+            rows.forEachIndexed { i, r -> assertEquals(line, card.lines[i], "${r.name} — ${r.qty}") }
+            val lux = rows.first { it.name == "Lux Soap" }
+            assertEquals(KaiStockLevel.LOW, lux.level)
+            assertEquals(KaiStockLevel.NO_LEVEL, rows.first { it.name == "Colgate" }.level)
+            assertNull(rows.first { it.name == "Colgate" }.fill)
+            assertEquals(0.25f, lux.fill!!, 0.001f)
+        }
+    }
+
+    @Test fun stockLevels() {
+        val q = { n: BigDecimal, u: String -> "${n.stripTrailingZeros().toPlainString()} $u" }
+        val rows = KaiStockView.rows(listOf(
+            com.shopai.app.brain.tools.StockFact("Rice", BigDecimal.ZERO, "KG", BigDecimal("10")),
+            com.shopai.app.brain.tools.StockFact("Dal", BigDecimal("8"), "KG", BigDecimal("10")),
+            com.shopai.app.brain.tools.StockFact("Oil", BigDecimal("50"), "LTR", BigDecimal("10")),
+            com.shopai.app.brain.tools.StockFact("Salt", BigDecimal("5"), "KG", null),
+        ), q)
+        assertEquals(listOf(KaiStockLevel.OUT, KaiStockLevel.LOW, KaiStockLevel.OK, KaiStockLevel.NO_LEVEL), rows.map { it.level })
+        assertEquals(1f, rows[2].fill!!, 0.001f)
+        assertEquals("Stock illa", KaiStockView.label(rows[0], KaiLang.TANGLISH))
+        assertEquals("Low · reorder 10 KG", KaiStockView.label(rows[1], KaiLang.TANGLISH))
+        assertEquals("குறைவு · reorder 10 KG", KaiStockView.label(rows[1], KaiLang.TAMIL))
+    }
 }
