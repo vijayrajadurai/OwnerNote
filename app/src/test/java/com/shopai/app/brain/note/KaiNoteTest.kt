@@ -186,6 +186,26 @@ class KaiNoteTest {
         assertEquals("2 box", row.value)
     }
 
+    /** A product the shop doesn't have yet ("Rice 2 bag vandhuchu", a new product with its stock): the note shows it too. */
+    @Test fun aNewProductWithItsStockIsWritten() {
+        for ((lines, lang) in listOf(listOf("Basmati Rice 2 bag vandhuchu") to KaiLang.TANGLISH, listOf("பாஸ்மதி ரைஸ் 2 பேக் வந்துச்சு") to KaiLang.TAMIL)) {
+            val (agent, inv) = kai()
+            val chat = Chat(agent, lang, today)
+            var t = chat.say(lines.first())
+            // Kai asks what it needs for a new product (bag size, prices…): answered until the summary with Confirm.
+            val answers = ArrayDeque(listOf("25", "1500", "70", "80", "1000", "skip"))
+            while (t.card?.buttons?.any { it.primary && it.action is KaiAction.ConfirmStock } != true && answers.isNotEmpty()) t = chat.say(answers.removeFirst())
+            assertTrue("«${lines.first()}» no Confirm: ${t.reply.text}", t.card?.buttons?.any { it.primary } == true)
+            val note = chat.flow.note
+            assertTrue("«${lines.first()}» no note: ${t.reply.text} | ${t.card?.lines}", note != null)
+            assertEquals(KaiNoteKind.STOCK_IN, note!!.kind)
+            assertTrue(note.rows.single().detail.orEmpty(), note.rows.single().detail.orEmpty().contains(if (lang == KaiLang.TAMIL) "புது" else "Pudhu"))
+            assertTrue(inv.created.isEmpty())
+            chat.tap(confirmOf(t))
+            assertEquals("«${lines.first()}» ${chat.last?.reply?.text}", KaiNoteState.SAVE_SUCCESS, chat.flow.noteState)
+        }
+    }
+
     @Test fun aQuestionOrAReportIsNoNote() {
         val (agent, _) = kai()
         val chat = Chat(agent, KaiLang.TANGLISH, today)

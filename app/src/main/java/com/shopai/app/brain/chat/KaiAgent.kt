@@ -5037,6 +5037,10 @@ class KaiAgent(
 
     /** A stock draft as Kai's notebook writes it (read only): what was said, which way, and the stock before → after when known. */
     fun stockNoteOf(key: String): com.shopai.app.brain.note.KaiStockNoteLine? = stockPlans[key]?.let(::stockNoteLine)
+        // A product not in the shop yet, added with its opening stock ("Colgate 5 box vandhuchu" → new Colgate, 5 boxes): its summary.
+        ?: newItem?.takeIf { it.key == key && it.asked == null }?.let { n ->
+            n.spec.qty?.let { q -> com.shopai.app.brain.note.KaiStockNoteLine(n.spec.name, q, n.spec.unit ?: "PCS", incoming = true, newProduct = true) }
+        }
 
     /** The goods said together ("5 kg rice, 2 soap, 1 oil") and waiting for one Confirm, as the notebook writes them (read only). */
     fun goodsNote(): List<com.shopai.app.brain.note.KaiStockNoteLine> = if (!goodsOpen()) emptyList() else goodsList.mapNotNull { g ->

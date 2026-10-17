@@ -54,6 +54,8 @@ data class KaiStockNoteLine(
     val baseUnit: String? = null,
     val batchNo: String? = null,
     val expiry: LocalDate? = null,
+    /** A product the shop doesn't have yet: added with this stock on Confirm. */
+    val newProduct: Boolean = false,
 )
 
 object KaiNotes {
@@ -131,8 +133,9 @@ object KaiNotes {
             val change = if (l.before != null && l.after != null && l.baseUnit != null)
                 "${qty(l.before)} → ${qty(l.after)} ${unit(l.baseUnit, lang)}" else null
             val batch = listOfNotNull(l.batchNo?.let { "Batch $it" }, l.expiry?.let { "Exp ${"%02d".format(it.monthValue)}/${it.year}" }).joinToString(" · ").ifEmpty { null }
+            val fresh = if (l.newProduct) pick(lang, "புது product", "Pudhu product", "New product") else null
             KaiNoteRow(l.name, (if (kind == KaiNoteKind.OTHER) (if (l.incoming) "+" else "−") else "") + "${qty(l.qty)} ${unit(l.unit, lang)}",
-                listOfNotNull(change, batch).joinToString(" · ").ifEmpty { null })
+                listOfNotNull(fresh, change, batch).joinToString(" · ").ifEmpty { null })
         }
         val title = if (kind == KaiNoteKind.OTHER) pick(lang, "ஸ்டாக்", "Stock", "Stock") else title(kind, lang)
         return KaiNote(messageId, kind, title, rows, today, lang, keys)
