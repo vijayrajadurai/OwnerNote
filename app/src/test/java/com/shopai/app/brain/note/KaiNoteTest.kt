@@ -281,7 +281,7 @@ class KaiNoteTest {
             assertEquals("«$line» ${t.reply.text}", KaiMood.CLARIFY, t.reply.mood)
             val p = agent.askProgress(lang)
             assertTrue("«$line» no progress: ${t.reply.text}", p != null)
-            assertEquals(listOf("Lux Soap", "2 box"), p!!.known)
+            assertEquals(listOf("Lux Soap", "2 box"), p!!.known.map { it.second })
             assertEquals("1 box = ? pcs", p.asking)
         }
         // A new product: its name and quantity known, a price asked; the count of questions never shrinks below this one.
@@ -293,9 +293,10 @@ class KaiNoteTest {
             val p = agent.askProgress(KaiLang.TANGLISH)
             if (p != null) {
                 seen++
-                assertTrue(p.known.first(), p.known.first().contains("Basmati", ignoreCase = true))
+                assertTrue(p.known.first().second, p.known.first().second.contains("Basmati", ignoreCase = true))
                 assertTrue("${p.step}/${p.steps}", p.step in 1..p.steps)
-                assertTrue(p.asking, p.asking.endsWith("?"))
+                // The row asked is a field not yet known.
+                assertTrue(p.asking, p.known.none { it.first == p.asking })
             }
             t = runBlocking { agent.ask(answers.removeFirst()) }
         }

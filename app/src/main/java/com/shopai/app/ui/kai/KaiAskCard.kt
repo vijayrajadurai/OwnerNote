@@ -1,12 +1,11 @@
 package com.shopai.app.ui.kai
 
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -26,23 +25,22 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.shopai.app.R
@@ -51,19 +49,24 @@ import com.shopai.app.brain.chat.KaiAction
 import com.shopai.app.brain.chat.KaiCard
 import com.shopai.app.brain.note.KaiAskProgress
 
-private val AskEmerald = Color(0xFF0F7A55)
-private val AskEmeraldDark = Color(0xFF0B5C40)
-private val AskMint = Color(0xFF7FE0B5)
-private val AskGold = Color(0xFFE8C35A)
-private val AskText = Color(0xFF1C2B26)
-private val AskSoft = Color(0xFF5B6B66)
+/** iPhone colours (system green, grey, grouped background, separator, red, label). */
+internal val IosGreen = Color(0xFF34C759)
+internal val IosGrey = Color(0xFF8E8E93)
+internal val IosGrouped = Color(0xFFF2F2F7)
+internal val IosSeparator = Color(0xFFE5E5EA)
+internal val IosRed = Color(0xFFFF3B30)
+internal val IosLabel = Color(0xFF1C1C1E)
+
+/** Kai's own "drop it" buttons — shown as red text, as on an iPhone. */
+internal fun isCancel(a: KaiAction): Boolean = a is KaiAction.CancelPlan || a is KaiAction.CancelRequest || a is KaiAction.CancelReminder ||
+    a is KaiAction.CancelStock || a == KaiAction.CancelGoods || a is KaiAction.CancelSale || a is KaiAction.CancelDayClose
 
 /**
- * Kai asking the one thing he needs ("Oru piece selling rate evlo?") — light glass, mint glow (owner, 17 Oct 2026, style B):
- * Kai's face and "2/3", the question large, chips of what the owner already said and the one asked (gold), a big mic to answer,
- * and Kai's own buttons. Everything comes from Kai's turn and his pending item; nothing is guessed.
+ * Kai asking the one thing he needs ("Oru piece selling rate evlo?") — iPhone style (owner, 18 Oct 2026: "iPhone classy-la kudu"):
+ * a white sheet with Kai's face and the step bars, the question large and bold, a clean list of what the owner already said with the
+ * asked row last (green, a blinking cursor), a green mic to answer by voice, and Kai's own buttons as text. Nothing is guessed: the
+ * rows come from Kai's pending item.
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun KaiAskCard(
     question: String,
@@ -77,108 +80,120 @@ fun KaiAskCard(
     onMic: (() -> Unit)? = null,
 ) {
     val life = rememberInfiniteTransition(label = "kai-ask")
-    val glow by life.animateFloat(0.10f, 0.28f, infiniteRepeatable(tween(1300), RepeatMode.Reverse), label = "glow")
-    val pulse by life.animateFloat(1f, 1.06f, infiniteRepeatable(tween(900), RepeatMode.Reverse), label = "pulse")
+    val ring by life.animateFloat(0f, 1f, infiniteRepeatable(tween(1600, easing = LinearEasing)), label = "ring")
+    val cursor by life.animateFloat(0f, 1f, infiniteRepeatable(tween(1000, easing = LinearEasing)), label = "cursor")
 
     Box(modifier.fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
-        // The mint glow ring around the card.
-        Box(
+        Column(
             Modifier
-                .widthIn(max = 360.dp)
-                .background(AskMint.copy(alpha = if (closed) 0.08f else glow), RoundedCornerShape(26.dp))
-                .padding(5.dp),
+                .widthIn(max = 380.dp)
+                .fillMaxWidth()
+                .shadow(14.dp, RoundedCornerShape(28.dp), ambientColor = Color.Black.copy(alpha = 0.10f), spotColor = Color.Black.copy(alpha = 0.10f))
+                .clip(RoundedCornerShape(28.dp))
+                .background(Color.White)
+                .alpha(if (closed) 0.6f else 1f)
+                .padding(start = 18.dp, end = 18.dp, top = 8.dp, bottom = 14.dp),
         ) {
-            Column(
-                Modifier
-                    .shadow(10.dp, RoundedCornerShape(22.dp), ambientColor = AskEmerald, spotColor = AskEmerald)
-                    .clip(RoundedCornerShape(22.dp))
-                    .background(Color.White)
-                    .border(1.5.dp, AskMint, RoundedCornerShape(22.dp)),
-            ) {
-                Row(
-                    Modifier.fillMaxWidth().background(Brush.horizontalGradient(listOf(AskEmeraldDark, AskEmerald))).padding(horizontal = 12.dp, vertical = 9.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(
-                        Modifier.size(42.dp).background(Color.White.copy(alpha = 0.2f), CircleShape).border(2.dp, AskMint, CircleShape).clip(CircleShape),
-                        contentAlignment = Alignment.BottomCenter,
-                    ) {
-                        Image(painterResource(R.drawable.kai_curious), contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(42.dp))
-                    }
-                    Spacer(Modifier.width(10.dp))
+            // The sheet's grabber.
+            Box(Modifier.align(Alignment.CenterHorizontally).size(width = 38.dp, height = 5.dp).background(Color(0xFFD1D1D6), RoundedCornerShape(3.dp)))
+            Spacer(Modifier.height(12.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(34.dp).clip(CircleShape).background(Color(0xFFE8F5EE)), contentAlignment = Alignment.TopCenter) {
+                    Image(painterResource(R.drawable.kai_curious), contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(34.dp))
+                }
+                Spacer(Modifier.width(10.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("Kai", color = IosLabel, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
                     Text(
-                        when (lang) { KaiLang.TAMIL -> "Kai கேக்குறார்"; KaiLang.TANGLISH -> "Kai kekkuraar"; KaiLang.ENGLISH -> "Kai asks" } +
+                        when (lang) { KaiLang.TAMIL -> "கேக்குறார்"; KaiLang.TANGLISH -> "Kekkuraar"; KaiLang.ENGLISH -> "Asking" } +
                             (progress?.takeIf { it.steps > 1 }?.let { " · ${it.step}/${it.steps}" } ?: ""),
-                        color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp,
+                        color = IosGrey, fontSize = 12.sp,
                     )
                 }
-                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    progress?.takeIf { it.steps > 1 }?.let { p ->
-                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            repeat(p.steps) { i ->
-                                Box(Modifier.weight(1f).height(5.dp).background(if (i < p.step) AskEmerald else Color(0xFFE3ECE8), RoundedCornerShape(3.dp)))
-                            }
-                        }
+                progress?.takeIf { it.steps > 1 }?.let { p ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        repeat(p.steps) { i -> Box(Modifier.size(width = 18.dp, height = 4.dp).background(if (i < p.step) IosGreen else IosSeparator, RoundedCornerShape(2.dp))) }
                     }
-                    Text(question, color = AskText, fontWeight = FontWeight.Bold, fontSize = 20.sp, lineHeight = 26.sp)
-                    progress?.let { p ->
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            p.known.forEach { Chip(it, asking = false, pulse = 1f) }
-                            Chip(p.asking, asking = !closed, pulse = pulse)
-                        }
+                }
+            }
+            Spacer(Modifier.height(14.dp))
+            Text(question, color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 23.sp, lineHeight = 28.sp)
+            Spacer(Modifier.height(14.dp))
+
+            // What the owner already said, and the one asked now — an iPhone inset list.
+            progress?.let { p ->
+                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(IosGrouped)) {
+                    p.known.forEachIndexed { i, (label, value) ->
+                        if (i > 0) Box(Modifier.padding(start = 14.dp).fillMaxWidth().height(0.5.dp).background(IosSeparator))
+                        ListRow(label, value, asking = false, cursorOn = false)
                     }
-                    if (progress == null) card?.lines?.takeIf { it.isNotEmpty() }?.let { lines ->
-                        Column(Modifier.fillMaxWidth().background(Color(0xFFF3F7F5), RoundedCornerShape(12.dp)).padding(10.dp),
-                            verticalArrangement = Arrangement.spacedBy(2.dp)) { lines.forEach { Text(it, color = AskSoft, fontSize = 13.sp) } }
+                    if (p.known.isNotEmpty()) Box(Modifier.padding(start = 14.dp).fillMaxWidth().height(0.5.dp).background(IosSeparator))
+                    ListRow(p.asking, "?", asking = !closed, cursorOn = cursor < 0.5f)
+                }
+            }
+            if (progress == null) card?.lines?.takeIf { it.isNotEmpty() }?.let { lines ->
+                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(IosGrouped)) {
+                    lines.forEachIndexed { i, line ->
+                        if (i > 0) Box(Modifier.padding(start = 14.dp).fillMaxWidth().height(0.5.dp).background(IosSeparator))
+                        Text(line, color = IosLabel, fontSize = 15.sp, modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp))
                     }
-                    if (onMic != null && !closed) {
-                        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                            Box(
-                                Modifier
-                                    .scale(pulse)
-                                    .size(72.dp)
-                                    .background(AskMint.copy(alpha = 0.25f), CircleShape)
-                                    .padding(7.dp)
-                                    .shadow(10.dp, CircleShape, ambientColor = AskEmerald, spotColor = AskEmerald)
-                                    .background(Brush.radialGradient(listOf(Color(0xFF19A874), AskEmeraldDark)), CircleShape)
-                                    .clickable { onMic() },
-                                contentAlignment = Alignment.Center,
-                            ) { Icon(Icons.Filled.Mic, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp)) }
-                            Spacer(Modifier.height(6.dp))
-                            Text(
-                                when (lang) {
-                                    KaiLang.TAMIL -> "Mic அமுக்கி சொல்லுங்க · இல்ல கீழ type பண்ணுங்க"
-                                    KaiLang.TANGLISH -> "Mic amukki sollunga · illa keezha type pannunga"
-                                    KaiLang.ENGLISH -> "Tap the mic and say it · or type below"
-                                },
-                                color = AskSoft, fontSize = 12.sp,
-                            )
-                        }
+                }
+            }
+
+            if (onMic != null && !closed) {
+                Spacer(Modifier.height(18.dp))
+                Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(contentAlignment = Alignment.Center) {
+                        // The ring that goes out from the mic, as iPhone's Siri / dictation.
+                        Box(Modifier.size(82.dp).scale(0.9f + 0.35f * ring).alpha(1f - ring).border(2.dp, IosGreen.copy(alpha = 0.45f), CircleShape))
+                        Box(
+                            Modifier
+                                .size(66.dp)
+                                .shadow(12.dp, CircleShape, ambientColor = IosGreen, spotColor = IosGreen)
+                                .background(IosGreen, CircleShape)
+                                .clickable { onMic() },
+                            contentAlignment = Alignment.Center,
+                        ) { Icon(Icons.Filled.Mic, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp)) }
                     }
-                    card?.buttons?.forEach { b ->
-                        val enabled = b.enabled && !closed
-                        if (b.primary) Button(onClick = { onTap(b.action) }, enabled = enabled, modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(containerColor = AskEmerald)) { Text(b.label) }
-                        else OutlinedButton(onClick = { onTap(b.action) }, enabled = enabled, modifier = Modifier.fillMaxWidth()) { Text(b.label, color = AskEmerald) }
-                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        when (lang) {
+                            KaiLang.TAMIL -> "Mic அமுக்கி சொல்லுங்க · இல்ல கீழ type பண்ணுங்க"
+                            KaiLang.TANGLISH -> "Mic amukki sollunga · illa keezha type pannunga"
+                            KaiLang.ENGLISH -> "Tap the mic and say it · or type below"
+                        },
+                        color = IosGrey, fontSize = 13.sp, textAlign = TextAlign.Center,
+                    )
+                }
+            }
+
+            card?.buttons?.takeIf { it.isNotEmpty() }?.let { buttons ->
+                Spacer(Modifier.height(10.dp))
+                buttons.forEach { b ->
+                    val enabled = b.enabled && !closed
+                    Text(
+                        b.label,
+                        color = when { !enabled -> IosGrey; isCancel(b.action) -> IosRed; else -> Color(0xFF007AFF) },
+                        fontSize = 17.sp,
+                        fontWeight = if (b.primary) FontWeight.SemiBold else FontWeight.Normal,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
+                            .clickable(enabled = enabled) { onTap(b.action) }.padding(vertical = 11.dp),
+                    )
                 }
             }
         }
     }
 }
 
-/** What the owner already said (mint), or the one thing Kai asks now (gold, gently pulsing). */
+/** One list row: the label in grey on the left, the value on the right; the asked row's value in green with a blinking cursor. */
 @Composable
-private fun Chip(text: String, asking: Boolean, pulse: Float) {
-    Text(
-        text,
-        color = if (asking) Color(0xFF5A4300) else AskEmeraldDark,
-        fontSize = 13.sp,
-        fontWeight = if (asking) FontWeight.Bold else FontWeight.Medium,
-        modifier = Modifier
-            .scale(if (asking) pulse else 1f)
-            .background(if (asking) Color(0xFFFFF4D1) else Color(0xFFEEF8F3), RoundedCornerShape(50))
-            .border(1.dp, if (asking) AskGold else Color(0xFFBFE8D5), RoundedCornerShape(50))
-            .padding(horizontal = 10.dp, vertical = 5.dp),
-    )
+private fun ListRow(label: String, value: String, asking: Boolean, cursorOn: Boolean) {
+    Row(Modifier.fillMaxWidth().background(Color.White).padding(horizontal = 14.dp, vertical = 11.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(label, color = if (asking) IosLabel else IosGrey, fontSize = 15.sp, fontWeight = if (asking) FontWeight.Medium else FontWeight.Normal,
+            maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f).padding(end = 12.dp))
+        Text(value, color = if (asking) IosGreen else IosLabel, fontSize = 15.sp, fontWeight = if (asking) FontWeight.SemiBold else FontWeight.Medium,
+            maxLines = 1, overflow = TextOverflow.Ellipsis)
+        if (asking) Box(Modifier.padding(start = 3.dp).size(width = 2.dp, height = 18.dp).background(if (cursorOn) IosGreen else Color.Transparent))
+    }
 }
