@@ -261,9 +261,35 @@ object KaiSpokenWords {
     /** Number words as [normalize] leaves them (Tanglish), for "a unit right after its number". */
     val numberWordsPattern = "onnu|oru|rendu|moonu|naalu|anju|aaru|ezhu|ettu|ombodhu|pathu|one|two|three|four|five|six|seven|eight|nine|ten"
 
+    /**
+     * Written (formal) Tamil the phone's mic often writes, back to the spoken forms Kai's words are kept in (owner, 18 Oct 2026:
+     * "கடைக்கு சரக்கு வந்திருக்கிறது" was not read; "text-la varudhu, mic-la varala"): "தர வேண்டும்" → "தரணும்", "இருக்கிறது" →
+     * "இருக்கு", "சொல்லுங்கள்" → "சொல்லுங்க", "கொடுத்துவிட்டேன்" → "குடுத்துட்டேன்", "இல்லை" → "இல்ல". Only word endings and these
+     * few words change; names and other words stay as written.
+     */
+    fun spoken(text: String): String {
+        if (!hasTamil(text)) return text
+        var s = text
+        fun word(from: String, to: String) { s = Regex("""(?<![\p{L}\p{M}])$from(?![\p{L}\p{M}])""").replace(s, to) }
+        fun tail(from: String, to: String) { s = Regex("""(?<=[\p{L}\p{M}])$from(?![\p{L}\p{M}])""").replace(s, to) }
+        // "தர வேண்டும்", "கொடுக்க வேண்டும்", "பண்ண வேண்டும்": the verb + "-ணும்"; "வேண்டும்" alone is "வேணும்".
+        s = Regex("""(?<![\p{L}\p{M}])([\u0B80-\u0BFF]*[\u0B95-\u0BB9])\s+வேண்டும்(?![\p{L}\p{M}])""").replace(s) { m -> m.groupValues[1] + "ணும்" }
+        word("வேண்டும்", "வேணும்"); word("வேண்டாம்", "வேணாம்")
+        tail("ருக்கிறதா", "ருக்கா"); tail("ருக்கிறது", "ருக்கு"); tail("ருக்கின்றன", "ருக்கு")
+        tail("கிறது", "குது"); tail("கிறார்கள்", "குறாங்க"); tail("கிறார்", "குறார்"); tail("கிறேன்", "குறேன்"); tail("கிறான்", "குறான்")
+        tail("ுங்கள்", "ுங்க"); tail("ார்கள்", "ாங்க")
+        word("ஆகிவிட்டது", "ஆயிடுச்சு")
+        tail("துவிட்டேன்", "துட்டேன்"); tail("துவிட்டான்", "துட்டான்"); tail("துவிட்டார்", "துட்டார்"); tail("துவிட்டாங்க", "துட்டாங்க"); tail("துவிட்டது", "துடுச்சு")
+        tail("ிவிட்டேன்", "ிட்டேன்"); tail("ிவிட்டான்", "ிட்டான்"); tail("ிவிட்டார்", "ிட்டார்"); tail("ிவிட்டது", "ிடுச்சு")
+        word("வந்தது", "வந்துச்சு")
+        s = Regex("""(?<![\p{L}\p{M}])கொடு""").replace(s, "குடு")
+        word("இல்லை", "இல்ல"); word("ஆமாம்", "ஆமா")
+        return s
+    }
+
     fun normalize(text: String): String {
         if (!hasTamil(text)) return text
-        var s = amounts(text)
+        var s = amounts(spoken(text))
         // Units first ("மணி நேரத்துல" before "மணி").
         for ((re, unit) in units) {
             s = re.replace(s) { m -> if (m.value.endsWith("ல") || m.value.endsWith("ல்") || m.value.endsWith("லே")) "$unit la" else unit }

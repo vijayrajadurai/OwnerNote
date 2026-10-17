@@ -5420,7 +5420,10 @@ class KaiAgent(
 
     /** Only the question — no buttons: Photo / Cancel are not shown here; the drafts carry Confirm / Edit / Cancel (owner, 11 Oct 2026). */
     private suspend fun goodsAnnounced(said: String, lang: KaiLang): KaiTurn? {
-        if (newItem != null || unitQuestion != null || stockQuestion != null) return null
+        // Kai mid-question (a price, a unit) answers that first; a new product's draft only waiting for Confirm stays, and the goods
+        // question comes (owner, 18 Oct 2026: "Kadaiku saraku vandhuruku" then was read as a person "Sara").
+        if (newItem?.asked != null || unitQuestion != null || stockQuestion != null) return null
+        val waiting = newItem?.spec?.name
         val products = runCatching { tools.products() }.getOrNull() ?: return null
         val people = runCatching { books.snapshot()?.people.orEmpty() }.getOrDefault(emptyList())
         // "new stock add pannu", "Colgate photo edu": the stock line's own question (with its Photo button) — goods mode opens there too.
@@ -5437,7 +5440,10 @@ class KaiAgent(
             ChatReply(pick(lang,
                 ta = "என்ன சாமான் வந்திருக்கு? 🎙 ஒண்ணு ஒண்ணா சொல்லுங்க (உதா: அரிசி 3 மூட்டை)",
                 tl = "Enna saaman vandhuruku? 🎙 Onnu onna sollunga (eg: Rice 3 moota)",
-                en = "What came in? 🎙 Tell me one by one (e.g. Rice 3 bags)"), KaiMood.HAPPY, ChatIntent.GENERAL_BUSINESS_QUERY),
+                en = "What came in? 🎙 Tell me one by one (e.g. Rice 3 bags)") +
+                // The draft still on screen: its Confirm puts it in this list.
+                (waiting?.let { pick(lang, ta = "\n($it: உறுதி செய்தா list-ல சேரும்)", tl = "\n($it: Confirm pannaa list-la serum)",
+                    en = "\n($it: Confirm puts it in the list)") } ?: ""), KaiMood.HAPPY, ChatIntent.GENERAL_BUSINESS_QUERY),
         )
     }
 
