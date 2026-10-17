@@ -78,7 +78,8 @@ class KaiNoteTest {
         private fun settle(t: KaiTurn): KaiTurn {
             id++
             flow = flow.answered(t.reply.mood, spent = flow.note?.let { KaiNoteReader.spent(agent, it) } == true,
-                newNote = KaiNoteReader.noteFor(agent, id, t.card, lang, today))
+                newNote = KaiNoteReader.noteFor(agent, id, t.card, lang, today),
+                listed = flow.note?.let { KaiNoteReader.listed(agent, it) } == true)
             flow = flow.written()
             last = t
             return t
@@ -347,5 +348,36 @@ class KaiNoteTest {
         assertEquals("Stock illa", KaiStockView.label(rows[0], KaiLang.TANGLISH))
         assertEquals("Low · reorder 10 KG", KaiStockView.label(rows[1], KaiLang.TANGLISH))
         assertEquals("குறைவு · reorder 10 KG", KaiStockView.label(rows[1], KaiLang.TAMIL))
+    }
+
+    /**
+     * Goods one by one (owner, 18 Oct 2026): a draft's Confirm only puts it in the list — the note says "in the list · not saved",
+     * never "Save aagiduchu"; only the list's own Confirm saves, and then it ticks. Typed and as the mic writes it.
+     */
+    @Test fun aGoodsDraftConfirmedIsListedNotSaved() {
+        for ((lines, lang) in listOf(
+            listOf("Kadaiku saraku vandhuruku", "Noodles 100 pieces", "10", "12") to KaiLang.TANGLISH,
+            listOf("கடைக்கு சரக்கு வந்திருக்கிறது", "நூடுல்ஸ் 100 பீஸ்", "10", "12") to KaiLang.TAMIL,
+        )) {
+            val (agent, inv) = kai()
+            val chat = Chat(agent, lang, today)
+            lines.forEach { chat.say(it) }
+            val draft = chat.last!!
+            assertEquals("${lines[1]}: ${draft.reply.text}", KaiNoteState.REVIEWING, chat.flow.noteState)
+            val kept = chat.tap(confirmOf(draft))
+            assertEquals("${kept.reply.text}", KaiNoteState.LISTED, chat.flow.noteState)
+            assertTrue(KaiNotes.status(chat.flow.noteState, lang), !KaiNotes.status(chat.flow.noteState, lang).contains("✓"))
+            // Short, with the list so far as a card.
+            assertTrue(kept.reply.text, kept.reply.text.length < 90)
+            assertEquals(1, kept.card!!.lines.size)
+            assertTrue(kept.card!!.lines.single(), kept.card!!.lines.single().startsWith("1. "))
+            val before = inv.items.size
+            val list = chat.say(if (lang == KaiLang.TAMIL) "அவ்ளோ தான்" else "avlo dhaan")
+            assertEquals(before, inv.items.size)
+            assertEquals(KaiNoteState.REVIEWING, chat.flow.noteState)
+            chat.tap(confirmOf(list))
+            assertEquals(before + 1, inv.items.size)
+            assertEquals("${chat.last!!.reply.text}", KaiNoteState.SAVE_SUCCESS, chat.flow.noteState)
+        }
     }
 }
