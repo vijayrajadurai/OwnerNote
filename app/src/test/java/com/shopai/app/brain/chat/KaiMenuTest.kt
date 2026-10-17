@@ -125,11 +125,45 @@ class KaiMenuTest {
             // "Facial" is not on this Menu: never sold as their Face massage or Gold facial, typed or by mic.
             for (line in listOf("facial onnu", "ஃபேஷியல் ஒன்னு")) {
                 val t = s.say(line)
-                if (t.card?.buttons?.isNotEmpty() == true && !all(t).contains("Facial —") || all(t).contains("Face massage") || all(t).contains("Gold facial"))
+                // (never sold as another item — Kai may name "Gold facial" as the one on the Menu, with nothing drafted)
+                val drafted = t.card?.buttons?.isNotEmpty() == true
+                if (drafted && (!all(t).contains("Facial —") || all(t).contains("Face massage") || all(t).contains("Gold facial")))
                     fails += "[$category] «$line» → ${all(t)}: another Menu item"
                 s.say("venam")
             }
             if (s.tools.sales.isNotEmpty()) fails += "[$category] sold before Confirm"
+        }
+        assertTrue(fails.joinToString("\n"), fails.isEmpty())
+    }
+
+    /**
+     * The owner's phone (17 Oct 2026): "Hair cutting cambo ₹780" and "HALLS ₹1" on the Menu — typed it sold, by mic it didn't. A part
+     * of their name up to its last word, their spelling or not, typed or as the mic writes it (and the mic's slips: "காம்பவுண்ட்" for
+     * cambo, "ஹால் சொன்ன" for "Halls onnu") is that item; "hair cutting" alone is not their combo — named, never sold by itself.
+     */
+    @Test fun aPartOfTheOwnersNameTypedOrSpoken() {
+        val sells = listOf("hair cutting cambo onnu" to "Hair cutting cambo ×1", "cutting cambo onnu" to "Hair cutting cambo ×1",
+            "hair cutting combo onnu" to "Hair cutting cambo ×1", "cutting combo rendu" to "Hair cutting cambo ×2",
+            "ஹேர் கட்டிங் காம்போ ஒன்னு" to "Hair cutting cambo ×1", "கட்டிங் காம்போ ஒன்னு" to "Hair cutting cambo ×1",
+            "ஹேர் கட்டிங் காம்பவுண்ட்" to "Hair cutting cambo ×1", "halls onnu" to "HALLS ×1", "ஹால்ஸ் ஒன்னு" to "HALLS ×1",
+            "ஹால் சொன்ன" to "HALLS ×1", "ஹால்ஸ் ரெண்டு" to "HALLS ×2")
+        val fails = mutableListOf<String>()
+        for (category in listOf("GROCERY", "BEAUTY_SALON")) {
+            val s = Shop(category)
+            runBlocking { s.memory.open("shop-1", "owner-1"); KaiMenu.save(s.memory, "Hair cutting cambo", BigDecimal("780")); KaiMenu.save(s.memory, "HALLS", BigDecimal("1")) }
+            for ((line, want) in sells) {
+                val t = s.say(line)
+                if (!all(t).contains(want)) fails += "[$category] «$line» → ${all(t)} (want $want)"
+                s.say("venam")
+            }
+            if (s.tools.sales.isNotEmpty()) fails += "[$category] sold before Confirm"
+        }
+        // "hair cutting" alone in a grocery: their combo named, nothing sold.
+        val g = Shop("GROCERY")
+        runBlocking { g.memory.open("shop-1", "owner-1"); KaiMenu.save(g.memory, "Hair cutting cambo", BigDecimal("780")) }
+        for (line in listOf("hair cutting onnu", "கட்டிங் ஒன்னு")) {
+            val t = g.say(line)
+            if (t.card?.buttons?.isNotEmpty() == true || !all(t).contains("Hair cutting cambo")) fails += "«$line» → ${all(t)}"
         }
         assertTrue(fails.joinToString("\n"), fails.isEmpty())
     }
