@@ -20,6 +20,8 @@ data class KaiStockRow(
     /** 0..1 against three times the reorder level (the bar); null when no level is set. */
     val fill: Float?,
     val level: KaiStockLevel,
+    /** The product's own photo (from the books), shown instead of the picture sign. */
+    val photo: String? = null,
 )
 
 object KaiStockView {
@@ -32,7 +34,7 @@ object KaiStockView {
             else -> KaiStockLevel.OK
         }
         val fill = at?.let { f.qty.max(BigDecimal.ZERO).divide(it.multiply(BigDecimal(3)), 4, RoundingMode.HALF_UP).toFloat().coerceIn(0f, 1f) }
-        KaiStockRow(f.name, qtyText(f.qty, f.unit), at?.let { qtyText(it, f.unit) }, fill, level)
+        KaiStockRow(f.name, qtyText(f.qty, f.unit), at?.let { qtyText(it, f.unit) }, fill, level, f.photo?.takeIf { it.isNotBlank() })
     }
 
     /** The line under a product's name. */

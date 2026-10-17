@@ -337,9 +337,12 @@ class KaiNoteTest {
             com.shopai.app.brain.tools.StockFact("Rice", BigDecimal.ZERO, "KG", BigDecimal("10")),
             com.shopai.app.brain.tools.StockFact("Dal", BigDecimal("8"), "KG", BigDecimal("10")),
             com.shopai.app.brain.tools.StockFact("Oil", BigDecimal("50"), "LTR", BigDecimal("10")),
-            com.shopai.app.brain.tools.StockFact("Salt", BigDecimal("5"), "KG", null),
+            com.shopai.app.brain.tools.StockFact("Salt", BigDecimal("5"), "KG", null, photo = " "),
+            com.shopai.app.brain.tools.StockFact("Colgate", BigDecimal("5"), "PCS", null, photo = "/data/products/colgate.jpg"),
         ), q)
-        assertEquals(listOf(KaiStockLevel.OUT, KaiStockLevel.LOW, KaiStockLevel.OK, KaiStockLevel.NO_LEVEL), rows.map { it.level })
+        // The product's own photo goes to the card; a blank one is no photo.
+        assertEquals(listOf(null, null, null, null, "/data/products/colgate.jpg"), rows.map { it.photo })
+        assertEquals(listOf(KaiStockLevel.OUT, KaiStockLevel.LOW, KaiStockLevel.OK, KaiStockLevel.NO_LEVEL, KaiStockLevel.NO_LEVEL), rows.map { it.level })
         assertEquals(1f, rows[2].fill!!, 0.001f)
         assertEquals("Stock illa", KaiStockView.label(rows[0], KaiLang.TANGLISH))
         assertEquals("Low · reorder 10 KG", KaiStockView.label(rows[1], KaiLang.TANGLISH))

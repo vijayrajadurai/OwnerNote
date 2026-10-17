@@ -3,6 +3,11 @@ package com.shopai.app.ui.kai
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,14 +26,21 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -39,6 +51,9 @@ import com.shopai.app.brain.note.KaiNotes
 import com.shopai.app.brain.note.KaiShopScene
 import com.shopai.app.brain.note.KaiStockLevel
 import com.shopai.app.brain.note.KaiStockRow
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.File
 
 private val IosOrange = Color(0xFFFF9500)
 
@@ -85,7 +100,7 @@ fun KaiStockCard(rows: List<KaiStockRow>, lang: KaiLang, category: String?, modi
             }
             rows.forEachIndexed { i, row ->
                 val t = (shown.value - i).coerceIn(0f, 1f)
-                Box(Modifier.padding(start = 62.dp).fillMaxWidth().height(0.5.dp).background(IosSeparator))
+                Box(Modifier.padding(start = 72.dp).fillMaxWidth().height(0.5.dp).background(IosSeparator))
                 StockRow(row, lang, scene, t)
             }
             Spacer(Modifier.height(6.dp))
@@ -102,12 +117,15 @@ private fun StockRow(row: KaiStockRow, lang: KaiLang, scene: KaiShopScene, t: Fl
         KaiStockLevel.NO_LEVEL -> IosGrey
     }
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 58.dp).alpha(t).graphicsLayer { translationY = (1f - t) * 8.dp.toPx() }
+        Modifier.fillMaxWidth().heightIn(min = 62.dp).alpha(t).graphicsLayer { translationY = (1f - t) * 8.dp.toPx() }
             .padding(horizontal = 16.dp, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.size(34.dp).background(IosGrouped, RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
-            Text(KaiNotes.icon(KaiNoteKind.STOCK_IN, row.name, scene), fontSize = 18.sp)
+        // The product's own photo from the books; the picture sign only when it has none.
+        val photo = rememberProductPhoto(row.photo)
+        Box(Modifier.size(44.dp).clip(RoundedCornerShape(11.dp)).background(IosGrouped), contentAlignment = Alignment.Center) {
+            if (photo != null) Image(photo, contentDescription = row.name, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
+            else Text(KaiNotes.icon(KaiNoteKind.STOCK_IN, row.name, scene), fontSize = 22.sp)
         }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -126,4 +144,31 @@ private fun StockRow(row: KaiStockRow, lang: KaiLang, scene: KaiShopScene, t: Fl
             }
         }
     }
+}
+
+/** The product photo the owner took (a file path, or a file:// / content:// link), read small off the main thread; null if none / gone. */
+@Composable
+private fun rememberProductPhoto(path: String?): ImageBitmap? {
+    val context = LocalContext.current
+    var photo by remember(path) { mutableStateOf<ImageBitmap?>(null) }
+    LaunchedEffect(path) {
+        photo = if (path == null) null else withContext(Dispatchers.IO) { runCatching { readSmall(context, path) }.getOrNull()?.asImageBitmap() }
+    }
+    return photo
+}
+
+private fun readSmall(context: Context, path: String, maxSide: Int = 160): Bitmap? {
+    val file: File? = when {
+        path.startsWith("content://") -> null
+        path.startsWith("file://") -> Uri.parse(path).path?.let(::File)
+        else -> File(path)
+    }
+    if (!path.startsWith("content://") && file?.exists() != true) return null
+    fun open(): java.io.InputStream? = if (file != null) file.inputStream() else context.contentResolver.openInputStream(Uri.parse(path))
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    open()?.use { BitmapFactory.decodeStream(it, null, bounds) }
+    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+    var sample = 1
+    while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= maxSide) sample *= 2
+    return open()?.use { BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = sample }) }
 }
