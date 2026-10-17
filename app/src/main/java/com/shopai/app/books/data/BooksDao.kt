@@ -156,6 +156,13 @@ interface BooksDao {
     @Query("SELECT * FROM products WHERE businessId = :businessId AND hsnCode = :hsn AND archived = 0 ORDER BY nameKey")
     suspend fun productsByHsn(businessId: String, hsn: String): List<ProductEntity>
     @Upsert suspend fun upsertBatch(b: BatchEntity)
+
+    /** A product starting to be kept by batch: its stock so far (movements with no batch) becomes the batch [batchId]. */
+    @Query("UPDATE stock_movements SET batchId = :batchId WHERE businessId = :businessId AND productId = :productId AND batchId IS NULL")
+    suspend fun batchUnbatchedStock(businessId: String, productId: String, batchId: String): Int
+
+    @Query("SELECT COUNT(*) FROM stock_movements WHERE businessId = :businessId AND productId = :productId AND batchId IS NULL")
+    suspend fun unbatchedMovements(businessId: String, productId: String): Int
     @Query("SELECT * FROM batches WHERE id = :id") suspend fun batch(id: String): BatchEntity?
     @Query("SELECT * FROM batches WHERE productId = :productId AND batchNo = :batchNo LIMIT 1")
     suspend fun batchByNo(productId: String, batchNo: String): BatchEntity?

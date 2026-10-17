@@ -396,6 +396,8 @@ class KaiAgent(
         val conv: com.shopai.app.brain.tools.UnitResolution.Ok? = null,
         /** New stock of a batch-tracked product: the batch / expiry the owner said (null = not said — the books' newest batch). */
         val batch: com.shopai.app.brain.tools.StockBatch? = null,
+        /** On Confirm the product starts being kept by batch (an expiry said for goods that can expire, not yet kept by batch). */
+        val startsTracking: Boolean = false,
     )
     /** "Owner, 1 box-la evlo pieces irukku?" — waiting for the number (nothing is drafted without it). */
     private data class UnitQuestion(val product: com.shopai.app.brain.tools.ProductRef, val parts: List<com.shopai.app.brain.tools.QtyPart>, val incoming: Boolean, val said: String, val unit: String, val key: String)
@@ -1294,9 +1296,8 @@ class KaiAgent(
             productIn(spoken, products)?.let { p -> return productMovement(p, lang, now().toLocalDate()) }
         }
         // "Expiry aagura medicine list kudu": the batches expiring soon (and expired), read-only from the batch records.
-        if (plans.isEmpty() && KaiCommands.asksExpiry(spoken)) return if (expiryShop()) expiryList(spoken, lang, products.orEmpty(), now().toLocalDate())
-            else say(lang, KaiMood.NEUTRAL, "expiry: not this shop's", ta = "ஓனர், expiry list Medical shop-க்கு மட்டும் தான் — உங்க கடை category-ல expiry வைக்கல.",
-                tl = "Owner, expiry list Medical shop-ku mattum dhaan — unga kadai category-la expiry vaikkala.", en = "Owner, the expiry list is for a medical shop only — your shop's category keeps no expiry.")
+        // (any shop: what can expire is kept by expiry — owner, 17 Oct 2026)
+        if (plans.isEmpty() && KaiCommands.asksExpiry(spoken)) return expiryList(spoken, lang, products.orEmpty(), now().toLocalDate())
         // "Stock report", "stock value evlo", "stock-la evlo panam mudangi irukku": the report / the money in stock — not the item list.
         if (plans.isEmpty() && products != null && KaiCommands.asksStockReport(spoken)) return stockReport(lang, now().toLocalDate())
         if (plans.isEmpty() && products != null && KaiCommands.asksStockValue(spoken)) return stockValue(spoken, lang, products)
@@ -1443,15 +1444,15 @@ class KaiAgent(
         val lang = (forcedLang ?: if (tamil) KaiLang.TAMIL else KaiLanguage.forChat(said, chatLang)).also { chatLang = it; brain.chatLang = it }
         previousTurnLang = turnLang
         turnLang = lang
-        // Expiry / batch is a medical shop's (owner, 16 Oct 2026): in a shop of another category it is said plainly and nothing
-        // is kept — never a batch-tracked product made from a grocery's line.
-        if (cut != null && !expiryShop()) {
+        // An expiry / batch said for goods that never expire ("Shirt 10 vandhuchu expiry 20/10"): said plainly, nothing kept. Goods that
+        // can expire keep it in any shop — fruits & vegetables, dairy, bakery, grocery… (owner, 17 Oct 2026).
+        if (cut != null) neverExpires(cut.first)?.let { name ->
             saidBatch = null
             val rest = cut.first.trim()
-            return say(lang, KaiMood.CLARIFY, "expiry: not this shop's",
-                ta = "ஓனர், expiry / batch Medical shop-க்கு மட்டும் தான் — உங்க கடை category-ல இல்ல. எதுவும் சேமிக்கல." + (if (rest.isNotEmpty()) " Expiry இல்லாம சொல்லுங்க: “$rest”." else ""),
-                tl = "Owner, expiry / batch Medical shop-ku mattum dhaan — unga kadai category-la illa. Edhuvum save pannala." + (if (rest.isNotEmpty()) " Expiry illaama sollunga: “$rest”." else ""),
-                en = "Owner, expiry / batch is for a medical shop only — not your shop's category. Nothing was saved." + (if (rest.isNotEmpty()) " Say it without the expiry: “$rest”." else ""))
+            return say(lang, KaiMood.CLARIFY, "expiry: goods that never expire",
+                ta = "ஓனர், $name expiry ஆகுற பொருள் இல்ல — expiry சேமிக்கல." + (if (rest.isNotEmpty()) " Expiry இல்லாம சொல்லுங்க: “$rest”." else ""),
+                tl = "Owner, $name expiry aagura product illa — expiry save pannala." + (if (rest.isNotEmpty()) " Expiry illaama sollunga: “$rest”." else ""),
+                en = "Owner, $name doesn't expire — no expiry was saved." + (if (rest.isNotEmpty()) " Say it without the expiry: “$rest”." else ""))
         }
         brain.spokenLang = forcedLang ?: if (tamil) KaiLang.TAMIL else null
         val scope = runCatching { memory?.current()?.let { "${it.businessId.orEmpty()}:${it.ownerId.orEmpty()}" } }.getOrNull()
@@ -3095,9 +3096,14 @@ class KaiAgent(
      * (KaiTime), "10" (then this month or next is asked, never guessed), "adutha maasam" (then the day is asked).
      */
     /** "innaikku yaar tharanum?", "Murugan evlo?" while a due date is awaited: a new question, not the date. */
-    /** The shop keeps expiry / batches: a medical shop (or no category / "OTHER" — every feature, as before). */
-    private suspend fun expiryShop(): Boolean = runCatching { tools.businessCategory() }.getOrNull()?.trim()?.uppercase(Locale.ROOT)
-        .let { it.isNullOrEmpty() || it == "PHARMACY" || it == "OTHER" }
+    /** The product a line names, when it is goods that never expire (clothes, hardware, mobiles…) — else null (it may expire, or isn't named). */
+    private suspend fun neverExpires(text: String): String? {
+        val products = runCatching { tools.products() }.getOrNull().orEmpty()
+        val req = com.shopai.app.brain.tools.KaiStock.understand(text, products)
+        val name = req?.product?.name ?: req?.spokenName?.takeIf { it.isNotBlank() } ?: return null
+        val category = req?.product?.category
+        return name.takeUnless { com.shopai.app.brain.tools.KaiExpiry.canExpire(category, name) }
+    }
 
     /** The owner calling it a loan: "kadan", "credit", "udhaar" (typed, or the mic's "கடன்"). */
     private val loanWord = Regex("""(?i)(?<![\p{L}])(credit|kadan|kadanaa|kadana|kadanaga|udhaar|udhar)(?![\p{L}])|கடன்""")
@@ -4745,7 +4751,22 @@ class KaiAgent(
         product: com.shopai.app.brain.tools.ProductRef, qty: BigDecimal, unit: String, incoming: Boolean, said: String, lang: KaiLang, key: String = newKey(),
         conv: com.shopai.app.brain.tools.UnitResolution.Ok? = null, learned: Boolean = false, batch: com.shopai.app.brain.tools.StockBatch? = null,
     ): KaiTurn {
-        val newBatch = if (incoming && product.batchTracked) batch ?: saidBatch ?: batchSaid(said) else null
+        // An expiry said for goods that can expire, not yet kept by batch ("Bread 10 packet vandhuchu expiry 20/10"): kept by batch from
+        // this stock on — on Confirm; the stock it has now stays as one batch with no expiry (owner, 17 Oct 2026).
+        val starts = incoming && !product.batchTracked && com.shopai.app.brain.tools.KaiExpiry.canExpire(product.category, product.name)
+        val newBatch = if (incoming && product.batchTracked || starts) batch ?: saidBatch ?: batchSaid(said) else null
+        if (starts && newBatch != null) {
+            val turn = stockDraftOnly(product, qty, unit, incoming, said, lang, key, conv, learned, newBatch)
+            stockPlans[key] = stockPlans[key]!!.copy(startsTracking = true)
+            val now = com.shopai.app.brain.tools.KaiStock.shown(product.stock, product.unit)
+            val note = if (product.stock.signum() > 0) pick(lang,
+                ta = "(Confirm பண்ணா ${product.name} expiry வாரியா வைக்கப்படும். இப்போ இருக்குற $now “expiry தெரியாது”-ஆ இருக்கும்.)",
+                tl = "(Confirm pannina ${product.name} expiry-wise vaikkapadum. Ippo irukkura $now “expiry theriyaadhu”-aa irukkum.)",
+                en = "(On Confirm, ${product.name} is kept by expiry from now on. The $now in stock now stays as “expiry unknown”.)")
+            else pick(lang, ta = "(Confirm பண்ணா ${product.name} expiry வாரியா வைக்கப்படும்.)", tl = "(Confirm pannina ${product.name} expiry-wise vaikkapadum.)",
+                en = "(On Confirm, ${product.name} is kept by expiry from now on.)")
+            return withBatchLines(withText(turn, turn.reply.text + "\n" + note), newBatch, lang)
+        }
         val turn = stockDraftOnly(product, qty, unit, incoming, said, lang, key, conv, learned, newBatch)
         if (incoming && !product.batchTracked && (batch ?: saidBatch) != null) {
             // A batch / expiry said for a product not kept by batch: said plainly — never dropped without a word.
@@ -5016,7 +5037,14 @@ class KaiAgent(
         val input = plan.conv?.let { com.shopai.app.brain.tools.KaiUnits.describe(it.input, plan.product.unit) }
         val total = com.shopai.app.brain.tools.KaiStock.shown(plan.qty, plan.product.unit)
         val note = if (input != null) "$input = $total · ${plan.said}" else plan.said
-        val saved = if (plan.incoming && plan.batch != null) tools.stockInBatch(plan.product, plan.qty, note, plan.batch)
+        // (kept by batch first — if the books refuse, nothing is saved: never stock without its expiry when one was said)
+        if (plan.startsTracking) (tools.keepByBatch(plan.product) as? ActionOutcome.Failed)?.let { f ->
+            tools.log(intent, "books engine", f.reason, ActionStatus.FAILED, null, plan.said)
+            return say(lang, KaiMood.ERROR, null,
+                ta = "சேமிக்க முடியல ஓனர்: ${f.reason}. எதுவும் சேமிக்கல.", tl = "Owner, save aagala: ${f.reason}. Edhuvum save aagala.", en = "It wasn't saved, Owner: ${f.reason}. Nothing was saved.")
+        }
+        val product = if (plan.startsTracking) plan.product.copy(batchTracked = true) else plan.product
+        val saved = if (plan.incoming && plan.batch != null) tools.stockInBatch(product, plan.qty, note, plan.batch)
             else tools.changeStock(plan.product, plan.qty, plan.incoming, note)
         return when (val outcome = saved) {
             is ActionOutcome.Done -> {
