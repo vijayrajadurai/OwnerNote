@@ -91,6 +91,53 @@ object KaiNotes {
         KaiNoteState.CANCELLED -> pick(lang, "ரத்து — எதுவும் சேமிக்கல", "Cancel — edhuvum save aagala", "Cancelled — nothing saved")
     }
 
+    /** A card row's line under its name: ready (by the kind of entry) until the books answer, then saved / not saved / cancelled. */
+    fun rowStatus(kind: KaiNoteKind, state: KaiNoteState, lang: KaiLang): String = when (state) {
+        KaiNoteState.SAVE_SUCCESS -> pick(lang, "சேமிச்சாச்சு", "Save aagiduchu", "Saved")
+        KaiNoteState.SAVE_ERROR -> pick(lang, "சேமிக்கல", "Save aagala", "Not saved")
+        KaiNoteState.CANCELLED -> pick(lang, "ரத்து", "Cancel", "Cancelled")
+        else -> when (kind) {
+            KaiNoteKind.STOCK_IN -> pick(lang, "ஸ்டாக் சேர்க்க தயார்", "Stock add ready", "Stock in ready")
+            KaiNoteKind.STOCK_OUT -> pick(lang, "ஸ்டாக் குறைக்க தயார்", "Stock out ready", "Stock out ready")
+            KaiNoteKind.CREDIT -> pick(lang, "வாங்க வேண்டியது — தயார்", "Vaanganum — ready", "To collect — ready")
+            KaiNoteKind.DEBIT -> pick(lang, "கொடுக்க வேண்டியது — தயார்", "Kudukkanum — ready", "To pay — ready")
+            KaiNoteKind.PAYMENT_IN -> pick(lang, "வந்த பணம் — தயார்", "Vandha panam — ready", "Money in — ready")
+            KaiNoteKind.PAYMENT_OUT -> pick(lang, "கொடுத்த பணம் — தயார்", "Kudutha panam — ready", "Money out — ready")
+            KaiNoteKind.SALE -> pick(lang, "Sale தயார்", "Sale ready", "Sale ready")
+            KaiNoteKind.OTHER -> pick(lang, "தயார்", "Ready", "Ready")
+        }
+    }
+
+    /**
+     * A row's little picture: money is ₹, a sale its shop's sign, goods by what the name says (rice, soap, oil…). A name Kai has
+     * no picture for gets a plain box — never another product's picture.
+     */
+    fun icon(kind: KaiNoteKind, name: String, scene: KaiShopScene = KaiShopScene.NEUTRAL): String {
+        when (kind) {
+            KaiNoteKind.CREDIT, KaiNoteKind.DEBIT, KaiNoteKind.PAYMENT_IN, KaiNoteKind.PAYMENT_OUT -> return "₹"
+            KaiNoteKind.SALE -> return when (scene) { KaiShopScene.BEAUTY_SALON -> "✂️"; KaiShopScene.RESTAURANT_FOOD -> "🍽️"; else -> "🧾" }
+            else -> Unit
+        }
+        val n = name.lowercase()
+        fun has(vararg w: String) = w.any { Regex("""(?<![\p{L}])$it""").containsMatchIn(n) }
+        return when {
+            has("rice", "arisi", "atta", "maida", "rava", "dal", "paruppu", "flour") -> "🌾"
+            has("soap", "sopu", "detergent", "surf", "lux", "rin", "vim") -> "🧼"
+            has("oil", "ennai", "ghee", "nei") -> "🫙"
+            has("colgate", "paste", "toothpaste", "brush") -> "🪥"
+            has("milk", "paal", "curd", "thayir", "butter") -> "🥛"
+            has("sugar", "sarkarai", "salt", "uppu") -> "🧂"
+            has("biscuit", "cookie", "chocolate", "maggi", "noodles", "snack") -> "🍪"
+            has("tea", "coffee", "bru", "chai") -> "☕"
+            has("tablet", "capsule", "syrup", "paracetamol", "medicine", "strip") -> "💊"
+            has("onion", "vengayam", "tomato", "thakkali", "potato", "vegetable", "banana", "fruit") -> "🥬"
+            has("saree", "shirt", "fabric", "cloth", "kurti", "dhoti", "veshti", "leggings") -> "👕"
+            has("cement", "pipe", "nail", "tap", "paint", "brick", "sand") -> "🧱"
+            has("bulb", "wire", "switch", "fan", "led") -> "💡"
+            else -> "📦"
+        }
+    }
+
     private fun qty(q: BigDecimal): String = q.stripTrailingZeros().let { if (it.scale() < 0) it.setScale(0) else it }.toPlainString()
 
     private fun unit(u: String, lang: KaiLang): String = when (u.uppercase()) {

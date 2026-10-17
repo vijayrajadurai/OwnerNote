@@ -258,6 +258,21 @@ class KaiNoteTest {
         }
     }
 
+    /** The card's little pictures and row lines: by what the row is; a name with no picture is a plain box, never a guess. */
+    @Test fun rowPicturesAndLines() {
+        assertEquals("🪥", KaiNotes.icon(KaiNoteKind.STOCK_IN, "Colgate"))
+        assertEquals("🧼", KaiNotes.icon(KaiNoteKind.STOCK_IN, "Lux Soap"))
+        assertEquals("🌾", KaiNotes.icon(KaiNoteKind.STOCK_IN, "Aashirvaad Atta (10 Kg)"))
+        assertEquals("📦", KaiNotes.icon(KaiNoteKind.STOCK_IN, "Zxq Widget"))
+        assertEquals("₹", KaiNotes.icon(KaiNoteKind.CREDIT, "Kumar"))
+        assertEquals("✂️", KaiNotes.icon(KaiNoteKind.SALE, "Hair cutting", KaiShopScene.BEAUTY_SALON))
+        assertEquals("Stock add ready", KaiNotes.rowStatus(KaiNoteKind.STOCK_IN, KaiNoteState.REVIEWING, KaiLang.TANGLISH))
+        for (lang in KaiLang.entries) for (k in KaiNoteKind.entries) for (st in KaiNoteState.entries) {
+            val t = KaiNotes.rowStatus(k, st, lang)
+            if (st != KaiNoteState.SAVE_SUCCESS) assertTrue("$k $st $lang: $t", !t.contains("aagiduchu") && !t.contains("சேமிச்சாச்சு") && t != "Saved")
+        }
+    }
+
     @Test fun aServiceSaleCardIsWrittenRowByRow() {
         val note = KaiNotes.fromCard(3, KaiNoteKind.SALE, listOf("Hair cutting ×3 — ₹450", "Mothama ₹450 · Cash"),
             listOf(KaiNoteKey(KaiNoteKey.Source.SALE, "s")), KaiLang.TANGLISH, today)!!

@@ -329,6 +329,7 @@ fun KaiChatScreen(
                                 flow = session.note, note = note, card = card, category = shopCategory,
                                 closed = m.cardClosed || session.thinking, onWritten = { session.noteWritten() },
                                 onTap = { tap(m.id, it) }, modifier = Modifier.padding(top = 4.dp),
+                                said = session.messages.lastOrNull { it.fromOwner && it.id < m.id }?.text,
                             ) else KaiCardView(card, closed = m.cardClosed || session.thinking) { tap(m.id, it) }
                         }
                     }
