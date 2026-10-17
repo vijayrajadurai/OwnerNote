@@ -153,7 +153,13 @@ data class ProductForm(
 )
 
 /** A card under a Kai message: the details of a draft / action, and its buttons. */
-data class KaiCard(val lines: List<String>, val buttons: List<KaiButton>, val warning: String? = null)
+/** [stock]: the same products as [lines], for the screen's stock card (name, quantity, reorder level) — nothing more is said. */
+data class KaiCard(
+    val lines: List<String>,
+    val buttons: List<KaiButton>,
+    val warning: String? = null,
+    val stock: List<com.shopai.app.brain.note.KaiStockRow>? = null,
+)
 
 /**
  * One Kai turn: the reply, and a card when there is something to confirm or do.
@@ -5035,6 +5041,49 @@ class KaiAgent(
         p.conv?.input?.singleOrNull()?.let { Triple(p.product.name, it.qty, it.unit ?: p.product.unit) } ?: Triple(p.product.name, p.qty, p.unit)
     }
 
+    /** A stock draft as Kai's notebook writes it (read only): what was said, which way, and the stock before → after when known. */
+    fun stockNoteOf(key: String): com.shopai.app.brain.note.KaiStockNoteLine? = stockPlans[key]?.let(::stockNoteLine)
+        // A product not in the shop yet, added with its opening stock ("Colgate 5 box vandhuchu" → new Colgate, 5 boxes): its summary.
+        ?: newItem?.takeIf { it.key == key && it.asked == null }?.let { n ->
+            n.spec.qty?.let { q -> com.shopai.app.brain.note.KaiStockNoteLine(n.spec.name, q, n.spec.unit ?: "PCS", incoming = true, newProduct = true) }
+        }
+
+    /** The goods said together ("5 kg rice, 2 soap, 1 oil") and waiting for one Confirm, as the notebook writes them (read only). */
+    fun goodsNote(): List<com.shopai.app.brain.note.KaiStockNoteLine> = if (!goodsOpen()) emptyList() else goodsList.mapNotNull { g ->
+        when (g) {
+            is GoodsStock -> stockNoteLine(g.plan)
+            is GoodsNew -> g.item.spec.qty?.let { q -> com.shopai.app.brain.note.KaiStockNoteLine(g.item.spec.name, q, g.item.spec.unit ?: "PCS", incoming = true) }
+            else -> null
+        }
+    }
+
+    /**
+     * What Kai has so far and is asking now — a new product being added, or a pack size for a stock line — for the question card
+     * (read only; null when Kai is asking nothing of these).
+     */
+    fun askProgress(lang: KaiLang): com.shopai.app.brain.note.KaiAskProgress? {
+        newItem?.let { n -> n.asked?.let { f -> return com.shopai.app.brain.note.KaiAsks.ofItem(n.spec, f, lang) } }
+        unitQuestion?.let { u ->
+            val part = u.parts.firstOrNull { it.unit != null } ?: u.parts.firstOrNull()
+            return com.shopai.app.brain.note.KaiAsks.ofUnit(u.product.name, part?.qty, part?.unit ?: u.unit, u.product.unit, lang)
+        }
+        return null
+    }
+
+    /** The service sale waiting for Confirm, by its key (read only). */
+    fun saleDraftOpen(key: String): Boolean = dailySales.shownKey() == key
+
+    private fun stockNoteLine(p: StockPlan): com.shopai.app.brain.note.KaiStockNoteLine {
+        val said = p.conv?.input?.singleOrNull()
+        // Before → after only when the draft's quantity is in the product's own unit (no conversion guessed here).
+        val same = p.unit.equals(p.product.unit, ignoreCase = true)
+        return com.shopai.app.brain.note.KaiStockNoteLine(
+            name = p.product.name, qty = said?.qty ?: p.qty, unit = said?.unit ?: p.unit, incoming = p.incoming,
+            before = p.product.stock.takeIf { same }, after = if (same) (if (p.incoming) p.product.stock + p.qty else p.product.stock - p.qty) else null,
+            baseUnit = p.product.unit.takeIf { same }, batchNo = p.batch?.batchNo, expiry = p.batch?.expiry,
+        )
+    }
+
     /** Edit: a new quantity / unit for the draft — shown again for Confirm. */
     fun reviseStock(key: String, qty: BigDecimal, unit: String, lang: KaiLang): KaiTurn? {
         val plan = stockPlans.remove(key) ?: return null
@@ -6135,7 +6184,8 @@ class KaiAgent(
         }
         return KaiTurn(
             ChatReply(pick(lang, ta = "Stock விவரம் ஓனர்:", tl = "Owner, stock details:", en = "Stock, Owner:"), KaiMood.EXPLAINING, ChatIntent.GENERAL_BUSINESS_QUERY),
-            KaiCard(facts.take(10).map { "${it.name} — ${qty(it.qty, it.unit)}" }, emptyList()),
+            KaiCard(facts.take(10).map { "${it.name} — ${qty(it.qty, it.unit)}" }, emptyList(),
+                stock = com.shopai.app.brain.note.KaiStockView.rows(facts.take(10), ::qty)),
         )
     }
 
@@ -6196,7 +6246,8 @@ class KaiAgent(
             ta = "எந்த பொருளும் reorder அளவுக்கு கீழ இல்ல ஓனர்.", tl = "Owner, endha product-um reorder level-ku keezha illa.", en = "Nothing is below its reorder level, Owner.")
         return KaiTurn(
             ChatReply(pick(lang, ta = "குறைவான stock ஓனர் (${low.size}):", tl = "Owner, low stock (${low.size}):", en = "Low stock, Owner (${low.size}):"), KaiMood.CONCERNED, ChatIntent.GENERAL_BUSINESS_QUERY),
-            KaiCard(low.take(10).map { f -> "${f.name} — ${qty(f.qty, f.unit)}" + (f.reorderAt?.let { " (reorder ${qty(it, f.unit)})" } ?: "") }, emptyList()),
+            KaiCard(low.take(10).map { f -> "${f.name} — ${qty(f.qty, f.unit)}" + (f.reorderAt?.let { " (reorder ${qty(it, f.unit)})" } ?: "") }, emptyList(),
+                stock = com.shopai.app.brain.note.KaiStockView.rows(low.take(10), ::qty)),
         )
     }
 

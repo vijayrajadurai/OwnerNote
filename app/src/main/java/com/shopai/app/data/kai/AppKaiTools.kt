@@ -96,7 +96,7 @@ class AppKaiTools(
             s.dao.products(biz, false, 500, 0).filter { !it.isService && it.id in withStock }
         } else s.dao.searchProducts(biz, nameKey(product), 10, 0).filter { !it.isService }
         return products.map { p ->
-            StockFact(p.name, qty(s.ledger.stock(p.id)), p.primaryUnit, (p.reorderLevelMilli ?: p.minStockMilli)?.let(::qty))
+            StockFact(p.name, qty(s.ledger.stock(p.id)), p.primaryUnit, (p.reorderLevelMilli ?: p.minStockMilli)?.let(::qty), p.imagePath)
         }
     }
 
@@ -106,10 +106,10 @@ class AppKaiTools(
         val moved = s.dao.allStock(biz).associateBy { it.productId }
         return s.dao.products(biz, false, 2000, 0).filter { !it.isService && it.active }.mapNotNull { p ->
             val level = p.reorderLevelMilli ?: p.minStockMilli
-            val have = moved[p.id]?.qtyMilli ?: return@mapNotNull if (level != null && level > 0) StockFact(p.name, BigDecimal.ZERO, p.primaryUnit, qty(level)) else null
+            val have = moved[p.id]?.qtyMilli ?: return@mapNotNull if (level != null && level > 0) StockFact(p.name, BigDecimal.ZERO, p.primaryUnit, qty(level), p.imagePath) else null
             when {
-                level != null && have <= level -> StockFact(p.name, qty(have), p.primaryUnit, qty(level))
-                have <= 0 -> StockFact(p.name, qty(have), p.primaryUnit, level?.let(::qty))
+                level != null && have <= level -> StockFact(p.name, qty(have), p.primaryUnit, qty(level), p.imagePath)
+                have <= 0 -> StockFact(p.name, qty(have), p.primaryUnit, level?.let(::qty), p.imagePath)
                 else -> null
             }
         }.sortedBy { it.qty }
