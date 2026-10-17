@@ -347,21 +347,26 @@ object KaiUnderstanding {
     }
 
     /**
-     * A new person's full name when the owner typed two capitalised name words ("Madurai Ravi", "Chennai Lokesh"):
-     * both words, never just the place. Lower-case speech keeps the first word (Kai's draft says "puthu customer").
+     * A new person's full name as said — "Madurai Ravi", "Sivalingam Mandi", "Sri Murugan Agro Centre", "சிவலிங்கம் கடை" —
+     * never just its first word.
      */
     fun personPhraseIn(text: String): String? {
         val first = personIn(text) ?: return null
-        // "sruthi store 10000 tharanum", "ஸ்ருதி ஸ்டோர் பத்தாயிரம் தரணும்": a shop's last word after the name is part of it, whatever
-        // its letters (owner, 16 Oct 2026: "Sruthi" alone was drafted as a new customer).
-        Regex("""(?<![\p{L}])${Regex.escape(first)}\s+([\p{L}][\p{L}\p{M}]*)(?![\p{L}\p{M}])""", RegexOption.IGNORE_CASE).find(text)?.groupValues?.get(1)
-            ?.takeIf { com.shopai.app.brain.tools.KaiCommands.isShopWord(it) }
-            ?.let { return "$first ${com.shopai.app.brain.tools.KaiCommands.shopWordFor(first, it)}" }
-        // "Kumar Tea Shop", "குமார் டீ ஷாப்": two words before a shop's last word are the name too (owner, 16 Oct 2026).
-        Regex("""(?<![\p{L}])${Regex.escape(first)}\s+([\p{L}][\p{L}\p{M}]*)\s+([\p{L}][\p{L}\p{M}]*?)(?:\s*-?\s*(?:ku|kku|ukku|kitta|க்கு|கிட்ட))?(?![\p{L}\p{M}])""", RegexOption.IGNORE_CASE)
-            .find(text)?.takeIf { m -> com.shopai.app.brain.tools.KaiCommands.isShopWord(m.groupValues[2]) &&
-                m.groupValues[1].lowercase(Locale.ROOT).let { w -> w !in notNames && w.length >= 2 } }
-            ?.let { m -> return "$first ${com.shopai.app.brain.tools.KaiCommands.middleWordFor(first, m.groupValues[1])} ${com.shopai.app.brain.tools.KaiCommands.shopWordFor(first, m.groupValues[2], m.groupValues[1])}" }
+        val c = com.shopai.app.brain.tools.KaiCommands
+        // "Sivalingam Mandi 5000 tharanum", "sruthi store enakku 10000", "Kumar Tea Shop", "சிவலிங்கம் கடை 5000 தரணும்": the words right
+        // after the name that can be a name's (any word but grammar, money, time, a verb, a role) are the name too — up to a
+        // shop's last word, or three words (owner, 17 Oct 2026: a name, a shop's name, or a name with its shop — never a list).
+        val hit = Regex("""(?<![\p{L}\p{M}])${Regex.escape(first)}((?:\s+[\p{L}][\p{L}\p{M}'.]*){1,3})""", RegexOption.IGNORE_CASE).find(text)
+        val after = hit?.groupValues?.get(1)?.trim()?.split(Regex("""\s+""")).orEmpty()
+        // (the name as written — the mic's "sri" stays lower-case, so its Tamil comes back)
+        val said = hit?.let { text.substring(it.range.first, it.range.first + first.length) } ?: first
+        val words = after.map { raw -> stripSuffix(raw.lowercase(Locale.ROOT)).let { base -> raw.take(base.length) } to raw }
+        // Up to a shop's last word, any word but grammar ("Mani Tea Shop", "மணி டீ ஷாப்"); else the name's own words.
+        val shopAt = words.indexOfFirst { (w, _) -> c.isShopWord(w) }
+        val tail = if (shopAt >= 0 && words.take(shopAt).all { (w, raw) -> w == raw && c.shopNameWord(w) }) words.take(shopAt + 1).map { it.first }
+            else words.withIndex().takeWhile { (n, p) -> c.nameWord(p.first) && (n == 0 || words[n - 1].first == words[n - 1].second) }.map { it.value.first }
+        // ("sruthi akka": a role after the name stays out — Kai asks about it)
+        if (tail.isNotEmpty()) return c.nameOf(said, tail, c.isShopWord(tail.last()), headKnown = false)
         val m = Regex("""(?<![\p{L}])${Regex.escape(first)}\s+(\p{Lu}[\p{L}\p{M}]+)""").find(text) ?: return first
         val second = m.groupValues[1]
         val base = stripSuffix(second.lowercase(Locale.ROOT))
