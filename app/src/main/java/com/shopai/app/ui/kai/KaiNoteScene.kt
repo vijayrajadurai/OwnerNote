@@ -349,7 +349,7 @@ private fun ColumnScope.Buttons(card: KaiCard, state: KaiNoteState, ready: Boole
 
 /** Apple-Pay-like: a frosted square, a green circle whose tick draws itself, and the word. Not saved: the red mark. */
 @Composable
-private fun Done(saved: Boolean, text: String, reducedMotion: Boolean, key: String, modifier: Modifier) {
+private fun Done(saved: Boolean, text: String, reducedMotion: Boolean, key: Long, modifier: Modifier) {
     val pop = remember(key, saved) { Animatable(if (reducedMotion) 1f else 0.6f) }
     val tick = remember(key, saved) { Animatable(if (reducedMotion) 1f else 0f) }
     LaunchedEffect(key, saved) {
