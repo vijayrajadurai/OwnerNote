@@ -16,7 +16,9 @@ import java.time.LocalDate
 
 /** What Kai is doing, as the scene shows it. Only the state the app has really reached. */
 enum class KaiNoteState {
-    IDLE, LISTENING, UNDERSTANDING, CLARIFICATION_REQUIRED, DRAFT_READY, REVIEWING, SAVING, SAVE_SUCCESS, SAVE_ERROR, CANCELLED
+    IDLE, LISTENING, UNDERSTANDING, CLARIFICATION_REQUIRED, DRAFT_READY, REVIEWING, SAVING, SAVE_SUCCESS, SAVE_ERROR, CANCELLED,
+    /** The draft's Confirm put it in the goods list — nothing saved yet; the list's own Confirm saves it (owner, 18 Oct 2026). */
+    LISTED,
 }
 
 /** The kind of entry a note is: its notebook title and icons. */
@@ -89,6 +91,7 @@ object KaiNotes {
         KaiNoteState.SAVE_SUCCESS -> pick(lang, "சேமிச்சாச்சு ✓", "Save aagiduchu ✓", "Saved ✓")
         KaiNoteState.SAVE_ERROR -> pick(lang, "சேமிக்கல — மறுபடி சொல்லுங்க", "Save aagala — thirumba sollunga", "Not saved — please say it again")
         KaiNoteState.CANCELLED -> pick(lang, "ரத்து — எதுவும் சேமிக்கல", "Cancel — edhuvum save aagala", "Cancelled — nothing saved")
+        KaiNoteState.LISTED -> pick(lang, "List-ல சேர்த்தாச்சு · இன்னும் சேமிக்கல", "List-la serthachu · innum save aagala", "In the list · not saved yet")
     }
 
     /** A card row's line under its name: ready (by the kind of entry) until the books answer, then saved / not saved / cancelled. */
@@ -96,6 +99,7 @@ object KaiNotes {
         KaiNoteState.SAVE_SUCCESS -> pick(lang, "சேமிச்சாச்சு", "Save aagiduchu", "Saved")
         KaiNoteState.SAVE_ERROR -> pick(lang, "சேமிக்கல", "Save aagala", "Not saved")
         KaiNoteState.CANCELLED -> pick(lang, "ரத்து", "Cancel", "Cancelled")
+        KaiNoteState.LISTED -> pick(lang, "List-ல · சேமிக்கல", "List-la · save aagala", "In the list · not saved")
         else -> when (kind) {
             KaiNoteKind.STOCK_IN -> pick(lang, "ஸ்டாக் சேர்க்க தயார்", "Stock add ready", "Stock in ready")
             KaiNoteKind.STOCK_OUT -> pick(lang, "ஸ்டாக் குறைக்க தயார்", "Stock out ready", "Stock out ready")
@@ -229,11 +233,13 @@ data class KaiNoteFlow(
     /**
      * Kai answered. [spent]: the open note's draft is gone (saved, dropped, or failed). [newNote]: this answer is a new draft.
      * [mood]: how Kai answered — a save is SUCCESS / HAPPY, a failure ERROR / CONCERNED, anything else (Cancel) drops it.
+     * [listed]: the draft went into the goods list, not the books — never "saved" (owner, 18 Oct 2026: a list item showed
+     * "Save aagiduchu" while Kai said "innum save pannala").
      */
-    fun answered(mood: KaiMood, spent: Boolean, newNote: KaiNote?): KaiNoteFlow {
+    fun answered(mood: KaiMood, spent: Boolean, newNote: KaiNote?, listed: Boolean = false): KaiNoteFlow {
         var f = this
         if (noteOpen && spent) {
-            val end = when (mood) {
+            val end = if (listed) KaiNoteState.LISTED else when (mood) {
                 KaiMood.SUCCESS, KaiMood.HAPPY -> KaiNoteState.SAVE_SUCCESS
                 KaiMood.ERROR, KaiMood.CONCERNED -> KaiNoteState.SAVE_ERROR
                 else -> KaiNoteState.CANCELLED
@@ -243,7 +249,7 @@ data class KaiNoteFlow(
         if (newNote != null) return f.copy(note = newNote, noteState = KaiNoteState.DRAFT_READY, state = KaiNoteState.DRAFT_READY)
         // A saving that came back without spending the draft (nothing happened): the note waits again.
         if (f.noteState == KaiNoteState.SAVING) f = f.copy(noteState = KaiNoteState.REVIEWING)
-        if (f.state in setOf(KaiNoteState.SAVE_SUCCESS, KaiNoteState.SAVE_ERROR, KaiNoteState.CANCELLED)) return f
+        if (f.state in setOf(KaiNoteState.SAVE_SUCCESS, KaiNoteState.SAVE_ERROR, KaiNoteState.CANCELLED, KaiNoteState.LISTED)) return f
         return f.copy(state = when {
             mood == KaiMood.CLARIFY -> KaiNoteState.CLARIFICATION_REQUIRED
             f.noteOpen -> KaiNoteState.REVIEWING

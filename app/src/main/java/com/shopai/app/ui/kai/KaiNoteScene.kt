@@ -194,6 +194,8 @@ private fun Island(note: KaiNote, state: KaiNoteState, writing: Boolean, beat: F
         state == KaiNoteState.SAVE_SUCCESS -> IosGreen to when (note.lang) { KaiLang.TAMIL -> "சேமிச்சாச்சு"; KaiLang.TANGLISH -> "Save aagiduchu"; KaiLang.ENGLISH -> "Saved" }
         state == KaiNoteState.SAVE_ERROR -> IosRed to when (note.lang) { KaiLang.TAMIL -> "சேமிக்கல"; KaiLang.TANGLISH -> "Save aagala"; KaiLang.ENGLISH -> "Not saved" }
         state == KaiNoteState.CANCELLED -> IosGrey to when (note.lang) { KaiLang.TAMIL -> "ரத்து"; KaiLang.TANGLISH -> "Cancel"; KaiLang.ENGLISH -> "Cancelled" }
+        // In the goods list — not saved: a blue dot, never the green "saved".
+        state == KaiNoteState.LISTED -> Color(0xFF007AFF) to when (note.lang) { KaiLang.TAMIL -> "List-ல · சேமிக்கல"; KaiLang.TANGLISH -> "List-la · save aagala"; KaiLang.ENGLISH -> "In the list · not saved" }
         state == KaiNoteState.SAVING -> IosGreen to KaiNotes.status(state, note.lang)
         writing || state == KaiNoteState.DRAFT_READY -> IosGreen to when (note.lang) { KaiLang.TAMIL -> "Kai எழுதுறார்"; else -> "Kai noting" }
         else -> IosGreen to when (note.lang) { KaiLang.TAMIL -> "Confirm பண்ணுங்க"; KaiLang.TANGLISH -> "Confirm pannunga"; KaiLang.ENGLISH -> "Please confirm" }
@@ -278,7 +280,7 @@ private fun GroupedList(note: KaiNote, progress: Float, state: KaiNoteState, sce
             Text(note.title.uppercase(), color = IosGrey, fontSize = 12.sp, letterSpacing = 0.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f))
             Text(KaiNotes.status(state, note.lang), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                color = when (state) { KaiNoteState.SAVE_ERROR -> IosRed; KaiNoteState.CANCELLED -> IosGrey; else -> IosGreen },
+                color = when (state) { KaiNoteState.SAVE_ERROR -> IosRed; KaiNoteState.CANCELLED -> IosGrey; KaiNoteState.LISTED -> Color(0xFF007AFF); else -> IosGreen },
                 modifier = Modifier.padding(start = 8.dp).widthIn(max = 200.dp))
         }
         note.rows.forEachIndexed { i, row ->

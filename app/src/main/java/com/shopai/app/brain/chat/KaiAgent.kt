@@ -5334,13 +5334,18 @@ class KaiAgent(
         goodsList += entry
         goodsTurn = conversationState.conversationTurn
         tools.log("goods arrived", "inventory", "${entry.name}: in the list (not saved)", ActionStatus.ANSWERED)
-        val line = goodsLine(entry, lang)
         // Items said together still waiting: the next draft follows (nextGoods), so "aduthu sollunga" only after the last one.
         val next = goodsQueue.isEmpty()
-        return say(lang, KaiMood.HAPPY, null,
-            ta = "சரி ஓனர் 👍 $line — list-ல சேர்த்துட்டேன் (இன்னும் சேமிக்கல)." + if (next) " அடுத்து சொல்லுங்க ஓனர். முடிஞ்சா 'அவ்ளோ தான்' சொல்லுங்க." else "",
-            tl = "Seri Owner 👍 $line — list-la serthutten (innum save pannala)." + if (next) " Aduthu sollunga Owner. Mudinjaa 'avlo dhaan' nu sollunga." else "",
-            en = "Okay Owner 👍 $line — added to the list (not saved yet)." + if (next) " Tell me the next one. Say 'that's all' when you're done." else "")
+        // Short, with the list so far as a card (owner, 18 Oct 2026: "reply text short and digital"); still nothing saved.
+        val name = entry.name
+        return KaiTurn(
+            ChatReply(pick(lang,
+                ta = "✓ $name list-ல (இன்னும் சேமிக்கல)." + if (next) " அடுத்து சொல்லுங்க · முடிஞ்சா 'அவ்ளோ தான்'" else "",
+                tl = "✓ $name list-la (innum save aagala)." + if (next) " Aduthu sollunga · mudinjaa 'avlo dhaan'" else "",
+                en = "✓ $name is in the list (not saved yet)." + if (next) " Tell me the next · say 'that's all' when done" else ""),
+                KaiMood.HAPPY, ChatIntent.GENERAL_BUSINESS_QUERY),
+            KaiCard(goodsList.mapIndexed { i, e -> "${i + 1}. ${goodsLine(e, lang)}" }, emptyList()),
+        )
     }
 
     /** "Avlo dhaan": every item in one list, to check once — Confirm saves them all, Edit changes one, Cancel drops the list. */
@@ -5348,9 +5353,9 @@ class KaiAgent(
         goodsTurn = conversationState.conversationTurn
         val lines = goodsList.mapIndexed { i, e -> "${i + 1}. ${goodsLine(e, lang)}" }
         val head = pick(lang,
-            ta = "சரி ஓனர் 👍 நாம add பண்ண stock list இதோ. ஒரு தடவை பார்த்து உறுதி செய்யுங்க ஓனர்.",
-            tl = "Seri Owner 👍 Namma add panna stock list idho. Oru thadava paathu confirm pannunga Owner.",
-            en = "Okay Owner 👍 Here's the stock list we made. Please check it once and confirm.")
+            ta = "Stock list தயார் · பார்த்து உறுதி செய்யுங்க.",
+            tl = "Stock list ready · paathu Confirm pannunga.",
+            en = "Stock list ready · check and confirm.")
         return KaiTurn(
             ChatReply(listOfNotNull(note, head).joinToString("\n"), KaiMood.EXPLAINING, ChatIntent.GENERAL_BUSINESS_QUERY),
             KaiCard(lines, listOf(
@@ -5430,9 +5435,9 @@ class KaiAgent(
         tools.log("goods arrived", "inventory", "asked which", ActionStatus.ANSWERED)
         return KaiTurn(
             ChatReply(pick(lang,
-                ta = "சரி ஓனர் 👍 என்ன என்ன சாமான் வந்திருக்கு? சொல்லுங்க, add பண்ணிடலாம் — ஒண்ணு ஒண்ணா சொல்லுங்க. (உதா: ஆசிர்வாத் ரவா அரைக்கிலோ 50 பாக்கெட்)",
-                tl = "Seri Owner 👍 Enna enna saaman vandhuruku? Sollunga, add panniruvom — onnu onna sollunga. (eg: Ashirvad rava arakilo 50 packet)",
-                en = "Sure, Owner 👍 What came in? Tell me one by one and I'll add it. (e.g. Ashirvad rava half kilo 50 packets)"), KaiMood.HAPPY, ChatIntent.GENERAL_BUSINESS_QUERY),
+                ta = "என்ன சாமான் வந்திருக்கு? 🎙 ஒண்ணு ஒண்ணா சொல்லுங்க (உதா: அரிசி 3 மூட்டை)",
+                tl = "Enna saaman vandhuruku? 🎙 Onnu onna sollunga (eg: Rice 3 moota)",
+                en = "What came in? 🎙 Tell me one by one (e.g. Rice 3 bags)"), KaiMood.HAPPY, ChatIntent.GENERAL_BUSINESS_QUERY),
         )
     }
 

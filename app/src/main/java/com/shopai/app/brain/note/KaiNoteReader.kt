@@ -28,6 +28,13 @@ object KaiNoteReader {
         return null
     }
 
+    /** The stock draft behind [note] is now in Kai's goods list (kept to save with the list) — not in the books. */
+    fun listed(agent: KaiAgent, note: KaiNote): Boolean {
+        if (note.keys.none { it.source == KaiNoteKey.Source.STOCK }) return false
+        val kept = agent.goodsNote().map { it.name.trim().lowercase() }.toSet()
+        return kept.isNotEmpty() && note.rows.all { it.name.trim().lowercase() in kept }
+    }
+
     /** The draft behind [note] is gone from Kai: saved, dropped, or failed (Kai's answer tells which). */
     fun spent(agent: KaiAgent, note: KaiNote): Boolean = note.keys.all { k ->
         when (k.source) {

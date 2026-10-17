@@ -670,7 +670,7 @@ class KaiOwnerSweepTest {
         // one at a time, until "avlo dhaan" (owner, 10 Oct 2026).
         fun stock(vararg want: Pair<String, String>): (Shop) -> String? = { s ->
             want.firstOrNull { (p, q) -> s.inv.item(p).stock.compareTo(BigDecimal(q)) != 0 }?.let { (p, _) -> "$p ${s.inv.item(p).stock}" } }
-        val askedWhich = { s: Shop -> if ((s.log.contains("Enna enna saaman vandhuruku") || s.log.contains("என்ன என்ன சாமான் வந்திருக்கு")) && s.nothingWritten()) null
+        val askedWhich = { s: Shop -> if ((s.log.contains("Enna saaman vandhuruku") || s.log.contains("என்ன சாமான் வந்திருக்கு")) && s.nothingWritten()) null
             else "goods not asked" }
         talk("goods came: Kai asks which", listOf("Kadaiku saman vandhuruku"), check = askedWhich)
         // Only the question: no Photo / Cancel buttons and no camera by itself — Confirm / Edit / Cancel come on the draft.
@@ -679,6 +679,13 @@ class KaiOwnerSweepTest {
         talk("saraku came: asked, not a person", listOf("Kadaiku Saraku vandhuruku"), check = askedWhich)
         talk("stock add pannalama: asked", listOf("Kadaiku stock add pannalama"), check = askedWhich)
         talk("maal came: asked", listOf("maal vandhuruku"), check = askedWhich)
+        // As the phone's mic writes it (owner, 18 Oct 2026: "Kadaiku saraku vandhuruku" by mic was not read): the written forms
+        // ("வந்திருக்கிறது", "வந்திருக்குது", "வந்துள்ளது") and "vandhu irukku" as two words.
+        for (said in listOf("கடைக்கு சரக்கு வந்திருக்கிறது", "கடைக்கு சரக்கு வந்திருக்குது", "கடைக்கு சரக்கு வந்து இருக்கு", "கடைக்கு சரக்கு வந்துள்ளது",
+                "கடைக்கு சாமான் வந்துருக்குது", "Kadaiku saraku vandhu irukku"))
+            talk("goods came, as the mic writes it: $said", listOf(said), check = askedWhich)
+        // Not "came": "saraku varala" (didn't come) is never the goods question.
+        talk("saraku didn't come: not asked", listOf("கடைக்கு சரக்கு வரல")) { s -> if (s.log.contains("Enna saaman vandhuruku") || s.log.contains("என்ன சாமான் வந்திருக்கு")) "goods asked" else null }
         talk("goods: the item after the question", listOf("Kadaiku Saraku vandhuruku", "Rice 3 moota", "TAP+", "avlo dhaan", "TAP+"), check = stock("Rice" to "325"))
         talk("goods: stock add pannalama then Oil", listOf("Kadaiku stock add pannalama", "Oil 1 box", "TAP+", "avlo dhaan", "TAP+"), check = stock("Oil" to "252"))
         talk("goods: two items, nothing written before Confirm", listOf("Kadaiku saman vandhuruku", "Colgate 2 box, Rice 3 moota")) { s ->
@@ -790,7 +797,7 @@ class KaiOwnerSweepTest {
             if (s.log.contains("₹4,000") && s.nothingWritten()) null else "balance not answered" }
         // The old stock flow stays as it is (owner, 11 Oct 2026): one product said → its own draft, never the goods question;
         // "new stock add pannu" keeps its one-product question; "venam" to a stock draft drops that draft.
-        val notGoods = { s: Shop -> if (s.log.contains("Enna enna saaman vandhuruku") || s.log.contains("என்ன என்ன சாமான் வந்திருக்கு")) "goods asked" else null }
+        val notGoods = { s: Shop -> if (s.log.contains("Enna saaman vandhuruku") || s.log.contains("என்ன சாமான் வந்திருக்கு")) "goods asked" else null }
         talk("old flow: one product added", listOf("Colgate 2 box stock add pannu", "TAP")) { s -> notGoods(s) ?: stock("Colgate" to "336")(s) }
         talk("old flow: a new product said alone", listOf("Ashirvad rava 2 kg vangi irukken")) { s -> notGoods(s) ?: if (s.nothingWritten()) null else "wrote before Confirm" }
         talk("old flow: new stock add pannu, then venam drops the draft", listOf("new stock add pannu", "Colgate 2 box", "venam")) { s ->

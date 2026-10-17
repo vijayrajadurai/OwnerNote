@@ -15,7 +15,9 @@ object KaiGoodsArrival {
     private val arrived = Regex(
         """(?i)$B(vandhuruku|vandhurukku|vandhiruku|vandhirukku|vanthuruku|vanthurukku|vanthiruku|vanthirukku|vandhuchu|vanthuchu|vandhachu|vanthachu|""" +
             """vandhudhu|vanthuthu|vandhadhu|vandhuduchu|vandhuchi|vanthuchi|vandhuruchu|vandhuruchi|vanthuruchu|vanthuruchi|vandhiruchu|irakkinom|irakkunom|irakkinen|irakkanum|eranguchu|iranguchu|came|arrived|received|""" +
-            """add\s*pannalama|add\s*pannanum|add\s*pannu|add\s*pannunga|podanum|podalama|podunga|serkkanum|serkkalama|serthudu|update\s*pannanum)$E|""" +
+            """add\s*pannalama|add\s*pannanum|add\s*pannu|add\s*pannunga|podanum|podalama|podunga|serkkanum|serkkalama|serthudu|update\s*pannanum|""" +
+            // "vandhu irukku" said as two words — the mic writes "வந்து இருக்கு" (owner, 18 Oct 2026).
+            """(?:vandhu|vanthu|வந்து)\s+(?:irukku|iruku|irukkudhu|இருக்கு|இருக்குது|இருக்கிறது))$E|""" +
             """வந்திருக்கு|வந்துருக்கு|வந்துச்சு|வந்தாச்சு|இறக்கினோம்|சேர்க்கலாமா|சேர்க்கணும்""",
     )
     /** A question about stock, not goods coming in ("stock evlo irukku"). */

@@ -69,7 +69,10 @@ object KaiSpokenWords {
         "சொல்லு" to "sollu", "சொல்லுங்க" to "sollunga",
         // ---- stock ----
         "ஸ்டாக்" to "stock", "ஸ்டாக்கு" to "stock", "இன்வென்டரி" to "inventory", "ஆட்" to "add", "சேர்" to "serthu", "சேர்த்து" to "serthu",
-        "வந்திருக்கு" to "vandhiruku", "வந்துருக்கு" to "vandhuruku", "வந்துச்சு" to "vandhuchu", "வந்துருச்சு" to "vandhuchu", "வந்துடுச்சு" to "vandhuchu", "வந்திருச்சு" to "vandhuchu", "வந்துட்டு" to "vandhuchu",
+        "வந்திருக்கு" to "vandhiruku", "வந்துருக்கு" to "vandhuruku",
+        // The phone's mic often writes the written forms (owner, 18 Oct 2026: "கடைக்கு சரக்கு வந்திருக்கிறது" was not read).
+        "வந்திருக்கிறது" to "vandhiruku", "வந்திருக்குது" to "vandhiruku", "வந்துருக்குது" to "vandhuruku", "வந்துள்ளது" to "vandhiruku",
+        "வந்துள்ளன" to "vandhiruku", "வந்திருக்கின்றன" to "vandhiruku", "வந்துவிட்டது" to "vandhuchu", "வந்துட்டுது" to "vandhuchu", "வந்துச்சு" to "vandhuchu", "வந்துருச்சு" to "vandhuchu", "வந்துடுச்சு" to "vandhuchu", "வந்திருச்சு" to "vandhuchu", "வந்துட்டு" to "vandhuchu",
         // Months said aloud ("மே 5 தரணும்" was read as "5th of next month" — owner, 11 Oct 2026).
         "ஜனவரி" to "january", "சனவரி" to "january", "பிப்ரவரி" to "february", "பெப்ரவரி" to "february", "மார்ச்" to "march", "ஏப்ரல்" to "april",
         "மே" to "may", "ஜூன்" to "june", "ஜுன்" to "june", "ஜூலை" to "july", "ஜுலை" to "july", "ஆகஸ்ட்" to "august", "ஆகஸ்டு" to "august",
