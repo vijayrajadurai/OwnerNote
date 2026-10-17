@@ -225,8 +225,12 @@ fun KaiChatScreen(
                 send(spoken, voice = true)
             },
             onError = {
+                // The recognizer gave up (silence, no final match) after it had already heard words: those words go to Kai —
+                // never dropped (owner, 18 Oct 2026: "mic-la sonna varamatikuthu").
+                val partial = heard?.trim()
                 listening = false
                 heard = null
+                if (!partial.isNullOrEmpty()) send(partial, voice = true)
             },
         )
     }
@@ -235,8 +239,12 @@ fun KaiChatScreen(
     ) { granted -> if (granted) listen() }
     fun onMic() {
         if (listening) {
+            // The owner tapped the mic to finish: what was heard so far is sent (stopping the recognizer drops its final result).
+            val partial = heard?.trim()
             speech.stopListening()
             listening = false
+            heard = null
+            if (!partial.isNullOrEmpty()) send(partial, voice = true)
             return
         }
         if (androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.RECORD_AUDIO) ==
