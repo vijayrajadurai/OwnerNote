@@ -394,9 +394,38 @@ class BooksMasters(
         dao.insertAudit(AuditEntity(businessId = biz, entity = entity, entityId = id, action = action, userId = ctx.userId, at = now(), source = "MANUAL"))
     }
 
+    /**
+     * Keeps [productId] by batch from now on (owner, 17 Oct 2026: an expiry said for a product already in stock — "Bread", "Milk").
+     * Its stock so far becomes one batch with no expiry ([OLD_STOCK_BATCH]) — the movements it came from are that batch's — so
+     * sales still find it and the totals, values and reports don't change; new stock comes in with its own expiry. Batch
+     * tracking is switched on for the business too. A product already kept by batch is left as it is (its batches untouched).
+     */
+    suspend fun startBatchTracking(productId: String): MasterResult<ProductEntity> = guard {
+        val product = dao.product(productId)?.takeIf { it.businessId == biz } ?: reject(BooksErrorCode.PRODUCT_NOT_FOUND, "Product not found", "productId")
+        if (product.isService) reject(BooksErrorCode.PRODUCT_INACTIVE, "${product.name} is a service — it has no stock to keep by batch", "productId")
+        db.withTransaction {
+            val b = dao.business(biz) ?: reject(BooksErrorCode.BUSINESS_NOT_SET_UP, "Set up the business first")
+            if (!b.batchTracking) dao.upsertBusiness(b.copy(batchTracking = true, updatedAt = now()))
+            // (stock moved before it was kept by batch — none for a new product, none the second time)
+            if (dao.unbatchedMovements(biz, product.id) > 0) {
+                val old = dao.batchByNo(product.id, OLD_STOCK_BATCH)
+                    ?: com.shopai.app.books.data.BatchEntity(newId(), biz, product.id, OLD_STOCK_BATCH, null, null, now()).also { dao.upsertBatch(it) }
+                dao.batchUnbatchedStock(biz, product.id, old.id)
+            }
+            if (!product.batchTracked) dao.updateProduct(product.copy(batchTracked = true, updatedBy = ctx.userId, updatedAt = now()))
+            audit("PRODUCT", product.id, "BATCH_TRACKING_ON")
+        }
+        dao.product(productId) ?: reject(BooksErrorCode.PRODUCT_NOT_FOUND, "Product not found", "productId")
+    }
+
     private suspend fun <T> guard(block: suspend () -> T): MasterResult<T> = try {
         MasterResult.Ok(block())
     } catch (e: RejectException) {
         MasterResult.Rejected(e.errors)
+    }
+
+    companion object {
+        /** The batch a product's stock from before it was kept by batch is in (no expiry — never guessed). */
+        const val OLD_STOCK_BATCH = "OLD-STOCK"
     }
 }

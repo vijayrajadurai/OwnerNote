@@ -90,6 +90,15 @@ class KaiInventoryChatTest {
             }
         }
 
+        /** Products switched to batch tracking on Confirm (an expiry said for goods not kept by batch yet). */
+        val keptByBatch = mutableListOf<String>()
+        override suspend fun keepByBatch(product: ProductRef): ActionOutcome {
+            val i = items.first { it.id == product.id }
+            i.batchTracked = true
+            keptByBatch += i.name
+            return ActionOutcome.Done(i.name, null)
+        }
+
         override suspend fun stockInBatch(product: ProductRef, qty: BigDecimal, said: String, batch: com.shopai.app.brain.tools.StockBatch): ActionOutcome {
             val i = items.first { it.id == product.id }
             batchIns += i.name to batch

@@ -147,13 +147,15 @@ class KaiBatchRecordsTest {
             val t = kai.say(line)
             assertTrue("$line → ${all(t)}", !all(t).contains("Batch") && !t.reply.text.contains("batch"))
         }
-        // A batch / expiry said for it anyway: the quantity is still 1 box, and Kai says the batch isn't kept.
+        // A batch / expiry said for it (toothpaste can expire — owner, 17 Oct 2026): the quantity is still 1 box, and on Confirm Colgate
+        // is kept by batch from this stock on — its stock so far one batch with no expiry; the new 48 pieces batch B7, expiry 06/2027.
         for (line in both("Colgate 1 box vandhuchu batch B7 expiry 06/2027")) {
             val (kai, inv) = shop()
             val t = kai.say(line)
-            assertTrue("$line → ${all(t)}", (t.reply.text.contains("batch-wise vaikkala") || t.reply.text.contains("batch வாரியா")) && all(t).contains("48 pieces"))
+            assertTrue("$line → ${all(t)}", all(t).contains("Batch: B7") && all(t).contains("48 pieces") && Regex("""expiry-wise|expiry வாரியா""").containsMatchIn(t.reply.text))
+            assertTrue("not before Confirm", inv.moves.isEmpty() && !inv.item("Colgate").batchTracked)
             kai.confirm(t)
-            assertTrue(inv.item("Colgate").stock.compareTo(r("288")) == 0 && inv.batchIns.isEmpty())
+            assertTrue(inv.item("Colgate").stock.compareTo(r("288")) == 0 && inv.item("Colgate").batchTracked && inv.batchIns.single().second.batchNo == "B7")
         }
     }
 

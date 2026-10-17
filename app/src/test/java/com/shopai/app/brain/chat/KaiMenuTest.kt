@@ -147,15 +147,26 @@ class KaiMenuTest {
         assertTrue(all(s.say("oru facial")).contains("menu-la illa"))
     }
 
-    @Test fun expiryIsAMedicalShopsOnly() {
+    /**
+     * Expiry is for goods that can expire, in any shop (owner, 17 Oct 2026: "grocery-ku fruits and vegetables… expiry alert 7-kulla"):
+     * Bread in a grocery keeps the expiry said — kept by batch from that stock on, on Confirm — typed and by mic; goods that never
+     * expire (a shirt) are told plainly and keep none; the expiry list answers in every shop.
+     */
+    @Test fun expiryIsForGoodsThatCanExpire() {
         for (line in listOf("Bread 10 packet vandhuchu expiry 20/10/2026", KaiMicForm.of("Bread 10 packet vandhuchu expiry 20/10/2026")!!)) {
             val g = Shop("GROCERY")
             val t = g.say(line)
-            assertTrue("[GROCERY] $line → ${all(t)}", all(t).contains("Medical shop") && g.inv.moves.isEmpty() && g.inv.batchIns.isEmpty())
-            assertTrue("[GROCERY] expiry list", all(g.say("expiry aagura list kudu")).contains("Medical shop"))
+            assertTrue("[GROCERY] $line → ${all(t)}", all(t).contains("Expiry: ") && !all(t).contains("Medical shop") && g.inv.moves.isEmpty())
+            g.confirm()
+            assertTrue("[GROCERY] $line kept by batch", g.inv.keptByBatch == listOf("Bread") && g.inv.batchIns.single().second.expiry == LocalDate.of(2026, 10, 20))
+            assertTrue("[GROCERY] expiry list", !all(g.say("expiry aagura list kudu")).contains("Medical shop"))
         }
-        // A medical shop (and a shop with no category yet) keeps reading the batch / expiry, as before.
+        // Goods that never expire: said plainly, nothing kept.
+        val t = Shop("TEXTILE").also { it.inv.items += Inventory.Item("p2", "Cotton Shirt", "PCS", BigDecimal("5"), emptyMap(), null, null, "Garments & Textiles", null) }
+        val r = t.say("Cotton Shirt 10 vandhuchu expiry 20/10/2026")
+        assertTrue(all(r), all(r).contains("expiry aagura product illa") && t.inv.moves.isEmpty() && t.inv.batchIns.isEmpty() && t.inv.keptByBatch.isEmpty())
+        // A medical shop keeps reading the batch / expiry, as before.
         val m = Shop("PHARMACY")
-        assertTrue(all(m.say("Bread 10 packet vandhuchu expiry 20/10/2026")).let { !it.contains("Medical shop-ku mattum") })
+        assertTrue(all(m.say("Bread 10 packet vandhuchu expiry 20/10/2026")).contains("Expiry: "))
     }
 }

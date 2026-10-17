@@ -17,6 +17,38 @@ object KaiExpiry {
     /** "Expiry aagapora stock sollu" with no time said: the next 30 days. */
     const val ASK_DAYS = 30L
 
+    /**
+     * Goods that can expire, in any shop (owner, 17 Oct 2026: "grocery-ku fruits and vegetables, vera enna enna product expiry
+     * aaga vaaippu irukko adhellaam"): fruits & vegetables, dairy & beverages, bakery, meat & fish, grocery & staples, snacks,
+     * personal care, cleaning liquids, baby care, medicines, seeds / fertiliser / pesticide, pooja (ghee, oil).
+     */
+    private val expires = setOf(ProductKind.VEGETABLE, ProductKind.BEVERAGE, ProductKind.BAKERY, ProductKind.MEAT, ProductKind.GROCERY,
+        ProductKind.SNACKS, ProductKind.FMCG, ProductKind.HOMECARE, ProductKind.BABY, ProductKind.PHARMACY, ProductKind.AGRI, ProductKind.POOJA)
+    /** Goods that never expire: garments, hardware, electricals, mobiles, stationery, footwear, kitchenware, toys, auto parts. */
+    private val lasts = setOf(ProductKind.GARMENT, ProductKind.HARDWARE, ProductKind.ELECTRICAL, ProductKind.ELECTRONICS, ProductKind.STATIONERY,
+        ProductKind.FOOTWEAR, ProductKind.KITCHENWARE, ProductKind.TOYS, ProductKind.AUTO)
+
+    /** The kind of goods a product's category names ("Grocery", "FMCG", "Fruits & Vegetables", "Garments & Textiles"); null = not one of them. */
+    fun kindOfCategory(category: String?): ProductKind? {
+        val c = category?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+        return ProductKind.entries.firstOrNull { k -> k.name.equals(c, ignoreCase = true) || k.category.equals(c, ignoreCase = true) ||
+            k.category.startsWith(c, ignoreCase = true) || c.startsWith(k.category.substringBefore(' '), ignoreCase = true) }
+            ?.takeIf { it != ProductKind.GENERAL }
+    }
+
+    /**
+     * Whether a product can expire: by its category, else by its name ("Bread", "Milk", "Paracetamol"); a product neither tells
+     * about ("General") — the owner said its expiry, so yes. Never for clothes, hardware, mobiles and the like.
+     */
+    /** The product is goods that expire, as its category or name says ("Bread", "Fruits & Vegetables") — for showing the expiry fields. */
+    fun knownToExpire(category: String?, name: String): Boolean =
+        (kindOfCategory(category) ?: KaiInventory.kindByName(name))?.let { it in expires } == true
+
+    fun canExpire(category: String?, name: String): Boolean {
+        val kind = kindOfCategory(category) ?: KaiInventory.kindByName(name) ?: return true
+        return kind in expires || kind !in lasts
+    }
+
     /** What the owner asked: a window ([days] ahead, [expiredOnly]), and FEFO (which batch to sell first). */
     data class Ask(val days: Long, val expiredOnly: Boolean, val fefo: Boolean)
 

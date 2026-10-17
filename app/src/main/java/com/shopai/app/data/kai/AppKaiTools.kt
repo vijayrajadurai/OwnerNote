@@ -268,6 +268,16 @@ class AppKaiTools(
         }.getOrElse { ActionOutcome.Failed(it.message ?: "not saved") }
     }
 
+    override suspend fun keepByBatch(product: com.shopai.app.brain.tools.ProductRef): ActionOutcome {
+        val s = session() ?: return ActionOutcome.Failed("Books not ready")
+        return runCatching {
+            when (val r = s.masters.startBatchTracking(product.id)) {
+                is com.shopai.app.books.engine.MasterResult.Ok -> ActionOutcome.Done(product.name, null)
+                is com.shopai.app.books.engine.MasterResult.Rejected -> ActionOutcome.Failed(r.errors.firstOrNull()?.message ?: "not saved")
+            }
+        }.getOrElse { ActionOutcome.Failed(it.message ?: "not saved") }
+    }
+
     /** "B-261013" for new stock with only its expiry said; "B-261013-2" when today's batch has another expiry. */
     private suspend fun freeBatchNo(s: BooksSession, productId: String, expiry: LocalDate?): String {
         val base = com.shopai.app.books.model.BatchPick.newNo(LocalDate.now())

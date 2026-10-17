@@ -124,6 +124,8 @@ private fun ProductForm(s: BooksSession, productId: String?, modifier: Modifier,
     var reorder by remember { mutableStateOf("") }
     var supplierId by remember { mutableStateOf<String?>(null) }
     var batchTracked by remember { mutableStateOf(false) }
+    /** Kept by batch when the form opened (an existing product switched on is moved to batches on Save). */
+    var wasBatchTracked by remember { mutableStateOf(false) }
     var batchNo by remember { mutableStateOf("") }
     var mfg by remember { mutableStateOf("") }
     var expiry by remember { mutableStateOf("") }
@@ -155,7 +157,7 @@ private fun ProductForm(s: BooksSession, productId: String?, modifier: Modifier,
             purchase = paiseText(p.purchasePricePaise); selling = paiseText(p.sellingPricePaise); mrp = paiseText(p.mrpPaise)
             wholesale = paiseText(p.wholesalePricePaise); retail = paiseText(p.retailPricePaise); minSelling = paiseText(p.minSellingPricePaise)
             includesTax = p.priceIncludesTax; minStock = qtyText(p.minStockMilli); reorder = qtyText(p.reorderLevelMilli)
-            supplierId = p.supplierId; batchTracked = p.batchTracked; description = p.description.orEmpty()
+            supplierId = p.supplierId; batchTracked = p.batchTracked; wasBatchTracked = p.batchTracked; description = p.description.orEmpty()
             imagePath = p.imagePath; active = !p.archived; backendId = p.backendId
         }
         loaded = true
@@ -208,6 +210,10 @@ private fun ProductForm(s: BooksSession, productId: String?, modifier: Modifier,
             try {
                 var savedId = ""
                 s.db.withTransaction {
+                    // Goods that expire, in a shop not keeping batches yet: switched on with this product (owner, 17 Oct 2026).
+                    if (batchTracked && !isService && !businessBatches) {
+                        (s.masters.updateSettings(batchTracking = true) as? MasterResult.Rejected)?.let { throw BooksRejectedException(it.errors) }
+                    }
                     val categoryId = s.masters.categoryId(category)
                     val full = input.copy(
                         primaryUnit = s.masters.ensureUnit(primaryUnit) ?: primaryUnit,
@@ -221,6 +227,10 @@ private fun ProductForm(s: BooksSession, productId: String?, modifier: Modifier,
                         is MasterResult.Ok -> result.value
                         is MasterResult.Rejected -> throw BooksRejectedException(result.errors)
                     }
+                    // An existing product now kept by batch: its stock so far becomes one batch with no expiry.
+                    if (productId != null && batchTracked && !wasBatchTracked && !isService) {
+                        (s.masters.startBatchTracking(product.id) as? MasterResult.Rejected)?.let { throw BooksRejectedException(it.errors) }
+                    }
                     if (productId != null && product.archived == active) {
                         (s.masters.setProductArchived(product.id, archived = !active) as? MasterResult.Rejected)?.let { throw BooksRejectedException(it.errors) }
                     }
@@ -228,7 +238,9 @@ private fun ProductForm(s: BooksSession, productId: String?, modifier: Modifier,
                         val posted = s.engine.postOpeningStock(
                             OpeningStockInput(
                                 productId = product.id, date = LocalDate.now(), qtyMilli = openQty!!, valuePaise = openValue,
-                                batchNo = batchNo.takeIf { it.isNotBlank() }, mfgDate = mfgDay, expiryDate = expiryDay,
+                                // (a batch kept with no number typed is named by the date, as Kai names one)
+                                batchNo = batchNo.trim().ifBlank { if (batchTracked && !isService) com.shopai.app.books.model.BatchPick.newNo(LocalDate.now()) else "" }
+                                    .takeIf { it.isNotBlank() }, mfgDate = mfgDay, expiryDate = expiryDay,
                                 meta = PostMeta(clientKey = UUID.randomUUID().toString()),
                             ),
                         )
@@ -338,7 +350,8 @@ private fun ProductForm(s: BooksSession, productId: String?, modifier: Modifier,
                 }
                 DecimalField(stringResource(R.string.inv_minimum_stock), minStock, { minStock = it })
                 DecimalField(stringResource(R.string.books_reorder_level), reorder, { reorder = it })
-                if (businessBatches) {
+                // (in any shop for goods that expire — fruits & vegetables, dairy, bakery, grocery…; else when the shop keeps batches)
+                if (businessBatches || batchTracked || com.shopai.app.brain.tools.KaiExpiry.knownToExpire(category, name)) {
                     SwitchRow(stringResource(R.string.books_batch_tracked), batchTracked, { batchTracked = it })
                     if (batchTracked && productId == null) {
                         ShopTextField(stringResource(R.string.books_batch_no), batchNo, { batchNo = it }, error = errors.messageFor("batchNo"))

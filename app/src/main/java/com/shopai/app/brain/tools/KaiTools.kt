@@ -214,6 +214,12 @@ interface KaiTools {
     suspend fun stockInBatch(product: ProductRef, qty: BigDecimal, said: String, batch: StockBatch): ActionOutcome = changeStock(product, qty, true, said)
 
     /**
+     * Keeps [product] by batch from now on — its stock so far one batch with no expiry — so new stock can come in with its own
+     * expiry (an expiry said for a product already in stock: "Bread 10 packet vandhuchu expiry 20/10"). Only on Confirm.
+     */
+    suspend fun keepByBatch(product: ProductRef): ActionOutcome = ActionOutcome.Failed("Batch tracking is not available")
+
+    /**
      * The owner confirmed a change to a product's details: purchase / selling price per stock unit, or its minimum
      * (low-stock) level in stock units. Only the fields given change. Stock is never touched here.
      */
