@@ -66,6 +66,9 @@ class KaiDailySales(
     private data class MenuToKeep(val key: String, val items: List<Pair<String, BigDecimal>>) : Waiting
 
     private var waiting: Waiting? = null
+
+    /** The key of the sale draft shown for Confirm, null when none (Kai's notebook follows it; read only). */
+    fun shownKey(): String? = (waiting as? Shown)?.draft?.key
     /** Prices confirmed in this conversation, for a phone with no business memory open. */
     private val sessionPrices = LinkedHashMap<String, BigDecimal>()
     private var lastSaleAt: LocalDateTime? = null

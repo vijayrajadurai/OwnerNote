@@ -201,6 +201,11 @@ fun KaiChatScreen(
     var listening by remember { mutableStateOf(false) }
     var heard by remember { mutableStateOf<String?>(null) }
     androidx.compose.runtime.DisposableEffect(Unit) { onDispose { speech.stopListening() } }
+    // Kai's hand-note follows the mic: listening only while the recognizer really records.
+    LaunchedEffect(listening) { session.listening(listening) }
+    // The owner's shop category (business profile) picks the scene behind Kai's notebook; unknown → a neutral counter.
+    var shopCategory by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) { shopCategory = runCatching { container.businessRepository.getMyBusiness()?.category }.getOrNull() }
     fun listen() {
         if (!speech.isAvailable()) return
         container.naturalTtsSpeaker.stop()
@@ -315,9 +320,22 @@ fun KaiChatScreen(
                     }
                 }
                 items(session.messages, key = { it.id }) { m ->
-                    if (m.fromOwner) OwnerBubble(if (m.voice) "🎙 ${m.text}" else m.text) else {
+                    val note = session.note.note?.takeIf { it.messageId == m.id }
+                    if (m.fromOwner) OwnerBubble(if (m.voice) "🎙 ${m.text}" else m.text)
+                    // Kai asking the one thing he needs: a clear question card (owner, 17 Oct 2026).
+                    else if (note == null && m.mood == com.shopai.app.brain.KaiMood.CLARIFY) com.shopai.app.ui.kai.KaiAskCard(
+                        question = m.text, card = m.card, lang = m.lang, closed = m.cardClosed || session.thinking, onTap = { tap(m.id, it) },
+                    ) else {
                         KaiBubble(m.text)
-                        m.card?.let { card -> KaiCardView(card, closed = m.cardClosed || session.thinking) { tap(m.id, it) } }
+                        m.card?.let { card ->
+                            // The draft waiting for Confirm (and how it ended): Kai's notebook in the shop; older cards as before.
+                            if (note != null) com.shopai.app.ui.kai.KaiNoteScene(
+                                flow = session.note, note = note, card = card, category = shopCategory,
+                                closed = m.cardClosed || session.thinking, onWritten = { session.noteWritten() },
+                                onTap = { tap(m.id, it) }, modifier = Modifier.padding(top = 4.dp),
+                                said = ownerLineOf(session.messages, m.id),
+                            ) else KaiCardView(card, closed = m.cardClosed || session.thinking) { tap(m.id, it) }
+                        }
                     }
                 }
                 if (session.thinking) item { KaiBubble("…") }
@@ -366,6 +384,21 @@ fun KaiChatScreen(
             }
         }
     }
+}
+
+/**
+ * The owner's line a draft came from: the first of the owner's lines since Kai last answered without a question ("vengayam
+ * 10kg" → "50" → "60" is "vengayam 10kg", not the last answer "60").
+ */
+private fun ownerLineOf(messages: List<KaiChatMessage>, kaiMessageId: Long): String? {
+    var j = messages.indexOfFirst { it.id == kaiMessageId } - 1
+    var first: String? = null
+    while (j >= 0) {
+        val x = messages[j]
+        if (x.fromOwner) first = x.text else if (x.mood != com.shopai.app.brain.KaiMood.CLARIFY) break
+        j--
+    }
+    return first
 }
 
 /** The details of a draft / action under Kai's message, with its buttons. */

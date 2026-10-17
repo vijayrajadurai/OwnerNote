@@ -56,6 +56,19 @@ class KaiChatSession(
         private set
     private var nextId = 1L
 
+    /**
+     * Kai's hand-note: the notebook and the digital card for the draft waiting for Confirm, and what Kai is doing. Moved only
+     * by real events — the mic, Kai's answer, the draft being saved or dropped (see [com.shopai.app.brain.note.KaiNoteFlow]).
+     */
+    var note by mutableStateOf(com.shopai.app.brain.note.KaiNoteFlow())
+        private set
+
+    /** The mic started / stopped (the screen's speech recognizer). */
+    fun listening(on: Boolean) { note = note.listening(on) }
+
+    /** The notebook finished writing the draft: its Confirm is shown. */
+    fun noteWritten() { note = note.written() }
+
     fun takeDirect(): Pair<Long, KaiAction>? = pendingDirect.also { pendingDirect = null }
 
     /**
@@ -87,6 +100,9 @@ class KaiChatSession(
             is KaiAction.ShareStatement, is KaiAction.ShareCashNote -> action
             else -> {
                 close(index)
+                // Confirm on the open note: "saving" until the books answer (never a tick before that).
+                if (note.note?.messageId == messageId && (action is KaiAction.ConfirmPlan || action is KaiAction.ConfirmStock ||
+                        action == KaiAction.ConfirmGoods || action is KaiAction.ConfirmSale)) note = note.saving()
                 respond(lang) { agent.act(action, lang) ?: KaiTurn(ChatReply("…", KaiMood.NEUTRAL, ChatIntent.UNKNOWN)) }
                 null
             }
@@ -149,6 +165,7 @@ class KaiChatSession(
 
     private suspend fun respond(lang: KaiLang, turn: suspend () -> KaiTurn) {
         thinking = true
+        if (note.state != com.shopai.app.brain.note.KaiNoteState.SAVING) note = note.understanding()
         val started = System.currentTimeMillis()
         val result = runCatching { turn() }.getOrElse {
             KaiTurn(ChatReply(
@@ -165,6 +182,9 @@ class KaiChatSession(
         closeSpentDrafts()
         val id = nextId++
         messages += KaiChatMessage(id, fromOwner = false, text = result.reply.text, mood = result.reply.mood, card = result.card, lang = lang)
+        // The notebook follows the real draft: the open one spent (saved / dropped / failed), and this answer's new draft.
+        note = note.answered(result.reply.mood, spent = note.note?.let { com.shopai.app.brain.note.KaiNoteReader.spent(agent, it) } == true,
+            newNote = runCatching { com.shopai.app.brain.note.KaiNoteReader.noteFor(agent, id, result.card, lang, java.time.LocalDate.now()) }.getOrNull())
         result.direct?.let { pendingDirect = id to it }
         lastMood = result.reply.mood
         lastReplyAt = System.currentTimeMillis()
@@ -172,6 +192,7 @@ class KaiChatSession(
     }
 
     fun clear() {
+        note = note.cleared()
         messages.clear()
         agent.reset()
         lastMood = null
