@@ -599,7 +599,15 @@ class KaiBusinessBrain(
     }
 
     private suspend fun history(p: PartyFacts, lang: KaiLang, day: LocalDate, intent: ChatIntent): ChatReply {
-        val h = books.history(p) ?: return reply(intent, KaiMood.ERROR, lang, noRecords(lang))
+        // "Kumar kanakku" when the entries can't be read just now: the balance the records keep, said plainly — never "net check"
+        // in place of an answer the books have (owner, 17 Oct 2026).
+        val h = books.history(p) ?: return balance(p, null, lang, day, intent).let { b ->
+            b.copy(text = b.text + when (lang) {
+                KaiLang.TAMIL -> " (entry விவரம் இப்போ பார்க்க முடியல.)"
+                KaiLang.TANGLISH -> " (Entry details ippo paakka mudiyala.)"
+                KaiLang.ENGLISH -> " (The entries can't be read just now.)"
+            })
+        }
         if (h.entries.isEmpty()) return reply(intent, KaiMood.NEUTRAL, lang, missing(lang))
         val n = p.name
         val total = KaiFormat.rupees(h.totalBilled)
@@ -1021,7 +1029,16 @@ class KaiBusinessBrain(
             val period = q.period ?: monthOf(day)
             val c = books.cashBook(period.from, minOf(period.to, day))
             val label = periodLabel(period, lang, day)
-            if (c == null || c.entries == 0) reply(q.intent, KaiMood.NEUTRAL, lang, missing(lang))
+            // Nothing in the Daily Cash Note for the period: said for that period and that thing, in the owner's language.
+            if (c == null || c.entries == 0) reply(q.intent, KaiMood.NEUTRAL, lang, if (q.intent == ChatIntent.MONTHLY_SALES) when (lang) {
+                KaiLang.TAMIL -> "ஓனர், $label sales (வந்த பணம்) Daily Cash Note-ல எதுவும் பதிவு ஆகல."
+                KaiLang.TANGLISH -> "Owner, ${label.replaceFirstChar { it.lowercase() }} sales (vandha panam) Daily Cash Note-la edhuvum record aagala."
+                KaiLang.ENGLISH -> "Owner, no sales (money in) are recorded in the Daily Cash Note ${label.replaceFirstChar { it.lowercase() }}."
+            } else when (lang) {
+                KaiLang.TAMIL -> "ஓனர், $label செலவு Daily Cash Note-ல எதுவும் பதிவு ஆகல."
+                KaiLang.TANGLISH -> "Owner, ${label.replaceFirstChar { it.lowercase() }} selavu Daily Cash Note-la edhuvum record aagala."
+                KaiLang.ENGLISH -> "Owner, no expenses are recorded in the Daily Cash Note ${label.replaceFirstChar { it.lowercase() }}."
+            })
             else if (q.intent == ChatIntent.MONTHLY_SALES) reply(q.intent, KaiMood.HAPPY, lang, pick3(lang,
                 ta = listOf("$label வந்த பணம் (cash + UPI) ${KaiFormat.rupees(c.totalIn)} ஓனர்."),
                 tl = listOf("$label vandha panam (cash + UPI) ${KaiFormat.rupees(c.totalIn)} owner.", "Owner, $label collection-um sales-um serthu ${KaiFormat.rupees(c.totalIn)} vandhirukku."),
