@@ -201,6 +201,11 @@ fun KaiChatScreen(
     var listening by remember { mutableStateOf(false) }
     var heard by remember { mutableStateOf<String?>(null) }
     androidx.compose.runtime.DisposableEffect(Unit) { onDispose { speech.stopListening() } }
+    // Kai's hand-note follows the mic: listening only while the recognizer really records.
+    LaunchedEffect(listening) { session.listening(listening) }
+    // The owner's shop category (business profile) picks the scene behind Kai's notebook; unknown → a neutral counter.
+    var shopCategory by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) { shopCategory = runCatching { container.businessRepository.getMyBusiness()?.category }.getOrNull() }
     fun listen() {
         if (!speech.isAvailable()) return
         container.naturalTtsSpeaker.stop()
@@ -317,7 +322,15 @@ fun KaiChatScreen(
                 items(session.messages, key = { it.id }) { m ->
                     if (m.fromOwner) OwnerBubble(if (m.voice) "🎙 ${m.text}" else m.text) else {
                         KaiBubble(m.text)
-                        m.card?.let { card -> KaiCardView(card, closed = m.cardClosed || session.thinking) { tap(m.id, it) } }
+                        val note = session.note.note?.takeIf { it.messageId == m.id }
+                        m.card?.let { card ->
+                            // The draft waiting for Confirm (and how it ended): Kai's notebook in the shop; older cards as before.
+                            if (note != null) com.shopai.app.ui.kai.KaiNoteScene(
+                                flow = session.note, note = note, card = card, category = shopCategory,
+                                closed = m.cardClosed || session.thinking, onWritten = { session.noteWritten() },
+                                onTap = { tap(m.id, it) }, modifier = Modifier.padding(top = 4.dp),
+                            ) else KaiCardView(card, closed = m.cardClosed || session.thinking) { tap(m.id, it) }
+                        }
                     }
                 }
                 if (session.thinking) item { KaiBubble("…") }
