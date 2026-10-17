@@ -464,9 +464,16 @@ fun DocumentCaptureSection(
             val stockFailed = mutableListOf<String>()
             var stockMoved = 0
             val stockIn = bill.stockIn
-            for ((product, qty) in bill.stockToMove) {
+            for ((product, qty, batchNo, expiry) in bill.stockToMove) {
                 val moved = runCatching {
-                    if (stockIn) {
+                    // A medical / grocery bill's row with its expiry: the stock comes in as that batch (kept by batch from now on,
+                    // the stock so far its old-stock batch), so the expiry list and the 7-day alert have it.
+                    val asBatch = stockIn && expiry != null && com.shopai.app.brain.tools.KaiExpiry.canExpire(product.category, product.name) &&
+                        (product.batchTracked || container.kaiTools.keepByBatch(product) is com.shopai.app.brain.tools.ActionOutcome.Done)
+                    if (asBatch) {
+                        val done = container.kaiTools.stockInBatch(product, qty, stockReason, com.shopai.app.brain.tools.StockBatch(batchNo, expiry))
+                        done is com.shopai.app.brain.tools.ActionOutcome.Done
+                    } else if (stockIn) {
                         container.inventoryRepository.stockIn(product.id, qty.toDouble(), stockReason)
                         true
                     } else {
@@ -480,12 +487,20 @@ fun DocumentCaptureSection(
             var productsAdded = 0
             for (item in bill.productsToAdd) {
                 val added = runCatching {
+                    // The row's batch / expiry go with the new product (kept by batch), and its stock comes in as that batch.
+                    val expiry = item.expiry?.takeIf { com.shopai.app.brain.tools.KaiExpiry.canExpire(null, item.name) }
                     val ref = container.kaiTools.createProduct(
-                        com.shopai.app.brain.tools.NewProduct(name = item.name, category = "General", unit = item.unit, purchasePrice = item.rate),
+                        com.shopai.app.brain.tools.NewProduct(name = item.name, category = "General", unit = item.unit, purchasePrice = item.rate,
+                            batchNo = item.batchNo.takeIf { expiry != null }, expiry = expiry),
                     ) ?: return@runCatching false
                     productsAdded++
-                    container.inventoryRepository.stockIn(ref.id, item.qty.toDouble(), stockReason)
-                    true
+                    if (expiry != null) {
+                        val done = container.kaiTools.stockInBatch(ref, item.qty, stockReason, com.shopai.app.brain.tools.StockBatch(item.batchNo, expiry))
+                        done is com.shopai.app.brain.tools.ActionOutcome.Done
+                    } else {
+                        container.inventoryRepository.stockIn(ref.id, item.qty.toDouble(), stockReason)
+                        true
+                    }
                 }.getOrDefault(false)
                 if (added) stockMoved++ else stockFailed += item.name
             }
