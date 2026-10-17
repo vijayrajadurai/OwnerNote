@@ -438,6 +438,8 @@ object KaiCommands {
     fun asksExpiry(text: String): Boolean {
         val t = text.lowercase(java.util.Locale.ROOT)
         if (!expiryWord.containsMatchIn(t)) return false
+        // "expiry", "expiry?", "எக்ஸ்பைரி" alone: the expiry list (owner, 17 Oct 2026 — it was asked what "expiry" means).
+        if (Regex("""^\s*(?:expiry|expiring|expired|காலாவதி|எக்ஸ்பைரி|எக்ஸ்பையரி)\s*[?.!]*\s*$""").matches(t)) return true
         // A product being added with its expiry ("Paracetamol 10 strip, batch B1, expiry 12/2026") is not the list.
         if (Regex("""\d""").containsMatchIn(t) && Regex("""(?<![\p{L}])(add|vandhuchu|vandhirukku|serthu|sethu|batch\s+no)(?![\p{L}])""").containsMatchIn(t)) return false
         return expiryAsk.containsMatchIn(t)

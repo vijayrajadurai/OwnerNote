@@ -57,8 +57,11 @@ object KaiLanguage {
         if (words.none { it.length >= 3 }) return previous ?: KaiLang.TANGLISH
         if (words.any { it in tanglish || tanglishVerb.matches(it) }) return KaiLang.TANGLISH
         if (words.any { it in english }) return KaiLang.ENGLISH
-        // (a first line of them alone reads as before — English)
-        return if (words.any { it in shared }) previous ?: KaiLang.ENGLISH else KaiLang.TANGLISH
+        // A first line of them alone, or a word or two ("sales", "stock report", "low stock"), is Kai's usual Tanglish too (owner,
+        // 17 Oct 2026: "sales" alone was answered in English); a longer English line with them ("Add 5 boxes of Colgate") is English.
+        val said = words.filter { it.length >= 2 }
+        if (words.any { it in shared }) return previous ?: if (said.size <= 2 || said.all { it in shared }) KaiLang.TANGLISH else KaiLang.ENGLISH
+        return KaiLang.TANGLISH
     }
 
     /** For entries without words (manual form, photos): Tamil app → Tamil, otherwise Tanglish. */
