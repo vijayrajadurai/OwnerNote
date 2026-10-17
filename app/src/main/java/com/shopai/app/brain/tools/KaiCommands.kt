@@ -297,7 +297,7 @@ object KaiCommands {
         "thaan", "pudhu", "puthu", "new", "old", "pazhaya", "total", "full", "fulla", "motham", "amount", "rupa", "rupai", "rooba", "ruba", "roobai",
         "advance", "bill", "kadan", "baaki", "bakki", "paakki", "settle", "clear", "reminder", "phone", "message", "whatsapp", "kai", "hello", "please",
         "pls", "also", "innoru", "marupadi", "again", "ini", "inimel", "yen", "what", "who", "when", "where", "which", "endha", "entha", "andha",
-        "indha", "intha", "rendu", "moonu", "customer", "supplier", "oda", "ode", "kooda", "kitta", "irukku", "iruku", "gave", "given", "give",
+        "indha", "intha", "rendu", "moonu", "customer", "supplier", "oda", "ode", "kooda", "kuda", "kooda", "kooda-ve", "kitta", "irukku", "iruku", "gave", "given", "give",
         "returned", "sent", "send", "transferred", "will", "should", "needs", "need", "must", "took", "bought", "borrowed", "lent", "received",
         "collected", "settled", "cleared", "owed", "for", "with", "by", "at", "on", "in", "of", "this", "that", "money", "loan", "eduthaan",
         "return", "refund", "ivlo", "ivvalavu", "evalo", "evvalo", "ewlo", "yevlo", "ethana", "evlavu", "full", "partial", "konjam", "mothama",

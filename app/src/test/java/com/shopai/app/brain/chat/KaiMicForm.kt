@@ -58,7 +58,7 @@ object KaiMicForm {
         athu=அது innoru=இன்னொரு adhe=அதே paadhi=பாதி munnadi=முன்னாடி ketten=கேட்டேன்
         business=பிசினஸ் pannalam=பண்ணலாம் idea=ஐடியா jaasthi=ஜாஸ்தி aaga=ஆக leave=லீவு light=லைட் water=வாட்டர் eb=ஈபி sales=சேல்ஸ்
         poyiduchu=போயிடுச்சு kattiten=கட்டிட்டேன்
-        hair=ஹேர் cutting=கட்டிங் haircutting=ஹேர்கட்டிங் onnu=ஒன்னு kids=கிட்ஸ் hotel=ஓட்டல் store=ஸ்டோர் shop=ஷாப் sivalingam=சிவலிங்கம் mandi=மண்டி medical=மெடிக்கல் agro=அக்ரோ centre=சென்டர் sri=ஸ்ரீ sruthi=ஸ்ருதி tharuvaan=தருவான் shaving=ஷேவிங் plus=பிளஸ் tea=டீ rate=ரேட் drill=டிரில் machine=மெஷின் naal=நாள் vaadagai=வாடகை
+        hair=ஹேர் cutting=கட்டிங் haircutting=ஹேர்கட்டிங் onnu=ஒன்னு kids=கிட்ஸ் hotel=ஓட்டல் store=ஸ்டோர் shop=ஷாப் note=நோட் ezhudhu=எழுது entry=என்ட்ரி amount=அமௌண்ட் arun=அருண் selvi=செல்வி kuda=கூட sivalingam=சிவலிங்கம் mandi=மண்டி medical=மெடிக்கல் agro=அக்ரோ centre=சென்டர் sri=ஸ்ரீ sruthi=ஸ்ருதி tharuvaan=தருவான் shaving=ஷேவிங் plus=பிளஸ் tea=டீ rate=ரேட் drill=டிரில் machine=மெஷின் naal=நாள் vaadagai=வாடகை
         ithuvaraikum=இதுவரைக்கும் avlothan=அவ்ளோதான் nethu=நேத்து service=சர்வீஸ் facial=ஃபேஷியல்
         pathi=பத்தி porul=பொருள் kadaila=கடையில irukura=இருக்குற kudukal=குடுக்கல் vangal=வாங்கல் ama=ஆமா
         kadaiku=கடைக்கு saman=சாமான் saraku=சரக்கு vandhuruku=வந்திருக்கு pannalama=பண்ணலாமா avlo=அவ்ளோ

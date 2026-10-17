@@ -308,3 +308,9 @@ ENTRY  | naan Sivalingam medical ku 5000 tharanum       | DEBIT Sivalingam Medic
 ENTRY  | Sivalingam mandi enakku 5000 tharanum          | CREDIT Sivalingam Mandi 5000
 ENTRY  | Sivalingam kadai kitta 5000 vaanganum          | CREDIT Sivalingam Kadai 5000
 ENTRY  | Sri Murugan Agro Centre ku 5000 kudukkanum     | DEBIT Sri Murugan Agro Centre 5000
+
+# "note pannu" / "ezhudhu" / "entry podu" is an entry on the record, like "add pannu" (owner, 17 Oct 2026: "Arun-ku amount note
+# pannu" showed the balance report).
+ENTRY  | Kumar ku 1500 note pannu                       | CREDIT Kumar 1500
+ENTRY  | Kumar 1500 ezhudhu                             | CREDIT Kumar 1500
+ENTRY  | ABC Traders ku 3000 entry podu                 | DEBIT ABC Traders 3000

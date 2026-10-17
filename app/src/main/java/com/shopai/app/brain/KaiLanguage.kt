@@ -31,13 +31,16 @@ object KaiLanguage {
     }
 
     /** Chat: English only when the owner clearly writes English; otherwise Kai's usual Tanglish (or Tamil). */
-    fun forChat(text: String): KaiLang {
+    fun forChat(text: String, previous: KaiLang? = null): KaiLang {
         val detected = detect(text)
         if (detected != KaiLang.ENGLISH) return detected
         val words = text.lowercase(Locale.ROOT).split(Regex("[^a-z]+")).toSet()
         val english = setOf("what", "how", "who", "whom", "when", "which", "is", "are", "does", "do", "did", "the", "much", "owe", "owes",
-            "my", "me", "i", "today", "tomorrow", "show", "tell", "total", "pay", "paid", "will", "has", "have", "from", "this", "next", "last",
-            "remind", "gave", "received", "call", "stock", "low", "sales", "balance", "add", "scan", "every", "after", "minutes", "hour")
+            "my", "me", "i", "today", "tomorrow", "show", "tell", "pay", "paid", "will", "has", "have", "from", "this", "next", "last",
+            "remind", "gave", "received", "every", "after", "minutes", "hour")
+        // "Arun balance", "stock low", "sales total": words Tanglish shares with English — the chat's language so far
+        // (owner, 17 Oct 2026: "Arun balance" in a Tanglish chat was answered in English).
+        val shared = setOf("total", "call", "stock", "low", "sales", "balance", "add", "scan")
         // "Suresh gpay la 5000 pay pannan": an English word ("pay") inside a Tanglish sentence — the reply stays Tanglish.
         val tanglish = setOf("pannan", "pannaan", "pannitaan", "pannittaan", "pannen", "pannitten", "panniten", "pannu", "pannunga", "pannanum",
             "kitta", "enakku", "enaku", "tharanum", "kudukkanum", "kuduthaan", "kuduthen", "kuduthutaan", "vandhuchu", "irukku", "evlo",
@@ -50,8 +53,12 @@ object KaiLanguage {
             "intha", "indha", "irukura", "irukkura", "seru", "seathuko", "serthuko", "sethuko", "kali", "kammi", "panniko", "pannidu")
         // "pay pannitaru", "kuduthutaanga", "anuppinaar": a Tanglish verb form, whatever its ending.
         val tanglishVerb = Regex("""(?:pann|kudu|kodu|anupp|vaang|vang|vandh|thar)[a-z]*|[a-z]+(?:itaan|ittaan|itaar|itaru|ittaru|itaanga|inaan|inaar|itten|anum|kanum)""")
+        // ("5000", "2 bag" to Kai's question: no language of its own — the chat's)
+        if (words.none { it.length >= 3 }) return previous ?: KaiLang.TANGLISH
         if (words.any { it in tanglish || tanglishVerb.matches(it) }) return KaiLang.TANGLISH
-        return if (words.any { it in english }) KaiLang.ENGLISH else KaiLang.TANGLISH
+        if (words.any { it in english }) return KaiLang.ENGLISH
+        // (a first line of them alone reads as before — English)
+        return if (words.any { it in shared }) previous ?: KaiLang.ENGLISH else KaiLang.TANGLISH
     }
 
     /** For entries without words (manual form, photos): Tamil app → Tamil, otherwise Tanglish. */
