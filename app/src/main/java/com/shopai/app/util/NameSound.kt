@@ -63,7 +63,8 @@ object NameSound {
     }
 
     private fun latin(raw: String): Pair<String, String> {
-        var s = raw.lowercase(Locale.ROOT).filter { it in 'a'..'z' }
+        // ("Centre", "Cement", "Lucy": a "c" before e / i / y is an s — "சென்டர்", "சிமெண்ட்")
+        var s = raw.lowercase(Locale.ROOT).filter { it in 'a'..'z' }.replace(Regex("""c(?=[eiy])"""), "s")
         s = s.replace("sh", "s").replace("ch", "s").replace("zh", "l").replace("th", "t").replace("dh", "t")
             .replace("ph", "p").replace("bh", "p").replace("kh", "k").replace("gh", "k").replace("ng", "n")
             .replace("ee", "i").replace("oo", "u").replace("aa", "a").replace("ai", "e").replace("au", "o")

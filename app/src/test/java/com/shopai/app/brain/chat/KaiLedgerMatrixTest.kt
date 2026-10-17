@@ -52,6 +52,13 @@ class KaiLedgerMatrixTest {
         Name("Selvi", "செல்வி", "செல்விக்கு"),
         // A new shop whose person isn't in the books either: the mic's name stays one name in Tamil letters ("மணி டீ ஷாப்").
         Name("Mani Tea Shop", "மணி டீ ஷாப்", "மணி டீ ஷாப்புக்கு"),
+        // Any word after a name is the shop's, no list (owner, 17 Oct 2026: "name-a sonnalum, shop per sonnalum, name plus shop per").
+        Name("Sivalingam Mandi", "சிவலிங்கம் மண்டி", "சிவலிங்கம் மண்டிக்கு"),
+        Name("Sivalingam Kadai", "சிவலிங்கம் கடை", "சிவலிங்கம் கடைக்கு"),
+        Name("Ganesh Medical", "கணேஷ் மெடிக்கல்", "கணேஷ் மெடிக்கலுக்கு"),
+        Name("Sri Murugan Agro Centre", "ஸ்ரீ முருகன் அக்ரோ சென்டர்", "ஸ்ரீ முருகன் அக்ரோ சென்டருக்கு"),
+        // Kumar is in the books: "Kumar Mandi" is asked about with the whole name — the same Kumar, or a new one — never merged.
+        Name("Kumar Mandi", "குமார் மண்டி", "குமார் மண்டிக்கு"),
     )
 
     private val ways = listOf(

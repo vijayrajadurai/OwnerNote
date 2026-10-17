@@ -251,7 +251,9 @@ object KaiCommands {
         // ("Kumar Hotel", "குமார் ஓட்டல்" — owner's phone, 15 Oct 2026)
         "hotel", "hotels", "mess", "bhavan", "restaurant", "cafe", "stall", "ஹோட்டல்", "ஓட்டல்", "மெஸ்", "பவன்", "ரெஸ்டாரண்ட்", "கஃபே", "ஸ்டால்",
         // ("Kumar Tea Shop", "குமார் டீ ஷாப்" — owner, 16 Oct 2026)
-        "shop", "shoppe", "ஷாப்")
+        "shop", "shoppe", "ஷாப்",
+        // "Sivalingam kadai", "சிவலிங்கம் கடை": the Tamil word for shop (never a name by itself — "kadai-la evlo sale?")
+        "kadai", "கடை", "மெடிக்கல்")
 
     /**
      * "குமார் ஓட்டல்-ku 2000 tharanum" with only Kumar in the books: the owner named Kumar's hotel — "குமார் ஓட்டல்", as said — not
@@ -262,7 +264,8 @@ object KaiCommands {
         "ஏஜென்சீஸ்" to "Agencies", "ஏஜென்சி" to "Agency", "மார்ட்" to "Mart", "என்டர்பிரைசஸ்" to "Enterprises", "டிஸ்ட்ரிபியூட்டர்ஸ்" to "Distributors",
         "சூப்பர்மார்க்கெட்" to "Supermarket", "ஹார்டுவேர்ஸ்" to "Hardwares", "டெக்ஸ்டைல்ஸ்" to "Textiles", "மெடிக்கல்ஸ்" to "Medicals",
         "பேக்கரி" to "Bakery", "ஸ்வீட்ஸ்" to "Sweets", "பிரதர்ஸ்" to "Brothers", "ஹோட்டல்" to "Hotel", "ஓட்டல்" to "Hotel", "மெஸ்" to "Mess",
-        "பவன்" to "Bhavan", "ரெஸ்டாரண்ட்" to "Restaurant", "கஃபே" to "Cafe", "ஸ்டால்" to "Stall", "ஷாப்" to "Shop")
+        "பவன்" to "Bhavan", "ரெஸ்டாரண்ட்" to "Restaurant", "கஃபே" to "Cafe", "ஸ்டால்" to "Stall", "ஷாப்" to "Shop",
+        "கடை" to "Kadai", "மெடிக்கல்" to "Medical")
 
     /** The hour word, which is a name too ("Mani") when no number comes before it. */
     private val hourNames = setOf("mani", "மணி")
@@ -276,13 +279,119 @@ object KaiCommands {
     private fun shopKey(word: String): String = word.substringBefore('-').replace(Regex("""(\p{L})ு$"""), "$1்").replace(Regex("""(.)்\1்$"""), "$1்")
 
     /** "ஸ்டோர்" → "Store" for a name kept in English letters; the word as said otherwise. */
-    fun shopWordFor(person: String, word: String, mid: String? = null): String = shopKey(word).let { w ->
-        // (and back: the mic's "ரவி டீ ஷாப்" — a Tamil name and middle word, "ஷாப்" already read as "shop" — stays one name in
-        // Tamil letters; a shop word the owner typed after a Tamil-letter name — "குமார் Hotel" — stays as typed)
+    fun shopWordFor(person: String, word: String, tamilSaid: Boolean = false): String = shopKey(word).let { w ->
+        // (and back: the mic's "ரவி டீ ஷாப்", "சிவலிங்கம் கடைக்கு" — said in Tamil letters, its shop word already read as "shop" /
+        // "kadai" — stays one name in Tamil letters; a shop word the owner typed after a Tamil-letter name in the books —
+        // "குமார் Hotel" — stays as typed)
         val tamil = com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(person)
-        (if (!tamil) englishShopWord[w] ?: w
-            else if (mid != null && com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(mid)) tamilShopWord[w.lowercase(Locale.ROOT)] ?: w else w)
+        (if (!tamil) englishShopWord[w] ?: w else if (tamilSaid) tamilShopWord[w.lowercase(Locale.ROOT)] ?: w else w)
             .replaceFirstChar { it.titlecase(Locale.ROOT) }
+    }
+
+    /** Words said next to a name that are never who it is: time, money ways, fillers, the owner, roles ("ippo", "gpay", "baaki"). */
+    val notQualifiers: Set<String> = setOf(
+        "hmm", "hmmm", "umm", "ahh", "aah", "haan", "ohh", "ayyo", "ayyoo", "illa", "illai", "thappu", "wrong", "late", "lateaa", "latea", "correct", "early", "seekiram", "sikkiram", "usually", "eppavum", "eppavume",
+        "inniku", "innikku", "innaiku", "innaikku", "indru", "naalaikku", "nalaikku", "naalaiku", "nalaiku", "nethu", "nethiku", "today", "tomorrow",
+        "yesterday", "ippo", "ipo", "ippa", "ipa", "appo", "seri", "sari", "ok", "okay", "bro", "boss", "owner", "sir", "madam", "kanakku", "kanakkula",
+        "account", "entry", "credit", "debit", "gpay", "phonepe", "paytm", "upi", "online", "bank", "card", "cheque", "mattum", "dhaan", "than",
+        "thaan", "pudhu", "puthu", "new", "old", "pazhaya", "total", "full", "fulla", "motham", "amount", "rupa", "rupai", "rooba", "ruba", "roobai",
+        "advance", "bill", "kadan", "baaki", "bakki", "paakki", "settle", "clear", "reminder", "phone", "message", "whatsapp", "kai", "hello", "please",
+        "pls", "also", "innoru", "marupadi", "again", "ini", "inimel", "yen", "what", "who", "when", "where", "which", "endha", "entha", "andha",
+        "indha", "intha", "rendu", "moonu", "customer", "supplier", "oda", "ode", "kooda", "kitta", "irukku", "iruku", "gave", "given", "give",
+        "returned", "sent", "send", "transferred", "will", "should", "needs", "need", "must", "took", "bought", "borrowed", "lent", "received",
+        "collected", "settled", "cleared", "owed", "for", "with", "by", "at", "on", "in", "of", "this", "that", "money", "loan", "eduthaan",
+        "return", "refund", "ivlo", "ivvalavu", "evalo", "evvalo", "ewlo", "yevlo", "ethana", "evlavu", "full", "partial", "konjam", "mothama",
+        "எனக்கு", "நான்", "கிட்ட", "இருந்து", "இன்னைக்கு", "நாளைக்கு", "ரூபாய்", "பணம்", "பாக்கி", "கணக்கு", "புது", "பழைய",
+    )
+
+    /** Tanglish verb endings ("kuduthaan", "vaanginen", "tharanum", "vandhuchu") — a verb, never a name's word (names end in
+     *  "-anga", "-chi", "-ttu" too: Ganga, Kanchi, Pattu). */
+    private val verbLike = Regex("""(aan|aaru|aanga|inen|inaan|anum|chu|tten|ten|ணும்|ான்|ார்|ாங்க|ேன்|ச்சு)$""")
+
+    /**
+     * A word that can be part of who the owner named — a person's or a shop's name, whatever the word ("Sivalingam", "Mandi",
+     * "Agro", "மண்டி", and a shop's last word: "kadai", "Hotel") — and not grammar, money, time, the owner, a role, a verb or a
+     * number (owner, 17 Oct 2026: "name-a sonnalum, shop per sonnalum, name plus shop per sonnalum" — never a list of names).
+     */
+    fun nameWord(raw: String): Boolean {
+        val w = raw.substringBefore('-').trim('.', '\'', ',')
+        if (w.isEmpty() || w.any(Char::isDigit) || w.count(Char::isLetter) < 2) return false
+        if (isShopWord(w)) return true
+        val k = w.lowercase(Locale.ROOT)
+        if (k in notNames || k in notQualifiers || k in KaiFeed.notNames || com.shopai.app.brain.chat.KaiEntityResolver.isFunctionWord(k)) return false
+        if (KaiPaymentDirection.of(w) != null || k in KaiFeed.receivedWords || k in KaiFeed.paidWords) return false
+        if (KaiUnderstanding.isNumberWord(k) || verbLike.containsMatchIn(k) || timeSpan.matches(k)) return false
+        return true
+    }
+
+    /** "2 nimishathula", "1 mani nerathula", "3 naal": a span of time, never a name's word. */
+    private val timeSpan = Regex("""(?i)(nimisha(m|thula|ththula|tula|tthula)?|nimidam|nimidathula|neram|nerathula|nerathile|nerathla|naal(ula|la)?|naala|vaaram|vaarathula|""" +
+        """maasam|maasathula|varusham|varushathula|seconds?|minutes?|mins?|hours?|hrs?|days?|weeks?|months?|years?)|(நிமிஷ|நிமிட|நேர|வார|மாச|வருஷ)[\p{L}\p{M}]*""")
+
+    /** A word between a name and a shop's last word ("Kumar Tea Shop", "மணி டீ ஷாப்"): any word but grammar, money, time or a verb. */
+    fun shopNameWord(raw: String): Boolean {
+        val w = raw.substringBefore('-').trim('.', '\'', ',')
+        if (w.isEmpty() || w.any(Char::isDigit) || w.none(Char::isLetter)) return false
+        if (nameWord(w) || isShopWord(w)) return true
+        val k = w.lowercase(Locale.ROOT)
+        return k !in notQualifiers && !com.shopai.app.brain.chat.KaiEntityResolver.isFunctionWord(k) && KaiPaymentDirection.of(w) == null &&
+            k !in KaiFeed.receivedWords && k !in KaiFeed.paidWords && !KaiUnderstanding.isNumberWord(k) && !verbLike.containsMatchIn(k) &&
+            (k !in notNames || k in hourNames)
+    }
+
+    /**
+     * The whole name said: [head] then [tail] (its last word a shop's last word when [lastShop]), in one script — the mic's
+     * "Kumar டீ ஷாப்" with Kumar in the books ([headKnown]) is "Kumar Tea Shop"; "mani டீ shop" with no Mani kept is
+     * "மணி டீ ஷாப்", as said; "Sivalingam மண்டி" with Sivalingam kept is "Sivalingam Mandi".
+     */
+    fun nameOf(head: String, tail: List<String>, lastShop: Boolean, headKnown: Boolean): String {
+        if (tail.isEmpty()) return head.replaceFirstChar { it.titlecase(Locale.ROOT) }
+        val hasTamil = com.shopai.app.brain.tools.KaiSpokenWords::hasTamil
+        // (a head the mic's words became — "mani", "sri", lower-case — goes back to the Tamil said; a name in English letters
+        // — "Vijayalakshmi ஸ்டோர்" — keeps them: "Vijayalakshmi Store")
+        if (!hasTamil(head) && !headKnown && head.first().isLowerCase() && tail.any(hasTamil)) com.shopai.app.brain.tools.KaiSpokenWords.tamilOf(head)?.let { th ->
+            fun ta(w: String) = w.substringBefore('-').let { x -> if (hasTamil(x)) x else com.shopai.app.brain.tools.KaiSpokenWords.tamilOf(x) ?: x }
+            val last = tail.last().substringBefore('-')
+            return (listOf(th) + tail.dropLast(1).map(::ta) + (if (lastShop) shopWordFor(th, last, true) else ta(last))).joinToString(" ")
+        }
+        val last = tail.last().substringBefore('-')
+        val words = tail.dropLast(1).map { middleWordFor(head, it) } + (if (lastShop) shopWordFor(head, last, hasTamil(head)) else middleWordFor(head, last))
+        return (listOf(head) + words).joinToString(" ") { it.replaceFirstChar { c -> c.titlecase(Locale.ROOT) } }
+    }
+
+    /** A Tamil-letter word in English letters, as owners type Tanglish ("மண்டி" → "Mandi", "கடை" → "Kadai") — for a name kept in English. */
+    fun latinOf(tamil: String): String {
+        val cons = mapOf('க' to "k", 'ங' to "ng", 'ச' to "s", 'ஞ' to "nj", 'ட' to "t", 'ண' to "n", 'த' to "th", 'ந' to "n", 'ப' to "p", 'ம' to "m",
+            'ய' to "y", 'ர' to "r", 'ல' to "l", 'வ' to "v", 'ழ' to "zh", 'ள' to "l", 'ற' to "r", 'ன' to "n", 'ஜ' to "j", 'ஷ' to "sh", 'ஸ' to "s", 'ஹ' to "h")
+        val signs = mapOf('ா' to "aa", 'ி' to "i", 'ீ' to "ee", 'ு' to "u", 'ூ' to "oo", 'ெ' to "e", 'ே' to "e", 'ை' to "ai", 'ொ' to "o", 'ோ' to "o", 'ௌ' to "au")
+        val vowels = mapOf('அ' to "a", 'ஆ' to "aa", 'இ' to "i", 'ஈ' to "ee", 'உ' to "u", 'ஊ' to "oo", 'எ' to "e", 'ஏ' to "e", 'ஐ' to "ai", 'ஒ' to "o", 'ஓ' to "o", 'ஔ' to "au")
+        // Voiced after its own nasal ("ண்ட" nd, "ந்த" ndh, "ம்ப" mb, "ங்க" ng, "ஞ்ச" nj) and "ட" between vowels ("கடை" kadai).
+        val voiced = mapOf('க' to "g", 'ச' to "j", 'ட' to "d", 'த' to "dh", 'ப' to "b")
+        val nasalOf = mapOf('க' to 'ங', 'ச' to 'ஞ', 'ட' to 'ண', 'த' to 'ந', 'ப' to 'ம')
+        val out = StringBuilder()
+        var i = 0
+        while (i < tamil.length) {
+            val c = tamil[i]
+            val next = tamil.getOrNull(i + 1)
+            when {
+                c in vowels -> out.append(vowels.getValue(c))
+                c in cons -> {
+                    val afterNasal = i >= 2 && tamil[i - 1] == '்' && tamil[i - 2] == nasalOf[c]
+                    val betweenVowels = c == 'ட' && i >= 1 && tamil[i - 1] != '்' && (tamil[i - 1] in signs || tamil[i - 1] in cons || tamil[i - 1] in vowels) && next != '்'
+                    val doubled = i >= 2 && tamil[i - 1] == '்' && tamil[i - 2] == c
+                    out.append(if (afterNasal || betweenVowels && !doubled) voiced.getValue(c) else if (c == 'ற' && doubled) "" else cons.getValue(c))
+                    if (c == 'ற' && doubled) { out.setLength(out.length - 1); out.append("tr") }
+                    when {
+                        next == '்' -> i++
+                        next != null && next in signs -> { out.append(signs.getValue(next)); i++ }
+                        else -> out.append('a')
+                    }
+                }
+                else -> if (c.isLetterOrDigit()) out.append(c)
+            }
+            i++
+        }
+        return out.toString().replaceFirstChar { it.titlecase(Locale.ROOT) }
     }
 
     /** A word between a name and its shop word, in the name's letters: the mic's "டீ" in "Kumar டீ ஷாப்" is "Tea". */
@@ -296,7 +405,7 @@ object KaiCommands {
         val goods = KaiFeed.goodsNames.firstOrNull { (names, _) -> w in names }?.second?.trim()?.takeIf { ' ' !in it }
         val heard = com.shopai.app.brain.tools.KaiSpokenWords.normalize(w).trim()
             .takeIf { it.length >= 2 && !com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(it) && ' ' !in it }
-        return (service ?: goods ?: heard ?: w).replaceFirstChar { it.titlecase(Locale.ROOT) }
+        return (service ?: goods ?: heard ?: latinOf(w)).replaceFirstChar { it.titlecase(Locale.ROOT) }
     }
 
     private fun shopNamedAfter(text: String, person: String, known: List<String>): String? {
@@ -309,7 +418,7 @@ object KaiCommands {
                     (m.groupValues[1].equals(person, ignoreCase = true) || com.shopai.app.util.NameSound.same(m.groupValues[1], person))
             } ?: return null
         val mid = m.groupValues[2].takeIf { it.isNotEmpty() }?.let { middleWordFor(person, it) }
-        val name = listOfNotNull(person, mid, shopWordFor(person, m.groupValues[3], m.groupValues[2].ifEmpty { null })).joinToString(" ")
+        val name = listOfNotNull(person, mid, shopWordFor(person, m.groupValues[3], com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(m.groupValues[1] + m.groupValues[2]))).joinToString(" ")
         return name.takeIf { n -> known.none { it.equals(n, ignoreCase = true) } }
     }
 
@@ -400,17 +509,24 @@ object KaiCommands {
                 if (!shop && key in notNames || key.length < 2 || key.any(Char::isDigit)) continue
                 // "Sujithukku" read as "Sujithuk" + "ku": the name is "Sujith" (+ "ukku").
                 val name = if (p === patterns[0] && key.endsWith("uk") && key.length >= 6) word.dropLast(2) else word
-                // "Vijayalakshmi Store-ku", "Sri Balaji Agencies kitta": a shop's last word — its name is the words before it too.
-                if (shop) {
-                    val all = text.substring(0, m.range.first).trimEnd().split(Regex("""\s+""")).filter { it.isNotEmpty() }
-                    // ("Mani Tea Shop": "mani" is the hour only after a number — "10 mani" — and a name before a shop's words)
-                    fun nameHere(i: Int) = all[i].let { w -> w.none(Char::isDigit) && w.any(Char::isLetter) &&
-                        (w.lowercase(Locale.ROOT) !in notNames || w.lowercase(Locale.ROOT) in hourNames && all.getOrNull(i - 1)?.any(Char::isDigit) != true) }
-                    val before = all.indices.reversed().takeWhile(::nameHere).reversed().map { all[it] }.takeLast(2)
-                    // (the mic's "ஸ்டோர்" after a name in English letters is that name's way: "Vijayalakshmi Store", as typed)
-                    // ("ரவி டீ ஷாப்புக்கு", "Kumar டீ ஷாப்புக்கு": the word between in the name's letters — "Kumar Tea Shop")
-                    if (before.isNotEmpty()) return (listOf(before.first()) + before.drop(1).map { middleWordFor(before.first(), it) } + shopWordFor(before.first(), shopKey(name), before.getOrNull(1)))
-                        .joinToString(" ") { it.replaceFirstChar { c -> c.titlecase(Locale.ROOT) } }
+                // "Sivalingam Mandi-ku", "Sri Murugan Agro Centre-ku", "Vijayalakshmi Store kitta", "சிவலிங்கம் மண்டிக்கு": the words
+                // right before it that can be a name's are the name too — whatever they are, no list of names or shops (owner,
+                // 17 Oct 2026). A pattern after "call / to / from" names one word.
+                val all = if (p === patterns[1]) emptyList() else text.substring(0, m.range.first).trimEnd().split(Regex("""\s+""")).filter { it.isNotEmpty() }
+                // ("Mani Tea Shop": "mani" is the hour only after a number — "10 mani" — and a name before a shop's words)
+                // (before a shop's last word, any word but grammar: "Kumar Tea Shop", "மணி டீ ஷாப்")
+                fun nameHere(i: Int) = all[i].let { w -> if (shop) shopNameWord(w) && (w.lowercase(Locale.ROOT) !in hourNames || all.getOrNull(i - 1)?.any(Char::isDigit) != true)
+                    else nameWord(w) }
+                val before = all.indices.reversed().takeWhile(::nameHere).reversed().map { all[it] }.takeLast(3)
+                    // (the name starts with a word that can start one — never "Tea Shop" alone)
+                    .dropWhile { !nameWord(it) && !(shop && it.lowercase(Locale.ROOT) in hourNames) }
+                // "kadai-ku 500", "Stores-ku 500" with no name before it names no one.
+                if (shop && before.isEmpty()) continue
+                if (before.isNotEmpty()) {
+                    // (the mic's "ஸ்டோர்" after a name in English letters is that name's way: "Vijayalakshmi Store", as typed;
+                    // "Kumar டீ ஷாப்புக்கு" → "Kumar Tea Shop"; "Sivalingam மண்டிக்கு" → "Sivalingam Mandi")
+                    val head = before.first()
+                    return nameOf(head, before.drop(1) + (if (shop) shopKey(name) else name), shop, known.any { it.equals(head, ignoreCase = true) })
                 }
                 return name.replaceFirstChar { it.titlecase(Locale.ROOT) }
             }

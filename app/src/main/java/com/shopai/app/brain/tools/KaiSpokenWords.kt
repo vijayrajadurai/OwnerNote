@@ -181,7 +181,7 @@ object KaiSpokenWords {
         "சரி" to "seri", "ஓகே" to "ok", "ஆமா" to "aama", "ஆமாம்" to "aama", "இல்ல" to "illa", "இல்லை" to "illa", "சேவ்" to "save",
         "இப்போ" to "ippo", "இப்ப" to "ippa", "இப்பொழுது" to "ippo", "எப்போ" to "eppo", "எப்ப" to "eppa", "எப்படி" to "eppadi",
         "யார்" to "yaar", "யாரு" to "yaaru", "யாருக்கு" to "yaarukku", "யாருகிட்ட" to "yaarukitta", "யாரெல்லாம்" to "yaarellam",
-        "கொஞ்சம்" to "konjam", "ஃபுல்" to "full", "ஃபுல்லா" to "fulla", "எல்லாத்தையும்" to "ellathaiyum", "முடங்கியிருக்கு" to "mudangi irukku", "முடங்கி" to "mudangi", "விக்காத" to "vikkaadha", "மெதுவா" to "medhuva", "அறிக்கை" to "arikkai", "விக்குற" to "vikkura", "போகல" to "pogala", "கம்மி" to "kammi", "குறைச்சிடு" to "kuraichidu", "மைனஸ்" to "minus", "கழி" to "kali", "லெஸ்" to "less", "இருந்தா" to "iruntha", "இருக்குற" to "irukura", "சேரு" to "seru", "சேத்துக்கோ" to "seathuko", "ஸ்டாக்க" to "stock ah", "போல" to "pola", "போகாத" to "pogaadha", "போவுது" to "pogudhu", "ஐட்டம்" to "item", "ஐட்டங்கள்" to "items", "நிக்குது" to "nikkudhu", "நிக்கிற" to "nikkira", "நிக்குற" to "nikkura", "விக்குது" to "vikkudhu", "ரிப்போர்ட்" to "report", "பர்ஃபார்மன்ஸ்" to "performance", "பெர்ஃபார்மன்ஸ்" to "performance", "எல்லாத்தயும்" to "ellathaiyum", "முழுசா" to "muzhusa", "ரூபாய்" to "rupees", "ரூபா" to "rupees",
+        "கொஞ்சம்" to "konjam", "ஃபுல்" to "full", "ஃபுல்லா" to "fulla", "எல்லாத்தையும்" to "ellathaiyum", "முடங்கியிருக்கு" to "mudangi irukku", "முடங்கி" to "mudangi", "விக்காத" to "vikkaadha", "மெதுவா" to "medhuva", "அறிக்கை" to "arikkai", "விக்குற" to "vikkura", "போகல" to "pogala", "கம்மி" to "kammi", "ஸ்ரீ" to "sri", "குறைச்சிடு" to "kuraichidu", "மைனஸ்" to "minus", "கழி" to "kali", "லெஸ்" to "less", "இருந்தா" to "iruntha", "இருக்குற" to "irukura", "சேரு" to "seru", "சேத்துக்கோ" to "seathuko", "ஸ்டாக்க" to "stock ah", "போல" to "pola", "போகாத" to "pogaadha", "போவுது" to "pogudhu", "ஐட்டம்" to "item", "ஐட்டங்கள்" to "items", "நிக்குது" to "nikkudhu", "நிக்கிற" to "nikkira", "நிக்குற" to "nikkura", "விக்குது" to "vikkudhu", "ரிப்போர்ட்" to "report", "பர்ஃபார்மன்ஸ்" to "performance", "பெர்ஃபார்மன்ஸ்" to "performance", "எல்லாத்தயும்" to "ellathaiyum", "முழுசா" to "muzhusa", "ரூபாய்" to "rupees", "ரூபா" to "rupees",
         // ---- stock (what typed Tanglish already says) ----
         "வித்துச்சு" to "vithuchu", "வித்துடுச்சு" to "vithiruchu", "வித்துட்டேன்" to "vithutten", "வித்தேன்" to "vithen", "விக்கல" to "vikkala",
         "ஆயிடுச்சு" to "aagiduchu", "ஆகிடுச்சு" to "aagiduchu", "ஆயிருச்சு" to "aagiduchu", "உடைஞ்சிடுச்சு" to "udanjiduchu", "உடைஞ்சுச்சு" to "udanjuchu",
@@ -270,6 +270,9 @@ object KaiSpokenWords {
     /** Words of goods names (KaiFeed): "விளக்கு" (lamp) of "மின் விளக்கு" ends like "-க்கு" but is never "to விள". */
     private val goodsWords: Set<String> by lazy { KaiFeed.goodsNames.flatMap { (names, _) -> names.filter(::hasTamil).flatMap { it.split(' ') } }.toSet() }
 
+    /** A Tanglish word back in the Tamil letters the mic writes it in ("mani" → "மணி"), else as Kai's voice spells it. */
+    fun tamilOf(latin: String): String? = latin.lowercase().let { l -> words.firstOrNull { (_, v) -> v == l }?.first ?: KaiTamilVoice.tamil(l) }
+
     private fun wordOf(w: String): String = wordMap[w] ?: if (w in goodsWords) w else dative(w)?.let { d -> wordMap[d.substringBefore('-')]?.let { "$it-${d.substringAfter('-')}" } ?: d } ?: w
 
     /**
@@ -330,7 +333,7 @@ object KaiSpokenWords {
                 w.startsWith(t.dropLast(1)) && w.last() in "ாிீுூெேைொோ" }.singleOrNull()?.let { return@replace it + m.groupValues[2] }
             KaiFeed.productNames[w]?.let { english -> if (shopWords.any { it.equals(english, ignoreCase = true) }) return@replace english + m.groupValues[2] }
             // A shop name's last word ("ஷாப்", the mic's "ஷாபு-ku") is only ever a shop word of the shop's names — never "Soap".
-            if (KaiCommands.isShopWord(w)) return@replace nameWords.filter { n -> KaiCommands.isShopWord(n) && (spelled(n) == w || sounds(w, n)) }.singleOrNull()
+            if (KaiCommands.isShopWord(w)) return@replace nameWords.filter { n -> KaiCommands.isShopWord(n) && (spelled(n) == w || startsAlike(w, n) && (sounds(w, n) || sounds(w, soft(n)))) }.singleOrNull()
                 ?.let { it + m.groupValues[2] } ?: m.value
             nameWords.filter { n -> spelled(n) == w || startsAlike(w, n) && (sounds(w, n) || sounds(w, soft(n))) }.singleOrNull()
                 ?.let { return@replace it + m.groupValues[2] }

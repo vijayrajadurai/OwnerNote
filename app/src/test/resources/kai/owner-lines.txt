@@ -299,3 +299,12 @@ ENTRY  | Kumar enakku 1000 tharanum                     | CREDIT Kumar 1000
 # Stock both ways round and "kammi pannu" (owner, 16 Oct 2026: "same stock-kum — logic correct-a irukkanum").
 STOCK  | 2 pieces Lux vandhuchu                         | Lux Soap 62
 STOCK  | Rice 2 kg kammi pannu                          | Rice 248
+
+# Any name, a shop's name, or a name with its shop — no list of names or shop words (owner, 17 Oct 2026: "Sivalingam kadaiku or
+# store ku or hotel ku or Mandi ku or shop ku or medical ku 5000 tharanum / kudukanum / vanganum").
+ENTRY  | Sivalingam mandi ku 5000 tharanum              | DEBIT Sivalingam Mandi 5000
+ENTRY  | Sivalingam kadai ku 5000 kudukkanum            | DEBIT Sivalingam Kadai 5000
+ENTRY  | naan Sivalingam medical ku 5000 tharanum       | DEBIT Sivalingam Medical 5000
+ENTRY  | Sivalingam mandi enakku 5000 tharanum          | CREDIT Sivalingam Mandi 5000
+ENTRY  | Sivalingam kadai kitta 5000 vaanganum          | CREDIT Sivalingam Kadai 5000
+ENTRY  | Sri Murugan Agro Centre ku 5000 kudukkanum     | DEBIT Sri Murugan Agro Centre 5000
