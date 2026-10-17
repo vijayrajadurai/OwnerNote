@@ -19,6 +19,8 @@ data class BillLineItem(
     val batchNo: String? = null,
     /** The row's expiry ("12/2026" → 31 Dec 2026, the month's last day), null when none. */
     val expiry: java.time.LocalDate? = null,
+    /** The row number printed before the name, when the reader took it off ("12 Se Teflon Tape 3919 …" → 12). */
+    val rowNo: Int? = null,
 )
 
 /** CGST / SGST (or UTGST) / IGST as printed; [suspect] when the lines disagree with each other. */
@@ -794,8 +796,10 @@ object BillTextParser {
         }
         val description = desc.takeIf { line.contains(it) } ?: tidy(description0).trimEnd(' ', 'i', 'l', '|')
         var hsn: String? = null
+        var rowNo: Int? = null
         hsnInDescription.find(desc)?.let { m ->
             hsn = m.groupValues[2]
+            rowNo = Regex("""^(\d{1,3})[.)]?\s+(?=\p{L})""").find(m.groupValues[1])?.groupValues?.get(1)?.toIntOrNull()
             desc = m.groupValues[1].replace(Regex("""^\d{1,3}[.)]?\s+(?=\p{L})"""), "").trim(' ', '-', ':', '.', '|', '*')
         }
         // Numbers after the description (after the HSN code), in order; rates ("18 %") are not quantities or prices.
@@ -843,7 +847,7 @@ object BillTextParser {
                 desc = desc.substring(0, m.range.first).trim()
             }
         }
-        return BillLineItem(desc, amount, hsn, quantity, unit, unitPrice, batchNo, expiry)
+        return BillLineItem(desc, amount, hsn, quantity, unit, unitPrice, batchNo, expiry, rowNo)
     }
 
     /** "PT2501 12/2026", "$02503 03/2026", "12/2026": a row's batch code (letters and digits) and its expiry month / year. */

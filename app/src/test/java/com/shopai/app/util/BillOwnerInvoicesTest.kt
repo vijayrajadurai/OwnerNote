@@ -60,8 +60,8 @@ class BillOwnerInvoicesTest {
         "Red Bricks (1st Quality) Local | 1000 nos | 8.00", "M-Sand Local | 2 lorry | 6500.00", "PVC Pipe 1 inch (3 mtr) Supreme | 50 nos | 120.00",
         "Electrical Wire 1.5 sq mm (90 mtr) Finolex | 10 coil | 850.00", "Modular Switch 6A (10 pcs box) Anchor | 5 box | 420.00",
         "LED Bulb 12W Havells | 20 nos | 110.00", "Brass Tap 15 mm Jaguar | 10 nos | 320.00",
-        "Apex Exterior Emulsion 20 Ltr Asian Paints | 4 drum | 2850.00", "Tk GI Nails 2 inch (1 kg) Local | 10 kg | 90.00",
-        "Se Teflon Tape Astral | 50 nos | 15.00",
+        "Apex Exterior Emulsion 20 Ltr Asian Paints | 4 drum | 2850.00", "GI Nails 2 inch (1 kg) Local | 10 kg | 90.00",
+        "Teflon Tape Astral | 50 nos | 15.00",
     )
 
     private val textile = listOf(
@@ -134,6 +134,36 @@ class BillOwnerInvoicesTest {
         val leg = BillStock.lines(BillTextParser.parse(text(5, 4)).items, shop).single { it.itemName.startsWith("Leggings") }
         assertEquals("t1", leg.product?.id)
         assertEquals(0, BigDecimal("100").compareTo(leg.qty))
+    }
+
+    /**
+     * The photo column's two letters ("Se", "Tk") leave a name; names that start with a short word keep it ("Dr Oetker", "Mr Muscle",
+     * "St Ives"), and so do capitals ("GI Pipe", "TV Stand"). A name the shop has is kept whole, whatever its first word.
+     */
+    @Test fun aPhotoColumnsLettersLeaveTheName() {
+        val bill = """
+            S.No Item Name Qty Unit Rate Amount
+            1 Dr Oetker Mayonnaise 2 Pcs 120.00 240.00
+            2 Mr Muscle Cleaner 3 Pcs 90.00 270.00
+            3 GI Pipe 1 inch 5 Nos 150.00 750.00
+            4 Qm Harpic Toilet Cleaner 6 Pcs 85.00 510.00
+            5 St Ives Face Wash 2 Pcs 199.00 398.00
+            6 Jo Malone Perfume 1 Pcs 900.00 900.00
+            7 Ab Lux Soap Bar 10 Pcs 30.00 300.00
+            8 TV Stand Wooden 1 Nos 1,500.00 1,500.00
+            Grand Total 4,868.00
+        """.trimIndent()
+        val shop = listOf(ProductRef("j1", "Jo Malone Perfume", "PCS", BigDecimal("0")), ProductRef("l1", "Lux Soap Bar", "PCS", BigDecimal("0")))
+        val names = BillStock.lines(BillTextParser.parse(bill).items, shop).map { it.itemName }
+        assertEquals(listOf("Dr Oetker Mayonnaise", "Mr Muscle Cleaner", "GI Pipe 1 inch", "Harpic Toilet Cleaner", "St Ives Face Wash",
+            "Jo Malone Perfume", "Lux Soap Bar", "TV Stand Wooden"), names)
+        // A row with no row number or speck before it: its first word is not guessed away for a new product…
+        val plain = BillStock.lines(BillTextParser.parse("Item Qty Rate Amount\nSe Teflon Tape 5 Nos 15.00 75.00\nGrand Total 75.00").items, emptyList())
+        assertEquals("Se Teflon Tape", plain.single().itemName)
+        // …and when the shop has "Teflon Tape", that's the product.
+        val known = BillStock.lines(BillTextParser.parse("Item Qty Rate Amount\nSe Teflon Tape 5 Nos 15.00 75.00\nGrand Total 75.00").items,
+            listOf(ProductRef("t1", "Teflon Tape", "NOS", BigDecimal("0"))))
+        assertEquals("t1", known.single().product?.id)
     }
 
     /** Words not in Kai's lists: a unit it doesn't know is asked (never the default unit), a form word it doesn't know keeps the name. */
