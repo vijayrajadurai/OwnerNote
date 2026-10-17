@@ -128,11 +128,35 @@ object BillStock {
         return kept.withIndex().map { (i, it) ->
             val d = if (numbered && serialOf(it.description).let { n -> n != null && n in (i + 1 - 2)..(i + 1 + 2) })
                 it.description.replaceFirst(Regex("""^\s*\d{1,3}\s+"""), "") else it.description
-            it.copy(description = cleanName(d), unit = it.unit?.let { u -> if (u == "pes" || u == "pce") "pcs" else u })
+            it.copy(description = withoutIconLetters(it.description, it.rowNo != null, cleanName(d), products), unit = it.unit?.let { u -> if (u == "pes" || u == "pce") "pcs" else u })
         }
             .filter { it.description.count(Char::isLetter) >= 2 }
             .map { line(it, products) }
     }
+
+    /**
+     * Two letters a product-photo column left before the name ("12 Se Teflon Tape", "an Tk GI Nails" — owner's hardware bill,
+     * 17 Oct 2026). A name the shop already has is kept as it is. Otherwise, when dropping the two letters gives one of the shop's
+     * products, they go; for a new product they go only right after a row number or a speck, and only as "Se" / "Tk" (a capital
+     * and a small letter) — "GI", "TV" stay, and so do the short words names start with ("Dr Oetker", "Mr Muscle", "St Ives").
+     */
+    private fun withoutIconLetters(raw: String, numbered: Boolean, name: String, products: List<ProductRef>): String {
+        val w = name.split(' ')
+        if (w.size < 3) return name
+        val first = w.first()
+        val rest = w.drop(1).joinToString(" ")
+        val whole = match(name, products)
+        // "Jo Malone Perfume" is the shop's own name: kept. "Ab Lux Soap Bar" found "Lux Soap Bar" anyway: the letters go.
+        if (whole != null) return if (!whole.name.startsWith(first, ignoreCase = true) && match(rest, products)?.id == whole.id) rest else name
+        if (first.length !in 1..2 || !first.all(Char::isLetter) || first.all(Char::isUpperCase)) return name
+        if (match(rest, products) != null) return rest
+        val afterMark = numbered || !raw.trim().startsWith(first)
+        val iconLike = first.length == 2 && first[0].isUpperCase() && first[1].isLowerCase() && first.lowercase() !in nameStarts
+        return if (afterMark && iconLike && w[1].first().let { it.isUpperCase() || it.isDigit() }) rest else name
+    }
+
+    /** Short words a product name starts with — never a photo column's letters. */
+    private val nameStarts = setOf("dr", "mr", "ms", "st", "jr", "sr", "co", "no", "my", "oh", "ok", "go", "hi", "up", "on", "in", "of", "de", "la", "le", "el", "al")
 
     private fun serialOf(text: String): Int? = Regex("""^\s*(\d{1,3})\s+\S""").find(text)?.groupValues?.get(1)?.toIntOrNull()
 
