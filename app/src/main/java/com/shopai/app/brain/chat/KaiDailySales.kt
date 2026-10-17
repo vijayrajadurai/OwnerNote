@@ -235,7 +235,10 @@ class KaiDailySales(
         // As the mic writes the name of a service the owner added ("ஹேர் போட்டாக்ஸ்" = their Hair botox): that name, by its sound.
         // The mic's Tamil letters for the owner's own Menu names, by sound, whatever language they typed them in ("ஃபேஸ் மசாஜ்" =
         // their "Face massage", "தலை முடி வெட்டு" = their "Thalai mudi vettu") — their Menu before Kai's own words (owner, 16 Oct 2026).
-        val sounded = ownBySound(menuBySound(raw, prices.keys, people), prices.keys)
+        // A part of the owner's Menu name, their spelling or not, typed or by mic — "cutting cambo", "hair cutting combo", the mic's
+        // "கட்டிங் காம்போ" / "ஹேர் கட்டிங் காம்பவுண்ட்" / "ஹால் சொன்ன" — is that item, before Kai's own words (owner's phone, 17 Oct 2026).
+        val sounded = menuByPart(ownBySound(menuBySound(raw, prices.keys, people), prices.keys), prices.keys)
+            .let { if (it == raw) menuByPart(text, prices.keys).takeIf { t -> t != text } ?: raw else it }
         val heardMenu = sounded != raw
         val namesPerson = people.any { p -> p.isNotBlank() && Regex("""(?i)(?<![\p{L}])${Regex.escape(p)}(?![\p{L}])""").containsMatchIn(text) }
 
@@ -308,6 +311,12 @@ class KaiDailySales(
         val n = services.map { it.name }.distinct().joinToString(", ")
         val first = services.first().name
         waiting = null
+        // An item of the owner's Menu with that name in it ("Hair cutting" said, "Hair cutting cambo" kept): named, never sold by itself.
+        val near = prices.entries.firstOrNull { (o, _) -> first.split(' ').all { w -> o.split(Regex("""\s+""")).any { sameSound(w, it) } } && !o.equals(first, ignoreCase = true) }
+        if (near != null) return turn(lang, KaiMood.CLARIFY,
+            ta = "ஓனர், $first உங்க மெனுவுல இல்ல. மெனுவுல “${near.key}” (${rupees(near.value)}) இருக்கு — அதுன்னா “${near.key} ஒன்னு”-ன்னு சொல்லுங்க. எதுவும் போடல.",
+            tl = "Owner, $first unga menu-la illa. Menu-la “${near.key}” (${rupees(near.value)}) irukku — adhu-na “${near.key} onnu”-nu sollunga. Edhuvum podala.",
+            en = "Owner, $first isn't on your Menu. “${near.key}” (${rupees(near.value)}) is — if it's that, say “${near.key} onnu”. Nothing was added.")
         return turn(lang, KaiMood.CLARIFY,
             ta = "ஓனர், $n உங்க மெனுவுல இல்ல — Daily Sales Note-ல எதுவும் போடல. நீங்க $n பண்றீங்கன்னா “மெனு: $first 150” மாதிரி விலையோட சொல்லுங்க, இல்ல Daily Sales Note → Menu-ல சேருங்க.",
             tl = "Owner, $n unga menu-la illa — Daily Sales Note-la edhuvum podala. Neenga $n pannureenga-na “menu: $first 150” maadhiri vilaiyoda sollunga, illa Daily Sales Note → Menu-la serunga.",
@@ -319,6 +328,64 @@ class KaiDailySales(
         val latin = own.filter { n -> !com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(n) && n.any(Char::isLetter) }
         if (latin.isEmpty() || !com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(raw)) return raw
         return runCatching { com.shopai.app.brain.tools.KaiProductSound.withProducts(raw, latin, people) }.getOrDefault(raw)
+    }
+
+    /** Two words that sound the same: across scripts by sound ("காம்போ" / "cambo"), in English letters by their consonants ("combo" / "cambo"). */
+    private fun sameSound(said: String, word: String): Boolean {
+        val a = said.trim('.', ',', '!', '?')
+        if (a.equals(word, ignoreCase = true)) return true
+        val tamil = com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(a)
+        if (tamil != com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(word)) return com.shopai.app.util.NameSound.same(a, word) ||
+            tamil && com.shopai.app.brain.tools.KaiProductSound.sameWord(a, word)
+        val k = com.shopai.app.util.NameSound.key(a)
+        // ("combo" / "cambo": three consonants the same; two only with the same vowels — "cut" is no "cot")
+        return k == com.shopai.app.util.NameSound.key(word) && (k.length >= 3 || k.length == 2 && com.shopai.app.util.NameSound.vowels(a) == com.shopai.app.util.NameSound.vowels(word))
+    }
+
+    /** The mic's slip on a name's last word: "காம்பவுண்ட்" (compound) for "cambo" — it starts with all of the name's sound (three consonants or more). */
+    private fun startsAsSound(said: String, word: String): Boolean {
+        val k = com.shopai.app.util.NameSound.key(word)
+        return k.length >= 3 && com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(said) != com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(word) &&
+            com.shopai.app.util.NameSound.key(said).startsWith(k)
+    }
+
+    private val sOnnu = Regex("""^(?:ச|ஸ)(?:ொ|ோ)(?:ன்ன|ண்ண|ன்னு|ண்ணு)\p{M}*$""")
+
+    /**
+     * [line] with the owner's whole Menu name put in where they said two words or more of it in a row (or a one-word name),
+     * each word as typed or by its sound — "cutting cambo onnu" → "Hair cutting cambo onnu", "ஹேர் கட்டிங் காம்பவுண்ட்" → "Hair
+     * cutting cambo". Only one item may fit; a name the line already says whole is left to the usual reading. The mic's "ஹால்
+     * சொன்ன" ("Halls onnu" with its s on the next word) is that item and "onnu".
+     */
+    private fun menuByPart(line: String, own: Collection<String>): String {
+        val names = own.filter { n -> !com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(n) && n.any(Char::isLetter) }
+        if (names.isEmpty()) return line
+        val words = line.trim().split(Regex("""\s+""")).filter { it.isNotEmpty() }
+        if (names.any { n -> " ${line.lowercase(Locale.ROOT)} ".contains(" ${n.lowercase(Locale.ROOT)} ") }) return line
+        data class Fit(val name: String, val from: Int, val to: Int, val size: Int)
+        val fits = mutableListOf<Fit>()
+        for (n in names) {
+            val nw = n.trim().split(Regex("""\s+"""))
+            for (i in words.indices) for (j in nw.indices) {
+                var k = 0
+                while (i + k < words.size && j + k < nw.size && sameSound(words[i + k], nw[j + k])) k++
+                // (the mic's slip on the name's last word, after the words before it matched)
+                if (k >= 1 && i + k < words.size && j + k == nw.size - 1 && startsAsSound(words[i + k], nw[j + k])) k++
+                // (up to the name's last word — "cutting cambo" is the Hair cutting cambo; "hair cutting" alone is not: Kai asks)
+                if ((k >= 2 || k == 1 && nw.size == 1) && j + k == nw.size) fits += Fit(n, i, i + k, k)
+            }
+        }
+        // "ஹால் சொன்ன": "Halls" with its s said on "onnu".
+        if (fits.isEmpty()) for (i in 0 until words.size - 1) if (sOnnu.matches(words[i + 1])) {
+            val joined = words[i] + "ஸ்"
+            names.filter { n -> n.trim().split(Regex("""\s+""")).size == 1 && com.shopai.app.util.NameSound.same(joined, n) }.singleOrNull()?.let { n ->
+                return (words.take(i) + n + "onnu" + words.drop(i + 2)).joinToString(" ")
+            }
+        }
+        val best = fits.maxOfOrNull { it.size } ?: return line
+        val top = fits.filter { it.size == best }
+        val fit = top.distinctBy { it.name }.singleOrNull() ?: return line
+        return (words.take(fit.from) + fit.name + words.drop(fit.to)).joinToString(" ")
     }
 
     /** [raw] with the owner's own service names put in where the mic wrote them in Tamil letters (only theirs — Kai's words are listed). */
