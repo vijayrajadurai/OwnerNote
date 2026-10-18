@@ -1508,6 +1508,7 @@ NewonX — Owner Note. ஆப்பில் உதவி & ஆதரவு.]]><
     <string name="home_morning_title">காலை வேலை</string>
     <string name="home_morning_sub">Kai இன்னைக்கு வேலை தயார் பண்ணுவார்</string>
     <string name="home_morning_count">இன்னைக்கு %1$d வேலை</string>
+    <string name="home_ask_kai">Kai-கிட்ட கேளுங்க</string>
     <string name="home_vanakkam">வணக்கம், ஓனர்</string>
     <string name="home_today_line">இன்னைக்கு %1$s வசூல் பண்ணலாம், %2$s கொடுக்கணும்.</string>
     <string name="home_today_line_clear">இன்னைக்கு வசூல், கொடுக்கல் எதுவும் இல்ல.</string>

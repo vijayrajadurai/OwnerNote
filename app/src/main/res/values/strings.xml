@@ -1563,6 +1563,7 @@ NewonX — Owner Note. Use Help & Support in the app.]]></string>
     <string name="home_morning_title">Morning Work</string>
     <string name="home_morning_sub">Kai innaikku velai ready pannuvaar</string>
     <string name="home_morning_count">%1$d velai innaiku</string>
+    <string name="home_ask_kai">Kai-kitta kelunga</string>
     <string name="home_vanakkam">Vanakkam, Owner</string>
     <string name="home_today_line">Innaiku %1$s vasool pannalaam, %2$s kudukkanum.</string>
     <string name="home_today_line_clear">Innaiku vasool, kudukkal edhuvum illa.</string>

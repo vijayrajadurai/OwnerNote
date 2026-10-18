@@ -325,13 +325,24 @@ fun HomeScreen(
             ) {
                 com.shopai.app.ui.home.HomeHeader(shopName, dayLabel, unreadReminders,
                     onBell = { onNavigate(Routes.Reminders) }, onProfile = { onNavigate(Routes.Profile) })
-                com.shopai.app.ui.home.HomeGreeting(
-                    stringResource(R.string.home_vanakkam),
-                    if (toShop.late + toShop.today > 0 || toPay.late + toPay.today > 0) {
-                        stringResource(R.string.home_today_line, formatInr(toShop.late + toShop.today), formatInr(toPay.late + toPay.today))
-                    } else {
-                        stringResource(R.string.home_today_line_clear)
+                // Kai standing, as in Kai chat: greets, speaks the brief (mouth moving), then rests with today's line.
+                com.shopai.app.ui.home.KaiHero(
+                    title = stringResource(R.string.home_vanakkam),
+                    line = when {
+                        kaiBrief != null -> kaiBrief!!.display
+                        toShop.late + toShop.today > 0 || toPay.late + toPay.today > 0 ->
+                            stringResource(R.string.home_today_line, formatInr(toShop.late + toShop.today), formatInr(toPay.late + toPay.today))
+                        else -> stringResource(R.string.home_today_line_clear)
                     },
+                    state = when {
+                        kaiBriefDone -> KaiState.IDLE
+                        kaiSpeaking -> KaiState.SPEAKING
+                        else -> KaiState.GREETING
+                    },
+                    mouthLevel = if (kaiBriefDone) 0f else kaiMouth,
+                    speakingAs = kaiBrief?.mood?.state(),
+                    askLabel = stringResource(R.string.home_ask_kai),
+                    onAsk = { onNavigate(Routes.KaiChat) },
                 )
                 if (loading && customers.isEmpty() && suppliers.isEmpty()) {
                     CircularProgressIndicator(

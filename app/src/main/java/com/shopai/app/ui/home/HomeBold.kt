@@ -9,7 +9,6 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -25,7 +24,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -48,6 +46,7 @@ import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Payments
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.Storefront
 import androidx.compose.material.icons.rounded.SouthWest
 import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material.icons.rounded.WbSunny
@@ -66,9 +65,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -139,13 +136,9 @@ fun HomeHeader(shopName: String, day: String, unread: Int, onBell: () -> Unit, o
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(
             Modifier.size(42.dp).clip(RoundedCornerShape(14.dp))
-                .background(Brush.linearGradient(listOf(Color(0xFFFFD66B), Color(0xFFFF9F43)))).clickable { onProfile() },
-            contentAlignment = Alignment.TopCenter,
-        ) {
-            // Kai's whole picture, wide enough that his face fills the tile (the rest is cut by the tile).
-            Image(painterResource(R.drawable.kai_full), contentDescription = null, contentScale = ContentScale.Fit,
-                modifier = Modifier.requiredSize(width = 72.dp, height = 116.dp).offset(y = 39.dp))
-        }
+                .background(Brush.verticalGradient(listOf(HomeColors.GreenTop, HomeColors.GreenBottom))).clickable { onProfile() },
+            contentAlignment = Alignment.Center,
+        ) { Icon(Icons.Rounded.Storefront, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp)) }
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
             Text(shopName, color = HomeColors.Ink, fontSize = 17.sp, fontWeight = FontWeight.Black, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -171,12 +164,40 @@ fun SquareButton(icon: ImageVector, tint: Color, onClick: () -> Unit, size: Dp =
     ) { Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(21.dp)) }
 }
 
-/** "Vanakkam, Owner" and Kai's one line for today. */
+/**
+ * Kai standing, his whole body, beside "Vanakkam, Owner" and what he says today (owner, 18 Oct 2026: "Kai chat-la Kai eppadi
+ * irukkaano adha maadhiri"). The same live Kai as in Kai chat: he greets, his mouth moves while he speaks the brief, then he rests.
+ * Tapping opens Kai chat.
+ */
 @Composable
-fun HomeGreeting(title: String, line: String?) {
-    Column(Modifier.padding(top = 14.dp, bottom = 12.dp)) {
-        Text(title, color = HomeColors.Ink, fontSize = 26.sp, fontWeight = FontWeight.Black, lineHeight = 30.sp)
-        if (!line.isNullOrBlank()) Text(line, color = Color(0xFF3B3550), fontSize = 13.5.sp, lineHeight = 19.sp, modifier = Modifier.padding(top = 4.dp))
+fun KaiHero(
+    title: String,
+    line: String?,
+    state: com.shopai.app.ui.kai.KaiState,
+    mouthLevel: Float,
+    speakingAs: com.shopai.app.ui.kai.KaiState?,
+    askLabel: String,
+    onAsk: () -> Unit,
+) {
+    Row(
+        Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 12.dp).whiteCard(RoundedCornerShape(28.dp)).clickable { onAsk() }
+            .padding(start = 4.dp, end = 14.dp, top = 10.dp, bottom = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        com.shopai.app.ui.kai.KaiCharacter(state = state, mouthLevel = mouthLevel, speakingAs = speakingAs, size = 128.dp)
+        Spacer(Modifier.width(6.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, color = HomeColors.Ink, fontSize = 22.sp, fontWeight = FontWeight.Black, lineHeight = 26.sp)
+            if (!line.isNullOrBlank()) Text(
+                line, color = Color(0xFF2A2440), fontSize = 13.5.sp, lineHeight = 19.sp, maxLines = 5, overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 6.dp).clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomEnd = 16.dp, bottomStart = 4.dp))
+                    .background(Color(0xFFF4F2F8)).padding(horizontal = 11.dp, vertical = 9.dp),
+            )
+            Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(askLabel, color = HomeColors.LeafDark, fontSize = 12.5.sp, fontWeight = FontWeight.ExtraBold)
+                Icon(Icons.Rounded.ChevronRight, contentDescription = null, tint = HomeColors.LeafDark, modifier = Modifier.size(15.dp))
+            }
+        }
     }
 }
 
