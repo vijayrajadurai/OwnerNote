@@ -185,6 +185,16 @@ object KaiStock {
     /** [text] as product names are compared: a size however written or said, one way ("16A" = "16 amp", "half inch" = "0.5 inch"). */
     fun sizeKey(text: String): String = lowerOf(KaiSpokenWords.normalize(text))
 
+    /** "onnara" 1½, "rendara" 2½, "moonara" 3½ … "pathara" 10½; "onnekaal" 1¼, "rendekaal" 2¼ (Tanglish as typed and as normalize writes the mic's). */
+    private val halfAndMore: Map<String, String> by lazy { listOf("onn" to 1, "rend" to 2, "moon" to 3, "naal" to 4, "anj" to 5, "aar" to 6, "ezh" to 7, "ett" to 8, "pathth" to 10, "path" to 10)
+        .flatMap { (stem, n) -> listOf("${stem}ara" to "$n.5", "${stem}arai" to "$n.5", "${stem}ekaal" to "$n.25", "${stem}ekal" to "$n.25") }
+        .plus(listOf("onrarai" to "1.5", "onrara" to "1.5", "irandarai" to "2.5", "moonrarai" to "3.5", "naalarai" to "4.5", "aindharai" to "5.5", "onnaekaal" to "1.25", "onnegaal" to "1.25", "onrekaal" to "1.25"))
+        .toMap() }
+
+    private val fractionCount: Regex by lazy {
+        Regex("""(?<![\p{L}])(${halfAndMore.keys.sortedByDescending { it.length }.joinToString("|")})\s+(?=(?:kilo|kg|litre|liter|ltr|meter|metre|mtr|m|adi|feet|ft|dozen|box|bag|moota|packet|pieces|pcs)(?![\p{L}]))""")
+    }
+
     /**
      * A size however it is written or said, one way (owner's hardware stock master, 13 Oct 2026): "16A" / "16 amp" / "16 amps",
      * "1/2 inch" / "half inch" / "arai inch", "3/4" / "mukkal", "1 1/4" / "onnekaal" = 1.25, "1 1/2" / "onnara" = 1.5, "1 L" /
@@ -207,6 +217,17 @@ object KaiStock {
             .replace(Regex("""(?<![\p{L}])(?:onnekaal|onnekal|onrekaal|onnaekaal|onnegaal)\s+$inch"""), "1.25 ")
             .replace(Regex("""(?<![\p{L}])(?:onnara|onnarai|onrarai|onrara)\s+$inch"""), "1.5 ")
             .replace(Regex("""(?<![\p{L}])(?:rendara|rendarai|irandarai)\s+$inch"""), "2.5 ")
+            // The owner's other fractions, with any unit (owner, 19 Oct 2026: "Sunflower Oil arai litre", "Sugar onnara kilo",
+            // "Cotton cloth rendara meter"): "onnara" = 1½, "rendara" = 2½ … "kaal" = ¼, "mukkaal" = ¾, "arai" = ½ — a litre's part
+            // in ml (as a kilo's is in g), any other unit as a decimal. Never a word Kai can't read as a number.
+            .replace(Regex("""(?<![\p{L}])(?:arai|half|ara)\s+(?:litre|liter|ltr|lit)(?![\p{L}])"""), "500 ml")
+            .replace(Regex("""(?<![\p{L}])(?:kaal|quarter)\s+(?:litre|liter|ltr|lit)(?![\p{L}])"""), "250 ml")
+            .replace(Regex("""(?<![\p{L}])(?:mukkal|mukkaal)\s+(?:litre|liter|ltr|lit)(?![\p{L}])"""), "750 ml")
+            .replace(fractionCount) { m ->
+                halfAndMore.getValue(m.groupValues[1]) + " " }
+            .replace(Regex("""(?<![\p{L}])(?:arai|half|ara)\s+(?=(?:meter|metre|mtr|adi|feet|ft|dozen)(?![\p{L}]))"""), "0.5 ")
+            .replace(Regex("""(?<![\p{L}])(?:kaal|quarter)\s+(?=(?:meter|metre|mtr|adi|feet|ft|dozen)(?![\p{L}]))"""), "0.25 ")
+            .replace(Regex("""(?<![\p{L}])(?:mukkal|mukkaal)\s+(?=(?:meter|metre|mtr|adi|feet|ft|dozen)(?![\p{L}]))"""), "0.75 ")
             .replace(Regex("""(?<![\p{L}\d.])(\d+(?:\.\d+)?)\s*(?:a|amp|amps|ampere|amperes)(?![\p{L}])"""), "$1 amp")
             .replace(Regex("""(?<![\p{L}\d.])(\d+(?:\.\d+)?)\s*(?:l|ltr|ltrs|liter|liters|litre|litres)(?![\p{L}])"""), "$1 litre")
             .replace(Regex("""(?<![\p{L}\d.])(\d+(?:\.\d+)?)\s*(?:m|mtr|mtrs|meter|meters|metre|metres)(?![\p{L}])"""), "$1 meter")
