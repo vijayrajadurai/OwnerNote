@@ -1476,4 +1476,42 @@ NewonX — Owner Note. ஆப்பில் உதவி & ஆதரவு.]]><
     <string name="bill_stock_new_name_needed">Product பெயர் போடுங்க</string>
     <string name="bill_stock_new_unit_needed">Unit போடுங்க</string>
     <string name="bill_stock_new_added">%1$d புது product Inventory-ல சேர்ந்துடுச்சு.</string>
+
+    <!-- Kadai Bold home -->
+    <string name="home_vaanganum">வாங்கணும்</string>
+    <string name="home_kudukkanum">கொடுக்கணும்</string>
+    <string name="home_customers_n">%1$d வாடிக்கையாளர்</string>
+    <string name="home_suppliers_n">%1$d சப்ளையர்</string>
+    <string name="home_late">தாமதம்</string>
+    <string name="home_today">இன்னைக்கு</string>
+    <string name="home_later">அப்புறம்</string>
+    <string name="home_days_late">%1$d நாள் தாமதம்</string>
+    <string name="home_net_pay_more">வாங்கணும்-ஐ விட கொடுக்கணும் கொஞ்சம் அதிகம்</string>
+    <string name="home_net_collect_more">கொடுக்கணும்-ஐ விட வாங்கணும் அதிகம்</string>
+    <string name="home_collect_today">இன்னைக்கு வசூல்</string>
+    <string name="home_late_people">தாமதம் ஆனவங்க</string>
+    <string name="home_pay_today">இன்னைக்கு கொடுக்கணும்</string>
+    <string name="home_quick">சீக்கிரம்</string>
+    <string name="home_all">எல்லாம்</string>
+    <string name="home_call">கால்</string>
+    <string name="home_remind">நினைவூட்டு</string>
+    <string name="home_pay">கொடு</string>
+    <string name="home_qa_credit">கிரெடிட்</string>
+    <string name="home_qa_payment">பேமெண்ட்</string>
+    <string name="home_qa_scan">பில் ஸ்கேன்</string>
+    <string name="home_qa_stock">ஸ்டாக்</string>
+    <string name="home_cash_today">இன்னைக்கு கேஷ்</string>
+    <string name="home_cash_out">வெளியே</string>
+    <string name="home_stock_ok">எல்லாம் சரி</string>
+    <string name="home_stock_alerts">%1$d குறைவு · %2$d இல்ல</string>
+    <string name="home_stock_none">ஸ்டாக் அலர்ட் இல்ல</string>
+    <string name="home_morning_title">காலை வேலை</string>
+    <string name="home_morning_sub">Kai இன்னைக்கு வேலை தயார் பண்ணுவார்</string>
+    <string name="home_morning_count">இன்னைக்கு %1$d வேலை</string>
+    <string name="home_ask_kai">Kai-கிட்ட கேளுங்க</string>
+    <string name="home_vanakkam">வணக்கம், ஓனர்</string>
+    <string name="home_today_line">இன்னைக்கு %1$s வசூல் பண்ணலாம், %2$s கொடுக்கணும்.</string>
+    <string name="home_today_line_clear">இன்னைக்கு வசூல், கொடுக்கல் எதுவும் இல்ல.</string>
+    <string name="home_bigger_bills">%1$d பில் · %2$s</string>
+    <string name="home_remind_text">வணக்கம் %1$s, %2$s கடையில உங்க பாக்கி %3$s. சீக்கிரம் கொடுங்க, நன்றி 🙏</string>
 </resources>

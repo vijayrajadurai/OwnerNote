@@ -280,70 +280,69 @@ enum class BottomNavTab(@androidx.annotation.StringRes val labelRes: Int, val ic
     More(R.string.nav_more, Icons.Outlined.MoreHoriz),
 }
 
+/**
+ * The tab bar (owner, 18 Oct 2026, "Kadai Bold"): a dark bar floating over the screen, every tab with its icon and name; the
+ * open tab's icon sits in a green pill.
+ */
 @Composable
 fun BottomNavBar(
     active: BottomNavTab,
     onTabSelected: (BottomNavTab) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val pillShape = RoundedCornerShape(999.dp)
+    val barShape = RoundedCornerShape(24.dp)
     Box(
         modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(start = 20.dp, end = 20.dp, bottom = 14.dp),
+            .padding(start = 14.dp, end = 14.dp, bottom = 12.dp),
         contentAlignment = Alignment.Center,
     ) {
         Row(
             modifier = Modifier
-                .shadow(
-                    elevation = 18.dp,
-                    shape = pillShape,
-                    ambientColor = Color.Black.copy(alpha = 0.12f),
-                    spotColor = Color.Black.copy(alpha = 0.18f),
-                )
-                .clip(pillShape)
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(horizontal = 8.dp, vertical = 7.dp),
+                .fillMaxWidth()
+                .shadow(elevation = 16.dp, shape = barShape, ambientColor = Color(0xFF1A1530), spotColor = Color(0xFF1A1530))
+                .clip(barShape)
+                .background(Brush.verticalGradient(listOf(Color(0xFF2A2350), Color(0xFF1A1530))))
+                .padding(horizontal = 4.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             BottomNavTab.entries.forEach { tab ->
                 val isActive = tab == active
                 val label = stringResource(tab.labelRes)
-                Row(
+                Column(
                     modifier = Modifier
-                        .clip(pillShape)
-                        .background(
-                            if (isActive) com.shopai.app.ui.theme.HeaderGreenStart else Color.Transparent,
-                        )
+                        .weight(1f)
+                        .clip(RoundedCornerShape(14.dp))
                         .clickable { onTabSelected(tab) }
-                        .padding(
-                            horizontal = if (isActive) 16.dp else 12.dp,
-                            vertical = 10.dp,
-                        ),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        .padding(vertical = 2.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Icon(
-                        imageVector = tab.icon,
-                        contentDescription = label,
-                        tint = if (isActive) {
-                            MaterialTheme.colorScheme.onPrimary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
-                        modifier = Modifier.size(22.dp),
-                    )
-                    if (isActive) {
-                        Text(
-                            text = label,
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            maxLines = 1,
+                    Box(
+                        modifier = Modifier
+                            .size(width = 44.dp, height = 30.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(
+                                if (isActive) Brush.verticalGradient(listOf(Color(0xFF19B97F), Color(0xFF0B8A5C)))
+                                else Brush.verticalGradient(listOf(Color.Transparent, Color.Transparent)),
+                            ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = tab.icon,
+                            contentDescription = label,
+                            tint = if (isActive) Color.White else Color(0xFF9C96B5),
+                            modifier = Modifier.size(21.dp),
                         )
                     }
+                    Text(
+                        text = label,
+                        fontSize = 10.5.sp,
+                        fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
+                        color = if (isActive) Color.White else Color(0xFF9C96B5),
+                        maxLines = 1,
+                        modifier = Modifier.padding(top = 3.dp),
+                    )
                 }
             }
         }
