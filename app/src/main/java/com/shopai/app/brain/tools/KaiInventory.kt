@@ -431,6 +431,9 @@ object KaiInventory {
     /** "batch B123", "batch no 45A" said with the stock. */
     fun batchIn(text: String): String? =
         Regex("""(?i)(?<![\p{L}])batch\s*(?:no\.?|number|num)?\s*[:#-]?\s*([A-Za-z0-9][A-Za-z0-9/-]{0,19})""").find(text)?.groupValues?.get(1)
+            // A batch code has a digit ("B123", "45A") or is written in capitals ("ABC"): "pudhu batch vandhuchu" names no batch
+            // (owner's test, 19 Oct 2026: the batch was saved as "vandhuchu").
+            ?.takeIf { c -> c.any(Char::isDigit) || (c.length in 2..6 && c == c.uppercase(Locale.ROOT)) }
 
     private val batchCode = Regex("""(?i)(?<![\p{L}])batch\s*(?:no\.?|number|num)?\s*[:#-]?\s*([A-Za-z]{0,4}-?\d[A-Za-z0-9/-]{0,15})(?![\p{L}\d])""")
     private val expiryDate = Regex("""(?i)(?<![\p{L}])(?:expiry|exp|expires?|best\s+before)\s*(?:date)?\s*[:-]?\s*""" +

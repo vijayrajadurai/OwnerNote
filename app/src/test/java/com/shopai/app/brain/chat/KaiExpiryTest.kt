@@ -127,4 +127,17 @@ class KaiExpiryTest {
     }
 
     private object KaiExpiryAsks { fun asks(t: String) = com.shopai.app.brain.tools.KaiCommands.asksExpiry(t) }
+    /**
+     * Expiry asked the owner's way, typed and spoken (owner, 19 Oct 2026): "date mudiyura saamaan", "expiry nerungudhu", "seekiram
+     * kettu pogum", "best before thaandiduchu", "date thaandina marundhu" — the soon / expired batches, never a person or the dues.
+     */
+    @Test fun expiryAskedTheOwnersWay() {
+        for (q in listOf("date mudiyura saamaan enna", "தேதி முடியுற சாமான் என்ன", "expiry nerungudhu edhu", "எக்ஸ்பைரி நெருங்குது எது",
+                "seekiram kettu pogum items enna", "சீக்கிரம் கெட்டுப் போகும் ஐட்டம் என்ன")) ask(q).first.let { t ->
+            assertTrue("$q → $t", shows(t, "B5", "M2").isEmpty() && hides(t, "P2", "PT2").isEmpty())
+        }
+        for (q in listOf("best before thaandiduchu edhu", "பெஸ்ட் பிஃபோர் தாண்டிடுச்சு எது", "date thaandina marundhu irukka", "தேதி தாண்டின மருந்து இருக்கா")) ask(q).first.let { t ->
+            assertTrue("$q → $t", shows(t, "S7", "PN1").isEmpty() && hides(t, "P2").isEmpty())
+        }
+    }
 }

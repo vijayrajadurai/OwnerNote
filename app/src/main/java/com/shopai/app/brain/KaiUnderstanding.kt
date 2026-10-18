@@ -209,11 +209,19 @@ object KaiUnderstanding {
     private val digitAmount = Regex("""(?<![\d.,/])(?:₹|rs\.?\s*)?(\d{1,3}(?:,\d{2,3})+|\d+(?:\.\d{1,2})?)\s*(k\b)?""", RegexOption.IGNORE_CASE)
 
     /** Every distinct money amount the words contain (dates excluded). */
+    /** "11 manikku", "6 mani", "9 am", "10 nimisham", "2 hours": a clock time or a span — its number is not an amount. */
+    private val timeNumber = Regex(
+        """(?i)(?<![\d.,])\d{1,2}(?:[.:]\d{2})?\s*-?\s*(?:manikku|maniku|mani(?:\s*(?:ku|kku|neram|nerathula|nerathil))?|o'?clock|a\.?m\.?|p\.?m\.?|""" +
+            """nimisham\p{L}*|nimisha\p{L}*|minutes?|mins?|hours?|hrs?|மணிக்கு|மணி)(?![\p{L}\p{M}])""",
+    )
+
     fun amountsIn(text: String, today: LocalDate): List<Double> {
         var masked = text
         DocumentDates.findMatch(text, today, allowYearless = true, yearless = YearlessPolicy.CURRENT_YEAR)?.let { masked = masked.replace(it.text, " ") }
         // Ordinals of a date ("10th") are never money.
         masked = masked.replace(Regex("""\b\d{1,2}(st|nd|rd|th)\b""", RegexOption.IGNORE_CASE), " ")
+        // A time is never money: "naalai 11 manikku Lakshmi baaki vaanga" is 11 o'clock, never ₹11 (owner's test, 19 Oct 2026).
+        masked = masked.replace(timeNumber, " ")
         val found = mutableListOf<Double>()
         digitAmount.findAll(masked).forEach { m ->
             val digits = m.groupValues[1].replace(",", "")
