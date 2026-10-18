@@ -65,9 +65,9 @@ class KaiChatSession(
      * by real events — the mic, Kai's answer, the draft being saved or dropped (see [com.shopai.app.brain.note.KaiNoteFlow]).
      */
     var note by mutableStateOf(com.shopai.app.brain.note.KaiNoteFlow())
+        private set
     /** The owner's people in the books: their names are shown bold in Kai's replies. */
     var names by mutableStateOf<List<String>>(emptyList())
-        private set
         private set
 
     /** The mic started / stopped (the screen's speech recognizer). */
