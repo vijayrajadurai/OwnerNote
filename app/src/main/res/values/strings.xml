@@ -1531,4 +1531,41 @@ NewonX — Owner Note. Use Help & Support in the app.]]></string>
     <string name="bill_stock_new_name_needed">Type the product name</string>
     <string name="bill_stock_new_unit_needed">Type the unit</string>
     <string name="bill_stock_new_added">%1$d new product(s) added to Inventory.</string>
+
+    <!-- Kadai Bold home (owner, 18 Oct 2026) -->
+    <string name="home_vaanganum">Vaanganum</string>
+    <string name="home_kudukkanum">Kudukkanum</string>
+    <string name="home_customers_n">%1$d customers</string>
+    <string name="home_suppliers_n">%1$d suppliers</string>
+    <string name="home_late">Late</string>
+    <string name="home_today">Innaiku</string>
+    <string name="home_later">Apram</string>
+    <string name="home_days_late">%1$d naal late</string>
+    <string name="home_net_pay_more">Vaanganum-ai vida kudukkanum konjam adhigam</string>
+    <string name="home_net_collect_more">Kudukkanum-ai vida vaanganum adhigam</string>
+    <string name="home_collect_today">Innaiku vasool</string>
+    <string name="home_late_people">Late aanavanga</string>
+    <string name="home_pay_today">Innaiku kudukkanum</string>
+    <string name="home_quick">Seekiram</string>
+    <string name="home_all">Ellaam</string>
+    <string name="home_call">Call</string>
+    <string name="home_remind">Remind</string>
+    <string name="home_pay">Pay</string>
+    <string name="home_qa_credit">Credit</string>
+    <string name="home_qa_payment">Payment</string>
+    <string name="home_qa_scan">Bill scan</string>
+    <string name="home_qa_stock">Stock</string>
+    <string name="home_cash_today">Innaiku cash</string>
+    <string name="home_cash_out">Out</string>
+    <string name="home_stock_ok">Ellaam OK</string>
+    <string name="home_stock_alerts">%1$d low · %2$d illa</string>
+    <string name="home_stock_none">Stock alert illa</string>
+    <string name="home_morning_title">Morning Work</string>
+    <string name="home_morning_sub">Kai innaikku velai ready pannuvaar</string>
+    <string name="home_morning_count">%1$d velai innaiku</string>
+    <string name="home_vanakkam">Vanakkam, Owner</string>
+    <string name="home_today_line">Innaiku %1$s vasool pannalaam, %2$s kudukkanum.</string>
+    <string name="home_today_line_clear">Innaiku vasool, kudukkal edhuvum illa.</string>
+    <string name="home_bigger_bills">%1$d bills · %2$s</string>
+    <string name="home_remind_text">Vanakkam %1$s, %2$s kadaila unga baaki %3$s. Seekiram kudunga, nandri 🙏</string>
 </resources>
