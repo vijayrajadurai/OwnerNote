@@ -338,3 +338,77 @@ ASK    | sales                                          | sales;Daily Cash Note
 ASK    | Intha masam Selavu evlo                        | selavu;Daily Cash Note
 ASK    | indha maasam selavu evlo                       | selavu;Daily Cash Note
 ASK    | nalla irukku                                   | 😄
+
+# The owner's own words for an intent — Kai was never fed these (owner, 19 Oct 2026: "words maaralaam, intent purinjikkanum;
+# stock-la nariya problem"). Each family is a stem in KaiIntentWords, so other endings of the same word read the same.
+# Stock came in.
+STOCK  | Colgate 2 box irakkumadhi aachu                | Colgate 336
+STOCK  | Rice 2 moota pudhu batch vandhuchu             | Rice 300
+STOCK  | Oil 1 box kadaikku serndhuchu                  | Oil 252
+STOCK  | Lux soap 24 delivery aachu                     | Lux Soap 84
+STOCK  | Baniyan 30 unload pannom                       | Baniyan 80
+STOCK  | Maggi 40 rack-la adukkinen                     | Maggi 40
+STOCK  | Colgate 48 stock eathitten                     | Colgate 288
+STOCK  | Rice 3 moota vandhu irangichu                  | Rice 325
+STOCK  | Colgate 1 box kadaikku vandhu serndhirukku     | Colgate 288
+STOCK  | Lux soap 12 delivery vandhuchu                 | Lux Soap 72
+STOCK  | Baniyan 25 godown-la adukkitten                | Baniyan 75
+STOCK  | Oil 1 box kidaichiduchu                        | Oil 252
+STOCK  | Colgate 48 eathinom                            | Colgate 288
+# Stock went out: sold out, taken home, sent back, rats, a leak, gone old, stolen, given free.
+STOCK  | Lux soap 10 theernjuduchu                      | Lux Soap 50
+STOCK  | Rice 4 kg theernthuduchu                       | Rice 246
+STOCK  | Lux soap 6 kaali aayiduchu                     | Lux Soap 54
+STOCK  | Rice 5 kg veetukku eduthutten                  | Rice 245
+STOCK  | Colgate 4 sondha use-ku eduthen                | Colgate 236
+STOCK  | Oil 1 box thirupi anuppinen                    | Oil 228
+STOCK  | Rice 3 kg eli kadichiduchu                     | Rice 247
+STOCK  | Rice 2 kg eli thinnuduchu                      | Rice 248
+STOCK  | Oil 2 bottle oluguchu                          | Oil 238
+STOCK  | Oil 1 bottle ozhugiduchu                       | Oil 239
+STOCK  | Baniyan 4 pazhasaagiduchu                      | Baniyan 46
+STOCK  | Baniyan 2 thirudu poyiduchu                    | Baniyan 48
+STOCK  | Colgate 5 free-a kuduthen                      | Colgate 235
+# Reminders said the owner's way — "ezhuppi vidu", "thatti vidu", "kekka sollu", "eluthi vei", "maranthudaama sollu", a "-a sollu"
+# with a time — and "naalanniki" (day after tomorrow). A time is never an amount ("11 manikku" is not ₹11).
+REMIND | naalaiku kaalai 9 manikku Kumar-kitta panam kekka ezhuppi vidu | 2026-10-09 09:00 Kumar
+REMIND | saayangaalam 5 manikku ABC Traders-ku pay panna thatti vidu | 2026-10-08 17:00 ABC
+REMIND | 2 mani neram kalichu Selvam-kitta kekka sollu   | 2026-10-08 13:00 Selvam
+REMIND | naalai 11 manikku Lakshmi baaki vaanga maranthudaama sollu | 2026-10-09 11:00 Lakshmi
+REMIND | adutha Monday kaalai 10 manikku GST kattanum eluthi vei | 2026-10-12 10:00 GST
+REMIND | arai mani neram kalichu Ramesh-ku phone poda thatti vidu | 2026-10-08 11:30 Ramesh
+REMIND | naalaiku madhiyam 2 manikku Murugan Stores-ku kaasu anuppanum marandhudaama paathuko | 2026-10-09 14:00 Murugan
+REMIND | Friday saayangaalam 6 manikku current bill katta sollu | 2026-10-09 18:00 current
+REMIND | 15 nimisham kalichu Kumar-ku call poda ezhuppi vidu | 2026-10-08 11:15 Kumar
+REMIND | naalanniki kaalai 10 manikku Selvam veetuku poganum eluthi vei | 2026-10-10 10:00 Selvam
+REMIND | naalaiku kaalai 8 manikku Ramesh-ku phone panna ezhuppi vidunga | 2026-10-09 08:00 Ramesh
+REMIND | innaiku saayangaalam 7 manikku kadai poottanum thatti vidu | 2026-10-08 19:00
+REMIND | 1 mani neram kalichu Lakshmi-kitta kaasu vaanga marakkaama sollu | 2026-10-08 12:00 Lakshmi
+REMIND | Saturday kaalai 10 manikku ABC Traders-ku pay pannanum eluthi vachuko | 2026-10-10 10:00 ABC
+REMIND | naalanaikku madhiyam 3 manikku bank poganum ezhuppi vidu | 2026-10-10 15:00 bank
+REMIND | naalai raathiri 9 manikku Selvam-kitta pesanum maranthudaama paathuko | 2026-10-09 21:00 Selvam
+# Credit / payment the owner's way: "pakki", "eluthi vei", "account-la potukko / podu", "patru", "varavu vechaan", "adaichuttaan",
+# "katti mudichaan", "rendaayiram", "kadanukku eduthen" (bought on credit), "paadhi kaasu" (part of it — never a name).
+ENTRY  | Kumar 500 pakki vechutu ponaan                 | CREDIT Kumar 500
+ENTRY  | Ramesh 800 pakki vachitu poitaan               | CREDIT Ramesh 800
+ENTRY  | Kumar-ku 700 eluthi vei                        | CREDIT Kumar 700
+ENTRY  | Lakshmi-ku 350 eluthi vachuko                  | CREDIT Lakshmi 350
+ENTRY  | Ramesh 1200 account-la potukko                 | CREDIT Ramesh 1200
+ENTRY  | Selvam 1500 account-la podu                    | CREDIT Selvam 1500
+ENTRY  | Selvam 2000 patru                              | CREDIT Selvam 2000
+ENTRY  | Muthu-ku 800 kadan sollitu poyitaan            | CREDIT Muthu 800
+ENTRY  | Kumar aayirathu ainooru adaichuttaan           | IN Kumar 1500
+ENTRY  | Kumar moonaayiram katti mudichaan              | IN Kumar 3000
+ENTRY  | Selvam paadhi kaasu 3000 kuduthaan             | IN Selvam 3000
+ENTRY  | Lakshmi akka 1000 varavu vechaanga             | IN Lakshmi 1000
+ENTRY  | Ramesh 700 varavu vechaan                      | IN Ramesh 700
+ENTRY  | ABC Traders-ku 4000 settle pannitten           | OUT ABC Traders 4000
+ENTRY  | Murugan Stores-la 6000-ku saraku kadanukku eduthen | DEBIT Murugan Stores 6000
+ENTRY  | ABC Traders-la 5000-ku maal kadanukku vaanginen | DEBIT ABC Traders 5000
+# The totals, said other ways.
+ASK    | ellaarum sethu enakku evlo tharanum            | ₹13,500
+ASK    | naan mothathula evlo kudukka vendi irukku      | ₹14,000
+ASK    | Colgate ethana petti irukku                    | 5
+ASK    | Rice ethana moota irukku                       | 10
+ASK    | innaiku evlo vasool aaganum                    | ₹6,500
+ENTRY  | Ramesh rendaayiram GPay-la pottaan             | IN Ramesh 2000

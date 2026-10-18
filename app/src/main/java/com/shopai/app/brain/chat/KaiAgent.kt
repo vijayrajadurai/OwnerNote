@@ -889,6 +889,45 @@ class KaiAgent(
             en = "Owner, ${product.name} $rest — did it come in (add to stock), or go out (sold)?")
     }
 
+    /** A question, a time, or money in a line: never read as a stock / entry line whose way is missing. */
+    private val askedOrTimed = Regex("""(?i)\?|(?<![\p{L}\p{M}])(?:evlo|evvalavu|ewlo|enna|yaar\p{L}*|yar\p{L}*|eppo|eppa|edhu|ethu|endha|entha|yentha|ethana|list|how|what|who|when|which|""" +
+        """balance|history|total|motham|report|rate|vilai|price|remind\p{L}*|nyabagam|manikku|maniku|nimisham\p{L}*|minutes?|hours?|naalai\p{L}*|""" +
+        """rs|rupees?|rooba\p{L}*|panam|kaasu|cash|gpay|upi|phonepe)(?![\p{L}\p{M}])|₹""")
+
+    /**
+     * A product of the shop and a count, with a word for which way it went that Kai doesn't know ("Colgate 2 box ___ aachu"):
+     * it IS stock — the one thing missing is which way, asked in one short question ("vandhucha, vithucha?"), never "edha pathi?"
+     * and never a guess (owner, 19 Oct 2026: "words maaralaam, intent purinjikkanum"). Nothing is drafted until the owner says.
+     */
+    private fun stockWayMissing(text: String, lang: KaiLang, products: List<com.shopai.app.brain.tools.ProductRef>, people: List<String>): KaiTurn? {
+        if (askedOrTimed.containsMatchIn(text) || KaiCommands.personIn(text, people) != null) return null
+        val product = productIn(text, products) ?: com.shopai.app.brain.tools.KaiStock.productNamedIn(text, products) ?: return null
+        val count = Regex("""(?i)(?<![\p{L}\d.])(\d+(?:\.\d+)?)\s*([\p{L}]+)?""").findAll(text).firstOrNull { m ->
+            !Regex("""(?i)${Regex.escape(m.value.trim())}""").containsMatchIn(product.name)
+        } ?: return null
+        val unit = count.groupValues[2].takeIf { it.isNotEmpty() && com.shopai.app.brain.tools.KaiStock.unitOf(it) != null }
+        val qty = listOfNotNull(count.groupValues[1], unit).joinToString(" ")
+        productHalf = Triple(product.name, qty, conversationState.conversationTurn)
+        return say(lang, KaiMood.CLARIFY, "stock: which way (word not known)",
+            ta = "ஓனர், ${product.name} $qty — வந்துச்சா (stock-ல add), இல்ல போச்சா (stock-ல குறைக்கணுமா)?",
+            tl = "Owner, ${product.name} $qty — vandhucha (stock-la add), illa pochaa (stock-la minus)?",
+            en = "Owner, ${product.name} $qty — did it come in (add to stock), or go out (minus)?")
+    }
+
+    /**
+     * A person in the books and one amount, with a word Kai doesn't know for what happened ("Kumar 500 ___"): it IS an entry —
+     * which way is asked ("kuduthaara, illa tharanum-aa?"), never their balance read out instead with the amount dropped (owner's
+     * test, 19 Oct 2026: "Kumar 500 pakki vechutu ponaan" → "Kumar ₹4,000 tharanum").
+     */
+    private suspend fun entryWayMissing(text: String, lang: KaiLang, people: List<String>, products: List<com.shopai.app.brain.tools.ProductRef>?): KaiTurn? {
+        if (askedOrTimed.containsMatchIn(text)) return null
+        val person = KaiCommands.personIn(text, people) ?: return null
+        if (products?.let { productIn(text, it) } != null) return null
+        val amount = com.shopai.app.brain.KaiUnderstanding.amountsIn(text, now().toLocalDate()).filter { it > 0 }.singleOrNull() ?: return null
+        val shown = if (amount % 1.0 == 0.0) amount.toLong().toString() else amount.toString()
+        return askAs(lang, "$person $shown")
+    }
+
     /** The owner's answer to "money to come in, or money you pay?": the question for that side, or null (they moved on). */
     private fun sideAnswered(said: String): String? {
         val t = " ${said.lowercase(Locale.ROOT).replace(Regex("""[?!.,]"""), " ")} "
@@ -1510,7 +1549,10 @@ class KaiAgent(
         com.shopai.app.brain.KaiUnderstanding.knownPerson(read, people0)?.let { personOnTopic = it to conversationState.conversationTurn + 1 }
         // "Power bank" is a product, not a bank: product names that hold a money word are joined first. "totel" = total (KaiFeed).
         // "Kumar innum 500 rooba tharala", "Kumarku 500 baaki iruku": an entry said in other words, read as Kai reads entries (KaiLedgerPhrases).
-        val phrased = com.shopai.app.brain.tools.KaiLedgerPhrases.canonical(com.shopai.app.brain.tools.KaiInventory.joinProductWords(spelled(read)))
+        // "Colgate 2 box irakkumadhi aachu", "naalaiku 9 manikku ezhuppi vidu", "Kumar 500 pakki vechutu ponaan": the owner's own words
+        // for an intent, read as Kai's rules read it (KaiIntentWords — owner, 19 Oct 2026: "words maaralaam, intent purinjikkanum").
+        val phrased = com.shopai.app.brain.tools.KaiLedgerPhrases.canonical(com.shopai.app.brain.tools.KaiIntentWords.canonical(
+            com.shopai.app.brain.tools.KaiInventory.joinProductWords(spelled(read))))
         // "naan" / "enakku" / "suppliers" / "customers" right after Kai asked whose money it is: the full question, that side.
         val said0 = (if (brain.sideAsked) { brain.sideAsked = false; sideAnswered(phrased) } else null) ?: phrased
         // "… batch B20 expiry 06/2027" said with stock: kept for the stock / product draft and cut out of the line — a date or a
@@ -1923,6 +1965,7 @@ class KaiAgent(
                 return if (name.isEmpty() && !photoAsked.containsMatchIn(text)) askStockLine(said, lang) else stockCamera(name, said, lang, products)
             }
             stockChange(text, said, lang, products, people)?.let { return it }
+            if (plans.isEmpty()) stockWayMissing(text, lang, products, people)?.let { return it }
         }
         if (com.shopai.app.brain.tools.KaiIntents.isBillScan(text)) {
             val cmd = KaiCommands.route(text, at, people)
@@ -1974,6 +2017,8 @@ class KaiAgent(
                             tl = "Owner, $name-nu product-um illa, customer-um illa. Product-na mudhalla add pannunga.",
                             en = "Owner, there's no product or customer called $name. If it's a product, add it first.")
                     }
+                // "Kumar 500 <a word Kai doesn't know>": an entry whose way is missing — asked, never the balance instead.
+                if (plans.isEmpty() && askDepth == 1) entryWayMissing(text, lang, people, products)?.let { return it }
                 rememberNamedBusinessContext(text, people)
                 learner?.before(said, lang)?.let { step ->
                     return when (step) {

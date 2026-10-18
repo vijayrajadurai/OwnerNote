@@ -122,11 +122,13 @@ object KaiStock {
     private val reasons = listOf(
         "Customer return" to Regex("""(?i)customer\s+return|sales?\s+return|return\s+vand|return\s+vanth|thirumbi\s+vand|thiruppi\s+kuduth"""),
         "Supplier return" to Regex("""(?i)supplier\s*-?\s*(?:ku\s+)?return|purchase\s+return|return\s+anupp|thiruppi\s+anupp|returned\b.*\bto\s+(?:the\s+)?supplier"""),
-        "Damage" to Regex("""(?i)damage|odanj|udanj|broken|சேதம்|உடைஞ்சு"""),
+        "Damage" to Regex("""(?i)damage|odanj|udanj|broken|olug|ozhug|leak|சேதம்|உடைஞ்சு"""),
         "Expired" to Regex("""(?i)expir"""),
         // (vegetables: "azhugiduchu" rotted, "vaadiduchu" wilted)
-        "Wastage" to Regex("""(?i)wastage|waste|kettu\s*poch|spoil|rotten|azhug|azhuk|vaadidu|வீணா|கெட்டுப்போச்சு|அழுகி|அழுகு|வாடிடு"""),
-        "Missing" to Regex("""(?i)missing|kaanom|kanom"""),
+        "Wastage" to Regex("""(?i)wastage|waste|kettu\s*poch|spoil|rotten|azhug|azhuk|vaadidu|eli\s+kadi|pazhas|வீணா|கெட்டுப்போச்சு|அழுகி|அழுகு|வாடிடு"""),
+        "Missing" to Regex("""(?i)missing|kaanom|kanom|thirud|stolen"""),
+        // Taken for the shop's own use / home (owner, 19 Oct 2026: "Rice 5 kg veetukku eduthutten").
+        "Own use" to Regex("""(?i)veett?ukk?u|own\s+use|sondha\s+use|self\s+use"""),
         "Free" to Regex("""(?i)^free\s·|(?<![\p{L}])(?:free|summa|ilavasam|sample)(?![\p{L}])"""),
     )
 
@@ -152,7 +154,7 @@ object KaiStock {
         "kadaiku", "kadaila", "shop", "to", "into", "got", "irukku", "iruku", "vandhu", "vanthu", "mattum", "ellam", "items", "photo", "edu", "edunga", "camera", "open",
         "sell", "kuduthen", "kuduthuten", "kuduthutten", "koduthen", "koduthuten", "gave", "given", "vandhuduchu", "vanthuduchu",
         "damage", "damaged", "wastage", "waste", "expiry", "expired", "missing", "customer", "supplier", "return", "returned", "sales",
-        "kuraivu", "kuraichu", "kuraichi", "kuraichudu", "kuraichiru",
+        "kuraivu", "kuraichu", "kuraichi", "kuraichudu", "kuraichiru", "veetukku", "veetuku",
     )
     /** Words that make it money or a question, not a stock change ("cash 500 pochu", "sale evlo aachu?"). */
     private val notStock = Regex(
