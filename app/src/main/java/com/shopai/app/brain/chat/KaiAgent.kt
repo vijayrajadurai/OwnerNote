@@ -650,6 +650,9 @@ class KaiAgent(
 
     fun plan(key: String): ActionPlan? = plans[key]
 
+    /** The owner's people in the books (read only) — the chat shows their names in bold. */
+    suspend fun peopleNames(): List<String> = runCatching { books.snapshot()?.people.orEmpty() }.getOrDefault(emptyList())
+
     /** Kai is waiting for the owner's answer about their own words (voice answers go to the same conversation). */
     val waitingForLearningAnswer: Boolean get() = learner?.isAsking == true || routine?.waiting == true
 

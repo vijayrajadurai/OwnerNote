@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -46,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -364,7 +367,7 @@ fun KaiChatScreen(
                 }
                 items(session.messages, key = { it.id }) { m ->
                     val note = session.note.note?.takeIf { it.messageId == m.id }
-                    if (m.fromOwner) OwnerBubble(if (m.voice) "🎙 ${m.text}" else m.text)
+                    if (m.fromOwner) OwnerBubble(if (m.voice) "🎙 ${m.text}" else m.text, m.at)
                     // Kai asking the one thing he needs: a clear question card (owner, 17 Oct 2026).
                     else if (note == null && m.mood == com.shopai.app.brain.KaiMood.CLARIFY) com.shopai.app.ui.kai.KaiAskCard(
                         question = m.text, card = m.card, lang = m.lang, closed = m.cardClosed || session.thinking, onTap = { tap(m.id, it) },
@@ -372,10 +375,17 @@ fun KaiChatScreen(
                         // The mic on the newest question: answer it by voice.
                         onMic = if (m.id == session.messages.lastOrNull()?.id && !listening) ({ onMic() }) else null,
                     ) else {
-                        KaiBubble(m.text)
+                        val latest = m.id == session.messages.lastOrNull { !it.fromOwner }?.id
+                        KaiBubble(m.text, names = session.names, mood = m.mood, at = m.at, live = latest && !session.thinking)
                         m.card?.let { card ->
+                            // A money draft (credit / debit / payment): the digital card, like the stock card (owner, 18 Oct 2026).
+                            val money = note?.money
+                            if (money != null) com.shopai.app.ui.kai.KaiMoneyCard(
+                                money = money, flow = session.note, card = card, lang = m.lang,
+                                closed = m.cardClosed || session.thinking, onWritten = { session.noteWritten() }, onTap = { tap(m.id, it) },
+                            )
                             // The draft waiting for Confirm (and how it ended): Kai's notebook in the shop; older cards as before.
-                            if (note != null) com.shopai.app.ui.kai.KaiNoteScene(
+                            else if (note != null) com.shopai.app.ui.kai.KaiNoteScene(
                                 flow = session.note, note = note, card = card, category = shopCategory,
                                 closed = m.cardClosed || session.thinking, onWritten = { session.noteWritten() },
                                 onTap = { tap(m.id, it) }, modifier = Modifier.padding(top = 4.dp),
@@ -540,32 +550,83 @@ private fun EditPlanDialog(
 }
 
 @Composable
-private fun OwnerBubble(text: String) {
+private fun OwnerBubble(text: String, at: Long? = null) {
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
-        Text(
-            text,
-            color = Color.White,
-            style = MaterialTheme.typography.bodyLarge,
+        Column(
             modifier = Modifier
                 .widthIn(max = 300.dp)
-                .background(Primary, RoundedCornerShape(18.dp, 18.dp, 4.dp, 18.dp))
-                .padding(horizontal = 14.dp, vertical = 10.dp),
+                .background(Primary, RoundedCornerShape(18.dp, 18.dp, 6.dp, 18.dp))
+                .padding(start = 14.dp, end = 12.dp, top = 9.dp, bottom = 6.dp),
+            horizontalAlignment = Alignment.End,
+        ) {
+            Text(text, color = Color.White, fontSize = 16.sp, lineHeight = 22.sp)
+            at?.let { Text(clock(it), color = Color.White.copy(alpha = 0.75f), fontSize = 11.sp) }
+        }
+    }
+}
+
+/** "11:42" in the phone's own time. */
+private fun clock(at: Long): String = java.time.Instant.ofEpochMilli(at).atZone(java.time.ZoneId.systemDefault()).toLocalTime()
+    .format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
+
+/**
+ * Kai's reply (owner, 18 Oct 2026: "chat-la iruka text romba simple"): Kai's own small face beside it — alive on the newest reply,
+ * his look following the reply's mood — amounts bold (green to the shop, red going out), the owner's people bold, a line after
+ * the first in small grey, and the time. Tamil, Tanglish and English alike; the words are Kai's own, unchanged.
+ */
+@Composable
+private fun KaiBubble(text: String, names: List<String> = emptyList(), mood: com.shopai.app.brain.KaiMood? = null, at: Long? = null, live: Boolean = false) {
+    val lines = text.split('\n').map { it.trimEnd() }.filter { it.isNotBlank() }
+    val main = lines.firstOrNull().orEmpty()
+    val more = lines.drop(1)
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+        KaiFace(mood, live)
+        androidx.compose.foundation.layout.Spacer(Modifier.size(8.dp))
+        Column(
+            modifier = Modifier
+                .widthIn(max = 290.dp)
+                .shadow(1.dp, RoundedCornerShape(18.dp, 18.dp, 18.dp, 6.dp))
+                .background(Color.White, RoundedCornerShape(18.dp, 18.dp, 18.dp, 6.dp))
+                .padding(start = 13.dp, end = 13.dp, top = 9.dp, bottom = 7.dp),
+        ) {
+            Text(marked(main, names), color = com.shopai.app.ui.theme.TextPrimary, fontSize = 16.sp, lineHeight = 22.sp)
+            more.forEach { line ->
+                Text(marked(line, names), color = Color(0xFF6B7280), fontSize = 13.5.sp, lineHeight = 19.sp, modifier = Modifier.padding(top = 4.dp))
+            }
+            at?.let { Text(clock(it), color = Color(0xFF9CA3AF), fontSize = 11.sp, modifier = Modifier.align(Alignment.End).padding(top = 2.dp)) }
+        }
+    }
+}
+
+/** Kai's small face: alive (blinks, mood) on the newest reply; a still picture on older ones. */
+@Composable
+private fun KaiFace(mood: com.shopai.app.brain.KaiMood?, live: Boolean) {
+    Box(
+        Modifier.size(32.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Color(0xFFE8F5EE)),
+        contentAlignment = Alignment.TopCenter,
+    ) {
+        if (live) KaiCharacter(
+            state = mood?.state() ?: KaiState.IDLE,
+            size = 96.dp,
+            modifier = Modifier.wrapContentSize(Alignment.TopCenter, unbounded = true).offset(y = (-2).dp),
+        ) else androidx.compose.foundation.Image(
+            androidx.compose.ui.res.painterResource(R.drawable.kai_full), contentDescription = null,
+            contentScale = androidx.compose.ui.layout.ContentScale.FillWidth, alignment = Alignment.TopCenter,
+            modifier = Modifier.size(width = 32.dp, height = 32.dp).scale(1.9f).offset(y = 6.dp),
         )
     }
 }
 
-@Composable
-private fun KaiBubble(text: String) {
-    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
-        Column(
-            modifier = Modifier
-                .widthIn(max = 310.dp)
-                .background(Color.White, RoundedCornerShape(18.dp, 18.dp, 18.dp, 4.dp))
-                .border(1.dp, Primary.copy(alpha = 0.18f), RoundedCornerShape(18.dp, 18.dp, 18.dp, 4.dp))
-                .padding(horizontal = 14.dp, vertical = 10.dp),
-        ) {
-            Text("Kai", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Primary)
-            Text(text, style = MaterialTheme.typography.bodyLarge, color = com.shopai.app.ui.theme.TextPrimary)
+/** The reply with its amounts and the owner's people marked (KaiReplyMarks). */
+private fun marked(text: String, names: List<String>): androidx.compose.ui.text.AnnotatedString =
+    androidx.compose.ui.text.buildAnnotatedString {
+        append(text)
+        com.shopai.app.brain.note.KaiReplyMarks.of(text, names).forEach { mk ->
+            val color = when (mk.kind) {
+                com.shopai.app.brain.note.KaiMarkKind.AMOUNT_IN -> com.shopai.app.ui.kai.MoneyIn
+                com.shopai.app.brain.note.KaiMarkKind.AMOUNT_OUT -> com.shopai.app.ui.kai.MoneyOut
+                else -> Color.Unspecified
+            }
+            addStyle(androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.Bold, color = color), mk.start, mk.end)
         }
     }
-}
