@@ -380,4 +380,25 @@ class KaiNoteTest {
             assertEquals("${chat.last!!.reply.text}", KaiNoteState.SAVE_SUCCESS, chat.flow.noteState)
         }
     }
+
+    /** A new product's draft waiting for Confirm, then "Kadaiku saraku vandhuruku": the goods question — never a person "Sara". */
+    @Test fun goodsSaidWithADraftWaiting() {
+        for ((lines, lang) in listOf(
+            listOf("Noodles 100 pieces", "10", "12", "Kadaiku saraku vandhuruku") to KaiLang.TANGLISH,
+            listOf("நூடுல்ஸ் 100 பீஸ்", "10", "12", "கடைக்கு சரக்கு வந்திருக்கிறது") to KaiLang.TAMIL,
+        )) {
+            val (agent, inv) = kai()
+            val chat = Chat(agent, lang, today)
+            lines.dropLast(1).forEach { chat.say(it) }
+            val draft = chat.last!!
+            val asked = chat.say(lines.last())
+            assertTrue(asked.reply.text, asked.reply.text.contains("Enna saaman vandhuruku") || asked.reply.text.contains("என்ன சாமான் வந்திருக்கு"))
+            assertTrue(asked.reply.text, !asked.reply.text.contains("Sara "))
+            // The draft's Confirm now puts it in the goods list — nothing saved.
+            val before = inv.items.size
+            chat.tap(confirmOf(draft))
+            assertEquals(before, inv.items.size)
+            assertEquals(chat.last!!.reply.text, KaiNoteState.LISTED, chat.flow.noteState)
+        }
+    }
 }

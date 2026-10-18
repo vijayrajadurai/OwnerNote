@@ -261,9 +261,43 @@ object KaiSpokenWords {
     /** Number words as [normalize] leaves them (Tanglish), for "a unit right after its number". */
     val numberWordsPattern = "onnu|oru|rendu|moonu|naalu|anju|aaru|ezhu|ettu|ombodhu|pathu|one|two|three|four|five|six|seven|eight|nine|ten"
 
+    private fun wordRule(from: String, to: String) = Regex("""(?<![\p{L}\p{M}])$from(?![\p{L}\p{M}])""") to to
+    private fun tailRule(from: String, to: String) = Regex("""(?<=[\p{L}\p{M}])$from(?![\p{L}\p{M}])""") to to
+    /** "தர வேண்டும்", "கொடுக்க வேண்டும்", "பண்ண வேண்டும்": the verb + "-ணும்". */
+    private val mustRule = Regex("""(?<![\p{L}\p{M}])([\u0B80-\u0BFF]*[\u0B95-\u0BB9])\s+வேண்டும்(?![\p{L}\p{M}])""")
+    /** In order: each rule sees the line as the rules before it left it. Made once — [normalize] runs on every line. */
+    private val writtenRules: List<Pair<Regex, String>> by lazy {
+        listOf(
+            wordRule("வேண்டும்", "வேணும்"), wordRule("வேண்டாம்", "வேணாம்"),
+            tailRule("ருக்கிறதா", "ருக்கா"), tailRule("ருக்கிறது", "ருக்கு"), tailRule("ருக்கின்றன", "ருக்கு"),
+            tailRule("கிறது", "குது"), tailRule("கிறார்கள்", "குறாங்க"), tailRule("கிறார்", "குறார்"), tailRule("கிறேன்", "குறேன்"), tailRule("கிறான்", "குறான்"),
+            tailRule("ுங்கள்", "ுங்க"), tailRule("ார்கள்", "ாங்க"),
+            wordRule("ஆகிவிட்டது", "ஆயிடுச்சு"),
+            tailRule("துவிட்டேன்", "துட்டேன்"), tailRule("துவிட்டான்", "துட்டான்"), tailRule("துவிட்டார்", "துட்டார்"), tailRule("துவிட்டாங்க", "துட்டாங்க"),
+            tailRule("துவிட்டது", "துடுச்சு"),
+            tailRule("ிவிட்டேன்", "ிட்டேன்"), tailRule("ிவிட்டான்", "ிட்டான்"), tailRule("ிவிட்டார்", "ிட்டார்"), tailRule("ிவிட்டது", "ிடுச்சு"),
+            wordRule("வந்தது", "வந்துச்சு"),
+            Regex("""(?<![\p{L}\p{M}])கொடு""") to "குடு",
+            wordRule("இல்லை", "இல்ல"), wordRule("ஆமாம்", "ஆமா"),
+        )
+    }
+
+    /**
+     * Written (formal) Tamil the phone's mic often writes, back to the spoken forms Kai's words are kept in (owner, 18 Oct 2026:
+     * "கடைக்கு சரக்கு வந்திருக்கிறது" was not read; "text-la varudhu, mic-la varala"): "தர வேண்டும்" → "தரணும்", "இருக்கிறது" →
+     * "இருக்கு", "சொல்லுங்கள்" → "சொல்லுங்க", "கொடுத்துவிட்டேன்" → "குடுத்துட்டேன்", "இல்லை" → "இல்ல". Only word endings and these
+     * few words change; names and other words stay as written.
+     */
+    fun spoken(text: String): String {
+        if (!hasTamil(text)) return text
+        var s = mustRule.replace(text) { m -> m.groupValues[1] + "ணும்" }
+        for ((re, to) in writtenRules) s = re.replace(s, to)
+        return s
+    }
+
     fun normalize(text: String): String {
         if (!hasTamil(text)) return text
-        var s = amounts(text)
+        var s = amounts(spoken(text))
         // Units first ("மணி நேரத்துல" before "மணி").
         for ((re, unit) in units) {
             s = re.replace(s) { m -> if (m.value.endsWith("ல") || m.value.endsWith("ல்") || m.value.endsWith("லே")) "$unit la" else unit }

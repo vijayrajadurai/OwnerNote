@@ -103,6 +103,30 @@ object KaiMicForm {
         return s.takeIf { it != typed }
     }
 
+    /**
+     * The mic's line in written (formal) Tamil, as the phone often writes what was said (owner, 18 Oct 2026: "Kadaiku saraku
+     * vandhuruku" came out "கடைக்கு சரக்கு வந்திருக்கிறது" and was not read; "text-la varudhu, mic-la varala"): "இருக்கு" →
+     * "இருக்கிறது", "சொல்லுங்க" → "சொல்லுங்கள்", "தரணும்" → "தர வேண்டும்", "குடுத்தான்" → "கொடுத்தான்", "குடுத்துட்டேன்" →
+     * "கொடுத்துவிட்டேன்", "இல்ல" → "இல்லை". Null when nothing changes.
+     */
+    fun written(spoken: String): String? {
+        var s = spoken
+        fun word(from: String, to: String) { s = Regex("""(?<![\p{L}\p{M}])$from(?![\p{L}\p{M}])""").replace(s, to) }
+        fun tail(from: String, to: String) { s = Regex("""(?<=[\p{L}\p{M}])$from(?![\p{L}\p{M}])""").replace(s, to) }
+        word("வேணும்", "வேண்டும்")
+        tail("ணும்", " வேண்டும்")
+        tail("ருக்கா", "ருக்கிறதா")
+        tail("ருக்கு", "ருக்கிறது")
+        word("இருக்கு", "இருக்கிறது")
+        tail("ுங்க", "ுங்கள்")
+        tail("ிட்டேன்", "ிவிட்டேன்"); tail("ிட்டான்", "ிவிட்டான்")
+        tail("துட்டேன்", "துவிட்டேன்"); tail("துட்டான்", "துவிட்டான்"); tail("துட்டார்", "துவிட்டார்"); tail("துட்டாங்க", "துவிட்டார்கள்")
+        word("வந்துச்சு", "வந்தது"); word("ஆயிடுச்சு", "ஆகிவிட்டது")
+        s = Regex("""(?<![\p{L}\p{M}])குடு""").replace(s, "கொடு")
+        word("இல்ல", "இல்லை"); word("ஆமா", "ஆமாம்")
+        return s.takeIf { it != spoken }
+    }
+
     /** A phrase Kai repeats back to a spoken line: the owner's words as the mic wrote them, names as the shop has them. */
     fun repeated(typed: String): String = Regex("""(?<![\p{L}])[a-z]+(?![\p{L}])""").replace(typed) { m -> words[m.value] ?: m.value }
 
