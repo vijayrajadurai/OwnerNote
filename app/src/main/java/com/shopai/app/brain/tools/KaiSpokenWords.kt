@@ -194,7 +194,36 @@ object KaiSpokenWords {
         "டேமேஜ்" to "damage", "ரிட்டர்ன்" to "return", "எக்ஸ்பைரி" to "expiry", "லோ" to "low", "ஃபாஸ்ட்" to "fast", "ஸ்லோ" to "slow", "மூவ்" to "move",
         "ஆகுது" to "aagudhu", "ஆகல" to "agala", "சேல்ஸ்" to "sales", "இருப்பு" to "iruppu", "கையில" to "kaila",
         "மூட்டை" to "moota", "பாட்டில்" to "bottle", "லிட்டர்" to "litre", "டஜன்" to "dozen", "பீஸ்கள்" to "pieces",
-    ).sortedByDescending { it.first.length }
+        // ---- the owner's own ways of saying it (19 Oct 2026; read by KaiIntentWords) ----
+        // stock in
+        "இறக்குமதி" to "irakkumadhi", "இறங்கிடுச்சு" to "irangiduchu", "இறங்குச்சு" to "iranguchu", "இறங்கிச்சு" to "irangichu",
+        "சேர்ந்துச்சு" to "serndhuchu", "சேந்துச்சு" to "sendhuchu", "சேர்ந்திருக்கு" to "serndhirukku", "டெலிவரி" to "delivery", "அன்லோட்" to "unload",
+        "அடுக்கினேன்" to "adukkinen", "அடுக்கிட்டேன்" to "adukkitten", "அடுக்கினோம்" to "adukkinom", "ஏத்திட்டேன்" to "eathitten", "ஏத்தினேன்" to "eathinen",
+        "ஏத்தினோம்" to "eathinom", "கிடைச்சுச்சு" to "kidaichuchu", "கிடைச்சிடுச்சு" to "kidaichiduchu", "ரீஃபில்" to "refill", "ரேக்ல" to "rack la",
+        "பண்ணோம்" to "pannom", "பண்ணினோம்" to "panninom",
+        // stock out
+        "தீர்ந்துடுச்சு" to "theernjuduchu", "தீர்ந்துச்சு" to "theerndhuchu", "தீர்ந்திடுச்சு" to "theernjuduchu", "காலி" to "kaali",
+        "முடிஞ்சிடுச்சு" to "mudinjiduchu", "முடிஞ்சுச்சு" to "mudinjuchu", "வீட்டுக்கு" to "veetukku", "எடுத்துட்டேன்" to "eduthutten", "எடுத்தேன்" to "eduthen",
+        "திருப்பி" to "thiruppi", "எலி" to "eli", "தின்னுடுச்சு" to "thinnuduchu", "தின்னிடுச்சு" to "thinniduchu", "கோடவுன்ல" to "godown la",
+        "கோடவுன்" to "godown", "குடோன்ல" to "godown la", "சொந்த" to "sondha", "யூஸ்க்கு" to "use ku", "யூஸ்" to "use", "முடிச்சான்" to "mudichaan",
+        "முடிச்சாங்க" to "mudichaanga", "கட்டி" to "katti",
+        "ரேக்" to "rack", "அடுத்த" to "adutha", "சேத்து" to "sethu", "வேண்டி" to "vendi", "போட" to "poda", "அனுப்பணும்" to "anuppanum",
+        "பூட்டணும்" to "poottanum", "ஆகணும்" to "aaganum", "நேரம்" to "neram", "ஃப்ரீ" to "free", "ஃப்ரீயா" to "free-a", "வந்து" to "vandhu", "கடிச்சிடுச்சு" to "kadichiduchu", "கடிச்சுச்சு" to "kadichuchu", "ஒழுகுச்சு" to "oluguchu",
+        "ஒழுகிடுச்சு" to "olugiduchu", "பழசாகிடுச்சு" to "pazhasaagiduchu", "பழசாயிடுச்சு" to "pazhasaayiduchu", "திருடு" to "thirudu", "திருட்டு" to "thiruttu",
+        // reminders
+        "எழுப்பி" to "ezhuppi", "விடு" to "vidu", "விடுங்க" to "vidunga", "தட்டி" to "thatti", "மறந்துடாம" to "maranthudaama", "மறந்திடாம" to "maranthudaama",
+        "மறக்காம" to "marakkaama", "பாத்துக்கோ" to "paathuko", "பார்த்துக்கோ" to "paathuko", "எழுதி" to "eluthi", "வை" to "vai", "வச்சுக்கோ" to "vachuko",
+        "கேக்க" to "kekka", "கேட்க" to "kekka", "கட்ட" to "katta", "சனியும்" to "saniyum", "வெள்ளியும்" to "velliyum", "ஞாயிறும்" to "nyayirum",
+        "மண்டே" to "monday", "டியூஸ்டே" to "tuesday", "ட்யூஸ்டே" to "tuesday", "வெட்னஸ்டே" to "wednesday", "தர்ஸ்டே" to "thursday", "தர்ஸ்டே" to "thursday",
+        "ஃப்ரைடே" to "friday", "பிரைடே" to "friday", "ப்ரைடே" to "friday", "சாட்டர்டே" to "saturday", "சாட்டர்டேவும்" to "saturday", "சண்டே" to "sunday",
+        // money
+        "பக்கி" to "pakki", "வச்சுட்டு" to "vachuttu", "வெச்சுட்டு" to "vachuttu", "போனான்" to "ponaan", "போனாங்க" to "ponaanga", "போயிட்டான்" to "poyitaan",
+        "சொல்லிட்டு" to "sollitu", "போட்டுக்கோ" to "potukko", "பற்று" to "patru", "வச்சாங்க" to "vechaanga", "வெச்சாங்க" to "vechaanga", "வச்சான்" to "vechaan",
+        "பாதி" to "paadhi", "காசு" to "kaasu",
+        // expiry
+        "முடியுற" to "mudiyura", "முடியப்போகுது" to "mudiyapogudhu", "நெருங்குது" to "nerungudhu", "கெட்டுப்" to "kettu", "போகும்" to "pogum",
+        "தாண்டிடுச்சு" to "thaandiduchu", "தாண்டின" to "thaandina", "பெஸ்ட்" to "best", "பிஃபோர்" to "before", "பிபோர்" to "before",
+    ).distinctBy { it.first }.sortedByDescending { it.first.length }
 
     private val wordMap = words.toMap()
 
@@ -380,6 +409,11 @@ object KaiSpokenWords {
             if (w.endsWith("ும்") && w.length > 4) {
                 val stem = w.dropLast(3) + "்"
                 nameWords.filter { n -> startsAlike(stem, n) && (sounds(stem, n) || sounds(stem, soft(n))) }.singleOrNull()?.let { return@replace "$it um" + m.groupValues[2] }
+            }
+            // "ஸ்டோர்ஸ்ல" (at Murugan Stores): the name, then "-la" — never a name "Storsla" (owner's test, 19 Oct 2026).
+            if (w.endsWith("்ல") && w.length > 4) {
+                val stem = w.dropLast(1)
+                nameWords.filter { n -> startsAlike(stem, n) && (sounds(stem, n) || sounds(stem, soft(n))) }.singleOrNull()?.let { return@replace "$it-la" + m.groupValues[2] }
             }
             // A name cut short, said right before its quantity ("கோல்கா 1 பாக்ஸ்" = Colgate): the one name it is the start of.
             val beforeQty = Regex("""^\s*\d""").containsMatchIn(text.substring(m.range.last + 1))

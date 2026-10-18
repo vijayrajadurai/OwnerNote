@@ -80,6 +80,18 @@ object KaiMicForm {
         thandhaa=தந்தா pesanum=பேசணும் rent=ரெண்ட் current=கரண்ட் vaadagai=வாடகை kattanum=கட்டணும் vithucha=வித்துச்சா vandhucha=வந்துச்சா
         batch=பேட்ச் expiry=எக்ஸ்பைரி strip=ஸ்ட்ரிப் paracetamol=பாராசிட்டமால் tube=டியூப் dolo=டோலோ
         palan=பலன் inniku=இன்னிக்கு biryani=பிரியாணி recipe=ரெசிபி gst=ஜிஎஸ்டி kooda=கூட bore=போர் adikkudhu=அடிக்குது cheque=செக் card=கார்டு
+        aaganum=ஆகணும் aayiduchu=ஆயிடுச்சு aayirathu=ஆயிரத்து adaichuttaan=அடைச்சுட்டான் adukkinen=அடுக்கினேன் adukkitten=அடுக்கிட்டேன் adutha=அடுத்த
+        ainooru=ஐநூறு anuppanum=அனுப்பணும் delivery=டெலிவரி eathinom=ஏத்தினோம் eathitten=ஏத்திட்டேன் eduthen=எடுத்தேன் eduthutten=எடுத்துட்டேன்
+        eli=எலி ellaarum=எல்லாரும் eluthi=எழுதி ethana=எத்தனை ezhuppi=எழுப்பி free=ஃப்ரீ godown=கோடவுன் irakkumadhi=இறக்குமதி irangichu=இறங்கிச்சு
+        kaali=காலி kaasu=காசு kadaikku=கடைக்கு kadanukku=கடனுக்கு kadichiduchu=கடிச்சிடுச்சு katta=கட்ட kekka=கேக்க kidaichiduchu=கிடைச்சிடுச்சு
+        madhiyam=மதியம் mani=மணி marakkaama=மறக்காம marandhudaama=மறந்துடாம maranthudaama=மறந்துடாம monday=மண்டே moonaayiram=மூவாயிரம்
+        mothathula=மொத்தத்துல mudichaan=முடிச்சான் naalanaikku=நாளன்னைக்கு naalanniki=நாளன்னைக்கு neram=நேரம் oluguchu=ஒழுகுச்சு
+        ozhugiduchu=ஒழுகிடுச்சு paathuko=பாத்துக்கோ pakki=பக்கி pannom=பண்ணோம் patru=பற்று pazhasaagiduchu=பழசாகிடுச்சு poda=போட
+        poitaan=போயிட்டான் poottanum=பூட்டணும் pottaan=போட்டான் potukko=போட்டுக்கோ poyitaan=போயிட்டான் raathiri=ராத்திரி rack=ரேக்
+        rendaayiram=ரெண்டாயிரம் saayangaalam=சாயங்காலம் saturday=சாட்டர்டே serndhirukku=சேர்ந்திருக்கு serndhuchu=சேர்ந்துச்சு sethu=சேத்து
+        sollitu=சொல்லிட்டு sondha=சொந்த thatti=தட்டி theernjuduchu=தீர்ந்துடுச்சு theernthuduchu=தீர்ந்துடுச்சு thinnuduchu=தின்னுடுச்சு
+        thirudu=திருடு thirupi=திருப்பி unload=அன்லோட் use=யூஸ் vachitu=வச்சுட்டு vachuko=வச்சுக்கோ vandhu=வந்து vechaan=வச்சான்
+        vechaanga=வச்சாங்க vechutu=வச்சுட்டு veetukku=வீட்டுக்கு veetuku=வீட்டுக்கு vei=வை vendi=வேண்டி vidu=விடு vidunga=விடுங்க
     """.trim().split(Regex("""\s+""")).associate { it.substringBefore('=') to it.substringAfter('=') }
 
     /** Said as one word ("katti tan" is "கட்டிட்டான்"). */

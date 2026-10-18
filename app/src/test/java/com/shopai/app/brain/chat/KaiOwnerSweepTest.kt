@@ -351,6 +351,10 @@ class KaiOwnerSweepTest {
         reminder("naalai kaalai 9 manikku ABC Traders ku payment pannanum remind pannu", LocalDateTime.of(2026, 10, 9, 9, 0), "ABC Traders")
         reminder("15th 10 manikku Lakshmi kitta panam vaanganum remind pannu", LocalDateTime.of(2026, 10, 15, 10, 0), "Lakshmi")
         reminder("every monday 9 am stock check remind pannu", null, "stock", repeat = true)
+        // Said the owner's way (19 Oct 2026): "ovvoru Saniyum", "ovvoru Velliyum", "dhinamum … ezhuppi vidu" repeat.
+        reminder("ovvoru Saniyum kaalai 8 manikku stock ennanum nu sollu", null, "stock", repeat = true)
+        reminder("ovvoru Velliyum saayangaalam 6 manikku stock check pannanum nu sollu", null, "stock", repeat = true)
+        reminder("dhinamum raathiri 9 manikku kallaa kanakku paakka ezhuppi vidu", null, repeat = true)
         reminder("Friday 5 pm Murugan Stores payment nyabagam paduthu", LocalDateTime.of(2026, 10, 9, 17, 0), "Murugan")
         reminder("remind me at 6 pm to close the shop", LocalDateTime.of(2026, 10, 8, 18, 0), "close")
     }
@@ -855,6 +859,24 @@ class KaiOwnerSweepTest {
             when (val t = s.tools.rems.singleOrNull()?.title) { null -> "no reminder"; "சபரிக்கு பர்த்டே விஷ் பண்ணணும்" -> null; else -> "title: $t" } }
         talk("reminde pannu", listOf("December 3 morning 10 sabari ku birthday ku wish pannanum reminde pannu", "TAP")) { s ->
             when (val t = s.tools.rems.singleOrNull()?.title) { null -> "no reminder"; else -> if (t.contains("remind", true) || t.contains("ரிமைண்ட்")) "title: $t" else null } }
+        // A word Kai has never heard for what happened (owner, 19 Oct 2026: "words maaralaam, intent purinjikkanum"): a person and an
+        // amount is still an entry, a product and a count is still stock — only which way is asked, never the balance read out with
+        // the amount dropped, never "edha pathi?", never a guess. The next word finishes it.
+        val wayAsked: (Shop) -> String? = { s -> lastTurn?.reply?.text.orEmpty().let { t ->
+            if (s.nothingWritten() && (t.contains("vandhucha") || t.contains("வந்துச்சா") || t.contains("kuduthaara") || t.contains("குடுத்தாரா") ||
+                    t.contains("கொடுத்தாரா"))) null else "said: $t" } }
+        talk("person, amount, a word never heard: which way", listOf("Kumar 600 jamaai pannitaan"), check = wayAsked)
+        talk("product, count, a word never heard: which way", listOf("Colgate 2 box gadabada aachu"), check = wayAsked)
+        talk("product, count, a word never heard: then vandhuchu", listOf("Colgate 2 box gadabada aachu", "vandhuchu", "TAP"), check = stock("Colgate" to "336"))
+        talk("product, count, a word never heard: then vithuchu", listOf("Rice 5 kg gadabada aachu", "vithuchu", "TAP"), check = stock("Rice" to "245"))
+        // A time is never an amount, and "sollu" after a report word is the report, not a reminder.
+        talk("11 manikku is never ₹11", listOf("naalai 11 manikku Lakshmi baaki vaanga maranthudaama sollu")) { s ->
+            if (s.tools.saved.isEmpty() && lastTurn?.card?.lines.orEmpty().none { it.contains("₹11") }) null else "drafted ₹11: ${lastTurn?.card?.lines}" }
+        talk("innaiku sales sollu is the sales", listOf("innaiku sales sollu")) { s ->
+            if (s.nothingWritten() && lastTurn?.card?.buttons.orEmpty().none { it.action is KaiAction.ConfirmReminder }) null else "read as a reminder" }
+        // "pudhu batch vandhuchu" names no batch: the batch is never "vandhuchu".
+        talk("pudhu batch vandhuchu is no batch", listOf("Bournvita 10 bottle pudhu batch vandhuchu", "50", "60")) { _ ->
+            if (lastTurn?.card?.lines.orEmpty().none { it.contains("vandhuchu", true) || it.contains("வந்துச்சு") }) null else "batch: ${lastTurn?.card?.lines}" }
     }
 
     /** KAI's own feed of owner lines (src/test/resources/kai/owner-lines.txt): each played like the lines above. */
