@@ -152,17 +152,19 @@ class KaiOwnerSweepTest {
 
     private val failures = mutableListOf<String>()
     private var count = 0
-    private fun fail(what: String, s: Shop, why: String) { failures += "[${if (mic) "mic: " else ""}$what] $why${s.log}" }
+    private fun fail(what: String, s: Shop, why: String) { failures += "[${if (written) "mic written: " else if (mic) "mic: " else ""}$what] $why${s.log}" }
 
     /**
      * Every line is played twice: typed, then as Kai Chat's mic writes it ([KaiMicForm]: Tamil script). The text box and the
      * mic go to the same Kai and must do the same thing (owner's rule, 10 Oct 2026) — a fix that works only typed fails here.
      */
     private var mic = false
+    /** The mic writing it in written (formal) Tamil ([KaiMicForm.written]) — the third way each line is played. */
+    private var written = false
     /** The owner's line, typed or as the mic writes it (null: the mic would not hear it as typed — not replayed). */
-    private fun heard(typed: String): String? = if (mic) KaiMicForm.of(typed) else typed
+    private fun heard(typed: String): String? = if (!mic) typed else KaiMicForm.of(typed)?.let { m -> if (written) KaiMicForm.written(m) else m }
     /** A short answer to Kai's question, said the same way as the line. */
-    private fun answer(typed: String): String = if (mic) KaiMicForm.of(typed) ?: typed else typed
+    private fun answer(typed: String): String = if (mic) KaiMicForm.of(typed)?.let { m -> if (written) KaiMicForm.written(m) ?: m else m } ?: typed else typed
 
     /** A money entry: drafted, confirmed (answering a due-date question with "due venam"), then exactly this in the books. */
     private fun entry(typed: String, kind: PlanKind, party: String, amount: String, due: LocalDate? = null, mode: PaymentMode? = null) {
@@ -988,6 +990,10 @@ class KaiOwnerSweepTest {
         // The same lines said into the mic.
         mic = true
         moneyLines(); reminderLines(); stockLines(); questionLines(); conversationLines(); feedLines()
+        // And as the phone often writes it: written Tamil ("இருக்கிறது", "தர வேண்டும்", "கொடுத்தான்") — owner, 18 Oct 2026.
+        written = true
+        moneyLines(); reminderLines(); stockLines(); questionLines(); conversationLines(); feedLines()
+        written = false
         mic = false
         System.getProperty("sweep.out")?.let { java.io.File(it).writeText("$count lines, ${failures.size} failed\n\n" + failures.joinToString("\n\n")) }
         assertTrue("${failures.size} of $count owner lines failed:\n\n" + failures.joinToString("\n\n"), failures.isEmpty())

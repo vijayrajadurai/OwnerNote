@@ -187,6 +187,11 @@ object KaiInventory {
         val joined = words.joinToString("")
         // A whole word first ("Coconut oil" → oil, "Muttaikose" → cabbage), then a long word inside a joined name ("Mallipoo").
         kindWords.firstOrNull { (_, list) -> list.any { w -> w in words } }?.let { return it.first }
+        // A plural said for the name ("Asian Paints", "Biscuits", "Tomatoes"): its one word, as the mic's Tamil already is read
+        // (owner, 18 Oct 2026: typed "Asian Paints 100 litre" was taken for a drink, by mic for paint).
+        val single = words.filter { it.length >= 4 && it.endsWith("s") && !it.endsWith("ss") }
+            .flatMap { listOfNotNull(it.dropLast(1), it.takeIf { w -> w.endsWith("es") }?.dropLast(2)) }
+        if (single.isNotEmpty()) kindWords.firstOrNull { (_, list) -> list.any { w -> w in single } }?.let { return it.first }
         kindWords.firstOrNull { (_, list) -> list.any { w -> w.length >= 6 && joined.contains(w) } }?.let { return it.first }
         // The name as the mic wrote it ("பெனட்ரில் சிரப்", "காட்டன் பேண்டேஜ்"): its words by sound — the same kind as typed; the
         // kind most of its words sound like.
