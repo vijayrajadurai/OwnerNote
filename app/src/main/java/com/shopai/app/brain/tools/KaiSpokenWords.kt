@@ -206,7 +206,9 @@ object KaiSpokenWords {
         "முடிஞ்சிடுச்சு" to "mudinjiduchu", "முடிஞ்சுச்சு" to "mudinjuchu", "வீட்டுக்கு" to "veetukku", "எடுத்துட்டேன்" to "eduthutten", "எடுத்தேன்" to "eduthen",
         "திருப்பி" to "thiruppi", "எலி" to "eli", "தின்னுடுச்சு" to "thinnuduchu", "தின்னிடுச்சு" to "thinniduchu", "கோடவுன்ல" to "godown la",
         "கோடவுன்" to "godown", "குடோன்ல" to "godown la", "சொந்த" to "sondha", "யூஸ்க்கு" to "use ku", "யூஸ்" to "use", "முடிச்சான்" to "mudichaan",
-        "முடிச்சாங்க" to "mudichaanga", "கட்டி" to "katti", "கடிச்சிடுச்சு" to "kadichiduchu", "கடிச்சுச்சு" to "kadichuchu", "ஒழுகுச்சு" to "oluguchu",
+        "முடிச்சாங்க" to "mudichaanga", "கட்டி" to "katti",
+        "ரேக்" to "rack", "அடுத்த" to "adutha", "சேத்து" to "sethu", "வேண்டி" to "vendi", "போட" to "poda", "அனுப்பணும்" to "anuppanum",
+        "பூட்டணும்" to "poottanum", "ஆகணும்" to "aaganum", "நேரம்" to "neram", "ஃப்ரீ" to "free", "ஃப்ரீயா" to "free-a", "வந்து" to "vandhu", "கடிச்சிடுச்சு" to "kadichiduchu", "கடிச்சுச்சு" to "kadichuchu", "ஒழுகுச்சு" to "oluguchu",
         "ஒழுகிடுச்சு" to "olugiduchu", "பழசாகிடுச்சு" to "pazhasaagiduchu", "பழசாயிடுச்சு" to "pazhasaayiduchu", "திருடு" to "thirudu", "திருட்டு" to "thiruttu",
         // reminders
         "எழுப்பி" to "ezhuppi", "விடு" to "vidu", "விடுங்க" to "vidunga", "தட்டி" to "thatti", "மறந்துடாம" to "maranthudaama", "மறந்திடாம" to "maranthudaama",

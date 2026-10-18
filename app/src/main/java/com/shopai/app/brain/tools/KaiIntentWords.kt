@@ -26,7 +26,7 @@ object KaiIntentWords {
     // ------------------------------------------------------------------ cues
 
     /** A count said: a digit, or a number word ("rendu", "aimbadhu"). */
-    private val quantity = Regex("""\d|""" + B + """(?:oru|onnu|rendu|moonu|naalu|anju|aaru|ezhu|ettu|pathu|pannendu|irupadhu|iruvadhu|aimbadhu|ambadhu|nooru)""" + E, RegexOption.IGNORE_CASE)
+    private val quantity = Regex("""\d|""" + B + """(?:oru|onnu|rendu|moonu|naalu|anju|aaru|ezhu|ettu|pathu|pannendu|irupadhu|iruvadhu|aimbadhu|ambadhu|aimbathu|nooru|\p{L}*nooru|\p{L}*nuru|aa?yira\p{L}*|thousand|hundred)""" + E, RegexOption.IGNORE_CASE)
 
     /** A time or a day: "10 manikku", "naalaiku", "saayangaalam", "Friday", "adutha Monday", "ovvoru Sani", "2 mani neram kalichu". */
     private val timeCue = Regex(

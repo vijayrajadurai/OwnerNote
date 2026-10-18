@@ -1965,7 +1965,8 @@ class KaiAgent(
                 return if (name.isEmpty() && !photoAsked.containsMatchIn(text)) askStockLine(said, lang) else stockCamera(name, said, lang, products)
             }
             stockChange(text, said, lang, products, people)?.let { return it }
-            if (plans.isEmpty()) stockWayMissing(text, lang, products, people)?.let { return it }
+            // (with the owner's word memory, its own guess comes first — "pochaanga" sounds like went: "stock out pannradha?")
+            if (plans.isEmpty() && learner == null) stockWayMissing(text, lang, products, people)?.let { return it }
         }
         if (com.shopai.app.brain.tools.KaiIntents.isBillScan(text)) {
             val cmd = KaiCommands.route(text, at, people)
@@ -2017,8 +2018,6 @@ class KaiAgent(
                             tl = "Owner, $name-nu product-um illa, customer-um illa. Product-na mudhalla add pannunga.",
                             en = "Owner, there's no product or customer called $name. If it's a product, add it first.")
                     }
-                // "Kumar 500 <a word Kai doesn't know>": an entry whose way is missing — asked, never the balance instead.
-                if (plans.isEmpty() && askDepth == 1) entryWayMissing(text, lang, people, products)?.let { return it }
                 rememberNamedBusinessContext(text, people)
                 learner?.before(said, lang)?.let { step ->
                     return when (step) {
@@ -2028,6 +2027,10 @@ class KaiAgent(
                 }
                 conversation(text, said, lang, at)
                     ?: learner?.unknown(text, said, lang, people, products.orEmpty().map { it.name })
+                    // A product and a count / a person and an amount with a word neither Kai nor the owner's memory knows: which
+                    // way is asked — never "edha pathi?", never the balance with the amount dropped (owner, 19 Oct 2026).
+                    ?: products?.takeIf { plans.isEmpty() }?.let { stockWayMissing(text, lang, it, people) }
+                    ?: (if (plans.isEmpty() && askDepth == 1) entryWayMissing(text, lang, people, products) else null)
                     ?: run {
                         val answer = questionOrLearn(routed, text, said, lang, at.toLocalDate(), people, products.orEmpty())
                         if (answer.reply.intent != ChatIntent.UNKNOWN) conversationState.currentIntent = "BUSINESS_QUERY"
