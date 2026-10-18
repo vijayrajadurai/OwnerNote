@@ -202,46 +202,40 @@ fun KaiHero(
 }
 
 /**
- * Vaanganum (green) or Kudukkanum (red): the total, how many, the late / today split as a bar with the amounts, and the people's
- * initials. Tapping opens the full list ([MoneySheet]).
+ * Vaanganum (green) or Kudukkanum (red), small (owner, 18 Oct 2026: "green and red box romba perusa irukku"): the total, how many
+ * and how much is late, and a thin late / today bar. Tapping opens the full list ([MoneySheet]).
  */
 @Composable
 fun MoneyTile(title: String, people: String, side: HomeSide, toShop: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val color = if (toShop) HomeColors.Leaf else HomeColors.Kum
     val late = if (toShop) HomeColors.LateTint else Color(0xFFFFE4E0)
-    Column(modifier.tile(color).clickable { onClick() }.padding(start = 13.dp, end = 13.dp, top = 13.dp, bottom = 12.dp)) {
+    Column(modifier.tile(color, RoundedCornerShape(20.dp)).clickable { onClick() }.padding(horizontal = 12.dp, vertical = 10.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(if (toShop) Icons.Rounded.SouthWest else Icons.Rounded.NorthEast, contentDescription = null, tint = Color.White,
-                modifier = Modifier.size(15.dp))
-            Spacer(Modifier.width(5.dp))
-            Text(title, color = Color.White, fontSize = 12.5.sp, fontWeight = FontWeight.Bold, maxLines = 1, modifier = Modifier.weight(1f))
-            Box(Modifier.size(26.dp).clip(RoundedCornerShape(9.dp)).background(Color.White.copy(alpha = 0.2f)), contentAlignment = Alignment.Center) {
-                Icon(Icons.Rounded.ChevronRight, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
-            }
+                modifier = Modifier.size(14.dp))
+            Spacer(Modifier.width(4.dp))
+            Text(title, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f))
+            if (side.count > 0) Text(
+                "${side.count}", color = Color.White, fontSize = 10.5.sp, fontWeight = FontWeight.Black, maxLines = 1,
+                modifier = Modifier.clip(RoundedCornerShape(7.dp)).background(Color.White.copy(alpha = 0.22f)).padding(horizontal = 6.dp, vertical = 1.dp),
+            )
+            Icon(Icons.Rounded.ChevronRight, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
         }
-        Text(formatInr(side.total), color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Black, maxLines = 1,
-            modifier = Modifier.padding(top = 8.dp))
-        Text(people, color = Color.White.copy(alpha = 0.9f), fontSize = 11.5.sp)
+        Text(formatInr(side.total), color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.Black, maxLines = 1,
+            modifier = Modifier.padding(top = 2.dp))
+        // How much is late (the people are counted in the badge above); no late → how many people.
+        Text(
+            if (side.late > 0) stringOf(R.string.home_late) + " " + formatInr(side.late) else people,
+            color = Color.White.copy(alpha = 0.92f), fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis,
+        )
         SplitBar(listOf(side.late to late, side.today to HomeColors.TodayTint, side.later to Color.White), Color.White.copy(alpha = 0.25f),
-            Modifier.padding(top = 10.dp))
-        LegendRow(late, stringOf(R.string.home_late), side.late)
-        LegendRow(HomeColors.TodayTint, stringOf(R.string.home_today), side.today)
-        if (side.parties.isNotEmpty()) InitialsStack(side.parties.take(4).map { it.name }, color, Modifier.padding(top = 8.dp))
+            Modifier.padding(top = 7.dp), 5.dp)
     }
 }
 
 @Composable
 private fun stringOf(id: Int): String = androidx.compose.ui.res.stringResource(id)
-
-@Composable
-private fun LegendRow(dot: Color, label: String, amount: Double) {
-    Row(Modifier.fillMaxWidth().padding(top = 5.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(7.dp).clip(RoundedCornerShape(2.dp)).background(dot))
-        Spacer(Modifier.width(5.dp))
-        Text(label, color = Color.White, fontSize = 11.sp, modifier = Modifier.weight(1f))
-        Text(formatInr(amount), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Black)
-    }
-}
 
 /** A thin bar split by amount (each part its colour), the rest the track. */
 @Composable
