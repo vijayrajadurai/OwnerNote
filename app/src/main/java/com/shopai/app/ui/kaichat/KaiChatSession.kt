@@ -32,6 +32,8 @@ data class KaiChatMessage(
     val voice: Boolean = false,
     /** Kai asking: what he has so far and the one thing asked (the question card's chips), null otherwise. */
     val ask: com.shopai.app.brain.note.KaiAskProgress? = null,
+    /** When it was said (shown small under the bubble). */
+    val at: Long = System.currentTimeMillis(),
 )
 
 /**
@@ -63,6 +65,9 @@ class KaiChatSession(
      * by real events — the mic, Kai's answer, the draft being saved or dropped (see [com.shopai.app.brain.note.KaiNoteFlow]).
      */
     var note by mutableStateOf(com.shopai.app.brain.note.KaiNoteFlow())
+    /** The owner's people in the books: their names are shown bold in Kai's replies. */
+    var names by mutableStateOf<List<String>>(emptyList())
+        private set
         private set
 
     /** The mic started / stopped (the screen's speech recognizer). */
@@ -192,6 +197,7 @@ class KaiChatSession(
         result.direct?.let { pendingDirect = id to it }
         lastMood = result.reply.mood
         lastReplyAt = System.currentTimeMillis()
+        names = runCatching { agent.peopleNames() }.getOrDefault(names)
         thinking = false
     }
 

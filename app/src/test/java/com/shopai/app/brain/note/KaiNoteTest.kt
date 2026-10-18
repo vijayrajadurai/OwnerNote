@@ -401,4 +401,49 @@ class KaiNoteTest {
             assertEquals(chat.last!!.reply.text, KaiNoteState.LISTED, chat.flow.noteState)
         }
     }
+
+    /** The credit / debit draft's digital card (owner, 18 Oct 2026): the same person, amount and balance Kai saves, typed or by mic. */
+    @Test fun aMoneyDraftCardShowsTheDraftsOwnNumbers() {
+        for ((line, lang) in listOf("Kumar ku 5000 credit kuduthen" to KaiLang.TANGLISH, "குமாருக்கு 5000 கிரெடிட் குடுத்தேன்" to KaiLang.TAMIL)) {
+            val (agent, _) = kai()
+            val chat = Chat(agent, lang, today)
+            chat.say(line)
+            val m = chat.flow.note!!.money!!
+            assertEquals("Kumar", m.name)
+            assertEquals("₹5,000", m.amount)
+            assertTrue(m.toShop)
+            assertTrue(m.heading, m.heading.contains(if (lang == KaiLang.TAMIL) "கிரெடிட்" else "CREDIT"))
+        }
+        // From a draft with balances: before → after and the bar's parts.
+        val plan = com.shopai.app.brain.tools.ActionPlan(key = "k", kind = com.shopai.app.brain.tools.PlanKind.DEBIT_TAKEN, partyName = "ABC Traders",
+            partyId = "s1", amount = BigDecimal("2000"), mode = com.shopai.app.books.model.PaymentMode.CASH,
+            balanceBefore = BigDecimal("10000"), balanceAfter = BigDecimal("12000"), said = "ABC Traders ku 2000 tharanum")
+        val d = KaiMoney.of(plan, KaiLang.TANGLISH, today)
+        assertEquals("DEBIT · KUDUKKANUM", d.heading)
+        assertTrue(!d.toShop)
+        assertEquals("ABC Traders-ku naan", d.balanceLabel)
+        assertEquals("₹10,000", d.before)
+        assertEquals("₹12,000", d.after)
+        assertEquals(10000f / 12000f, d.kept!!, 0.001f)
+        assertEquals(2000f / 12000f, d.changed!!, 0.001f)
+        // No balance from the books: no balance line, nothing made up.
+        val bare = KaiMoney.of(plan.copy(balanceBefore = null, balanceAfter = null), KaiLang.ENGLISH, today)
+        assertNull(bare.balanceLabel)
+        assertNull(bare.kept)
+    }
+
+    /** Kai's reply marked for the chat: amounts green / red by their sentence, the owner's people bold — the words unchanged. */
+    @Test fun replyMarks() {
+        fun kinds(t: String, names: List<String> = emptyList()) = KaiReplyMarks.of(t, names).map { t.substring(it.start, it.end) to it.kind }
+        assertEquals(listOf("Selvam" to KaiMarkKind.NAME, "₹6,000" to KaiMarkKind.AMOUNT_IN), kinds("Selvam ₹6,000 tharanum Owner.", listOf("Selvam")))
+        assertEquals(listOf("₹4,000" to KaiMarkKind.AMOUNT_IN), kinds("குமார் உங்களுக்கு ₹4,000 தரணும் ஓனர்."))
+        assertEquals(listOf("₹2,000" to KaiMarkKind.AMOUNT_OUT), kinds("Naan ABC Traders-ku ₹2,000 tharanum."))
+        assertEquals(listOf("₹2,000" to KaiMarkKind.AMOUNT_OUT), kinds("Mudinjudhu Owner ✅ ABC Traders-ku ₹2,000 kudukkanum-nu save aagiduchu."))
+        assertEquals(listOf("₹2,500" to KaiMarkKind.AMOUNT_IN), kinds("Ramesh owes you ₹2,500, Owner."))
+        // Each sentence its own: a sale total stays plain, the dues after it green.
+        assertEquals(listOf("₹1,200" to KaiMarkKind.AMOUNT, "₹500" to KaiMarkKind.AMOUNT_IN),
+            kinds("Innaiku sales ₹1,200. Kumar ₹500 tharanum."))
+        // A name inside another word is not marked ("Ravi" in "Ravikumar").
+        assertEquals(emptyList<Pair<String, KaiMarkKind>>(), kinds("Ravikumar vandhaar", listOf("Ravi")))
+    }
 }

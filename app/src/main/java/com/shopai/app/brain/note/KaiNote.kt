@@ -41,6 +41,8 @@ data class KaiNote(
     val date: LocalDate,
     val lang: KaiLang,
     val keys: List<KaiNoteKey>,
+    /** A money draft (credit, debit, payment): the digital card's details, kept after the save too. */
+    val money: KaiMoneyDraft? = null,
 )
 
 /** A stock line of a draft, as the notebook writes it (read from the draft — nothing computed here but the after-stock). */
@@ -173,7 +175,8 @@ object KaiNotes {
         }
         val due = plan.dueDate?.let { pick(lang, "கடைசி தேதி ", "Due ", "Due ") + KaiFormat.date(it, lang, today) }
         val row = KaiNoteRow(plan.partyName, KaiFormat.rupees(plan.amount.toDouble()), listOfNotNull(pending, due).joinToString(" · "))
-        return KaiNote(messageId, kind, title(kind, lang), listOf(row), today, lang, listOf(KaiNoteKey(KaiNoteKey.Source.PLAN, plan.key)))
+        return KaiNote(messageId, kind, title(kind, lang), listOf(row), today, lang, listOf(KaiNoteKey(KaiNoteKey.Source.PLAN, plan.key)),
+            money = KaiMoney.of(plan, lang, today))
     }
 
     /** Stock lines (one draft, or several items said in one line): each product, its quantity, and its stock before → after. */
