@@ -433,3 +433,12 @@ ENTRY  | Sarath 5000 tharanum December 5               | CREDIT Sarath 5000
 ENTRY  | ABC Traders ku 4000 kudukkanum 25 October      | DEBIT ABC Traders 4000
 ENTRY  | Kumar ku 1500 kadan kuduthen 20th tharuvan     | CREDIT Kumar 1500
 ENTRY  | Senthil 5000 kadan, adutha maasam 5 tharuvan   | CREDIT Senthil 5000
+
+# Paid, said every way (owner, 19 Oct 2026: "Kumar yeanuku 5000 pay pannitan or kuduthan or full settlement or full ah kuduthutan"):
+# money in — the amount said, or Kumar's whole ₹4,000 when paid in full; "enakku … kuduthutaan" is never a Credit.
+ENTRY  | Kumar yeanuku 4000 pay pannitan               | IN Kumar 4000
+ENTRY  | Kumar enakku 4000 kuduthutaan                  | IN Kumar 4000
+ENTRY  | Kumar full settlement pannitan                 | IN Kumar 4000
+ENTRY  | Kumar ellam clear pannitan                     | IN Kumar 4000
+ENTRY  | Kumar kanakku mudichitaan                      | IN Kumar 4000
+ENTRY  | Kumar muzhusa kuduthutan                       | IN Kumar 4000

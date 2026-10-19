@@ -137,6 +137,20 @@ object KaiIntentWords {
         """\d{1,2}[/.\-]\d{1,2}[/.\-](?:\d{4}|\d{2}))\s*(?:-?\s*(?:kulla|kulle|kullae|thethikulla|ku|kku|kkulla|varaikkum|varai))?\s+""" +
         """(?:tharuvan|tharuvaan|tharuvaanga|tharuvanga|tharuvaaru|tharuvaru|tharanum|kudukkanum|kudukanum|kodukkanum|kodukanum|kattanum|tharen|tharuven|kuduppen|kudupen|thiruppi\s+tharuvan|thiruppi\s+tharuvaanga)\s*[.!]*$""")
 
+    /**
+     * "Kumar full settlement pannitan", "ellam clear pannitan", "kanakku mudichitaan", "settlement kuduthutan", "baaki ellam
+     * kuduthutan", "muzhusa kuduthutaan": paid all that was owed — "full ah kuduthutan" (the whole pending, from the books, on the
+     * draft; Confirm saves it). Only with no amount said: "Ramesh 2000 settle pannitaan" is ₹2,000 (owner, 19 Oct 2026).
+     */
+    private val paidInFull = listOf(
+        r("""(?:full|motham|mothama|muzhusa|muzhusaa|ellam|ellaam|baaki\s+ellam|baaki\s+ellaam|balance)?\s*(?:settlement|settle|settled|clear|cleared)\s+""" +
+            """(?:pannitan|pannitaan|pannittan|pannittaan|pannidan|pannidaan|pannitanga|pannitaanga|pannitaru|pannitaaru|pannitar|pannitaar|panniyachu|pannirukkaan|pannirukkan)""") to "full ah kuduthutan",
+        r("""kanakku\s+(?:mudichitaan|mudichitan|mudichutaan|mudichutan|mudichittaan|mudichaan|mudichan|mudichitaanga|mudichaanga|mudichitaaru|mudichutaaru|mudichitaar)""") to "full ah kuduthutan",
+        r("""settlement\s+(kuduth\p{L}*|koduth\p{L}*|anupp\p{L}*|pott\p{L}*)""") to "full ah $1",
+        r("""(?:baaki|balance)\s+(?:ellam|ellaam|full|motham|muzhusa)\s+(kuduth\p{L}*|koduth\p{L}*|katti\p{L}*|anupp\p{L}*)""") to "full ah $1",
+        r("""(?:muzhusa|muzhusaa|muzhusaaga|muzhusaga)\s+(kuduth\p{L}*|koduth\p{L}*|katti\p{L}*|anupp\p{L}*|thandh\p{L}*)""") to "full ah $1",
+    )
+
     /** "Murugan Stores-la 6000-ku … credit la maal vaanginen": from them, for that much. */
     private val boughtFrom = Regex("""(?i)^(.+?)\s*-?\s*(?:la|le|il)\s+(\d[\d,]*)\s*-?\s*(?:ku|kku)\s+credit la maal vaanginen""")
 
@@ -179,6 +193,7 @@ object KaiIntentWords {
         // "pakki" is "baaki" in a question too; the entry words only on a line with an amount that asks nothing.
         t = moneyRules.first().first.replace(t, moneyRules.first().second)
         if (quantity.containsMatchIn(t) && !asks) for ((re, to) in moneyRules.drop(1)) t = re.replace(t, to)
+        if (!asks && !quantity.containsMatchIn(t)) for ((re, to) in paidInFull) t = re.replace(t, to)
         boughtFrom.find(t.trim())?.let { m -> t = "${m.groupValues[1].trim()} kitta ${m.groupValues[2]} ku credit la maal vaanginen" }
         if (quantity.containsMatchIn(t) && !asks) dueClause.find(t)?.takeIf { m -> entryWord.containsMatchIn(t.substring(0, m.range.first)) }?.let { m ->
             t = t.substring(0, m.range.first).trimEnd(' ', ',', ';') + " due " + m.groupValues[1]

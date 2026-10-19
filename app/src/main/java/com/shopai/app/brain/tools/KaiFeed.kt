@@ -631,6 +631,16 @@ object KaiFeed {
     /** How owners actually type a word = the word Kai's rules read ("totel" = total). Whole words only. */
     val spellings: Map<String, String> = pairs("""
         totel = total
+        # "Kumar yeanuku 5000 pay pannitan" (owner, 19 Oct 2026): "to me", however it is typed
+        yeanuku = enakku
+        yeanaku = enakku
+        yeanakku = enakku
+        eanaku = enakku
+        eanakku = enakku
+        yanaku = enakku
+        yanakku = enakku
+        enuku = enakku
+        yenuku = enakku
         # "Kumar kitta pesanum": a call to make — Kai asks when to remind (owner, 12 Oct 2026: answered with a balance).
         pesanum = call pannanum
         pesanu = call pannanum

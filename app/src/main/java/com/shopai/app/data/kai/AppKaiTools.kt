@@ -440,9 +440,14 @@ class AppKaiTools(
                 var draft = PaymentDraft(if (incoming) DraftKind.PAYMENT_IN else DraftKind.PAYMENT_OUT, partyId, amountPaise, mode, notes = "Kai: $said")
                 // The engine's own preview: which bills it settles; more than the dues becomes an advance (shown to the owner).
                 var quote = s.engine.quotePayment(draft.toInput(s, "kai-quote", TxnSource.VOICE), incoming)
+                // The same payment already saved today: a second one the owner may well mean (two visits, two GPay sends) — the
+                // draft says so and Confirm saves it; it is never refused (owner, 19 Oct 2026).
+                val sameDay = quote.errors.any { it.code == BooksErrorCode.DUPLICATE_PAYMENT }
+                fun quoteOf(d: PaymentDraft) = s.engine.quotePayment(d.toInput(s, "kai-quote", TxnSource.VOICE).copy(allowSameDayDuplicate = sameDay), incoming)
+                if (sameDay) quote = quoteOf(draft)
                 if (quote.errors.any { it.code == BooksErrorCode.OVERPAYMENT }) {
                     draft = draft.copy(keepAsAdvance = true)
-                    quote = s.engine.quotePayment(draft.toInput(s, "kai-quote", TxnSource.VOICE), incoming)
+                    quote = quoteOf(draft)
                 }
                 val draftId = BillDrafts(s).save(null, draft.kind, draft, TxnSource.VOICE, raw = said)
                 val before = if (incoming) s.ledger.receivable(partyId) else s.ledger.payable(partyId)
@@ -451,7 +456,7 @@ class AppKaiTools(
                     settles = quote.allocations.map { it.doc.number to rupees(it.amountPaise) },
                     advance = rupees(quote.excessPaise),
                     balanceBefore = rupees(before), balanceAfter = rupees(before - amountPaise),
-                    problems = quote.errors.map { it.message }, draftId = draftId, said = said,
+                    problems = quote.errors.map { it.message }, draftId = draftId, said = said, sameDayRepeat = sameDay,
                 )
             }
             PlanKind.CREDIT_GIVEN, PlanKind.DEBIT_TAKEN -> {
@@ -474,7 +479,8 @@ class AppKaiTools(
                 val s = session() ?: return ActionOutcome.Failed("books unavailable")
                 val draftId = plan.draftId ?: return ActionOutcome.Failed("draft missing")
                 val draft = BillDrafts(s).payment(draftId) ?: return ActionOutcome.Failed("draft missing")
-                val input = draft.toInput(s, draftId, TxnSource.VOICE)
+                // (the owner confirmed a second payment of the same amount today, told so on the draft)
+                val input = draft.toInput(s, draftId, TxnSource.VOICE).let { if (plan.sameDayRepeat) it.copy(allowSameDayDuplicate = true) else it }
                 when (val r = if (plan.kind == PlanKind.PAYMENT_IN) s.engine.postPaymentIn(input) else s.engine.postPaymentOut(input)) {
                     is PostResult.Posted -> ActionOutcome.Done(r.txn.number, rupees(
                         if (plan.kind == PlanKind.PAYMENT_IN) s.ledger.receivable(plan.partyId!!) else s.ledger.payable(plan.partyId!!),
