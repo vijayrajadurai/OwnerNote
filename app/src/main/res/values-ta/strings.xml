@@ -1479,4 +1479,24 @@ NewonX — Owner Note. ஆப்பில் உதவி & ஆதரவு.]]><
     <!-- The salon master list on the Menu (owner, 19 Oct 2026) -->
     <string name="menu_pick_list">Service list-ல இருந்து எடுங்க (%1$d)</string>
     <string name="menu_hide_list">Service list மூடு</string>
+    <!-- Customer / supplier list import (owner, 19 Oct 2026) -->
+    <string name="party_import_short">Import</string>
+    <string name="party_import_title">பழைய கணக்கு import</string>
+    <string name="party_import_menu_caption">முன்னாடி use பண்ண app-ல இருந்து customers, balance கொண்டு வாங்க</string>
+    <string name="party_import_caption">முன்னாடி use பண்ண கணக்கு app-ல Reports → Customer List (இல்ல Supplier List) → PDF download பண்ணுங்க. அந்த PDF-ஐ இங்க select பண்ணுங்க. ஒவ்வொருத்தரும் balance-உம் காட்டுவேன்; Confirm பண்ணா தான் save ஆகும்.</string>
+    <string name="party_import_pick">Customer list PDF select பண்ணுங்க</string>
+    <string name="party_import_pick_again">வேற PDF select பண்ணுங்க</string>
+    <string name="party_import_not_list">இது Customer / Supplier List report PDF மாதிரி இல்ல. அந்த app-ல Reports → Customer List → PDF download பண்ணி அதை select பண்ணுங்க.</string>
+    <string name="party_import_found">%1$d பேர் கிடைச்சாங்க — %2$s</string>
+    <string name="party_import_total_ok">✓ Report-ஓட Grand Total-ஓட சரியா match ஆகுது</string>
+    <string name="party_import_total_check">⚠ Total report-ஓட Grand Total-ஓட match ஆகல — ஒவ்வொரு line-ஐயும் check பண்ணுங்க</string>
+    <string name="party_import_customers">Customers</string>
+    <string name="party_import_suppliers">Suppliers</string>
+    <string name="party_import_due">வசூல்: %1$s</string>
+    <string name="party_import_they_owe">%1$s தரணும்</string>
+    <string name="party_import_you_owe">%1$s கொடுக்கணும்</string>
+    <string name="party_import_confirm">Confirm — %1$d பேர் save பண்ணு</string>
+    <string name="party_import_saved">✅ Save ஆச்சு: %1$d பேர் add ஆனாங்க (%2$d balance-ஓட).</string>
+    <string name="party_import_already">ஏற்கனவே இருந்தவங்க (மாத்தல): %1$s</string>
+    <string name="party_import_failed">Save ஆகல. எதுவும் மாறல — மறுபடியும் try பண்ணுங்க.</string>
 </resources>

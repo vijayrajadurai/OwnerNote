@@ -183,6 +183,7 @@ fun ShopAiApp(container: AppContainer) {
                 onNavigate = { route -> navController.navigateMainTab(route) },
                 onOpenCustomer = { customerId -> navController.navigate(Routes.customerDetail(customerId)) },
                 onNewCustomer = { navController.navigate(Routes.partyForm("CUSTOMER")) },
+                onImport = { navController.navigate(Routes.PartyListImport) },
                 onAddCredit = { id, name, phone ->
                     navController.navigate(Routes.addCredit(id, name.takeIf { it.isNotBlank() }, phone))
                 },
@@ -511,6 +512,9 @@ fun ShopAiApp(container: AppContainer) {
                     }
                 },
             )
+        }
+        composable(Routes.PartyListImport) {
+            com.shopai.app.ui.books.PartyListImportScreen(container = container, onBack = { navController.navigateUpOrHome() })
         }
         composable(Routes.HsnMaster) {
             com.shopai.app.ui.books.HsnMasterScreen(

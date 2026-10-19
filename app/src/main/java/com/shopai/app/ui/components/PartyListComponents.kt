@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Contacts
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material.icons.outlined.UploadFile
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -139,17 +140,42 @@ fun PartyDirectoryBody(
     /** Full customer / supplier master form (OwnerNote Books). */
     newPartyLabel: String? = null,
     onNewParty: (() -> Unit)? = null,
+    /** A small "Import" beside the title: bring the list from the app the owner used before (owner, 20 Oct 2026). */
+    importLabel: String? = null,
+    onImport: (() -> Unit)? = null,
 ) {
     Column(
         modifier = modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineMedium,
-            color = ShopAiThemeColors.onSurface,
-            fontWeight = FontWeight.Bold,
-        )
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineMedium,
+                color = ShopAiThemeColors.onSurface,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f),
+            )
+            if (importLabel != null && onImport != null) {
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(999.dp))
+                        .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(999.dp))
+                        .clickable(onClick = onImport)
+                        .padding(horizontal = 12.dp, vertical = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Icon(
+                        androidx.compose.material.icons.Icons.Outlined.UploadFile,
+                        contentDescription = null,
+                        tint = ShopAiThemeColors.primary,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Text(importLabel, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = ShopAiThemeColors.primary)
+                }
+            }
+        }
         PartyScreenActions(
             contactLabel = contactLabel,
             addLabel = addLabel,
