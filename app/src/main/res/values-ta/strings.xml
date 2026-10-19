@@ -1499,4 +1499,37 @@ NewonX — Owner Note. ஆப்பில் உதவி & ஆதரவு.]]><
     <string name="party_import_saved">✅ Save ஆச்சு: %1$d பேர் add ஆனாங்க (%2$d balance-ஓட).</string>
     <string name="party_import_already">ஏற்கனவே இருந்தவங்க (மாத்தல): %1$s</string>
     <string name="party_import_failed">Save ஆகல. எதுவும் மாறல — மறுபடியும் try பண்ணுங்க.</string>
+    <!-- Tamil for the screens that still showed English (production check, 20 Oct 2026) -->
+    <string name="contacts_pick_failed">Contact-ஐ படிக்க முடியல. Contacts permission-ஐ check பண்ணி மறுபடியும் try பண்ணுங்க.</string>
+    <string name="customers_add_contact">+ Contact-ல இருந்து கடன்</string>
+    <string name="customers_import_exists">இந்த contact ஏற்கனவே உங்க customer list-ல இருக்கு.</string>
+    <string name="customers_import_success">Contacts-ல இருந்து customer சேர்ந்தாச்சு.</string>
+    <string name="home_net_position">மொத்த நிலை</string>
+    <string name="home_reminders_carousel_title">வரப்போகும் reminders</string>
+    <string name="party_add_credit">கடன் சேர்</string>
+    <string name="party_add_debit">கொடுக்கணும் சேர்</string>
+    <string name="party_add_payment">Payment சேர்</string>
+    <string name="party_confirm_payment">Payment உறுதி செய்</string>
+    <string name="party_due_date">Due: %1$s</string>
+    <string name="party_history_title">வரலாறு</string>
+    <string name="party_mark_paid">முழுசா கொடுத்தாச்சு</string>
+    <string name="party_no_transactions">இன்னும் entry எதுவும் இல்ல.</string>
+    <string name="party_payment_amount">வந்த தொகை (₹)</string>
+    <string name="party_payment_error">Payment சேமிக்க முடியல.</string>
+    <string name="party_running_balance">Balance: %1$s</string>
+    <string name="party_status_paid">கொடுத்தாச்சு</string>
+    <string name="party_status_partial">கொஞ்சம் கொடுத்தாங்க</string>
+    <string name="party_status_pending">பாக்கி</string>
+    <string name="party_total_pending">மொத்த பாக்கி: %1$s</string>
+    <string name="party_transactions_title">Entries</string>
+    <string name="party_txn_pending">பாக்கி: %1$s</string>
+    <string name="profile_phone_hint">இது login பண்ண use பண்ண mobile number. இங்க மாத்த முடியாது.</string>
+    <string name="suppliers_add_contact">+ Contact-ல இருந்து கொடுக்கணும்</string>
+    <string name="suppliers_import_exists">இந்த contact ஏற்கனவே உங்க supplier list-ல இருக்கு.</string>
+    <string name="suppliers_import_success">Contacts-ல இருந்து supplier சேர்ந்தாச்சு.</string>
+    <string name="txn_chooser_from_contact">Contacts-ல இருந்து</string>
+    <string name="txn_chooser_manual">நானே type பண்றேன்</string>
+    <string name="txn_chooser_subtitle">Contacts-ல இருந்து எடுங்க, இல்ல விவரம் type பண்ணுங்க.</string>
+    <string name="txn_chooser_title_credit">Customer கடன் சேர்</string>
+    <string name="txn_chooser_title_debit">Supplier-க்கு கொடுக்கணும் சேர்</string>
 </resources>
