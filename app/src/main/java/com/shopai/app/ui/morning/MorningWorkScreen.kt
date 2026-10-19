@@ -268,6 +268,9 @@ fun MorningWorkScreen(
         if (granted) {
             autoListen = true
             listen()
+        } else {
+            // Mic permission refused: say so instead of a silent mic.
+            android.widget.Toast.makeText(context, context.getString(R.string.error_mic_permission), android.widget.Toast.LENGTH_LONG).show()
         }
     }
 

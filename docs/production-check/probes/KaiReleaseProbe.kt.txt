@@ -1,0 +1,411 @@
+package com.shopai.app.brain.chat
+
+import com.shopai.app.books.model.PaymentMode
+import com.shopai.app.brain.BusinessSnapshot
+import com.shopai.app.brain.KaiLang
+import com.shopai.app.brain.PartyFacts
+import com.shopai.app.brain.PartyHistory
+import com.shopai.app.brain.chat.KaiInventoryChatTest.Inventory
+import com.shopai.app.brain.tools.ActionOutcome
+import com.shopai.app.brain.tools.ActionPlan
+import com.shopai.app.brain.tools.KaiReminder
+import com.shopai.app.brain.tools.KaiTools
+import com.shopai.app.brain.tools.PartyMatch
+import com.shopai.app.brain.tools.PlanKind
+import com.shopai.app.brain.tools.ProductSalesFact
+import com.shopai.app.brain.tools.ReminderSaved
+import com.shopai.app.brain.tools.ScheduleResult
+import com.shopai.app.data.model.PartySummary
+import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import java.math.BigDecimal
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
+
+/**
+ * One shop, the way an owner talks to Kai all day (owner's request, 9 Oct 2026: "stock, reminder, credit and debit entry and
+ * questions about them — understand what the shop owner asks and answer correctly"). Every line is played on a fresh shop
+ * and checked in the books, the inventory or the reminders — never on Kai's words alone. Nothing may be saved before Confirm.
+ */
+class KaiReleaseProbe {
+    private val now = LocalDateTime.of(2026, 10, 8, 11, 0)
+    private val today: LocalDate = now.toLocalDate()
+    private fun d(m: Int, day: Int) = LocalDate.of(2026, m, day)
+    private val zone = ZoneId.of("Asia/Kolkata")
+
+    // ------------------------------------------------------------------ the shop
+
+    private class Ledger {
+        class Entry(val amount: BigDecimal, val created: LocalDate, val due: LocalDate?) {
+            val payments = mutableListOf<Pair<BigDecimal, LocalDate>>()
+            val paid: BigDecimal get() = payments.fold(BigDecimal.ZERO) { t, p -> t + p.first }
+            val open: BigDecimal get() = amount - paid
+        }
+        class Party(val id: String, val name: String, val customer: Boolean) {
+            val entries = mutableListOf<Entry>()
+            val pending: BigDecimal get() = entries.fold(BigDecimal.ZERO) { t, e -> t + e.open }
+            val nextDue: LocalDate? get() = entries.filter { it.open.signum() > 0 }.minOfOrNull { it.due ?: it.created }
+        }
+        val parties = mutableListOf<Party>()
+        /** A party's phone number (by id), when the books have one. */
+        val phones = mutableMapOf<String, String>()
+        fun add(id: String, name: String, customer: Boolean, amount: String, created: LocalDate, due: LocalDate?): Entry {
+            val p = parties.firstOrNull { it.id == id } ?: Party(id, name, customer).also { parties += it }
+            return Entry(BigDecimal(amount), created, due).also { p.entries += it }
+        }
+        fun summary(p: Party) = PartySummary(p.id, p.name, phones[p.id], p.pending.toDouble(), p.nextDue?.let { "${it}T00:00:00Z" })
+        fun snapshot() = BusinessSnapshot(customers = parties.filter { it.customer }.map(::summary), suppliers = parties.filter { !it.customer }.map(::summary))
+    }
+
+    private class Books(val l: Ledger) : KaiBooks {
+        override suspend fun snapshot() = l.snapshot()
+        override suspend fun history(party: PartyFacts): PartyHistory? = l.parties.firstOrNull { it.id == party.id }?.let { p ->
+            PartyHistory(party, p.entries.map { e ->
+                PartyHistory.LedgerEntry(e.amount.toDouble(), e.paid.toDouble(), e.due, e.created, e.payments.map { PartyHistory.Payment(it.first.toDouble(), it.second) })
+            })
+        }
+        override suspend fun cashBook(from: LocalDate, to: LocalDate) = null
+    }
+
+    /** Stock from the inventory fixture; money from the ledger; reminders kept. Only Confirm writes. */
+    private class Tools(val inv: Inventory, val l: Ledger, val today: LocalDate) : KaiTools by inv {
+        val saved = mutableListOf<ActionPlan>()
+        var prepared = 0
+        val rems = mutableListOf<KaiReminder>()
+        override suspend fun parties(name: String) = l.parties.filter { it.name.contains(name, true) }
+            .map { PartyMatch(it.id, it.name, it.customer, null, it.pending) }
+        override suspend fun prepare(kind: PlanKind, partyName: String, partyId: String?, amount: BigDecimal, mode: PaymentMode, said: String): ActionPlan =
+            ActionPlan("p${prepared++}", kind, partyName, partyId, amount, mode, balanceBefore = l.parties.firstOrNull { it.id == partyId }?.pending, said = said)
+        override suspend fun confirm(plan: ActionPlan): ActionOutcome {
+            val customer = plan.kind == PlanKind.CREDIT_GIVEN || plan.kind == PlanKind.PAYMENT_IN
+            val p = l.parties.firstOrNull { it.id == plan.partyId }
+                ?: l.parties.firstOrNull { it.customer == customer && it.name.equals(plan.partyName, true) }
+                ?: Ledger.Party("n${l.parties.size}", plan.partyName, customer).also { l.parties += it }
+            when (plan.kind) {
+                PlanKind.CREDIT_GIVEN, PlanKind.DEBIT_TAKEN -> p.entries += Ledger.Entry(plan.amount, today, plan.dueDate)
+                else -> {
+                    var left = plan.amount
+                    for (e in p.entries.sortedBy { it.due ?: it.created }) {
+                        if (left.signum() <= 0) break
+                        val take = left.min(e.open)
+                        if (take.signum() > 0) { e.payments += take to today; left -= take }
+                    }
+                }
+            }
+            saved += plan
+            return ActionOutcome.Done("TXN-${saved.size}", p.pending)
+        }
+        override fun createReminder(reminder: KaiReminder): ReminderSaved { rems += reminder; return ReminderSaved(reminder, false, ScheduleResult.EXACT) }
+        override fun reminders() = rems.toList()
+        override fun reminderStored(id: String) = rems.any { it.id == id }
+        override fun zone() = "Asia/Kolkata"
+        override suspend fun lowStock() = inv.items.filter { i -> i.stock.signum() <= 0 || i.minimum?.let { i.stock <= it } == true }
+            .map { com.shopai.app.brain.tools.StockFact(it.name, it.stock, it.unit, it.minimum) }
+        /** Sales, purchases, expenses by month ("2026-10"); none by default (Kai then says the books don't have them). */
+        var money: Map<String, Triple<BigDecimal, BigDecimal, BigDecimal>> = emptyMap()
+        override suspend fun sales(from: LocalDate, to: LocalDate) = money[from.toString().take(7)]?.first
+        override suspend fun purchases(from: LocalDate, to: LocalDate) = money[from.toString().take(7)]?.second
+        override suspend fun expenses(from: LocalDate, to: LocalDate) = money[from.toString().take(7)]?.third
+        override suspend fun topProducts(from: LocalDate, to: LocalDate, limit: Int) = listOf(
+            ProductSalesFact("Rice", BigDecimal("320"), BigDecimal("17600")), ProductSalesFact("Colgate", BigDecimal("90"), BigDecimal("4500")),
+        ).take(limit)
+    }
+
+    private inner class Shop(more: Ledger.() -> Unit = {}) {
+        val l = Ledger().apply {
+            add("c1", "Kumar", true, "5000", d(9, 1), d(9, 15)).payments += BigDecimal("5000") to d(9, 25)
+            add("c1", "Kumar", true, "3000", d(9, 20), d(9, 30)).payments += BigDecimal("3000") to d(10, 6)
+            add("c1", "Kumar", true, "4000", d(10, 1), d(10, 8))
+            add("c2", "Ramesh", true, "2000", d(8, 20), d(9, 1)).payments += BigDecimal("2000") to d(9, 1)
+            add("c2", "Ramesh", true, "2500", d(9, 28), d(10, 8))
+            add("c3", "Selvam", true, "3000", d(7, 20), d(8, 1)).payments += BigDecimal("3000") to d(8, 20)
+            add("c3", "Selvam", true, "6000", d(9, 5), d(9, 20))
+            add("c4", "Lakshmi", true, "1000", d(10, 2), d(10, 12))
+            add("s1", "ABC Traders", false, "10000", d(9, 25), d(10, 8))
+            add("s2", "Murugan Stores", false, "4000", d(10, 1), d(10, 15))
+            more()
+        }
+        val inv = Inventory().apply {
+            items += Inventory.Item("p1", "Colgate", "PCS", BigDecimal("240"), mapOf("BOX" to BigDecimal("48")), BigDecimal("28"), BigDecimal("35"), "FMCG", "200 g", BigDecimal("50"))
+            items += Inventory.Item("p2", "Rice", "KG", BigDecimal("250"), mapOf("BAG" to BigDecimal("25")), BigDecimal("56"), BigDecimal("65"), "Grocery", null, BigDecimal("50"))
+            items += Inventory.Item("p3", "Oil", "BOTTLE", BigDecimal("240"), mapOf("BOX" to BigDecimal("12")), BigDecimal("150"), BigDecimal("170"), "Grocery", "1 litre")
+            items += Inventory.Item("p4", "Baniyan", "PCS", BigDecimal("50"), emptyMap(), BigDecimal("60"), BigDecimal("90"), "Garments & Textiles", null)
+            items += Inventory.Item("p5", "Lux Soap", "PCS", BigDecimal("60"), emptyMap(), BigDecimal("30"), BigDecimal("38"), "FMCG", null)
+            items += Inventory.Item("p6", "Maggi", "PCS", BigDecimal("0"), emptyMap(), BigDecimal("12"), BigDecimal("14"), "FMCG", null, BigDecimal("10"))
+        }
+        val books = Books(l)
+        val tools = Tools(inv, l, today)
+        val k = KaiAgent(KaiBusinessBrain(books, today = { today }, random = kotlin.random.Random(1)), books, tools, now = { now })
+        val log = StringBuilder()
+        fun say(t: String): KaiTurn = runBlocking { k.ask(t) }.also { r ->
+            log.append("\n   » $t\n     ${r.reply.text.replace("\n", " / ")}")
+            r.card?.let { c -> log.append("\n     [card] ${c.lines.joinToString(" | ")} {${c.buttons.joinToString { it.label }}}") }
+        }
+        fun act(a: KaiAction): KaiTurn? = runBlocking { k.act(a, KaiLang.TANGLISH) }.also { r -> log.append("\n   [tap] ${r?.reply?.text?.replace("\n", " / ")}") }
+        fun nothingWritten() = tools.saved.isEmpty() && inv.moves.isEmpty() && tools.rems.isEmpty() && inv.created.isEmpty()
+    }
+
+    // ------------------------------------------------------------------ the checks
+
+    private val failures = mutableListOf<String>()
+    private var count = 0
+    private fun fail(what: String, s: Shop, why: String) { failures += "[${if (written) "mic written: " else if (mic) "mic: " else ""}$what] $why${s.log}" }
+
+    /**
+     * Every line is played twice: typed, then as Kai Chat's mic writes it ([KaiMicForm]: Tamil script). The text box and the
+     * mic go to the same Kai and must do the same thing (owner's rule, 10 Oct 2026) — a fix that works only typed fails here.
+     */
+    private var mic = false
+    /** The mic writing it in written (formal) Tamil ([KaiMicForm.written]) — the third way each line is played. */
+    private var written = false
+    /** The owner's line, typed or as the mic writes it (null: the mic would not hear it as typed — not replayed). */
+    val micOf = mutableMapOf<String, String>()
+    private fun heard(typed: String): String? = if (!mic) typed else micOf[typed] ?: KaiMicForm.of(typed)
+    /** A short answer to Kai's question, said the same way as the line. */
+    private fun answer(typed: String): String = if (mic) micOf[typed] ?: KaiMicForm.of(typed) ?: typed else typed
+
+    /** A money entry: drafted, confirmed (answering a due-date question with "due venam"), then exactly this in the books. */
+    private fun entry(typed: String, kind: PlanKind, party: String, amount: String, due: LocalDate? = null, mode: PaymentMode? = null) {
+        val said = heard(typed) ?: return
+        count++
+        val s = Shop()
+        var t = s.say(said)
+        repeat(4) {
+            if (s.tools.saved.isNotEmpty()) return@repeat
+            val confirm = t.card?.buttons?.firstOrNull { it.action is KaiAction.ConfirmPlan }
+            if (confirm != null) {
+                if (!s.nothingWritten()) return fail(said, s, "saved before Confirm")
+                t = s.act(confirm.action) ?: t
+                return@repeat
+            }
+            val txt = t.reply.text
+            t = when {
+                Regex("""(?i)due date eppa|eppo tharuvaanga|eppa tharuvaanga|eppo kudukkanum|eppa kudukkanum|due date""").containsMatchIn(txt) && txt.trim().endsWith("?") -> s.say(answer("due venam"))
+                // "records-la already ₹4,000 irukku — adhey-aa, illa pudhu-aa?": this is a new entry.
+                txt.contains("illa pudhu") || txt.contains("இல்ல புது") -> s.say(answer("pudhu"))
+                // "'Lakshmi Akka' — Lakshmi dhaan-aa, illa Lakshmi-oda akka-aa?": the owner means the person in the books.
+                (txt.contains("dhaan-aa") || txt.contains("தானா")) && t.card?.buttons?.isNotEmpty() == true -> s.act(t.card!!.buttons.first().action) ?: t
+                else -> return fail(said, s, "no draft to confirm")
+            }
+        }
+        val p = s.tools.saved.singleOrNull() ?: return fail(said, s, "saved ${s.tools.saved.size} entries")
+        if (p.kind != kind) return fail(said, s, "kind ${p.kind} ≠ $kind")
+        // Spoken, a new name stays in Tamil letters ("சுஜித்") — the same name.
+        if (!p.partyName.equals(party, true) && !(mic && com.shopai.app.util.NameSound.same(p.partyName, party)))
+            return fail(said, s, "party ${p.partyName} ≠ $party")
+        if (p.amount.compareTo(BigDecimal(amount)) != 0) return fail(said, s, "amount ${p.amount} ≠ $amount")
+        if (due != null && p.dueDate != due) return fail(said, s, "due ${p.dueDate} ≠ $due")
+        if (mode != null && p.mode != mode) return fail(said, s, "mode ${p.mode} ≠ $mode")
+    }
+
+    /** A reminder: asked, confirmed, stored at that local time with that person / words. */
+    private fun reminder(typed: String, at: LocalDateTime?, has: String? = null, repeat: Boolean = false) {
+        val said = heard(typed) ?: return
+        count++
+        val s = Shop()
+        val t = s.say(said)
+        if (s.tools.rems.isNotEmpty()) return fail(said, s, "set before Confirm")
+        val b = t.card?.buttons?.firstOrNull { it.action is KaiAction.ConfirmReminder } ?: return fail(said, s, "no reminder to confirm")
+        s.act(b.action)
+        val r = s.tools.rems.singleOrNull() ?: return fail(said, s, "stored ${s.tools.rems.size} reminders")
+        val time = LocalDateTime.ofInstant(Instant.ofEpochMilli(r.triggerAt), zone)
+        if (at != null && time != at) return fail(said, s, "at $time ≠ $at")
+        val words = r.title + " " + r.task + " " + (r.person ?: "")
+        if (has != null && !words.contains(has, true) && !(mic && listOfNotNull(KaiMicForm.of(has), KaiMicForm.repeated(has)).any { words.contains(it) })) return fail(said, s, "'${r.title}' / '${r.task}' lacks '$has'")
+        if (repeat && r.recurrence.repeat == com.shopai.app.brain.tools.Repeat.ONCE) return fail(said, s, "not repeating")
+        if (s.tools.saved.isNotEmpty() || s.inv.moves.isNotEmpty()) return fail(said, s, "a reminder wrote money / stock")
+    }
+
+    /** Stock: drafted, confirmed (new products: answer what Kai asks), the product's stock after. */
+    private fun stock(typed: String, product: String, after: String) {
+        val said = heard(typed) ?: return
+        count++
+        val s = Shop()
+        var t = s.say(said)
+        repeat(8) {
+            val b = t.card?.buttons?.firstOrNull { it.action is KaiAction.ConfirmStock || it.action is KaiAction.ConfirmPlan }
+            if (b != null) {
+                if (s.inv.moves.isNotEmpty()) return fail(said, s, "stock changed before Confirm")
+                s.act(b.action)
+                // Spoken, a new product keeps the name as said ("ஹார்லிக்ஸ்") — the same product.
+                val i = s.inv.items.firstOrNull { it.name.equals(product, true) || mic && com.shopai.app.util.NameSound.same(it.name, product) } ?: return fail(said, s, "'$product' not in inventory: ${s.inv.items.map { it.name }}")
+                if (i.stock.compareTo(BigDecimal(after)) != 0) fail(said, s, "$product stock ${i.stock.toPlainString()} ≠ $after")
+                if (s.tools.saved.isNotEmpty() && s.inv.bills.isEmpty()) fail(said, s, "stock wrote a money entry")
+                return
+            }
+            val txt = t.reply.text
+            t = when {
+                // "petti" is the owner's word for box; Kai asks once which it is.
+                (txt.contains("pieces-aa") || txt.contains("pieces-ஆ")) && typed.contains("petti") -> s.say(answer("box"))
+                txt.contains("pieces-aa") || txt.contains("pieces-ஆ") -> s.say(answer("pieces"))
+                txt.contains("evlo pieces") || txt.contains("எத்தனை pieces") -> s.say("12")
+                txt.contains("rate evlo") || txt.contains("rate எவ்வளவு") || txt.contains("'skip'") -> s.say(answer("skip"))
+                txt.contains("Stock add pannattuma") -> s.say(answer("aama"))
+                else -> return fail(said, s, "no stock draft")
+            }
+        }
+        fail(said, s, "never reached Confirm")
+    }
+
+    /** A question: answered from the records — these words in the reply (or card), never those; nothing written. */
+    private fun ask(typed: String, wanted: List<String>, not: List<String> = emptyList()) {
+        val said = heard(typed) ?: return
+        count++
+        val s = Shop()
+        val t = s.say(said)
+        val all = t.reply.text + " " + t.card?.lines.orEmpty().joinToString(" ")
+        // Spoken, Kai answers in Tamil: the amounts, numbers and names must still be there.
+        val has = if (mic) wanted.filter(KaiMicForm::keepsInTamil).map(KaiMicForm::inTamil) else wanted
+        has.firstOrNull { !all.contains(it, true) }?.let { return fail(said, s, "lacks '$it'") }
+        not.firstOrNull { all.contains(it, true) }?.let { return fail(said, s, "has '$it'") }
+        if (!s.nothingWritten()) fail(said, s, "a question wrote something")
+    }
+
+    /** A short conversation: each line said in turn, then the books / stock / reminders checked. */
+    private fun talk(what: String, lines: List<String>, more: Ledger.() -> Unit = {}, check: (Shop) -> String?) {
+        count++
+        val s = Shop(more)
+        for (l in lines) {
+            if (l == "TAP" || l == "TAP+") {
+                val b = lastTurn?.card?.buttons?.firstOrNull { it.action is KaiAction.ConfirmPlan || it.action is KaiAction.ConfirmStock || it.action is KaiAction.ConfirmReminder ||
+                    it.action == KaiAction.ConfirmGoods } ?: return fail(what, s, "nothing to tap")
+                // "TAP+": what Kai says after the tap (the next goods draft) is what the next tap answers.
+                s.act(b.action)?.let { if (l == "TAP+") lastTurn = it }
+            } else if (l == "CANCEL+") {
+                val b = lastTurn?.card?.buttons?.firstOrNull { it.action is KaiAction.CancelStock || it.action is KaiAction.CancelPlan || it.action == KaiAction.CancelGoods }
+                    ?: return fail(what, s, "nothing to cancel")
+                s.act(b.action)?.let { lastTurn = it }
+            } else if (l == "EDIT+") {
+                val b = lastTurn?.card?.buttons?.firstOrNull { it.action == KaiAction.EditGoods } ?: return fail(what, s, "no list Edit")
+                s.act(b.action)?.let { lastTurn = it }
+            } else lastTurn = s.say(answer(l))
+        }
+        check(s)?.let { fail(what, s, it) }
+    }
+    private var lastTurn: KaiTurn? = null
+
+
+
+    // ------------------------------------------------------------------ RELEASE CHECK (20 Oct 2026): words never fed to Kai
+
+    val results = mutableListOf<String>()
+    private fun probe(area: String, typed: String, tamil: String?, run: () -> Unit) {
+        if (tamil != null) micOf[typed] = tamil
+        val before = failures.size
+        run()
+        val said = if (mic) (tamil ?: KaiMicForm.of(typed) ?: "(no mic form)") else typed
+        results += "${if (failures.size == before) "PASS" else "FAIL"} | $area | ${if (mic) "mic" else "typed"} | $said"
+    }
+    private val tamilLetters = Regex("[\\u0B80-\\u0BFF]")
+    private fun last() = (lastTurn?.reply?.text.orEmpty() + " " + lastTurn?.card?.lines.orEmpty().joinToString(" "))
+
+    private fun lines() {
+        val IN = PlanKind.PAYMENT_IN; val CR = PlanKind.CREDIT_GIVEN; val DR = PlanKind.DEBIT_TAKEN; val OUT = PlanKind.PAYMENT_OUT
+        fun st(a: String, typed: String, tamil: String, product: String, after: String) = probe(a, typed, tamil) { stock(typed, product, after) }
+        // ---- stock IN, new verbs / units
+        st("stock in", "Rice 2 bag supplier kondu vandhaar", "ரைஸ் 2 பேக் சப்ளையர் கொண்டு வந்தார்", "Rice", "300")
+        st("stock in", "Lux soap 10 unloading mudinjidhu", "லக்ஸ் சோப் 10 அன்லோடிங் முடிஞ்சிது", "Lux Soap", "70")
+        st("stock in EN", "received 10 lux soap today", "ரிசீவ்டு 10 லக்ஸ் சோப் டுடே", "Lux Soap", "70")
+        st("stock in unit", "Colgate 2 dozen vandhuruchu", "கோல்கேட் 2 டஜன் வந்துருச்சு", "Colgate", "264")
+        st("stock in unit", "Rice 500 gram vandhuchu", "ரைஸ் 500 கிராம் வந்துச்சு", "Rice", "250.5")
+        st("stock in EN", "added 3 boxes of colgate", "ஆடட் 3 பாக்ஸஸ் ஆஃப் கோல்கேட்", "Colgate", "384")
+        st("stock in", "Oil 6 bottle irakkunom", "ஆயில் 6 பாட்டில் இறக்குனோம்", "Oil", "246")
+        st("stock in new", "Dettol 5 vandhuchu", "டெட்டால் 5 வந்துச்சு", "Dettol", "5")
+        // ---- stock OUT
+        st("stock out", "Rice 1.5 kg kettu pochu", "ரைஸ் 1.5 கிலோ கெட்டுப் போச்சு", "Rice", "248.5")
+        st("stock out", "Baniyan 3 supplier-ku thiruppi koduthen", "பனியன் 3 சப்ளையருக்கு திருப்பி கொடுத்தேன்", "Baniyan", "47")
+        st("stock out EN", "sold 6 lux soap", "சோல்டு 6 லக்ஸ் சோப்", "Lux Soap", "54")
+        st("stock out", "Oil 2 bottle sindhiduchu", "ஆயில் 2 பாட்டில் சிந்திடுச்சு", "Oil", "238")
+        st("stock out unit", "Rice 250 gram eduthen", "ரைஸ் 250 கிராம் எடுத்தேன்", "Rice", "249.75")
+
+        // ---- stock lines Kai asked about ("vandhucha, illa pochaa?"): the owner's one-word answer finishes it right
+        micOf["pochu"] = "போச்சு"
+        for ((typed, tamil, way, product, after) in listOf(
+            listOf("Rice 2 bag supplier kondu vandhaar", "ரைஸ் 2 பேக் சப்ளையர் கொண்டு வந்தார்", "vandhuchu", "Rice", "300"),
+            listOf("added 3 boxes of colgate", "ஆடட் 3 பாக்ஸஸ் ஆஃப் கோல்கேட்", "vandhuchu", "Colgate", "384"),
+            listOf("Oil 6 bottle irakkunom", "ஆயில் 6 பாட்டில் இறக்குனோம்", "vandhuchu", "Oil", "246"),
+            listOf("Oil 2 bottle sindhiduchu", "ஆயில் 2 பாட்டில் சிந்திடுச்சு", "pochu", "Oil", "238"),
+            listOf("Rice 250 gram eduthen", "ரைஸ் 250 கிராம் எடுத்தேன்", "pochu", "Rice", "249.75"),
+            listOf("Baniyan 3 supplier-ku thiruppi koduthen", "பனியன் 3 சப்ளையருக்கு திருப்பி கொடுத்தேன்", "pochu", "Baniyan", "47"),
+        )) {
+            micOf[typed] = tamil
+            probe("stock asked → $way", typed, null) { talk("stock asked", listOf(typed, way, "TAP")) { s ->
+                val st = s.inv.items.firstOrNull { it.name.equals(product, true) }?.stock
+                if (st != null && st.compareTo(BigDecimal(after)) == 0) null else "$product $st ≠ $after" } }
+        }
+        // ---- credit / debit, both ways, customer and supplier
+        fun en(a: String, typed: String, tamil: String, k: PlanKind, who: String, amt: String, mode: PaymentMode? = null) = probe(a, typed, tamil) { entry(typed, k, who, amt, mode = mode) }
+        en("credit given", "Selvam 450 baaki solli vaanginaan", "செல்வம் 450 பாக்கி சொல்லி வாங்கினான்", CR, "Selvam", "450")
+        en("credit given", "Lakshmi 1200 credit-la eduthutu ponaanga", "லட்சுமி 1200 கிரெடிட்ல எடுத்துட்டு போனாங்க", CR, "Lakshmi", "1200")
+        en("credit given EN", "gave 900 on credit to Ramesh", "கேவ் 900 ஆன் கிரெடிட் டு ரமேஷ்", CR, "Ramesh", "900")
+        en("credit given TA", "குமாருக்கு ஐநூறு ரூபாய் கடன் கொடுத்தேன்", "குமாருக்கு ஐநூறு ரூபாய் கடன் கொடுத்தேன்", CR, "Kumar", "500")
+        en("credit new name", "Vignesh 650 baaki", "விக்னேஷ் 650 பாக்கி", CR, "Vignesh", "650")
+        en("payment in", "Kumar rendaayiram thanthaan", "குமார் ரெண்டாயிரம் தந்தான்", IN, "Kumar", "2000")
+        en("payment in EN", "Lakshmi paid 500 by phonepe", "லட்சுமி பெய்டு 500 பை போன்பே", IN, "Lakshmi", "500", PaymentMode.UPI)
+        en("payment in", "Selvam ezhunooru thiruppi koduthaan", "செல்வம் எழுநூறு திருப்பி கொடுத்தான்", IN, "Selvam", "700")
+        en("payment out", "Murugan Stores-ku 3000 anuppiten", "முருகன் ஸ்டோர்ஸுக்கு 3000 அனுப்பிட்டேன்", OUT, "Murugan Stores", "3000")
+        en("payment out EN", "paid 4000 to ABC Traders", "பெய்டு 4000 டு ஏபிசி டிரேடர்ஸ்", OUT, "ABC Traders", "4000")
+        en("debit taken", "ABC Traders kitta 7000 maal kadanaa eduthen", "ஏபிசி டிரேடர்ஸ் கிட்ட 7000 மால் கடனா எடுத்தேன்", DR, "ABC Traders", "7000")
+        // ---- reminders (now: Thu 8 Oct, 11:00)
+        fun rem(typed: String, tamil: String, at: LocalDateTime?, has: String?, rep: Boolean = false) = probe("reminder", typed, tamil) { reminder(typed, at, has, rep) }
+        rem("naalai kaalai 9:30-ku Kumar-kitta baaki ketkanum nyabagapaduthu", "நாளை காலை 9:30க்கு குமார்கிட்ட பாக்கி கேட்கணும் ஞாபகப்படுத்து", LocalDateTime.of(2026, 10, 9, 9, 30), "Kumar")
+        rem("remind me tomorrow at 5 pm to call Murugan", "ரிமைண்ட் மீ டுமாரோ அட் 5 பிஎம் டு கால் முருகன்", LocalDateTime.of(2026, 10, 9, 17, 0), "Murugan")
+        rem("ovvoru Monday kaalai 9 manikku kadai suththam pannanum nu sollu", "ஒவ்வொரு மண்டே காலை 9 மணிக்கு கடை சுத்தம் பண்ணணும்னு சொல்லு", null, null, true)
+        rem("30 nimisham kazhichu tea kudikka sollu", "30 நிமிஷம் கழிச்சு டீ குடிக்க சொல்லு", now.plusMinutes(30), null)
+        rem("remind me on Friday 6 pm to pay ABC Traders", "ரிமைண்ட் மீ ஆன் ஃப்ரைடே 6 பிஎம் டு பே ஏபிசி டிரேடர்ஸ்", LocalDateTime.of(2026, 10, 9, 18, 0), "ABC")
+        rem("naalu naal kazhichu kaalai 10 manikku GST file pannanum alert pannu", "நாலு நாள் கழிச்சு காலை 10 மணிக்கு ஜிஎஸ்டி ஃபைல் பண்ணணும் அலர்ட் பண்ணு", LocalDateTime.of(2026, 10, 12, 10, 0), "GST")
+        // ---- questions: answered from the records, nothing written
+        fun q(a: String, typed: String, tamil: String?, want: List<String>, not: List<String> = emptyList()) = probe(a, typed, tamil) { ask(typed, want, not) }
+        q("who owes most", "who owes me the most", "ஹூ ஓஸ் மீ தி மோஸ்ட்", listOf("Selvam", "₹6,000"))
+        q("supplier due", "Murugan Stores-ku naan evlo tharanum", "முருகன் ஸ்டோர்ஸுக்கு நான் எவ்வளவு தரணும்", listOf("₹4,000"))
+        q("low stock", "theerapora saamaan enna", "தீரப்போற சாமான் என்ன", listOf("Maggi"), listOf("Colgate"))
+        q("low stock EN", "which products are running low", "விச் ப்ராடக்ட்ஸ் ஆர் ரன்னிங் லோ", listOf("Maggi"), listOf("Colgate"))
+        q("stock qty", "Rice evlo kg irukku", "ரைஸ் எவ்வளவு கிலோ இருக்கு", listOf("250"))
+        q("total to collect", "ellarum serthu motham evlo varanum", "எல்லாரும் சேர்த்து மொத்தம் எவ்வளவு வரணும்", listOf("₹13,500"))
+        q("total to pay", "supplier-ku motham evlo kudukkanum", "சப்ளையருக்கு மொத்தம் எவ்வளவு குடுக்கணும்", listOf("₹14,000"))
+        q("off topic", "IPL score enna", "ஐபிஎல் ஸ்கோர் என்ன", emptyList(), listOf("₹"))
+        // ---- clarifying questions: an incomplete line is asked about, never guessed, never saved
+        micOf["Kumar 500"] = "குமார் 500"
+        probe("ask: which way", "Kumar 500", null) { talk("no verb", listOf("Kumar 500")) { s ->
+            val t = last(); if (s.nothingWritten() && t.contains("500") && t.contains("?")) null else "said: $t" } }
+        micOf["Ramesh-ku kadan kuduthen"] = "ரமேஷுக்கு கடன் குடுத்தேன்"
+        probe("ask: amount → saved", "Ramesh-ku kadan kuduthen → 600", null) { talk("no amount", listOf("Ramesh-ku kadan kuduthen")) { s ->
+            val t1 = last()
+            if (!s.nothingWritten() || !t1.contains("?")) return@talk "first: $t1"
+            lastTurn = s.say("600")
+            val b = lastTurn?.card?.buttons?.firstOrNull { it.action is KaiAction.ConfirmPlan } ?: return@talk "after 600: ${last()}"
+            s.act(b.action)
+            val p = s.tools.saved.singleOrNull() ?: return@talk "saved ${s.tools.saved.size}"
+            if (p.kind == CR && p.amount.compareTo(BigDecimal("600")) == 0 && p.partyName.contains("Ramesh", true)) null else "saved ${p.kind} ${p.partyName} ${p.amount}" } }
+        micOf["Colgate vandhuchu"] = "கோல்கேட் வந்துச்சு"
+        probe("ask: how many", "Colgate vandhuchu", null) { talk("no qty", listOf("Colgate vandhuchu")) { s ->
+            val t = last(); if (s.nothingWritten() && t.contains("?")) null else "said: $t" } }
+        micOf["remind pannu"] = "ரிமைண்ட் பண்ணு"
+        probe("ask: remind what", "remind pannu", null) { talk("no time / task", listOf("remind pannu")) { s ->
+            val t = last(); if (s.nothingWritten() && t.contains("?")) null else "said: $t" } }
+        // ---- reply language follows the owner: Tamil in → Tamil out; English in → English out; Tanglish → Tanglish
+        probe("lang: Tamil", "குமார் இன்னும் எவ்வளவு பாக்கி", "குமார் இன்னும் எவ்வளவு பாக்கி") { talk("tamil reply", listOf("குமார் இன்னும் எவ்வளவு பாக்கி")) { _ ->
+            val t = lastTurn?.reply?.text.orEmpty(); if (tamilLetters.containsMatchIn(t) && t.contains("4,000")) null else "said: $t" } }
+        if (!mic) {
+            probe("lang: English", "how much is Kumar's balance", null) { talk("english reply", listOf("how much is Kumar's balance")) { _ ->
+                val t = lastTurn?.reply?.text.orEmpty(); if (!tamilLetters.containsMatchIn(t) && t.contains("4,000") && !Regex("(?i)\\b(irukku|tharanum|kudukkanum|aachu)\\b").containsMatchIn(t)) null else "said: $t" } }
+            probe("lang: Tanglish", "Kumar innum evlo baaki", null) { talk("tanglish reply", listOf("Kumar innum evlo baaki")) { _ ->
+                val t = lastTurn?.reply?.text.orEmpty(); if (!tamilLetters.containsMatchIn(t) && t.contains("4,000")) null else "said: $t" } }
+            // Kai does not read the owner's whole line back to them.
+            probe("no echo", "Selvam 450 baaki solli vaanginaan", null) { talk("no echo", listOf("Selvam 450 baaki solli vaanginaan")) { _ ->
+                val t = lastTurn?.reply?.text.orEmpty(); if (!t.contains("baaki solli vaanginaan", true)) null else "echoed: $t" } }
+        }
+    }
+
+    @Test fun releaseCheck() {
+        lines()
+        mic = true
+        lines()
+        mic = false
+        val out = java.io.File(System.getProperty("probe.out") ?: "release.txt")
+        out.writeText(results.joinToString("\n") + "\n\n==== FAILURES ====\n\n" + failures.joinToString("\n\n"))
+    }
+}

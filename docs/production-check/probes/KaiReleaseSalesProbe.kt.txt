@@ -1,0 +1,127 @@
+package com.shopai.app.brain.chat
+
+import com.shopai.app.brain.BusinessSnapshot
+import com.shopai.app.brain.KaiLang
+import com.shopai.app.brain.PartyFacts
+import com.shopai.app.brain.PartyHistory
+import com.shopai.app.brain.chat.KaiInventoryChatTest.Inventory
+import com.shopai.app.brain.memory.InMemoryKaiMemoryStore
+import com.shopai.app.brain.memory.KaiPrivateMemory
+import com.shopai.app.brain.memory.KnownEntity
+import com.shopai.app.brain.tools.ActionOutcome
+import com.shopai.app.brain.tools.KaiServices
+import com.shopai.app.brain.tools.KaiTools
+import com.shopai.app.data.model.DailyCashTotals
+import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import java.math.BigDecimal
+import java.time.LocalDate
+import java.time.LocalDateTime
+
+/**
+ * The beauty parlour & salon master list (owner's PDF, 19 Oct 2026): every service on it is Kai's by its own name, listed on the
+ * Daily Sales Note's Menu for the owner to pick and price (never a sample price), and sold by chat typed and as the ta-IN mic
+ * writes it. "Hand wax" is full arms or half arms — asked, never guessed ("hand wax correct-ah work aagudhaa paaru"). A word
+ * that is not a service is never turned into one. Nothing is written before Confirm.
+ */
+class KaiReleaseSalesProbe {
+    private val now = LocalDateTime.of(2026, 10, 19, 11, 0)
+    private val today = now.toLocalDate()
+
+    private class Note {
+        data class Entry(val day: LocalDate, val amount: BigDecimal, val upi: Boolean, val note: String)
+        val entries = mutableListOf<Entry>()
+        val opening = HashMap<LocalDate, BigDecimal>()
+        fun view(day: LocalDate): CashNoteView {
+            val es = entries.filter { it.day == day }
+            val cash = es.sumOf { it.amount.toDouble() }
+            return CashNoteView(day, es.size, DailyCashTotals(cash, 0.0, cash, 0.0, 0.0, 0.0, cash, 0.0, cash), opening[day]?.toDouble(),
+                opening[day]?.toDouble()?.plus(cash), false, es.mapIndexed { i, e -> CashLine(true, e.amount.toDouble(), e.upi, e.note, "2026-10-19T0$i:00:00Z") })
+        }
+    }
+
+    private class Books(val note: Note) : KaiBooks {
+        override suspend fun snapshot() = BusinessSnapshot(customers = emptyList(), suppliers = emptyList())
+        override suspend fun history(party: PartyFacts): PartyHistory? = null
+        override suspend fun cashBook(from: LocalDate, to: LocalDate) = null
+        override suspend fun cashNote(day: LocalDate) = note.view(day)
+    }
+
+    private class Tools(val inv: Inventory, val note: Note, val category: String) : KaiTools by inv {
+        override suspend fun cashOpening(day: LocalDate) = note.opening[day] ?: BigDecimal.ZERO
+        override suspend fun setCashOpening(day: LocalDate, amount: BigDecimal): ActionOutcome { note.opening[day] = amount; return ActionOutcome.Done("k", amount) }
+        override suspend fun addCashSale(day: LocalDate, amount: BigDecimal, upi: Boolean, note: String): ActionOutcome {
+            this.note.entries += Note.Entry(day, amount, upi, note); return ActionOutcome.Done("c${this.note.entries.size}", amount)
+        }
+        override suspend fun sellsServices() = category == "BEAUTY_SALON"
+        override suspend fun businessCategory() = category
+    }
+
+    private class Access(val memory: KaiPrivateMemory) : KaiMemoryAccess {
+        override suspend fun current() = memory.also { it.open("salon-1", "owner-1") }
+        override suspend fun entities(): List<KnownEntity> = emptyList()
+    }
+
+    private inner class Shop(category: String = "BEAUTY_SALON") {
+        val note = Note()
+        val memory = KaiPrivateMemory(InMemoryKaiMemoryStore())
+        val tools = Tools(Inventory(), note, category)
+        val kai = KaiAgent(KaiBusinessBrain(Books(note)), Books(note), tools, { now }, memory = Access(memory))
+        var last: KaiTurn? = null
+        fun say(line: String): KaiTurn = runBlocking { kai.ask(line) }.also { last = it }
+        fun confirm(): KaiTurn {
+            val b = last?.card?.buttons?.firstOrNull { it.label.contains("Confirm") || it.label.contains("உறுதி") } ?: error("no Confirm: ${all(last)}")
+            return runBlocking { kai.act(b.action, KaiLang.TANGLISH)!! }.also { last = it }
+        }
+        fun menu(vararg items: Pair<String, String>) = runBlocking {
+            memory.open("salon-1", "owner-1"); items.forEach { (n, p) -> KaiMenu.save(memory, n, BigDecimal(p)) }
+        }
+    }
+
+    private fun all(t: KaiTurn?) = (t?.reply?.text.orEmpty() + " | " + t?.card?.lines.orEmpty().joinToString(" | ")).replace("\n", " ")
+    private fun bothWays(typed: String): List<String> = listOfNotNull(typed, KaiMicForm.of(typed)?.takeIf { it != typed })
+
+    @Test fun releaseCheck() {
+        val out = StringBuilder()
+        fun rec(ok: Boolean, area: String, line: String, t: KaiTurn?) { out.append(if (ok) "PASS" else "FAIL").append(" | $area | $line\n   ").append(all(t).take(330)).append("\n") }
+        // Services from the master list, price said, in words Kai was never fed — typed and in Tamil script (the mic).
+        for ((line, want, amount) in listOf(
+            Triple("gold facial 900 aachu", "Gold Facial", "900"), Triple("கோல்ட் ஃபேஷியல் 900 ஆச்சு", "Gold Facial", "900"),
+            Triple("keratin panninom 3500", "Keratin", "3500"), Triple("கெரட்டின் பண்ணினோம் 3500", "Keratin", "3500"),
+            Triple("full kaal wax 500", "Full Legs Waxing", "500"), Triple("ஃபுல் கால் வாக்ஸ் 500", "Full Legs Waxing", "500"),
+            Triple("saree draping 300 cash", "Saree Draping", "300"), Triple("சாரி டிரேப்பிங் 300 கேஷ்", "Saree Draping", "300"),
+            Triple("kaadhu kuthu 200", "Ear Piercing", "200"), Triple("காது குத்து 200", "Ear Piercing", "200"),
+            Triple("mudi colour 1200", "Colo", "1200"), Triple("முடி கலர் 1200", "Colo", "1200"),
+            Triple("pedicure onnu 450", "Pedicure", "450"), Triple("பெடிக்யூர் ஒன்னு 450", "Pedicure", "450"),
+            Triple("hand wax 250", "Arms Waxing", "250"), Triple("ஹேண்ட் வாக்ஸ் 250", "Arms Waxing", "250"),
+        )) {
+            val s = Shop()
+            var t = s.say(line)
+            val asked = t.card?.buttons.isNullOrEmpty()
+            if (asked && all(t).contains(want)) {
+                // Kai asked which one (full / half, which kind): pick the first it offered.
+                val pick = Regex("""(?:•|\d\.|-)\s*([A-Z][\w &'-]+)""").find(all(t))?.groupValues?.get(1)?.trim()
+                if (pick != null) t = s.say(pick)
+            }
+            val before = s.note.entries.isEmpty()
+            val drafted = t.card?.buttons?.isNotEmpty() == true && all(t).contains("₹${"%,d".format(amount.toInt())}")
+            var saved = false
+            if (drafted && before) { s.confirm(); saved = s.note.entries.singleOrNull()?.let { it.note.contains(want, true) && it.amount.compareTo(BigDecimal(amount)) == 0 } == true }
+            rec(before && drafted && saved, if (asked) "service (asked first)" else "service", line, t)
+        }
+        // The owner's own Menu, said in words never fed: "aambala cutting" (gents), a line that is not a service stays out.
+        for ((line, want) in listOf("oru aambala cutting" to "Gents Haircut", "ஒரு ஆம்பள கட்டிங்" to "Gents Haircut")) {
+            val s = Shop(); s.menu("Gents Haircut" to "150", "Kids Haircut" to "100")
+            val t = s.say(line)
+            rec(all(t).contains(want) && s.note.entries.isEmpty(), "menu", line, t)
+        }
+        for (line in listOf("Kumar 500 kuduthaan", "குமார் 500 குடுத்தான்", "Colgate 2 box vandhuchu")) {
+            val s = Shop()
+            val t = s.say(line)
+            rec(KaiServices.catalogue.none { all(t).contains(it.name) } && s.note.entries.isEmpty(), "not a service", line, t)
+        }
+        java.io.File(System.getProperty("probe.out") ?: "sales-release.txt").writeText(out.toString())
+    }
+}

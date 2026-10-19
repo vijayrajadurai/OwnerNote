@@ -236,7 +236,10 @@ fun KaiChatScreen(
     }
     val micPermission = androidx.activity.compose.rememberLauncherForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
-    ) { granted -> if (granted) listen() }
+    ) { granted ->
+        // Mic permission refused: say so — a tap that does nothing looks like a broken mic.
+        if (granted) listen() else android.widget.Toast.makeText(context, context.getString(com.shopai.app.R.string.error_mic_permission), android.widget.Toast.LENGTH_LONG).show()
+    }
     fun onMic() {
         if (listening) {
             // The owner tapped the mic to finish: what was heard so far is sent (stopping the recognizer drops its final result).

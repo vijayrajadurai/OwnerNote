@@ -1,0 +1,51 @@
+PASS | service | gold facial 900 aachu
+   Gold Facial — ₹900 (Cash) Daily Sales Note-la podava? Confirm pannunga. | Gold Facial ×1 — ₹900 | Mothama ₹900 · Cash | Vilai nyabagam: Gold Facial ₹900
+PASS | service | கோல்ட் ஃபேஷியல் 900 ஆச்சு
+   Gold Facial — ₹900 (Cash) Daily Sales Note-ல போடவா? உறுதி செய்யுங்க. | Gold Facial ×1 — ₹900 | மொத்தம் ₹900 · Cash | விலை நினைவு: Gold Facial ₹900
+FAIL | service (asked first) | keratin panninom 3500
+   Owner, Keratin Treatment unga menu-la illa — Keratin Treatment evlo? Sonna menu-la serthudren. | 
+FAIL | service (asked first) | கெரட்டின் பண்ணினோம் 3500
+   ஓனர், Keratin Treatment உங்க மெனுவுல இல்ல — Keratin Treatment எவ்வளவு? சொன்னா மெனுவுல சேர்த்துடுறேன். | 
+PASS | service | full kaal wax 500
+   Full Legs Waxing — ₹500 (Cash) Daily Sales Note-la podava? Confirm pannunga. | Full Legs Waxing ×1 — ₹500 | Mothama ₹500 · Cash | Vilai nyabagam: Full Legs Waxing ₹500
+FAIL | service | ஃபுல் கால் வாக்ஸ் 500
+   Waxing — ₹500 (Cash) Daily Sales Note-ல போடவா? உறுதி செய்யுங்க. | Waxing ×1 — ₹500 | மொத்தம் ₹500 · Cash | விலை நினைவு: Waxing ₹500
+PASS | service | saree draping 300 cash
+   Saree Draping — ₹300 (Cash) Daily Sales Note-la podava? Confirm pannunga. | Saree Draping ×1 — ₹300 | Mothama ₹300 · Cash | Vilai nyabagam: Saree Draping ₹300
+PASS | service | சாரி டிரேப்பிங் 300 கேஷ்
+   Saree Draping — ₹300 (Cash) Daily Sales Note-ல போடவா? உறுதி செய்யுங்க. | Saree Draping ×1 — ₹300 | மொத்தம் ₹300 · Cash | விலை நினைவு: Saree Draping ₹300
+FAIL | service (asked first) | kaadhu kuthu 200
+   Owner, edha pathi sollureenga? Credit / debit (kudukkal vaangal) pathiyaa, stock (kadaila irukkura porul) pathiyaa, reminder pathiyaa? | 
+FAIL | service (asked first) | காது குத்து 200
+   Owner, எதைப் பத்தி சொல்றீங்க? Credit / debit (கொடுக்கல் வாங்கல்) பத்தியா, stock (கடையில இருக்கிற பொருள்) பத்தியா, reminder பத்தியா? | 
+FAIL | service (asked first) | mudi colour 1200
+   Owner, edha pathi sollureenga? Credit / debit (kudukkal vaangal) pathiyaa, stock (kadaila irukkura porul) pathiyaa, reminder pathiyaa? | 
+FAIL | service (asked first) | முடி கலர் 1200
+   Owner, எதைப் பத்தி சொல்றீங்க? Credit / debit (கொடுக்கல் வாங்கல்) பத்தியா, stock (கடையில இருக்கிற பொருள்) பத்தியா, reminder பத்தியா? | 
+FAIL | service (asked first) | pedicure onnu 450
+   Owner, Pedicure unga menu-la illa — Pedicure evlo? Sonna menu-la serthudren. | 
+FAIL | service (asked first) | பெடிக்யூர் ஒன்னு 450
+   ஓனர், Pedicure உங்க மெனுவுல இல்ல — Pedicure எவ்வளவு? சொன்னா மெனுவுல சேர்த்துடுறேன். | 
+FAIL | service (asked first) | hand wax 250
+   Owner, edhu (₹250) — “Full Arms Waxing” / “Half Arms Waxing”? Per sollunga (eg: “Full Arms Waxing”). Innum edhuvum podala. | Full Arms Waxing | Half Arms Waxing
+FAIL | service (asked first) | ஹேண்ட் வாக்ஸ் 250
+   ஓனர், எது (₹250) — “Full Arms Waxing” / “Half Arms Waxing”? பேர் சொல்லுங்க (உதா: “Full Arms Waxing”). இன்னும் எதுவும் போடல. | Full Arms Waxing | Half Arms Waxing
+PASS | menu | oru aambala cutting
+   Owner, Hair cutting-aa? Menu-la “Gents Haircut” (₹150), “Kids Haircut” (₹100) irukku — edhu? Per sollunga (eg: “Gents Haircut”). Innum edhuvum podala. | Gents Haircut — ₹150 | Kids Haircut — ₹100
+PASS | menu | ஒரு ஆம்பள கட்டிங்
+   ஓனர், Hair cutting-ஆ? மெனுவுல “Gents Haircut” (₹150), “Kids Haircut” (₹100) இருக்கு — எது? பேர் சொல்லுங்க (உதா: “Gents Haircut”). இன்னும் எதுவும் போடல. | Gents Haircut — ₹150 | Kids Haircut — ₹100
+PASS | not a service | Kumar 500 kuduthaan
+   Owner, Kumar puthu per — records-la illa. Kumar ungalukku ₹500 kuduthaanga. Idhu kadan-aa — neenga Kumar-ku ₹500 thiruppi tharanum-aa? 'Aama' sollunga, illa Debit button-a thottunga. Confirm pannina dhaan save aagum. | 
+PASS | not a service | குமார் 500 குடுத்தான்
+   ஓனர், குமார் புது பேர் — பதிவுல இல்ல. குமார் உங்களுக்கு ₹500 குடுத்தாங்க. இது கடனா — நீங்க குமார்-க்கு ₹500 திருப்பி தரணுமா? 'ஆமா'-ன்னு சொல்லுங்க, இல்ல Debit பட்டனை தொடுங்க. Confirm பண்ணா தான் save ஆகும். | 
+PASS | not a service | Colgate 2 box vandhuchu
+   Seri Owner 👍 1 box-la evlo pieces irukku? | Pudhu product: Colgate (Confirm pannina dhaan serum)
+   Keratin Treatment — ₹3,500 (Cash) Daily Sales Note-la podava? Confirm pannunga. | Keratin Treatment ×1 — ₹3,500 | Mothama ₹3,500 · Cash | Vilai nyabagam: Keratin Treatment ₹3,500
+   Keratin Treatment — ₹3,500 (Cash) Daily Sales Note-la podava? Confirm pannunga. | Keratin Treatment ×1 — ₹3,500 | Mothama ₹3,500 · Cash | Vilai nyabagam: Keratin Treatment ₹3,500
+   Owner, Keratin Treatment unga menu-la illa — Keratin Treatment evlo? Sonna menu-la serthudren. | 
+   Pedicure — ₹450 (Cash) Daily Sales Note-la podava? Confirm pannunga. | Pedicure ×1 — ₹450 | Mothama ₹450 · Cash | Vilai nyabagam: Pedicure ₹450
+   Spa Pedicure — ₹450 (Cash) Daily Sales Note-la podava? Confirm pannunga. | Spa Pedicure ×1 — ₹450 | Mothama ₹450 · Cash | Vilai nyabagam: Spa Pedicure ₹450
+   Owner, Pedicure unga menu-la illa — Pedicure evlo? Sonna menu-la serthudren. | 
+   Gold Facial — ₹900 (Cash) Daily Sales Note-la podava? Confirm pannunga. | Gold Facial ×1 — ₹900 | Mothama ₹900 · Cash | Vilai nyabagam: Gold Facial ₹900
+   Owner, Gold Facial unga menu-la illa — Gold Facial evlo? Sonna menu-la serthudren. | 
+   Owner, Fruit Facial unga menu-la illa — Fruit Facial evlo? Sonna menu-la serthudren. | 

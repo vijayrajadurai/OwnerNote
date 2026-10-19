@@ -1,0 +1,221 @@
+FAIL | stock in | typed | Rice 2 bag supplier kondu vandhaar
+FAIL | stock in | typed | Lux soap 10 unloading mudinjidhu
+PASS | stock in EN | typed | received 10 lux soap today
+PASS | stock in unit | typed | Colgate 2 dozen vandhuruchu
+PASS | stock in unit | typed | Rice 500 gram vandhuchu
+FAIL | stock in EN | typed | added 3 boxes of colgate
+FAIL | stock in | typed | Oil 6 bottle irakkunom
+PASS | stock in new | typed | Dettol 5 vandhuchu
+PASS | stock out | typed | Rice 1.5 kg kettu pochu
+FAIL | stock out | typed | Baniyan 3 supplier-ku thiruppi koduthen
+PASS | stock out EN | typed | sold 6 lux soap
+FAIL | stock out | typed | Oil 2 bottle sindhiduchu
+FAIL | stock out unit | typed | Rice 250 gram eduthen
+PASS | stock asked → vandhuchu | typed | Rice 2 bag supplier kondu vandhaar
+PASS | stock asked → vandhuchu | typed | added 3 boxes of colgate
+PASS | stock asked → vandhuchu | typed | Oil 6 bottle irakkunom
+PASS | stock asked → pochu | typed | Oil 2 bottle sindhiduchu
+PASS | stock asked → pochu | typed | Rice 250 gram eduthen
+PASS | stock asked → pochu | typed | Baniyan 3 supplier-ku thiruppi koduthen
+PASS | credit given | typed | Selvam 450 baaki solli vaanginaan
+PASS | credit given | typed | Lakshmi 1200 credit-la eduthutu ponaanga
+PASS | credit given EN | typed | gave 900 on credit to Ramesh
+PASS | credit given TA | typed | குமாருக்கு ஐநூறு ரூபாய் கடன் கொடுத்தேன்
+FAIL | credit new name | typed | Vignesh 650 baaki
+PASS | payment in | typed | Kumar rendaayiram thanthaan
+PASS | payment in EN | typed | Lakshmi paid 500 by phonepe
+PASS | payment in | typed | Selvam ezhunooru thiruppi koduthaan
+PASS | payment out | typed | Murugan Stores-ku 3000 anuppiten
+PASS | payment out EN | typed | paid 4000 to ABC Traders
+PASS | debit taken | typed | ABC Traders kitta 7000 maal kadanaa eduthen
+FAIL | reminder | typed | naalai kaalai 9:30-ku Kumar-kitta baaki ketkanum nyabagapaduthu
+PASS | reminder | typed | remind me tomorrow at 5 pm to call Murugan
+PASS | reminder | typed | ovvoru Monday kaalai 9 manikku kadai suththam pannanum nu sollu
+PASS | reminder | typed | 30 nimisham kazhichu tea kudikka sollu
+PASS | reminder | typed | remind me on Friday 6 pm to pay ABC Traders
+FAIL | reminder | typed | naalu naal kazhichu kaalai 10 manikku GST file pannanum alert pannu
+PASS | who owes most | typed | who owes me the most
+PASS | supplier due | typed | Murugan Stores-ku naan evlo tharanum
+PASS | low stock | typed | theerapora saamaan enna
+PASS | low stock EN | typed | which products are running low
+PASS | stock qty | typed | Rice evlo kg irukku
+PASS | total to collect | typed | ellarum serthu motham evlo varanum
+PASS | total to pay | typed | supplier-ku motham evlo kudukkanum
+PASS | off topic | typed | IPL score enna
+PASS | ask: which way | typed | Kumar 500
+PASS | ask: amount → saved | typed | Ramesh-ku kadan kuduthen → 600
+PASS | ask: how many | typed | Colgate vandhuchu
+PASS | ask: remind what | typed | remind pannu
+PASS | lang: Tamil | typed | குமார் இன்னும் எவ்வளவு பாக்கி
+PASS | lang: English | typed | how much is Kumar's balance
+PASS | lang: Tanglish | typed | Kumar innum evlo baaki
+PASS | no echo | typed | Selvam 450 baaki solli vaanginaan
+FAIL | stock in | mic | ரைஸ் 2 பேக் சப்ளையர் கொண்டு வந்தார்
+FAIL | stock in | mic | லக்ஸ் சோப் 10 அன்லோடிங் முடிஞ்சிது
+FAIL | stock in EN | mic | ரிசீவ்டு 10 லக்ஸ் சோப் டுடே
+PASS | stock in unit | mic | கோல்கேட் 2 டஜன் வந்துருச்சு
+PASS | stock in unit | mic | ரைஸ் 500 கிராம் வந்துச்சு
+FAIL | stock in EN | mic | ஆடட் 3 பாக்ஸஸ் ஆஃப் கோல்கேட்
+FAIL | stock in | mic | ஆயில் 6 பாட்டில் இறக்குனோம்
+PASS | stock in new | mic | டெட்டால் 5 வந்துச்சு
+PASS | stock out | mic | ரைஸ் 1.5 கிலோ கெட்டுப் போச்சு
+FAIL | stock out | mic | பனியன் 3 சப்ளையருக்கு திருப்பி கொடுத்தேன்
+FAIL | stock out EN | mic | சோல்டு 6 லக்ஸ் சோப்
+FAIL | stock out | mic | ஆயில் 2 பாட்டில் சிந்திடுச்சு
+FAIL | stock out unit | mic | ரைஸ் 250 கிராம் எடுத்தேன்
+PASS | stock asked → vandhuchu | mic | ரைஸ் 2 பேக் சப்ளையர் kondu vandhaar
+FAIL | stock asked → vandhuchu | mic | added 3 பாக்ஸ் of கோல்கேட்
+PASS | stock asked → vandhuchu | mic | ஆயில் 6 பாட்டில் irakkunom
+PASS | stock asked → pochu | mic | ஆயில் 2 பாட்டில் sindhiduchu
+PASS | stock asked → pochu | mic | ரைஸ் 250 கிராம் எடுத்தேன்
+PASS | stock asked → pochu | mic | பனியன் 3 சப்ளையருக்கு thiruppi கொடுத்தேன்
+PASS | credit given | mic | செல்வம் 450 பாக்கி சொல்லி வாங்கினான்
+PASS | credit given | mic | லட்சுமி 1200 கிரெடிட்ல எடுத்துட்டு போனாங்க
+PASS | credit given EN | mic | கேவ் 900 ஆன் கிரெடிட் டு ரமேஷ்
+PASS | credit given TA | mic | குமாருக்கு ஐநூறு ரூபாய் கடன் கொடுத்தேன்
+FAIL | credit new name | mic | விக்னேஷ் 650 பாக்கி
+PASS | payment in | mic | குமார் ரெண்டாயிரம் தந்தான்
+FAIL | payment in EN | mic | லட்சுமி பெய்டு 500 பை போன்பே
+PASS | payment in | mic | செல்வம் எழுநூறு திருப்பி கொடுத்தான்
+PASS | payment out | mic | முருகன் ஸ்டோர்ஸுக்கு 3000 அனுப்பிட்டேன்
+FAIL | payment out EN | mic | பெய்டு 4000 டு ஏபிசி டிரேடர்ஸ்
+PASS | debit taken | mic | ஏபிசி டிரேடர்ஸ் கிட்ட 7000 மால் கடனா எடுத்தேன்
+PASS | reminder | mic | நாளை காலை 9:30க்கு குமார்கிட்ட பாக்கி கேட்கணும் ஞாபகப்படுத்து
+FAIL | reminder | mic | ரிமைண்ட் மீ டுமாரோ அட் 5 பிஎம் டு கால் முருகன்
+PASS | reminder | mic | ஒவ்வொரு மண்டே காலை 9 மணிக்கு கடை சுத்தம் பண்ணணும்னு சொல்லு
+PASS | reminder | mic | 30 நிமிஷம் கழிச்சு டீ குடிக்க சொல்லு
+PASS | reminder | mic | ரிமைண்ட் மீ ஆன் ஃப்ரைடே 6 பிஎம் டு பே ஏபிசி டிரேடர்ஸ்
+FAIL | reminder | mic | நாலு நாள் கழிச்சு காலை 10 மணிக்கு ஜிஎஸ்டி ஃபைல் பண்ணணும் அலர்ட் பண்ணு
+FAIL | who owes most | mic | ஹூ ஓஸ் மீ தி மோஸ்ட்
+PASS | supplier due | mic | முருகன் ஸ்டோர்ஸுக்கு நான் எவ்வளவு தரணும்
+PASS | low stock | mic | தீரப்போற சாமான் என்ன
+FAIL | low stock EN | mic | விச் ப்ராடக்ட்ஸ் ஆர் ரன்னிங் லோ
+PASS | stock qty | mic | ரைஸ் எவ்வளவு கிலோ இருக்கு
+PASS | total to collect | mic | எல்லாரும் சேர்த்து மொத்தம் எவ்வளவு வரணும்
+PASS | total to pay | mic | சப்ளையருக்கு மொத்தம் எவ்வளவு குடுக்கணும்
+PASS | off topic | mic | ஐபிஎல் ஸ்கோர் என்ன
+PASS | ask: which way | mic | குமார் 500
+PASS | ask: amount → saved | mic | ரமேஷுக்கு கடன் குடுத்தேன் → 600
+PASS | ask: how many | mic | கோல்கேட் வந்துச்சு
+PASS | ask: remind what | mic | ரிமைண்ட் பண்ணு
+PASS | lang: Tamil | mic | குமார் இன்னும் எவ்வளவு பாக்கி
+
+==== FAILURES ====
+
+[Rice 2 bag supplier kondu vandhaar] no stock draft
+   » Rice 2 bag supplier kondu vandhaar
+     Owner, Rice 2 bag — vandhucha (stock-la add), illa pochaa (stock-la minus)?
+
+[Lux soap 10 unloading mudinjidhu] no stock draft
+   » Lux soap 10 unloading mudinjidhu
+     Owner, Lux Soap 10 — vandhucha (stock-la add), illa pochaa (stock-la minus)?
+
+[added 3 boxes of colgate] no stock draft
+   » added 3 boxes of colgate
+     Owner, Colgate 3 boxes — vandhucha (stock-la add), illa pochaa (stock-la minus)?
+
+[Oil 6 bottle irakkunom] no stock draft
+   » Oil 6 bottle irakkunom
+     Owner, Oil 6 bottle — vandhucha (stock-la add), illa pochaa (stock-la minus)?
+
+[Baniyan 3 supplier-ku thiruppi koduthen] no stock draft
+   » Baniyan 3 supplier-ku thiruppi koduthen
+     Owner, Baniyan 3 — vandhucha (stock-la add), illa pochaa (stock-la minus)?
+
+[Oil 2 bottle sindhiduchu] no stock draft
+   » Oil 2 bottle sindhiduchu
+     Owner, Oil 2 bottle — vandhucha (stock-la add), illa pochaa (stock-la minus)?
+
+[Rice 250 gram eduthen] no stock draft
+   » Rice 250 gram eduthen
+     Owner, Rice 250 gram — vandhucha (stock-la add), illa pochaa (stock-la minus)?
+
+[Vignesh 650 baaki] no draft to confirm
+   » Vignesh 650 baaki
+     Owner, edha pathi sollureenga? Credit / debit (kudukkal vaangal) pathiyaa, stock (kadaila irukkura porul) pathiyaa, reminder pathiyaa?
+
+[naalai kaalai 9:30-ku Kumar-kitta baaki ketkanum nyabagapaduthu] no reminder to confirm
+   » naalai kaalai 9:30-ku Kumar-kitta baaki ketkanum nyabagapaduthu
+     Kumar ungalukku ₹4,000 tharanum owner.
+
+[naalu naal kazhichu kaalai 10 manikku GST file pannanum alert pannu] at 2026-10-12T11:00 ≠ 2026-10-12T10:00
+   » naalu naal kazhichu kaalai 10 manikku GST file pannanum alert pannu
+     Seri Owner. 96 hours-la “GST file pannanum alert” reminder set pannalama?
+     [card] Reminder | GST file pannanum alert | When: 96 hours kalichi | Status: Confirm pannina dhaan set aagum {Confirm, Edit, Cancel}
+   [tap] Done Owner ✅ 96 hours kalichi GST file pannanum alert remind pannuren.
+
+[mic: ரைஸ் 2 பேக் சப்ளையர் கொண்டு வந்தார்] no stock draft
+   » ரைஸ் 2 பேக் சப்ளையர் கொண்டு வந்தார்
+     ஓனர், Rice 2 bag — வந்துச்சா (stock-ல add), இல்ல போச்சா (stock-ல குறைக்கணுமா)?
+
+[mic: லக்ஸ் சோப் 10 அன்லோடிங் முடிஞ்சிது] no stock draft
+   » லக்ஸ் சோப் 10 அன்லோடிங் முடிஞ்சிது
+     ஓனர், Lux Soap 10 — வந்துச்சா (stock-ல add), இல்ல போச்சா (stock-ல குறைக்கணுமா)?
+
+[mic: ரிசீவ்டு 10 லக்ஸ் சோப் டுடே] no stock draft
+   » ரிசீவ்டு 10 லக்ஸ் சோப் டுடே
+     ஓனர், Lux Soap 10 — வந்துச்சா (stock-ல add), இல்ல போச்சா (stock-ல குறைக்கணுமா)?
+
+[mic: ஆடட் 3 பாக்ஸஸ் ஆஃப் கோல்கேட்] no stock draft
+   » ஆடட் 3 பாக்ஸஸ் ஆஃப் கோல்கேட்
+     ஓனர், Colgate 3 — வந்துச்சா (stock-ல add), இல்ல போச்சா (stock-ல குறைக்கணுமா)?
+
+[mic: ஆயில் 6 பாட்டில் இறக்குனோம்] no stock draft
+   » ஆயில் 6 பாட்டில் இறக்குனோம்
+     ஓனர், Oil 6 bottle — வந்துச்சா (stock-ல add), இல்ல போச்சா (stock-ல குறைக்கணுமா)?
+
+[mic: பனியன் 3 சப்ளையருக்கு திருப்பி கொடுத்தேன்] no stock draft
+   » பனியன் 3 சப்ளையருக்கு திருப்பி கொடுத்தேன்
+     ஓனர், Baniyan 3 — வந்துச்சா (stock-ல add), இல்ல போச்சா (stock-ல குறைக்கணுமா)?
+
+[mic: சோல்டு 6 லக்ஸ் சோப்] no stock draft
+   » சோல்டு 6 லக்ஸ் சோப்
+     ஓனர், Lux Soap 6 — வந்துச்சா (stock-ல add), இல்ல போச்சா (stock-ல குறைக்கணுமா)?
+
+[mic: ஆயில் 2 பாட்டில் சிந்திடுச்சு] no stock draft
+   » ஆயில் 2 பாட்டில் சிந்திடுச்சு
+     ஓனர், Oil 2 bottle — வந்துச்சா (stock-ல add), இல்ல போச்சா (stock-ல குறைக்கணுமா)?
+
+[mic: ரைஸ் 250 கிராம் எடுத்தேன்] no stock draft
+   » ரைஸ் 250 கிராம் எடுத்தேன்
+     ஓனர், Rice 250 gram — வந்துச்சா (stock-ல add), இல்ல போச்சா (stock-ல குறைக்கணுமா)?
+
+[mic: stock asked] nothing to tap
+   » ஆடட் 3 பாக்ஸஸ் ஆஃப் கோல்கேட்
+     ஓனர், Colgate 3 — வந்துச்சா (stock-ல add), இல்ல போச்சா (stock-ல குறைக்கணுமா)?
+   » வந்துச்சு
+     Colgate — 3 pieces-ஆ, 3 boxes-ஆ ஓனர்?
+
+[mic: விக்னேஷ் 650 பாக்கி] no draft to confirm
+   » விக்னேஷ் 650 பாக்கி
+     Owner, எதைப் பத்தி சொல்றீங்க? Credit / debit (கொடுக்கல் வாங்கல்) பத்தியா, stock (கடையில இருக்கிற பொருள்) பத்தியா, reminder பத்தியா?
+
+[mic: லட்சுமி பெய்டு 500 பை போன்பே] no draft to confirm
+   » லட்சுமி பெய்டு 500 பை போன்பே
+     Lakshmi உங்களுக்கு ₹1,000 தரணும் ஓனர். (பதிவுல ₹1,000 தான் இருக்கு.)
+
+[mic: பெய்டு 4000 டு ஏபிசி டிரேடர்ஸ்] no draft to confirm
+   » பெய்டு 4000 டு ஏபிசி டிரேடர்ஸ்
+     Records-ல நீங்க ABC Traders-க்கு ₹10,000 கொடுக்கணும். ABC Traders ₹4,000 — நீங்க ₹4,000 கொடுத்தீங்களா, இல்ல புதுசா ₹4,000 வாங்கினீங்களா (debit) ஓனர்?
+   » புது
+     Owner, இது ABC Traders பத்தியா, இல்ல வேற விஷயம் பத்தியா?
+
+[mic: ரிமைண்ட் மீ டுமாரோ அட் 5 பிஎம் டு கால் முருகன்] at 2026-10-08T17:00 ≠ 2026-10-09T17:00
+   » ரிமைண்ட் மீ டுமாரோ அட் 5 பிஎம் டு கால் முருகன்
+     சரி ஓனர். Murugan-க்கு இன்னைக்கு 5:00 PM call reminder வைக்கட்டுமா?
+     [card] நினைவூட்டல் | Call Murugan | எப்போ: இன்னைக்கு 5:00 PM | நிலை: Confirm பண்ணா தான் வைப்பேன் {Confirm, மாற்று, ரத்து}
+   [tap] சரி ஓனர் ✅ இன்னைக்கு 5:00 PM Murugan-க்கு call பண்ண நினைவூட்டுறேன்.
+
+[mic: நாலு நாள் கழிச்சு காலை 10 மணிக்கு ஜிஎஸ்டி ஃபைல் பண்ணணும் அலர்ட் பண்ணு] at 2026-10-12T11:00 ≠ 2026-10-12T10:00
+   » நாலு நாள் கழிச்சு காலை 10 மணிக்கு ஜிஎஸ்டி ஃபைல் பண்ணணும் அலர்ட் பண்ணு
+     சரி ஓனர். 96 மணி நேரம்-ல “ஜிஎஸ்டி ஃபைல் பண்ணணும் அலர்ட்” reminder வைக்கட்டுமா?
+     [card] நினைவூட்டல் | ஜிஎஸ்டி ஃபைல் பண்ணணும் அலர்ட் | எப்போ: 96 மணி நேரம் கழிச்சு | நிலை: Confirm பண்ணா தான் வைப்பேன் {Confirm, மாற்று, ரத்து}
+   [tap] சரி ஓனர் ✅ 96 மணி நேரம் கழிச்சு ஜிஎஸ்டி ஃபைல் பண்ணணும் அலர்ட் நினைவூட்டுறேன்.
+
+[mic: ஹூ ஓஸ் மீ தி மோஸ்ட்] lacks 'Selvam'
+   » ஹூ ஓஸ் மீ தி மோஸ்ட்
+     Owner, எதைப் பத்தி சொல்றீங்க? Credit / debit (கொடுக்கல் வாங்கல்) பத்தியா, stock (கடையில இருக்கிற பொருள்) பத்தியா, reminder பத்தியா?
+
+[mic: விச் ப்ராடக்ட்ஸ் ஆர் ரன்னிங் லோ] lacks 'Maggi'
+   » விச் ப்ராடக்ட்ஸ் ஆர் ரன்னிங் லோ
+     Owner, எதைப் பத்தி சொல்றீங்க? Credit / debit (கொடுக்கல் வாங்கல்) பத்தியா, stock (கடையில இருக்கிற பொருள்) பத்தியா, reminder பத்தியா?
