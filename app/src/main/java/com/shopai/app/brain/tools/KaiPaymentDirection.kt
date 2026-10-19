@@ -32,9 +32,9 @@ object KaiPaymentDirection {
     private const val E = """(?![\p{L}\p{M}])"""
 
     private val giving = Regex(
-        """$B(tharanum|tharanu|tharanam|tharan|kudukan|kodukan|tharavendum|thara\s*vendum|thara\s*venum|thara\s*venam|tharuvaan|kudukanum|kudukkanum|kodukkanum|kodukanum|kudukanu|""" +
+        """$B(tharanum|tharanu|tharanam|tharan|kudukan|kodukan|tharavendum|thara\s*vendum|thara\s*venum|thara\s*venam|tharuvaan|tharuvan|tharuvaanga|tharuvanga|tharuvaaru|tharuvaru|tharuvar|kuduppaan|kuduppan|kudupaan|kuduppaanga|kudupaanga|kuduppaaru|kudukanum|kudukkanum|kodukkanum|kodukanum|kudukanu|""" +
             """kudukka\s*venum|kudukka\s*vendum|kodukka\s*vendum|pay\s*pannanum|pay\s*panna\s*venum|payment\s*pannanum|kattanum|katta\s*venum|settle\s*pannanum|""" +
-            """owe|owes|give|(?:have|has|need|needs|must|should)\s+to\s+(?:pay|give))$E|தரணும்|தர\s*வேண்டும்|தரவேண்டும்|கொடுக்கணும்|குடுக்கணும்|கொடுக்க\s*வேண்டும்|கட்டணும்""",
+            """owe|owes|give|(?:have|has|need|needs|must|should)\s+to\s+(?:pay|give))$E|தரணும்|தருவான்|தருவாங்க|தருவாரு|குடுப்பான்|குடுப்பாங்க|தர\s*வேண்டும்|தரவேண்டும்|கொடுக்கணும்|குடுக்கணும்|கொடுக்க\s*வேண்டும்|கட்டணும்""",
         RegexOption.IGNORE_CASE,
     )
     private val taking = Regex(
@@ -56,7 +56,7 @@ object KaiPaymentDirection {
     private val notDative = setOf(
         "ena", "enak", "enna", "yena", "yenak", "yenna", "una", "unak", "unna", "yaar", "yaaru", "yar", "yaru", "innai", "innaik", "inni", "innik", "naalai", "naalaik", "nalai",
         "ir", "iru", "iruk", "irukk", "irukkudh", "irukkuth",
-        "mani", "manik", "adhu", "idhu", "athu", "ithu", "avan", "avanu", "avar", "avaru", "avanga", "avangalu", "time", "date", "thethi", "month", "week",
+        "mani", "manik", "adhu", "idhu", "athu", "ithu", "avan", "avanu", "avar", "avaru", "avanga", "avangalu", "time", "date", "thethi", "thethikulla", "month", "week", "naal", "thedhi",
     )
     private val latinDative = Regex("""(?i)([a-z]{2,})\s*-?\s*(?:ukku|kku|ku|uku)(?![a-z])""")
     private val tamilDative = Regex("""([஀-௿]+)க்கு""")
@@ -64,7 +64,7 @@ object KaiPaymentDirection {
     private val mixedDative = Regex("""([஀-௿]+)\s*-?\s*(?:ukku|kku|ku)(?![a-z])""", RegexOption.IGNORE_CASE)
     /** "Lokesh 9876543210-ku": the person named by their phone number. */
     private val numberDative = Regex("""\d{10}\s*-?\s*(?:ukku|kku|ku)(?![a-z])""", RegexOption.IGNORE_CASE)
-    private val tamilNotDative = setOf("என", "உன", "யாரு", "இன்னை", "நாளை", "மணி", "அது", "இது", "அவனு", "அவரு")
+    private val tamilNotDative = setOf("என", "உன", "யாரு", "இன்னை", "நாளை", "மணி", "அது", "இது", "அவனு", "அவரு", "தேதி", "மாசத்து", "மாதத்து")
 
     /** The sentence talks about owing / paying / collecting money. */
     fun mentionsMoneyOwed(text: String): Boolean = giving.containsMatchIn(text) || taking.containsMatchIn(text)

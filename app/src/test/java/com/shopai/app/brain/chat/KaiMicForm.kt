@@ -93,6 +93,7 @@ object KaiMicForm {
         thirudu=திருடு thirupi=திருப்பி unload=அன்லோட் use=யூஸ் vachitu=வச்சுட்டு vachuko=வச்சுக்கோ vandhu=வந்து vechaan=வச்சான்
         vechaanga=வச்சாங்க vechutu=வச்சுட்டு veetukku=வீட்டுக்கு veetuku=வீட்டுக்கு vei=வை vendi=வேண்டி vidu=விடு vidunga=விடுங்க
         onnara=ஒன்றரை rendara=ரெண்டரை kaal=கால் mukkal=முக்கால் senthil=செந்தில் dinesh=தினேஷ் ravikumar=ரவிக்குமார் murugesan=முருகேசன் customer=கஸ்டமர்
+        sarath=சரத் december=டிசம்பர் october=அக்டோபர் tharuvan=தருவான்
     """.trim().split(Regex("""\s+""")).associate { it.substringBefore('=') to it.substringAfter('=') }
 
     /** Said as one word ("katti tan" is "கட்டிட்டான்"). */

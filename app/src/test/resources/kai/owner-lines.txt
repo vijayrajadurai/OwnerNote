@@ -426,3 +426,10 @@ ENTRY  | Senthil 500 kadan                              | CREDIT Senthil 500
 ENTRY  | Ravikumar 400 kadan                            | CREDIT Ravikumar 400
 ENTRY  | pudhu customer Dinesh 600 kadan                | CREDIT Dinesh 600
 ENTRY  | Murugesan anna-ku 1200 kadan kuduthen          | CREDIT Murugesan 1200
+
+# Everything said at once (owner, 19 Oct 2026: "Sarath 5000 tharanum December 5 nu sonnalum kai due date yeppa nu varathu"): the draft
+# straight away with its due date, never a reminder asked its time (KaiFullDetailsTest checks each date is saved).
+ENTRY  | Sarath 5000 tharanum December 5               | CREDIT Sarath 5000
+ENTRY  | ABC Traders ku 4000 kudukkanum 25 October      | DEBIT ABC Traders 4000
+ENTRY  | Kumar ku 1500 kadan kuduthen 20th tharuvan     | CREDIT Kumar 1500
+ENTRY  | Senthil 5000 kadan, adutha maasam 5 tharuvan   | CREDIT Senthil 5000
