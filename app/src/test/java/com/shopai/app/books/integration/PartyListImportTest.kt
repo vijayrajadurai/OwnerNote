@@ -8,17 +8,17 @@ import org.junit.Test
 import java.time.LocalDate
 
 /**
- * Khatabook's "Customer List Report" / "Supplier List Report" PDF (owner, 19 Oct 2026: a new owner brings their khata over).
- * The samples are made the way Khatabook makes them (a browser printing the report to PDF), with made-up people: names that wrap
+ * A ledger app's "Customer List Report" / "Supplier List Report" PDF (owner, 19 Oct 2026: a new owner brings their accounts over).
+ * The samples are made the way such apps make them (a browser printing the report to PDF), with made-up people: names that wrap
  * onto three lines, a person with no phone, an amount on either side, a collection date, and the Grand Total the rows must add
  * up to. The real file the owner shared was read the same way (not kept here: it has their customers' phone numbers).
  */
-class KhataImportTest {
+class PartyListImportTest {
 
     private fun pdf(name: String) = javaClass.classLoader!!.getResourceAsStream("import/$name")!!.readBytes()
 
     @Test fun theCustomerListIsReadPersonByPerson() {
-        val sheet = KhataImport.read(pdf("khatabook-customers-sample.pdf"))!!
+        val sheet = PartyListImport.read(pdf("customer-list-sample.pdf"))!!
         assertEquals(PartyKind.CUSTOMER, sheet.kind)
         assertEquals("Murugan Stores", sheet.shop)
         assertEquals(5, sheet.rows.size)
@@ -43,7 +43,7 @@ class KhataImportTest {
     }
 
     @Test fun theSupplierListIsSuppliers() {
-        val sheet = KhataImport.read(pdf("khatabook-suppliers-sample.pdf"))!!
+        val sheet = PartyListImport.read(pdf("supplier-list-sample.pdf"))!!
         assertEquals(PartyKind.SUPPLIER, sheet.kind)
         assertEquals(listOf("ABC Traders", "Selvi Agencies"), sheet.rows.map { it.name })
         val abc = sheet.rows[0]
@@ -53,11 +53,11 @@ class KhataImportTest {
         assertTrue(sheet.checked)
     }
 
-    @Test fun aFileThatIsNotAKhatabookListIsNotRead() {
-        assertNull(KhataImport.read("not a pdf".toByteArray()))
-        assertNull(KhataImport.read(ByteArray(0)))
+    @Test fun aFileThatIsNotAListIsNotRead() {
+        assertNull(PartyListImport.read("not a pdf".toByteArray()))
+        assertNull(PartyListImport.read(ByteArray(0)))
         // a PDF of something else: no Name / You'll Get / You'll Give header
         val lines = listOf(PdfText.Line(1, 10f, listOf(PdfText.Run(1, 10f, 10f, 12f, "Invoice"))), PdfText.Line(1, 30f, listOf(PdfText.Run(1, 10f, 30f, 12f, "Total 500.00"))))
-        assertNull(KhataImport.parse(lines))
+        assertNull(PartyListImport.parse(lines))
     }
 }

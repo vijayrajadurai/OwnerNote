@@ -8,13 +8,13 @@ import com.shopai.app.books.engine.PartyOpeningInput
 import com.shopai.app.books.engine.PostMeta
 import com.shopai.app.books.engine.PostResult
 import com.shopai.app.books.engine.nameKey
-import com.shopai.app.books.integration.KhataImport.Row
+import com.shopai.app.books.integration.PartyListImport.Row
 import com.shopai.app.books.model.PartyKind
 import com.shopai.app.books.model.TxnSource
 import java.time.LocalDate
 
-/** Confirm on a Khatabook report ([KhataImport]): the people and their balances into the books — all or nothing. */
-object KhataImportSave {
+/** Confirm on an imported customer / supplier list ([PartyListImport]): the people and their balances into the books — all or nothing. */
+object PartyListImportSave {
 
     /** What Confirm did: people added (with a balance or without), people already in the books (left as they were). */
     data class Outcome(val added: Int, val withBalance: Int, val alreadyThere: List<String>)
@@ -30,7 +30,7 @@ object KhataImportSave {
             for (r in rows) {
                 if (session.dao.partyByName(biz, kind.name, nameKey(r.name)) != null) { there += r.name; continue }
                 val mobile = r.phone?.takeIf { it.length == 10 && it[0] in "6789" }
-                val party = session.masters.createParty(PartyInput(kind = kind, name = r.name, mobile = mobile, notes = "From Khatabook")).orThrow()
+                val party = session.masters.createParty(PartyInput(kind = kind, name = r.name, mobile = mobile, notes = "Imported from a customer / supplier list")).orThrow()
                 added++
                 val owed = if (kind == PartyKind.CUSTOMER) r.getPaise - r.givePaise else r.givePaise - r.getPaise
                 if (owed == 0L) continue
@@ -41,7 +41,7 @@ object KhataImportSave {
                         inPartysFavour = owed < 0,
                         date = today,
                         dueDate = r.collectionDate?.takeIf { owed > 0 },
-                        meta = PostMeta(clientKey = "khatabook-${kind.name}-${nameKey(r.name)}-${r.phone.orEmpty()}-$owed", source = TxnSource.IMPORT, notes = "Balance brought from Khatabook"),
+                        meta = PostMeta(clientKey = "import-list-${kind.name}-${nameKey(r.name)}-${r.phone.orEmpty()}-$owed", source = TxnSource.IMPORT, notes = "Balance brought from an imported list"),
                     ),
                 )
                 if (posted is PostResult.Rejected && posted.errors.none { it.code == BooksErrorCode.OPENING_EXISTS }) throw BooksRejectedException(posted.errors)

@@ -6,14 +6,14 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /**
- * Bringing a shop's khata from Khatabook (owner, 19 Oct 2026: "pudhu user maara idhu romba mukkiyam"): the "Customer List Report"
- * / "Supplier List Report" PDF Khatabook exports — each person's name, phone, what you'll get / give and the collection date — read,
+ * Bringing a shop's accounts over from the ledger app it used before (owner, 19 Oct 2026: "pudhu user maara idhu romba mukkiyam"): the "Customer List Report"
+ * / "Supplier List Report" PDF such an app exports — each person's name, phone, what you'll get / give and the collection date — read,
  * shown to the owner, and written only on Confirm: the person, and their balance as an opening balance with the collection date as
  * its due date, through the books' own [com.shopai.app.books.engine.BooksEngine.postPartyOpening]. Nothing else in the books
  * changes; a person already in the books is left as they are (never a second balance), and bringing the same file again adds
  * nothing twice.
  */
-object KhataImport {
+object PartyListImport {
 
     /** One person on the report: what you'll get from them / give them (paise), and the collection date when there is one. */
     data class Row(val name: String, val phone: String?, val getPaise: Long, val givePaise: Long, val collectionDate: LocalDate?)
@@ -39,7 +39,7 @@ object KhataImport {
 
     private fun phoneOf(text: String): String? = text.filter(Char::isDigit).takeLast(10).takeIf { it.length == 10 }
 
-    /** Khatabook's report from its lines (see [PdfText.lines]) — null when it isn't one (no Name / Details / You'll Get header). */
+    /** The list report from its lines (see [PdfText.lines]) — null when it isn't one (no Name / Details / You'll Get header). */
     fun parse(lines: List<PdfText.Line>): Sheet? {
         val headerAt = lines.indexOfFirst { l -> l.cells.any { it.text.equals("Name", true) } && l.cells.any { it.text.contains("Get", true) } && l.cells.any { it.text.contains("Give", true) } }
         if (headerAt < 0) return null
@@ -88,7 +88,7 @@ object KhataImport {
         }
     }
 
-    /** The PDF's bytes → the report, or null when the file is not a Khatabook list (or carries no text). */
+    /** The PDF's bytes → the report, or null when the file is not such a list (or carries no text). */
     fun read(pdf: ByteArray): Sheet? = runCatching { parse(PdfText.lines(pdf)) }.getOrNull()
 
 }

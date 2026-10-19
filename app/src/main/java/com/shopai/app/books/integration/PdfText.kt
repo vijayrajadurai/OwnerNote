@@ -4,11 +4,11 @@ import java.io.ByteArrayOutputStream
 import java.util.zip.Inflater
 
 /**
- * The text of a PDF with where it sits on the page — enough to read a report another app exported (Khatabook's "Customer List
+ * The text of a PDF with where it sits on the page — enough to read a report another ledger app exported (a "Customer List
  * Report", owner, 19 Oct 2026). Plain Kotlin, nothing downloaded: the file's own objects, its Flate streams (java.util.zip), its
  * fonts' ToUnicode maps, and the page's drawing operators (cm, q/Q, BT, Tf, Td, Tm, Tj, TJ, form XObjects).
  *
- * Reads PDFs that carry text (made by a browser or an app, like Khatabook's); a scanned page has none and gives no lines.
+ * Reads PDFs that carry text (made by a browser or an app); a scanned page has none and gives no lines.
  */
 object PdfText {
 
