@@ -2,6 +2,7 @@ package com.shopai.app.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -75,6 +76,14 @@ import com.shopai.app.ui.components.BottomNavTab
 import com.shopai.app.ui.components.DashboardGreetingHeader
 import com.shopai.app.ui.components.HomeBackHandler
 import com.shopai.app.ui.components.HomeQuickLinks
+import com.shopai.app.ui.components.GreenDetailBox
+import com.shopai.app.ui.components.GreenSlideBar
+import com.shopai.app.ui.components.GreenUi
+import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.ui.unit.sp
 import com.shopai.app.ui.components.shopLocationLabel
 // import com.shopai.app.ui.components.HomePriorityList
 // import com.shopai.app.ui.components.HomeCreditDebitActions
@@ -144,6 +153,8 @@ fun HomeScreen(
     var profilePhotoPath by remember { mutableStateOf<String?>(null) }
     // Kai's Morning Work: how many important tasks today (read only; null until known).
     var morningCount by remember { mutableStateOf<Int?>(null) }
+    // The stock box: the products at or below their minimum (null until known).
+    var lowStock by remember { mutableStateOf<List<com.shopai.app.data.model.InventoryProduct>?>(null) }
     // One-time move of the ledger into OwnerNote Books (null = not running / nothing to show).
     var importing by remember { mutableStateOf(false) }
     var imported by remember { mutableStateOf<com.shopai.app.books.integration.ImportOutcome.Imported?>(null) }
@@ -180,6 +191,8 @@ fun HomeScreen(
             }.onFailure {
                 container.presentApiError(it, errorLoadDashboard, { msg -> error = msg }, { msg -> alertError = msg })
             }
+            // The stock box reads apart: a stock read that fails leaves the box at "—", never the whole Home.
+            lowStock = runCatching { container.inventoryRepository.getLowStockProducts() }.getOrNull()
             loading = false
         }
     }
@@ -324,43 +337,81 @@ fun HomeScreen(
                     .weight(1f)
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
+                    .padding(start = 18.dp, end = 18.dp, top = 8.dp, bottom = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                if (carouselItems.isNotEmpty()) {
-                    HomePaymentReminderCard(
-                        items = carouselItems.take(2),
-                        onClick = { onNavigate(Routes.reminderDetail(carouselItems.first().id)) },
+                // The green UI's Home (owner, 19 Oct 2026): four boxes — to collect, to pay (each with its overdue / due-soon lines),
+                // stock (the low items on the front) and reminders (the next ones) — then the day close slide and the quick links.
+                // No black anywhere; every figure from the books.
+                // Kai on Home (owner, 19 Oct 2026: "kai home page-la illa"): he greets, speaks the day's brief (lip-synced), then
+                // settles; tap him to speak, or "Kai-kitta kelunga" for the chat.
+                GreenKaiCard(
+                    state = when {
+                        kaiBriefDone -> KaiState.IDLE
+                        kaiSpeaking -> KaiState.SPEAKING
+                        else -> KaiState.GREETING
+                    },
+                    line = when {
+                        !kaiBriefDone && !kaiSpeaking -> stringResource(R.string.kai_greeting)
+                        kaiBrief != null -> kaiBrief!!.display
+                        priorities.isEmpty() -> stringResource(R.string.kai_brief_clear)
+                        else -> stringResource(R.string.kai_brief_count, priorities.size)
+                    },
+                    mouthLevel = if (kaiBriefDone) 0f else kaiMouth,
+                    compact = kaiBriefDone,
+                    speakingAs = kaiBrief?.mood?.state(),
+                    onTap = { onNavigate(Routes.VoiceEntry) },
+                    onChat = { onNavigate(Routes.KaiChat) },
+                )
+                com.shopai.app.ui.books.CreditDebitSummaryCard(
+                    container = container,
+                    refreshKey = cashFlow,
+                    onOpenCustomers = { onNavigate(Routes.Customers) },
+                    onOpenSuppliers = { onNavigate(Routes.Suppliers) },
+                    pendingReceivables = cashFlow?.pendingReceivables,
+                    pendingPayables = cashFlow?.pendingPayables,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    val low = lowStock.orEmpty()
+                    GreenDetailBox(
+                        title = stringResource(R.string.green_home_stock),
+                        value = if (lowStock == null) "—" else stringResource(R.string.green_home_low_count, low.size),
+                        accent = GreenUi.StockInk,
+                        tint = GreenUi.StockBox,
+                        icon = Icons.Filled.Inventory2,
+                        meta = when {
+                            lowStock == null -> ""
+                            low.isEmpty() -> stringResource(R.string.green_home_stock_ok)
+                            low.size <= 2 -> low.joinToString(", ") { it.name }
+                            else -> low.take(2).joinToString(", ") { it.name } + " +" + (low.size - 2)
+                        },
+                        onClick = { onNavigate(Routes.Inventory) },
+                        modifier = Modifier.weight(1f).fillMaxHeight(),
                     )
-                } else {
-                    KaiBriefCard(
-                        state = when {
-                            kaiBriefDone -> KaiState.IDLE
-                            kaiSpeaking -> KaiState.SPEAKING
-                            else -> KaiState.GREETING
-                        },
-                        line = when {
-                            !kaiBriefDone && !kaiSpeaking -> stringResource(R.string.kai_greeting)
-                            kaiBrief != null -> kaiBrief!!.display
-                            priorities.isEmpty() -> stringResource(R.string.kai_brief_clear)
-                            else -> stringResource(R.string.kai_brief_count, priorities.size)
-                        },
-                        mouthLevel = if (kaiBriefDone) 0f else kaiMouth,
-                        compact = kaiBriefDone,
-                        speakingAs = kaiBrief?.mood?.state(),
-                        onTap = { onNavigate(Routes.VoiceEntry) },
+                    val next = carouselItems.firstOrNull()
+                    GreenDetailBox(
+                        title = stringResource(R.string.green_home_reminders),
+                        value = stringResource(R.string.green_home_reminders_count, carouselItems.size),
+                        accent = GreenUi.ReminderInk,
+                        tint = GreenUi.ReminderBox,
+                        icon = Icons.Filled.NotificationsActive,
+                        meta = if (next == null) stringResource(R.string.green_home_no_reminders)
+                            else stringResource(
+                                R.string.green_home_next,
+                                next.partyName.ifBlank { next.description } + " · " + (next.amount?.let { formatInr(it) } ?: formatHomeReminderDate(next.dueDateIso)),
+                            ),
+                        onClick = { onNavigate(Routes.Reminders) },
+                        modifier = Modifier.weight(1f).fillMaxHeight(),
                     )
                 }
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    com.shopai.app.ui.morning.MorningWorkCard(
-                        count = morningCount,
-                        onClick = { onNavigate(Routes.morningWork()) },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    HomeAskKaiCard(
-                        onClick = { onNavigate(Routes.KaiChat) },
-                    )
-                }
+                GreenSlideBar(
+                    label = stringResource(R.string.green_home_day_close),
+                    knob = stringResource(R.string.green_home_slide),
+                    onDone = { onNavigate(Routes.DailyCashNote) },
+                )
                 HomeQuickLinks(
                     onSpeakClick = { onNavigate(Routes.VoiceEntry) },
                     onGroupBuyingClick = { onNavigate(Routes.GroupBuying) },
@@ -387,10 +438,6 @@ fun HomeScreen(
                     onInventoryClick = { onNavigate(Routes.Inventory) },
                     onSeeAllClick = { onNavigate(Routes.More) },
                 )
-                DailyCashHomeCard(
-                    summary = cashNoteSummary,
-                    onClick = { onNavigate(Routes.DailyCashNote) },
-                )
 
             if (loading) {
                 CircularProgressIndicator(
@@ -403,15 +450,6 @@ fun HomeScreen(
                 if (error != null) {
                     Text(error!!, color = Danger)
                 }
-
-                com.shopai.app.ui.books.CreditDebitSummaryCard(
-                    container = container,
-                    refreshKey = cashFlow,
-                    onOpenCustomers = { onNavigate(Routes.Customers) },
-                    onOpenSuppliers = { onNavigate(Routes.Suppliers) },
-                    pendingReceivables = cashFlow?.pendingReceivables,
-                    pendingPayables = cashFlow?.pendingPayables,
-                )
 
                 /*
                 health?.let { h ->
@@ -578,9 +616,9 @@ private fun HomePaymentReminderCard(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(8.dp, RoundedCornerShape(24.dp), ambientColor = Color(0x1A1E6B4E), spotColor = Color(0x1A1E6B4E))
-            .clip(RoundedCornerShape(24.dp))
-            .background(Color.White)
+            .clip(RoundedCornerShape(26.dp))
+            // The green UI: a soft white wash on the green page.
+            .background(Color.White.copy(alpha = 0.62f))
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -614,6 +652,61 @@ private fun HomePaymentReminderCard(
     }
 }
 
+/** Home's Kai: on a soft green tile, his brief beside him and a green "Kai-kitta kelunga" pill for the chat. */
+@Composable
+private fun GreenKaiCard(
+    state: KaiState,
+    line: String,
+    mouthLevel: Float,
+    compact: Boolean,
+    speakingAs: KaiState?,
+    onTap: () -> Unit,
+    onChat: () -> Unit,
+) {
+    val size by androidx.compose.animation.core.animateDpAsState(if (compact) 72.dp else 110.dp, label = "homeKaiSize")
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(24.dp))
+            // Kai's card in deep navy (owner, 19 Oct 2026: "Kai background white maathi nalla colour") — white text, a white pill.
+            .background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(Color(0xFF1F2B5C), Color(0xFF2E4185))))
+            .clickable(onClick = onTap)
+            .padding(start = 8.dp, end = 16.dp, top = 10.dp, bottom = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        com.shopai.app.ui.kai.KaiCharacter(state = state, size = size, mouthLevel = mouthLevel, speakingAs = speakingAs)
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Kai", fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.2.sp, color = Color(0xFFB9C7FF))
+            Text(
+                line,
+                style = com.shopai.app.ui.theme.MoneyStyle.copy(fontWeight = FontWeight.Normal, letterSpacing = 0.sp),
+                fontSize = 14.sp,
+                lineHeight = 20.sp,
+                color = Color.White,
+                maxLines = 3,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            )
+            Text(
+                text = stringResource(R.string.green_home_ask_kai),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = GreenUi.Brand,
+                modifier = Modifier
+                    .padding(top = 2.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.White)
+                    .clickable(onClick = onChat)
+                    .padding(horizontal = 14.dp, vertical = 7.dp),
+            )
+        }
+    }
+}
+
+/** "2 kg", "1.5 kg": a stock figure without a trailing ".0". */
+private fun homeQty(q: Double): String =
+    if (q == Math.floor(q)) q.toLong().toString() else java.math.BigDecimal(q).setScale(2, java.math.RoundingMode.HALF_UP).stripTrailingZeros().toPlainString()
+
 private fun formatHomeReminderDate(iso: String): String {
     val date = parseIsoToLocalDate(iso) ?: return iso
     val day = date.dayOfMonth
@@ -636,7 +729,8 @@ private fun HomeGradientHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.background)
+            // (the green UI: the page's own green wash shows through)
+            .background(Color.Transparent)
             .then(
                 if (view.isInEditMode) {
                     Modifier

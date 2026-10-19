@@ -34,6 +34,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -106,6 +107,7 @@ fun PrimaryButton(
                 spotColor = BrandGlow,
             )
             .clip(shape)
+            // The green UI: a green pill.
             .background(Brush.linearGradient(listOf(BrandGradientStart, BrandGradientEnd)))
             .clickable(
                 interactionSource = interaction,
@@ -147,11 +149,13 @@ fun OutlinedButton(
     enabled: Boolean = true,
     shape: Shape = RoundedCornerShape(percent = 50),
     colors: ButtonColors = ButtonDefaults.outlinedButtonColors(
-        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+        containerColor = if (isRedesignLight()) Color.White.copy(alpha = 0.6f) else MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
         contentColor = MaterialTheme.colorScheme.primary,
     ),
     elevation: ButtonElevation? = null,
-    border: BorderStroke? = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = if (enabled) 0.28f else 0.12f)),
+    // The green UI: a green-grey outline (owner's preview, 19 Oct 2026).
+    border: BorderStroke? = if (isRedesignLight()) BorderStroke(1.5.dp, Color(0xFFCDD5E6).copy(alpha = if (enabled) 1f else 0.4f))
+        else BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = if (enabled) 0.28f else 0.12f)),
     contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
     interactionSource: MutableInteractionSource? = null,
     content: @Composable RowScope.() -> Unit,
@@ -237,7 +241,8 @@ fun isRedesignLight(): Boolean = MaterialTheme.colorScheme.background == Backgro
 @Composable
 fun Modifier.appBackground(): Modifier =
     if (isRedesignLight()) {
-        background(Brush.linearGradient(listOf(AppBackgroundTop, AppBackgroundMid, AppBackgroundBottom)))
+        // (the green UI: a soft green at the top fading to the light wash)
+        background(Brush.verticalGradient(0f to AppBackgroundTop, 0.35f to AppBackgroundMid, 1f to AppBackgroundBottom))
     } else {
         background(MaterialTheme.colorScheme.background)
     }
@@ -303,7 +308,8 @@ fun BottomNavBar(
                     spotColor = Color.Black.copy(alpha = 0.18f),
                 )
                 .clip(pillShape)
-                .background(MaterialTheme.colorScheme.surface)
+                // (the green UI: a white glass floating pill)
+                .background(if (isRedesignLight()) Color.White else MaterialTheme.colorScheme.surface)
                 .padding(horizontal = 8.dp, vertical = 7.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(2.dp),
@@ -315,7 +321,9 @@ fun BottomNavBar(
                     modifier = Modifier
                         .clip(pillShape)
                         .background(
-                            if (isActive) com.shopai.app.ui.theme.HeaderGreenStart else Color.Transparent,
+                            // The chosen tab: the indigo → violet gradient pill.
+                            if (isActive && isRedesignLight()) Brush.linearGradient(GreenUi.BrandGradient)
+                            else androidx.compose.ui.graphics.SolidColor(if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f) else Color.Transparent),
                         )
                         .clickable { onTabSelected(tab) }
                         .padding(
@@ -328,10 +336,10 @@ fun BottomNavBar(
                     Icon(
                         imageVector = tab.icon,
                         contentDescription = label,
-                        tint = if (isActive) {
-                            MaterialTheme.colorScheme.onPrimary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = when {
+                            isActive -> if (isRedesignLight()) Color.White else MaterialTheme.colorScheme.primary
+                            isRedesignLight() -> GreenUi.Muted
+                            else -> MaterialTheme.colorScheme.onSurfaceVariant
                         },
                         modifier = Modifier.size(22.dp),
                     )
@@ -340,7 +348,7 @@ fun BottomNavBar(
                             text = label,
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onPrimary,
+                            color = if (isRedesignLight()) Color.White else MaterialTheme.colorScheme.primary,
                             maxLines = 1,
                         )
                     }
@@ -360,12 +368,17 @@ fun CategoryChip(
         modifier = Modifier
             .clip(RoundedCornerShape(999.dp))
             .background(
-                if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-                else MaterialTheme.colorScheme.surface,
+                // The digital UI: the chosen chip is the indigo → violet gradient pill.
+                if (selected && isRedesignLight()) Brush.linearGradient(GreenUi.BrandGradient)
+                else androidx.compose.ui.graphics.SolidColor(
+                    if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                    else if (isRedesignLight()) Color.White else MaterialTheme.colorScheme.surface,
+                ),
             )
             .border(
                 width = 1.dp,
-                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                color = if (selected) MaterialTheme.colorScheme.primary
+                    else if (isRedesignLight()) Color(0xFFCDD5E6) else MaterialTheme.colorScheme.outline,
                 shape = RoundedCornerShape(999.dp),
             )
             .clickable(onClick = onClick)
@@ -373,7 +386,7 @@ fun CategoryChip(
     ) {
         Text(
             text = label,
-            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+            color = if (selected) (if (isRedesignLight()) GreenUi.OnBrand else MaterialTheme.colorScheme.primary) else MaterialTheme.colorScheme.onSurface,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
         )

@@ -76,8 +76,10 @@ fun MoreMenuItem(
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(if (pressed) 0.97f else 1f, label = "moreCardPress")
     val light = isRedesignLight()
-    val cardColor = if (light) item.card else MaterialTheme.colorScheme.surface
-    val chevronTint = item.tint.copy(alpha = if (light) 0.55f else 0.7f)
+    // The green UI: every card a soft green tile with an ink icon (no rainbow cards).
+    val cardColor = if (light) com.shopai.app.ui.components.GreenUi.Glass else MaterialTheme.colorScheme.surface
+    val iconTint = item.tint
+    val chevronTint = iconTint.copy(alpha = if (light) 0.55f else 0.7f)
 
     Column(
         modifier = modifier
@@ -87,7 +89,7 @@ fun MoreMenuItem(
                 scaleY = scale
             }
             .shadow(
-                elevation = if (light) 10.dp else 2.dp,
+                elevation = if (light) 1.dp else 2.dp,
                 shape = CardShape,
                 clip = false,
                 ambientColor = if (light) GlassShadow else MaterialTheme.colorScheme.scrim.copy(alpha = 0.3f),
@@ -115,13 +117,13 @@ fun MoreMenuItem(
                 modifier = Modifier
                     .size(48.dp)
                     .clip(IconWellShape)
-                    .background(if (light) Color.White.copy(alpha = 0.78f) else item.tint.copy(alpha = 0.2f)),
+                    .background(item.tint.copy(alpha = if (light) 0.14f else 0.2f)),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = item.icon.asImageVector(),
                     contentDescription = iconDescription,
-                    tint = item.tint,
+                    tint = iconTint,
                     modifier = Modifier.size(26.dp),
                 )
             }

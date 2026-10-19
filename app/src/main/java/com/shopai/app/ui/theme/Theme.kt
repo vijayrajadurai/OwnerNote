@@ -12,6 +12,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import com.shopai.app.data.local.AppThemeMode
 
@@ -19,7 +20,14 @@ private val LightColorScheme = lightColorScheme(
     primary = Primary,
     onPrimary = OnPrimary,
     primaryContainer = PrimaryLight,
+    onPrimaryContainer = TextPrimary,
     secondary = Accent,
+    // The green UI: Material's own chips, tonal buttons and switches use the green tile / ink, never the default lavender.
+    secondaryContainer = PrimaryLight,
+    onSecondaryContainer = TextPrimary,
+    tertiaryContainer = PrimaryLight,
+    onTertiaryContainer = TextPrimary,
+    surfaceVariant = PrimaryLight,
     background = Background,
     surface = Surface,
     surfaceContainerLowest = Background,
@@ -79,6 +87,14 @@ fun ShopAiTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = ShopAiTypography,
+        // The green UI's soft, round corners on cards, sheets and dialogs.
+        shapes = androidx.compose.material3.Shapes(
+            extraSmall = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
+            small = androidx.compose.foundation.shape.RoundedCornerShape(14.dp),
+            medium = androidx.compose.foundation.shape.RoundedCornerShape(22.dp),
+            large = androidx.compose.foundation.shape.RoundedCornerShape(28.dp),
+            extraLarge = androidx.compose.foundation.shape.RoundedCornerShape(32.dp),
+        ),
     ) {
         CompositionLocalProvider(LocalContentColor provides colorScheme.onSurface) {
             content()
