@@ -1531,4 +1531,7 @@ NewonX — Owner Note. Use Help & Support in the app.]]></string>
     <string name="bill_stock_new_name_needed">Type the product name</string>
     <string name="bill_stock_new_unit_needed">Type the unit</string>
     <string name="bill_stock_new_added">%1$d new product(s) added to Inventory.</string>
+    <!-- The salon master list on the Menu (owner, 19 Oct 2026) -->
+    <string name="menu_pick_list">Service list-la irundhu edunga (%1$d)</string>
+    <string name="menu_hide_list">Service list moodu</string>
 </resources>

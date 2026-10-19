@@ -1476,4 +1476,7 @@ NewonX — Owner Note. ஆப்பில் உதவி & ஆதரவு.]]><
     <string name="bill_stock_new_name_needed">Product பெயர் போடுங்க</string>
     <string name="bill_stock_new_unit_needed">Unit போடுங்க</string>
     <string name="bill_stock_new_added">%1$d புது product Inventory-ல சேர்ந்துடுச்சு.</string>
+    <!-- The salon master list on the Menu (owner, 19 Oct 2026) -->
+    <string name="menu_pick_list">Service list-ல இருந்து எடுங்க (%1$d)</string>
+    <string name="menu_hide_list">Service list மூடு</string>
 </resources>
