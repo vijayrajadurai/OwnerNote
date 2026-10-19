@@ -12,6 +12,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import com.shopai.app.data.local.AppThemeMode
 
@@ -79,6 +80,14 @@ fun ShopAiTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = ShopAiTypography,
+        // The green UI's soft, round corners on cards, sheets and dialogs.
+        shapes = androidx.compose.material3.Shapes(
+            extraSmall = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
+            small = androidx.compose.foundation.shape.RoundedCornerShape(14.dp),
+            medium = androidx.compose.foundation.shape.RoundedCornerShape(22.dp),
+            large = androidx.compose.foundation.shape.RoundedCornerShape(28.dp),
+            extraLarge = androidx.compose.foundation.shape.RoundedCornerShape(32.dp),
+        ),
     ) {
         CompositionLocalProvider(LocalContentColor provides colorScheme.onSurface) {
             content()

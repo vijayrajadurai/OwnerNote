@@ -1531,4 +1531,18 @@ NewonX — Owner Note. Use Help & Support in the app.]]></string>
     <string name="bill_stock_new_name_needed">Type the product name</string>
     <string name="bill_stock_new_unit_needed">Type the unit</string>
     <string name="bill_stock_new_added">%1$d new product(s) added to Inventory.</string>
+
+    <!-- The green UI (owner, 19 Oct 2026) -->
+    <string name="green_home_title">Innaikku</string>
+    <string name="green_home_to_collect">Vara vendiyadhu</string>
+    <string name="green_home_to_pay">Kudukka vendiyadhu</string>
+    <string name="green_home_due_count">%1$d due innaikku</string>
+    <string name="green_home_ask_kai">Kai-kitta kelunga</string>
+    <string name="green_home_sales_today">Innaikku sales</string>
+    <string name="green_home_tasks">Innaikku velai</string>
+    <string name="green_home_tasks_unit">tasks</string>
+    <string name="green_home_reminders">Reminders</string>
+    <string name="green_home_reminders_unit">pending</string>
+    <string name="green_home_day_close">Day close pannunga</string>
+    <string name="green_home_slide">Slide</string>
 </resources>

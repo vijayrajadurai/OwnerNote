@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.sp
 import com.shopai.app.R
 import com.shopai.app.data.AppContainer
 import com.shopai.app.ui.components.DetailScaffold
+import com.shopai.app.ui.components.GreenUi
 import com.shopai.app.ui.kai.KaiCharacter
 import com.shopai.app.ui.kai.KaiContentCard
 import com.shopai.app.ui.kai.KaiState
@@ -310,11 +311,14 @@ fun KaiChatScreen(
 
     DetailScaffold(title = stringResource(R.string.kai_chat_title), onBack = onBack) { contentModifier ->
         Column(modifier = contentModifier.fillMaxSize().imePadding()) {
-            KaiContentCard(
+            // The green UI (owner, 19 Oct 2026): Kai on a soft green tile, no "digital" look.
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(GreenUi.Tile)
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -328,8 +332,8 @@ fun KaiChatScreen(
                         size = 120.dp,
                     )
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Kai", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = com.shopai.app.ui.theme.TextPrimary)
-                        Text(stringResource(R.string.kai_chat_subtitle), color = com.shopai.app.ui.theme.TextSecondary)
+                        Text("Kai", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Medium, color = GreenUi.Ink)
+                        Text(stringResource(R.string.kai_chat_subtitle), color = GreenPositive)
                         Text(
                             stringResource(R.string.kai_chat_mic_tip),
                             style = MaterialTheme.typography.bodySmall,
@@ -339,7 +343,7 @@ fun KaiChatScreen(
                     }
                     Column(horizontalAlignment = Alignment.End) {
                         if (session.messages.isNotEmpty()) {
-                            TextButton(onClick = { session.clear() }) { Text(stringResource(R.string.kai_chat_clear)) }
+                            TextButton(onClick = { session.clear() }) { Text(stringResource(R.string.kai_chat_clear), color = GreenUi.Ink) }
                         }
                     }
                 }
@@ -354,10 +358,19 @@ fun KaiChatScreen(
                 item { KaiBubble(stringResource(R.string.kai_chat_hello)) }
                 if (session.messages.isEmpty()) {
                     item {
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(top = 4.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 4.dp)) {
                             for (s in listOf(R.string.kai_chat_suggest_1, R.string.kai_chat_suggest_2, R.string.kai_chat_suggest_3, R.string.kai_chat_suggest_4)) {
                                 val text = stringResource(s)
-                                AssistChip(onClick = { send(text) }, label = { Text(text) })
+                                Text(
+                                    text,
+                                    fontSize = 14.sp,
+                                    color = GreenUi.Ink,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(18.dp))
+                                        .border(1.dp, GreenBorder, RoundedCornerShape(18.dp))
+                                        .clickable { send(text) }
+                                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                                )
                             }
                         }
                     }
@@ -391,42 +404,56 @@ fun KaiChatScreen(
             if (listening) {
                 Text(
                     heard ?: stringResource(R.string.kai_chat_listening),
-                    color = Primary,
+                    color = GreenPositive,
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(start = 20.dp, top = 4.dp),
                 )
             }
+            // The input: one ink pill — type, or the round mic on the right (same Kai either way); send shows when there is text.
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 14.dp)
+                    .shadow(16.dp, RoundedCornerShape(32.dp), ambientColor = GreenUi.Ink.copy(alpha = 0.28f), spotColor = GreenUi.Ink.copy(alpha = 0.28f))
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(GreenUi.Ink)
+                    .padding(start = 20.dp, end = 7.dp, top = 6.dp, bottom = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+                androidx.compose.foundation.text.BasicTextField(
+                    value = input,
+                    onValueChange = { input = it },
+                    modifier = Modifier.weight(1f).padding(vertical = 10.dp),
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = GreenUi.OnInk),
+                    cursorBrush = androidx.compose.ui.graphics.SolidColor(GreenUi.OnInk),
+                    maxLines = 4,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                    keyboardActions = KeyboardActions(onSend = { send(input) }),
+                    decorationBox = { field ->
+                        Box(contentAlignment = Alignment.CenterStart) {
+                            if (input.isEmpty()) Text(stringResource(R.string.kai_chat_hint), color = GreenUi.OnInkMuted, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            field()
+                        }
+                    },
+                )
+                if (input.isNotBlank()) IconButton(
+                    onClick = { send(input) },
+                    enabled = !session.thinking,
+                    modifier = Modifier.size(44.dp).border(1.dp, GreenUi.InkSoft, CircleShape),
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = stringResource(R.string.kai_chat_send), tint = GreenUi.OnInk)
+                }
                 IconButton(
                     onClick = { onMic() },
-                    modifier = Modifier.padding(end = 6.dp).size(48.dp)
-                        .background(if (listening) com.shopai.app.ui.theme.Danger else Primary.copy(alpha = 0.12f), CircleShape),
+                    modifier = Modifier.size(52.dp)
+                        .background(if (listening) com.shopai.app.ui.theme.Danger else GreenUi.OnInk, CircleShape),
                 ) {
                     Icon(
                         androidx.compose.material.icons.Icons.Filled.Mic,
                         contentDescription = stringResource(R.string.kai_chat_speak),
-                        tint = if (listening) Color.White else Primary,
+                        tint = if (listening) Color.White else GreenUi.Ink,
                     )
-                }
-                OutlinedTextField(
-                    value = input,
-                    onValueChange = { input = it },
-                    placeholder = { Text(stringResource(R.string.kai_chat_hint)) },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(24.dp),
-                    maxLines = 4,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                    keyboardActions = KeyboardActions(onSend = { send(input) }),
-                )
-                IconButton(
-                    onClick = { send(input) },
-                    enabled = input.isNotBlank() && !session.thinking,
-                    modifier = Modifier.padding(start = 6.dp).size(48.dp).background(if (input.isNotBlank()) Primary else Primary.copy(alpha = 0.35f), CircleShape),
-                ) {
-                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = stringResource(R.string.kai_chat_send), tint = Color.White)
                 }
             }
         }
@@ -458,13 +485,12 @@ private fun KaiCardView(card: com.shopai.app.brain.chat.KaiCard, closed: Boolean
         Column(
             modifier = Modifier
                 .widthIn(max = 340.dp)
-                .shadow(10.dp, RoundedCornerShape(18.dp), ambientColor = Color.Black.copy(alpha = 0.08f), spotColor = Color.Black.copy(alpha = 0.08f))
-                .clip(RoundedCornerShape(18.dp))
-                .background(Color.White)
-                .padding(vertical = 4.dp),
+                .clip(RoundedCornerShape(28.dp))
+                .background(GreenUi.Tile)
+                .padding(vertical = 8.dp),
         ) {
             card.lines.forEachIndexed { i, line ->
-                if (i > 0) Box(Modifier.padding(start = 16.dp).fillMaxWidth().height(0.5.dp).background(com.shopai.app.ui.kai.IosSeparator))
+                if (i > 0) Box(Modifier.padding(start = 16.dp).fillMaxWidth().height(1.dp).background(GreenBorder.copy(alpha = 0.6f)))
                 val parts = line.split(" — ", limit = 2)
                 Row(Modifier.padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                     if (parts.size == 2) {
@@ -479,16 +505,17 @@ private fun KaiCardView(card: com.shopai.app.brain.chat.KaiCard, closed: Boolean
                 card.buttons.forEach { b ->
                     val enabled = b.enabled && !closed
                     if (b.primary) Box(
-                        Modifier.fillMaxWidth().height(48.dp).alpha(if (enabled) 1f else 0.3f).clip(RoundedCornerShape(14.dp)).background(Color.Black)
+                        Modifier.fillMaxWidth().height(48.dp).alpha(if (enabled) 1f else 0.3f).clip(RoundedCornerShape(24.dp)).background(GreenUi.Ink)
                             .clickable(enabled = enabled) { onTap(b.action) },
                         contentAlignment = Alignment.Center,
-                    ) { Text(b.label, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold) }
+                    ) { Text(b.label, color = GreenUi.OnInk, fontSize = 16.sp, fontWeight = FontWeight.SemiBold) }
                     else Text(
                         b.label,
-                        color = when { !enabled -> com.shopai.app.ui.kai.IosGrey; com.shopai.app.ui.kai.isCancel(b.action) -> com.shopai.app.ui.kai.IosRed; else -> Color(0xFF007AFF) },
+                        color = when { !enabled -> com.shopai.app.ui.kai.IosGrey; com.shopai.app.ui.kai.isCancel(b.action) -> com.shopai.app.ui.kai.IosRed; else -> GreenUi.Ink },
                         fontSize = 16.sp,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable(enabled = enabled) { onTap(b.action) }.padding(vertical = 10.dp),
+                        modifier = Modifier.fillMaxWidth().padding(top = 6.dp).clip(RoundedCornerShape(24.dp)).border(1.dp, GreenBorder, RoundedCornerShape(24.dp))
+                            .clickable(enabled = enabled) { onTap(b.action) }.padding(vertical = 11.dp),
                     )
                 }
             }
@@ -544,12 +571,12 @@ private fun OwnerBubble(text: String) {
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
         Text(
             text,
-            color = Color.White,
+            color = GreenUi.OnInk,
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier
                 .widthIn(max = 300.dp)
-                .background(Primary, RoundedCornerShape(18.dp, 18.dp, 4.dp, 18.dp))
-                .padding(horizontal = 14.dp, vertical = 10.dp),
+                .background(GreenUi.Ink, RoundedCornerShape(24.dp, 24.dp, 8.dp, 24.dp))
+                .padding(horizontal = 16.dp, vertical = 12.dp),
         )
     }
 }
@@ -560,12 +587,15 @@ private fun KaiBubble(text: String) {
         Column(
             modifier = Modifier
                 .widthIn(max = 310.dp)
-                .background(Color.White, RoundedCornerShape(18.dp, 18.dp, 18.dp, 4.dp))
-                .border(1.dp, Primary.copy(alpha = 0.18f), RoundedCornerShape(18.dp, 18.dp, 18.dp, 4.dp))
-                .padding(horizontal = 14.dp, vertical = 10.dp),
+                .background(GreenUi.Wash.copy(alpha = 0.7f), RoundedCornerShape(24.dp, 24.dp, 24.dp, 8.dp))
+                .padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
-            Text("Kai", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Primary)
-            Text(text, style = MaterialTheme.typography.bodyLarge, color = com.shopai.app.ui.theme.TextPrimary)
+            Text("Kai", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = GreenPositive)
+            Text(text, style = MaterialTheme.typography.bodyLarge, color = GreenUi.Ink)
         }
     }
 }
+
+/** The green UI's two extra tones here: Kai's green (his name, "ready") and the soft outline of pills. */
+private val GreenPositive = Color(0xFF1F6B3E)
+private val GreenBorder = Color(0xFFB9CDBD)

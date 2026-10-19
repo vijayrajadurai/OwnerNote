@@ -75,6 +75,11 @@ import com.shopai.app.ui.components.BottomNavTab
 import com.shopai.app.ui.components.DashboardGreetingHeader
 import com.shopai.app.ui.components.HomeBackHandler
 import com.shopai.app.ui.components.HomeQuickLinks
+import com.shopai.app.ui.components.GreenHeroCard
+import com.shopai.app.ui.components.GreenSlideBar
+import com.shopai.app.ui.components.GreenStatTile
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.ui.unit.sp
 import com.shopai.app.ui.components.shopLocationLabel
 // import com.shopai.app.ui.components.HomePriorityList
 // import com.shopai.app.ui.components.HomeCreditDebitActions
@@ -324,9 +329,65 @@ fun HomeScreen(
                     .weight(1f)
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
+                    .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
+                // The green UI's Home (owner's preview, 19 Oct 2026): what is to be collected with Kai beside it, the bento
+                // tiles (to pay, today's sales, today's work, reminders) and the day close slide — every figure from the books.
+                Text(
+                    text = stringResource(R.string.green_home_title),
+                    fontSize = 30.sp,
+                    fontWeight = FontWeight.Light,
+                    color = ShopAiThemeColors.onSurface,
+                    modifier = Modifier.padding(start = 4.dp),
+                )
+                GreenHeroCard(
+                    label = stringResource(R.string.green_home_to_collect),
+                    amount = cashFlow?.pendingReceivables?.let { formatInr(it) } ?: "—",
+                    subtitle = stringResource(R.string.green_home_due_count, unreadReminders),
+                    kaiLine = stringResource(R.string.green_home_ask_kai),
+                    onOpen = { onNavigate(Routes.Customers) },
+                    onKai = { onNavigate(Routes.KaiChat) },
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    GreenStatTile(
+                        label = stringResource(R.string.green_home_to_pay),
+                        value = cashFlow?.pendingPayables?.let { formatInr(it) } ?: "—",
+                        icon = Icons.Filled.ArrowDownward,
+                        dark = true,
+                        onClick = { onNavigate(Routes.Suppliers) },
+                        modifier = Modifier.weight(1f),
+                    )
+                    GreenStatTile(
+                        label = stringResource(R.string.green_home_sales_today),
+                        value = formatInr(cashNoteSummary?.totalIn ?: 0.0),
+                        icon = Icons.Filled.BarChart,
+                        onClick = { onNavigate(Routes.DailyCashNote) },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    GreenStatTile(
+                        label = stringResource(R.string.green_home_tasks),
+                        value = morningCount?.toString() ?: "—",
+                        unit = stringResource(R.string.green_home_tasks_unit),
+                        onClick = { onNavigate(Routes.morningWork()) },
+                        modifier = Modifier.weight(1f),
+                    )
+                    GreenStatTile(
+                        label = stringResource(R.string.green_home_reminders),
+                        value = carouselItems.size.toString(),
+                        unit = stringResource(R.string.green_home_reminders_unit),
+                        onClick = { onNavigate(Routes.Reminders) },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                GreenSlideBar(
+                    label = stringResource(R.string.green_home_day_close),
+                    knob = stringResource(R.string.green_home_slide),
+                    onDone = { onNavigate(Routes.DailyCashNote) },
+                )
+                // Kept from the old Home: the due-payment card, or Kai speaking the day's brief (lip-synced).
                 if (carouselItems.isNotEmpty()) {
                     HomePaymentReminderCard(
                         items = carouselItems.take(2),
@@ -349,16 +410,6 @@ fun HomeScreen(
                         compact = kaiBriefDone,
                         speakingAs = kaiBrief?.mood?.state(),
                         onTap = { onNavigate(Routes.VoiceEntry) },
-                    )
-                }
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    com.shopai.app.ui.morning.MorningWorkCard(
-                        count = morningCount,
-                        onClick = { onNavigate(Routes.morningWork()) },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    HomeAskKaiCard(
-                        onClick = { onNavigate(Routes.KaiChat) },
                     )
                 }
                 HomeQuickLinks(
@@ -386,10 +437,6 @@ fun HomeScreen(
                     },
                     onInventoryClick = { onNavigate(Routes.Inventory) },
                     onSeeAllClick = { onNavigate(Routes.More) },
-                )
-                DailyCashHomeCard(
-                    summary = cashNoteSummary,
-                    onClick = { onNavigate(Routes.DailyCashNote) },
                 )
 
             if (loading) {
@@ -636,7 +683,8 @@ private fun HomeGradientHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.background)
+            // (the green UI: the page's own green wash shows through)
+            .background(Color.Transparent)
             .then(
                 if (view.isInEditMode) {
                     Modifier

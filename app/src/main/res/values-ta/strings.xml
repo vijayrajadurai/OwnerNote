@@ -1476,4 +1476,18 @@ NewonX — Owner Note. ஆப்பில் உதவி & ஆதரவு.]]><
     <string name="bill_stock_new_name_needed">Product பெயர் போடுங்க</string>
     <string name="bill_stock_new_unit_needed">Unit போடுங்க</string>
     <string name="bill_stock_new_added">%1$d புது product Inventory-ல சேர்ந்துடுச்சு.</string>
+
+    <!-- The green UI (owner, 19 Oct 2026) -->
+    <string name="green_home_title">இன்னைக்கு</string>
+    <string name="green_home_to_collect">வர வேண்டியது</string>
+    <string name="green_home_to_pay">கொடுக்க வேண்டியது</string>
+    <string name="green_home_due_count">%1$d இன்னைக்கு due</string>
+    <string name="green_home_ask_kai">Kai-கிட்ட கேளுங்க</string>
+    <string name="green_home_sales_today">இன்னைக்கு sales</string>
+    <string name="green_home_tasks">இன்னைக்கு வேலை</string>
+    <string name="green_home_tasks_unit">tasks</string>
+    <string name="green_home_reminders">Reminders</string>
+    <string name="green_home_reminders_unit">pending</string>
+    <string name="green_home_day_close">Day close பண்ணுங்க</string>
+    <string name="green_home_slide">Slide</string>
 </resources>

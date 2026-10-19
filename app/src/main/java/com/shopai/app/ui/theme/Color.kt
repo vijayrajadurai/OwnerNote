@@ -3,18 +3,19 @@ package com.shopai.app.ui.theme
 import androidx.compose.ui.graphics.Color
 
 // Mirrors apps/mobile/src/theme/colors.ts — single source for Compose tokens.
-val Primary = Color(0xFF1E6B4E)
-val PrimaryDark = Color(0xFF154F39)
-val PrimaryLight = Color(0xFFD9F2E5)
-val PrimaryMuted = Color(0x1A1E6B4E)
+// Green UI (owner, 19 Oct 2026): ink-black actions on a soft green wash; green stays for money in / success.
+val Primary = Color(0xFF141416)
+val PrimaryDark = Color(0xFF000000)
+val PrimaryLight = Color(0xFFD6E6D9)
+val PrimaryMuted = Color(0x1A141416)
 val OnPrimary = Color(0xFFFFFFFF)
 val Accent = Color(0xFF2E9F6E)
 // Owner Note redesign (green + white): mint-white app background.
-val Background = Color(0xFFF1F9F5)
+val Background = Color(0xFFE8F1E9)
 val Surface = Color(0xFFFFFFFF)
-val TextPrimary = Color(0xFF12281F)
-val TextSecondary = Color(0xFF6B7F76)
-val Border = Color(0xFFD6E7DE)
+val TextPrimary = Color(0xFF141416)
+val TextSecondary = Color(0xFF4D4D52)
+val Border = Color(0xFFC9DBCD)
 val Danger = Color(0xFFD6503C)
 val DangerMuted = Color(0x1AD6503C)
 val Success = Color(0xFF1E6B4E)
@@ -32,16 +33,16 @@ val LedgerDebitMuted = DangerMuted
 val LedgerPending = Danger
 
 // Redesign: the brand gradient (buttons) — deep green to emerald — and its soft glow.
-val BrandGradientStart = Primary
-val BrandGradientEnd = Color(0xFF2FB27A)
-val BrandGlow = Color(0x66FFFFFF)
+val BrandGradientStart = Color(0xFF141416)
+val BrandGradientEnd = Color(0xFF3A3A3F)
+val BrandGlow = Color(0x33141416)
 
 // Redesign: the soft page wash (white → mint → pale sea-green) and the glass surfaces on it.
-val HeaderGreenStart = Color(0xFF075C45)
-val HeaderGreenEnd = Color(0xFF16845F)
-val AppBackgroundTop = Color(0xFFF1F9F5)
-val AppBackgroundMid = Color(0xFFF1F9F5)
-val AppBackgroundBottom = Color(0xFFEAF6F0)
-val GlassFill = Color(0xB8FFFFFF)
-val GlassBorder = Color(0xE6FFFFFF)
-val GlassShadow = Color(0x2E1E6B4E)
+val HeaderGreenStart = Color(0xFF141416)
+val HeaderGreenEnd = Color(0xFF2A2A2E)
+val AppBackgroundTop = Color(0xFFD3EBD8)
+val AppBackgroundMid = Color(0xFFEAF3EB)
+val AppBackgroundBottom = Color(0xFFE3ECE4)
+val GlassFill = Color(0x9EFFFFFF)
+val GlassBorder = Color(0xB3FFFFFF)
+val GlassShadow = Color(0x14141416)

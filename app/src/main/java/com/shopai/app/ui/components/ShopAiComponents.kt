@@ -237,7 +237,8 @@ fun isRedesignLight(): Boolean = MaterialTheme.colorScheme.background == Backgro
 @Composable
 fun Modifier.appBackground(): Modifier =
     if (isRedesignLight()) {
-        background(Brush.linearGradient(listOf(AppBackgroundTop, AppBackgroundMid, AppBackgroundBottom)))
+        // (the green UI: a soft green at the top fading to the light wash)
+        background(Brush.verticalGradient(0f to AppBackgroundTop, 0.35f to AppBackgroundMid, 1f to AppBackgroundBottom))
     } else {
         background(MaterialTheme.colorScheme.background)
     }
@@ -303,7 +304,8 @@ fun BottomNavBar(
                     spotColor = Color.Black.copy(alpha = 0.18f),
                 )
                 .clip(pillShape)
-                .background(MaterialTheme.colorScheme.surface)
+                // (the green UI: an ink-black floating pill)
+                .background(if (isRedesignLight()) GreenUi.Ink else MaterialTheme.colorScheme.surface)
                 .padding(horizontal = 8.dp, vertical = 7.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(2.dp),
@@ -315,7 +317,7 @@ fun BottomNavBar(
                     modifier = Modifier
                         .clip(pillShape)
                         .background(
-                            if (isActive) com.shopai.app.ui.theme.HeaderGreenStart else Color.Transparent,
+                            if (isActive) GreenUi.InkSoft else Color.Transparent,
                         )
                         .clickable { onTabSelected(tab) }
                         .padding(
@@ -328,10 +330,10 @@ fun BottomNavBar(
                     Icon(
                         imageVector = tab.icon,
                         contentDescription = label,
-                        tint = if (isActive) {
-                            MaterialTheme.colorScheme.onPrimary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = when {
+                            isActive -> GreenUi.OnInk
+                            isRedesignLight() -> Color(0xFFC9C9CE)
+                            else -> MaterialTheme.colorScheme.onSurfaceVariant
                         },
                         modifier = Modifier.size(22.dp),
                     )
@@ -340,7 +342,7 @@ fun BottomNavBar(
                             text = label,
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onPrimary,
+                            color = GreenUi.OnInk,
                             maxLines = 1,
                         )
                     }
