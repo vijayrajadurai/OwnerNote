@@ -337,8 +337,8 @@ fun HomeScreen(
                     .weight(1f)
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                    .padding(start = 18.dp, end = 18.dp, top = 8.dp, bottom = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 // The green UI's Home (owner, 19 Oct 2026): four boxes — to collect, to pay (each with its overdue / due-soon lines),
                 // stock (the low items on the front) and reminders (the next ones) — then the day close slide and the quick links.
@@ -373,7 +373,7 @@ fun HomeScreen(
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     val low = lowStock.orEmpty()
                     GreenDetailBox(
@@ -667,27 +667,35 @@ private fun GreenKaiCard(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            // The refined look: Kai on a white card with a hairline edge.
-            .background(Color.White)
-            .border(1.dp, GreenUi.Line, RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(24.dp))
+            // Kai's card in deep navy (owner, 19 Oct 2026: "Kai background white maathi nalla colour") — white text, a white pill.
+            .background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(Color(0xFF1F2B5C), Color(0xFF2E4185))))
             .clickable(onClick = onTap)
-            .padding(start = 6.dp, end = 12.dp, top = 6.dp, bottom = 6.dp),
+            .padding(start = 8.dp, end = 16.dp, top = 10.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         com.shopai.app.ui.kai.KaiCharacter(state = state, size = size, mouthLevel = mouthLevel, speakingAs = speakingAs)
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("Kai", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = GreenUi.Brand)
-            Text(line, fontSize = 14.sp, color = GreenUi.Ink, maxLines = 3, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Kai", fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.2.sp, color = Color(0xFFB9C7FF))
+            Text(
+                line,
+                style = com.shopai.app.ui.theme.MoneyStyle.copy(fontWeight = FontWeight.Normal, letterSpacing = 0.sp),
+                fontSize = 14.sp,
+                lineHeight = 20.sp,
+                color = Color.White,
+                maxLines = 3,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            )
             Text(
                 text = stringResource(R.string.green_home_ask_kai),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = GreenUi.OnBrand,
+                color = GreenUi.Brand,
                 modifier = Modifier
+                    .padding(top = 2.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(GreenUi.Brand)
+                    .background(Color.White)
                     .clickable(onClick = onChat)
                     .padding(horizontal = 14.dp, vertical = 7.dp),
             )

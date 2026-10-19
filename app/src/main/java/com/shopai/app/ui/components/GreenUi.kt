@@ -323,22 +323,38 @@ fun GreenDetailBox(
             .background(Color.White)
             .border(1.dp, GreenUi.Line, shape)
             .clickable(onClick = onClick)
-            .padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Box(
-                modifier = Modifier.size(28.dp).clip(RoundedCornerShape(9.dp)).background(tint),
+                modifier = Modifier.size(30.dp).clip(RoundedCornerShape(10.dp)).background(tint),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(15.dp))
             }
-            Text(text = title, fontSize = 13.sp, color = GreenUi.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            Text(text = title, fontSize = 13.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.1.sp, color = GreenUi.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
         }
-        Text(text = value, fontSize = 21.sp, fontWeight = FontWeight.SemiBold, color = GreenUi.Ink, maxLines = 1, modifier = Modifier.padding(top = 2.dp))
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+        Text(
+            text = value,
+            style = com.shopai.app.ui.theme.MoneyStyle,
+            fontSize = 22.sp,
+            lineHeight = 28.sp,
+            color = GreenUi.Ink,
+            maxLines = 1,
+            modifier = Modifier.padding(top = 2.dp),
+        )
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             if (metaDot != null) Box(Modifier.size(6.dp).clip(CircleShape).background(metaDot))
-            Text(text = meta, fontSize = 12.sp, color = GreenUi.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                text = meta,
+                style = com.shopai.app.ui.theme.MoneyStyle.copy(fontWeight = FontWeight.Normal, letterSpacing = 0.sp),
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+                color = GreenUi.Muted,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }

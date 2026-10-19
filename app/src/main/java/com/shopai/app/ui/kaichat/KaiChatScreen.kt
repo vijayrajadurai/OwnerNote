@@ -499,11 +499,11 @@ private fun KaiCardView(card: com.shopai.app.brain.chat.KaiCard, closed: Boolean
             card.lines.forEachIndexed { i, line ->
                 if (i > 0) Box(Modifier.padding(start = 16.dp).fillMaxWidth().height(1.dp).background(Color(0xFFEEF0F4)))
                 val parts = line.split(" — ", limit = 2)
-                Row(Modifier.padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.padding(horizontal = 18.dp, vertical = 13.dp), verticalAlignment = Alignment.CenterVertically) {
                     if (parts.size == 2) {
                         Text(parts[0], fontSize = 15.sp, color = com.shopai.app.ui.kai.IosLabel, fontWeight = FontWeight.Medium,
                             modifier = Modifier.weight(1f).padding(end = 12.dp))
-                        Text(parts[1], fontSize = 15.sp, color = com.shopai.app.ui.kai.IosLabel, fontWeight = FontWeight.SemiBold)
+                        Text(parts[1], style = com.shopai.app.ui.theme.MoneyStyle.copy(letterSpacing = 0.sp), fontSize = 15.sp, color = com.shopai.app.ui.kai.IosLabel)
                     } else Text(line, fontSize = 15.sp, color = com.shopai.app.ui.kai.IosLabel)
                 }
             }
