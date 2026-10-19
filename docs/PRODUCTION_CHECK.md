@@ -70,7 +70,7 @@ Reminders, Daily Sales Note, Day close. Rarely used, could move lower: Group buy
 
 | Suite | Result |
 |-------|--------|
-| Kai test classes (JVM harness, 86 classes) | ✅ 81 pass · ❌ 5 fail (all already on master — this branch changes no Kai code) |
+| Kai test classes (JVM harness, 86 classes) | ✅ 82 pass · ❌ 4 fail (all already on master — this branch changes no Kai code) |
 | GST (`BooksTaxTest` 12 + new `BooksGstReleaseTest` 8) | ✅ 20 / 20 |
 | Old-list import (`PartyListImportTest`) | ✅ 3 / 3 |
 | Room / Compose / instrumented tests | 📱 need Android SDK — run `./gradlew test connectedAndroidTest` in Android Studio |
@@ -80,7 +80,7 @@ Failures already on master (not new):
 - `KaiCatalogue1620ShopTest` (4/5): **K7** — "Mosquito refill Small pack 7 add pannu" names the exact product, yet Kai asks
   "Small pack-aa, Medium pack-aa?" (asks what was already said).
 - `KaiHardwareShopTest.everyItemSpoken` (1 of 1104): **K8** — mic "Rake" heard as "Rack" and offered as a new product.
-- `KaiSupermarketShopTest`: runs over 25 min in this sandbox (timed out with 2 CPUs) — rerun alone in progress; run it in Android Studio too.
+- `KaiSupermarketShopTest`: ✅ passes (4/4) when run alone — it takes 44 min here, so it timed out when run beside the others.
 
 ---
 
