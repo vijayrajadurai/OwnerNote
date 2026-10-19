@@ -342,6 +342,26 @@ fun HomeScreen(
                 // The green UI's Home (owner, 19 Oct 2026): four boxes — to collect, to pay (each with its overdue / due-soon lines),
                 // stock (the low items on the front) and reminders (the next ones) — then the day close slide and the quick links.
                 // No black anywhere; every figure from the books.
+                // Kai on Home (owner, 19 Oct 2026: "kai home page-la illa"): he greets, speaks the day's brief (lip-synced), then
+                // settles; tap him to speak, or "Kai-kitta kelunga" for the chat.
+                GreenKaiCard(
+                    state = when {
+                        kaiBriefDone -> KaiState.IDLE
+                        kaiSpeaking -> KaiState.SPEAKING
+                        else -> KaiState.GREETING
+                    },
+                    line = when {
+                        !kaiBriefDone && !kaiSpeaking -> stringResource(R.string.kai_greeting)
+                        kaiBrief != null -> kaiBrief!!.display
+                        priorities.isEmpty() -> stringResource(R.string.kai_brief_clear)
+                        else -> stringResource(R.string.kai_brief_count, priorities.size)
+                    },
+                    mouthLevel = if (kaiBriefDone) 0f else kaiMouth,
+                    compact = kaiBriefDone,
+                    speakingAs = kaiBrief?.mood?.state(),
+                    onTap = { onNavigate(Routes.VoiceEntry) },
+                    onChat = { onNavigate(Routes.KaiChat) },
+                )
                 com.shopai.app.ui.books.CreditDebitSummaryCard(
                     container = container,
                     refreshKey = cashFlow,
@@ -622,6 +642,47 @@ private fun HomePaymentReminderCard(
             tint = com.shopai.app.ui.theme.TextSecondary,
             modifier = Modifier.size(22.dp),
         )
+    }
+}
+
+/** Home's Kai: on a soft green tile, his brief beside him and a green "Kai-kitta kelunga" pill for the chat. */
+@Composable
+private fun GreenKaiCard(
+    state: KaiState,
+    line: String,
+    mouthLevel: Float,
+    compact: Boolean,
+    speakingAs: KaiState?,
+    onTap: () -> Unit,
+    onChat: () -> Unit,
+) {
+    val size by androidx.compose.animation.core.animateDpAsState(if (compact) 104.dp else 140.dp, label = "homeKaiSize")
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(28.dp))
+            .background(GreenUi.Tile)
+            .clickable(onClick = onTap)
+            .padding(start = 8.dp, end = 14.dp, top = 8.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        com.shopai.app.ui.kai.KaiCharacter(state = state, size = size, mouthLevel = mouthLevel, speakingAs = speakingAs)
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Kai", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = GreenUi.Brand)
+            Text(line, fontSize = 15.sp, color = GreenUi.Ink, maxLines = 4, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            Text(
+                text = stringResource(R.string.green_home_ask_kai),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = GreenUi.OnBrand,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(GreenUi.Brand)
+                    .clickable(onClick = onChat)
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
+            )
+        }
     }
 }
 
