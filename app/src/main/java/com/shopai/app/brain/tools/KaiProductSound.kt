@@ -34,12 +34,15 @@ object KaiProductSound {
     /** The shop's names, ready to be heard: worked out once per list of names (a big shop has thousands), not for every line. */
     private class Prepared(val products: List<Product>, val sizeless: List<Product>, val goodsWritten: Map<String, String?>, val heardGoods: List<Product>, val parts: List<Word>)
 
-    @Volatile private var cache: Pair<List<String>, Prepared?>? = null
+    /** The last few lists heard (the shop's products, the owner's Menu, the salon's services): each prepared once, not per line. */
+    private val cache = object : LinkedHashMap<List<String>, Prepared?>(8, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<List<String>, Prepared?>?) = size > 4
+    }
 
     private fun prepared(productNames: List<String>): Prepared? {
-        cache?.let { (names, prep) -> if (names == productNames) return prep }
+        synchronized(cache) { if (cache.containsKey(productNames)) return cache[productNames] }
         val prep = prepare(productNames)
-        cache = productNames.toList() to prep
+        synchronized(cache) { cache[productNames.toList()] = prep }
         return prep
     }
 
