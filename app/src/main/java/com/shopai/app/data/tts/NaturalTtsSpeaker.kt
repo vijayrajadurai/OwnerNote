@@ -176,9 +176,10 @@ class NaturalTtsSpeaker(context: Context) {
      *
      * [useAlarmStream] routes playback through STREAM_ALARM instead of the
      * default media stream — the same mechanism alarm-clock apps use to be
-     * heard over silent/DND mode. Only the Daily Voice Check-in feature
-     * passes true; every other caller keeps today's default (unchanged)
-     * media-stream behavior.
+     * heard over silent/DND mode. The Daily Voice Check-in and Kai's
+     * reminder voice pass true (owner, 20 Oct 2026: "reminder voice volume
+     * kammiya irukku" — it played at the media volume); every other caller
+     * keeps the media stream.
      */
     fun speakNatural(
         text: String,
@@ -210,6 +211,8 @@ class NaturalTtsSpeaker(context: Context) {
         gapsMs: List<Long>,
         languageCode: String = "ta-IN",
         onDone: (() -> Unit)? = null,
+        /** Through the alarm volume (a reminder) instead of the media volume — see [speakNatural]. */
+        useAlarmStream: Boolean = false,
     ) {
         val asked = generation
         val lines = parts.map { it.trim() }.filter { it.isNotEmpty() }
@@ -229,7 +232,7 @@ class NaturalTtsSpeaker(context: Context) {
                     if (joined != null) {
                         val file = withContext(Dispatchers.IO) { File.createTempFile("turn_", ".wav", appContext.cacheDir).apply { writeBytes(joined) } }
                         Log.i(TAG, "voice turn: ${lines.size} sentences joined in ${System.currentTimeMillis() - started} ms, gaps=$gapsMs")
-                        val played = if (asked == generation) playWavFile(file, false) else false
+                        val played = if (asked == generation) playWavFile(file, useAlarmStream) else false
                         file.delete()
                         if (played) {
                             lastEngine = "sarvam"
@@ -242,7 +245,7 @@ class NaturalTtsSpeaker(context: Context) {
                         Log.i(TAG, "voice turn: sentences not all available (${clips.count { it != null }}/${lines.size}); one request for the turn")
                     }
                 }
-                speakNaturalInternal(whole, languageCode, whole, languageCode, false, null, onDone, asked)
+                speakNaturalInternal(whole, languageCode, whole, languageCode, useAlarmStream, null, onDone, asked)
             }
         }
     }

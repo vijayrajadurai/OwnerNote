@@ -210,7 +210,11 @@ fun KaiChatScreen(
     LaunchedEffect(listening) { session.listening(listening) }
     // The owner's shop category (business profile) picks the scene behind Kai's notebook; unknown → a neutral counter.
     var shopCategory by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(Unit) { shopCategory = runCatching { container.businessRepository.getMyBusiness()?.category }.getOrNull() }
+    LaunchedEffect(Unit) {
+        shopCategory = runCatching { container.businessRepository.getMyBusiness()?.category }.getOrNull()
+        // The product names and the salon list's sounds, prepared now (off the main thread) — not when the first spoken line arrives.
+        session.warmUp(shopCategory)
+    }
     fun listen() {
         if (!speech.isAvailable()) return
         container.naturalTtsSpeaker.stop()
