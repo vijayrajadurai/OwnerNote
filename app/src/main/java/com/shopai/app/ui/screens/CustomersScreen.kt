@@ -28,6 +28,8 @@ fun CustomersScreen(
     /** Full master form; only offered once the books are in use. */
     onNewCustomer: () -> Unit = {},
     onAddCredit: (customerId: String?, customerName: String, customerPhone: String?) -> Unit,
+    /** The customer / supplier list from the app the owner used before (More → Pazhaiya kanakku import). */
+    onImport: () -> Unit = {},
 ) {
     var customers by remember { mutableStateOf<List<PartySummary>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
@@ -88,6 +90,8 @@ fun CustomersScreen(
             onPartyClick = onOpenCustomer,
             newPartyLabel = if (booksOn) stringResource(R.string.books_customer_new) else null,
             onNewParty = onNewCustomer,
+            importLabel = if (booksOn) stringResource(R.string.party_import_short) else null,
+            onImport = onImport,
         )
     }
 }

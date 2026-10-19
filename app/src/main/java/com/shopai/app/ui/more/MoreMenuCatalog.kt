@@ -24,6 +24,7 @@ enum class MoreMenuIcon {
     Hsn,
     BooksSettings,
     Offers,
+    Import,
 }
 
 data class MoreMenuEntry(
@@ -178,6 +179,16 @@ object MoreMenuCatalog {
             tint = Color(0xFF6B4C9A),
             card = Color(0xFFF3ECFE),
             route = Routes.Subscription,
+        ),
+        MoreMenuEntry(
+            id = "party_import",
+            labelRes = R.string.party_import_title,
+            captionRes = R.string.party_import_menu_caption,
+            contentDescriptionRes = R.string.party_import_title,
+            icon = MoreMenuIcon.Import,
+            tint = Color(0xFF1F6FD1),
+            card = Color(0xFFE8F1FC),
+            route = Routes.PartyListImport,
         ),
         MoreMenuEntry(
             id = "hsn",

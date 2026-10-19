@@ -50,6 +50,7 @@ object Routes {
     const val ProductForm = "product_form?productId={productId}"
     const val PartyForm = "party_form/{kind}?partyId={partyId}"
     const val HsnMaster = "hsn_master"
+    const val PartyListImport = "party_import"
     const val BooksSettings = "books_settings"
 
     // OwnerNote Books billing.
