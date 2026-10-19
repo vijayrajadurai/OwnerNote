@@ -512,6 +512,9 @@ fun ShopAiApp(container: AppContainer) {
                 },
             )
         }
+        composable(Routes.KhataImport) {
+            com.shopai.app.ui.books.KhataImportScreen(container = container, onBack = { navController.navigateUpOrHome() })
+        }
         composable(Routes.HsnMaster) {
             com.shopai.app.ui.books.HsnMasterScreen(
                 container = container,

@@ -1534,4 +1534,23 @@ NewonX — Owner Note. Use Help & Support in the app.]]></string>
     <!-- The salon master list on the Menu (owner, 19 Oct 2026) -->
     <string name="menu_pick_list">Service list-la irundhu edunga (%1$d)</string>
     <string name="menu_hide_list">Service list moodu</string>
+    <!-- Khatabook import (owner, 19 Oct 2026) -->
+    <string name="khata_import_title">Khatabook-la irundhu</string>
+    <string name="khata_import_menu_caption">Khatabook customers, balance-ellam kondu vaanga</string>
+    <string name="khata_import_caption">Khatabook app → Reports → Customer List (illa Supplier List) → PDF download pannunga. Andha PDF-ah inga select pannunga. Ovvoru aalum balance-um kaattuven; Confirm pannina dhaan save aagum.</string>
+    <string name="khata_import_pick">Khatabook PDF select pannunga</string>
+    <string name="khata_import_pick_again">Vera PDF select pannunga</string>
+    <string name="khata_import_not_khata">Idhu Khatabook Customer / Supplier List PDF maadhiri illa. Khatabook → Reports → Customer List → PDF download panni adha select pannunga.</string>
+    <string name="khata_import_found">%1$d per kidaichanga — %2$s</string>
+    <string name="khata_import_total_ok">✓ Khatabook Grand Total-oda sariyaa match aagudhu</string>
+    <string name="khata_import_total_check">⚠ Total Khatabook Grand Total-oda match aagala — ovvoru line-ayum check pannunga</string>
+    <string name="khata_import_customers">Customers</string>
+    <string name="khata_import_suppliers">Suppliers</string>
+    <string name="khata_import_due">Vasool: %1$s</string>
+    <string name="khata_import_they_owe">%1$s tharanum</string>
+    <string name="khata_import_you_owe">%1$s kudukkanum</string>
+    <string name="khata_import_confirm">Confirm — %1$d per save pannu</string>
+    <string name="khata_import_saved">✅ Save aachu: %1$d per add aanaanga (%2$d balance-oda).</string>
+    <string name="khata_import_already">Already irundhavanga (maathala): %1$s</string>
+    <string name="khata_import_failed">Save aagala. Edhuvum maaralai — marubadiyum try pannunga.</string>
 </resources>

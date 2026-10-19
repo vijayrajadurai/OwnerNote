@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Alarm
+import androidx.compose.material.icons.rounded.UploadFile
 import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.Category
 import androidx.compose.material.icons.rounded.Chat
@@ -174,4 +175,5 @@ private fun MoreMenuIcon.asImageVector(): ImageVector = when (this) {
     MoreMenuIcon.Hsn -> Icons.Rounded.QrCode2
     MoreMenuIcon.BooksSettings -> Icons.Rounded.MenuBook
     MoreMenuIcon.Offers -> Icons.Rounded.LocalOffer
+    MoreMenuIcon.Import -> Icons.Rounded.UploadFile
 }
