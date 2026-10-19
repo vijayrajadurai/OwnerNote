@@ -73,6 +73,11 @@ data class ActionPlan(
     val reference: String? = null,
     /** When a Credit / Debit entry is due ("Mahesh enaku 2000 tharanum … adutha maasam 5"): saved on the entry. */
     val dueDate: java.time.LocalDate? = null,
+    /**
+     * The same payment (person, amount, mode) is already in the books today: said on the draft, and a second one is saved only
+     * on the owner's Confirm (owner, 19 Oct 2026: "oru aaluku rendu entry poda vida matikuthu") — never refused, never silent.
+     */
+    val sameDayRepeat: Boolean = false,
 )
 
 sealed interface ActionOutcome {

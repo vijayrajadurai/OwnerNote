@@ -102,9 +102,12 @@ object KaiLedgerPhrases {
         val bare = t.trim()
         fun first(list: List<Regex>) = list.firstNotNullOfOrNull { it.find(bare) }
         first(theyOwe)?.let { m -> return "${m.groupValues[1]} enakku ${m.groupValues[2]} tharanum" }
-        first(iOwe)?.let { m -> return "naan ${person(m.groupValues[1])} ${m.groupValues[2]} tharanum" }
+        // ("Kumar enakku 5000 kuduthutaan" is Kumar giving the owner — "enakku" is "to me", never the person paid; owner, 19 Oct 2026)
+        fun toSomeone(list: List<Regex>) = list.firstNotNullOfOrNull { r -> r.find(bare)?.takeIf { m -> m.groupValues[1].trim().split(Regex("""\s+""")).last().let { w ->
+            !Regex("""(?i)^(?:enakku|enaku|ennaku|yenakku|yenaku|yennaku|enakk|எனக்கு)$""").matches(w.replace("-", "")) } } }
+        toSomeone(iOwe)?.let { m -> return "naan ${person(m.groupValues[1])} ${m.groupValues[2]} tharanum" }
         first(theyPaid)?.let { m -> return "${m.groupValues[1]} ${m.groupValues[2]} kuduthaan" }
-        first(iPaid)?.let { m -> return "${person(m.groupValues[1])} ${m.groupValues[2]} kuduthen" }
+        toSomeone(iPaid)?.let { m -> return "${person(m.groupValues[1])} ${m.groupValues[2]} kuduthen" }
         settledBy.find(bare)?.let { m -> if (!m.groupValues[1].contains(Regex("""(?i)(?<![\p{L}])(?:naan|nan|enakku|enaku)(?![\p{L}])"""))) return "${m.groupValues[1]} ${m.groupValues[2]} kuduthaan" }
         owedQuestion.find(bare)?.let { m -> if (!notPerson.matches(m.groupValues[1] + "ku") && !pronoun(m.groupValues[1])) return "${m.groupValues[1].removeSuffix("ு")}-ku evlo kudukkanum?" }
         gluedQuestion.find(bare)?.let { m -> if (!notPerson.matches(m.groupValues[1]) && !pronoun(m.groupValues[1])) return "${bareOf(m.groupValues[1])}-ku${m.groupValues[2]}" }
