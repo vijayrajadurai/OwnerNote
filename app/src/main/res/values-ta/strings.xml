@@ -1495,4 +1495,5 @@ NewonX — Owner Note. ஆப்பில் உதவி & ஆதரவு.]]><
     <string name="green_home_stock_ok">எல்லாம் stock-ல இருக்கு</string>
     <string name="green_home_reminders_count">%1$d pending</string>
     <string name="green_home_no_reminders">Reminder எதுவும் இல்ல</string>
+    <string name="green_home_next">அடுத்து: %1$s</string>
 </resources>

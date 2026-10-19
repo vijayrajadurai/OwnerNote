@@ -1,6 +1,7 @@
 package com.shopai.app.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,7 +34,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -133,9 +133,9 @@ private fun HomeQuickLinkTile(
         modifier = Modifier
             .width(76.dp)
             // The green UI: a soft green tile with an ink icon circle (no coloured cards).
-            .shadow(6.dp, RoundedCornerShape(22.dp), ambientColor = Color(0x1A1E6B4E), spotColor = Color(0x1A1E6B4E))
+            .then(if (light) Modifier else Modifier.shadow(6.dp, RoundedCornerShape(22.dp), ambientColor = Color(0x1A1E6B4E), spotColor = Color(0x1A1E6B4E)))
             .clip(RoundedCornerShape(22.dp))
-            .background(if (light) GreenUi.Glass else Surface)
+            .background(if (light) Color.Transparent else Surface)
             .semantics {
                 contentDescription = label
                 role = Role.Button
@@ -147,21 +147,19 @@ private fun HomeQuickLinkTile(
     ) {
         Box(
             modifier = Modifier
-                .size(42.dp)
-                .clip(RoundedCornerShape(14.dp))
-                // The digital UI: each link its own gradient (from its colour to a lighter shade).
-                .background(
-                    if (light) androidx.compose.ui.graphics.Brush.linearGradient(listOf(tint, lerp(tint, Color.White, 0.35f)))
-                    else androidx.compose.ui.graphics.SolidColor(tint.copy(alpha = 0.22f)),
-                ),
+                .size(if (light) 52.dp else 42.dp)
+                .clip(CircleShape)
+                // The refined look: a white circle with a hairline edge and a navy icon.
+                .background(if (light) Color.White else tint.copy(alpha = 0.22f))
+                .then(if (light) Modifier.border(1.dp, GreenUi.Line, CircleShape) else Modifier),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(icon, contentDescription = null, tint = if (light) GreenUi.OnBrand else tint, modifier = Modifier.size(20.dp))
+            Icon(icon, contentDescription = null, tint = if (light) GreenUi.Brand else tint, modifier = Modifier.size(20.dp))
         }
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = if (light) FontWeight.Medium else FontWeight.SemiBold,
             color = if (light) GreenUi.Ink else TextPrimary,
             textAlign = TextAlign.Center,
             maxLines = 2,

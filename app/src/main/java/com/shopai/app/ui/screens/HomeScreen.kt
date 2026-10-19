@@ -379,22 +379,30 @@ fun HomeScreen(
                     GreenDetailBox(
                         title = stringResource(R.string.green_home_stock),
                         value = if (lowStock == null) "—" else stringResource(R.string.green_home_low_count, low.size),
-                        gradient = GreenUi.StockGradient,
+                        accent = GreenUi.StockInk,
+                        tint = GreenUi.StockBox,
                         icon = Icons.Filled.Inventory2,
-                        lines = low.map { it.name to "${homeQty(it.currentStock)} ${it.unit}" },
-                        empty = if (lowStock != null) stringResource(R.string.green_home_stock_ok) else null,
+                        meta = when {
+                            lowStock == null -> ""
+                            low.isEmpty() -> stringResource(R.string.green_home_stock_ok)
+                            low.size <= 2 -> low.joinToString(", ") { it.name }
+                            else -> low.take(2).joinToString(", ") { it.name } + " +" + (low.size - 2)
+                        },
                         onClick = { onNavigate(Routes.Inventory) },
                         modifier = Modifier.weight(1f).fillMaxHeight(),
                     )
+                    val next = carouselItems.firstOrNull()
                     GreenDetailBox(
                         title = stringResource(R.string.green_home_reminders),
                         value = stringResource(R.string.green_home_reminders_count, carouselItems.size),
-                        gradient = GreenUi.ReminderGradient,
+                        accent = GreenUi.ReminderInk,
+                        tint = GreenUi.ReminderBox,
                         icon = Icons.Filled.NotificationsActive,
-                        lines = carouselItems.map { r ->
-                            r.partyName.ifBlank { r.description } to (r.amount?.let { formatInr(it) } ?: formatHomeReminderDate(r.dueDateIso))
-                        },
-                        empty = stringResource(R.string.green_home_no_reminders),
+                        meta = if (next == null) stringResource(R.string.green_home_no_reminders)
+                            else stringResource(
+                                R.string.green_home_next,
+                                next.partyName.ifBlank { next.description } + " · " + (next.amount?.let { formatInr(it) } ?: formatHomeReminderDate(next.dueDateIso)),
+                            ),
                         onClick = { onNavigate(Routes.Reminders) },
                         modifier = Modifier.weight(1f).fillMaxHeight(),
                     )
@@ -655,24 +663,23 @@ private fun GreenKaiCard(
     onTap: () -> Unit,
     onChat: () -> Unit,
 ) {
-    val size by androidx.compose.animation.core.animateDpAsState(if (compact) 104.dp else 140.dp, label = "homeKaiSize")
+    val size by androidx.compose.animation.core.animateDpAsState(if (compact) 72.dp else 110.dp, label = "homeKaiSize")
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(28.dp))
-            // The digital UI: Kai on white glass with a violet glow behind him.
-            .background(GreenUi.Glass)
-            .background(androidx.compose.ui.graphics.Brush.radialGradient(listOf(GreenUi.BrandSoft.copy(alpha = 0.22f), Color.Transparent), center = androidx.compose.ui.geometry.Offset(160f, 120f), radius = 420f))
-            .border(1.dp, GreenUi.GlassEdge, RoundedCornerShape(28.dp))
+            .clip(RoundedCornerShape(20.dp))
+            // The refined look: Kai on a white card with a hairline edge.
+            .background(Color.White)
+            .border(1.dp, GreenUi.Line, RoundedCornerShape(20.dp))
             .clickable(onClick = onTap)
-            .padding(start = 8.dp, end = 14.dp, top = 8.dp, bottom = 8.dp),
+            .padding(start = 6.dp, end = 12.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         com.shopai.app.ui.kai.KaiCharacter(state = state, size = size, mouthLevel = mouthLevel, speakingAs = speakingAs)
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("KAI", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp, color = GreenUi.BrandSoft)
-            Text(line, fontSize = 15.sp, color = GreenUi.Ink, maxLines = 4, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text("Kai", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = GreenUi.Brand)
+            Text(line, fontSize = 14.sp, color = GreenUi.Ink, maxLines = 3, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
             Text(
                 text = stringResource(R.string.green_home_ask_kai),
                 fontSize = 13.sp,
@@ -680,9 +687,9 @@ private fun GreenKaiCard(
                 color = GreenUi.OnBrand,
                 modifier = Modifier
                     .clip(RoundedCornerShape(16.dp))
-                    .background(androidx.compose.ui.graphics.Brush.linearGradient(GreenUi.BrandGradient))
+                    .background(GreenUi.Brand)
                     .clickable(onClick = onChat)
-                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                    .padding(horizontal = 14.dp, vertical = 7.dp),
             )
         }
     }

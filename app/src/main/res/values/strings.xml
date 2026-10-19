@@ -1550,4 +1550,5 @@ NewonX — Owner Note. Use Help & Support in the app.]]></string>
     <string name="green_home_stock_ok">Ellam stock-la irukku</string>
     <string name="green_home_reminders_count">%1$d pending</string>
     <string name="green_home_no_reminders">Reminder edhuvum illa</string>
+    <string name="green_home_next">Adutha: %1$s</string>
 </resources>

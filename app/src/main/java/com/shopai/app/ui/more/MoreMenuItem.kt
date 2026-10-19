@@ -89,7 +89,7 @@ fun MoreMenuItem(
                 scaleY = scale
             }
             .shadow(
-                elevation = if (light) 6.dp else 2.dp,
+                elevation = if (light) 1.dp else 2.dp,
                 shape = CardShape,
                 clip = false,
                 ambientColor = if (light) GlassShadow else MaterialTheme.colorScheme.scrim.copy(alpha = 0.3f),

@@ -152,6 +152,22 @@ private fun LedgerSideCard(
     modifier: Modifier = Modifier,
 ) {
     val light = com.shopai.app.ui.components.isRedesignLight()
+    if (light) {
+        // The refined Home (owner, 19 Oct 2026: "international level"): a compact white card — the total, and what is overdue.
+        val g = com.shopai.app.ui.components.GreenUi
+        com.shopai.app.ui.components.GreenDetailBox(
+            title = title,
+            value = total,
+            accent = if (down) g.CollectInk else g.PayInk,
+            tint = if (down) g.CollectBox else g.PayBox,
+            icon = if (down) Icons.Filled.ArrowDownward else Icons.Filled.ArrowUpward,
+            meta = "$overdueLabel · $overdueValue",
+            metaDot = g.PayInk,
+            onClick = onClick,
+            modifier = modifier,
+        )
+        return
+    }
     Column(
         modifier = modifier
             // The digital UI: Home's first two boxes — to collect a green → teal gradient, to pay a rose gradient, white text, a glow.

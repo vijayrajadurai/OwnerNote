@@ -55,39 +55,41 @@ import kotlin.math.roundToInt
  */
 object GreenUi {
     /** Text — a deep green-black; no black blocks anywhere (owner, 19 Oct 2026: "black colour remove pannu"). */
-    val Ink = Color(0xFF16201B)
+    val Ink = Color(0xFF0F1B14)
     /**
-     * The digital colours (owner, 19 Oct 2026: "background mattum green, mathu ellam nalla colour, digital"): the fills —
-     * buttons, the slide, the chosen tab, the owner's bubble, the mic — are an indigo → violet gradient with a soft glow.
+     * The refined look (owner, 19 Oct 2026: "international level"; the page stays green): one deep navy for every action —
+     * buttons, the slide, the chosen tab, the owner's bubble, the mic — white cards with a hairline edge, and colour only
+     * where it means something (money in green, money out orange, stock blue, reminders amber).
      */
-    val Brand = Color(0xFF4F46E5)
-    val BrandSoft = Color(0xFF8B5CF6)
-    val BrandTint = Color(0xFFE0E7FF)
+    val Brand = Color(0xFF1F2B5C)
+    val BrandSoft = Color(0xFF34437A)
+    val BrandTint = Color(0xFFE6E9F4)
     val OnBrand = Color(0xFFFFFFFF)
-    val BrandGradient: List<Color> = listOf(Color(0xFF6366F1), Color(0xFF8B5CF6))
+    val BrandGradient: List<Color> = listOf(Color(0xFF1F2B5C), Color(0xFF1F2B5C))
     /** Glass: translucent white cards on the green page. */
-    val Glass = Color(0xBBFFFFFF)
-    val GlassEdge = Color(0xE6FFFFFF)
+    val Glass = Color(0xFFFFFFFF)
+    val GlassEdge = Color(0xFFE3EBE5)
     /** The four Home boxes as gradients (white text on them). */
     val CollectGradient: List<Color> = listOf(Color(0xFF10B981), Color(0xFF0D9488))
     val PayGradient: List<Color> = listOf(Color(0xFFF43F5E), Color(0xFFE11D48))
     val StockGradient: List<Color> = listOf(Color(0xFF3B82F6), Color(0xFF6366F1))
     val ReminderGradient: List<Color> = listOf(Color(0xFFF59E0B), Color(0xFFF97316))
     /** Confirm / save: a green gradient (money written in). */
-    val ConfirmGradient: List<Color> = listOf(Color(0xFF10B981), Color(0xFF0D9488))
+    val ConfirmGradient: List<Color> = listOf(Color(0xFF1F2B5C), Color(0xFF1F2B5C))
     /** The four Home boxes: to collect (green), to pay (rose), stock (blue), reminders (amber). */
-    val CollectBox = Color(0xFFDDF0E4)
-    val PayBox = Color(0xFFFBE6E1)
-    val StockBox = Color(0xFFE3EBF8)
-    val ReminderBox = Color(0xFFFBF0D9)
-    val PayInk = Color(0xFFA1261C)
-    val StockInk = Color(0xFF2F5597)
-    val ReminderInk = Color(0xFF9A6200)
+    val CollectBox = Color(0xFFE3F5EC)
+    val CollectInk = Color(0xFF0E9F6E)
+    val PayBox = Color(0xFFFDEBDF)
+    val StockBox = Color(0xFFE4ECFB)
+    val ReminderBox = Color(0xFFFDF3D7)
+    val PayInk = Color(0xFFD9480F)
+    val StockInk = Color(0xFF2F5BD8)
+    val ReminderInk = Color(0xFFB7791F)
     val InkSoft = Color(0xFF3A3A3F)
     val Tile = Color(0xFFD6E6D9)
     val TileDark = Color(0xFF5B5B60)
-    val Line = Color(0xFFD3E0D6)
-    val Muted = Color(0xFF4D4D52)
+    val Line = Color(0xFFE3EBE5)
+    val Muted = Color(0xFF5B6670)
     val OnInk = Color(0xFFF4F4F5)
     val OnInkMuted = Color(0xFFB4B4BA)
     val Wash = Color(0x8CFFFFFF)
@@ -240,10 +242,9 @@ fun GreenSlideBar(
     BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
-            .height(60.dp)
-            .shadow(14.dp, shape, ambientColor = GreenUi.Brand.copy(alpha = 0.45f), spotColor = GreenUi.Brand.copy(alpha = 0.45f))
+            .height(58.dp)
             .clip(shape)
-            .background(androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color(0xFF4F46E5), Color(0xFF7C3AED), Color(0xFFA855F7))))
+            .background(GreenUi.Brand)
             .clickable(onClick = onDone),
     ) {
         val density = LocalDensity.current
@@ -300,56 +301,44 @@ fun GreenSlideBar(
 }
 
 /**
- * One of Home's four boxes (owner, 19 Oct 2026): a coloured tile with its title, the big figure, and up to three detail lines on
- * the front (overdue, the low stock items, the next reminders) — tap opens the screen behind it.
+ * One of Home's four boxes (owner, 19 Oct 2026): a compact white card — a small tinted icon, the title, the figure, and one
+ * line of detail (what is overdue, the low items, the next reminder). Tap opens the screen behind it.
  */
 @Composable
 fun GreenDetailBox(
     title: String,
     value: String,
-    gradient: List<Color>,
+    accent: Color,
+    tint: Color,
     icon: ImageVector,
-    lines: List<Pair<String, String>>,
+    meta: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    empty: String? = null,
+    metaDot: Color? = null,
 ) {
-    val shape = RoundedCornerShape(26.dp)
-    Box(
+    val shape = RoundedCornerShape(20.dp)
+    Column(
         modifier = modifier
-            .shadow(12.dp, shape, ambientColor = gradient.first().copy(alpha = 0.4f), spotColor = gradient.first().copy(alpha = 0.4f))
             .clip(shape)
-            .background(Brush.linearGradient(gradient))
-            .clickable(onClick = onClick),
+            .background(Color.White)
+            .border(1.dp, GreenUi.Line, shape)
+            .clickable(onClick = onClick)
+            .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        // The digital touch: two soft rings in the corner.
-        Box(Modifier.align(Alignment.TopEnd).offset(x = 30.dp, y = (-30).dp).size(100.dp).border(14.dp, Color.White.copy(alpha = 0.12f), CircleShape))
-        Box(Modifier.align(Alignment.BottomEnd).offset(x = (-18).dp, y = 40.dp).size(70.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.08f)))
-        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(RoundedCornerShape(11.dp))
-                        .background(Color.White.copy(alpha = 0.22f))
-                        .border(1.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(11.dp)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                }
-                Text(text = title, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color.White.copy(alpha = 0.92f), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box(
+                modifier = Modifier.size(28.dp).clip(RoundedCornerShape(9.dp)).background(tint),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(15.dp))
             }
-            Text(text = value, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1)
-            if (lines.isEmpty() && empty != null) {
-                Text(text = empty, fontSize = 12.sp, color = Color.White.copy(alpha = 0.9f), maxLines = 2)
-            }
-            lines.take(3).forEach { (left, right) ->
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Box(Modifier.size(6.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.9f)))
-                    Text(text = left, fontSize = 12.sp, color = Color.White.copy(alpha = 0.9f), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-                    if (right.isNotEmpty()) Text(text = right, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1)
-                }
-            }
+            Text(text = title, fontSize = 13.sp, color = GreenUi.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+        }
+        Text(text = value, fontSize = 21.sp, fontWeight = FontWeight.SemiBold, color = GreenUi.Ink, maxLines = 1, modifier = Modifier.padding(top = 2.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            if (metaDot != null) Box(Modifier.size(6.dp).clip(CircleShape).background(metaDot))
+            Text(text = meta, fontSize = 12.sp, color = GreenUi.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }

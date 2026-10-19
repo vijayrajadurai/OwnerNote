@@ -154,7 +154,7 @@ fun OutlinedButton(
     ),
     elevation: ButtonElevation? = null,
     // The green UI: a green-grey outline (owner's preview, 19 Oct 2026).
-    border: BorderStroke? = if (isRedesignLight()) BorderStroke(1.5.dp, Color(0xFFC7D2FE).copy(alpha = if (enabled) 1f else 0.4f))
+    border: BorderStroke? = if (isRedesignLight()) BorderStroke(1.5.dp, Color(0xFFCDD5E6).copy(alpha = if (enabled) 1f else 0.4f))
         else BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = if (enabled) 0.28f else 0.12f)),
     contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
     interactionSource: MutableInteractionSource? = null,
@@ -241,22 +241,8 @@ fun isRedesignLight(): Boolean = MaterialTheme.colorScheme.background == Backgro
 @Composable
 fun Modifier.appBackground(): Modifier =
     if (isRedesignLight()) {
-        // (the green UI: a soft green at the top fading to the light wash, with a faint digital dot grid)
+        // (the green UI: a soft green at the top fading to the light wash)
         background(Brush.verticalGradient(0f to AppBackgroundTop, 0.35f to AppBackgroundMid, 1f to AppBackgroundBottom))
-            .drawBehind {
-                val step = 14.dp.toPx()
-                val r = 1.dp.toPx()
-                val dot = Color(0x1A1E6B4E)
-                var y = step / 2
-                while (y < size.height) {
-                    var x = step / 2
-                    while (x < size.width) {
-                        drawCircle(dot, radius = r, center = androidx.compose.ui.geometry.Offset(x, y))
-                        x += step
-                    }
-                    y += step
-                }
-            }
     } else {
         background(MaterialTheme.colorScheme.background)
     }
@@ -323,7 +309,7 @@ fun BottomNavBar(
                 )
                 .clip(pillShape)
                 // (the green UI: a white glass floating pill)
-                .background(if (isRedesignLight()) Color.White.copy(alpha = 0.9f) else MaterialTheme.colorScheme.surface)
+                .background(if (isRedesignLight()) Color.White else MaterialTheme.colorScheme.surface)
                 .padding(horizontal = 8.dp, vertical = 7.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(2.dp),
@@ -352,7 +338,7 @@ fun BottomNavBar(
                         contentDescription = label,
                         tint = when {
                             isActive -> if (isRedesignLight()) Color.White else MaterialTheme.colorScheme.primary
-                            isRedesignLight() -> Color(0xFF4B5563)
+                            isRedesignLight() -> GreenUi.Muted
                             else -> MaterialTheme.colorScheme.onSurfaceVariant
                         },
                         modifier = Modifier.size(22.dp),
@@ -386,13 +372,13 @@ fun CategoryChip(
                 if (selected && isRedesignLight()) Brush.linearGradient(GreenUi.BrandGradient)
                 else androidx.compose.ui.graphics.SolidColor(
                     if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-                    else if (isRedesignLight()) Color.White.copy(alpha = 0.6f) else MaterialTheme.colorScheme.surface,
+                    else if (isRedesignLight()) Color.White else MaterialTheme.colorScheme.surface,
                 ),
             )
             .border(
                 width = 1.dp,
                 color = if (selected) MaterialTheme.colorScheme.primary
-                    else if (isRedesignLight()) Color(0xFFC7D2FE) else MaterialTheme.colorScheme.outline,
+                    else if (isRedesignLight()) Color(0xFFCDD5E6) else MaterialTheme.colorScheme.outline,
                 shape = RoundedCornerShape(999.dp),
             )
             .clickable(onClick = onClick)
