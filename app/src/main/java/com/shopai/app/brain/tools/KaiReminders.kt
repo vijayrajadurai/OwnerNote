@@ -194,6 +194,10 @@ object KaiReminderUnderstanding {
         // "innaiku ABC ku 3000 kudukkanum", "innaiku ABC ku pay pannen": money owed / paid today, said without "remind" and without a
         // clock time — an entry, not a reminder. (Kai never asks "eppa remind pannanum?" for words that didn't ask for one.)
         if (!mentionsReminder && time != null && time.relative == null && time.needsTime && time.at.toLocalDate() == now.toLocalDate()) return null
+        // "Ramesh ku 4000 kudukkanum 25 October", "Sarath kitta 5000 vaanganum December 5": an amount owed with its due day and no
+        // clock time is the entry with its due date — never "eppa remind pannanum?" (owner, 19 Oct 2026).
+        if (!mentionsReminder && time != null && time.relative == null && time.needsTime && KaiPaymentDirection.mentionsMoneyOwed(text) &&
+            Regex("""(?<![\d/.:-])\d{3,}(?![\d/.:])""").containsMatchIn(text)) return null
         if (!mentionsReminder && donePast.containsMatchIn(text)) return null
         // "today due + overdue list sollu": "tell me" a report from the books, not a reminder to set.
         if (!mentionsReminder && !doVerbs.containsMatchIn(text) && ledgerReport.containsMatchIn(text)) return null

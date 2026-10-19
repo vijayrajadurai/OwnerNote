@@ -124,6 +124,19 @@ object KaiIntentWords {
         // says a new customer / supplier is added; owner, 19 Oct 2026)
         Regex("""(?i)^\s*(?:pudhu|puthu|new|oru\s+pudhu|oru\s+puthu)\s+(?:customer|customeru|supplier|aalu|aal|party|per|aaal)\s+(?=[\p{L}])""") to "",
     )
+    /**
+     * "Kumar ku 1500 kadan kuduthen, 20th tharuvan", "Vasanth kitta 5000 ku credit la maal vaanginen, 30th kudukkanum": an entry
+     * already said, then when it is to be paid — the due day of that entry ("… due 20th"), never a second, opposite line (owner,
+     * 19 Oct 2026: "thevayana details kedacha draft katti confirm anathum task ah mudikanum").
+     */
+    private val entryWord = Regex("""(?i)(?<![\p{L}])(kadan|kadanukku|credit|debit|udhaar|kuduthen|koduthen|kudutthen|vaanginen|vanginen|eduthen)(?![\p{L}])""")
+    private val dueClause = Regex("""(?i)[,;]?\s*(?:due\s+)?((?:next|adutha|aduththa|indha|intha|this)\s+(?:month|maasam|masam)\s*\d{1,2}(?:\s*-?\s*(?:aam|am|m|thethi))*|""" +
+        """\d{1,2}\s*(?:st|nd|rd|th)|\d{1,2}\s*-?\s*(?:aam|am)?\s*(?:thethi|thedhi)|""" +
+        """(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\s*\d{1,2}(?:\s*(?:st|nd|rd|th))?|\d{1,2}(?:\s*(?:st|nd|rd|th))?\s*(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*|""" +
+        """naalaiku|naalaikku|nalaiku|naalai|nalai|tomorrow|naalanniku|next\s+week|adutha\s+vaaram|(?:next\s+|adutha\s+)?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)|""" +
+        """\d{1,2}[/.\-]\d{1,2}[/.\-](?:\d{4}|\d{2}))\s*(?:-?\s*(?:kulla|kulle|kullae|thethikulla|ku|kku|kkulla|varaikkum|varai))?\s+""" +
+        """(?:tharuvan|tharuvaan|tharuvaanga|tharuvanga|tharuvaaru|tharuvaru|tharanum|kudukkanum|kudukanum|kodukkanum|kodukanum|kattanum|tharen|tharuven|kuduppen|kudupen|thiruppi\s+tharuvan|thiruppi\s+tharuvaanga)\s*[.!]*$""")
+
     /** "Murugan Stores-la 6000-ku … credit la maal vaanginen": from them, for that much. */
     private val boughtFrom = Regex("""(?i)^(.+?)\s*-?\s*(?:la|le|il)\s+(\d[\d,]*)\s*-?\s*(?:ku|kku)\s+credit la maal vaanginen""")
 
@@ -167,6 +180,9 @@ object KaiIntentWords {
         t = moneyRules.first().first.replace(t, moneyRules.first().second)
         if (quantity.containsMatchIn(t) && !asks) for ((re, to) in moneyRules.drop(1)) t = re.replace(t, to)
         boughtFrom.find(t.trim())?.let { m -> t = "${m.groupValues[1].trim()} kitta ${m.groupValues[2]} ku credit la maal vaanginen" }
+        if (quantity.containsMatchIn(t) && !asks) dueClause.find(t)?.takeIf { m -> entryWord.containsMatchIn(t.substring(0, m.range.first)) }?.let { m ->
+            t = t.substring(0, m.range.first).trimEnd(' ', ',', ';') + " due " + m.groupValues[1]
+        }
         // Stock words only on a line with a count — "Colgate 2 box irakkumadhi aachu", never a sentence about something else.
         if (quantity.containsMatchIn(t) && !Regex("""(?i)remind""").containsMatchIn(t)) {
             // "rack-la", "godown-la": where it was put — the place, never a unit or part of the name.

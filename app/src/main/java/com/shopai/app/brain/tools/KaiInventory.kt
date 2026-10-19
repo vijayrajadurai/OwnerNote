@@ -362,6 +362,15 @@ object KaiInventory {
     /** Whether a size (weight / volume / clothes size / spec / model / vehicle) is asked for this product. */
     private fun asksSize(spec: ItemSpec): Boolean = styleOf(spec) != SizeStyle.NONE
 
+    /**
+     * "Pepsodent 5 box, boxku 12 pieces, purchase 40, selling 50": everything the stock needs said in one line — a piece's
+     * weight / volume is not asked then (it can be added on the product later); the draft comes with Confirm (owner, 19 Oct 2026:
+     * "thevayana details kedacha kai draft katti confirm anathum task ah mudikanum"). Sizes that are the stock itself (clothes,
+     * shoes, a spec, a model) are still asked.
+     */
+    private fun weightLeftForLater(spec: ItemSpec): Boolean =
+        spec.purchase != null && spec.selling != null && styleOf(spec) in setOf(SizeStyle.WEIGHT, SizeStyle.VOLUME)
+
     /** Medicines carry a batch number; medicines and bakery goods an expiry date (both can be skipped). */
     fun asksBatch(spec: ItemSpec): Boolean = spec.kind == ProductKind.PHARMACY
     fun asksExpiry(spec: ItemSpec): Boolean = spec.kind == ProductKind.PHARMACY || spec.kind == ProductKind.BAKERY
@@ -393,7 +402,7 @@ object KaiInventory {
         spec.qty == null -> ItemField.QTY
         spec.unit == null -> ItemField.UNIT
         needsPerPack(spec) && spec.perPack == null -> ItemField.PER_PACK
-        asksSize(spec) && spec.size == null && ItemField.SIZE !in spec.skipped -> ItemField.SIZE
+        asksSize(spec) && spec.size == null && ItemField.SIZE !in spec.skipped && !weightLeftForLater(spec) -> ItemField.SIZE
         asksBatch(spec) && spec.batch == null && ItemField.BATCH !in spec.skipped -> ItemField.BATCH
         asksExpiry(spec) && spec.expiry == null && ItemField.EXPIRY !in spec.skipped -> ItemField.EXPIRY
         spec.purchase == null && ItemField.PURCHASE !in spec.skipped -> ItemField.PURCHASE
