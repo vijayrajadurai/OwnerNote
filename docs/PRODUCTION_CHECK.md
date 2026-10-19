@@ -70,12 +70,17 @@ Reminders, Daily Sales Note, Day close. Rarely used, could move lower: Group buy
 
 | Suite | Result |
 |-------|--------|
-| Kai test classes (JVM harness, 86 classes) | SEE_SUITE |
+| Kai test classes (JVM harness, 86 classes) | ✅ 81 pass · ❌ 5 fail (all already on master — this branch changes no Kai code) |
 | GST (`BooksTaxTest` 12 + new `BooksGstReleaseTest` 8) | ✅ 20 / 20 |
 | Old-list import (`PartyListImportTest`) | ✅ 3 / 3 |
 | Room / Compose / instrumented tests | 📱 need Android SDK — run `./gradlew test connectedAndroidTest` in Android Studio |
 
-Known failures already on main (not new): `KaiCatalogueShopTest`, `KaiBusinessBrainTest.cashBookAnswers`.
+Failures already on master (not new):
+- `KaiCatalogueShopTest` (5/5), `KaiBusinessBrainTest.cashBookAnswers` — known before.
+- `KaiCatalogue1620ShopTest` (4/5): **K7** — "Mosquito refill Small pack 7 add pannu" names the exact product, yet Kai asks
+  "Small pack-aa, Medium pack-aa?" (asks what was already said).
+- `KaiHardwareShopTest.everyItemSpoken` (1 of 1104): **K8** — mic "Rake" heard as "Rack" and offered as a new product.
+- `KaiSupermarketShopTest`: runs over 25 min in this sandbox (timed out with 2 CPUs) — rerun alone in progress; run it in Android Studio too.
 
 ---
 
@@ -149,6 +154,8 @@ script; checked in the books / stock / reminders, never on Kai's words alone.
 | K4 | mic "லட்சுமி **பெய்டு** 500 பை போன்பே" | read Lakshmi's balance, no entry | payment in ₹500 UPI (typed works — typed ≠ mic) |
 | K5 | "gold facial **onnu** 900", "keratin **panninom** 3500", "pedicure **onnu** 450" | asks "evlo?" — the price was already said | draft at the price said |
 | K6 | mic "ஃபுல் **கால்** வாக்ஸ் 500" | plain "Waxing" (கால் read as "call") | Full Legs Waxing (typed works — typed ≠ mic) |
+| K7 | "Mosquito refill Small pack 7 add pannu" (catalogue test) | asks Small or Medium pack | add 7 to Small pack |
+| K8 | mic "Rake 7" (hardware catalogue test) | "Rack" — new product | the shop's Rake |
 
 ### ⚠️ Asked plainly, but could understand (gaps)
 - English sentences said into the Tamil mic ("ஹூ ஓஸ் மீ தி மோஸ்ட்", "விச் ப்ராடக்ட்ஸ் ஆர் ரன்னிங் லோ", "ரிசீவ்டு", "சோல்டு", "ஆடட்", "பாக்ஸஸ்") → Kai asks
@@ -180,7 +187,7 @@ On a phone: new install → login (OTP) → shop setup → add customer → cred
 - [ ] B1 keystore out of the public repo, upload key reset
 - [ ] B2 TTS key changed
 - [ ] B3 Subscription hidden or billing on
-- [ ] K1–K6 Kai fixes (after your ok)
+- [ ] K1–K8 Kai fixes (after your ok)
 - [x] Tamil text for every screen
 - [x] Mic-denied message
 - [x] GST checked by hand
