@@ -824,7 +824,8 @@ class KaiOwnerSweepTest {
         // Context memory, said the many ways owners say it (owner, 11 Oct 2026): "ivan", "adhe aal", "rendavadhu aal", an amount alone
         // right after a person, "2000 illa 1500", and a product's price asked after the product.
         fun saved(name: String, amount: String, kind: PlanKind): (Shop) -> String? = { s ->
-            if (s.tools.saved.singleOrNull()?.let { it.partyName == name && it.amount.compareTo(BigDecimal(amount)) == 0 && it.kind == kind } == true) null
+            // (spoken, a new name stays in Tamil letters — "தினேஷ்" is the same Dinesh, as in [entry])
+            if (s.tools.saved.singleOrNull()?.let { (it.partyName == name || com.shopai.app.util.NameSound.same(it.partyName, name)) && it.amount.compareTo(BigDecimal(amount)) == 0 && it.kind == kind } == true) null
             else "saved ${s.tools.saved.map { "${it.partyName} ${it.amount} ${it.kind}" }}" }
         talk("ivan is the person just asked", listOf("Kumar evlo tharanum", "ivan balance enna"), check = nothingWritten("₹4,000"))
         talk("adhe aal after a stock question", listOf("Ramesh evlo tharanum", "Colgate stock evlo", "adhe aal evlo tharanum"), check = nothingWritten("₹2,500"))

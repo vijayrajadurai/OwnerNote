@@ -262,6 +262,27 @@ object KaiServices {
             ?: own.firstOrNull { o -> o.equals(h.name, ignoreCase = true) }
     }
 
+    /** Words an owner puts before or after a service's name for their own kinds of it ("Gents Haircut", "Kids Haircut", "Gold Facial"). */
+    private val ownKindWords = setOf("gents", "gent", "men", "mens", "male", "ladies", "lady", "women", "womens", "female", "kids", "kid", "child",
+        "children", "baby", "boys", "boy", "girls", "girl", "adult", "normal", "regular", "simple", "special", "premium", "deluxe", "gold", "silver",
+        "diamond", "pearl", "herbal", "fruit", "mini", "full", "half", "small", "big", "large", "basic", "classic", "royal", "quick", "express", "style",
+        "styling", "fancy", "plain")
+
+    /**
+     * The owner's Menu items that may be the service [service] Kai's list read ("Hair cutting" said, "Gents Haircut" and "Kids
+     * Haircut" kept): an item named by one of the service's own words, alone or with the owner's own kind words ("gents", "kids",
+     * "gold"…). Never sold as one of them by itself — Kai asks (owner, 16 Oct 2026: an item is never another of theirs; owner,
+     * 19 Oct 2026: "mudi vettu onnu" with "Gents Haircut" on the Menu was asked its price as a new "Hair cutting").
+     */
+    fun ownChoices(service: String, own: Collection<String>): List<String> {
+        val s = catalogue.firstOrNull { it.name.equals(service, ignoreCase = true) } ?: return emptyList()
+        val words = s.words.filterNot(KaiSpokenWords::hasTamil).map { it.lowercase(Locale.ROOT).split(' ') }
+        return own.filter { o -> !KaiSpokenWords.hasTamil(o) && !o.equals(s.name, ignoreCase = true) }.filter { o ->
+            val ow = o.lowercase(Locale.ROOT).trim().split(Regex("""\s+"""))
+            words.any { w -> (0..ow.size - w.size).any { i -> ow.subList(i, i + w.size) == w && (ow.take(i) + ow.drop(i + w.size)).all { it in ownKindWords } } }
+        }.distinct()
+    }
+
     /**
      * The services a shop of [category] sells (the owner's pick at setup): a beauty salon's salon and parlour services, a
      * restaurant's / tea shop's food, a hardware / electrical shop's tool rental; any other shop's none (only the services the

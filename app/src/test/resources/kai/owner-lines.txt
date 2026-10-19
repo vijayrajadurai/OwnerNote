@@ -412,3 +412,17 @@ ASK    | Colgate ethana petti irukku                    | 5
 ASK    | Rice ethana moota irukku                       | 10
 ASK    | innaiku evlo vasool aaganum                    | ₹6,500
 ENTRY  | Ramesh rendaayiram GPay-la pottaan             | IN Ramesh 2000
+
+# The owner's fractions with any unit (owner, 19 Oct 2026: "units ah correct ah yeadukutha nu paru"): onnara 1½, rendara 2½, kaal ¼,
+# mukkal ¾ — typed and by mic (KaiUnitsEveryShopTest has every kind of shop).
+STOCK  | Rice onnara kilo vithuchu                      | Rice 248.5
+STOCK  | Rice kaal kilo vithuchu                        | Rice 249.75
+STOCK  | Rice mukkal kilo vithuchu                      | Rice 249.25
+STOCK  | Rice rendara kilo vandhuchu                    | Rice 252.5
+
+# A name the books don't have (owner, 19 Oct 2026: "namba feed pannatha name vandha?"): a new customer / supplier on Confirm — never
+# someone else's record ("Ravikumar" is not Ravi + "-ku"; "அண்ணாவுக்கு" is anna-ku; "pudhu customer" before the name).
+ENTRY  | Senthil 500 kadan                              | CREDIT Senthil 500
+ENTRY  | Ravikumar 400 kadan                            | CREDIT Ravikumar 400
+ENTRY  | pudhu customer Dinesh 600 kadan                | CREDIT Dinesh 600
+ENTRY  | Murugesan anna-ku 1200 kadan kuduthen          | CREDIT Murugesan 1200

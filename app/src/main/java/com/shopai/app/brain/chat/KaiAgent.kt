@@ -121,8 +121,8 @@ sealed interface KaiAction {
     data class CancelDayClose(val day: LocalDate) : KaiAction
     /** A service's price the owner said (changed, or a new service): kept in the owner's memory only after this. */
     data class ConfirmServicePrice(val key: String) : KaiAction
-    /** That day's Daily Sales Note as a PDF, made on the phone — the share sheet opens; the owner presses send. */
-    data class ShareCashNote(val day: LocalDate) : KaiAction
+    /** That day's Daily Sales Note as a PDF ([day] to [to] for a week / month asked), made on the phone — the share sheet opens; the owner presses send. */
+    data class ShareCashNote(val day: LocalDate, val to: LocalDate? = null) : KaiAction
 }
 
 /**
@@ -4223,7 +4223,7 @@ class KaiAgent(
         // "5inch tape 10": the size said in the name is the product's size too (Kai doesn't ask it again).
         val spec = com.shopai.app.brain.tools.ItemSpec(name, kindInShop(name, unit, products), qty, unit, size = req.size)
         tools.log(com.shopai.app.brain.tools.KaiIntents.STOCK_IN, "kai", "$name: new product by chat", ActionStatus.ANSWERED, null, said)
-        return itemStep(newKey(), com.shopai.app.brain.tools.KaiInventory.withDetails(spec, said), said, lang)
+        return itemStep(newKey(), com.shopai.app.brain.tools.KaiInventory.withDetails(spec, said), said, lang, first = true)
     }
 
     /**
@@ -4297,7 +4297,7 @@ class KaiAgent(
         // "Plywood 5 sheet" with Plywood 12mm and Plywood 18mm in the shop: which one — never a new product called "Plywood".
         oneOfMany(name, text, lang, products)?.let { return it }
         tools.log(com.shopai.app.brain.tools.KaiIntents.STOCK_IN, "kai", "$name: new product by chat", ActionStatus.ANSWERED, null, said)
-        return itemStep(newKey(), com.shopai.app.brain.tools.KaiInventory.withDetails(spec, text), said, lang)
+        return itemStep(newKey(), com.shopai.app.brain.tools.KaiInventory.withDetails(spec, text), said, lang, first = true)
     }
 
     /** "Cinthol soap add pannu", "pudhu product Hamam soap serthudu": a product name and "add" — no quantity, no money. */
@@ -4324,7 +4324,7 @@ class KaiAgent(
         val shown = com.shopai.app.brain.tools.KaiInventory.display(name)
         val spec = com.shopai.app.brain.tools.ItemSpec(shown, com.shopai.app.brain.tools.KaiInventory.kindOf(shown, null), null, null)
         tools.log(com.shopai.app.brain.tools.KaiIntents.STOCK_IN, "kai", "$shown: new product by chat (quantity asked)", ActionStatus.ANSWERED, null, said)
-        return itemStep(newKey(), spec, said, lang)
+        return itemStep(newKey(), spec, said, lang, first = true)
     }
 
     private val bareStockLine = Regex("""^[\p{L}\p{M}][\p{L}\p{M}\s.'-]{1,40}?\s+\d+(?:\.\d+)?\s*[\p{L}\p{M}]+\s*[.!]?$""")
@@ -4341,15 +4341,19 @@ class KaiAgent(
     }
 
     /** The next question for a new product — or, when nothing is missing, the summary with Confirm. Nothing is saved here. */
-    private fun itemStep(key: String, spec0: com.shopai.app.brain.tools.ItemSpec, said: String, lang: KaiLang): KaiTurn {
+    private fun itemStep(key: String, spec0: com.shopai.app.brain.tools.ItemSpec, said: String, lang: KaiLang, first: Boolean = false): KaiTurn {
         // The batch / expiry said with the line ("… batch B12 expiry 12/2027") are this product's.
         val spec = saidBatch?.let { b -> spec0.copy(batch = spec0.batch ?: b.batchNo, expiry = spec0.expiry ?: b.expiry) } ?: spec0
         val inv = com.shopai.app.brain.tools.KaiInventory
         val field = inv.next(spec)
         newItem = NewItem(key, spec, said, field, conversationState.conversationTurn, lang)
+        // The first question's card says it plainly: a new product, to be added (owner, 19 Oct 2026: "namba feed pannatha stock or
+        // brand name vandha?") — the owner sees a new product starting, never a question that reads as one they keep.
+        val newOne = if (first) listOf(pick(lang, ta = "புது product: ${spec.name} (Confirm பண்ணா தான் சேரும்)", tl = "Pudhu product: ${spec.name} (Confirm pannina dhaan serum)",
+            en = "New product: ${spec.name} (added only on Confirm)")) else emptyList()
         if (field != null) return KaiTurn(
             ChatReply(inv.question(spec, field, lang), KaiMood.CLARIFY, ChatIntent.GENERAL_BUSINESS_QUERY),
-            KaiCard(emptyList(), listOf(KaiButton(cancelLabel(lang), KaiAction.CancelStock(key)))),
+            KaiCard(newOne, listOf(KaiButton(cancelLabel(lang), KaiAction.CancelStock(key)))),
         )
         val t = inv.totals(spec) ?: run {
             newItem = null
@@ -5987,6 +5991,11 @@ class KaiAgent(
                 if (partyId == null) add(if (kind == PlanKind.CREDIT_GIVEN) pick(lang, ta = "புது வாடிக்கையாளர்-ஆ சேரும்", tl = "Puthu customer-ah add aagum", en = "Will be added as a new customer")
                     else pick(lang, ta = "புது சப்ளையர்-ஆ சேரும்", tl = "Puthu supplier-ah add aagum", en = "Will be added as a new supplier"))
             }
+            // "Senthil 500 kadan" with no Senthil in the books: the draft says so — a new name is added on Confirm, never put on
+            // someone else's record (owner, 19 Oct 2026: "namba feed pannatha name vandha enna pandrathu").
+            else if (partyId == null && (kind == PlanKind.CREDIT_GIVEN || kind == PlanKind.DEBIT_TAKEN))
+                add(if (kind == PlanKind.CREDIT_GIVEN) pick(lang, ta = "புது வாடிக்கையாளர்-ஆ சேரும்", tl = "Puthu customer-ah add aagum", en = "Will be added as a new customer")
+                    else pick(lang, ta = "புது சப்ளையர்-ஆ சேரும்", tl = "Puthu supplier-ah add aagum", en = "Will be added as a new supplier"))
             if (plan.settles.isNotEmpty()) add(pick(lang, ta = "சரி செய்வது: ", tl = "Settles: ", en = "Settles: ") +
                 plan.settles.joinToString(", ") { (n, v) -> "$n ${KaiFormat.rupees(v.toDouble())}" })
             if (plan.advance.signum() == 0 && extra != null) add(pick(lang, ta = "${KaiFormat.rupees(extra.toDouble())} advance-ஆ சேமிக்கப்படும்",
