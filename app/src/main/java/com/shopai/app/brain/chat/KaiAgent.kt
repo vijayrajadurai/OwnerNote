@@ -6038,7 +6038,16 @@ class KaiAgent(
                 tl = "Owner, ippo dhaan ${s.person} $a2 save pannom (${s.reference}). Idhu innoru $a2-aa? Aama-na Confirm pannunga. ",
                 en = "Owner, ${s.person} $a2 was just saved (${s.reference}). Is this another $a2? If so, confirm. ")
         }
-        val intro = (repeatNote ?: "") + if (extra != null && owed != null && !tooBig) {
+        // The same payment is already in the books today (not one just said here): a second one, only if meant.
+        val sameDayNote = if (repeat == null && plan.sameDayRepeat) {
+            val a2 = KaiFormat.rupees(plan.amount.toDouble())
+            val who = ownerName(plan.partyId, plan.partyName)
+            pick(lang,
+                ta = "ஓனர், இன்னைக்கு ஏற்கனவே $who $a2 payment சேமிச்சிருக்கு. இது இன்னொரு $a2-ஆ? ஆமா-னா உறுதி செய்யுங்க — இன்னொரு entry-ஆ சேரும். ",
+                tl = "Owner, innaikku already $who $a2 payment save aagirukku. Idhu innoru $a2-aa? Aama-na Confirm pannunga — innoru entry-aa serum. ",
+                en = "Owner, a $a2 payment for $who is already saved today. Is this another $a2? If so, confirm — it is added as a second entry. ")
+        } else null
+        val intro = (repeatNote ?: sameDayNote ?: "") + if (extra != null && owed != null && !tooBig) {
             val o = KaiFormat.rupees(owed.toDouble()); val a2 = KaiFormat.rupees(plan.amount.toDouble()); val e = KaiFormat.rupees(extra.toDouble())
             val who = ownerName(plan.partyId, plan.partyName)
             if (kind == PlanKind.PAYMENT_IN) pick(lang,
@@ -6062,7 +6071,8 @@ class KaiAgent(
                     KaiButton(pick(lang, ta = "மாற்று", tl = "Edit", en = "Edit"), KaiAction.EditPlan(plan.key)),
                     KaiButton(cancelLabel(lang), KaiAction.CancelPlan(plan.key)),
                 ),
-                warning = (plan.problems + listOfNotNull(repeat?.let { s -> pick(lang, ta = "ஏற்கனவே சேமிச்சது: ${s.reference}", tl = "Already saved: ${s.reference}", en = "Already saved: ${s.reference}") }))
+                warning = (plan.problems + listOfNotNull(repeat?.let { s -> pick(lang, ta = "ஏற்கனவே சேமிச்சது: ${s.reference}", tl = "Already saved: ${s.reference}", en = "Already saved: ${s.reference}") },
+                    plan.sameDayRepeat.takeIf { it && repeat == null }?.let { pick(lang, ta = "இன்னைக்கு இதே தொகை ஏற்கனவே இருக்கு — இது 2-வது entry", tl = "Innaikku idhe amount already irukku — idhu 2-vadhu entry", en = "The same amount is already saved today — this is a second entry") }))
                     .takeIf { it.isNotEmpty() }?.joinToString("\n"),
             ),
             plans[plan.key],

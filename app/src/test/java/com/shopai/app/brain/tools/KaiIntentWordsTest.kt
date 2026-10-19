@@ -48,6 +48,12 @@ class KaiIntentWordsTest {
         assertEquals("Vasanth Traders kitta 5000 ku credit la maal vaanginen due 30th", c("Vasanth Traders kitta 5000 ku credit la maal vaanginen, 30th kudukkanum"))
         // (no entry before it: the owed line itself, read as before)
         assertEquals("Sarath 5000 tharanum December 5", c("Sarath 5000 tharanum December 5"))
+        // paid in full, however said — the whole pending (only with no amount: "Ramesh 2000 settle pannitaan" is ₹2,000)
+        assertEquals("Kumar full ah kuduthutan", c("Kumar full settlement pannitan"))
+        assertEquals("Kumar full ah kuduthutan", c("Kumar ellam clear pannitan"))
+        assertEquals("Kumar full ah kuduthutan", c("Kumar kanakku mudichitaan"))
+        assertEquals("Kumar full ah kuduthutan", c("Kumar muzhusa kuduthutan"))
+        assertEquals("Ramesh 2000 settle pannitaan", c("Ramesh 2000 settle pannitaan"))
     }
 
     @Test fun linesKaiAlreadyReadsAreLeftAlone() {
