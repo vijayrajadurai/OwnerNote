@@ -443,7 +443,7 @@ class AppKaiTools(
                 // The same payment already saved today: a second one the owner may well mean (two visits, two GPay sends) — the
                 // draft says so and Confirm saves it; it is never refused (owner, 19 Oct 2026).
                 val sameDay = quote.errors.any { it.code == BooksErrorCode.DUPLICATE_PAYMENT }
-                fun quoteOf(d: PaymentDraft) = s.engine.quotePayment(d.toInput(s, "kai-quote", TxnSource.VOICE).copy(allowSameDayDuplicate = sameDay), incoming)
+                suspend fun quoteOf(d: PaymentDraft) = s.engine.quotePayment(d.toInput(s, "kai-quote", TxnSource.VOICE).copy(allowSameDayDuplicate = sameDay), incoming)
                 if (sameDay) quote = quoteOf(draft)
                 if (quote.errors.any { it.code == BooksErrorCode.OVERPAYMENT }) {
                     draft = draft.copy(keepAsAdvance = true)
