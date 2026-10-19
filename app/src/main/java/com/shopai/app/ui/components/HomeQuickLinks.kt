@@ -131,9 +131,10 @@ private fun HomeQuickLinkTile(
     Column(
         modifier = Modifier
             .width(76.dp)
-            .shadow(6.dp, RoundedCornerShape(20.dp), ambientColor = Color(0x1A1E6B4E), spotColor = Color(0x1A1E6B4E))
-            .clip(RoundedCornerShape(20.dp))
-            .background(Surface)
+            // The green UI: a soft green tile with an ink icon circle (no coloured cards).
+            .then(if (light) Modifier else Modifier.shadow(6.dp, RoundedCornerShape(20.dp), ambientColor = Color(0x1A1E6B4E), spotColor = Color(0x1A1E6B4E)))
+            .clip(RoundedCornerShape(22.dp))
+            .background(if (light) GreenUi.Tile else Surface)
             .semantics {
                 contentDescription = label
                 role = Role.Button
@@ -147,16 +148,16 @@ private fun HomeQuickLinkTile(
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(if (light) well else tint.copy(alpha = 0.22f)),
+                .background(if (light) GreenUi.Ink else tint.copy(alpha = 0.22f)),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
+            Icon(icon, contentDescription = null, tint = if (light) GreenUi.OnInk else tint, modifier = Modifier.size(20.dp))
         }
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.SemiBold,
-            color = TextPrimary,
+            color = if (light) GreenUi.Ink else TextPrimary,
             textAlign = TextAlign.Center,
             maxLines = 2,
             minLines = 2,

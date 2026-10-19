@@ -625,9 +625,9 @@ private fun HomePaymentReminderCard(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(8.dp, RoundedCornerShape(24.dp), ambientColor = Color(0x1A1E6B4E), spotColor = Color(0x1A1E6B4E))
-            .clip(RoundedCornerShape(24.dp))
-            .background(Color.White)
+            .clip(RoundedCornerShape(26.dp))
+            // The green UI: a soft white wash on the green page.
+            .background(Color.White.copy(alpha = 0.62f))
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,

@@ -106,7 +106,8 @@ fun PrimaryButton(
                 spotColor = BrandGlow,
             )
             .clip(shape)
-            .background(Brush.linearGradient(listOf(BrandGradientStart, BrandGradientEnd)))
+            // The green UI: a solid ink pill.
+            .background(Brush.linearGradient(listOf(BrandGradientStart, BrandGradientStart)))
             .clickable(
                 interactionSource = interaction,
                 indication = LocalIndication.current,
@@ -147,11 +148,13 @@ fun OutlinedButton(
     enabled: Boolean = true,
     shape: Shape = RoundedCornerShape(percent = 50),
     colors: ButtonColors = ButtonDefaults.outlinedButtonColors(
-        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+        containerColor = if (isRedesignLight()) Color.Transparent else MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
         contentColor = MaterialTheme.colorScheme.primary,
     ),
     elevation: ButtonElevation? = null,
-    border: BorderStroke? = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = if (enabled) 0.28f else 0.12f)),
+    // The green UI: a green-grey outline (owner's preview, 19 Oct 2026).
+    border: BorderStroke? = if (isRedesignLight()) BorderStroke(1.dp, Color(0xFFA3B9A8).copy(alpha = if (enabled) 1f else 0.4f))
+        else BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = if (enabled) 0.28f else 0.12f)),
     contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
     interactionSource: MutableInteractionSource? = null,
     content: @Composable RowScope.() -> Unit,
@@ -362,12 +365,14 @@ fun CategoryChip(
         modifier = Modifier
             .clip(RoundedCornerShape(999.dp))
             .background(
-                if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-                else MaterialTheme.colorScheme.surface,
+                // The green UI: the chosen chip is a solid ink pill.
+                if (selected) (if (isRedesignLight()) GreenUi.Ink else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                else if (isRedesignLight()) Color.Transparent else MaterialTheme.colorScheme.surface,
             )
             .border(
                 width = 1.dp,
-                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                color = if (selected) MaterialTheme.colorScheme.primary
+                    else if (isRedesignLight()) Color(0xFFB9CDBD) else MaterialTheme.colorScheme.outline,
                 shape = RoundedCornerShape(999.dp),
             )
             .clickable(onClick = onClick)
@@ -375,7 +380,7 @@ fun CategoryChip(
     ) {
         Text(
             text = label,
-            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+            color = if (selected) (if (isRedesignLight()) GreenUi.OnInk else MaterialTheme.colorScheme.primary) else MaterialTheme.colorScheme.onSurface,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
         )

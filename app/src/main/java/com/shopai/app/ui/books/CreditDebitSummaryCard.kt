@@ -151,18 +151,20 @@ private fun LedgerSideCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val light = com.shopai.app.ui.components.isRedesignLight()
     Column(
         modifier = modifier
-            .shadow(8.dp, RoundedCornerShape(24.dp), ambientColor = Color(0x1A1E6B4E), spotColor = Color(0x1A1E6B4E))
-            .clip(RoundedCornerShape(24.dp))
-            .background(Surface)
+            // The green UI: a soft green tile (the green / red amounts stay — they tell to-collect from to-pay).
+            .then(if (light) Modifier else Modifier.shadow(8.dp, RoundedCornerShape(24.dp), ambientColor = Color(0x1A1E6B4E), spotColor = Color(0x1A1E6B4E)))
+            .clip(RoundedCornerShape(26.dp))
+            .background(if (light) com.shopai.app.ui.components.GreenUi.Tile else Surface)
             .clickable(onClick = onClick)
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Box(
-                Modifier.size(32.dp).clip(CircleShape).background(tint),
+                Modifier.size(32.dp).clip(CircleShape).background(if (light) Color.White.copy(alpha = 0.7f) else tint),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(

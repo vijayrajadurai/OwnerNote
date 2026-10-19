@@ -114,7 +114,7 @@ fun DashboardGreetingHeader(
                     .clip(RoundedCornerShape(999.dp))
                     .background(
                         if (onHeader) androidx.compose.ui.graphics.Color.White.copy(alpha = 0.16f)
-                        else androidx.compose.ui.graphics.Color(0xFFE5F6EE),
+                        else GreenUi.Ink,
                     )
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -124,13 +124,13 @@ fun DashboardGreetingHeader(
                     text = stringResource(R.string.home_view_profile),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold,
-                    color = if (onHeader) androidx.compose.ui.graphics.Color.White else MaterialTheme.colorScheme.primary,
+                    color = if (onHeader) androidx.compose.ui.graphics.Color.White else GreenUi.OnInk,
                     maxLines = 1,
                 )
                 Icon(
                     imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                     contentDescription = null,
-                    tint = if (onHeader) androidx.compose.ui.graphics.Color.White else MaterialTheme.colorScheme.primary,
+                    tint = if (onHeader) androidx.compose.ui.graphics.Color.White else GreenUi.OnInk,
                     modifier = Modifier.size(18.dp),
                 )
             }
@@ -157,7 +157,7 @@ private fun ShopBannerImage(
             .clip(BannerShape)
             .background(
                 if (onHeader) androidx.compose.ui.graphics.Color.White.copy(alpha = 0.16f)
-                else androidx.compose.ui.graphics.Color(0xFFDFF6EA),
+                else GreenUi.Tile,
             ),
         contentAlignment = Alignment.Center,
     ) {
