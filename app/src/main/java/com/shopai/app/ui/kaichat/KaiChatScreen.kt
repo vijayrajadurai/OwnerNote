@@ -409,14 +409,14 @@ fun KaiChatScreen(
                     modifier = Modifier.padding(start = 20.dp, top = 4.dp),
                 )
             }
-            // The input: one ink pill — type, or the round mic on the right (same Kai either way); send shows when there is text.
+            // The input: one white pill — type, or the round mic on the right (same Kai either way); send shows when there is text.
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 14.dp)
-                    .shadow(16.dp, RoundedCornerShape(32.dp), ambientColor = GreenUi.Ink.copy(alpha = 0.28f), spotColor = GreenUi.Ink.copy(alpha = 0.28f))
+                    .shadow(14.dp, RoundedCornerShape(32.dp), ambientColor = GreenUi.Brand.copy(alpha = 0.18f), spotColor = GreenUi.Brand.copy(alpha = 0.18f))
                     .clip(RoundedCornerShape(32.dp))
-                    .background(GreenUi.Ink)
+                    .background(Color.White)
                     .padding(start = 20.dp, end = 7.dp, top = 6.dp, bottom = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -425,14 +425,14 @@ fun KaiChatScreen(
                     value = input,
                     onValueChange = { input = it },
                     modifier = Modifier.weight(1f).padding(vertical = 10.dp),
-                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = GreenUi.OnInk),
-                    cursorBrush = androidx.compose.ui.graphics.SolidColor(GreenUi.OnInk),
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = GreenUi.Ink),
+                    cursorBrush = androidx.compose.ui.graphics.SolidColor(GreenUi.Brand),
                     maxLines = 4,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                     keyboardActions = KeyboardActions(onSend = { send(input) }),
                     decorationBox = { field ->
                         Box(contentAlignment = Alignment.CenterStart) {
-                            if (input.isEmpty()) Text(stringResource(R.string.kai_chat_hint), color = GreenUi.OnInkMuted, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            if (input.isEmpty()) Text(stringResource(R.string.kai_chat_hint), color = GreenUi.Muted, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             field()
                         }
                     },
@@ -440,19 +440,19 @@ fun KaiChatScreen(
                 if (input.isNotBlank()) IconButton(
                     onClick = { send(input) },
                     enabled = !session.thinking,
-                    modifier = Modifier.size(44.dp).border(1.dp, GreenUi.InkSoft, CircleShape),
+                    modifier = Modifier.size(44.dp).border(1.dp, GreenBorder, CircleShape),
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = stringResource(R.string.kai_chat_send), tint = GreenUi.OnInk)
+                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = stringResource(R.string.kai_chat_send), tint = GreenUi.Brand)
                 }
                 IconButton(
                     onClick = { onMic() },
                     modifier = Modifier.size(52.dp)
-                        .background(if (listening) com.shopai.app.ui.theme.Danger else GreenUi.OnInk, CircleShape),
+                        .background(if (listening) com.shopai.app.ui.theme.Danger else GreenUi.Brand, CircleShape),
                 ) {
                     Icon(
                         androidx.compose.material.icons.Icons.Filled.Mic,
                         contentDescription = stringResource(R.string.kai_chat_speak),
-                        tint = if (listening) Color.White else GreenUi.Ink,
+                        tint = Color.White,
                     )
                 }
             }
@@ -505,10 +505,10 @@ private fun KaiCardView(card: com.shopai.app.brain.chat.KaiCard, closed: Boolean
                 card.buttons.forEach { b ->
                     val enabled = b.enabled && !closed
                     if (b.primary) Box(
-                        Modifier.fillMaxWidth().height(48.dp).alpha(if (enabled) 1f else 0.3f).clip(RoundedCornerShape(24.dp)).background(GreenUi.Ink)
+                        Modifier.fillMaxWidth().height(48.dp).alpha(if (enabled) 1f else 0.3f).clip(RoundedCornerShape(24.dp)).background(GreenUi.Brand)
                             .clickable(enabled = enabled) { onTap(b.action) },
                         contentAlignment = Alignment.Center,
-                    ) { Text(b.label, color = GreenUi.OnInk, fontSize = 16.sp, fontWeight = FontWeight.SemiBold) }
+                    ) { Text(b.label, color = GreenUi.OnBrand, fontSize = 16.sp, fontWeight = FontWeight.SemiBold) }
                     else Text(
                         b.label,
                         color = when { !enabled -> com.shopai.app.ui.kai.IosGrey; com.shopai.app.ui.kai.isCancel(b.action) -> com.shopai.app.ui.kai.IosRed; else -> GreenUi.Ink },
@@ -571,11 +571,11 @@ private fun OwnerBubble(text: String) {
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
         Text(
             text,
-            color = GreenUi.OnInk,
+            color = GreenUi.OnBrand,
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier
                 .widthIn(max = 300.dp)
-                .background(GreenUi.Ink, RoundedCornerShape(24.dp, 24.dp, 8.dp, 24.dp))
+                .background(GreenUi.Brand, RoundedCornerShape(24.dp, 24.dp, 8.dp, 24.dp))
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         )
     }
@@ -587,7 +587,7 @@ private fun KaiBubble(text: String) {
         Column(
             modifier = Modifier
                 .widthIn(max = 310.dp)
-                .background(GreenUi.Wash.copy(alpha = 0.7f), RoundedCornerShape(24.dp, 24.dp, 24.dp, 8.dp))
+                .background(Color.White.copy(alpha = 0.85f), RoundedCornerShape(24.dp, 24.dp, 24.dp, 8.dp))
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
             Text("Kai", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = GreenPositive)

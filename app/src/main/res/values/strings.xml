@@ -1545,4 +1545,9 @@ NewonX — Owner Note. Use Help & Support in the app.]]></string>
     <string name="green_home_reminders_unit">pending</string>
     <string name="green_home_day_close">Day close pannunga</string>
     <string name="green_home_slide">Slide</string>
+    <string name="green_home_stock">Stock</string>
+    <string name="green_home_low_count">%1$d low</string>
+    <string name="green_home_stock_ok">Ellam stock-la irukku</string>
+    <string name="green_home_reminders_count">%1$d pending</string>
+    <string name="green_home_no_reminders">Reminder edhuvum illa</string>
 </resources>

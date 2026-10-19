@@ -114,7 +114,7 @@ fun DashboardGreetingHeader(
                     .clip(RoundedCornerShape(999.dp))
                     .background(
                         if (onHeader) androidx.compose.ui.graphics.Color.White.copy(alpha = 0.16f)
-                        else GreenUi.Ink,
+                        else GreenUi.Brand,
                     )
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -124,13 +124,13 @@ fun DashboardGreetingHeader(
                     text = stringResource(R.string.home_view_profile),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold,
-                    color = if (onHeader) androidx.compose.ui.graphics.Color.White else GreenUi.OnInk,
+                    color = if (onHeader) androidx.compose.ui.graphics.Color.White else GreenUi.OnBrand,
                     maxLines = 1,
                 )
                 Icon(
                     imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                     contentDescription = null,
-                    tint = if (onHeader) androidx.compose.ui.graphics.Color.White else GreenUi.OnInk,
+                    tint = if (onHeader) androidx.compose.ui.graphics.Color.White else GreenUi.OnBrand,
                     modifier = Modifier.size(18.dp),
                 )
             }

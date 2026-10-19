@@ -52,7 +52,21 @@ import kotlin.math.roundToInt
  * cards and pills, big light numbers. Shared by Home and the other screens so they read as one app.
  */
 object GreenUi {
-    val Ink = Color(0xFF141416)
+    /** Text — a deep green-black; no black blocks anywhere (owner, 19 Oct 2026: "black colour remove pannu"). */
+    val Ink = Color(0xFF16201B)
+    /** The fills (buttons, the slide, the chosen tab, the owner's bubble): OwnerNote green. */
+    val Brand = Color(0xFF1E6B4E)
+    val BrandSoft = Color(0xFF2E9F6E)
+    val BrandTint = Color(0xFFE2F1E7)
+    val OnBrand = Color(0xFFFFFFFF)
+    /** The four Home boxes: to collect (green), to pay (rose), stock (blue), reminders (amber). */
+    val CollectBox = Color(0xFFDDF0E4)
+    val PayBox = Color(0xFFFBE6E1)
+    val StockBox = Color(0xFFE3EBF8)
+    val ReminderBox = Color(0xFFFBF0D9)
+    val PayInk = Color(0xFFA1261C)
+    val StockInk = Color(0xFF2F5597)
+    val ReminderInk = Color(0xFF9A6200)
     val InkSoft = Color(0xFF3A3A3F)
     val Tile = Color(0xFFD6E6D9)
     val TileDark = Color(0xFF5B5B60)
@@ -212,7 +226,7 @@ fun GreenSlideBar(
             .fillMaxWidth()
             .height(60.dp)
             .clip(shape)
-            .background(GreenUi.Ink)
+            .background(androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(GreenUi.Brand, GreenUi.BrandSoft)))
             .clickable(onClick = onDone),
     ) {
         val density = LocalDensity.current
@@ -228,13 +242,13 @@ fun GreenSlideBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Icon(Icons.Filled.KeyboardDoubleArrowRight, contentDescription = null, tint = Color(0xFF8A8A90), modifier = Modifier.size(22.dp))
-            Text(text = label, fontSize = 14.sp, color = Color(0xFFD4D4D8), maxLines = 1, modifier = Modifier.weight(1f))
+            Icon(Icons.Filled.KeyboardDoubleArrowRight, contentDescription = null, tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(22.dp))
+            Text(text = label, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color.White, maxLines = 1, modifier = Modifier.weight(1f))
             Box(
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFF2A2A2E)),
+                    .background(Color.White.copy(alpha = 0.2f)),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = GreenUi.OnInk, modifier = Modifier.size(18.dp))
@@ -247,7 +261,7 @@ fun GreenSlideBar(
                 .offset { IntOffset(drag.roundToInt(), 0) }
                 .size(48.dp)
                 .clip(CircleShape)
-                .background(GreenUi.OnInk)
+                .background(Color.White)
                 .pointerInput(maxPx) {
                     detectHorizontalDragGestures(
                         onDragEnd = {
@@ -263,7 +277,54 @@ fun GreenSlideBar(
                 },
             contentAlignment = Alignment.Center,
         ) {
-            Text(text = knob, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = GreenUi.Ink, maxLines = 1)
+            Text(text = knob, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = GreenUi.Brand, maxLines = 1)
+        }
+    }
+}
+
+/**
+ * One of Home's four boxes (owner, 19 Oct 2026): a coloured tile with its title, the big figure, and up to three detail lines on
+ * the front (overdue, the low stock items, the next reminders) — tap opens the screen behind it.
+ */
+@Composable
+fun GreenDetailBox(
+    title: String,
+    value: String,
+    box: Color,
+    accent: Color,
+    icon: ImageVector,
+    lines: List<Pair<String, String>>,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    empty: String? = null,
+) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(26.dp))
+            .background(box)
+            .clickable(onClick = onClick)
+            .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box(
+                modifier = Modifier.size(32.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.75f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(16.dp))
+            }
+            Text(text = title, fontSize = 13.sp, color = GreenUi.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+        }
+        Text(text = value, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = accent, maxLines = 1)
+        if (lines.isEmpty() && empty != null) {
+            Text(text = empty, fontSize = 12.sp, color = GreenUi.Muted, maxLines = 2)
+        }
+        lines.take(3).forEach { (left, right) ->
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Box(Modifier.size(6.dp).clip(CircleShape).background(accent))
+                Text(text = left, fontSize = 12.sp, color = GreenUi.Ink, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                if (right.isNotEmpty()) Text(text = right, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = GreenUi.Ink, maxLines = 1)
+            }
         }
     }
 }

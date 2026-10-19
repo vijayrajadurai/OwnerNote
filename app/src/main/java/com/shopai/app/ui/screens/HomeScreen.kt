@@ -75,10 +75,13 @@ import com.shopai.app.ui.components.BottomNavTab
 import com.shopai.app.ui.components.DashboardGreetingHeader
 import com.shopai.app.ui.components.HomeBackHandler
 import com.shopai.app.ui.components.HomeQuickLinks
-import com.shopai.app.ui.components.GreenHeroCard
+import com.shopai.app.ui.components.GreenDetailBox
 import com.shopai.app.ui.components.GreenSlideBar
-import com.shopai.app.ui.components.GreenStatTile
-import androidx.compose.material.icons.filled.BarChart
+import com.shopai.app.ui.components.GreenUi
+import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.ui.unit.sp
 import com.shopai.app.ui.components.shopLocationLabel
 // import com.shopai.app.ui.components.HomePriorityList
@@ -149,6 +152,8 @@ fun HomeScreen(
     var profilePhotoPath by remember { mutableStateOf<String?>(null) }
     // Kai's Morning Work: how many important tasks today (read only; null until known).
     var morningCount by remember { mutableStateOf<Int?>(null) }
+    // The stock box: the products at or below their minimum (null until known).
+    var lowStock by remember { mutableStateOf<List<com.shopai.app.data.model.InventoryProduct>?>(null) }
     // One-time move of the ledger into OwnerNote Books (null = not running / nothing to show).
     var importing by remember { mutableStateOf(false) }
     var imported by remember { mutableStateOf<com.shopai.app.books.integration.ImportOutcome.Imported?>(null) }
@@ -185,6 +190,8 @@ fun HomeScreen(
             }.onFailure {
                 container.presentApiError(it, errorLoadDashboard, { msg -> error = msg }, { msg -> alertError = msg })
             }
+            // The stock box reads apart: a stock read that fails leaves the box at "—", never the whole Home.
+            lowStock = runCatching { container.inventoryRepository.getLowStockProducts() }.getOrNull()
             loading = false
         }
     }
@@ -332,54 +339,45 @@ fun HomeScreen(
                     .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                // The green UI's Home (owner's preview, 19 Oct 2026): what is to be collected with Kai beside it, the bento
-                // tiles (to pay, today's sales, today's work, reminders) and the day close slide — every figure from the books.
-                Text(
-                    text = stringResource(R.string.green_home_title),
-                    fontSize = 30.sp,
-                    fontWeight = FontWeight.Light,
-                    color = ShopAiThemeColors.onSurface,
-                    modifier = Modifier.padding(start = 4.dp),
+                // The green UI's Home (owner, 19 Oct 2026): four boxes — to collect, to pay (each with its overdue / due-soon lines),
+                // stock (the low items on the front) and reminders (the next ones) — then the day close slide and the quick links.
+                // No black anywhere; every figure from the books.
+                com.shopai.app.ui.books.CreditDebitSummaryCard(
+                    container = container,
+                    refreshKey = cashFlow,
+                    onOpenCustomers = { onNavigate(Routes.Customers) },
+                    onOpenSuppliers = { onNavigate(Routes.Suppliers) },
+                    pendingReceivables = cashFlow?.pendingReceivables,
+                    pendingPayables = cashFlow?.pendingPayables,
                 )
-                GreenHeroCard(
-                    label = stringResource(R.string.green_home_to_collect),
-                    amount = cashFlow?.pendingReceivables?.let { formatInr(it) } ?: "—",
-                    subtitle = stringResource(R.string.green_home_due_count, unreadReminders),
-                    kaiLine = stringResource(R.string.green_home_ask_kai),
-                    onOpen = { onNavigate(Routes.Customers) },
-                    onKai = { onNavigate(Routes.KaiChat) },
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    GreenStatTile(
-                        label = stringResource(R.string.green_home_to_pay),
-                        value = cashFlow?.pendingPayables?.let { formatInr(it) } ?: "—",
-                        icon = Icons.Filled.ArrowDownward,
-                        dark = true,
-                        onClick = { onNavigate(Routes.Suppliers) },
-                        modifier = Modifier.weight(1f),
+                Row(
+                    modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    val low = lowStock.orEmpty()
+                    GreenDetailBox(
+                        title = stringResource(R.string.green_home_stock),
+                        value = if (lowStock == null) "—" else stringResource(R.string.green_home_low_count, low.size),
+                        box = GreenUi.StockBox,
+                        accent = GreenUi.StockInk,
+                        icon = Icons.Filled.Inventory2,
+                        lines = low.map { it.name to "${homeQty(it.currentStock)} ${it.unit}" },
+                        empty = if (lowStock != null) stringResource(R.string.green_home_stock_ok) else null,
+                        onClick = { onNavigate(Routes.Inventory) },
+                        modifier = Modifier.weight(1f).fillMaxHeight(),
                     )
-                    GreenStatTile(
-                        label = stringResource(R.string.green_home_sales_today),
-                        value = formatInr(cashNoteSummary?.totalIn ?: 0.0),
-                        icon = Icons.Filled.BarChart,
-                        onClick = { onNavigate(Routes.DailyCashNote) },
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    GreenStatTile(
-                        label = stringResource(R.string.green_home_tasks),
-                        value = morningCount?.toString() ?: "—",
-                        unit = stringResource(R.string.green_home_tasks_unit),
-                        onClick = { onNavigate(Routes.morningWork()) },
-                        modifier = Modifier.weight(1f),
-                    )
-                    GreenStatTile(
-                        label = stringResource(R.string.green_home_reminders),
-                        value = carouselItems.size.toString(),
-                        unit = stringResource(R.string.green_home_reminders_unit),
+                    GreenDetailBox(
+                        title = stringResource(R.string.green_home_reminders),
+                        value = stringResource(R.string.green_home_reminders_count, carouselItems.size),
+                        box = GreenUi.ReminderBox,
+                        accent = GreenUi.ReminderInk,
+                        icon = Icons.Filled.NotificationsActive,
+                        lines = carouselItems.map { r ->
+                            r.partyName.ifBlank { r.description } to (r.amount?.let { formatInr(it) } ?: formatHomeReminderDate(r.dueDateIso))
+                        },
+                        empty = stringResource(R.string.green_home_no_reminders),
                         onClick = { onNavigate(Routes.Reminders) },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).fillMaxHeight(),
                     )
                 }
                 GreenSlideBar(
@@ -387,31 +385,6 @@ fun HomeScreen(
                     knob = stringResource(R.string.green_home_slide),
                     onDone = { onNavigate(Routes.DailyCashNote) },
                 )
-                // Kept from the old Home: the due-payment card, or Kai speaking the day's brief (lip-synced).
-                if (carouselItems.isNotEmpty()) {
-                    HomePaymentReminderCard(
-                        items = carouselItems.take(2),
-                        onClick = { onNavigate(Routes.reminderDetail(carouselItems.first().id)) },
-                    )
-                } else {
-                    KaiBriefCard(
-                        state = when {
-                            kaiBriefDone -> KaiState.IDLE
-                            kaiSpeaking -> KaiState.SPEAKING
-                            else -> KaiState.GREETING
-                        },
-                        line = when {
-                            !kaiBriefDone && !kaiSpeaking -> stringResource(R.string.kai_greeting)
-                            kaiBrief != null -> kaiBrief!!.display
-                            priorities.isEmpty() -> stringResource(R.string.kai_brief_clear)
-                            else -> stringResource(R.string.kai_brief_count, priorities.size)
-                        },
-                        mouthLevel = if (kaiBriefDone) 0f else kaiMouth,
-                        compact = kaiBriefDone,
-                        speakingAs = kaiBrief?.mood?.state(),
-                        onTap = { onNavigate(Routes.VoiceEntry) },
-                    )
-                }
                 HomeQuickLinks(
                     onSpeakClick = { onNavigate(Routes.VoiceEntry) },
                     onGroupBuyingClick = { onNavigate(Routes.GroupBuying) },
@@ -450,15 +423,6 @@ fun HomeScreen(
                 if (error != null) {
                     Text(error!!, color = Danger)
                 }
-
-                com.shopai.app.ui.books.CreditDebitSummaryCard(
-                    container = container,
-                    refreshKey = cashFlow,
-                    onOpenCustomers = { onNavigate(Routes.Customers) },
-                    onOpenSuppliers = { onNavigate(Routes.Suppliers) },
-                    pendingReceivables = cashFlow?.pendingReceivables,
-                    pendingPayables = cashFlow?.pendingPayables,
-                )
 
                 /*
                 health?.let { h ->
@@ -660,6 +624,10 @@ private fun HomePaymentReminderCard(
         )
     }
 }
+
+/** "2 kg", "1.5 kg": a stock figure without a trailing ".0". */
+private fun homeQty(q: Double): String =
+    if (q == Math.floor(q)) q.toLong().toString() else java.math.BigDecimal(q).setScale(2, java.math.RoundingMode.HALF_UP).stripTrailingZeros().toPlainString()
 
 private fun formatHomeReminderDate(iso: String): String {
     val date = parseIsoToLocalDate(iso) ?: return iso

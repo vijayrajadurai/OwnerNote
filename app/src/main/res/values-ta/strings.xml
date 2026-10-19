@@ -1490,4 +1490,9 @@ NewonX — Owner Note. ஆப்பில் உதவி & ஆதரவு.]]><
     <string name="green_home_reminders_unit">pending</string>
     <string name="green_home_day_close">Day close பண்ணுங்க</string>
     <string name="green_home_slide">Slide</string>
+    <string name="green_home_stock">Stock</string>
+    <string name="green_home_low_count">%1$d குறைவு</string>
+    <string name="green_home_stock_ok">எல்லாம் stock-ல இருக்கு</string>
+    <string name="green_home_reminders_count">%1$d pending</string>
+    <string name="green_home_no_reminders">Reminder எதுவும் இல்ல</string>
 </resources>

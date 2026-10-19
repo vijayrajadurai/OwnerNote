@@ -78,7 +78,7 @@ fun MoreMenuItem(
     val light = isRedesignLight()
     // The green UI: every card a soft green tile with an ink icon (no rainbow cards).
     val cardColor = if (light) com.shopai.app.ui.components.GreenUi.Tile else MaterialTheme.colorScheme.surface
-    val iconTint = if (light) com.shopai.app.ui.components.GreenUi.Ink else item.tint
+    val iconTint = if (light) com.shopai.app.ui.components.GreenUi.Brand else item.tint
     val chevronTint = iconTint.copy(alpha = if (light) 0.55f else 0.7f)
 
     Column(

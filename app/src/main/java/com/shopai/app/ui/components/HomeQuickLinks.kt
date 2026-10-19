@@ -148,10 +148,10 @@ private fun HomeQuickLinkTile(
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(if (light) GreenUi.Ink else tint.copy(alpha = 0.22f)),
+                .background(if (light) GreenUi.Brand else tint.copy(alpha = 0.22f)),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(icon, contentDescription = null, tint = if (light) GreenUi.OnInk else tint, modifier = Modifier.size(20.dp))
+            Icon(icon, contentDescription = null, tint = if (light) GreenUi.OnBrand else tint, modifier = Modifier.size(20.dp))
         }
         Text(
             text = label,

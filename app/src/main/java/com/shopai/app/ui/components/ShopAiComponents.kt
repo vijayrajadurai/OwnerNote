@@ -106,8 +106,8 @@ fun PrimaryButton(
                 spotColor = BrandGlow,
             )
             .clip(shape)
-            // The green UI: a solid ink pill.
-            .background(Brush.linearGradient(listOf(BrandGradientStart, BrandGradientStart)))
+            // The green UI: a green pill.
+            .background(Brush.linearGradient(listOf(BrandGradientStart, BrandGradientEnd)))
             .clickable(
                 interactionSource = interaction,
                 indication = LocalIndication.current,
@@ -308,7 +308,7 @@ fun BottomNavBar(
                 )
                 .clip(pillShape)
                 // (the green UI: an ink-black floating pill)
-                .background(if (isRedesignLight()) GreenUi.Ink else MaterialTheme.colorScheme.surface)
+                .background(if (isRedesignLight()) Color.White else MaterialTheme.colorScheme.surface)
                 .padding(horizontal = 8.dp, vertical = 7.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(2.dp),
@@ -320,7 +320,7 @@ fun BottomNavBar(
                     modifier = Modifier
                         .clip(pillShape)
                         .background(
-                            if (isActive) GreenUi.InkSoft else Color.Transparent,
+                            if (isActive) (if (isRedesignLight()) GreenUi.BrandTint else MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)) else Color.Transparent,
                         )
                         .clickable { onTabSelected(tab) }
                         .padding(
@@ -334,7 +334,7 @@ fun BottomNavBar(
                         imageVector = tab.icon,
                         contentDescription = label,
                         tint = when {
-                            isActive -> GreenUi.OnInk
+                            isActive -> if (isRedesignLight()) GreenUi.Brand else MaterialTheme.colorScheme.primary
                             isRedesignLight() -> Color(0xFFC9C9CE)
                             else -> MaterialTheme.colorScheme.onSurfaceVariant
                         },
@@ -345,7 +345,7 @@ fun BottomNavBar(
                             text = label,
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.SemiBold,
-                            color = GreenUi.OnInk,
+                            color = if (isRedesignLight()) GreenUi.Brand else MaterialTheme.colorScheme.primary,
                             maxLines = 1,
                         )
                     }
@@ -366,7 +366,7 @@ fun CategoryChip(
             .clip(RoundedCornerShape(999.dp))
             .background(
                 // The green UI: the chosen chip is a solid ink pill.
-                if (selected) (if (isRedesignLight()) GreenUi.Ink else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                if (selected) (if (isRedesignLight()) GreenUi.Brand else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
                 else if (isRedesignLight()) Color.Transparent else MaterialTheme.colorScheme.surface,
             )
             .border(
@@ -380,7 +380,7 @@ fun CategoryChip(
     ) {
         Text(
             text = label,
-            color = if (selected) (if (isRedesignLight()) GreenUi.OnInk else MaterialTheme.colorScheme.primary) else MaterialTheme.colorScheme.onSurface,
+            color = if (selected) (if (isRedesignLight()) GreenUi.OnBrand else MaterialTheme.colorScheme.primary) else MaterialTheme.colorScheme.onSurface,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
         )
