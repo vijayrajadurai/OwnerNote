@@ -1535,6 +1535,7 @@ NewonX — Owner Note. Use Help & Support in the app.]]></string>
     <string name="menu_pick_list">Service list-la irundhu edunga (%1$d)</string>
     <string name="menu_hide_list">Service list moodu</string>
     <!-- Customer / supplier list import (owner, 19 Oct 2026) -->
+    <string name="party_import_short">Import</string>
     <string name="party_import_title">Pazhaiya kanakku import</string>
     <string name="party_import_menu_caption">Munnadi use panna app-la irundhu customers, balance kondu vaanga</string>
     <string name="party_import_caption">Munnadi use panna kanakku app-la Reports → Customer List (illa Supplier List) → PDF download pannunga. Andha PDF-ah inga select pannunga. Ovvoru aalum balance-um kaattuven; Confirm pannina dhaan save aagum.</string>

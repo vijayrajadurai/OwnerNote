@@ -183,6 +183,7 @@ fun ShopAiApp(container: AppContainer) {
                 onNavigate = { route -> navController.navigateMainTab(route) },
                 onOpenCustomer = { customerId -> navController.navigate(Routes.customerDetail(customerId)) },
                 onNewCustomer = { navController.navigate(Routes.partyForm("CUSTOMER")) },
+                onImport = { navController.navigate(Routes.PartyListImport) },
                 onAddCredit = { id, name, phone ->
                     navController.navigate(Routes.addCredit(id, name.takeIf { it.isNotBlank() }, phone))
                 },
