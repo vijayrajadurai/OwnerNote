@@ -311,13 +311,15 @@ fun KaiChatScreen(
 
     DetailScaffold(title = stringResource(R.string.kai_chat_title), onBack = onBack) { contentModifier ->
         Column(modifier = contentModifier.fillMaxSize().imePadding()) {
-            // The green UI (owner, 19 Oct 2026): Kai on a soft green tile, no "digital" look.
+            // The digital UI (owner, 19 Oct 2026): Kai on white glass with a violet glow; the page stays green.
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp)
                     .clip(RoundedCornerShape(28.dp))
-                    .background(GreenUi.Tile)
+                    .background(GreenUi.Glass)
+                    .background(androidx.compose.ui.graphics.Brush.radialGradient(listOf(GreenUi.BrandSoft.copy(alpha = 0.24f), Color.Transparent), center = androidx.compose.ui.geometry.Offset(140f, 60f), radius = 380f))
+                    .border(1.dp, GreenUi.GlassEdge, RoundedCornerShape(28.dp))
                     .padding(horizontal = 8.dp, vertical = 8.dp),
             ) {
                 Row(
@@ -343,7 +345,7 @@ fun KaiChatScreen(
                     }
                     Column(horizontalAlignment = Alignment.End) {
                         if (session.messages.isNotEmpty()) {
-                            TextButton(onClick = { session.clear() }) { Text(stringResource(R.string.kai_chat_clear), color = GreenUi.Ink) }
+                            TextButton(onClick = { session.clear() }) { Text(stringResource(R.string.kai_chat_clear), color = GreenUi.Brand, fontWeight = FontWeight.Bold) }
                         }
                     }
                 }
@@ -364,10 +366,11 @@ fun KaiChatScreen(
                                 Text(
                                     text,
                                     fontSize = 14.sp,
-                                    color = GreenUi.Ink,
+                                    color = GreenUi.Brand,
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(18.dp))
-                                        .border(1.dp, GreenBorder, RoundedCornerShape(18.dp))
+                                        .background(Color.White.copy(alpha = 0.6f))
+                                        .border(1.dp, ChipBorder, RoundedCornerShape(18.dp))
                                         .clickable { send(text) }
                                         .padding(horizontal = 14.dp, vertical = 8.dp),
                                 )
@@ -416,7 +419,7 @@ fun KaiChatScreen(
                     .padding(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 14.dp)
                     .shadow(14.dp, RoundedCornerShape(32.dp), ambientColor = GreenUi.Brand.copy(alpha = 0.18f), spotColor = GreenUi.Brand.copy(alpha = 0.18f))
                     .clip(RoundedCornerShape(32.dp))
-                    .background(Color.White)
+                    .background(Color.White.copy(alpha = 0.92f))
                     .padding(start = 20.dp, end = 7.dp, top = 6.dp, bottom = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -440,14 +443,19 @@ fun KaiChatScreen(
                 if (input.isNotBlank()) IconButton(
                     onClick = { send(input) },
                     enabled = !session.thinking,
-                    modifier = Modifier.size(44.dp).border(1.dp, GreenBorder, CircleShape),
+                    modifier = Modifier.size(44.dp).border(1.5.dp, ChipBorder, CircleShape),
                 ) {
                     Icon(Icons.AutoMirrored.Filled.Send, contentDescription = stringResource(R.string.kai_chat_send), tint = GreenUi.Brand)
                 }
                 IconButton(
                     onClick = { onMic() },
                     modifier = Modifier.size(52.dp)
-                        .background(if (listening) com.shopai.app.ui.theme.Danger else GreenUi.Brand, CircleShape),
+                        .shadow(10.dp, CircleShape, ambientColor = GreenUi.Brand.copy(alpha = 0.5f), spotColor = GreenUi.Brand.copy(alpha = 0.5f))
+                        .background(
+                            if (listening) androidx.compose.ui.graphics.SolidColor(com.shopai.app.ui.theme.Danger)
+                            else androidx.compose.ui.graphics.Brush.linearGradient(GreenUi.BrandGradient),
+                            CircleShape,
+                        ),
                 ) {
                     Icon(
                         androidx.compose.material.icons.Icons.Filled.Mic,
@@ -485,12 +493,15 @@ private fun KaiCardView(card: com.shopai.app.brain.chat.KaiCard, closed: Boolean
         Column(
             modifier = Modifier
                 .widthIn(max = 340.dp)
+                .shadow(12.dp, RoundedCornerShape(28.dp), ambientColor = GreenUi.Brand.copy(alpha = 0.2f), spotColor = GreenUi.Brand.copy(alpha = 0.2f))
                 .clip(RoundedCornerShape(28.dp))
-                .background(GreenUi.Tile)
+                .background(Color.White.copy(alpha = 0.94f))
+                // The digital touch: an indigo → green gradient edge around the draft.
+                .border(1.5.dp, androidx.compose.ui.graphics.Brush.linearGradient(listOf(Color(0xFF6366F1), Color(0xFF10B981))), RoundedCornerShape(28.dp))
                 .padding(vertical = 8.dp),
         ) {
             card.lines.forEachIndexed { i, line ->
-                if (i > 0) Box(Modifier.padding(start = 16.dp).fillMaxWidth().height(1.dp).background(GreenBorder.copy(alpha = 0.6f)))
+                if (i > 0) Box(Modifier.padding(start = 16.dp).fillMaxWidth().height(1.dp).background(Color(0xFFEEF0F4)))
                 val parts = line.split(" — ", limit = 2)
                 Row(Modifier.padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                     if (parts.size == 2) {
@@ -505,16 +516,16 @@ private fun KaiCardView(card: com.shopai.app.brain.chat.KaiCard, closed: Boolean
                 card.buttons.forEach { b ->
                     val enabled = b.enabled && !closed
                     if (b.primary) Box(
-                        Modifier.fillMaxWidth().height(48.dp).alpha(if (enabled) 1f else 0.3f).clip(RoundedCornerShape(24.dp)).background(GreenUi.Brand)
+                        Modifier.fillMaxWidth().height(48.dp).alpha(if (enabled) 1f else 0.3f).clip(RoundedCornerShape(24.dp)).background(androidx.compose.ui.graphics.Brush.linearGradient(GreenUi.ConfirmGradient))
                             .clickable(enabled = enabled) { onTap(b.action) },
                         contentAlignment = Alignment.Center,
                     ) { Text(b.label, color = GreenUi.OnBrand, fontSize = 16.sp, fontWeight = FontWeight.SemiBold) }
                     else Text(
                         b.label,
-                        color = when { !enabled -> com.shopai.app.ui.kai.IosGrey; com.shopai.app.ui.kai.isCancel(b.action) -> com.shopai.app.ui.kai.IosRed; else -> GreenUi.Ink },
+                        color = when { !enabled -> com.shopai.app.ui.kai.IosGrey; com.shopai.app.ui.kai.isCancel(b.action) -> com.shopai.app.ui.kai.IosRed; else -> GreenUi.Brand },
                         fontSize = 16.sp,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth().padding(top = 6.dp).clip(RoundedCornerShape(24.dp)).border(1.dp, GreenBorder, RoundedCornerShape(24.dp))
+                        modifier = Modifier.fillMaxWidth().padding(top = 6.dp).clip(RoundedCornerShape(24.dp)).border(1.5.dp, ChipBorder, RoundedCornerShape(24.dp))
                             .clickable(enabled = enabled) { onTap(b.action) }.padding(vertical = 11.dp),
                     )
                 }
@@ -575,7 +586,7 @@ private fun OwnerBubble(text: String) {
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier
                 .widthIn(max = 300.dp)
-                .background(GreenUi.Brand, RoundedCornerShape(24.dp, 24.dp, 8.dp, 24.dp))
+                .background(androidx.compose.ui.graphics.Brush.linearGradient(GreenUi.BrandGradient), RoundedCornerShape(24.dp, 24.dp, 8.dp, 24.dp))
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         )
     }
@@ -588,9 +599,10 @@ private fun KaiBubble(text: String) {
             modifier = Modifier
                 .widthIn(max = 310.dp)
                 .background(Color.White.copy(alpha = 0.85f), RoundedCornerShape(24.dp, 24.dp, 24.dp, 8.dp))
+                .border(1.dp, GreenUi.GlassEdge, RoundedCornerShape(24.dp, 24.dp, 24.dp, 8.dp))
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
-            Text("Kai", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = GreenPositive)
+            Text("Kai", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = GreenUi.BrandSoft)
             Text(text, style = MaterialTheme.typography.bodyLarge, color = GreenUi.Ink)
         }
     }
@@ -599,3 +611,4 @@ private fun KaiBubble(text: String) {
 /** The green UI's two extra tones here: Kai's green (his name, "ready") and the soft outline of pills. */
 private val GreenPositive = Color(0xFF1F6B3E)
 private val GreenBorder = Color(0xFFB9CDBD)
+private val ChipBorder = Color(0xFFC7D2FE)

@@ -3,18 +3,18 @@ package com.shopai.app.ui.theme
 import androidx.compose.ui.graphics.Color
 
 // Mirrors apps/mobile/src/theme/colors.ts — single source for Compose tokens.
-// Green UI (owner, 19 Oct 2026): green actions on a soft green wash — no black (owner: "black colour remove pannu").
-val Primary = Color(0xFF1E6B4E)
-val PrimaryDark = Color(0xFF145A3F)
-val PrimaryLight = Color(0xFFD6E6D9)
-val PrimaryMuted = Color(0x1A1E6B4E)
+// Green UI (owner, 19 Oct 2026): the green wash is the page; the actions are digital indigo → violet ("background mattum green").
+val Primary = Color(0xFF4F46E5)
+val PrimaryDark = Color(0xFF3730A3)
+val PrimaryLight = Color(0xFFE0E7FF)
+val PrimaryMuted = Color(0x1A4F46E5)
 val OnPrimary = Color(0xFFFFFFFF)
 val Accent = Color(0xFF2E9F6E)
 // Owner Note redesign (green + white): mint-white app background.
 val Background = Color(0xFFE8F1E9)
 val Surface = Color(0xFFFFFFFF)
-val TextPrimary = Color(0xFF16201B)
-val TextSecondary = Color(0xFF4D4D52)
+val TextPrimary = Color(0xFF111827)
+val TextSecondary = Color(0xFF4B5563)
 val Border = Color(0xFFC9DBCD)
 val Danger = Color(0xFFD6503C)
 val DangerMuted = Color(0x1AD6503C)
@@ -33,9 +33,9 @@ val LedgerDebitMuted = DangerMuted
 val LedgerPending = Danger
 
 // Redesign: the brand gradient (buttons) — deep green to emerald — and its soft glow.
-val BrandGradientStart = Color(0xFF1E6B4E)
-val BrandGradientEnd = Color(0xFF2E9F6E)
-val BrandGlow = Color(0x331E6B4E)
+val BrandGradientStart = Color(0xFF6366F1)
+val BrandGradientEnd = Color(0xFF8B5CF6)
+val BrandGlow = Color(0x664F46E5)
 
 // Redesign: the soft page wash (white → mint → pale sea-green) and the glass surfaces on it.
 val HeaderGreenStart = Color(0xFF1E6B4E)

@@ -2,6 +2,7 @@ package com.shopai.app.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -378,8 +379,7 @@ fun HomeScreen(
                     GreenDetailBox(
                         title = stringResource(R.string.green_home_stock),
                         value = if (lowStock == null) "—" else stringResource(R.string.green_home_low_count, low.size),
-                        box = GreenUi.StockBox,
-                        accent = GreenUi.StockInk,
+                        gradient = GreenUi.StockGradient,
                         icon = Icons.Filled.Inventory2,
                         lines = low.map { it.name to "${homeQty(it.currentStock)} ${it.unit}" },
                         empty = if (lowStock != null) stringResource(R.string.green_home_stock_ok) else null,
@@ -389,8 +389,7 @@ fun HomeScreen(
                     GreenDetailBox(
                         title = stringResource(R.string.green_home_reminders),
                         value = stringResource(R.string.green_home_reminders_count, carouselItems.size),
-                        box = GreenUi.ReminderBox,
-                        accent = GreenUi.ReminderInk,
+                        gradient = GreenUi.ReminderGradient,
                         icon = Icons.Filled.NotificationsActive,
                         lines = carouselItems.map { r ->
                             r.partyName.ifBlank { r.description } to (r.amount?.let { formatInr(it) } ?: formatHomeReminderDate(r.dueDateIso))
@@ -661,7 +660,10 @@ private fun GreenKaiCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(28.dp))
-            .background(GreenUi.Tile)
+            // The digital UI: Kai on white glass with a violet glow behind him.
+            .background(GreenUi.Glass)
+            .background(androidx.compose.ui.graphics.Brush.radialGradient(listOf(GreenUi.BrandSoft.copy(alpha = 0.22f), Color.Transparent), center = androidx.compose.ui.geometry.Offset(160f, 120f), radius = 420f))
+            .border(1.dp, GreenUi.GlassEdge, RoundedCornerShape(28.dp))
             .clickable(onClick = onTap)
             .padding(start = 8.dp, end = 14.dp, top = 8.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -669,7 +671,7 @@ private fun GreenKaiCard(
     ) {
         com.shopai.app.ui.kai.KaiCharacter(state = state, size = size, mouthLevel = mouthLevel, speakingAs = speakingAs)
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Kai", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = GreenUi.Brand)
+            Text("KAI", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp, color = GreenUi.BrandSoft)
             Text(line, fontSize = 15.sp, color = GreenUi.Ink, maxLines = 4, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
             Text(
                 text = stringResource(R.string.green_home_ask_kai),
@@ -678,7 +680,7 @@ private fun GreenKaiCard(
                 color = GreenUi.OnBrand,
                 modifier = Modifier
                     .clip(RoundedCornerShape(16.dp))
-                    .background(GreenUi.Brand)
+                    .background(androidx.compose.ui.graphics.Brush.linearGradient(GreenUi.BrandGradient))
                     .clickable(onClick = onChat)
                     .padding(horizontal = 14.dp, vertical = 8.dp),
             )

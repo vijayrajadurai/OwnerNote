@@ -154,45 +154,52 @@ private fun LedgerSideCard(
     val light = com.shopai.app.ui.components.isRedesignLight()
     Column(
         modifier = modifier
-            // The green UI: Home's first two boxes — to collect on green, to pay on rose (owner, 19 Oct 2026).
-            .then(if (light) Modifier else Modifier.shadow(8.dp, RoundedCornerShape(24.dp), ambientColor = Color(0x1A1E6B4E), spotColor = Color(0x1A1E6B4E)))
+            // The digital UI: Home's first two boxes — to collect a green → teal gradient, to pay a rose gradient, white text, a glow.
+            .shadow(if (light) 12.dp else 8.dp, RoundedCornerShape(26.dp),
+                ambientColor = if (light) (if (down) Color(0x6610B981) else Color(0x66F43F5E)) else Color(0x1A1E6B4E),
+                spotColor = if (light) (if (down) Color(0x6610B981) else Color(0x66F43F5E)) else Color(0x1A1E6B4E))
             .clip(RoundedCornerShape(26.dp))
-            .background(if (!light) Surface else if (down) com.shopai.app.ui.components.GreenUi.CollectBox else com.shopai.app.ui.components.GreenUi.PayBox)
+            .background(
+                if (!light) androidx.compose.ui.graphics.SolidColor(Surface)
+                else androidx.compose.ui.graphics.Brush.linearGradient(
+                    if (down) com.shopai.app.ui.components.GreenUi.CollectGradient else com.shopai.app.ui.components.GreenUi.PayGradient,
+                ),
+            )
             .clickable(onClick = onClick)
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Box(
-                Modifier.size(32.dp).clip(CircleShape).background(if (light) Color.White.copy(alpha = 0.7f) else tint),
+                Modifier.size(32.dp).clip(CircleShape).background(if (light) Color.White.copy(alpha = 0.25f) else tint),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     if (down) Icons.Filled.ArrowDownward else Icons.Filled.ArrowUpward,
                     contentDescription = null,
-                    tint = accent,
+                    tint = if (light) Color.White else accent,
                     modifier = Modifier.size(16.dp),
                 )
             }
-            Text(title, style = MaterialTheme.typography.labelLarge, color = TextSecondary)
+            Text(title, style = MaterialTheme.typography.labelLarge, color = if (light) Color.White.copy(alpha = 0.92f) else TextSecondary)
         }
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(total, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = accent)
-            Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null, tint = accent, modifier = Modifier.size(20.dp))
+            Text(total, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = if (light) Color.White else accent)
+            Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null, tint = if (light) Color.White else accent, modifier = Modifier.size(20.dp))
         }
-        DueLine(Color(0xFFE24B4B), overdueLabel, overdueValue)
-        DueLine(Warning, soonLabel, soonValue)
-        DueLine(TextSecondary, laterLabel, laterValue)
+        DueLine(if (light) Color.White else Color(0xFFE24B4B), overdueLabel, overdueValue, light)
+        DueLine(if (light) Color(0xFFFFE08A) else Warning, soonLabel, soonValue, light)
+        DueLine(if (light) Color.White.copy(alpha = 0.6f) else TextSecondary, laterLabel, laterValue, light)
     }
 }
 
 @Composable
-private fun DueLine(dot: Color, label: String, value: String) {
+private fun DueLine(dot: Color, label: String, value: String, onGradient: Boolean = false) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.weight(1f)) {
             Box(Modifier.size(7.dp).clip(CircleShape).background(dot))
-            Text(label, style = MaterialTheme.typography.labelSmall, color = TextSecondary, maxLines = 1)
+            Text(label, style = MaterialTheme.typography.labelSmall, color = if (onGradient) Color.White.copy(alpha = 0.9f) else TextSecondary, maxLines = 1)
         }
-        Text(value, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = TextPrimary)
+        Text(value, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = if (onGradient) Color.White else TextPrimary)
     }
 }

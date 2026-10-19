@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -98,22 +99,22 @@ fun HomeQuickLinks(
             contentPadding = PaddingValues(end = 4.dp),
         ) {
             item {
-                HomeQuickLinkTile(stringResource(R.string.more_voice), Icons.Outlined.Mic, Color(0xFF0F7A5A), Color(0xFFDDF6EA), onSpeakClick)
+                HomeQuickLinkTile(stringResource(R.string.more_voice), Icons.Outlined.Mic, Color(0xFF10B981), Color(0xFFDDF6EA), onSpeakClick)
             }
             item {
-                HomeQuickLinkTile(stringResource(R.string.more_group_buying), Icons.Outlined.Groups, Color(0xFF3D6BCC), Color(0xFFE8F1FC), onGroupBuyingClick)
+                HomeQuickLinkTile(stringResource(R.string.more_group_buying), Icons.Outlined.Groups, Color(0xFF3B82F6), Color(0xFFE8F1FC), onGroupBuyingClick)
             }
             item {
-                HomeQuickLinkTile(stringResource(R.string.more_reports), Icons.Outlined.BarChart, Color(0xFF7B5CDB), Color(0xFFF3ECFE), onReportsClick)
+                HomeQuickLinkTile(stringResource(R.string.more_reports), Icons.Outlined.BarChart, Color(0xFF8B5CF6), Color(0xFFF3ECFE), onReportsClick)
             }
             item {
-                HomeQuickLinkTile(stringResource(R.string.more_local_offers), Icons.Outlined.LocalOffer, Color(0xFFD9793C), Color(0xFFFFF3E6), onTodayOfferClick)
+                HomeQuickLinkTile(stringResource(R.string.more_local_offers), Icons.Outlined.LocalOffer, Color(0xFFF59E0B), Color(0xFFFFF3E6), onTodayOfferClick)
             }
             item {
-                HomeQuickLinkTile(stringResource(R.string.home_quick_loans), Icons.Outlined.AccountBalance, Color(0xFF1E8A5A), Color(0xFFE8F7EE), onLoansClick)
+                HomeQuickLinkTile(stringResource(R.string.home_quick_loans), Icons.Outlined.AccountBalance, Color(0xFFF43F5E), Color(0xFFE8F7EE), onLoansClick)
             }
             item {
-                HomeQuickLinkTile(stringResource(R.string.home_quick_inventory), Icons.Outlined.Inventory2, Color(0xFF2A7A8C), Color(0xFFE4F4F6), onInventoryClick)
+                HomeQuickLinkTile(stringResource(R.string.home_quick_inventory), Icons.Outlined.Inventory2, Color(0xFF06B6D4), Color(0xFFE4F4F6), onInventoryClick)
             }
         }
     }
@@ -132,9 +133,9 @@ private fun HomeQuickLinkTile(
         modifier = Modifier
             .width(76.dp)
             // The green UI: a soft green tile with an ink icon circle (no coloured cards).
-            .then(if (light) Modifier else Modifier.shadow(6.dp, RoundedCornerShape(20.dp), ambientColor = Color(0x1A1E6B4E), spotColor = Color(0x1A1E6B4E)))
+            .shadow(6.dp, RoundedCornerShape(22.dp), ambientColor = Color(0x1A1E6B4E), spotColor = Color(0x1A1E6B4E))
             .clip(RoundedCornerShape(22.dp))
-            .background(if (light) GreenUi.Tile else Surface)
+            .background(if (light) GreenUi.Glass else Surface)
             .semantics {
                 contentDescription = label
                 role = Role.Button
@@ -146,9 +147,13 @@ private fun HomeQuickLinkTile(
     ) {
         Box(
             modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(if (light) GreenUi.Brand else tint.copy(alpha = 0.22f)),
+                .size(42.dp)
+                .clip(RoundedCornerShape(14.dp))
+                // The digital UI: each link its own gradient (from its colour to a lighter shade).
+                .background(
+                    if (light) androidx.compose.ui.graphics.Brush.linearGradient(listOf(tint, lerp(tint, Color.White, 0.35f)))
+                    else androidx.compose.ui.graphics.SolidColor(tint.copy(alpha = 0.22f)),
+                ),
             contentAlignment = Alignment.Center,
         ) {
             Icon(icon, contentDescription = null, tint = if (light) GreenUi.OnBrand else tint, modifier = Modifier.size(20.dp))
