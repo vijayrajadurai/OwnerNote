@@ -498,7 +498,8 @@ object KaiCommands {
             Regex("""(?<![\p{L}\p{M}])([\p{L}][\p{L}\p{M}.']{1,})\s*-?\s*(?:ku|kku|ukku|kitta|kita|kitte|kittae|kitaa|idam|oda)(?![\p{L}])""", RegexOption.IGNORE_CASE),
             // The name is only looked at (not used up), so "to call Ruthran" still finds Ruthran after "to call".
             Regex("""(?<![\p{L}])(?:call|phone|to|from)\s+(?=([\p{L}][\p{L}\p{M}.']{1,}))""", RegexOption.IGNORE_CASE),
-            Regex("""([\p{L}][\p{L}\p{M}.']{1,})-?(?:க்கு|கிட்ட|கிட்டே)"""),
+            // (only at a word's end — "ரவிக்குமார்" is Ravikumar, never "ரவி" + "-க்கு")
+            Regex("""(?<![\p{L}\p{M}])([\p{L}][\p{L}\p{M}.']{1,}?)-?(?:க்கு|கிட்ட|கிட்டே)(?![\p{L}\p{M}])"""),
             // "Ravi call remind pannu", "Ruthran phone pannanum": the name just before call / phone.
             Regex("""(?<![\p{L}\p{M}])([\p{L}][\p{L}\p{M}.']{1,})\s+(?:call|phone)(?![\p{L}])""", RegexOption.IGNORE_CASE),
         )

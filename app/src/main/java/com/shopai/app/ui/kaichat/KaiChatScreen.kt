@@ -138,7 +138,7 @@ fun KaiChatScreen(
             is com.shopai.app.brain.chat.KaiAction.ShareCashNote -> {
                 val lang = session.messages.firstOrNull { it.id == messageId }?.lang ?: com.shopai.app.brain.KaiLang.TANGLISH
                 scope.launch {
-                    val shared = runCatching { shareCashNote(container, context, action.day) }
+                    val shared = runCatching { shareCashNote(container, context, action.day, action.to) }
                     if (shared.isFailure) android.widget.Toast.makeText(context, pdfFailed(lang), android.widget.Toast.LENGTH_LONG).show()
                 }
             }

@@ -39,6 +39,9 @@ class KaiIntentWordsTest {
         assertEquals("Selvam 3000 kuduthaan", c("Selvam paadhi kaasu 3000 kuduthaan"))
         assertEquals("Murugan Stores kitta 6000 ku credit la maal vaanginen", c("Murugan Stores-la 6000-ku saraku kadanukku eduthen"))
         assertEquals("Ramesh rendu aayiram GPay-la pottaan", c("Ramesh rendaayiram GPay-la pottaan"))
+        // a new person said as one: the line is about them ("pudhu customer" is never their name)
+        assertEquals("Dinesh 600 kadan", c("pudhu customer Dinesh 600 kadan"))
+        assertEquals("pudhu customer yaaru", c("pudhu customer yaaru"))
     }
 
     @Test fun linesKaiAlreadyReadsAreLeftAlone() {

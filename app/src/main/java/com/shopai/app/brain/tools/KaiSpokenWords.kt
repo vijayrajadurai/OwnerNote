@@ -137,7 +137,7 @@ object KaiSpokenWords {
         // ---- units, payment modes, money words, sums and small talk said in Tamil script (typed versions already understood) ----
         "கிராம்" to "gram", "இன்ச்" to "inch", "சாமான்" to "saamaan", "சரக்கு" to "saraku", "கடைக்கு" to "kadaiku", "சேர்க்கலாமா" to "serkkalama",
         "அவ்ளோ" to "avlo", "பண்ணலாமா" to "pannalama", "அவ்வளவு" to "avvalavu", "போதும்" to "podhum", "கேட்டேன்" to "ketten", "கேட்டோம்" to "kettom", "இஞ்ச்" to "inch", "கிராமு" to "gram", "கிராம்ஸ்" to "grams", "மில்லி" to "ml", "ஸ்ட்ரிப்" to "strip", "எக்ஸ்பைர்" to "expire", "எக்ஸ்பையர்" to "expire", "எக்ஸ்பையரி" to "expiry", "பேட்ச்" to "batch", "ஆம்ப்" to "amp", "ஆம்ப்ஸ்" to "amps", "இன்டு" to "into", "எம்எல்" to "ml", "ஸ்கொயர்" to "square", "முக்கால்" to "mukkal",
-        "ஒன்றரை" to "onnara", "ஒன்றேகால்" to "onnekaal", "டியூப்" to "tube", "டியூப்ஸ்" to "tubes", "பேட்ச்சு" to "batch", "பேட்ச்ல" to "batch", "காலாவதியான" to "expired", "எம்எம்" to "mm", "எம்.எம்" to "mm", "இன்ச்" to "inch", "குவிண்டால்" to "quintal", "டன்" to "tonne", "லோடு" to "load", "லோட்" to "load", "கிட்" to "kit", "சிஎஃப்டி" to "cft", "மீட்டர்" to "meter", "செட்" to "set", "ரோல்" to "roll",
+        "ஒன்றரை" to "onnara", "ஒண்ணரை" to "onnara", "அக்கா" to "akka", "தம்பி" to "thambi", "மாதம்" to "maasam", "ஒன்னரை" to "onnara", "ரெண்டரை" to "rendara", "இரண்டரை" to "rendara", "மூணரை" to "moonara", "மூன்றரை" to "moonara", "நாலரை" to "naalara", "அஞ்சரை" to "anjara", "டேப்லெட்" to "tablet", "டேப்லெட்ஸ்" to "tablets", "டாப்லெட்" to "tablet", "ஒன்றேகால்" to "onnekaal", "டியூப்" to "tube", "டியூப்ஸ்" to "tubes", "பேட்ச்சு" to "batch", "பேட்ச்ல" to "batch", "காலாவதியான" to "expired", "எம்எம்" to "mm", "எம்.எம்" to "mm", "இன்ச்" to "inch", "குவிண்டால்" to "quintal", "டன்" to "tonne", "லோடு" to "load", "லோட்" to "load", "கிட்" to "kit", "சிஎஃப்டி" to "cft", "மீட்டர்" to "meter", "செட்" to "set", "ரோல்" to "roll",
         "செக்" to "cheque", "செக்ல" to "cheque la", "செக்கு" to "cheque", "கார்டு" to "card", "கார்ட்" to "card", "கார்டுல" to "card la", "கார்ட்ல" to "card la",
         "டிரான்ஸ்ஃபர்" to "transfer", "ட்ரான்ஸ்ஃபர்" to "transfer", "டிரான்ஸ்பர்" to "transfer", "ட்ரான்ஸ்பர்" to "transfer",
         "போட்டான்" to "pottaan", "போட்டுட்டான்" to "pottutaan", "போட்டாங்க" to "pottaanga", "போட்டாரு" to "pottaaru", "போட்டேன்" to "potten", "போட்டுட்டேன்" to "pottuten",
@@ -236,6 +236,8 @@ object KaiSpokenWords {
         Regex("""(?:நாள்|டேஸ்|டேய்ஸ்)[$TA]*""") to "days",
     )
 
+    private val quarterWord = Regex("""(?<![$TA])கால்(?=\s+(?:கிலோ|லிட்டர்|லிட்டரு|மீட்டர்|டஜன்|லிட்டர்|kg|litre|meter)(?![$TA]))""")
+
     private val tamilWord = Regex("""[$TA]+""")
 
     fun hasTamil(text: String) = text.any { it in '஀'..'௿' }
@@ -327,6 +329,8 @@ object KaiSpokenWords {
     fun normalize(text: String): String {
         if (!hasTamil(text)) return text
         var s = amounts(spoken(text))
+        // "கால் கிலோ" is a quarter kilo, not "call" (owner, 19 Oct 2026: "சுகர் கால் கிலோ வித்துச்சு").
+        s = quarterWord.replace(s, "kaal")
         // Units first ("மணி நேரத்துல" before "மணி").
         for ((re, unit) in units) {
             s = re.replace(s) { m -> if (m.value.endsWith("ல") || m.value.endsWith("ல்") || m.value.endsWith("லே")) "$unit la" else unit }
@@ -461,6 +465,9 @@ object KaiSpokenWords {
         val c = stem.getOrNull(stem.length - 2)
         val doubled = stem.length >= 4 && stem[stem.length - 3] == '்' && stem[stem.length - 4] == c
         val endsInU = stem.endsWith("ு") && c != null && c in "வபஜகசடதற" && !doubled
+        // "அண்ணாவுக்கு", "அக்காவுக்கு", "ராஜாவுக்கு": "-வுக்கு" after a long "ஆ" is only the glide — அண்ணா-ku (owner, 19 Oct 2026:
+        // "முருகேசன் அண்ணாவுக்கு 1200 கடன்" was drafted for "முருகேசன் அண்ணாவு").
+        if (stem.length >= 4 && stem.endsWith("ாவு")) return stem.dropLast(2) + "-ku"
         val fixed = if (stem.endsWith("ு") && stem.length >= 2 && !endsInU) stem.dropLast(1) + "்" else stem
         return "$fixed-ku"
     }

@@ -64,6 +64,8 @@ class KaiDailySales(
     private data class PriceToKeep(val key: String, val name: String, val price: BigDecimal, val old: BigDecimal?) : Waiting
     /** Menu items said in chat ("menu: cutting 100, shaving 80"): waiting for Confirm. */
     private data class MenuToKeep(val key: String, val items: List<Pair<String, BigDecimal>>) : Waiting
+    /** A service said that isn't on the Menu, with items of the owner's that may be it ("Gents Haircut", "Kids Haircut"): which one. */
+    private data class ChoiceAsked(val sale: KaiServices.SaleLine, val index: Int, val choices: List<String>, val said: String, val lang: KaiLang) : Waiting
 
     private var waiting: Waiting? = null
 
@@ -206,6 +208,15 @@ class KaiDailySales(
                 }
                 else -> { waiting = null; null }
             }
+            is ChoiceAsked -> {
+                val l = if (lang0 == KaiLang.ENGLISH && w.lang != KaiLang.ENGLISH && text.split(Regex("""\s+""")).size <= 3) w.lang else lang
+                if (no.matches(text) || cancelWord.containsMatchIn(text) && text.split(Regex("""\s+""")).size <= 3) { waiting = null; return dropped(l) }
+                val chosen = choiceIn(text, raw, w.choices) ?: w.choices.singleOrNull()?.takeIf { yes.matches(text) }
+                    ?: run { waiting = null; return null }
+                waiting = null
+                val items = w.sale.items.toMutableList().also { it[w.index] = it[w.index].copy(name = chosen) }
+                startSale(w.sale.copy(items = items), w.said, prices(), w.lang)
+            }
             is MenuToKeep -> when {
                 yes.matches(text) -> confirmPrice(w.key, lang)
                 no.matches(text) -> { waiting = null; turn(lang, KaiMood.NEUTRAL, ta = "சரி ஓனர், மெனுவுல எதுவும் சேர்க்கல.", tl = "Seri Owner, menu-la edhuvum serkala.", en = "Okay Owner, nothing was added to the Menu.") }
@@ -250,20 +261,36 @@ class KaiDailySales(
         // The rate list / the Menu: the prices the owner gave.
         if ((rateList.containsMatchIn(text) || menuAsk.matches(text.trim())) && !namesPerson) return rateListTurn(prices, lang)
 
-        // The day's PDF: "innaikku sales pdf kudu", "nethu report", "Oct 10 daily note pdf".
-        if (pdfWord.containsMatchIn(text) && noteWord.containsMatchIn(text) && !namesPerson && Regex("""(?i)pdf|report|ரிப்போர்ட்|பிடிஎஃப்""").containsMatchIn(text))
-            return pdfTurn(dayOf(text, people, today) ?: today, lang)
+        // The day the owner asks about — "Monday", "munnaal", "anjaam thedhi", "Oct 5", "nethu" — or a span ("indha maasam",
+        // "pona vaaram", "kadandha 7 naal"): only days already gone (owner, 19 Oct 2026: "yentha date la evlo sales nu ketalum").
+        val dayAsked = ownDay(text, raw, today) ?: dayOf(text, people, today)
+        val spanAsked = if (dayAsked == null) spanOf(text, people, today) else null
+
+        // The PDF: "innaikku sales pdf kudu", "nethu report", "Oct 10 daily note pdf", "5th report PDF venum", "indha maasam sales PDF".
+        if (pdfWord.containsMatchIn(text) && !namesPerson && Regex("""(?i)pdf|report|ரிப்போர்ட்|பிடிஎஃப்""").containsMatchIn(text) &&
+            (noteWord.containsMatchIn(text) || (dayAsked != null || spanAsked != null) && !otherReport.containsMatchIn(text))) {
+            spanAsked?.let { (from, to, kind) -> return rangePdfTurn(from, to, kind, lang) }
+            return pdfTurn(dayAsked ?: today, lang)
+        }
 
         // The day close: "innaikku avlothan", "day close pannu", "கடை க்ளோஸ்".
         if (!busy && !namesPerson && (dayClose.containsMatchIn(text) || thatsAll.containsMatchIn(text) && (todayWord.containsMatchIn(text) || recentSale())))
             closeAsk(today, lang)?.let { return it }
 
-        // Sales so far / on a day: "ithuvaraikum evlo sales", "innaikku sales evlo", "nethu evlo vyabaram", "Oct 10 sales".
-        if (!namesPerson && (soFar.containsMatchIn(text) && howMuch.containsMatchIn(text) || salesWord.containsMatchIn(text) && howMuch.containsMatchIn(text))) {
-            val day = dayOf(text, people, today)
-            val span = KaiChatUnderstanding.understand(text, today, people).period
-            if (day != null || soFar.containsMatchIn(text) || span == null) {
-                salesTurn(day ?: today, lang, forceAnswer = soFar.containsMatchIn(text) || day != null && span?.kind == ChatPeriod.Kind.TODAY)?.let { return it }
+        // Sales so far / on a day / in a span: "ithuvaraikum evlo sales", "innaikku sales evlo", "nethu evlo vyabaram", "Oct 10 sales",
+        // "Monday sales evlo", "indha maasam sales", "kadandha 7 naal sales"; and "indha maasam endha service adhigama pochu".
+        val dated = dayAsked != null || spanAsked != null
+        val topAsk = topWord.containsMatchIn(text) && serviceWord.containsMatchIn(text)
+        val salesAsk = salesWord.containsMatchIn(text) && (howMuch.containsMatchIn(text) ||
+            dated && text.trim().split(Regex("""\s+""")).size <= 6 && KaiServices.saleIn(text, prices, names, true, kinds) == null && !otherReport.containsMatchIn(text))
+        if (!namesPerson && (soFar.containsMatchIn(text) && howMuch.containsMatchIn(text) || salesAsk || topAsk)) {
+            if (spanAsked != null) rangeTurn(spanAsked.first, spanAsked.second, spanAsked.third, lang, topAsk)?.let { return it }
+            else if (topAsk && dayAsked == null && !soFar.containsMatchIn(text) && !todayWord.containsMatchIn(text))
+                rangeTurn(today.withDayOfMonth(1), today, ChatPeriod.Kind.THIS_MONTH, lang, true)?.let { return it }
+            else {
+                val span = KaiChatUnderstanding.understand(text, today, people).period
+                val own = ownDay(text, raw, today) != null
+                salesTurn(dayAsked ?: today, lang, forceAnswer = soFar.containsMatchIn(text) || own || dayAsked != null && span?.kind == ChatPeriod.Kind.TODAY)?.let { return it }
             }
         }
 
@@ -421,6 +448,62 @@ class KaiDailySales(
         return d
     }
 
+    private val otherReport = Regex("""(?i)(?<![\p{L}])(stock|statement|kadan|credit|debit|baaki|baki|balance|purchase|selavu|expense|expenses|pending|customer|supplier|gst|bill)(?![\p{L}])|ஸ்டாக்|ஸ்டேட்மென்ட்|கடன்|பாக்கி""")
+    private val topWord = Regex("""(?i)(?<![\p{L}])(adhigama|athigama|adhigam|athigam|top|best|most|niraya|neraya)(?![\p{L}])|அதிகமா|அதிகம்|நிறைய""")
+    private val serviceWord = Regex("""(?i)(?<![\p{L}])(service|services|servis|item|items)(?![\p{L}])|சர்வீஸ்|ஐட்டம்""")
+    private val beforeYesterday = Regex("""(?i)(?<![\p{L}])(munnaal|munnal|munthanaal|munthaanaal|mundhanaal|mundhaanaal|munthaa\s*naal|mundhaa\s*naal|munna\s*naal|nethukku\s*munnaal|nethu\s*munnaal|nethuku\s*munnadi|nethukku\s*munnadi|day\s+before\s+yesterday)(?![\p{L}])|முந்தா\s*நாள்|முந்தாநாள்|முன்னாள்|நேத்துக்கு\s*முன்னாடி""")
+    private val lastWord = Regex("""(?i)(?<![\p{L}])(pona|poona|last|previous|kadandha|kadantha)(?![\p{L}])|போன|கடந்த""")
+    private val weekdays: List<Pair<java.time.DayOfWeek, Regex>> = listOf(
+        java.time.DayOfWeek.MONDAY to """monday|thingal\p{L}*|thingak\p{L}*|thingat\p{L}*|திங்க\p{L}*|மண்டே""",
+        java.time.DayOfWeek.TUESDAY to """tuesday|sevvai\p{L}*|chevvai\p{L}*|செவ்வா\p{L}*|ட்யூஸ்டே|டியூஸ்டே""",
+        java.time.DayOfWeek.WEDNESDAY to """wednesday|budhan\p{L}*|bhudhan\p{L}*|puthan\p{L}*|budhankizhamai|புதன்\p{L}*|வெட்னஸ்டே|வென்ஸ்டே""",
+        java.time.DayOfWeek.THURSDAY to """thursday|vyazhan\p{L}*|viyazhan\p{L}*|vyaazhan\p{L}*|வியாழ\p{L}*|தர்ஸ்டே""",
+        java.time.DayOfWeek.FRIDAY to """friday|vellikizhamai|velli\s*kizhamai|வெள்ளிக்கிழமை|ஃப்ரைடே|ப்ரைடே|பிரைடே""",
+        java.time.DayOfWeek.SATURDAY to """saturday|sani|sanikizhamai|sani\s*kizhamai|சனிக்கிழமை|சாட்டர்டே|சேட்டர்டே""",
+        java.time.DayOfWeek.SUNDAY to """sunday|nyayiru|nyaayiru|gnayiru|nyayitru\p{L}*|gnayitru\p{L}*|ஞாயிறு|ஞாயிற்று\p{L}*|சண்டே""",
+    ).map { (d, alt) -> d to Regex("""(?i)(?<![\p{L}\p{M}])(?:$alt)(?![\p{L}\p{M}])""") }
+    /** "anjaam thedhi", "5aam thethi", "5 தேதி", "அஞ்சாம் தேதி": a day of the month said the Tamil way. */
+    private val ordinalWords = mapOf("onnaam" to 1, "onaam" to 1, "rendaam" to 2, "irandaam" to 2, "moonaam" to 3, "moondraam" to 3, "naalaam" to 4,
+        "anjaam" to 5, "aindhaam" to 5, "aaraam" to 6, "ezhaam" to 7, "ettaam" to 8, "onbadhaam" to 9, "ombadhaam" to 9, "pathaam" to 10, "patthaam" to 10,
+        "ஒன்னாம்" to 1, "ஒண்ணாம்" to 1, "ஒன்றாம்" to 1, "ரெண்டாம்" to 2, "இரண்டாம்" to 2, "மூணாம்" to 3, "மூன்றாம்" to 3, "நாலாம்" to 4, "நான்காம்" to 4,
+        "அஞ்சாம்" to 5, "ஐந்தாம்" to 5, "ஆறாம்" to 6, "ஏழாம்" to 7, "எட்டாம்" to 8, "ஒன்பதாம்" to 9, "பத்தாம்" to 10)
+    private val dateWord = """(?:thethi|thedhi|theti|thedi|thethiyila|thethila|thedhila|tharikh|thaarikh|தேதி\p{L}*)"""
+    private val ordinalDay = Regex("""(?i)(?<![\p{L}\p{M}\d])(\d{1,2}|${ordinalWords.keys.joinToString("|")})\s*(?:-?\s*(?:aam|am|vadhu|ஆம்))?\s*$dateWord(?![\p{L}\p{M}])""")
+
+    /**
+     * The day the owner names in a way the books' reading doesn't (a day already gone): "munnaal" / "முந்தா நாள்" (the day before
+     * yesterday), a weekday ("Monday", "pona Sunday", "திங்கக்கிழமை" — its last one, today when it is today; "pona …" a week back
+     * then), "anjaam thedhi" / "5 தேதி" (this month's, or last month's when it hasn't come yet). Null: none said.
+     */
+    private fun ownDay(text: String, raw: String, today: LocalDate): LocalDate? {
+        val heard = "$text $raw"
+        if (beforeYesterday.containsMatchIn(heard)) return today.minusDays(2)
+        weekdays.firstOrNull { (_, r) -> r.containsMatchIn(heard) }?.let { (dow, r) ->
+            var d = today
+            while (d.dayOfWeek != dow) d = d.minusDays(1)
+            // ("pona Monday" said on a Monday: last week's)
+            val at = r.find(heard)!!.range.first
+            if (d == today && lastWord.findAll(heard).any { it.range.last < at && at - it.range.last <= 3 }) d = d.minusWeeks(1)
+            return d
+        }
+        ordinalDay.find(heard)?.let { m ->
+            val n = m.groupValues[1].toIntOrNull() ?: ordinalWords[m.groupValues[1].lowercase(Locale.ROOT)] ?: return null
+            val here = runCatching { today.withDayOfMonth(n) }.getOrNull()
+            return if (here != null && !here.isAfter(today)) here else runCatching { today.minusMonths(1).withDayOfMonth(n) }.getOrNull()
+        }
+        return null
+    }
+
+    /** A span of days already gone the line asks about — this / last week, this / last month, the last N days — up to today, at most 62 days. */
+    private fun spanOf(text: String, people: List<String>, today: LocalDate): Triple<LocalDate, LocalDate, ChatPeriod.Kind>? {
+        val p = KaiChatUnderstanding.understand(text, today, people).period ?: return null
+        if (p.from == p.to || p.from.isAfter(today)) return null
+        if (p.kind !in setOf(ChatPeriod.Kind.THIS_WEEK, ChatPeriod.Kind.LAST_WEEK, ChatPeriod.Kind.THIS_MONTH, ChatPeriod.Kind.LAST_MONTH, ChatPeriod.Kind.LAST_DAYS)) return null
+        val to = if (p.to.isAfter(today)) today else p.to
+        val from = if (java.time.temporal.ChronoUnit.DAYS.between(p.from, to) > 61) to.minusDays(61) else p.from
+        return Triple(from, to, p.kind)
+    }
+
     // ------------------------------------------------------------ a sale: prices → opening → draft → Confirm
 
     private suspend fun startSale(sale: KaiServices.SaleLine, said: String, prices: Map<String, BigDecimal>, lang: KaiLang): KaiTurn {
@@ -431,6 +514,12 @@ class KaiDailySales(
                 tl = "Owner, innaikku Daily Sales Note already close aagiduchu — ini sale poda mudiyaadhu. Edhuvum save pannala.",
                 en = "Owner, today's Daily Sales Note is already closed — no more sales can go in. Nothing was saved.")
         }
+        // "mudi vettu onnu" with "Gents Haircut" and "Kids Haircut" on the Menu: which of theirs — never a new "Hair cutting" asked
+        // its price, never one of theirs by itself (owner, 19 Oct 2026).
+        for ((i, item) in sale.items.withIndex()) if (item.amount == null && priceOf(prices, item.name) == null) {
+            val choices = KaiServices.ownChoices(item.name, prices.keys)
+            if (choices.isNotEmpty()) return askChoice(sale, i, choices, said, prices, lang)
+        }
         val amounts = sale.items.map { i -> i.amount ?: priceOf(prices, i.name)?.multiply(BigDecimal(i.qty)) }
         // A price said with the sale ("oru cutting 150") for a service with none kept: kept with this Confirm.
         val learned = sale.items.filter { it.amount != null && it.qty == 1 && priceOf(prices, it.name) == null }.associate { it.name to it.amount!! }
@@ -438,6 +527,36 @@ class KaiDailySales(
         val d = Draft(java.util.UUID.randomUUID().toString().take(8), sale.items, amounts, sale.upi == true, learned, null, needsOpening, said, lang)
         tools.log("daily_sales", "chat", "sale said: ${sale.items.joinToString { "${it.name} ×${it.qty}" }}", ActionStatus.ANSWERED, null, said)
         return next(d, lang)
+    }
+
+    private fun askChoice(sale: KaiServices.SaleLine, index: Int, choices: List<String>, said: String, prices: Map<String, BigDecimal>, lang: KaiLang): KaiTurn {
+        waiting = ChoiceAsked(sale, index, choices, said, lang)
+        val name = sale.items[index].name
+        fun shown(c: String) = "“$c”" + (priceOf(prices, c)?.let { " (${rupees(it)})" } ?: "")
+        val card = KaiCard(choices.map { c -> c + (priceOf(prices, c)?.let { " — ${rupees(it)}" } ?: "") }, emptyList())
+        if (choices.size == 1) {
+            val c = choices.single()
+            return turn(lang, KaiMood.CLARIFY,
+                ta = "ஓனர், $name உங்க மெனுவுல இல்ல. மெனுவுல ${shown(c)} இருக்கு — அதுவா? “ஆமா”ன்னா அதையே போடுறேன், இல்லனா “வேணாம்”. இன்னும் எதுவும் போடல.",
+                tl = "Owner, $name unga menu-la illa. Menu-la ${shown(c)} irukku — adhuvaa? “Aama” sonna adhaye podren, illana “venam”. Innum edhuvum podala.",
+                en = "Owner, $name isn't on your Menu. ${shown(c)} is — that one? Say “yes” and I'll use it, or “no”. Nothing is added yet.", card = card)
+        }
+        val list = choices.joinToString(", ") { shown(it) }
+        return turn(lang, KaiMood.CLARIFY,
+            ta = "ஓனர், $name-ஆ? மெனுவுல $list இருக்கு — எது? பேர் சொல்லுங்க (உதா: “${choices.first()}”). இன்னும் எதுவும் போடல.",
+            tl = "Owner, $name-aa? Menu-la $list irukku — edhu? Per sollunga (eg: “${choices.first()}”). Innum edhuvum podala.",
+            en = "Owner, $name? Your Menu has $list — which one? Say its name (e.g. “${choices.first()}”). Nothing is added yet.", card = card)
+    }
+
+    /** The one of [choices] the owner's answer names — by its whole name, typed or by sound, or by the word only it has ("gents", "kids"). */
+    private fun choiceIn(text: String, raw: String, choices: List<String>): String? {
+        val heard = listOf(text, raw, menuBySound(raw, choices, emptyList())).distinct()
+        choices.filter { c -> heard.any { h -> " ${h.lowercase(Locale.ROOT)} ".contains(" ${c.lowercase(Locale.ROOT)} ") || menuByPart(h, listOf(c)) != h } }
+            .singleOrNull()?.let { return it }
+        val split = choices.associateWith { it.lowercase(Locale.ROOT).split(Regex("""\s+""")) }
+        val common = split.values.reduce { a, b -> a.intersect(b.toSet()).toList() }.toSet()
+        val said = heard.flatMap { it.trim().split(Regex("""\s+""")) }.filter { it.length >= 3 }
+        return choices.filter { c -> split.getValue(c).any { w -> w !in common && w.length >= 3 && said.any { sameSound(it, w) } } }.singleOrNull()
     }
 
     private fun next(d: Draft, lang: KaiLang): KaiTurn = when {
@@ -648,7 +767,10 @@ class KaiDailySales(
         return when (day) {
             today -> pick(lang, "இன்னைக்கு", "Innaikku", "Today")
             today.minusDays(1) -> pick(lang, "நேத்து", "Nethu", "Yesterday")
-            else -> day.format(DateTimeFormatter.ofPattern("MMMM d", Locale.ENGLISH))
+            // (a day of this past week with its weekday: "October 12 (Monday)" — the day the owner named, plainly)
+            else -> day.format(DateTimeFormatter.ofPattern("MMMM d", Locale.ENGLISH)) + if (!day.isAfter(today) && day.isAfter(today.minusDays(7)))
+                " (" + pick(lang, listOf("திங்கள்", "செவ்வாய்", "புதன்", "வியாழன்", "வெள்ளி", "சனி", "ஞாயிறு")[day.dayOfWeek.value - 1],
+                    day.dayOfWeek.getDisplayName(java.time.format.TextStyle.FULL, Locale.ENGLISH), day.dayOfWeek.getDisplayName(java.time.format.TextStyle.FULL, Locale.ENGLISH)) + ")" else ""
         }
     }
 
@@ -722,6 +844,80 @@ class KaiDailySales(
                     tl = "Owner, day close aagala (${r.reason}). Thirumba try pannunga.", en = "Owner, the day was not closed (${r.reason}). Please try again.")
             }
         }
+    }
+
+    /** Days' sales added up: by service, other money in, cash / UPI, money out, and the days that had entries. */
+    private data class SpanSales(val services: Map<String, Pair<Int, Double>>, val other: Double, val totalIn: Double, val cashIn: Double, val upiIn: Double,
+                                 val out: Double, val days: Int, val entries: Int)
+
+    private suspend fun spanSales(from: LocalDate, to: LocalDate): SpanSales {
+        val services = LinkedHashMap<String, Pair<Int, Double>>()
+        var other = 0.0; var totalIn = 0.0; var cash = 0.0; var upi = 0.0; var out = 0.0; var days = 0; var entries = 0
+        var d = from
+        while (!d.isAfter(to)) {
+            daySales(d)?.let { s ->
+                for ((n, v) in s.services) services[n] = (services[n]?.first ?: 0) + v.first to (services[n]?.second ?: 0.0) + v.second
+                other += s.other; totalIn += s.totalIn; cash += s.cashIn; upi += s.upiIn; out += s.out; entries += s.entries
+                if (s.entries > 0) days++
+            }
+            d = d.plusDays(1)
+        }
+        val sorted = services.entries.sortedByDescending { it.value.second }.associate { it.key to it.value }
+        return SpanSales(sorted, other, totalIn, cash, upi, out, days, entries)
+    }
+
+    private fun spanLabel(from: LocalDate, to: LocalDate, kind: ChatPeriod.Kind, lang: KaiLang): String {
+        val f = DateTimeFormatter.ofPattern("MMM d", Locale.ENGLISH)
+        val dates = if (from == to) from.format(f) else "${from.format(f)} – ${to.format(f)}"
+        val n = java.time.temporal.ChronoUnit.DAYS.between(from, to) + 1
+        val name = when (kind) {
+            ChatPeriod.Kind.THIS_WEEK -> pick(lang, "இந்த வாரம்", "Indha vaaram", "This week")
+            ChatPeriod.Kind.LAST_WEEK -> pick(lang, "போன வாரம்", "Pona vaaram", "Last week")
+            ChatPeriod.Kind.THIS_MONTH -> pick(lang, "இந்த மாசம்", "Indha maasam", "This month")
+            ChatPeriod.Kind.LAST_MONTH -> pick(lang, "போன மாசம்", "Pona maasam", "Last month")
+            else -> pick(lang, "கடந்த $n நாள்", "Kadandha $n naal", "The last $n days")
+        }
+        return "$name ($dates)"
+    }
+
+    private fun spanLines(s: SpanSales, lang: KaiLang): List<String> =
+        s.services.map { (n, v) -> "$n ×${v.first} — ${KaiFormat.rupees(v.second)}" } +
+            listOfNotNull(s.other.takeIf { it > 0 }?.let { pick(lang, "மற்ற வரவு — ${KaiFormat.rupees(it)}", "Matra varavu — ${KaiFormat.rupees(it)}", "Other money in — ${KaiFormat.rupees(it)}") },
+                s.out.takeIf { it > 0 }?.let { pick(lang, "செலவு — ${KaiFormat.rupees(it)}", "Selavu — ${KaiFormat.rupees(it)}", "Money out — ${KaiFormat.rupees(it)}") })
+
+    /**
+     * A span's sales ("indha maasam sales evlo", "pona vaaram", "kadandha 7 naal"), service by service with the top one, and its PDF
+     * button — or [top]: which service sold the most. Null when the span has no Kai sale in it: the Business Brain answers, as before.
+     */
+    private suspend fun rangeTurn(from: LocalDate, to: LocalDate, kind: ChatPeriod.Kind, lang: KaiLang, top: Boolean): KaiTurn? {
+        val s = spanSales(from, to)
+        if (s.services.isEmpty()) return null
+        val label = spanLabel(from, to, kind, lang)
+        val (topName, topV) = s.services.entries.first().let { it.key to it.value }
+        val topShown = "$topName ×${topV.first} ${KaiFormat.rupees(topV.second)}"
+        val total = KaiFormat.rupees(s.totalIn)
+        val split = "Cash ${KaiFormat.rupees(s.cashIn)}, UPI ${KaiFormat.rupees(s.upiIn)}"
+        val card = KaiCard(spanLines(s, lang), listOf(KaiButton("PDF 📄", KaiAction.ShareCashNote(from, to))))
+        val reply = if (top) pick(lang,
+            ta = "$label அதிகமா போனது: $topShown ஓனர். மொத்த sales $total.",
+            tl = "$label adhigama pochu: $topShown owner. Mothama sales $total.",
+            en = "$label, the top service: $topShown, Owner. Total sales $total.")
+        else pick(lang,
+            ta = "$label sales $total ஓனர் ($split) — ${s.days} நாள். அதிகமா: $topShown.",
+            tl = "$label sales $total owner ($split) — ${s.days} naal. Adhigama: $topShown.",
+            en = "$label sales: $total, Owner ($split) over ${s.days} days. Top: $topShown.")
+        return KaiTurn(ChatReply(reply, KaiMood.HAPPY, ChatIntent.MONTHLY_SALES), card)
+    }
+
+    private suspend fun rangePdfTurn(from: LocalDate, to: LocalDate, kind: ChatPeriod.Kind, lang: KaiLang): KaiTurn {
+        val s = spanSales(from, to)
+        val label = spanLabel(from, to, kind, lang)
+        if (s.entries == 0) return turn(lang, KaiMood.NEUTRAL, ta = "$label Daily Sales Note-ல entry எதுவும் இல்ல ஓனர் — PDF-க்கு எதுவும் இல்ல.",
+            tl = "$label Daily Sales Note-la entry edhuvum illa owner — PDF-ku edhuvum illa.", en = "$label: nothing in the Daily Sales Note, Owner — no PDF to make.")
+        return turn(lang, KaiMood.NEUTRAL, ta = "$label Daily Sales Note PDF ரெடி — மொத்தம் ${KaiFormat.rupees(s.totalIn)}. கீழ அழுத்தி share பண்ணுங்க.",
+            tl = "$label Daily Sales Note PDF ready — mothama ${KaiFormat.rupees(s.totalIn)}. Keezha press panni share pannunga.",
+            en = "$label: the Daily Sales Note PDF is ready — total ${KaiFormat.rupees(s.totalIn)}. Tap below to share it.",
+            card = KaiCard(spanLines(s, lang), listOf(KaiButton("PDF 📄", KaiAction.ShareCashNote(from, to), primary = true))))
     }
 
     private suspend fun pdfTurn(day: LocalDate, lang: KaiLang): KaiTurn {

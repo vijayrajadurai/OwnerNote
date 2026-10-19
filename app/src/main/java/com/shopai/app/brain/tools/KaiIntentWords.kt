@@ -120,6 +120,9 @@ object KaiIntentWords {
         r("""(?:saraku|maal|saamaan|saaman)?\s*kadanukk?u\s+(?:eduthen|eduthom|eduthutten|vaanginen|vanginen|vaangitten)""") to "credit la maal vaanginen",
         // "paadhi kaasu 3000": part of it — the amount is the amount (never a name "Paadhi")
         r("""(?:paadhi|paathi|paati|half)\s+(?:kaasu|panam|amount|payment)""") to "",
+        // "pudhu customer Dinesh 600 kadan", "new supplier Vasanth 5000": the person is new — the line is about them (Kai's draft
+        // says a new customer / supplier is added; owner, 19 Oct 2026)
+        Regex("""(?i)^\s*(?:pudhu|puthu|new|oru\s+pudhu|oru\s+puthu)\s+(?:customer|customeru|supplier|aalu|aal|party|per|aaal)\s+(?=[\p{L}])""") to "",
     )
     /** "Murugan Stores-la 6000-ku … credit la maal vaanginen": from them, for that much. */
     private val boughtFrom = Regex("""(?i)^(.+?)\s*-?\s*(?:la|le|il)\s+(\d[\d,]*)\s*-?\s*(?:ku|kku)\s+credit la maal vaanginen""")
