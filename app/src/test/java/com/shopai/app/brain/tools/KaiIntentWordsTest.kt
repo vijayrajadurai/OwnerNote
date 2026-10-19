@@ -42,6 +42,12 @@ class KaiIntentWordsTest {
         // a new person said as one: the line is about them ("pudhu customer" is never their name)
         assertEquals("Dinesh 600 kadan", c("pudhu customer Dinesh 600 kadan"))
         assertEquals("pudhu customer yaaru", c("pudhu customer yaaru"))
+        // an entry, then when it is to be paid: its due day — never a second, opposite line
+        assertEquals("Kumar ku 1500 kadan kuduthen due 20th", c("Kumar ku 1500 kadan kuduthen 20th tharuvan"))
+        assertEquals("Senthil 5000 kadan due adutha maasam 5", c("Senthil 5000 kadan, adutha maasam 5 tharuvan"))
+        assertEquals("Vasanth Traders kitta 5000 ku credit la maal vaanginen due 30th", c("Vasanth Traders kitta 5000 ku credit la maal vaanginen, 30th kudukkanum"))
+        // (no entry before it: the owed line itself, read as before)
+        assertEquals("Sarath 5000 tharanum December 5", c("Sarath 5000 tharanum December 5"))
     }
 
     @Test fun linesKaiAlreadyReadsAreLeftAlone() {

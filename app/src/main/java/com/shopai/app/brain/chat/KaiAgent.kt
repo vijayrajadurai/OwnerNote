@@ -2071,9 +2071,7 @@ class KaiAgent(
             ?: com.shopai.app.brain.KaiUnderstanding.personPhraseIn(text)
             ?.takeIf { owed != null && it.length >= 3 && Regex("""[\p{L}\p{M} ]+""").matches(it) }
         // "Kumar enakku 3000 tharanum, next month 10-ku": the 10 belongs to the date, not the amount.
-        val saidDate = datePhrase.find(text)?.value
-            ?.replace(Regex("""(?i)\s*-?\s*(?:ku|kku|m|aam|am|thethi|date)$"""), "")
-            ?.let { KaiTime.parse(it, now()) }?.takeIf { it.daySpecified }?.at?.toLocalDate()
+        val saidDate = datePhrase.find(text)?.value?.let(::dayOfPhrase)
         val amountText = if (saidDate != null) datePhrase.replace(text, " ") else text
         val amount = com.shopai.app.brain.KaiUnderstanding.amountsIn(amountText, now().toLocalDate())
             .filter { it > 0 }.singleOrNull()?.let { BigDecimal.valueOf(it).setScale(2, java.math.RoundingMode.HALF_UP) }
@@ -3159,8 +3157,28 @@ class KaiAgent(
             """(?<![\p{L}])(?:next|adutha|aduththa|varra|vara)\s+(?:week|vaaram)(?![\p{L}])|அடுத்த\s+வாரம்|""" +
             // "15th", "15th-ku", "15-aam thethi": a day of this month (or the next, once it has passed).
             """(?<![\p{L}\d₹.,])\d{1,2}\s*(?:st|nd|rd|th)(?:\s*-?\s*(?:ku|kku|thethi|date))?(?![\p{L}\d])|(?<![\p{L}\d₹.,])\d{1,2}\s*-?\s*(?:aam|am|m)?\s*thethi(?![\p{L}])|""" +
-            """(?:அடுத்த|இந்த)\s*(?:மாதம்|மாசம்)\s*\d{1,2}""",
+            """(?:அடுத்த|இந்த)\s*(?:மாதம்|மாசம்)\s*\d{1,2}|""" +
+            // "5/12/2026", "5.12.2026", "05-12-26": a written date (owner, 19 Oct 2026: "Sarath 5000 tharanum 5/12/2026" asked it again).
+            """(?<![\d/.\-₹,])\d{1,2}[/.\-]\d{1,2}[/.\-](?:\d{4}|\d{2})(?![\d/.\-])""",
     )
+
+    /**
+     * The due date said with a Credit / Debit line ("Kumar ku 1500 kadan kuduthen due 20th", "Kumar 2000 credit due date 15
+     * November", "Senthil 5000 kadan due adutha maasam 5"): a day to come, never one gone. Null when none is said.
+     */
+    private fun dueSaidIn(text: String): LocalDate? {
+        val day = datePhrase.find(text)?.value?.let(::dayOfPhrase) ?: return null
+        return day.takeIf { !it.isBefore(now().toLocalDate()) }
+    }
+
+    /** The day a [datePhrase] match names: "December 5", "naalaiku", "20th-ku", "10 thethi" / "5-aam thethi" (that day of the month). */
+    private fun dayOfPhrase(phrase: String): LocalDate? {
+        var p = phrase
+        while (true) { val q = p.replace(Regex("""(?i)\s*-?\s*(?:ku|kku|m|aam|am|thethi|date)$"""), ""); if (q == p) break; p = q }
+        // ("10 thethi": the bare day of the month, as "10th")
+        if (Regex("""\d{1,2}""").matches(p.trim())) p = "${p.trim()}th"
+        return KaiTime.parse(p, now())?.takeIf { it.daySpecified }?.at?.toLocalDate()
+    }
 
     /** A new payment stated while the previous one's draft is still open: that draft is discarded (never saved by a later "seri"). */
     private suspend fun dropStatedDraft() {
@@ -3359,7 +3377,8 @@ class KaiAgent(
             ?.takeIf { !samePerson(it, entity) }
         val ownLine = reminderSaid.containsMatchIn(heard) || reminderSaid.containsMatchIn(text) || KaiCommands.route(heard, at, people) is KaiCommand.Reminder
         val onlyTheDate = heard.trim().split(Regex("""\s+""")).size <= 4
-        KaiTime.parse(text, at)?.takeIf { it.daySpecified && someoneElse == null && !ownLine && (justAsked || onlyTheDate) }?.let { t ->
+        // (the mic's "டிசம்பர் 5ஆம் தேதி" is read as Kai reads it: "december 5-aam thethi")
+        (KaiTime.parse(text, at)?.takeIf { it.daySpecified } ?: KaiTime.parse(heard.replace(Regex("""(?i)(?<!\d)(\d{1,2})\s*-?\s*(?:aam|am)(?![\p{L}])"""), "$1"), at))?.takeIf { it.daySpecified && someoneElse == null && !ownLine && (justAsked || onlyTheDate) }?.let { t ->
             val date = t.at.toLocalDate()
             justPassed(date, text, today, amount)?.let { past ->
                 conversationState.pendingAskedTurn = conversationState.conversationTurn
@@ -5944,7 +5963,9 @@ class KaiAgent(
             s.amount.compareTo(plan.amount) == 0 && samePerson(s.person, plan.partyName) }
         // A short reference for the owner (the draft's internal id stays in the log result).
         val ref = tools.log("${kind.name.lowercase()} ${plan.partyName}", "draft", "${KaiFormat.rupees(plan.amount.toDouble())} ${plan.mode} draft=${plan.key}", ActionStatus.DRAFT, null)
-        plans[plan.key] = plan.copy(reference = ref, dueDate = r.dueDate ?: plan.dueDate)
+        // A Credit / Debit said with its due day ("… kadan kuduthen due 20th"): that day on the entry — never asked again.
+        val dueSaid = if (r.dueDate == null && plan.dueDate == null && !r.stated && (kind == PlanKind.CREDIT_GIVEN || kind == PlanKind.DEBIT_TAKEN)) dueSaidIn(r.said) else null
+        plans[plan.key] = plan.copy(reference = ref, dueDate = r.dueDate ?: plan.dueDate ?: dueSaid)
         if (r.stated) conversationState.statedDraftKey = plan.key
         conversationState.draftShownTurn = conversationState.conversationTurn
         conversationState.pendingDraft = plans[plan.key]
@@ -5993,9 +6014,12 @@ class KaiAgent(
             }
             // "Senthil 500 kadan" with no Senthil in the books: the draft says so — a new name is added on Confirm, never put on
             // someone else's record (owner, 19 Oct 2026: "namba feed pannatha name vandha enna pandrathu").
-            else if (partyId == null && (kind == PlanKind.CREDIT_GIVEN || kind == PlanKind.DEBIT_TAKEN))
-                add(if (kind == PlanKind.CREDIT_GIVEN) pick(lang, ta = "புது வாடிக்கையாளர்-ஆ சேரும்", tl = "Puthu customer-ah add aagum", en = "Will be added as a new customer")
+            else if (kind == PlanKind.CREDIT_GIVEN || kind == PlanKind.DEBIT_TAKEN) {
+                // "… kadan kuduthen due 20th": the due date said with the line is on the draft before Confirm.
+                plans[plan.key]?.dueDate?.let { due -> add("Due date: ${KaiFormat.date(due, lang, now().toLocalDate())}") }
+                if (partyId == null) add(if (kind == PlanKind.CREDIT_GIVEN) pick(lang, ta = "புது வாடிக்கையாளர்-ஆ சேரும்", tl = "Puthu customer-ah add aagum", en = "Will be added as a new customer")
                     else pick(lang, ta = "புது சப்ளையர்-ஆ சேரும்", tl = "Puthu supplier-ah add aagum", en = "Will be added as a new supplier"))
+            }
             if (plan.settles.isNotEmpty()) add(pick(lang, ta = "சரி செய்வது: ", tl = "Settles: ", en = "Settles: ") +
                 plan.settles.joinToString(", ") { (n, v) -> "$n ${KaiFormat.rupees(v.toDouble())}" })
             if (plan.advance.signum() == 0 && extra != null) add(pick(lang, ta = "${KaiFormat.rupees(extra.toDouble())} advance-ஆ சேமிக்கப்படும்",
