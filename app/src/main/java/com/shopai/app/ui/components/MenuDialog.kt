@@ -29,6 +29,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.shopai.app.R
 import com.shopai.app.brain.chat.KaiMenu
+import com.shopai.app.brain.tools.KaiServices
+import androidx.compose.foundation.clickable
 import com.shopai.app.data.AppContainer
 import com.shopai.app.util.formatInr
 import kotlinx.coroutines.Dispatchers
@@ -49,6 +51,10 @@ fun MenuDialog(container: AppContainer, onDismiss: () -> Unit) {
     var price by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
+    // The salon master list (owner's PDF, 19 Oct 2026): the shop's kind of services to pick from — the owner gives every price.
+    var kinds by remember { mutableStateOf<Set<KaiServices.Kind>?>(emptySet()) }
+    var showList by remember { mutableStateOf(false) }
+    var openGroup by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val needName = stringResource(R.string.menu_need_name)
     val needPrice = stringResource(R.string.menu_need_price)
@@ -61,7 +67,12 @@ fun MenuDialog(container: AppContainer, onDismiss: () -> Unit) {
         loaded = true
     }
 
-    LaunchedEffect(Unit) { reload() }
+    LaunchedEffect(Unit) {
+        kinds = KaiServices.kindsFor(withContext(Dispatchers.IO) { runCatching { container.businessRepository.getMyBusiness()?.category }.getOrNull() })
+        reload()
+    }
+    val serviceList = remember(kinds) { KaiServices.menuList(kinds) }
+    val onMenu = items.map { it.name.lowercase() }.toSet()
 
     ShopAlertDialog(
         onDismissRequest = onDismiss,
@@ -93,6 +104,16 @@ fun MenuDialog(container: AppContainer, onDismiss: () -> Unit) {
                     Text(stringResource(R.string.menu_add_title), fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 8.dp))
                     OutlinedTextField(value = name, onValueChange = { name = it; error = null }, singleLine = true, enabled = !busy,
                         label = { Text(stringResource(R.string.menu_item_name)) }, placeholder = { Text("Cutting") }, modifier = Modifier.fillMaxWidth())
+                    // What the owner is typing, from the service list ("gold" → Gold Facial): tap to take the name.
+                    val suggested = KaiServices.suggestions(name, kinds).filter { !it.equals(name.trim(), ignoreCase = true) }.take(5)
+                    suggested.forEach { sug ->
+                        Text(
+                            sug + if (sug.lowercase() in onMenu) "  ✓" else "",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.fillMaxWidth().clickable(enabled = !busy) { name = sug; error = null }.padding(vertical = 6.dp, horizontal = 4.dp),
+                        )
+                    }
                     OutlinedTextField(value = price, onValueChange = { v -> price = v.filter { it.isDigit() || it == '.' }; error = null }, singleLine = true, enabled = !busy,
                         label = { Text(stringResource(R.string.menu_item_price)) }, placeholder = { Text("100") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth())
@@ -114,6 +135,30 @@ fun MenuDialog(container: AppContainer, onDismiss: () -> Unit) {
                             }
                         }
                     }) { Text(stringResource(R.string.menu_add)) }
+                    // The whole service list, by section: tap a service to take its name, then give the price.
+                    if (serviceList.isNotEmpty()) {
+                        TextButton(onClick = { showList = !showList }) {
+                            Text(stringResource(if (showList) R.string.menu_hide_list else R.string.menu_pick_list, serviceList.sumOf { it.second.size }))
+                        }
+                        if (showList) serviceList.forEach { (group, names) ->
+                            Row(
+                                Modifier.fillMaxWidth().clickable { openGroup = if (openGroup == group) null else group }.padding(vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(group, Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
+                                Text("${names.size}  " + if (openGroup == group) "▲" else "▼", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            if (openGroup == group) names.forEach { n ->
+                                Text(
+                                    n + if (n.lowercase() in onMenu) "  ✓" else "",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.fillMaxWidth().clickable(enabled = !busy) { name = n; error = null; showList = false }
+                                        .padding(start = 12.dp, top = 6.dp, bottom = 6.dp),
+                                )
+                            }
+                            HorizontalDivider()
+                        }
+                    }
                 }
             }
         },

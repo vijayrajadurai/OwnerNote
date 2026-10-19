@@ -211,7 +211,7 @@ class KaiDailySales(
             is ChoiceAsked -> {
                 val l = if (lang0 == KaiLang.ENGLISH && w.lang != KaiLang.ENGLISH && text.split(Regex("""\s+""")).size <= 3) w.lang else lang
                 if (no.matches(text) || cancelWord.containsMatchIn(text) && text.split(Regex("""\s+""")).size <= 3) { waiting = null; return dropped(l) }
-                val chosen = choiceIn(text, raw, w.choices) ?: w.choices.singleOrNull()?.takeIf { yes.matches(text) }
+                val chosen = choiceIn(plainChoice(text), plainChoice(raw), w.choices) ?: w.choices.singleOrNull()?.takeIf { yes.matches(text) }
                     ?: run { waiting = null; return null }
                 waiting = null
                 val items = w.sale.items.toMutableList().also { it[w.index] = it[w.index].copy(name = chosen) }
@@ -318,7 +318,10 @@ class KaiDailySales(
         // (the mic's own words only when Kai didn't already read them as the shop's product — "ஃப்ரோசன் பரோட்டா" is Frozen paratha)
         val lower = " " + text.lowercase(Locale.ROOT) + " "
         val productSaid = names.any { n -> n.lowercase(Locale.ROOT).split(Regex("""\s+""")).take(2).joinToString(" ").let { head -> head.length >= 3 && lower.contains(" $head ") } }
+        // The salon master list's names as the mic wrote them ("கோல்ட் ஃபேஷியல்" = gold facial), by sound — a beauty shop's only.
+        val heardServices = if (productSaid) text else KaiServices.withServiceSounds(text, kinds, people)
         val sale = (if (heardMenu && !productSaid) KaiServices.saleIn(sounded, prices, names, serviceShop, kinds)?.takeIf { l -> l.items.any { i -> priceOf(prices, i.name) != null } } else null)
+            ?: (if (heardServices != text) KaiServices.saleIn(heardServices, prices, names, serviceShop, kinds) else null)
             ?: KaiServices.saleIn(text, prices, names, serviceShop, kinds)
             ?: (if (productSaid) null else KaiServices.saleIn(raw, prices, names, serviceShop, kinds) ?: KaiServices.saleIn(sounded, prices, names, serviceShop, kinds))
             ?: return otherShopsService(text, raw, sounded, prices, names, serviceShop, kinds, productSaid, lang)
@@ -516,9 +519,14 @@ class KaiDailySales(
         }
         // "mudi vettu onnu" with "Gents Haircut" and "Kids Haircut" on the Menu: which of theirs — never a new "Hair cutting" asked
         // its price, never one of theirs by itself (owner, 19 Oct 2026).
-        for ((i, item) in sale.items.withIndex()) if (item.amount == null && priceOf(prices, item.name) == null) {
-            val choices = KaiServices.ownChoices(item.name, prices.keys)
-            if (choices.isNotEmpty()) return askChoice(sale, i, choices, said, prices, lang)
+        // "hand wax 300" (owner, 19 Oct 2026: "hand wax correct-ah work aagudhaa"): full arms or half arms — asked, never guessed, the
+        // amount said kept for the one chosen; the owner's own Menu items for it first, then the master list's two.
+        for ((i, item) in sale.items.withIndex()) if (priceOf(prices, item.name) == null) {
+            val group = KaiServices.askFor(item.name)
+            if (item.amount != null && group.isEmpty()) continue
+            val own = KaiServices.ownChoices(item.name, prices.keys)
+            val choices = own.ifEmpty { group.filter { priceOf(prices, it) != null }.ifEmpty { group } }
+            if (choices.isNotEmpty()) return askChoice(sale, i, choices, said, prices, lang, onMenu = own.isNotEmpty() || choices.any { priceOf(prices, it) != null })
         }
         val amounts = sale.items.map { i -> i.amount ?: priceOf(prices, i.name)?.multiply(BigDecimal(i.qty)) }
         // A price said with the sale ("oru cutting 150") for a service with none kept: kept with this Confirm.
@@ -529,11 +537,21 @@ class KaiDailySales(
         return next(d, lang)
     }
 
-    private fun askChoice(sale: KaiServices.SaleLine, index: Int, choices: List<String>, said: String, prices: Map<String, BigDecimal>, lang: KaiLang): KaiTurn {
+    private fun askChoice(sale: KaiServices.SaleLine, index: Int, choices: List<String>, said: String, prices: Map<String, BigDecimal>, lang: KaiLang,
+        onMenu: Boolean = true): KaiTurn {
         waiting = ChoiceAsked(sale, index, choices, said, lang)
         val name = sale.items[index].name
         fun shown(c: String) = "“$c”" + (priceOf(prices, c)?.let { " (${rupees(it)})" } ?: "")
         val card = KaiCard(choices.map { c -> c + (priceOf(prices, c)?.let { " — ${rupees(it)}" } ?: "") }, emptyList())
+        // A word that is one of the master list's services ("hand wax"): which one — none of them on the Menu yet.
+        if (!onMenu) {
+            val list = choices.joinToString(" / ") { "“$it”" }
+            val heard = sale.items[index].amount?.let { " (${rupees(it)})" }.orEmpty()
+            return turn(lang, KaiMood.CLARIFY,
+                ta = "ஓனர், எது$heard — $list? பேர் சொல்லுங்க (உதா: “${choices.first()}”). இன்னும் எதுவும் போடல.",
+                tl = "Owner, edhu$heard — $list? Per sollunga (eg: “${choices.first()}”). Innum edhuvum podala.",
+                en = "Owner, which one$heard — $list? Say its name (e.g. “${choices.first()}”). Nothing is added yet.", card = card)
+        }
         if (choices.size == 1) {
             val c = choices.single()
             return turn(lang, KaiMood.CLARIFY,
@@ -547,6 +565,13 @@ class KaiDailySales(
             tl = "Owner, $name-aa? Menu-la $list irukku — edhu? Per sollunga (eg: “${choices.first()}”). Innum edhuvum podala.",
             en = "Owner, $name? Your Menu has $list — which one? Say its name (e.g. “${choices.first()}”). Nothing is added yet.", card = card)
     }
+
+    /** "muzhusa", "முழு" = full; "arai", "அரை" = half — the answer to "full arms-ah, half arms-ah?" as the owner says it. */
+    private fun plainChoice(text: String): String = text
+        .replace(Regex("""(?i)(?<![\p{L}\p{M}])(muzhusa|muzhusaa|muzhu|mulusa|mulu|full\s*ah|fulla|fullaa)(?![\p{L}\p{M}])"""), "full")
+        .replace(Regex("""(?i)(?<![\p{L}\p{M}])(arai|half\s*ah|halfa|haafa|paadhi|paathi)(?![\p{L}\p{M}])"""), "half")
+        .replace(Regex("""முழுசா|முழுசு|முழு|ஃபுல்லா|ஃபுல்|புல்"""), "full")
+        .replace(Regex("""அரை|ஹாஃப்|ஹாப்|பாதி"""), "half")
 
     /** The one of [choices] the owner's answer names — by its whole name, typed or by sound, or by the word only it has ("gents", "kids"). */
     private fun choiceIn(text: String, raw: String, choices: List<String>): String? {
