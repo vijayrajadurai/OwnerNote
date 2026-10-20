@@ -140,13 +140,22 @@ object KaiTime {
         val t = " " + KaiSpokenWords.normalize(raw).lowercase(Locale.ROOT).replace(Regex("""[?!,]"""), " ").replace(Regex("""\s+"""), " ").trim() + " "
         val today = now.toLocalDate()
 
-        // 1. Relative: exactly now + the said duration ("1 hour 30 minutes" adds up).
-        relativeDuration(t)?.let { d -> return KaiWhen(now.plus(d).withNano(0), relative = d) }
-
         val part = partWords.firstOrNull { it.second.containsMatchIn(t) }?.first
         val clock = clockTime(t, part)
         val amPmAssumed = clock?.second == true
         val time: LocalTime? = clock?.first
+
+        // 1. Relative: exactly now + the said duration ("1 hour 30 minutes" adds up).
+        relativeDuration(t)?.let { d ->
+            // "naalu naal kazhichu kaalai 10 manikku": days ahead, at the time said — that day at 10 AM, not 96 hours from now
+            // (release check, 20 Oct 2026: the time said was dropped).
+            val days = d.toDays()
+            if (days >= 1 && d == Duration.ofDays(days) && (time != null || part != null)) {
+                val at = today.plusDays(days).atTime(time ?: part!!.choices.first())
+                return KaiWhen(at, dayPart = part, missing = if (time == null) setOf(Missing.TIME) else emptySet(), amPmAssumed = amPmAssumed, daySpecified = true)
+            }
+            return KaiWhen(now.plus(d).withNano(0), relative = d)
+        }
 
         // 2. Repeats.
         val recurrence: Recurrence? = when {

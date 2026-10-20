@@ -319,7 +319,17 @@ class KaiDailySales(
         val lower = " " + text.lowercase(Locale.ROOT) + " "
         val productSaid = names.any { n -> n.lowercase(Locale.ROOT).split(Regex("""\s+""")).take(2).joinToString(" ").let { head -> head.length >= 3 && lower.contains(" $head ") } }
         // The salon master list's names as the mic wrote them ("கோல்ட் ஃபேஷியல்" = gold facial), by sound — a beauty shop's only.
-        val heardServices = if (productSaid) text else KaiServices.withServiceSounds(text, kinds, people)
+        val fromText = if (productSaid) text else KaiServices.withServiceSounds(text, kinds, people)
+        // (the mic's own words, when they name the service more exactly: "கோல்டு ஃபேஷியல்" — Kai's rules read "கோல்டு" as "gold" and leave
+        // "ஃபேஷியல்", heard alone as plain Facial — is Gold Facial; only ever a finer name for the very service already heard, never a
+        // service where none was: "குமார் 2000 குடுத்தான்" stays no service — release check, 20 Oct 2026)
+        val fromRaw = if (productSaid || !com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(text)) null
+            else KaiServices.withServiceSounds(raw, kinds, people).takeIf { it != raw }?.let { com.shopai.app.brain.tools.KaiSpokenWords.normalize(it) }
+        val heardServices = fromRaw?.takeIf { r ->
+            val a = KaiServices.saleIn(fromText, prices, names, serviceShop, kinds)?.items?.map { it.name }
+            val b = KaiServices.saleIn(r, prices, names, serviceShop, kinds)?.items?.map { it.name }
+            a != null && b != null && a != b && a.size == b.size && a.zip(b).all { (x, y) -> x == y || (y.length > x.length && y.contains(x, ignoreCase = true)) }
+        } ?: fromText
         val sale = (if (heardMenu && !productSaid) KaiServices.saleIn(sounded, prices, names, serviceShop, kinds)?.takeIf { l -> l.items.any { i -> priceOf(prices, i.name) != null } } else null)
             ?: (if (heardServices != text) KaiServices.saleIn(heardServices, prices, names, serviceShop, kinds) else null)
             ?: KaiServices.saleIn(text, prices, names, serviceShop, kinds)
