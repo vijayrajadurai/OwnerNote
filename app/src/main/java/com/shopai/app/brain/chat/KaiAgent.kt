@@ -679,7 +679,11 @@ class KaiAgent(
     private val recentAsks = ArrayDeque<String>()
     private var askDepth = 0
 
+    /** The setup's business categories (read once per chat; Kai's screen link for the shop's category reads them fresh). */
+    private var shopPicks: List<String>? = null
+
     suspend fun ask(raw: String): KaiTurn = run {
+        if (shopPicks == null) shopPicks = runCatching { tools.businessCategoryPicks()?.codes }.getOrNull().orEmpty()
         if (askDepth == 0 && !KaiConversationCare.asksWhatWasAsked(raw)) { recentAsks.addLast(raw.trim()); while (recentAsks.size > 6) recentAsks.removeFirst() }
         askDepth++
         try { answerOwner(raw) } finally { askDepth-- }
@@ -1397,6 +1401,8 @@ class KaiAgent(
                 tl = "Owner, balance-a chat-la sonnadha vechu naan maathavo nyabagam vechukkavo maatten — adhu records-la irundhu dhaan varum. Panam vandhirundhaa / kuduthirundhaa adha entry-aa sollunga, draft panren.",
                 en = "Owner, I don't change or memorise a balance from a chat message — it always comes from the records. If money came in or went out, tell me the entry and I'll draft it.")
         }
+        // "purchase bill podu", "draft bills", "pudhu product add pannanum", "en kadai enna vagai": the screen that does it.
+        KaiScreenLinks.of(said)?.let { return screenLink(it, lang) }
         if (KaiConversationCare.makesBill(said)) return noBillHere(said, named, lang)
         // "Kumar statement WhatsApp-la anuppu" is the statement PDF the owner sends (statementAsk), not a message Kai can't send.
         // "Idha WhatsApp-la anuppu" with nobody talked about reaches here: what Kai can't send, said as before.
@@ -1621,6 +1627,45 @@ class KaiAgent(
             KaiAction.OpenRecord(if (pay) "SUPPLIER" else "CUSTOMER", party.id), primary = true))))
     }
 
+    /**
+     * A screen of the app the owner asked for by chat or voice (owner, 20 Oct 2026): what it does, and a button that opens it.
+     * Nothing is written here — the screen saves only on its own Confirm.
+     */
+    private suspend fun screenLink(link: KaiScreenLinks.Link, lang: KaiLang): KaiTurn = when (link) {
+        KaiScreenLinks.Link.PURCHASE_BILL -> say(lang, KaiMood.EXPLAINING, "screen: purchase bill",
+            ta = "ஓனர், supplier bill-ஐ Purchase bill screen-ல போடலாம் — supplier, bill எண், பொருள், அளவு (வாங்கும் அலகு தானா வரும்), rate, GST. Confirm பண்ணா தான் stock கூடும்; draft-ஆ வெச்சா மாறாது.",
+            tl = "Owner, supplier bill-a Purchase bill screen-la podalaam — supplier, bill number, porul, alavu (vaangum unit thaanaa varum), rate, GST. Confirm pannina dhaan stock koodum; draft-aa vechaa maaradhu.",
+            en = "Owner, enter a supplier's bill on the Purchase bill screen — supplier, bill number, items, quantity (in the purchase unit), rate, GST. Stock goes up only on Confirm; a saved draft changes nothing.")
+            .withButton(pick(lang, ta = "🧾 Purchase bill", tl = "🧾 Purchase bill", en = "🧾 Purchase bill"), KaiAction.OpenRecord("PURCHASE_BILL", ""))
+        KaiScreenLinks.Link.DRAFT_BILLS -> say(lang, KaiMood.EXPLAINING, "screen: draft bills",
+            ta = "ஓனர், draft-ஆ வெச்ச bill-கள் Billing screen-ல இருக்கு — திறந்து முடிச்சு Confirm பண்ணலாம், இல்ல நீக்கலாம். Draft-ல stock / பணம் மாறாது.",
+            tl = "Owner, draft-aa vecha bill-gal Billing screen-la irukku — thirandhu mudichu Confirm pannalaam, illa neekkalaam. Draft-la stock / panam maaradhu.",
+            en = "Owner, bills saved as drafts are on the Billing screen — open one to finish and Confirm it, or discard it. A draft changes no stock or money.")
+            .withButton(pick(lang, ta = "📋 Billing", tl = "📋 Billing", en = "📋 Billing"), KaiAction.OpenRecord("BILLING", ""))
+        KaiScreenLinks.Link.NEW_PRODUCT -> say(lang, KaiMood.EXPLAINING, "screen: new product",
+            ta = "ஓனர், பொருள் பேரும் அளவும் சொன்னா இங்கேயே சேர்க்கறேன் (உதா: “Colgate 5 box vandhuchu”). எல்லா விவரமும் (category, SKU, GST, வாங்கும் / விற்கும் அலகு, opening stock) போடணும்னா Add Product screen-ல போடலாம்.",
+            tl = "Owner, porul peyarum alavum sonna inga-ye serkkaren (eg: “Colgate 5 box vandhuchu”). Ella vivaramum (category, SKU, GST, vaangum / vikkum unit, opening stock) podanumna Add Product screen-la podalaam.",
+            en = "Owner, tell me the product and how much and I'll add it here (e.g. “Colgate 5 boxes came”). For every detail (category, SKU, GST, purchase / sales unit, opening stock), use the Add Product screen.")
+            .withButton(pick(lang, ta = "➕ Add Product", tl = "➕ Add Product", en = "➕ Add Product"), KaiAction.OpenRecord("NEW_PRODUCT", ""))
+        KaiScreenLinks.Link.SHOP_CATEGORY -> {
+            val picks = runCatching { tools.businessCategoryPicks() }.getOrNull()
+            picks?.codes?.let { shopPicks = it }
+            val names = picks?.let { KaiScreenLinks.names(it.codes, it.otherName, lang == KaiLang.TAMIL) }.orEmpty()
+            val listed = names.joinToString(", ")
+            (if (names.isEmpty()) say(lang, KaiMood.EXPLAINING, "screen: shop category (none read)",
+                ta = "ஓனர், உங்க கடை வகையை Profile-ல பாக்கலாம், மாத்தலாம் — ஒன்றுக்கு மேல தேர்வு செய்யலாம்.",
+                tl = "Owner, unga kadai vagai-a Profile-la paakkalaam, maathalaam — onnukku mela select pannalaam.",
+                en = "Owner, your business categories are in Profile — you can pick more than one there.")
+            else say(lang, KaiMood.EXPLAINING, "screen: shop category",
+                ta = "ஓனர், உங்க கடை வகை: $listed. மாத்தணும்னா / சேக்கணும்னா Profile-ல பண்ணலாம்.",
+                tl = "Owner, unga kadai vagai: $listed. Maathanumna / serkkanumna Profile-la pannalaam.",
+                en = "Owner, your business categories: $listed. Change or add one in Profile."))
+                .withButton(pick(lang, ta = "✏️ கடை வகை மாத்து", tl = "✏️ Kadai vagai maathu", en = "✏️ Change categories"), KaiAction.OpenRecord("PROFILE", ""))
+        }
+    }
+
+    private fun KaiTurn.withButton(label: String, action: KaiAction) = copy(card = KaiCard(emptyList(), listOf(KaiButton(label, action, primary = true))))
+
     /** "GST bill podu": Kai chat doesn't make bills — the Billing screen does; a credit entry Kai can draft. */
     private suspend fun noBillHere(said: String, named: String?, lang: KaiLang): KaiTurn {
         val partyId = named?.let { n -> books.snapshot()?.parties?.filter { it.name.equals(n, ignoreCase = true) }?.singleOrNull()?.id }
@@ -1628,9 +1673,9 @@ class KaiAgent(
         val credit = if (named != null && amount != null) Triple(" இல்ல, “$named $amount கடன்”-னு சொன்னா credit entry-ஆ போடறேன்.",
             " Illa, “$named $amount credit”-nu sonna credit entry-aa podren.", " Or say “$named $amount credit” and I'll draft a credit entry.") else null
         val turn = say(lang, KaiMood.EXPLAINING, "beyond: make a bill",
-            ta = "ஓனர், Kai chat-ல GST bill / invoice போடற வசதி இன்னும் இல்ல. Billing screen-ல போடலாம் — கீழ இருக்கற button-ஐ தொடுங்க." + (credit?.first ?: ""),
-            tl = "Owner, Kai chat-la GST bill / invoice podra vasadhi innum illa. Billing screen-la podalaam — keezha irukkura button-ai thottunga." + (credit?.second ?: ""),
-            en = "Owner, Kai chat can't make GST bills / invoices yet. The Billing screen can — tap the button below." + (credit?.third ?: ""))
+            ta = "ஓனர், Kai chat-ல GST bill / invoice போடற வசதி இன்னும் இல்ல. Billing screen-ல போடலாம் — bill எண்ணும் இன்றைய தேதியும் தானா வரும், மாத்தலாம். கீழ இருக்கற button-ஐ தொடுங்க." + (credit?.first ?: ""),
+            tl = "Owner, Kai chat-la GST bill / invoice podra vasadhi innum illa. Billing screen-la podalaam — bill number-um innaiku date-um thaanaa varum, maathalaam. Keezha irukkura button-ai thottunga." + (credit?.second ?: ""),
+            en = "Owner, Kai chat can't make GST bills / invoices yet. The Billing screen can — the bill number and today's date fill in by themselves, and you can change them. Tap the button below." + (credit?.third ?: ""))
         return turn.copy(card = KaiCard(emptyList(), listOf(KaiButton(pick(lang, ta = "🧾 Bill போடுங்க", tl = "🧾 Bill podunga", en = "🧾 Make a bill"),
             KaiAction.OpenRecord("SALE_BILL", partyId.orEmpty()), primary = true))))
     }
@@ -4629,6 +4674,8 @@ class KaiAgent(
         // "Sintex tank 1000 litre" are hardware — never asked a medicine's batch / expiry or a phone's model (release check, 20 Oct 2026).
         val shopKind = products.mapNotNull { com.shopai.app.brain.tools.KaiExpiry.kindOfCategory(it.category) }.groupingBy { it }.eachCount()
             .maxByOrNull { it.value }?.takeIf { it.value * 2 >= products.size && products.size >= 3 }?.key
+            // (a new shop, few products yet: the kind of goods its setup categories name — a hardware shop's first "Tube light" too)
+            ?: shopPicks?.takeIf { products.size < 3 }?.let(KaiScreenLinks::kindOf)
         val durable = setOf(com.shopai.app.brain.tools.ProductKind.HARDWARE, com.shopai.app.brain.tools.ProductKind.ELECTRICAL, com.shopai.app.brain.tools.ProductKind.AUTO, com.shopai.app.brain.tools.ProductKind.STATIONERY, com.shopai.app.brain.tools.ProductKind.KITCHENWARE, com.shopai.app.brain.tools.ProductKind.FOOTWEAR, com.shopai.app.brain.tools.ProductKind.GARMENT, com.shopai.app.brain.tools.ProductKind.TOYS)
         if (shopKind != null && shopKind in durable && (byName == null || byName in setOf(com.shopai.app.brain.tools.ProductKind.PHARMACY, com.shopai.app.brain.tools.ProductKind.BAKERY, com.shopai.app.brain.tools.ProductKind.BEVERAGE, com.shopai.app.brain.tools.ProductKind.GROCERY, com.shopai.app.brain.tools.ProductKind.GENERAL) ||
                 byName == com.shopai.app.brain.tools.ProductKind.ELECTRONICS && !phoneGoods.containsMatchIn(name))) return shopKind

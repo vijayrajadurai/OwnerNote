@@ -59,6 +59,8 @@ class AppKaiTools(
     private val dailyCash: com.shopai.app.data.repository.DailyCashRepository? = null,
     /** The business profile's category (the backend's business, read once and kept — never on every message). */
     private val category: (suspend () -> String?)? = null,
+    /** The whole business profile — its several setup categories and the "Other" name (read once and kept, as the category). */
+    private val business: (suspend () -> com.shopai.app.data.model.Business?)? = null,
     /** The signed-in business + owner (from the session — never from a screen); reminders are theirs only. */
     private val scope: () -> Pair<String?, String?> = { null to null },
 ) : KaiTools {
@@ -143,9 +145,11 @@ class AppKaiTools(
             val p = s.dao.product(productId)?.takeIf { it.businessId == s.ctx.businessId } ?: return none
             val code = s.masters.ensureUnit(unit) ?: return none
             if (code.equals(p.primaryUnit, ignoreCase = true) || perUnit.signum() <= 0) return none
-            if (p.secondaryUnit != null && !p.secondaryUnit.equals(code, ignoreCase = true)) return com.shopai.app.brain.tools.ConversionSave.OTHER_UNIT_SET
             val milli = perUnit.multiply(BigDecimal(1000)).setScale(0, RoundingMode.HALF_UP).longValueExact()
-            when (s.masters.updateProduct(p.id, p.toInput().copy(secondaryUnit = code, conversionMilli = milli))) {
+            // A product already with a second unit keeps it; this one is kept beside it (1 CARTON = 144 pcs and 1 PACK = 6 pcs).
+            val input = if (p.secondaryUnit == null || p.secondaryUnit.equals(code, ignoreCase = true)) p.toInput().copy(secondaryUnit = code, conversionMilli = milli)
+                else p.toInput().let { it.copy(moreUnits = it.moreUnits + (code to milli)) }
+            when (s.masters.updateProduct(p.id, input)) {
                 is com.shopai.app.books.engine.MasterResult.Ok -> com.shopai.app.brain.tools.ConversionSave.SAVED
                 else -> none
             }
@@ -362,6 +366,8 @@ class AppKaiTools(
                     brandId = s.masters.brandId(product.brand?.takeIf { it.isNotBlank() }),
                     purchasePricePaise = product.purchasePrice?.let(::paise), sellingPricePaise = product.sellingPrice?.let(::paise),
                     imagePath = product.imageUri, description = notes, batchTracked = batch != null,
+                    // (GST is never said in a chat: "not specified", never a chosen 0% — owner, 20 Oct 2026)
+                    gstSpecified = false,
                 ),
             )
             val row = (result as? com.shopai.app.books.engine.MasterResult.Ok)?.value
@@ -608,6 +614,17 @@ class AppKaiTools(
         // (a failed read keeps the last one known — the profile doesn't change mid-day)
         if (read != null || categoryRead == null) categoryRead = System.currentTimeMillis() to (read ?: categoryRead?.second)
         return categoryRead?.second
+    }
+
+    private var picksRead: Pair<Long, com.shopai.app.brain.tools.ShopCategoryPicks?>? = null
+
+    override suspend fun businessCategoryPicks(): com.shopai.app.brain.tools.ShopCategoryPicks? {
+        picksRead?.takeIf { System.currentTimeMillis() - it.first < 30 * 60_000L }?.let { return it.second }
+        val b = runCatching { business?.invoke() }.getOrNull()
+        // (a business set up before the list: its one older category, read into the list; a failed read keeps the last one known)
+        val read = b?.let { com.shopai.app.brain.tools.ShopCategoryPicks(com.shopai.app.data.model.BusinessCategories.picked(it), it.otherCategoryName) }
+        if (read != null || picksRead == null) picksRead = System.currentTimeMillis() to (read ?: picksRead?.second)
+        return picksRead?.second
     }
 
     override suspend fun sellsServices(): Boolean? = session()?.let { s ->
