@@ -35,18 +35,21 @@ object KaiProductSound {
     private class Prepared(val products: List<Product>, val sizeless: List<Product>, val goodsWritten: Map<String, String?>, val heardGoods: List<Product>, val parts: List<Word>)
 
     /** The last few lists heard (the shop's products, the owner's Menu, the salon's services): each prepared once, not per line. */
-    private val cache = object : LinkedHashMap<List<String>, Prepared?>(8, 0.75f, true) {
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<List<String>, Prepared?>?) = size > 4
+    private val cache = object : LinkedHashMap<Pair<List<String>, Boolean>, Prepared?>(8, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Pair<List<String>, Boolean>, Prepared?>?) = size > 4
     }
 
-    private fun prepared(productNames: List<String>): Prepared? {
-        synchronized(cache) { if (cache.containsKey(productNames)) return cache[productNames] }
-        val prep = prepare(productNames)
-        synchronized(cache) { cache[productNames.toList()] = prep }
+    private fun prepared(productNames: List<String>, goods: Boolean = true): Prepared? {
+        val key = productNames to goods
+        synchronized(cache) { if (cache.containsKey(key)) return cache[key] }
+        val prep = prepare(productNames, goods)
+        synchronized(cache) { cache[productNames.toList() to goods] = prep }
         return prep
     }
 
-    private fun prepare(productNames: List<String>): Prepared? {
+    /** [goods]: also hear the owner's goods words (KaiFeed) — the shop's products need them; a list of services doesn't. */
+    private fun prepare(productNames: List<String>, goods: Boolean = true): Prepared? {
+        val withGoods = goods
         val products = productNames.map { it.trim() }.filter { n -> n.isNotEmpty() && !KaiSpokenWords.hasTamil(n) && n.any(Char::isLetter) }.distinct()
             .flatMap { n ->
                 // "ENO", "BPL": capitals are said letter by letter ("பிபிஎல்") — or as a word when they read as one ("ஈனோ").
@@ -84,7 +87,8 @@ object KaiProductSound {
             }
         // Goods by the name the owner says (KaiFeed): "கதவு கீல்" written as it is in the list, or heard like "kathavu keel".
         val names = products.map { it.out }.distinct()
-        val goods = KaiFeed.goodsNames.flatMap { (ks, e) -> ks.map { k -> k to ks + e } }.groupBy({ it.first }, { it.second }).mapValues { (_, v) -> v.flatten().distinct() }
+        // (the slow part of preparing a list: skipped for a list of services, which has no goods — owner, 20 Oct 2026: "Kai late")
+        val goods = (if (withGoods) KaiFeed.goodsNames else emptyList()).flatMap { (ks, e) -> ks.map { k -> k to ks + e } }.groupBy({ it.first }, { it.second }).mapValues { (_, v) -> v.flatten().distinct() }
             // (a thing kept only in packs is heard as the packs' own name: "நண்டு" = Crab, for Crab Small pack / Crab Medium pack)
             .mapNotNull { (k, es) -> (KaiStock.shopNameFor(es, names) ?: KaiStock.familyOf(es, names))?.let { k to it } }
         val goodsWritten = goods.filter { KaiSpokenWords.hasTamil(it.first) }.groupBy({ fold(it.first) }, { it.second })
@@ -125,9 +129,9 @@ object KaiProductSound {
         return base.split(" / ").map { it.trim() }.filter { it.any(Char::isLetter) }.map { it + m?.value.orEmpty() }
     }
 
-    fun withProducts(text: String, productNames: List<String>, people: List<String> = emptyList()): String {
+    fun withProducts(text: String, productNames: List<String>, people: List<String> = emptyList(), goods: Boolean = true): String {
         if (!KaiSpokenWords.hasTamil(text)) return text
-        val prep = prepared(productNames) ?: return text
+        val prep = prepared(productNames, goods) ?: return text
         val products = prep.products
         val sizeless = prep.sizeless
         val names = products.map { it.name }

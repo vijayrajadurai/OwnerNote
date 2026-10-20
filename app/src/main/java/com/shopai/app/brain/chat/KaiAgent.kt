@@ -598,6 +598,15 @@ class KaiAgent(
     /** The turn a product's price / details were last answered: "labam evlo?" right after "Colgate rate enna?" is about Colgate. */
     private var productTalkTurn = -10L
     /** "Vengayathula" = Vengayam + "-la", "Ricela" = Rice + "-la": a shop product with a case ending, written apart ("Vengayam la"). */
+    /**
+     * Prepares the shop's product names for hearing by sound ahead (owner, 20 Oct 2026: "Kai response konjam late"): done when Kai
+     * Chat opens, off the main thread, so the first spoken line doesn't wait for it. Reads only; nothing else changes.
+     */
+    suspend fun warmUp() {
+        val names = runCatching { tools.products()?.map { it.name } }.getOrNull().orEmpty()
+        if (names.isNotEmpty()) runCatching { com.shopai.app.brain.tools.KaiProductSound.withProducts("ஒரு", names) }
+    }
+
     private fun productCase(text: String, productNames: List<String>): String {
         if (productNames.isEmpty()) return text
         val words = productNames.flatMap { it.split(Regex("""\s+""")) }.filter { it.length >= 3 && it.any(Char::isLetter) }
