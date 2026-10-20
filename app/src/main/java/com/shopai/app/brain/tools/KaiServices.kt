@@ -419,13 +419,23 @@ object KaiServices {
      */
     fun withServiceSounds(text: String, kinds: Set<Kind>?, people: List<String>): String {
         if (!KaiSpokenWords.hasTamil(text) || kinds == null || (Kind.SALON !in kinds && Kind.PARLOUR !in kinds)) return text
-        return runCatching { KaiProductSound.withProducts(text, soundNames, people) }.getOrDefault(text)
+        return runCatching { KaiProductSound.withProducts(text, soundNames, people, goods = false) }.getOrDefault(text)
     }
 
     /** The salon / parlour words to hear by sound: English ones of two words or more ("gold facial"), or long ones ("keratin"). */
     private val soundNames: List<String> by lazy {
         catalogue.filter { it.kind == Kind.SALON || it.kind == Kind.PARLOUR }.flatMap { s -> s.words.filter { w -> !KaiSpokenWords.hasTamil(w) && (' ' in w || w.length >= 7) } }
             .distinct()
+    }
+
+    /**
+     * Prepares the salon list's sounds ahead (owner, 20 Oct 2026: "Kai response konjam late"): the first mic line of a beauty shop
+     * no longer waits seconds for it. Called off the main thread when Kai Chat opens; nothing else changes.
+     */
+    fun warmUp(category: String?) {
+        val kinds = kindsFor(category)
+        if (kinds == null || (Kind.SALON !in kinds && Kind.PARLOUR !in kinds)) return
+        runCatching { KaiProductSound.withProducts("ஒரு", soundNames, goods = false) }
     }
 
     /** "oru", "rendu" … "pathu" — and as the mic writes them. */

@@ -178,6 +178,12 @@ class KaiSalonServicesTest {
             val t = s.say(line)
             assertTrue("$line → ${all(t)}", !all(t).contains("Arms Waxing") && !all(t).contains("Hand Massage") && s.note.entries.isEmpty())
         }
+        // A salon owner's ledger line by mic is never a service (owner's phone, 20 Oct 2026: "குடுத்தான்" was heard as "cutting").
+        for (line in listOf("குமார் 2000 குடுத்தான்", "சரத் 5000 தரணும்", "குமார் கிட்ட 500 வாங்கினேன்")) {
+            val s = Shop()
+            val t = s.say(line)
+            assertTrue("[salon] $line → ${all(t)}", s.note.entries.isEmpty() && !all(t).contains("cutting", ignoreCase = true) && !all(t).contains("Daily Sales"))
+        }
         // A grocery: "hand wax" is not its service — nothing written.
         for (line in bothWays("hand wax 300")) {
             val s = Shop("GROCERY")
