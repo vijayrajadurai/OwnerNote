@@ -271,9 +271,6 @@
     <string name="voice_debit_party_label">சப்ளையர் பெயர்</string>
     <string name="voice_confirm_save">உறுதி செய்து சேமி</string>
     <string name="voice_speak_again">மறுபடி பேசு</string>
-    <string name="voice_parse">பார்ஸ்</string>
-    <string name="voice_sentence">உங்க வாக்கியம்</string>
-    <string name="voice_sentence_placeholder">Kumar-ku 2000-ku tharanum</string>
     <string name="voice_parsed">புரிஞ்சது</string>
     <string name="voice_intent">Intent: %1$s</string>
     <string name="voice_confidence">Confidence: %1$d%%</string>

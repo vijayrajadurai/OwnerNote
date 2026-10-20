@@ -1351,7 +1351,9 @@ class KaiOwnerSweepTest {
         val none: (List<KaiTurn>, Shop) -> String? = { _, s -> if (s.tools.saved.isEmpty() && s.inv.moves.isEmpty()) null else "wrote" }
         // 2. receive vs pay
         conv("2 customer owes me", listOf("Kumar enakku 500 tharanum", "due venam"), kind(PlanKind.CREDIT_GIVEN, "Kumar"))
-        conv("2 I owe a customer", listOf("naan Kumar ku 500 kudukkanum", "due venam"), kind(PlanKind.DEBIT_TAKEN, "Kumar"))
+        // (owner, 20 Oct 2026: a name kept on the other side is asked first — "Kumar already customer-aa irukkaar — avare-vaa?")
+        conv("2 I owe a customer: someone else", listOf("naan Kumar ku 500 kudukkanum", "due venam", "vera aal"), kind(PlanKind.DEBIT_TAKEN, "Kumar"))
+        conv("2 I owe a customer: the same Kumar, set off", listOf("naan Kumar ku 500 kudukkanum", "due venam", "avare"), kind(PlanKind.PAYMENT_IN, "Kumar"))
         conv("3 bare then paid", listOf("Kumar 500", "kuduthan"), kind(PlanKind.PAYMENT_IN, "Kumar"))
         conv("3 bare then credit", listOf("Kumar 500", "credit", "due venam"), kind(PlanKind.CREDIT_GIVEN, "Kumar"))
         conv("3 bare supplier paid", listOf("ABC Traders 5000", "kuduthen"), kind(PlanKind.PAYMENT_OUT, "ABC"))

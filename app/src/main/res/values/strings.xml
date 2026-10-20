@@ -314,9 +314,6 @@
     <string name="voice_debit_party_label">Supplier name</string>
     <string name="voice_confirm_save">Confirm &amp; save</string>
     <string name="voice_speak_again">Speak again</string>
-    <string name="voice_parse">Parse</string>
-    <string name="voice_sentence">Your sentence</string>
-    <string name="voice_sentence_placeholder">Kumar-ku 2000-ku tharanum</string>
     <string name="voice_parsed">Parsed result</string>
     <string name="voice_intent">Intent: %1$s</string>
     <string name="voice_confidence">Confidence: %1$d%%</string>

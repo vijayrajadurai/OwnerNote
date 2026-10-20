@@ -446,6 +446,15 @@ object KaiSpokenWords {
             val key = com.shopai.app.util.NameSound.key(w)
             if (beforeQty && key.length >= 3) nameWords.filter { n -> startsAlike(w, n) && com.shopai.app.util.NameSound.key(n).let { it.length == key.length + 1 && it.startsWith(key) } }
                 .singleOrNull()?.let { return@replace it + m.groupValues[2] }
+            // "செல்வத்துக்கு" read as செல்வம்-ku: the shop's Selvam — or its "Selva", or "Bharath" for பரத்துக்கு (the -த் name) —
+            // whichever one the books keep (owner, 20 Oct 2026: "selvam or selva name correct-ah eduthu kudukanum").
+            if (w.endsWith("ம்") && m.groupValues[2] == "-ku" && w.length >= 4) {
+                val stem = w.dropLast(2)
+                for (alt in listOf(stem + "த்", stem)) {
+                    if (alt in tamilKept) return@replace "$alt-ku"
+                    nameWords.filter { n -> startsAlike(alt, n) && (sounds(alt, n) || sounds(alt, soft(n))) }.singleOrNull()?.let { return@replace "$it-ku" }
+                }
+            }
             m.value
         }
     }
@@ -490,6 +499,9 @@ object KaiSpokenWords {
         // "அண்ணாவுக்கு", "அக்காவுக்கு", "ராஜாவுக்கு": "-வுக்கு" after a long "ஆ" is only the glide — அண்ணா-ku (owner, 19 Oct 2026:
         // "முருகேசன் அண்ணாவுக்கு 1200 கடன்" was drafted for "முருகேசன் அண்ணாவு").
         if (stem.length >= 4 && stem.endsWith("ாவு")) return stem.dropLast(2) + "-ku"
+        // "செல்வத்துக்கு" = செல்வம் + -க்கு (a name ending in -ம் takes -த்து-, owner, 20 Oct 2026: it was "செல்வத்த்"): a bare
+        // consonant before "த்து" — the -ம் name. ([withNames] tries the -த் name too — பரத்துக்கு with Bharath in the books.)
+        if (stem.length >= 5 && stem.endsWith("த்து") && stem[stem.length - 5] in 'க'..'ஹ') return stem.dropLast(4) + "ம்-ku"
         val fixed = if (stem.endsWith("ு") && stem.length >= 2 && !endsInU) stem.dropLast(1) + "்" else stem
         return "$fixed-ku"
     }
