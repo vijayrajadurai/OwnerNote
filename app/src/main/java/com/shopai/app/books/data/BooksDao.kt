@@ -153,6 +153,13 @@ interface BooksDao {
            ORDER BY nameKey LIMIT :limit OFFSET :offset""",
     )
     suspend fun searchProducts(businessId: String, q: String, limit: Int, offset: Int): List<ProductEntity>
+    /** Part of a product code / SKU or barcode typed in the Inventory search ("PON" finds RIC-PON-001). */
+    @Query(
+        """SELECT * FROM products WHERE businessId = :businessId AND archived = 0 AND :q != ''
+           AND (sku LIKE '%' || :q || '%' OR barcode LIKE '%' || :q || '%')
+           ORDER BY nameKey LIMIT :limit""",
+    )
+    suspend fun productsByCodePart(businessId: String, q: String, limit: Int): List<ProductEntity>
     @Query("SELECT * FROM products WHERE businessId = :businessId AND hsnCode = :hsn AND archived = 0 ORDER BY nameKey")
     suspend fun productsByHsn(businessId: String, hsn: String): List<ProductEntity>
     @Upsert suspend fun upsertBatch(b: BatchEntity)

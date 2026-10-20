@@ -185,7 +185,7 @@ object KaiSpokenWords {
         "பெண்டிங்" to "pending", "பேலன்ஸ்" to "balance", "லிஸ்ட்" to "list", "டோட்டல்" to "total", "டோட்டலா" to "total", "டோட்டல்ல" to "total la", "மொத்தத்துல" to "mothathula", "மொத்தம்" to "motham", "மொத்தமா" to "mothama",
         "டியூ" to "due", "டேட்" to "date", "தேதி" to "thethi", "வேண்டாம்" to "venam", "வேணாம்" to "venam", "எடுத்துடு" to "eduthudu", "எடுத்துடுங்க" to "eduthudunga", "வேணும்" to "venum",
         "கஸ்டமர்" to "customer", "சப்ளையர்" to "supplier", "ஓனர்" to "owner", "அண்ணா" to "anna", "அண்ணே" to "anna", "சார்" to "sir",
-        "சரி" to "seri", "ஓகே" to "ok", "ஆமா" to "aama", "ஆமாம்" to "aama", "இல்ல" to "illa", "இல்லை" to "illa", "சேவ்" to "save",
+        "சரி" to "seri", "ஓகே" to "ok", "ஆமா" to "aama", "ஆமாம்" to "aama", "இல்ல" to "illa", "இல்லை" to "illa", "தெரியாது" to "theriyaadhu", "தெரியல" to "theriyala", "தெரியலை" to "theriyala", "சேவ்" to "save",
         "இப்போ" to "ippo", "இப்ப" to "ippa", "இப்பொழுது" to "ippo", "எப்போ" to "eppo", "எப்ப" to "eppa", "எப்படி" to "eppadi",
         "யார்" to "yaar", "யாரு" to "yaaru", "யாருக்கு" to "yaarukku", "யாருகிட்ட" to "yaarukitta", "யாரெல்லாம்" to "yaarellam",
         "கொஞ்சம்" to "konjam", "ஃபுல்" to "full", "ஃபுல்லா" to "fulla", "எல்லாத்தையும்" to "ellathaiyum", "முடங்கியிருக்கு" to "mudangi irukku", "முடங்கி" to "mudangi", "விக்காத" to "vikkaadha", "மெதுவா" to "medhuva", "அறிக்கை" to "arikkai", "விக்குற" to "vikkura", "போகல" to "pogala", "கம்மி" to "kammi", "ல" to "la", "நோட்" to "note", "நோட்டு" to "note", "எழுது" to "ezhudhu", "எழுதிக்கோ" to "ezhudhiko", "எழுதிடு" to "ezhudhidu",
@@ -446,6 +446,15 @@ object KaiSpokenWords {
             val key = com.shopai.app.util.NameSound.key(w)
             if (beforeQty && key.length >= 3) nameWords.filter { n -> startsAlike(w, n) && com.shopai.app.util.NameSound.key(n).let { it.length == key.length + 1 && it.startsWith(key) } }
                 .singleOrNull()?.let { return@replace it + m.groupValues[2] }
+            // "செல்வத்துக்கு" read as செல்வம்-ku: the shop's Selvam — or its "Selva", or "Bharath" for பரத்துக்கு (the -த் name) —
+            // whichever one the books keep (owner, 20 Oct 2026: "selvam or selva name correct-ah eduthu kudukanum").
+            if (w.endsWith("ம்") && m.groupValues[2] == "-ku" && w.length >= 4) {
+                val stem = w.dropLast(2)
+                for (alt in listOf(stem + "த்", stem)) {
+                    if (alt in tamilKept) return@replace "$alt-ku"
+                    nameWords.filter { n -> startsAlike(alt, n) && (sounds(alt, n) || sounds(alt, soft(n))) }.singleOrNull()?.let { return@replace "$it-ku" }
+                }
+            }
             m.value
         }
     }
@@ -490,6 +499,9 @@ object KaiSpokenWords {
         // "அண்ணாவுக்கு", "அக்காவுக்கு", "ராஜாவுக்கு": "-வுக்கு" after a long "ஆ" is only the glide — அண்ணா-ku (owner, 19 Oct 2026:
         // "முருகேசன் அண்ணாவுக்கு 1200 கடன்" was drafted for "முருகேசன் அண்ணாவு").
         if (stem.length >= 4 && stem.endsWith("ாவு")) return stem.dropLast(2) + "-ku"
+        // "செல்வத்துக்கு" = செல்வம் + -க்கு (a name ending in -ம் takes -த்து-, owner, 20 Oct 2026: it was "செல்வத்த்"): a bare
+        // consonant before "த்து" — the -ம் name. ([withNames] tries the -த் name too — பரத்துக்கு with Bharath in the books.)
+        if (stem.length >= 5 && stem.endsWith("த்து") && stem[stem.length - 5] in 'க'..'ஹ') return stem.dropLast(4) + "ம்-ku"
         val fixed = if (stem.endsWith("ு") && stem.length >= 2 && !endsInU) stem.dropLast(1) + "்" else stem
         return "$fixed-ku"
     }

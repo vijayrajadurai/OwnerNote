@@ -454,3 +454,9 @@ STOCK  | சோல்டு 6 லக்ஸ் சோப்                      
 # Hardware stock-in check (20 Oct 2026): packs of a size, and a new product never put on one the shop has.
 STOCK  | Rice arai kilo 10 packet vandhuchu            | Rice 255       # 10 packets of 500 g = 5 kg
 STOCK  | Oil 1 litre 12 bottle vandhuchu               | Oil 252        # kept in bottles: 12 bottles
+
+# Owner's list (20 Oct 2026): a sale said with its amount is never added to the quantity ("Onion 5 kg 100 ku vithen" was 105 kg);
+# a supplier's invoice by name is their PDF.
+STOCK  | Rice 2 kg 130 rupees ku vithuchu               | Rice 248
+STOCK  | Rice 2 kg 130 ku vithen                        | Rice 248
+ASK    | ABC Traders invoice kudu                       | ABC Traders; PDF

@@ -66,6 +66,9 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
 - Context across turns: the person, product, amount and saved entry said before. "avan", "andha aalu", "mudhal aal"
   (the first one in the list just shown). Return to an earlier topic.
 - A word alone ("report", "Lux", "cash") gets a question, never an unasked report.
+- One category at a time (owner, 20 Oct 2026): with a stock question waiting, a credit / debit line (or with a money question
+  waiting, a stock line) gets "stock-aa, credit-aa, debit-aa?" (buttons + said) and goes the way picked. "stock add pannu" never
+  confirms a money draft; "credit / debit add pannu" is the money flow, never a product. Goods mode keeps its own way.
 - Plain answers for what Kai wasn't fed (advice, a shop holiday, utility bills as expenses); small talk answered kindly.
 - The chat's language is kept: a one-word English reply never switches it.
 - Speed: product and service sound keys are prepared when Kai Chat opens. The first mic line takes ~0.2 s, and Kai
@@ -83,6 +86,10 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
   not a reminder.
 - Same names: "which Lokesh?"; a new name gets "Puthu customer / supplier-ah add aagum". Any name, a shop's name, or a
   name with its shop works, with no list of names.
+- One name on both sides: a Debit for a name kept only as a customer (or a Credit for a supplier) asks "already customer-aa
+  irukkaar — avare-vaa?" — the same: set off on their record (balance said); someone else: a new supplier / customer.
+- Tamil names in their case: "செல்வத்துக்கு" = Selvam (or the shop's Selva / Bharath for பரத்துக்கு); typed "selvathukku" too.
+- A supplier's invoice by name ("ABC Traders invoice kudu") is their statement PDF; "bill podu" stays the Billing screen's.
 - A second payment the same day is asked ("innoru ₹1,000-aa?"), then allowed on Confirm.
 - Questions answered from the full ledger:
   - who owes
@@ -112,10 +119,28 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
   - inch / mm / sqmm read the same by mic.
   - No expiry / batch / phone-model questions in a hardware shop.
   - Test: `KaiHardwareStockInTest`.
+- A sale said with its amount ("Onion 5 kg 100 rupees-ku vithuchu") never adds the amount to the kilos; "innaiku total sale /
+  labam evlo" sums today's stock sales (₹100 + ₹50 = ₹150) and their profit — kept with Kai's memory (no books table yet).
+- Stock-in of goods that can expire asks the expiry date; a date said next goes onto the draft (hardware never asked).
+  "skip" / "illa" / "theriyaadhu" keeps the draft with no expiry (never cancels it); a customer return is not asked.
 - Goods arriving ("kadaiku saraku vandhuruku") → items one by one into a list, saved together on the list's Confirm.
 - Expiry for goods that can expire, in any shop. Batches and a 7-day alert. Old stock becomes an "OLD-STOCK" batch on
   Confirm.
 - Reports: stock on hand, low stock, fast and slow movers, profit and loss. A stock card shows the product's photo.
+- Inventory fields (owner, 20 Oct 2026; not yet checked on a phone — UI needs an Android Studio build):
+  - Dashboard: search (name / code / SKU / barcode, part of a code too), Add Product, Total Products and Low Stock tiles
+    (tap Low Stock to list only those).
+  - Add Product: business category (the shop's by default), required product category with the kind's own list, SKU
+    Auto (`books/model/ProductCategories.kt` `ProductCode`), GST "not specified" when left blank (never 0%).
+  - Unit Master for every kind of business (`books/model/UnitMaster.kt`): searchable by code / English / Tamil / short
+    form, the kind's units first, a new unit typed in English letters. Stock, purchase and sales unit per product, each
+    with its own conversion (`ProductUnits.more`); fixed ones (1 metre = 1,000 mm, 1 quintal = 100 kg) are filled in,
+    a box / strip / coil never is. Books DB v2 (`BooksDatabase.MIGRATION_1_2`). Test: `UnitMasterTest`.
+  - Bills: a line starts in the purchase / sales unit; Save draft; discount, taxable, CGST + SGST / IGST shown; Credit
+    as a payment choice for a named party. Stock change dialog: one-tap reasons (old stock = opening correction).
+  - Sales bill: the invoice number is filled in from the series (INV-0001…) and can be changed ("use the automatic
+    number" brings it back; an auto number is taken on Confirm, so two bills never share it); the date is the phone's
+    today, changed by tapping it.
 
 ### Bills
 - Bill photo OCR (Tesseract), hardened on 50+ real bills:
@@ -164,6 +189,7 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
 - Kai's note scene: the notebook writes the draft, a digital card follows, and a tick appears only after the save.
   iPhone-style cards; a compact question card with step bars and chips.
 - Inventory screen with animated category pictures.
+- The voice / bill screen no longer has the "Your sentence" box (its "Kumar-ku 2000-ku tharanum" example) or the Parse button.
 - Customers: a small Import beside the title. More → "Pazhaiya kanakku import" reads another app's Customer / Supplier
   List PDF and adds people with opening balances on Confirm. No other app's name is shown anywhere.
 

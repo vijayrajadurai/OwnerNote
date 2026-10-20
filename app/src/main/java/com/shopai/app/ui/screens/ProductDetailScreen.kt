@@ -122,7 +122,7 @@ fun ProductDetailScreen(
                         DetailRow(stringResource(R.string.inv_purchase_price), p.purchasePrice?.let { formatInr(it) })
                         DetailRow(stringResource(R.string.inv_selling_price), p.sellingPrice?.let { formatInr(it) })
                         DetailRow(stringResource(R.string.inv_mrp), p.mrp?.let { formatInr(it) })
-                        DetailRow(stringResource(R.string.inv_gst_rate), p.gstRate?.let { "$it%" })
+                        DetailRow(stringResource(R.string.inv_gst_rate), p.gstRate?.let { "$it%" } ?: stringResource(R.string.books_gst_not_specified))
                         DetailRow(stringResource(R.string.inv_supplier), p.supplierName)
                         DetailRow(stringResource(R.string.inv_image_uri), p.imageUri)
                         DetailRow(stringResource(R.string.inv_notes), p.notes)

@@ -14,7 +14,8 @@ object AdjustmentReasonText {
         AdjustmentReason.MISSING to listOf("missing", "lost", "theft", "stolen", "காணவில்லை", "காணோம்"),
         AdjustmentReason.WASTAGE to listOf("wastage", "waste", "spoil", "rotten", "வீண்"),
         AdjustmentReason.PHYSICAL_COUNT to listOf("count", "physical", "stock check", "audit", "எண்ணிக்கை"),
-        AdjustmentReason.OPENING_CORRECTION to listOf("opening"),
+        // Stock that was in the shop before the app (no purchase bill): the opening stock corrected (owner, 20 Oct 2026).
+        AdjustmentReason.OPENING_CORRECTION to listOf("opening", "old stock", "pazhaya", "பழைய"),
     )
 
     fun from(text: String): AdjustmentReason {

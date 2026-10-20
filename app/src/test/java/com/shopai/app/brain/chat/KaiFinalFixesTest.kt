@@ -180,7 +180,7 @@ class KaiFinalFixesTest {
         assertTrue(r.reply.text, r.reply.text.startsWith("Done Owner ✅ 10 minutes kalichi"))
         assertEquals("Kumar", tools.scheduled.single().person)
         kai.ask("Colgate stock add pannu")
-        assertEquals("Colgate — 12 pieces stock-in draft ready. Confirm pannunga.", kai.ask("12").reply.text)
+        assertEquals("Colgate — 12 pieces stock-in draft ready. Confirm pannunga.\nExpiry date enna Owner? (eg: 25/12/2026). Expiry illa-na appadiye Confirm pannunga.", kai.ask("12").reply.text)
     }
 
     // ------------------------------------------------------------ stock
@@ -196,7 +196,7 @@ class KaiFinalFixesTest {
         val first = newKai().ask("Colgate stock vandhiruku add pannu")
         assertEquals("Seri Owner 👍 Colgate stock add pannalam.\nEvlo pieces vandhirukku?", first.reply.text)
         val withQty = newKai().ask("Colgate 12 pieces add pannu")
-        assertEquals("Colgate — 12 pieces stock-in draft ready. Confirm pannunga.", withQty.reply.text)
+        assertEquals("Colgate — 12 pieces stock-in draft ready. Confirm pannunga.\nExpiry date enna Owner? (eg: 25/12/2026). Expiry illa-na appadiye Confirm pannunga.", withQty.reply.text)
         assertEquals(listOf("Confirm", "Edit", "Cancel"), withQty.card!!.buttons.map { it.label })
         assertTrue(tools.stockChanges.isEmpty())
     }

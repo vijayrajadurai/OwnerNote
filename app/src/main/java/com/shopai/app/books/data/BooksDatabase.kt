@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
  * OwnerNote Books — its own database file, separate from `shop_ai_local.db`
@@ -34,7 +36,7 @@ import androidx.room.RoomDatabase
         OutboxEntity::class,
         DraftEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = false,
 )
 abstract class BooksDatabase : RoomDatabase() {
@@ -47,7 +49,24 @@ abstract class BooksDatabase : RoomDatabase() {
         fun get(context: Context): BooksDatabase =
             instance ?: synchronized(this) {
                 instance ?: Room.databaseBuilder(context.applicationContext, BooksDatabase::class.java, "ownernote_books.db")
+                    .addMigrations(MIGRATION_1_2)
                     .build().also { instance = it }
             }
+
+        /**
+         * v2 (owner's inventory fields, 20 Oct 2026): GST left blank is "not specified" (never 0%), purchase / sales units,
+         * more than one unit conversion, and the product's kind of business. Products saved before keep everything; one whose
+         * GST was the form's pre-selected 0% (taxType GST, rate 0) is "not specified" — no 0% was ever chosen for it.
+         */
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE products ADD COLUMN gstSpecified INTEGER NOT NULL DEFAULT 1")
+                db.execSQL("ALTER TABLE products ADD COLUMN moreUnits TEXT")
+                db.execSQL("ALTER TABLE products ADD COLUMN purchaseUnit TEXT")
+                db.execSQL("ALTER TABLE products ADD COLUMN salesUnit TEXT")
+                db.execSQL("ALTER TABLE products ADD COLUMN businessKind TEXT")
+                db.execSQL("UPDATE products SET gstSpecified = 0 WHERE taxType = 'GST' AND gstBp = 0")
+            }
+        }
     }
 }
