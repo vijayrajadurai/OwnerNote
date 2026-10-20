@@ -1208,6 +1208,9 @@ NewonX — Owner Note. ஆப்பில் உதவி & ஆதரவு.]]><
     <string name="bill_home_caption">பில்கள், கொள்முதல், திருப்பம், பணம், PDF &amp; WhatsApp</string>
     <string name="bill_home_title">விற்பனை &amp; கொள்முதல்</string>
     <string name="bill_invoice_no">பில் எண்</string>
+    <string name="bill_number_auto_caption">தானாக வந்த எண் — மாற்றலாம்.</string>
+    <string name="bill_number_auto">தானாக வரும் எண்ணையே வை</string>
+    <string name="bill_date_today_caption">போனின் இன்றைய தேதி — மாற்ற தொடுங்கள்.</string>
     <string name="bill_items">பொருட்கள்</string>
     <string name="bill_keep_advance">மீதியை முன்பணமாக வை</string>
     <string name="bill_keep_advance_caption">நிலுவைக்கு மேல் உள்ளது சேமிக்கப்பட்டு அடுத்த பில்லில் பயன்படும்</string>

@@ -1263,6 +1263,9 @@ NewonX — Owner Note. Use Help & Support in the app.]]></string>
     <string name="bill_home_caption">Invoices, purchase bills, returns, payments, PDF &amp; WhatsApp</string>
     <string name="bill_home_title">Sales &amp; purchases</string>
     <string name="bill_invoice_no">Invoice number</string>
+    <string name="bill_number_auto_caption">Filled in automatically — you can change it.</string>
+    <string name="bill_number_auto">Use the automatic number</string>
+    <string name="bill_date_today_caption">Today\'s date from the phone — tap to change.</string>
     <string name="bill_items">Items</string>
     <string name="bill_keep_advance">Keep extra as advance</string>
     <string name="bill_keep_advance_caption">Anything more than what is due is kept and can be used on a later bill</string>

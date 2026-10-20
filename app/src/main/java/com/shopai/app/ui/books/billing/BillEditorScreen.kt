@@ -48,6 +48,7 @@ import com.shopai.app.books.model.PaymentMode
 import com.shopai.app.books.model.ProductUnits
 import com.shopai.app.books.model.TaxType
 import com.shopai.app.books.model.TxnSource
+import com.shopai.app.books.model.TxnType
 import com.shopai.app.data.AppContainer
 import com.shopai.app.ui.books.BooksErrors
 import com.shopai.app.ui.books.BooksNotReady
@@ -134,6 +135,8 @@ private fun BillEditor(
     var date by remember { mutableStateOf(LocalDate.now()) }
     var dueDate by remember { mutableStateOf<LocalDate?>(null) }
     var number by remember { mutableStateOf("") }
+    // A sale's invoice number is filled in from the shop's series (owner, 20 Oct 2026); typing one makes it the owner's own.
+    var numberAuto by remember { mutableStateOf(sale) }
     var lines by remember { mutableStateOf(emptyList<EditLine>()) }
     var pays by remember { mutableStateOf(listOf(EditPay(PaymentMode.CASH, ""))) }
     var notes by remember { mutableStateOf("") }
@@ -157,6 +160,7 @@ private fun BillEditor(
             date = LocalDate.parse(draft.date)
             dueDate = draft.dueDate?.let(LocalDate::parse)
             number = draft.number.orEmpty()
+            numberAuto = sale && draft.number == null
             notes = draft.notes.orEmpty()
             lines = draft.lines.map { l ->
                 EditLine(l.productId?.let { s.dao.product(it) }, l.name, qtyText(l.qtyMilli), l.unit, paiseText(l.ratePaise),
@@ -167,6 +171,8 @@ private fun BillEditor(
             party = initialPartyId?.let { s.dao.party(it) }
             dueDate = party?.creditDays?.let { date.plusDays(it.toLong()) }
         }
+        // (the next number of the series, filled in — the same one the engine gives on Confirm unless the owner changes it)
+        if (sale && numberAuto) number = s.engine.peekNumber(TxnType.SALE)
         ready = true
     }
 
@@ -188,7 +194,9 @@ private fun BillEditor(
             amount?.takeIf { it > 0 }?.let { BillPayment(p.mode, it) }
         }
         if (errs.isNotEmpty()) return null to errs
-        return BillDraft(kind, party?.id, date.toString(), dueDate?.toString(), number.trim().ifEmpty { null }, billLines, billPays, notes) to emptyList()
+        // (an auto number is not kept with the draft: Confirm takes the series' next one, so two bills never share it)
+        val ownNumber = if (sale && numberAuto) null else number.trim().ifEmpty { null }
+        return BillDraft(kind, party?.id, date.toString(), dueDate?.toString(), ownNumber, billLines, billPays, notes) to emptyList()
     }
 
     suspend fun quoteOf(d: BillDraft): Quote =
@@ -202,6 +210,8 @@ private fun BillEditor(
         val (d, errs) = toDraft()
         parseErrors = errs
         quote = if (d == null || d.lines.isEmpty()) null else quoteOf(d)
+        // (another bill may have taken the number meanwhile: the auto number follows the series)
+        if (sale && numberAuto) quote?.number?.let { if (it != number) number = it }
     }
 
     if (!ready) {
@@ -297,11 +307,24 @@ private fun BillEditor(
                 DateField(stringResource(R.string.bill_date), date, { it?.let { d -> date = d } })
                 DateField(stringResource(R.string.bill_due_date), dueDate, { dueDate = it }, clearable = true)
             }
+            // The bill date starts as the phone's today; tapping it picks another day.
+            if (date == LocalDate.now()) Text(stringResource(R.string.bill_date_today_caption), style = MaterialTheme.typography.bodySmall, color = ShopAiThemeColors.onSurfaceVariant)
             ShopTextField(
-                stringResource(if (sale) R.string.bill_invoice_no else R.string.bill_supplier_bill_no), number, { number = it.trim() },
+                stringResource(if (sale) R.string.bill_invoice_no else R.string.bill_supplier_bill_no), number,
+                { number = it.trim(); if (sale) numberAuto = false },
                 placeholder = if (sale) quote?.number.orEmpty() else "",
                 error = (quote?.errors.orEmpty()).firstOrNull { it.field == "number" || it.field == "billNumber" }?.message,
             )
+            if (sale) {
+                if (numberAuto) {
+                    Text(stringResource(R.string.bill_number_auto_caption), style = MaterialTheme.typography.bodySmall, color = ShopAiThemeColors.onSurfaceVariant)
+                } else {
+                    // Back to the series' next number.
+                    TextButton(onClick = { scope.launch { number = s.engine.peekNumber(TxnType.SALE); numberAuto = true } }) {
+                        Text(stringResource(R.string.bill_number_auto))
+                    }
+                }
+            }
         }
 
         SectionCard(stringResource(R.string.bill_items)) {

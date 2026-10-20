@@ -127,6 +127,9 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
     a box / strip / coil never is. Books DB v2 (`BooksDatabase.MIGRATION_1_2`). Test: `UnitMasterTest`.
   - Bills: a line starts in the purchase / sales unit; Save draft; discount, taxable, CGST + SGST / IGST shown; Credit
     as a payment choice for a named party. Stock change dialog: one-tap reasons (old stock = opening correction).
+  - Sales bill: the invoice number is filled in from the series (INV-0001…) and can be changed ("use the automatic
+    number" brings it back; an auto number is taken on Confirm, so two bills never share it); the date is the phone's
+    today, changed by tapping it.
 
 ### Bills
 - Bill photo OCR (Tesseract), hardened on 50+ real bills:
