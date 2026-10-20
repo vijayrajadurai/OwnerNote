@@ -148,8 +148,15 @@ private fun ProductForm(container: AppContainer, s: BooksSession, productId: Str
     var saving by remember { mutableStateOf(false) }
 
     // The shop's category (a network read — never holds the form up): its kind is the default for a new product.
+    // The business categories picked at setup: their subcategories come first among the product category suggestions.
+    var shopKind0 by remember { mutableStateOf<UnitMaster.Kind?>(null) }
+    var shopSubcategories by remember { mutableStateOf(emptyList<String>()) }
     LaunchedEffect(Unit) {
-        val shop = UnitMaster.kindOf(runCatching { container.businessRepository.getMyBusiness()?.category }.getOrNull())
+        val business = runCatching { container.businessRepository.getMyBusiness() }.getOrNull()
+        val picked = com.shopai.app.data.model.BusinessCategories.picked(business)
+        val shop = com.shopai.app.data.model.BusinessCategories.unitKindFor(picked) ?: UnitMaster.kindOf(business?.category)
+        shopKind0 = shop
+        shopSubcategories = com.shopai.app.data.model.BusinessCategories.subcategoriesFor(picked)
         if (kind == null) kind = shop
     }
 
@@ -322,7 +329,7 @@ private fun ProductForm(container: AppContainer, s: BooksSession, productId: Str
             ChoiceChips(UnitMaster.Kind.entries, shopKind, { kindLabel(it) }) { kind = it }
             ShopTextField(stringResource(R.string.books_product_category_required), category, { category = it }, error = errors.messageFor("category"))
             // The kind's own categories as suggestions (what is typed narrows them); a new one is created for the shop on Save.
-            val categoryHits = ProductCategories.suggestions(shopKind).filter { category.isBlank() || it.contains(category.trim(), ignoreCase = true) }
+            val categoryHits = ((if (shopKind == shopKind0) shopSubcategories else emptyList()) + ProductCategories.suggestions(shopKind)).distinct().filter { category.isBlank() || it.contains(category.trim(), ignoreCase = true) }
             if (categoryHits.isNotEmpty() && categoryHits.none { it.equals(category.trim(), ignoreCase = true) }) {
                 ChoiceChips(categoryHits, null, { it }) { category = it }
             }

@@ -189,6 +189,11 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
 - Kai's note scene: the notebook writes the draft, a digital card follows, and a tick appears only after the save.
   iPhone-style cards; a compact question card with step bars and chips.
 - Inventory screen with animated category pictures.
+- Setup / Profile business category (owner, 20 Oct 2026; not yet checked on a phone): 40 product business categories
+  plus hotel and salon (`data/model/BusinessCategories.kt`, subcategories with each). The 9 popular are cards, with a
+  search (names, Tamil, what the shop sells) and "View all"; several can be picked; "Other Product Businesses" takes a
+  typed name. Saved as `categories` + `otherCategoryName` (backend `claude/business-categories`); `category` stays the
+  older single value Kai and the server read (a service pick wins, else the first). Test: `BusinessCategoriesTest`.
 - The voice / bill screen no longer has the "Your sentence" box (its "Kumar-ku 2000-ku tharanum" example) or the Parse button.
 - Customers: a small Import beside the title. More → "Pazhaiya kanakku import" reads another app's Customer / Supplier
   List PDF and adds people with opening balances on Confirm. No other app's name is shown anywhere.
@@ -211,4 +216,6 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
 - Kai 2.0 roadmap (owner, Oct 2026): understand everything → know the business → never make silent mistakes → learn
   automatically → predict before problems happen (cash-flow risk, stock running out). Step 5 is not started; the owner
   said to wait until after launch.
-- The backend (`OwnerNote-Backend`, Prisma) has no `category` enum change; the app maps categories on its side.
+- The backend (`OwnerNote-Backend`, Prisma) has no `category` enum change; the app maps categories on its side. Several
+  categories and the "Other" name are kept in `Business.categories` / `otherCategoryName` (migration
+  `20261020180000_business_categories`); the server must be deployed with it for the picks to be kept.

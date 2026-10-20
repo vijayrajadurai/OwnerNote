@@ -46,11 +46,11 @@ import androidx.compose.ui.unit.dp
 import com.shopai.app.R
 import com.shopai.app.data.AppContainer
 import com.shopai.app.data.model.Business
-import com.shopai.app.data.model.BusinessCategory
+import com.shopai.app.data.model.BusinessCategories
 import com.shopai.app.data.model.BusinessInput
 import com.shopai.app.data.network.presentApiError
 import com.shopai.app.ui.components.ApiErrorAlertDialog
-import com.shopai.app.ui.components.CategoryChip
+import com.shopai.app.ui.components.BusinessCategoryPicker
 import com.shopai.app.ui.components.DetailScaffold
 import com.shopai.app.ui.components.PrimaryButton
 import com.shopai.app.ui.components.ShopTextField
@@ -75,7 +75,8 @@ fun ProfileEditScreen(
     var photoPath by remember { mutableStateOf<String?>(null) }
     var ownerName by remember { mutableStateOf("") }
     var businessName by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf<BusinessCategory?>(null) }
+    var categories by remember { mutableStateOf(emptyList<String>()) }
+    var otherCategoryName by remember { mutableStateOf("") }
     var city by remember { mutableStateOf("") }
     var runningSinceYear by remember { mutableStateOf("") }
     var monthlyVolume by remember { mutableStateOf("") }
@@ -137,7 +138,9 @@ fun ProfileEditScreen(
                 if (business != null) {
                     ownerName = business.ownerName
                     businessName = business.businessName
-                    category = BusinessCategory.fromApi(business.category)
+                    // (set up before the list: its one older category, read into the list)
+                    categories = BusinessCategories.picked(business)
+                    otherCategoryName = business.otherCategoryName.orEmpty()
                     city = business.city
                     runningSinceYear = business.runningSinceYear?.toString().orEmpty()
                     monthlyVolume = business.monthlyVolumeApprox.orEmpty().filter { it.isDigit() }
@@ -163,7 +166,7 @@ fun ProfileEditScreen(
 
     val isValid = ownerName.trim().length >= 2 &&
         businessName.trim().length >= 2 &&
-        category != null &&
+        BusinessCategories.complete(categories, otherCategoryName) &&
         city.trim().length >= 2 &&
         coords != null
 
@@ -273,19 +276,13 @@ fun ProfileEditScreen(
                 color = ShopAiThemeColors.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 8.dp),
             )
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+            BusinessCategoryPicker(
+                selected = categories,
+                otherName = otherCategoryName,
+                onSelectedChange = { categories = it },
+                onOtherNameChange = { otherCategoryName = it },
                 modifier = Modifier.padding(bottom = 16.dp),
-            ) {
-                BusinessCategory.entries.forEach { cat ->
-                    CategoryChip(
-                        label = stringResource(cat.labelRes),
-                        selected = category == cat,
-                        onClick = { category = cat },
-                    )
-                }
-            }
+            )
 
             ShopTextField(
                 label = stringResource(R.string.business_city),
@@ -358,7 +355,7 @@ fun ProfileEditScreen(
                 loading = loading,
                 enabled = isValid && !loading,
                 onClick = {
-                    val selected = category ?: return@PrimaryButton
+                    if (!BusinessCategories.complete(categories, otherCategoryName)) return@PrimaryButton
                     val current = existing
                     val shop = coords
                     scope.launch {
@@ -369,7 +366,9 @@ fun ProfileEditScreen(
                                 BusinessInput(
                                     ownerName = ownerName.trim(),
                                     businessName = businessName.trim(),
-                                    category = selected.apiValue,
+                                    category = BusinessCategories.legacyFor(categories),
+                                    categories = categories,
+                                    otherCategoryName = otherCategoryName.trim().takeIf { BusinessCategories.OTHER in categories },
                                     city = city.trim(),
                                     runningSinceYear = runningSinceYear.toIntOrNull(),
                                     monthlyVolumeApprox = monthlyVolume.toIntOrNull(),
