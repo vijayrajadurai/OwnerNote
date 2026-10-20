@@ -113,6 +113,12 @@ class KaiChatSession(
 
     fun plan(key: String): ActionPlan? = agent.plan(key)
 
+    /** The shop's product names and its salon list made ready for the mic, off the main thread, when Kai Chat opens. */
+    suspend fun warmUp(category: String?) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+        runCatching { agent.warmUp() }
+        com.shopai.app.brain.tools.KaiServices.warmUp(category)
+    }
+
     /** Kai asked about the owner's own words and waits for the answer (Pesunga sends that answer here). */
     val waitingForLearningAnswer: Boolean get() = agent.waitingForLearningAnswer
 
@@ -169,7 +175,8 @@ class KaiChatSession(
         thinking = true
         if (note.state != com.shopai.app.brain.note.KaiNoteState.SAVING) note = note.understanding()
         val started = System.currentTimeMillis()
-        val result = runCatching { turn() }.getOrElse {
+        // Kai's reading runs off the main thread (owner, 20 Oct 2026: "Kai response konjam late"): the screen never freezes while he reads.
+        val result = runCatching { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { turn() } }.getOrElse {
             KaiTurn(ChatReply(
                 when (lang) {
                     KaiLang.TAMIL -> "ஓனர், கொஞ்சம் தெளிவா சொல்லுங்க."
@@ -179,8 +186,8 @@ class KaiChatSession(
                 KaiMood.CLARIFY, ChatIntent.UNKNOWN,
             ))
         }
-        // A short, visible moment of thinking (the brain itself is instant).
-        kotlinx.coroutines.delay((650 - (System.currentTimeMillis() - started)).coerceAtLeast(0))
+        // A short, visible moment of thinking (the brain itself is quick) — kept brief so the answer comes at once.
+        kotlinx.coroutines.delay((300 - (System.currentTimeMillis() - started)).coerceAtLeast(0))
         closeSpentDrafts()
         val id = nextId++
         val ask = if (result.reply.mood == KaiMood.CLARIFY) runCatching { agent.askProgress(lang) }.getOrNull() else null
