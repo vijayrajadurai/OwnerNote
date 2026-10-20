@@ -4773,6 +4773,8 @@ class KaiAgent(
         )
     }
 
+    /** A reply to "Expiry date enna?" that means none / not known (typed, or spoken — normalized first). */
+    private val noExpiry = Regex("""(?i)^(?:expiry\s+)?(?:skip|illa|illai|no|none|nil|theriyaadhu|theriyadhu|theriyala|theriyalai|no\s+expiry|expiry\s+(?:illa|illai|theriyaadhu|theriyala|venam|vendaam|vendam))\s*[.!]?$""")
     private val oldThenNew = Regex("""(?i)^\s*(\d+(?:\.\d+)?)\s*([\p{L}]+)?\s*(?:illa|illai|no|இல்ல)[\s,]+(\d+(?:\.\d+)?)\s*([\p{L}]+)?\s*(?:dhaan|than|thaan|dhan|தான்)?\s*[.!]?\s*$""")
     private val itemCorrection = Regex("""(?i)^\s*(?:(?:illa|illai|no|இல்ல)[\s,]+)?(\d+(?:\.\d+)?)\s*([\p{L}]+)?\s*(?:dhaan|than|thaan|dhan|தான்|only|mattum)\s*[.!]?\s*$|^\s*(?:illa|illai|no|இல்ல)[\s,]+(\d+(?:\.\d+)?)\s*([\p{L}]+)?\s*[.!]?\s*$""")
 
@@ -4833,6 +4835,11 @@ class KaiAgent(
         val plan = stockPlans.values.lastOrNull { it.said == last.first }?.takeIf { it.incoming &&
             (it.product.batchTracked || com.shopai.app.brain.tools.KaiExpiry.canExpire(it.product.category, it.product.name)) } ?: return null
         val text = com.shopai.app.brain.tools.KaiSpokenWords.let { it.normalize(it.code(said)) }.trim()
+        // "skip" / "illa" / "theriyaadhu" to the expiry question: the draft stays (Confirm saves it with no expiry) — never dropped.
+        if (!plan.product.batchTracked && plan.batch == null && noExpiry.matches(text)) {
+            val turn = stockDraftOnly(plan.product, plan.qty, plan.unit, plan.incoming, plan.said, lang, plan.key, plan.conv, false, null)
+            return withText(turn, pick(lang, ta = "சரி ஓனர், expiry இல்லாம.", tl = "Seri Owner, expiry illama.", en = "OK Owner, no expiry.") + "\n" + turn.reply.text)
+        }
         val words = text.split(Regex("""\s+"""))
         val answer = batchSaid(text) ?: run {
             // A short reply with no "batch" / "expiry" word: a date is the expiry ("06/2027"), a code with a digit the batch ("B20").
@@ -5323,7 +5330,8 @@ class KaiAgent(
         if (incoming && product.batchTracked) return withBatchLines(turn, newBatch, lang)
         // Goods that can expire, no expiry said (owner, 20 Oct 2026: "stock add pannum podhu oru oru stock-kum expiry date kekanum"):
         // the draft asks for it — a date said next comes onto this draft; Confirm without one keeps it as before.
-        if (starts) return withText(turn, turn.reply.text + "\n" + pick(lang,
+        // (a customer return is the shop's own stock coming back — not asked)
+        if (starts && com.shopai.app.brain.tools.KaiStock.reasonOf(said) != "Customer return") return withText(turn, turn.reply.text + "\n" + pick(lang,
             ta = "Expiry date என்ன ஓனர்? (உதா: 25/12/2026). Expiry இல்லன்னா அப்படியே Confirm பண்ணுங்க.",
             tl = "Expiry date enna Owner? (eg: 25/12/2026). Expiry illa-na appadiye Confirm pannunga.",
             en = "What's the expiry date, Owner? (e.g. 25/12/2026). No expiry? Just tap Confirm."))

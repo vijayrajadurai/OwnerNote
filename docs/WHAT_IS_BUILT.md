@@ -122,6 +122,7 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
 - A sale said with its amount ("Onion 5 kg 100 rupees-ku vithuchu") never adds the amount to the kilos; "innaiku total sale /
   labam evlo" sums today's stock sales (₹100 + ₹50 = ₹150) and their profit — kept with Kai's memory (no books table yet).
 - Stock-in of goods that can expire asks the expiry date; a date said next goes onto the draft (hardware never asked).
+  "skip" / "illa" / "theriyaadhu" keeps the draft with no expiry (never cancels it); a customer return is not asked.
 - Goods arriving ("kadaiku saraku vandhuruku") → items one by one into a list, saved together on the list's Confirm.
 - Expiry for goods that can expire, in any shop. Batches and a 7-day alert. Old stock becomes an "OLD-STOCK" batch on
   Confirm.

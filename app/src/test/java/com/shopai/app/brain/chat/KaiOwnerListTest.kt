@@ -218,6 +218,23 @@ class KaiOwnerListTest {
         for (line in ways("Hammer 5 pcs vandhuchu", "Hammer 5 pcs வந்துச்சு")) assertFalse(line, Regex("""(?i)expiry""").containsMatchIn(Shop().say(line).reply.text))
     }
 
+    @Test fun noExpiryKeepsTheDraftAndAReturnIsNeverAsked() {
+        // "skip" / "illa" / "theriyaadhu" to the expiry question: the same draft, no expiry — never cancelled; Confirm saves it.
+        for (reply in ways("skip") + ways("expiry theriyaadhu") + listOf("illa", "இல்ல", "தெரியாது", "no expiry")) {
+            val s = Shop()
+            s.say("Onion 10 kg vandhuchu")
+            val t = s.say(reply)
+            assertTrue("$reply: ${all(t)}", Regex("expiry (?:illama|இல்லாம)").containsMatchIn(t.reply.text) && t.card?.buttons?.any { it.action is KaiAction.ConfirmStock } == true)
+            assertTrue(s.nothingSaved())
+            s.confirmStock()
+            assertTrue("$reply: ${s.inv.item("Onion").stock}", s.inv.item("Onion").stock.compareTo(BigDecimal("110")) == 0)
+        }
+        // A word that is not a "no": not read as one (the draft is not changed into a no-expiry one).
+        Shop().apply { say("Onion 10 kg vandhuchu"); assertFalse(Regex("expiry (?:illama|இல்லாம)").containsMatchIn(all(say("blue")))) }
+        // A customer return is the shop's own stock coming back: no expiry asked.
+        for (line in ways("Onion 3 kg customer return")) assertFalse(line, Regex("""(?i)expiry""").containsMatchIn(Shop().say(line).reply.text))
+    }
+
     // ------------------------------------------------------------ 6. one name on both sides
 
     @Test fun oneNameOnBothSidesIsAskedAndSetOff() {

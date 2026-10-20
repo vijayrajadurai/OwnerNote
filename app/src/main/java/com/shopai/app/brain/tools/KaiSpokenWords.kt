@@ -185,7 +185,7 @@ object KaiSpokenWords {
         "பெண்டிங்" to "pending", "பேலன்ஸ்" to "balance", "லிஸ்ட்" to "list", "டோட்டல்" to "total", "டோட்டலா" to "total", "டோட்டல்ல" to "total la", "மொத்தத்துல" to "mothathula", "மொத்தம்" to "motham", "மொத்தமா" to "mothama",
         "டியூ" to "due", "டேட்" to "date", "தேதி" to "thethi", "வேண்டாம்" to "venam", "வேணாம்" to "venam", "எடுத்துடு" to "eduthudu", "எடுத்துடுங்க" to "eduthudunga", "வேணும்" to "venum",
         "கஸ்டமர்" to "customer", "சப்ளையர்" to "supplier", "ஓனர்" to "owner", "அண்ணா" to "anna", "அண்ணே" to "anna", "சார்" to "sir",
-        "சரி" to "seri", "ஓகே" to "ok", "ஆமா" to "aama", "ஆமாம்" to "aama", "இல்ல" to "illa", "இல்லை" to "illa", "சேவ்" to "save",
+        "சரி" to "seri", "ஓகே" to "ok", "ஆமா" to "aama", "ஆமாம்" to "aama", "இல்ல" to "illa", "இல்லை" to "illa", "தெரியாது" to "theriyaadhu", "தெரியல" to "theriyala", "தெரியலை" to "theriyala", "சேவ்" to "save",
         "இப்போ" to "ippo", "இப்ப" to "ippa", "இப்பொழுது" to "ippo", "எப்போ" to "eppo", "எப்ப" to "eppa", "எப்படி" to "eppadi",
         "யார்" to "yaar", "யாரு" to "yaaru", "யாருக்கு" to "yaarukku", "யாருகிட்ட" to "yaarukitta", "யாரெல்லாம்" to "yaarellam",
         "கொஞ்சம்" to "konjam", "ஃபுல்" to "full", "ஃபுல்லா" to "fulla", "எல்லாத்தையும்" to "ellathaiyum", "முடங்கியிருக்கு" to "mudangi irukku", "முடங்கி" to "mudangi", "விக்காத" to "vikkaadha", "மெதுவா" to "medhuva", "அறிக்கை" to "arikkai", "விக்குற" to "vikkura", "போகல" to "pogala", "கம்மி" to "kammi", "ல" to "la", "நோட்" to "note", "நோட்டு" to "note", "எழுது" to "ezhudhu", "எழுதிக்கோ" to "ezhudhiko", "எழுதிடு" to "ezhudhidu",
