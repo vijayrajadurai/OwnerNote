@@ -30,7 +30,7 @@ object KaiScreenLinks {
     private val newProduct = Regex("""(?i)^\s*(?:(?:pudhu|puthu|new|oru)\s+)?product\s+(?:master|form|screen|add\s*(?:pannu|pannanum|panna|pannunga|podu)?\s*(?:screen|form)?|serkkanum|serkanum)\s*[.!?]?\s*$""")
 
     /** "en kadai enna vagai", "business category enna", "kadai category maathanum", "shop type change". */
-    private val shopCategory = Regex("""(?i)(?<![\p{L}])(?:kadai|kada|kadaiyoda|shop|business|vyabaram|viyabaram|vyaabaaram|vyabara|viyabara)\s*(?:oda\s*)?(?:category|categories|vagai|type|vagaigal)(?![\p{L}])""")
+    private val shopCategory = Regex("""(?i)(?<![\p{L}])(?:kadai|kada|kadaiyoda|shop|business|vyabaram|viyabaram|vyaabaaram|vyabara|viyabara)(?:\s*oda)?(?:\s+[\p{L}]+){0,2}?\s+(?:category|categories|vagai|type|vagaigal)(?![\p{L}])""")
 
     fun of(text: String): Link? = when {
         purchaseBill.containsMatchIn(text) && !scan.containsMatchIn(text) -> Link.PURCHASE_BILL
