@@ -450,3 +450,7 @@ REMIND | ரிமைண்ட் மீ டுமாரோ அட் 5 பி�
 ENTRY  | லட்சுமி பெய்டு 500 பை போன்பே                  | IN Lakshmi 500
 STOCK  | ரிசீவ்டு 10 லக்ஸ் சோப் டுடே                    | Lux Soap 70
 STOCK  | சோல்டு 6 லக்ஸ் சோப்                           | Lux Soap 54
+
+# Hardware stock-in check (20 Oct 2026): packs of a size, and a new product never put on one the shop has.
+STOCK  | Rice arai kilo 10 packet vandhuchu            | Rice 255       # 10 packets of 500 g = 5 kg
+STOCK  | Oil 1 litre 12 bottle vandhuchu               | Oil 252        # kept in bottles: 12 bottles

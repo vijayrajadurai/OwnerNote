@@ -225,7 +225,15 @@ object KaiProductSound {
                         (c.all(Char::isDigit) && l.startsWith(c) && l.drop(c.length).all(Char::isLetter)) } }
                     ?.range?.first?.plus(copied)
             } ?: from0
-            out.append(text, copied, from).append(name)
+            // "பிர்லா சிமெண்ட்" with only Ultratech Cement kept: the words heard are a later part of the shop's name and another brand was
+            // said right before them — not the shop's product; only those words in English ("பிர்லா Cement"), so Kai offers a new
+            // product instead of adding to Ultratech (release check, 20 Oct 2026).
+            val nameWords = name.trim().split(Regex("""\s+"""))
+            val prev = words.getOrNull(i - 1)?.takeIf { it.range.last < from0 }?.value
+            val shown = if (prev != null && span < nameWords.size && KaiSpokenWords.hasTamil(prev) && KaiSpokenWords.normalize(prev) == prev &&
+                !NameSound.same(words[i].value, nameWords.first()) && nameWords.none { NameSound.same(prev, it) } &&
+                people.none { p -> p.split(Regex("""\s+""")).any { NameSound.same(prev, it) } }) nameWords.takeLast(span).joinToString(" ") else name
+            out.append(text, copied, from).append(shown)
             copied = words[i + span - 1].range.last + 1
             // "மாக்ஸ் 500" → "Mox 500": the strength said after the name is the name's own, not a second quantity ("அப்ரைஸ் டி3" → Uprise D3).
             Regex("""(\d+(?:\.\d+)?)$""").find(name.substringAfterLast(' '))?.value?.let { size ->

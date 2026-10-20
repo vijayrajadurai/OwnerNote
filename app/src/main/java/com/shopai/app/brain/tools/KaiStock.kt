@@ -117,6 +117,8 @@ object KaiStock {
         "length" to "LENGTH", "lengths" to "LENGTH", "neelam" to "LENGTH", "நீளம்" to "LENGTH", "sheet" to "SHEET", "sheets" to "SHEET",
         "ஷீட்" to "SHEET", "board" to "BOARD", "boards" to "BOARD", "vial" to "VIAL", "vials" to "VIAL", "வயல்" to "VIAL",
         "kit" to "KIT", "kits" to "KIT", "கிட்" to "KIT", "feet" to "FEET", "ft" to "FEET", "adi" to "FEET", "அடி" to "FEET",
+        // Steel rods / TMT bars counted by the rod (release check, 20 Oct 2026: "Tata Tiscon 12mm 100 rod").
+        "rod" to "ROD", "rods" to "ROD", "kambi" to "ROD", "கம்பி" to "ROD",
     ) + KaiFeed.units
 
     private val reasons = listOf(
@@ -232,6 +234,8 @@ object KaiStock {
             .replace(Regex("""(?<![\p{L}\d.])(\d+(?:\.\d+)?)\s*(?:l|ltr|ltrs|liter|liters|litre|litres)(?![\p{L}])"""), "$1 litre")
             .replace(Regex("""(?<![\p{L}\d.])(\d+(?:\.\d+)?)\s*(?:m|mtr|mtrs|meter|meters|metre|metres)(?![\p{L}])"""), "$1 meter")
             .replace(Regex("""(?<![\p{L}\d.])(\d+)\s*(?:x|×|\*|by|into)\s*(\d+)(?=\s*mm(?![\p{L}]))"""), "$1x$2")
+            // A sheet's size, however said: "8x4", "8 x 4", "8 by 4" (release check, 20 Oct 2026: "Century 8x4 10 sheet" was 8 sheets).
+            .replace(Regex("""(?<![\p{L}\d.])(\d+)\s*(?:x|×|\*|by)\s*(\d+)(?![\d.])"""), "$1x$2")
             .replace(Regex("""(?<![\p{L}])(?:sq\.?\s*mm|square\s+mm|sq\s+mm)(?![\p{L}])"""), "sqmm")
             // Packs (supermarket stock master, 14 Oct 2026): "100 g" / "100 gram" / "100gm", "1 kg" / "1 kilo", "arai kilo" = 500 g,
             // "kaal kilo" = 250 g, "mukkal kilo" = 750 g, "500ml" = 500 ml.
@@ -372,7 +376,8 @@ object KaiStock {
         }
         val words = lower.split(' ').filter { it.isNotEmpty() }
         // The whole name said, not a part of a longer one: "Paint brush 5" is never "Paint", "Engine oil" never "Oil filter".
-        fun nameWord(w: String) = w.first().isLetter() && w !in units && w !in fillers && w !in numberWords && w !in stockTokens
+        // (a size word — "sqmm", "inch", "amp" — is the size, never a name word: "Polycab wire 2.5 sqmm" is not Finolex Wire 1.5 sqmm)
+        fun nameWord(w: String) = w.first().isLetter() && w !in units && w !in fillers && w !in numberWords && w !in stockTokens && w !in sizeWords
         fun wholeName(from: Int, to: Int) = (from == 0 || !nameWord(words[from - 1])) && (to >= words.size || !nameWord(words[to]))
         // "Biscuits 5" for "Biscuit", "paint 5" for a "பெயிண்ட்" kept in Tamil: the name word for word, one or many, in any script.
         val plain = words.map(::plainWord)
@@ -493,10 +498,93 @@ object KaiStock {
                 val before = words.getOrNull(i - 1)?.value?.takeIf { it.first().isLetter() }
                 val after = words.getOrNull(i + size)?.value?.takeIf { it.first().isLetter() }
                 if (indexFor(names).spaced.withIndex().any { (j, o) -> names[j] != shop && (before != null && o.contains(" $before $phrase ") || after != null && o.contains(" $phrase $after ")) }) continue
+                // "Birla cement 20 bag" with only Ultratech Cement kept: another brand said before the goods word — not this product.
+                if (otherBrand(words.getOrNull(i - 1)?.value, said, p.name)) continue
                 return p to (words[i].range.first..words[i + size - 1].range.last)
             }
         }
         return null
+    }
+
+    /** Words that say a size, never a name or a unit of count: "12 mm", "2.5 sqmm", "6 amp", "9 watt", "2 inch". */
+    private val sizeWords = setOf("mm", "cm", "inch", "inches", "sqmm", "amp", "amps", "watt", "watts", "volt", "volts", "hp", "gauge", "x")
+
+    /**
+     * Another brand said before the words that matched a product (release check, 20 Oct 2026: "Birla cement" was put on Ultratech
+     * Cement, "Anchor switch 6A" on Havells Switch 6A, "Polycab wire" on Finolex Wire): [before] is a name word the product's name
+     * doesn't have, and the product's own name has a word before the part said ("Ultratech" of Ultratech Cement) — a different
+     * product, so Kai never takes this one (it asks / offers it as new).
+     */
+    fun otherBrand(before: String?, said: List<String>, productName: String): Boolean {
+        val b = before?.lowercase(Locale.ROOT)?.trim()?.trim('-', ',') ?: return false
+        if (b.length < 3 || !b.first().isLetter() || b in units || b in fillers || b in numberWords || b in stockTokens || b in sizeWords ||
+            b in KaiFeed.notNames || b in KaiFeed.everydayWords || b in packWords) return false
+        val name = nameWords(productName).map(::plainWord)
+        val pb = plainWord(b)
+        if (name.any { sameWord(it, pb) || sameWord(it, b) }) return false
+        val first = said.firstOrNull()?.let(::plainWord) ?: return false
+        val at = name.indexOfFirst { sameWord(it, first) }
+        return at > 0
+    }
+
+    /** A size word ("mm", "inch", "sqmm", "amp", "watt") — the size of a thing, never its name or a unit it is counted in. */
+    fun isSizeWord(word: String): Boolean = word.lowercase(Locale.ROOT) in sizeWords
+
+    /** Pack-size words said before an item ("small", "periya") — a size of the item, never a brand. */
+    private val packWords = setOf("small", "medium", "large", "family", "chinna", "periya", "big", "mini", "jumbo", "full", "half", "arai", "puthu", "pudhu", "new", "old", "nalla", "local", "original")
+
+    /** Units of measure — what one pack holds ("500 g", "4 litre", "50 adi", "90 meter") — as against units counted ("dabba", "roll"). */
+    private val measureUnits = setOf("KG", "GRAM", "LITRE", "ML", "METER", "FEET")
+
+    /**
+     * Packs of a size said together (release check, 20 Oct 2026: "Fevicol arai kilo 24 dabba" was 24.5 kg, "Garden pipe 50 adi 4 roll"
+     * 2,620 m): "<size> <measure> <count> <pack>" — "500 g 24 can", "4 litre 10 can", "50 feet 4 roll" — or the count first and one
+     * pack's size after it: "3 roll … oru roll 90 meter", "3 roll, roll-ku 90 meter". The count (in the pack) and one pack's size.
+     */
+    fun packsOfSize(text: String): Pair<QtyPart, QtyPart>? {
+        val lower = lowerOf(KaiSpokenWords.normalize(text))
+        val num = """(\d+(?:\.\d+)?)"""
+        val w = """([\p{L}\p{M}]+)"""
+        Regex("""(?<![\p{L}\p{M}\d.])$num\s+$w\s+$num\s+$w(?![\p{L}\p{M}])""").findAll(lower).forEach { m ->
+            val su = units[m.groupValues[2]]?.let { KaiUnits.canon(it) }
+            val pu = units[m.groupValues[4]]?.let { KaiUnits.canon(it) }
+            val size = m.groupValues[1].toBigDecimalOrNull(); val count = m.groupValues[3].toBigDecimalOrNull()
+            if (su != null && pu != null && su in measureUnits && pu !in measureUnits && size != null && count != null && size.signum() > 0 && count.signum() > 0)
+                return QtyPart(count, pu) to QtyPart(size, su)
+        }
+        // count first, one pack's size after it: "3 roll vandhuchu oru roll 90 meter", "3 roll, roll-ku 90 meter"
+        val toks = lower.trim().split(Regex("""\s+"""))
+        fun packUnit(t: String) = units[t.removeSuffix("-ku").removeSuffix("ku").removeSuffix("kku").removeSuffix("க்கு")]?.let { KaiUnits.canon(it) }
+        for (k in 0 until toks.size - 1) {
+            val count = toks[k].toBigDecimalOrNull()?.takeIf { toks[k].first().isDigit() && it.signum() > 0 } ?: continue
+            val pu = units[toks[k + 1]]?.let { KaiUnits.canon(it) }?.takeIf { it !in measureUnits } ?: continue
+            for (j in k + 2 until toks.size - 2) {
+                if (packUnit(toks[j]) != pu) continue
+                val size = toks[j + 1].toBigDecimalOrNull()?.takeIf { toks[j + 1].first().isDigit() && it.signum() > 0 } ?: continue
+                val su = units[toks[j + 2]]?.let { KaiUnits.canon(it) }?.takeIf { it in measureUnits } ?: continue
+                return QtyPart(count, pu) to QtyPart(size, su)
+            }
+        }
+        return null
+    }
+
+    /**
+     * A size said in [text] that [productName] doesn't have, while it has another of that kind ("Havells switch 16 amp" for Havells
+     * Switch 6A, "Greenply 18 mm" for Greenply Plywood 12 mm): another product — never this one.
+     */
+    fun sizeConflict(text: String, productName: String): Boolean {
+        val own = saidSize.findAll(lowerOf(KaiSpokenWords.normalize(productName))).map(::sizeKeyOf).toSet()
+        if (own.isEmpty()) return false
+        return saidSize.findAll(lowerOf(KaiSpokenWords.normalize(text))).map(::sizeKeyOf)
+            .any { k -> k !in own && own.any { it.substringAfter(' ') == k.substringAfter(' ') } }
+    }
+
+    /** A size said with the product ("12 mm", "6 amp", "1.5 sqmm", "0.5 inch") as one string to compare: "12 mm", "6 amp". */
+    private val saidSize = Regex("""(?<![\p{L}\d.])(\d+(?:\.\d+)?(?:x\d+)?)\s*(inch|inches|mm|cm|sqmm|amp|amps|watt|watts|volt|volts|hp|gauge)(?![\p{L}])""")
+    private fun sizeKeyOf(m: MatchResult): String {
+        val n = m.groupValues[1].let { v -> if ('x' in v) v else (v.toBigDecimalOrNull()?.stripTrailingZeros()?.toPlainString() ?: v) }
+        val u = m.groupValues[2].let { when (it) { "inches" -> "inch"; "amps" -> "amp"; "watts" -> "watt"; "volts" -> "volt"; else -> it } }
+        return "$n $u"
     }
 
     /** A name's words, for comparing parts of names: "Necklace / chain" → necklace, chain ("Hand-pounded" stays one word). */
@@ -690,11 +778,18 @@ object KaiStock {
      * "5inch tape 10 add pannu", "10 inch pipe 90": the size is part of the product ("5 inch Tape") and the other number is
      * the quantity. Only when another number is said — "pipe 20 feet" alone keeps 20 feet as what came in.
      */
+    private val dimSize = Regex("""(?<![\p{L}\d.])\d+x\d+(?![\d.])""")
+    /** "Sintex tank 1000 litre 2": a measure said with a new thing, then a bare count — the measure is its size, the count how many. */
+    private val measureThenCount = Regex("""(?<![\p{L}\d.])(\d+(?:\.\d+)?) (litre|kg|g|ml|meter|feet|adi) (?=\d+(?:\.\d+)? ([\p{L}\p{M}]+|$))""")
+
     private fun sizeInName(rest: String): Pair<String, String>? {
-        val specs = specSize.findAll(rest).toList().takeIf { it.isNotEmpty() } ?: return null
-        val left = specSize.replace(rest, " ")
+        // ("Century plywood 8x4 10 sheet": the sheet's size is the name's, 10 the quantity)
+        val dims = dimSize.findAll(rest).map { it.value }.toList() + measureThenCount.findAll(rest).filter { mt ->
+            units[mt.groupValues[3]]?.let { KaiUnits.canon(it) !in measureUnits } != false }.map { mt -> "${mt.groupValues[1]} ${mt.groupValues[2]}" }
+        val specs = specSize.findAll(rest).toList().takeIf { it.isNotEmpty() || dims.isNotEmpty() } ?: return null
+        val left = specSize.replace(dimSize.replace(dims.filter { !dimSize.matches(it) }.fold(rest) { t, d -> t.replaceFirst(" $d ", " ") }, " "), " ")
         if (Regex("""(?<![\p{L}\d.])\d+(?:\.\d+)?(?![\d])""").find(left) == null && left.split(' ').none { it in numberWords }) return null
-        val shown = specs.joinToString(" ") { m -> "${m.groupValues[1]} ${m.groupValues[2].replace(Regex("""\s+"""), "")}" }
+        val shown = (dims + specs.map { m -> "${m.groupValues[1]} ${m.groupValues[2].replace(Regex("""\s+"""), "")}" }).joinToString(" ")
         return shown to left.replace(Regex("""\s+"""), " ")
     }
 
@@ -703,9 +798,18 @@ object KaiStock {
         // only in packs, read as that thing ("crab small pack 7").
         val lower = inNameOrder(goodsFamilies(lowerOf(text), products).replace(Regex("""(?<![\p{L}\d.])(\d+(?:\.\d+)?)(inch|inches|mm|cm|ft|feet|sqmm|watt|watts|volt|volts|amp|amps|hp)(?![\p{L}])"""), "$1 $2"), products)
         if (moneyOrQuestionIn(lower, products) || timeAfterNumber.containsMatchIn(lower)) return null
-        val found = productSaid(lower, products)
+        val found0 = productSaid(lower, products)
+        // The sizes said with a known product (release check, 20 Oct 2026: "Greenply 12 mm 5 sheet" asked "mm na enna?", "Nails 2 inch 5 kg"
+        // "inch na enna?"): its own size is part of its name, taken out with it; a size it doesn't have ("Havells switch 16A" with only
+        // the 6A kept) is another product — never this one with a wrong quantity.
+        val ownSizes = found0?.first?.name?.let { n -> saidSize.findAll(lowerOf(KaiSpokenWords.normalize(n))).map(::sizeKeyOf).toSet() }.orEmpty()
+        val rest0 = found0?.let { lower.replace(it.second, " ") } ?: lower
+        val saidSizes = if (found0 != null) saidSize.findAll(rest0).toList() else emptyList()
+        val otherSize = saidSizes.any { m -> sizeKeyOf(m) !in ownSizes && ownSizes.any { it.substringAfter(' ') == sizeKeyOf(m).substringAfter(' ') } }
+        val found = if (otherSize) null else found0
         val product = found?.first
-        val named = found?.let { lower.replace(it.second, " ") } ?: lower
+        val named = if (found == null) lower else saidSizes.filter { sizeKeyOf(it) in ownSizes || ownSizes.none { o -> o.substringAfter(' ') == sizeKeyOf(it).substringAfter(' ') } }
+            .fold(rest0) { t, m -> if (Regex("""(?<![\p{L}\d.])\d+(?:\.\d+)?(?![\d])""").findAll(t.replace(m.value, " ")).any() || t.replace(m.value, " ").split(' ').any { it in numberWords }) t.replace(m.value, " ") else t }
         // In or out from the words around the name: "Cotton waste 7 add pannu" is stock in (waste is the product's own word).
         // ("Pet waste scoop 7" with only its packs kept: the shop's own name said without its pack — its "waste" is not stock going out.)
         val inName = if (product != null) null else shopNameIn(named, products)
@@ -765,7 +869,8 @@ object KaiStock {
         val rest = lower.replace(said, " ")
         val m = Regex("""(?<![\p{L}\p{N}])(\d+(?:\.\d+)?|${numberWords.keys.joinToString("|")})\s+([\p{L}\p{M}]+)""").find(rest) ?: return null
         val word = m.groupValues[2]
-        if (word in units || word in fillers || word in numberWords || word.length < 2) return null
+        // (a size said with the product — "12 mm", "2 inch", "6 amp" — is its size, never a unit to ask about)
+        if (word in units || word in fillers || word in numberWords || word in sizeWords || word.length < 2) return null
         if ((inWords + outWords + gaveWords).any { k -> k.split(' ').contains(word) }) return null
         return word
     }
@@ -778,7 +883,8 @@ object KaiStock {
     private val sizeUnits = setOf("KG", "GRAM", "LITRE", "ML")
 
     fun partsIn(text: String): List<QtyPart> {
-        val lower = " " + text.lowercase(Locale.ROOT).replace(Regex("""[!,;+]"""), " ").replace(Regex("""(\d)([a-z]+)"""), "$1 $2").replace(Regex("""\s+"""), " ").trim() + " "
+        // (a sheet's size "8x4" is never a count)
+        val lower = " " + dimSize.replace(text.lowercase(Locale.ROOT), " ").replace(Regex("""[!,;+]"""), " ").replace(Regex("""(\d)([a-z]+)"""), "$1 $2").replace(Regex("""\s+"""), " ").trim() + " "
         val words = lower.split(' ').filter { it.isNotEmpty() }
         val out = mutableListOf<QtyPart>()
         var i = 0
