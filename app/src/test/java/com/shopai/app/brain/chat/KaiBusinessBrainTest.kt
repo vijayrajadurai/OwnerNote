@@ -159,7 +159,8 @@ class KaiBusinessBrainTest {
         assertTrue(ask(brain(), "Indha maasam selavu evlo?").text.contains("₹3,200"))
         assertTrue(ask(brain(), "Indha month sales evlo?").text.contains("₹12,500"))
         val none = ask(brain(FakeBooks(customers = emptyList(), cash = null)), "Indha maasam selavu evlo?")
-        assertTrue(none.text, none.text.contains("record-la illa"))
+        // Nothing recorded is said plainly (the Daily Cash Note's own wording since "selavu evlo" is answered from it).
+        assertTrue(none.text, none.text.contains("record-la illa") || none.text.contains("record aagala"))
     }
 
     @Test
