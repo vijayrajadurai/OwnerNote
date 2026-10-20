@@ -20,7 +20,8 @@ object KaiScreenLinks {
      * kudu" is that supplier's PDF and "purchase bill scan pannu" the scanner — neither is this.)
      */
     private val purchaseBill = Regex("""(?i)(?<![\p{L}])(?:(?:purchase|parchase|kolmudhal|kolmuthal)\s*$billWord(?:\s*$doIt)?|(?:vaangina|vaangunadhu|vaangunathu|supplier)\s*$billWord\s*$doIt)(?![\p{L}])""")
-    private val scan = Regex("""(?i)scan|photo|camera|padam|snap|போட்டோ|ஸ்கேன்""")
+    // ("Purchase invoice ah iruntha, inventory la stock add pannidu": the bill's items into stock — the bill scanner, not this.)
+    private val scan = Regex("""(?i)scan|photo|camera|padam|snap|stock|inventory|irunth|irundh|irukura|போட்டோ|ஸ்கேன்|ஸ்டாக்""")
 
     /** "draft bill", "save panna bill", "pending bills kaattu". */
     private val draftBills = Regex("""(?i)(?<![\p{L}])(?:draft|drafts|save\s*panna|save\s*pannuna|paadhi|pathi\s*ezhudhuna)\s*$billWord(?![\p{L}])""")

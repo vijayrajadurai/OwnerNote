@@ -1401,8 +1401,6 @@ class KaiAgent(
                 tl = "Owner, balance-a chat-la sonnadha vechu naan maathavo nyabagam vechukkavo maatten — adhu records-la irundhu dhaan varum. Panam vandhirundhaa / kuduthirundhaa adha entry-aa sollunga, draft panren.",
                 en = "Owner, I don't change or memorise a balance from a chat message — it always comes from the records. If money came in or went out, tell me the entry and I'll draft it.")
         }
-        // "purchase bill podu", "draft bills", "pudhu product add pannanum", "en kadai enna vagai": the screen that does it.
-        KaiScreenLinks.of(said)?.let { return screenLink(it, lang) }
         if (KaiConversationCare.makesBill(said)) return noBillHere(said, named, lang)
         // "Kumar statement WhatsApp-la anuppu" is the statement PDF the owner sends (statementAsk), not a message Kai can't send.
         // "Idha WhatsApp-la anuppu" with nobody talked about reaches here: what Kai can't send, said as before.
@@ -1993,6 +1991,8 @@ class KaiAgent(
         // A stock question waiting and a credit / debit line said (or the other way): which one — never one read as the other.
         if (plans.isEmpty()) categorySwitch(said, raw, lang, people0)?.let { return it }
         if (plans.isEmpty()) sameNameAnswered(said, lang)?.let { return it }
+        // "purchase bill podu", "draft bills", "pudhu product add pannanum", "en kadai enna vagai": the screen that does it.
+        if (plans.isEmpty()) KaiScreenLinks.of(said)?.let { return screenLink(it, lang) }
         // "Onion 5 kg 100 rupees-ku vithuchu" (the ₹100 never added to the kilos); "innaiku total sale evlo" from today's stock sales.
         if (plans.isEmpty()) stockSaleWithAmount(said, lang)?.let { return it }
         if (plans.isEmpty()) stockSalesToday(said, lang)?.let { return it }
