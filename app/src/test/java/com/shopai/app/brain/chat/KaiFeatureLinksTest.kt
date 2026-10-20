@@ -78,6 +78,7 @@ class KaiFeatureLinksTest {
         // A supplier's invoice asked for is their PDF, a bill to scan is the scanner, a product with a name is a stock line.
         assertFalse("PURCHASE_BILL" in opens(Shop().say("ABC Traders supplier invoice kudu")))
         assertFalse("PURCHASE_BILL" in opens(Shop().say("purchase bill scan pannu")))
+        assertNull(KaiScreenLinks.of("purchase bill add pannu"))
         assertFalse("NEW_PRODUCT" in opens(Shop().say("pudhu product Colgate 5 box add pannu")))
         assertNull(KaiScreenLinks.of("Colgate category enna"))
         assertNull(KaiScreenLinks.of("kadaiku saraku vandhuruku"))
@@ -106,10 +107,11 @@ class KaiFeatureLinksTest {
         }
     }
 
-    @Test fun fixedConversionsComeFromTheUnitMasterAndPacksNeverDo() {
+    @Test fun onlyTheConversionsTheOwnerKeptAreKaisAndPacksNeverAre() {
+        // Feet / yard for goods kept in metres are asked (the owner's rule: "Rope 20 feet" is never converted by Kai).
         val cloth = ProductRef("p3", "Cotton cloth", "METER", BigDecimal("50"))
-        assertEquals(0, BigDecimal("0.9144").compareTo(KaiUnits.factor(cloth, "YARD")))
-        assertEquals(0, BigDecimal("0.3048").compareTo(KaiUnits.factor(cloth, "FEET")))
+        assertNull(KaiUnits.factor(cloth, "YARD"))
+        assertNull(KaiUnits.factor(cloth, "FEET"))
         val rice = ProductRef("p4", "Rice", "KG", BigDecimal("10"))
         assertEquals(0, BigDecimal("0.001").compareTo(KaiUnits.factor(rice, "GRAM")))
         assertNull(KaiUnits.factor(rice, "BAG"))

@@ -13,7 +13,7 @@ object KaiScreenLinks {
     enum class Link { PURCHASE_BILL, DRAFT_BILLS, NEW_PRODUCT, SHOP_CATEGORY }
 
     private val billWord = """(?:bill|bills|invoice|பில்)"""
-    private val doIt = """(?:podu|potu|podunga|podanum|podunum|poda|pannu|pannunga|pannanum|entry|add|create|make|venum|ready|ezhudhu|ezhuthu)"""
+    private val doIt = """(?:podu|potu|podunga|podanum|podunum|poda|pannu|pannunga|pannanum|entry|create|make|venum|ready|ezhudhu|ezhuthu)"""
 
     /**
      * "purchase bill podu", "kolmudhal bill", "supplier bill entry pannanum", "vaangina bill podu". ("ABC Traders supplier invoice
@@ -21,7 +21,8 @@ object KaiScreenLinks {
      */
     private val purchaseBill = Regex("""(?i)(?<![\p{L}])(?:(?:purchase|parchase|kolmudhal|kolmuthal)\s*$billWord(?:\s*$doIt)?|(?:vaangina|vaangunadhu|vaangunathu|supplier)\s*$billWord\s*$doIt)(?![\p{L}])""")
     // ("Purchase invoice ah iruntha, inventory la stock add pannidu": the bill's items into stock — the bill scanner, not this.)
-    private val scan = Regex("""(?i)scan|photo|camera|padam|snap|stock|inventory|irunth|irundh|irukura|போட்டோ|ஸ்கேன்|ஸ்டாக்""")
+    // ("purchase bill add pannu" too: its items added to stock — the scanner.)
+    private val scan = Regex("""(?i)scan|photo|camera|padam|snap|stock|inventory|irunth|irundh|irukura|(?<![\p{L}])add(?![\p{L}])|போட்டோ|ஸ்கேன்|ஸ்டாக்|ஆட்""")
 
     /** "draft bill", "save panna bill", "pending bills kaattu". */
     private val draftBills = Regex("""(?i)(?<![\p{L}])(?:draft|drafts|save\s*panna|save\s*pannuna|paadhi|pathi\s*ezhudhuna)\s*$billWord(?![\p{L}])""")
