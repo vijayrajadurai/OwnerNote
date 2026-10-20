@@ -50,6 +50,10 @@ data class Business(
     val areaLabel: String? = null,
     val locationSource: String? = null,
     val phone: String? = null,
+    /** Every product business category picked ([BusinessCategories] codes); null / empty for a business set up before. */
+    val categories: List<String>? = null,
+    /** The owner's own name for "Other Product Businesses". */
+    val otherCategoryName: String? = null,
 )
 
 data class BusinessInput(
@@ -63,6 +67,9 @@ data class BusinessInput(
     val longitude: Double? = null,
     val areaLabel: String? = null,
     val locationSource: String? = null,
+    /** Null = left as it is on the server (an older screen saving the profile never clears the picks). */
+    val categories: List<String>? = null,
+    val otherCategoryName: String? = null,
 )
 
 data class DashboardSnapshot(
