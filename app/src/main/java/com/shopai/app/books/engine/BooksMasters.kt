@@ -73,7 +73,16 @@ data class ProductInput(
     val hsnConfirmed: Boolean = false,
     val taxType: TaxType = TaxType.GST,
     val gstBp: Int = 0,
+    /** False = GST left blank ("not specified"); [gstBp] is then 0 and is not a chosen 0% rate. */
+    val gstSpecified: Boolean = true,
     val cessBp: Int = 0,
+    /** Further units beyond [secondaryUnit]: unit → thousandths of the primary unit (1 CARTON = 144 PCS → "CARTON" to 144000). */
+    val moreUnits: Map<String, Long> = emptyMap(),
+    /** The unit a purchase / sale starts in; must be one of the product's units. Null = the primary unit. */
+    val purchaseUnit: String? = null,
+    val salesUnit: String? = null,
+    /** [com.shopai.app.books.model.UnitMaster.Kind] name; null = the shop's own kind. */
+    val businessKind: String? = null,
     val purchasePricePaise: Long? = null,
     val sellingPricePaise: Long? = null,
     val mrpPaise: Long? = null,
@@ -321,10 +330,17 @@ class BooksMasters(
         dao.productByName(biz, key)?.takeIf { it.id != existingId }?.let {
             if (!input.allowSimilarName) reject(BooksErrorCode.DUPLICATE_NAME, "${it.name} already exists", "name")
         }
-        val units = runCatching { ProductUnits(input.primaryUnit.trim().uppercase(), input.secondaryUnit?.trim()?.uppercase(), input.conversionMilli) }
-            .getOrElse { reject(BooksErrorCode.INVALID_UNIT, it.message.orEmpty(), "primaryUnit") }
+        val units = runCatching {
+            ProductUnits(input.primaryUnit.trim().uppercase(), input.secondaryUnit?.trim()?.uppercase(), input.conversionMilli,
+                input.moreUnits.mapKeys { it.key.trim().uppercase() })
+        }.getOrElse { reject(BooksErrorCode.INVALID_UNIT, it.message.orEmpty(), "primaryUnit") }
         val knownUnits = dao.units(biz).map { it.code }.toSet()
-        listOfNotNull(units.primary, units.secondary).forEach { if (it !in knownUnits) reject(BooksErrorCode.INVALID_UNIT, "Add the unit $it first", "primaryUnit") }
+        units.all.forEach { if (it !in knownUnits) reject(BooksErrorCode.INVALID_UNIT, "Add the unit $it first", "primaryUnit") }
+        // A purchase / sales unit is one the product has a conversion for — its size is never assumed.
+        val purchaseUnit = input.purchaseUnit?.trim()?.uppercase()?.takeIf { it.isNotEmpty() && !it.equals(units.primary, true) }
+        val salesUnit = input.salesUnit?.trim()?.uppercase()?.takeIf { it.isNotEmpty() && !it.equals(units.primary, true) }
+        purchaseUnit?.let { if (!units.accepts(it)) reject(BooksErrorCode.INVALID_UNIT, "Set how many ${units.primary} are in 1 $it", "purchaseUnit") }
+        salesUnit?.let { if (!units.accepts(it)) reject(BooksErrorCode.INVALID_UNIT, "Set how many ${units.primary} are in 1 $it", "salesUnit") }
 
         val barcode = input.barcode?.trim()?.takeIf { it.isNotEmpty() }
         if (barcode != null) {
@@ -337,7 +353,10 @@ class BooksMasters(
         if (sku != null) dao.productBySku(biz, sku)?.takeIf { it.id != existingId }?.let { reject(BooksErrorCode.DUPLICATE_SKU, "SKU $sku already belongs to ${it.name}", "sku") }
 
         val slabs = business.gstRatesBp.split(',').mapNotNull { it.trim().toIntOrNull() }.toSet()
-        if (input.taxType == TaxType.GST && input.gstBp !in slabs) reject(BooksErrorCode.INVALID_GST, "Choose a GST rate set up for this business", "gstBp")
+        // GST left blank is "not specified" (stored as 0, never offered as a chosen 0% rate).
+        val gstSpecified = input.gstSpecified || input.taxType != TaxType.GST
+        if (!gstSpecified && input.gstBp != 0) reject(BooksErrorCode.INVALID_GST, "Choose a GST rate or leave it blank", "gstBp")
+        if (input.taxType == TaxType.GST && gstSpecified && input.gstBp !in slabs) reject(BooksErrorCode.INVALID_GST, "Choose a GST rate set up for this business", "gstBp")
         if (input.taxType != TaxType.GST && (input.gstBp != 0 || input.cessBp != 0)) reject(BooksErrorCode.INVALID_GST, "${input.taxType.name.lowercase()} items carry no GST", "gstBp")
         if (input.cessBp < 0 || input.cessBp > 10_000) reject(BooksErrorCode.INVALID_GST, "Check the cess rate", "cessBp")
 
@@ -375,8 +394,10 @@ class BooksMasters(
             id = existingId ?: newId(), businessId = biz, name = name, nameKey = key, isService = input.isService,
             imagePath = input.imagePath, categoryId = input.categoryId, subCategoryId = input.subCategoryId, brandId = input.brandId,
             sku = sku, barcode = barcode, hsnCode = hsn, hsnVerified = verified, hsnConfirmedByUser = hsn != null && !verified && input.hsnConfirmed,
-            taxType = input.taxType.name, gstBp = input.gstBp, cessBp = input.cessBp,
+            taxType = input.taxType.name, gstBp = input.gstBp, gstSpecified = gstSpecified, cessBp = input.cessBp,
             primaryUnit = units.primary, secondaryUnit = units.secondary, conversionMilli = units.factorMilli,
+            moreUnits = ProductUnits.formatMore(units.more), purchaseUnit = purchaseUnit, salesUnit = salesUnit,
+            businessKind = input.businessKind?.trim()?.uppercase()?.takeIf { it.isNotEmpty() },
             purchasePricePaise = input.purchasePricePaise, sellingPricePaise = input.sellingPricePaise, mrpPaise = input.mrpPaise,
             wholesalePricePaise = input.wholesalePricePaise, retailPricePaise = input.retailPricePaise,
             minSellingPricePaise = input.minSellingPricePaise, priceIncludesTax = input.priceIncludesTax,

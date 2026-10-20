@@ -96,6 +96,8 @@ fun InventoryScreen(
     var query by remember { mutableStateOf("") }
     // Product ids matching the search (name, SKU, barcode or HSN); null = no search.
     var matches by remember { mutableStateOf<Set<String>?>(null) }
+    // The Low Stock tile tapped: only the products at or below their minimum.
+    var lowOnly by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { booksOn = container.books.session() != null }
     var archived by remember { mutableStateOf(emptyList<com.shopai.app.books.data.ProductEntity>()) }
     var showArchived by remember { mutableStateOf(false) }
@@ -107,7 +109,8 @@ fun InventoryScreen(
         matches = if (s == null || query.isBlank()) null else {
             val q = query.trim()
             s.dao.searchProducts(s.ctx.businessId, com.shopai.app.books.engine.nameKey(q), 500, 0).map { it.id }.toSet() +
-                s.dao.searchProducts(s.ctx.businessId, q, 500, 0).map { it.id }
+                s.dao.searchProducts(s.ctx.businessId, q, 500, 0).map { it.id } +
+                s.dao.productsByCodePart(s.ctx.businessId, q, 500).map { it.id }
         }
     }
     val errorLoad = stringResource(R.string.inv_error_load)
@@ -217,15 +220,16 @@ fun InventoryScreen(
                 style = MaterialTheme.typography.bodyMedium,
                 color = ShopAiThemeColors.onSurfaceVariant,
             )
-            PrimaryButton(label = stringResource(R.string.inv_new_product), onClick = { if (booksOn) onNewProduct() else showNewProduct = true })
-            if (booksOn) {
-                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    ShopTextField(
-                        label = stringResource(R.string.books_product_search),
-                        value = query,
-                        onValueChange = { query = it },
-                        modifier = Modifier.weight(1f),
-                    )
+            // Dashboard (owner, 20 Oct 2026): Search Product, Add Product, Total Products, Low Stock, then the list.
+            Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ShopTextField(
+                    label = stringResource(R.string.books_product_search),
+                    value = query,
+                    onValueChange = { query = it },
+                    placeholder = stringResource(R.string.inv_search_hint),
+                    modifier = Modifier.weight(1f),
+                )
+                if (booksOn) {
                     OutlinedButton(onClick = {
                         com.shopai.app.ui.books.scanBarcode(context) { code ->
                             code ?: return@scanBarcode
@@ -237,6 +241,14 @@ fun InventoryScreen(
                             }
                         }
                     }) { Text(stringResource(R.string.books_scan)) }
+                }
+            }
+            PrimaryButton(label = stringResource(R.string.inv_new_product), onClick = { if (booksOn) onNewProduct() else showNewProduct = true })
+            if (!loading && error == null) {
+                val lowCount = products.count { computeStockStatus(it.currentStock, it.minimumStock) == STOCK_STATUS_LOW_STOCK }
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    StockTile(stringResource(R.string.inv_total_products), products.size, selected = !lowOnly, alert = false, Modifier.weight(1f)) { lowOnly = false }
+                    StockTile(stringResource(R.string.inv_low_stock_tile), lowCount, selected = lowOnly, alert = lowCount > 0, Modifier.weight(1f)) { lowOnly = !lowOnly }
                 }
             }
 
@@ -300,7 +312,12 @@ fun InventoryScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = ShopAiThemeColors.onSurfaceVariant,
                 )
-                else -> products.filter { p -> matches?.contains(p.id) ?: true }.forEach { product ->
+                else -> products.filter { p ->
+                    // (without the books: the name, SKU or barcode typed, matched here)
+                    val q = query.trim()
+                    (matches?.contains(p.id) ?: (q.isEmpty() || listOfNotNull(p.name, p.sku, p.barcode).any { it.contains(q, ignoreCase = true) })) &&
+                        (!lowOnly || computeStockStatus(p.currentStock, p.minimumStock) == STOCK_STATUS_LOW_STOCK)
+                }.forEach { product ->
                     ShopCard(
                         modifier = Modifier.clickable { onOpenProduct(product.id) },
                     ) {
@@ -369,6 +386,25 @@ fun InventoryScreen(
             }
             Spacer(Modifier.height(24.dp))
         }
+    }
+}
+
+/** A dashboard count (Total Products / Low Stock); tapping it picks which products the list shows. */
+@Composable
+private fun StockTile(label: String, count: Int, selected: Boolean, alert: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    ShopCard(modifier = modifier.clickable(onClick = onClick)) {
+        Text(
+            text = count.toString(),
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = if (alert) Danger else ShopAiThemeColors.onSurface,
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (selected) MaterialTheme.colorScheme.primary else ShopAiThemeColors.onSurfaceVariant,
+        )
     }
 }
 
@@ -556,6 +592,14 @@ private fun StockChangeDialog(
                     onValueChange = { quantity = it.filter { ch -> ch.isDigit() || ch == '.' } },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 )
+                // The usual reasons as one tap (old stock, damaged, missing…); the owner's own words still go in the box.
+                val reasons = if (isStockIn) {
+                    listOf(R.string.inv_reason_old_stock, R.string.inv_reason_customer_return, R.string.inv_reason_count, R.string.inv_reason_other)
+                } else {
+                    listOf(R.string.inv_reason_damaged, R.string.inv_reason_expired, R.string.inv_reason_missing, R.string.inv_reason_wastage,
+                        R.string.inv_reason_count, R.string.inv_reason_own_use)
+                }.map { stringResource(it) }
+                com.shopai.app.ui.books.ChoiceChips(reasons, reasons.firstOrNull { it == reason }, { it }) { reason = it }
                 ShopTextField(
                     label = stringResource(R.string.inv_stock_change_reason),
                     value = reason,

@@ -168,6 +168,7 @@ class BooksImporter(
                 sku = sku,
                 barcode = barcode,
                 gstBp = gstBp,
+                gstSpecified = p.gstRate != null,
                 purchasePricePaise = p.purchasePrice?.let(::paise)?.takeIf { it >= 0 },
                 sellingPricePaise = selling,
                 mrpPaise = mrp,

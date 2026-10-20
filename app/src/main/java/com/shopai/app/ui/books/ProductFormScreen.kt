@@ -52,7 +52,11 @@ import com.shopai.app.books.integration.BooksSession
 import com.shopai.app.books.model.BusinessType
 import com.shopai.app.books.model.CodeKind
 import com.shopai.app.books.model.PartyKind
+import com.shopai.app.books.model.ProductCategories
+import com.shopai.app.books.model.ProductCode
 import com.shopai.app.books.model.TaxType
+import com.shopai.app.books.model.UnitMaster
+import com.shopai.app.books.model.UnitMaster.unitsNeedingConversion
 import com.shopai.app.books.tax.HsnRules
 import com.shopai.app.data.AppContainer
 import com.shopai.app.ui.components.DetailScaffold
@@ -77,14 +81,14 @@ fun ProductFormScreen(container: AppContainer, productId: String?, onBack: () ->
         onBack = onBack,
     ) { modifier ->
         when (books) {
-            is BooksState.Ready -> ProductForm(books.session, productId, modifier, onSaved)
+            is BooksState.Ready -> ProductForm(container, books.session, productId, modifier, onSaved)
             else -> BooksNotReady(books, modifier)
         }
     }
 }
 
 @Composable
-private fun ProductForm(s: BooksSession, productId: String?, modifier: Modifier, onSaved: (String) -> Unit) {
+private fun ProductForm(container: AppContainer, s: BooksSession, productId: String?, modifier: Modifier, onSaved: (String) -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var loaded by remember { mutableStateOf(false) }
@@ -106,11 +110,17 @@ private fun ProductForm(s: BooksSession, productId: String?, modifier: Modifier,
     var hsnVerdict by remember { mutableStateOf<HsnRules.Verdict?>(null) }
     var hsnSuggestions by remember { mutableStateOf(emptyList<HsnSacEntity>()) }
     var taxType by remember { mutableStateOf(TaxType.GST) }
-    var gstBp by remember { mutableStateOf(0) }
+    // null = GST left blank: "not specified", never a 0% rate (owner, 20 Oct 2026).
+    var gstBp by remember { mutableStateOf<Int?>(null) }
     var cess by remember { mutableStateOf("") }
+    // The product's kind of business (picks the unit and category suggestions); the shop's own until the owner picks one.
+    var kind by remember { mutableStateOf<UnitMaster.Kind?>(null) }
     var primaryUnit by remember { mutableStateOf("PCS") }
-    var secondaryUnit by remember { mutableStateOf("") }
-    var conversion by remember { mutableStateOf("") }
+    var purchaseUnit by remember { mutableStateOf<String?>(null) }
+    var salesUnit by remember { mutableStateOf<String?>(null) }
+    // Every unit other than the stock unit → "how many stock units in 1 of it", as typed.
+    var conversions by remember { mutableStateOf(emptyMap<String, String>()) }
+    var extraUnit by remember { mutableStateOf<String?>(null) }
     var purchase by remember { mutableStateOf("") }
     var selling by remember { mutableStateOf("") }
     var mrp by remember { mutableStateOf("") }
@@ -137,6 +147,12 @@ private fun ProductForm(s: BooksSession, productId: String?, modifier: Modifier,
     var errors by remember { mutableStateOf(emptyList<BooksError>()) }
     var saving by remember { mutableStateOf(false) }
 
+    // The shop's category (a network read — never holds the form up): its kind is the default for a new product.
+    LaunchedEffect(Unit) {
+        val shop = UnitMaster.kindOf(runCatching { container.businessRepository.getMyBusiness()?.category }.getOrNull())
+        if (kind == null) kind = shop
+    }
+
     LaunchedEffect(productId) {
         val dao = s.dao
         val business = dao.business(s.ctx.businessId)
@@ -152,8 +168,11 @@ private fun ProductForm(s: BooksSession, productId: String?, modifier: Modifier,
             brand = p.brandId?.let { dao.brand(it)?.name }.orEmpty()
             sku = p.sku.orEmpty(); barcode = p.barcode.orEmpty()
             hsn = p.hsnCode.orEmpty(); hsnConfirmed = p.hsnConfirmedByUser
-            taxType = TaxType.valueOf(p.taxType); gstBp = p.gstBp; cess = if (p.cessBp == 0) "" else bpText(p.cessBp)
-            primaryUnit = p.primaryUnit; secondaryUnit = p.secondaryUnit.orEmpty(); conversion = qtyText(p.conversionMilli)
+            taxType = TaxType.valueOf(p.taxType); gstBp = p.gstBp.takeIf { p.gstSpecified }; cess = if (p.cessBp == 0) "" else bpText(p.cessBp)
+            p.businessKind?.let { k -> UnitMaster.Kind.entries.firstOrNull { it.name == k } }?.let { kind = it }
+            primaryUnit = p.primaryUnit; purchaseUnit = p.purchaseUnit; salesUnit = p.salesUnit
+            conversions = (listOfNotNull(p.secondaryUnit?.let { u -> p.conversionMilli?.let { u to it } }) +
+                com.shopai.app.books.model.ProductUnits.parseMore(p.moreUnits).toList()).associate { (u, milli) -> u to qtyText(milli) }
             purchase = paiseText(p.purchasePricePaise); selling = paiseText(p.sellingPricePaise); mrp = paiseText(p.mrpPaise)
             wholesale = paiseText(p.wholesalePricePaise); retail = paiseText(p.retailPricePaise); minSelling = paiseText(p.minSellingPricePaise)
             includesTax = p.priceIncludesTax; minStock = qtyText(p.minStockMilli); reorder = qtyText(p.reorderLevelMilli)
@@ -175,6 +194,12 @@ private fun ProductForm(s: BooksSession, productId: String?, modifier: Modifier,
         uri?.let { imagePath = copyProductImage(context, it) ?: imagePath }
     }
 
+    val categoryMissing = stringResource(R.string.books_choose_category)
+    val conversionTemplate = stringResource(R.string.books_conversion_needed)
+    fun conversionMissing(unit: String) = conversionTemplate.format(unit, primaryUnit)
+    val tamil = androidx.compose.ui.platform.LocalConfiguration.current.locales[0].language == "ta"
+    val shopKind = kind ?: UnitMaster.Kind.OTHER
+
     fun save() {
         scope.launch {
             saving = true
@@ -185,14 +210,28 @@ private fun ProductForm(s: BooksSession, productId: String?, modifier: Modifier,
                 runCatching { LocalDate.parse(it) }.getOrElse { _ -> parseErrors += BooksError(BooksErrorCode.INVALID_DATE, "Use YYYY-MM-DD", field); null }
             }
             val cessBp = parsePercentBp(cess).getOrElse { parseErrors += BooksError(BooksErrorCode.INVALID_GST, "Check the cess %", "cessBp"); null } ?: 0
+            if (category.isBlank()) parseErrors += BooksError(BooksErrorCode.REQUIRED_FIELD, categoryMissing, "category")
+            // Every unit other than the stock unit needs its conversion — its size is never assumed.
+            val pu = purchaseUnit.takeUnless { isService }
+            val su = salesUnit.takeUnless { isService }
+            val otherUnits = unitsNeedingConversion(primaryUnit, pu, su, conversions.keys)
+            val convMilli = otherUnits.associateWith { u ->
+                val typed = conversions[u].orEmpty()
+                if (typed.isBlank()) { parseErrors += BooksError(BooksErrorCode.INVALID_UNIT, conversionMissing(u), "conv_$u"); null }
+                else quantity(typed, "conv_$u")?.also { if (it <= 0) parseErrors += BooksError(BooksErrorCode.INVALID_UNIT, conversionMissing(u), "conv_$u") }
+            }
             val openQty = quantity(openingQty, "openingQty")
             val openValue = money(openingValue, "openingValue")
+            // (the first other unit is the product's second unit, as Kai and older screens read it; the rest are kept with it)
+            val firstOther = otherUnits.firstOrNull()
             val input = ProductInput(
                 name = name, isService = isService, primaryUnit = primaryUnit,
-                secondaryUnit = secondaryUnit.trim().uppercase().takeIf { it.isNotEmpty() },
-                conversionMilli = quantity(conversion, "conversionMilli"),
+                secondaryUnit = firstOther, conversionMilli = firstOther?.let { convMilli[it] },
+                moreUnits = otherUnits.drop(1).mapNotNull { u -> convMilli[u]?.let { u to it } }.toMap(),
+                purchaseUnit = pu, salesUnit = su, businessKind = kind?.name,
                 sku = sku, barcode = barcode, hsnCode = hsn, hsnConfirmed = hsnConfirmed,
-                taxType = taxType, gstBp = if (taxType == TaxType.GST) gstBp else 0, cessBp = if (taxType == TaxType.GST) cessBp else 0,
+                taxType = taxType, gstBp = if (taxType == TaxType.GST) gstBp ?: 0 else 0, gstSpecified = taxType != TaxType.GST || gstBp != null,
+                cessBp = if (taxType == TaxType.GST) cessBp else 0,
                 purchasePricePaise = money(purchase, "purchasePricePaise"), sellingPricePaise = money(selling, "sellingPricePaise"),
                 mrpPaise = money(mrp, "mrpPaise"), wholesalePricePaise = money(wholesale, "wholesalePricePaise"),
                 retailPricePaise = money(retail, "retailPricePaise"), minSellingPricePaise = money(minSelling, "minSellingPricePaise"),
@@ -215,6 +254,8 @@ private fun ProductForm(s: BooksSession, productId: String?, modifier: Modifier,
                         (s.masters.updateSettings(batchTracking = true) as? MasterResult.Rejected)?.let { throw BooksRejectedException(it.errors) }
                     }
                     val categoryId = s.masters.categoryId(category)
+                    // (each unit chosen from the Unit Master or typed new is added to the shop's units first)
+                    input.moreUnits.keys.forEach { s.masters.ensureUnit(it) }
                     val full = input.copy(
                         primaryUnit = s.masters.ensureUnit(primaryUnit) ?: primaryUnit,
                         secondaryUnit = input.secondaryUnit?.let { s.masters.ensureUnit(it) },
@@ -257,6 +298,13 @@ private fun ProductForm(s: BooksSession, productId: String?, modifier: Modifier,
         }
     }
 
+    // A unit of fixed size (1 quintal = 100 kg, 1 dozen = 12 pcs, 1 metre = 1,000 mm) gets its conversion filled in; the owner can change it.
+    LaunchedEffect(primaryUnit, purchaseUnit, salesUnit, conversions.keys) {
+        val fill = unitsNeedingConversion(primaryUnit, purchaseUnit, salesUnit, conversions.keys).filter { conversions[it].isNullOrBlank() }
+            .mapNotNull { u -> UnitMaster.fixedFactor(u, primaryUnit)?.let { u to it.toPlainString() } }
+        if (fill.isNotEmpty()) conversions = conversions + fill
+    }
+
     if (!loaded) {
         BooksNotReady(BooksState.Loading, modifier)
         return
@@ -270,7 +318,14 @@ private fun ProductForm(s: BooksSession, productId: String?, modifier: Modifier,
         SectionCard(stringResource(R.string.books_section_basic)) {
             ShopTextField(stringResource(R.string.books_product_name), name, { name = it }, error = errors.messageFor("name"))
             SwitchRow(stringResource(R.string.books_is_service), isService, { isService = it }, stringResource(R.string.books_is_service_caption))
-            ShopTextField(stringResource(R.string.inv_category), category, { category = it })
+            Text(stringResource(R.string.books_business_kind), style = MaterialTheme.typography.bodyMedium, color = ShopAiThemeColors.onSurfaceVariant)
+            ChoiceChips(UnitMaster.Kind.entries, shopKind, { kindLabel(it) }) { kind = it }
+            ShopTextField(stringResource(R.string.books_product_category_required), category, { category = it }, error = errors.messageFor("category"))
+            // The kind's own categories as suggestions (what is typed narrows them); a new one is created for the shop on Save.
+            val categoryHits = ProductCategories.suggestions(shopKind).filter { category.isBlank() || it.contains(category.trim(), ignoreCase = true) }
+            if (categoryHits.isNotEmpty() && categoryHits.none { it.equals(category.trim(), ignoreCase = true) }) {
+                ChoiceChips(categoryHits, null, { it }) { category = it }
+            }
             ShopTextField(stringResource(R.string.inv_sub_category), subCategory, { subCategory = it })
             ShopTextField(stringResource(R.string.inv_brand), brand, { brand = it })
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -287,7 +342,15 @@ private fun ProductForm(s: BooksSession, productId: String?, modifier: Modifier,
         }
 
         SectionCard(stringResource(R.string.books_section_codes)) {
-            ShopTextField(stringResource(R.string.inv_sku), sku, { sku = it }, error = errors.messageFor("sku"))
+            Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ShopTextField(stringResource(R.string.inv_sku), sku, { sku = it }, error = errors.messageFor("sku"), modifier = Modifier.weight(1f))
+                OutlinedButton(onClick = {
+                    scope.launch {
+                        val taken = s.dao.products(s.ctx.businessId, archived = false, limit = 100_000, offset = 0).filter { it.id != productId }.mapNotNull { it.sku }
+                        sku = ProductCode.generate(name, category, taken)
+                    }
+                }) { Text(stringResource(R.string.books_sku_auto)) }
+            }
             Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ShopTextField(stringResource(R.string.inv_barcode), barcode, { barcode = it }, error = errors.messageFor("barcode"), modifier = Modifier.weight(1f))
                 OutlinedButton(onClick = { scanBarcode(context) { code -> code?.let { barcode = it } } }) { Text(stringResource(R.string.books_scan)) }
@@ -317,18 +380,35 @@ private fun ProductForm(s: BooksSession, productId: String?, modifier: Modifier,
             ChoiceChips(TaxType.entries, taxType, { taxTypeLabel(it) }) { taxType = it }
             if (taxType == TaxType.GST) {
                 Text(stringResource(R.string.inv_gst_rate), style = MaterialTheme.typography.bodyMedium, color = ShopAiThemeColors.onSurfaceVariant)
-                ChoiceChips(slabs, gstBp, { "${bpText(it)}%" }) { gstBp = it }
+                ChoiceChips(listOf<Int?>(null) + slabs, gstBp, { bp -> bp?.let { "${bpText(it)}%" } ?: stringResource(R.string.books_gst_not_specified) }) { gstBp = it }
+                if (gstBp == null) Text(stringResource(R.string.books_gst_blank_note), style = MaterialTheme.typography.bodySmall, color = ShopAiThemeColors.onSurfaceVariant)
                 errors.messageFor("gstBp")?.let { Text(it, color = Danger, style = MaterialTheme.typography.bodySmall) }
                 DecimalField(stringResource(R.string.books_cess), cess, { cess = it })
             }
         }
 
         SectionCard(stringResource(R.string.books_section_units)) {
-            ShopTextField(stringResource(R.string.books_primary_unit), primaryUnit, { primaryUnit = it.uppercase() }, error = errors.messageFor("primaryUnit"))
-            ChoiceChips(units, primaryUnit, { it }) { primaryUnit = it }
-            ShopTextField(stringResource(R.string.books_secondary_unit), secondaryUnit, { secondaryUnit = it.uppercase() })
-            if (secondaryUnit.isNotBlank()) {
-                DecimalField(stringResource(R.string.books_conversion, secondaryUnit.uppercase(), primaryUnit), conversion, { conversion = it })
+            // Stock / purchase / sales unit from the searchable Unit Master (the kind's units first, a new one typed in English).
+            UnitPicker(stringResource(R.string.books_stock_unit), primaryUnit, shopKind, units, tamil, error = errors.messageFor("primaryUnit")) { primaryUnit = it ?: primaryUnit }
+            if (!isService) {
+                UnitPicker(stringResource(R.string.books_purchase_unit), purchaseUnit, shopKind, units, tamil, none = stringResource(R.string.books_same_as_stock_unit),
+                    error = errors.messageFor("purchaseUnit")) { purchaseUnit = it?.takeIf { u -> !u.equals(primaryUnit, true) } }
+                UnitPicker(stringResource(R.string.books_sales_unit), salesUnit, shopKind, units, tamil, none = stringResource(R.string.books_same_as_stock_unit),
+                    error = errors.messageFor("salesUnit")) { salesUnit = it?.takeIf { u -> !u.equals(primaryUnit, true) } }
+            }
+            // Each other unit's size, set for this product (a fixed one — 1 metre = 1,000 mm — is filled in; a box / strip / coil never is).
+            unitsNeedingConversion(primaryUnit, purchaseUnit, salesUnit, conversions.keys).forEach { u ->
+                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    DecimalField(stringResource(R.string.books_conversion, u, primaryUnit), conversions[u].orEmpty(), { conversions = conversions + (u to it) },
+                        errors.messageFor("conv_$u"), Modifier.weight(1f))
+                    if (u != purchaseUnit && u != salesUnit) TextButton(onClick = { conversions = conversions - u }) { Text(stringResource(R.string.books_remove)) }
+                }
+            }
+            if (!isService) {
+                UnitPicker(stringResource(R.string.books_more_units), extraUnit, shopKind, units, tamil, none = "—") { picked ->
+                    if (picked != null && !picked.equals(primaryUnit, true) && picked !in conversions) conversions = conversions + (picked to "")
+                    extraUnit = null
+                }
             }
         }
 
@@ -370,6 +450,57 @@ private fun ProductForm(s: BooksSession, productId: String?, modifier: Modifier,
         Spacer(Modifier.height(32.dp))
     }
 }
+
+/**
+ * A unit chosen from the Unit Master: what is typed searches code, English, Tamil and short forms (the kind's own units first);
+ * a unit not in the master is offered as the shop's new unit when it can be kept in English letters. [none] (when given) is the
+ * first chip — "same as stock unit" — and picks null.
+ */
+@Composable
+private fun UnitPicker(
+    label: String, value: String?, kind: UnitMaster.Kind, shopUnits: List<String>, tamil: Boolean,
+    none: String? = null, error: String? = null, onPick: (String?) -> Unit,
+) {
+    var query by remember { mutableStateOf("") }
+    Text(label, style = MaterialTheme.typography.bodyMedium, color = ShopAiThemeColors.onSurfaceVariant)
+    ShopTextField(stringResource(R.string.books_unit_search), query, { query = it }, placeholder = value?.let { UnitMaster.label(it, tamil) }.orEmpty(), error = error)
+    val hits = UnitMaster.search(query, kind, shopUnits).take(if (query.isBlank()) 14 else 10)
+    // (the unit chosen stays in view even when it is not among the suggestions)
+    val options = (listOfNotNull(value) + hits).distinct()
+    val custom = query.takeIf { it.isNotBlank() }?.let(UnitMaster::customCode)?.takeIf { it !in options }
+    ChoiceChips(
+        (if (none != null) listOf<String?>(null) else emptyList()) + options + listOfNotNull(custom),
+        value,
+        { u -> if (u == null) none.orEmpty() else if (u == custom) stringResource(R.string.books_unit_custom, u) else UnitMaster.label(u, tamil) },
+    ) { u -> onPick(u); query = "" }
+    if (query.isNotBlank() && hits.isEmpty() && custom == null) {
+        Text(stringResource(R.string.books_unit_english), color = Warning, style = MaterialTheme.typography.bodySmall)
+    }
+}
+
+@Composable
+private fun kindLabel(k: UnitMaster.Kind): String = stringResource(
+    when (k) {
+        UnitMaster.Kind.HARDWARE -> R.string.unit_kind_hardware
+        UnitMaster.Kind.GROCERY -> R.string.unit_kind_grocery
+        UnitMaster.Kind.TEXTILE -> R.string.unit_kind_textile
+        UnitMaster.Kind.PHARMACY -> R.string.unit_kind_pharmacy
+        UnitMaster.Kind.AGRICULTURE -> R.string.unit_kind_agriculture
+        UnitMaster.Kind.AUTOMOBILE -> R.string.unit_kind_automobile
+        UnitMaster.Kind.FRESH -> R.string.unit_kind_fresh
+        UnitMaster.Kind.STATIONERY -> R.string.unit_kind_stationery
+        UnitMaster.Kind.PAINTS -> R.string.unit_kind_paints
+        UnitMaster.Kind.CHEMICALS -> R.string.unit_kind_chemicals
+        UnitMaster.Kind.COSMETICS -> R.string.unit_kind_cosmetics
+        UnitMaster.Kind.FOOTWEAR -> R.string.unit_kind_footwear
+        UnitMaster.Kind.FURNITURE -> R.string.unit_kind_furniture
+        UnitMaster.Kind.PET -> R.string.unit_kind_pet
+        UnitMaster.Kind.BEVERAGES -> R.string.unit_kind_beverages
+        UnitMaster.Kind.MOBILE -> R.string.unit_kind_mobile
+        UnitMaster.Kind.RESTAURANT -> R.string.unit_kind_restaurant
+        UnitMaster.Kind.OTHER -> R.string.unit_kind_other
+    },
+)
 
 @Composable
 fun taxTypeLabel(t: TaxType): String = stringResource(

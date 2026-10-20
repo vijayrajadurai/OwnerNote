@@ -808,6 +808,9 @@ class BooksEngine(
         val expiry: LocalDate?,
     )
 
+    /** The product's units: its primary and secondary unit and any further ones it holds. */
+    private fun unitsOf(p: ProductEntity) = ProductUnits(p.primaryUnit, p.secondaryUnit, p.conversionMilli, ProductUnits.parseMore(p.moreUnits))
+
     private suspend fun resolveItems(items: List<ItemInput>, business: BusinessEntity, forSale: Boolean): List<Line> {
         if (items.isEmpty()) reject(BooksErrorCode.NO_ITEMS, "Add at least one item", "items")
         val slabs = business.gstRatesBp.split(',').mapNotNull { it.trim().toIntOrNull() }.toSet()
@@ -820,14 +823,16 @@ class BooksEngine(
             val name = product?.name ?: item.name?.trim()?.takeIf { it.isNotEmpty() } ?: reject(BooksErrorCode.NO_ITEMS, "Enter the item name", field)
             if (item.qtyMilli <= 0) reject(BooksErrorCode.INVALID_QUANTITY, "Quantity of $name must be more than zero", field)
 
-            val units = product?.let { ProductUnits(it.primaryUnit, it.secondaryUnit, it.conversionMilli) }
+            val units = product?.let(::unitsOf)
             val unit = (item.unit ?: units?.primary ?: "PCS").trim().uppercase()
             if (units != null && !units.accepts(unit)) reject(BooksErrorCode.INVALID_UNIT, "$name is not sold in $unit", field)
             val baseQty = units?.toPrimary(item.qtyMilli, unit) ?: item.qtyMilli
 
             val listPrice = product?.let { if (forSale) it.sellingPricePaise else it.purchasePricePaise }
             val rate = item.ratePaise ?: listPrice?.let { p ->
-                if (units?.secondary != null && unit.equals(units.secondary, true)) Money.times(p, units.factorMilli!!) else p
+                // (the list price is per primary unit: a line in another of the product's units is priced by its conversion)
+                val factor = units?.factorFor(unit) ?: 1000L
+                if (factor != 1000L) Money.times(p, factor) else p
             } ?: reject(BooksErrorCode.INVALID_PRICE, "Enter the rate for $name", field)
             if (rate < 0) reject(BooksErrorCode.INVALID_PRICE, "Rate of $name cannot be negative", field)
 
@@ -836,7 +841,9 @@ class BooksEngine(
                 if ((item.gstBp ?: 0) != 0) reject(BooksErrorCode.INVALID_GST, "$name is ${taxType.name.lowercase()} — no GST applies", field)
                 0
             }
-            if (taxType == TaxType.GST && gstBp !in slabs) reject(BooksErrorCode.INVALID_GST, "${BigDecimal.valueOf(gstBp.toLong(), 2).stripTrailingZeros().toPlainString()}% is not a GST rate set up for this business", field)
+            // (a product whose GST was left blank, with no rate chosen on the line: no GST charged — shown as "not specified")
+            val gstUnset = taxType == TaxType.GST && item.gstBp == null && product != null && !product.gstSpecified
+            if (taxType == TaxType.GST && !gstUnset && gstBp !in slabs) reject(BooksErrorCode.INVALID_GST, "${BigDecimal.valueOf(gstBp.toLong(), 2).stripTrailingZeros().toPlainString()}% is not a GST rate set up for this business", field)
             val cessBp = if (taxType == TaxType.GST) item.cessBp ?: product?.cessBp ?: 0 else 0
 
             val isService = product?.isService ?: true
@@ -903,10 +910,10 @@ class BooksEngine(
             val product = item.productId?.takeIf { item.batchNo.isNullOrBlank() }?.let { dao.product(it) }?.takeIf { tracksBatches(it, business) }
                 ?: return@flatMap listOf(item)
             if (!forSale) return@flatMap listOf(item.copy(batchNo = BatchPick.newNo(date)))
-            val units = ProductUnits(product.primaryUnit, product.secondaryUnit, product.conversionMilli)
+            val units = unitsOf(product)
             val unit = (item.unit ?: units.primary).trim().uppercase()
             if (!units.accepts(unit) || item.qtyMilli <= 0) return@flatMap listOf(item)
-            val factor = if (units.secondary != null && unit.equals(units.secondary, true)) units.factorMilli!! else 1000L
+            val factor = units.factorFor(unit) ?: 1000L
             val out = BatchPick.out(dao.productBatches(biz, product.id), units.toPrimary(item.qtyMilli, unit))
             BatchPick.splitLine(item.qtyMilli, factor, item.discountPaise, out).map { item.copy(qtyMilli = it.qtyMilli, discountPaise = it.discountPaise, batchNo = it.batchNo) }
                 .ifEmpty { listOf(item) }

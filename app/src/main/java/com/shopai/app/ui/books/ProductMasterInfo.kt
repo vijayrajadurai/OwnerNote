@@ -57,6 +57,11 @@ fun ProductMasterInfo(container: AppContainer, productId: String, refreshKey: In
         Line(stringResource(R.string.books_tax_type), taxTypeLabel(TaxType.valueOf(p.taxType)) + if (p.cessBp > 0) " + ${bpText(p.cessBp)}% cess" else "")
         if (p.priceIncludesTax) Line(stringResource(R.string.books_price_includes_tax), "✓")
         p.secondaryUnit?.let { Line(stringResource(R.string.books_units), "1 $it = ${qtyText(p.conversionMilli)} ${p.primaryUnit}") }
+        com.shopai.app.books.model.ProductUnits.parseMore(p.moreUnits).forEach { (unit, milli) ->
+            Line(stringResource(R.string.books_units), "1 $unit = ${qtyText(milli)} ${p.primaryUnit}")
+        }
+        p.purchaseUnit?.let { Line(stringResource(R.string.books_purchase_unit), it) }
+        p.salesUnit?.let { Line(stringResource(R.string.books_sales_unit), it) }
         p.wholesalePricePaise?.let { Line(stringResource(R.string.books_wholesale_price), formatInr(it / 100.0)) }
         p.retailPricePaise?.let { Line(stringResource(R.string.books_retail_price), formatInr(it / 100.0)) }
         p.minSellingPricePaise?.let { Line(stringResource(R.string.books_min_selling_price), formatInr(it / 100.0)) }
