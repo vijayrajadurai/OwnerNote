@@ -43,8 +43,26 @@ object KaiStatement {
         if (notStatement.containsMatchIn(lower)) return false
         // An amount is money; a year or a day of the month ("2026", "1 to 30") is a period.
         if (number.findAll(lower).any { m -> m.groupValues[1].replace(",", "").toLongOrNull()?.let { it in 100..1899 || it > 2100 } == true }) return false
-        return pdfWord.containsMatchIn(lower) || ledgerWord.containsMatchIn(lower) && shareWord.containsMatchIn(lower) || onlyByReference(lower)
+        return pdfWord.containsMatchIn(lower) || ledgerWord.containsMatchIn(lower) && shareWord.containsMatchIn(lower) || onlyByReference(lower) || asksInvoice(lower)
     }
+
+    private val invoiceWord = Regex("""(?<![\p{L}])(?:invoice|invoices|bill|bills|purchase\s+bill)(?![\p{L}])""")
+    private val getWord = Regex("""(?<![\p{L}])(?:kudu|kudunga|kodu|kodunga|kaattu|kaatu|venum|vendum|send|share|anuppu|anupu|anuppunga|show|thaa|tha|paakkanum|paaknum)(?![\p{L}])""")
+    private val makeWord = Regex("""(?<![\p{L}])(?:podu|potu|podunga|podanum|create|generate|make|ready|ezhudhu|ezhuthu|pannu|pannunga|scan)(?![\p{L}])""")
+
+    /**
+     * "ABC Traders invoice kudu", "Kumar bill PDF anuppu" (owner, 20 Oct 2026: "supplier name mention panni invoice keta pdf-a
+     * kudukanum"): that party's bills and entries as the statement PDF — asked for, never a bill to make ("bill podu" stays the
+     * Billing screen's). Only with the party named in the line ([KaiAgent] checks the name).
+     */
+    fun asksInvoice(said: String): Boolean {
+        val lower = said.lowercase(Locale.ROOT)
+        return invoiceWord.containsMatchIn(lower) && (getWord.containsMatchIn(lower) || pdfWord.containsMatchIn(lower)) && !makeWord.containsMatchIn(lower)
+    }
+
+    /** "invoice kudu" with no PDF word: a statement only when a party is named in the line itself. */
+    fun invoiceOnly(said: String): Boolean = asksInvoice(said) && !pdfWord.containsMatchIn(said.lowercase(Locale.ROOT)) &&
+        !(ledgerWord.containsMatchIn(said.lowercase(Locale.ROOT)) && shareWord.containsMatchIn(said.lowercase(Locale.ROOT)))
 
     /** "Idha WhatsApp-la anuppu": a statement only because of "this" — it means one only right after a person was talked about. */
     fun onlyByReference(said: String): Boolean {

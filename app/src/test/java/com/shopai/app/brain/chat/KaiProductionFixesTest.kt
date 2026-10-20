@@ -115,7 +115,7 @@ class KaiProductionFixesTest {
         assertTrue(t.reply.text, t.reply.text.contains("Colgate stock add pannalam.\nEvlo pieces vandhirukku?"))
         // The quantity completes it — still a draft.
         val d = kai.ask("12")
-        assertEquals("Colgate — 12 pieces stock-in draft ready. Confirm pannunga.", d.reply.text)
+        assertEquals("Colgate — 12 pieces stock-in draft ready. Confirm pannunga.\nExpiry date enna Owner? (eg: 25/12/2026). Expiry illa-na appadiye Confirm pannunga.", d.reply.text)
         assertTrue(tools.stockChanges.isEmpty())
         val done = kai.act(d.actions().filterIsInstance<KaiAction.ConfirmStock>().single(), KaiLang.TANGLISH)!!
         assertEquals("Done Owner ✅ Colgate stock-la 12 pieces add panniten. Ippo stock 20 pieces.", done.reply.text)

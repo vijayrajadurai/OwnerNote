@@ -363,21 +363,8 @@ fun VoiceEntryScreen(
             cameraRequest = billCameraRequest,
         )
 
-        ShopTextField(
-            stringResource(R.string.voice_sentence),
-            inputText,
-            { inputText = it },
-            placeholder = stringResource(R.string.voice_sentence_placeholder),
-            singleLine = false,
-        )
-
-        PrimaryButton(
-            label = stringResource(R.string.voice_parse),
-            loading = parsing,
-            enabled = inputText.isNotBlank() && orbState != MicState.Listening,
-            modifier = Modifier.padding(top = 8.dp),
-            onClick = { parseInput() },
-        )
+        // (owner, 20 Oct 2026: the "Your sentence" box with its "Kumar-ku 2000-ku tharanum" example and the Parse button are
+        // gone from here — Kai's mic above still reads what is said; typed entries are Kai Chat's.)
 
         queryAnswer?.let { answer ->
             ShopCard(modifier = Modifier.padding(vertical = 8.dp)) {

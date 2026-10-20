@@ -490,6 +490,17 @@ object KaiCommands {
         RegexOption.IGNORE_CASE,
     )
 
+    /**
+     * "selvathukku" = Selvam + -ukku, as Tamil says a name ending in -m (செல்வத்துக்கு): "Selvam ku" when the books keep Selvam —
+     * or "Selva" (owner, 20 Oct 2026: "selvam or selva name correct-ah eduthu kudukanum"). A name the books don't keep stays as typed.
+     */
+    fun inflectedNames(text: String, known: List<String>): String =
+        Regex("""(?i)(?<![\p{L}])([a-z]{3,}?)(?:aththukku|athukku|athuku|aththuku)(?![\p{L}])""").replace(text) { m ->
+            val stem = m.groupValues[1]
+            val hit = known.firstOrNull { it.equals(stem + "am", ignoreCase = true) } ?: known.firstOrNull { it.equals(stem + "a", ignoreCase = true) }
+            hit?.let { "$it ku" } ?: m.value
+        }
+
     /** A known party in the text, else the word before -ku / kitta ("Ramesh ku", "Kumar kitta"), or after "call / to / from". */
     fun personIn(text: String, known: List<String>): String? {
         KaiUnderstanding.knownPerson(text, known)?.let { return shopNamedAfter(text, it, known) ?: it }
