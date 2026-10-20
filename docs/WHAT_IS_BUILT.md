@@ -5,7 +5,7 @@ memory: what the app already does, where it lives, and how work is done here. **
 `git log --oneline origin/main | head -40` (another session may have just fixed the same thing). **When you finish a
 feature or a fix:** add one line under its area below, in the same commit.
 
-Last brought up to date: 20 Oct 2026 (main at PR #136).
+Last brought up to date: 20 Oct 2026 (main at PR #138).
 
 ---
 
@@ -104,6 +104,14 @@ Last brought up to date: 20 Oct 2026 (main at PR #136).
   - hardware (sizes, codes, sound rules)
   - supermarket packs
   - vegetables
+- Hardware stock-in, as rules for any product (PR #138):
+  - A new product never lands on the last one talked about (Tata Tiscon ≠ Ultratech).
+  - Another brand before the shop's goods word is another product.
+  - A size (12 mm, 6 A, 8x4, 2 inch, 2.5 sqmm) is the product's, never the quantity.
+  - Packs multiply: "arai kilo 24 dabba" = 12 kg.
+  - inch / mm / sqmm read the same by mic.
+  - No expiry / batch / phone-model questions in a hardware shop.
+  - Test: `KaiHardwareStockInTest`.
 - Goods arriving ("kadaiku saraku vandhuruku") → items one by one into a list, saved together on the list's Confirm.
 - Expiry for goods that can expire, in any shop. Batches and a 7-day alert. Old stock becomes an "OLD-STOCK" batch on
   Confirm.
