@@ -295,6 +295,7 @@ private suspend fun persistShopLocation(
                 ownerName = business.ownerName,
                 businessName = business.businessName,
                 category = business.category,
+                categories = business.categories, otherCategoryName = business.otherCategoryName,
                 city = business.city,
                 runningSinceYear = business.runningSinceYear,
                 monthlyVolumeApprox = business.monthlyVolumeApprox?.toDoubleOrNull()?.toInt(),
