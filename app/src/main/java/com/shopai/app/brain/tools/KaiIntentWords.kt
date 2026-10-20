@@ -175,8 +175,18 @@ object KaiIntentWords {
         """collection|vasool|pending|owe\p{L}*|customer\p{L}*|supplier\p{L}*)""" + E)
 
     /** The line as Kai's rules read it, or the line itself when nothing here applies. */
-    fun canonical(text: String): String {
+    fun canonical(text: String, names: List<String> = emptyList()): String {
         var t = text
+        // The shop's own names, as words: a stock word that is part of a product's name ("Mosquito refill Small pack") is the name
+        // there, never "vandhuchu" (release check, 20 Oct 2026: "Mosquito refill Small pack 7 add pannu" asked which mosquito).
+        val spaced = names.map { " " + it.lowercase(Locale.ROOT).replace(Regex("""\s+"""), " ").trim() + " " }
+        fun inAName(line: String, r: IntRange): Boolean {
+            if (spaced.isEmpty()) return false
+            val word = line.substring(r).lowercase(Locale.ROOT).trim()
+            val before = Regex("""(\S+)\s*$""").find(line.substring(0, r.first))?.groupValues?.get(1)?.lowercase(Locale.ROOT)
+            val after = Regex("""^\s*(\S+)""").find(line.substring(r.last + 1))?.groupValues?.get(1)?.lowercase(Locale.ROOT)
+            return spaced.any { n -> (before != null && n.contains(" $before $word ")) || (after != null && n.contains(" $word $after ")) }
+        }
         for ((re, word) in thousands) t = re.replace(t) { m -> word + " " + if (m.groupValues[1] == "thu") "aayirathu" else "aayiram" }
         for ((re, word) in tens) t = re.replace(t, word)
         // ("due date thaandiduchu" is money overdue, never expiry)
@@ -202,7 +212,7 @@ object KaiIntentWords {
         if (quantity.containsMatchIn(t) && !Regex("""(?i)remind""").containsMatchIn(t)) {
             // "rack-la", "godown-la": where it was put — the place, never a unit or part of the name.
             t = shelfPlace.replace(t, " ")
-            for (re in stockIn) t = re.replace(t, "vandhuchu")
+            for (re in stockIn) t = re.replace(t) { m -> if (inAName(t, m.range)) m.value else "vandhuchu" }
             for ((re, to) in stockOut) t = re.replace(t, to)
         }
         t = t.replace(Regex("""\s+"""), " ").trim()

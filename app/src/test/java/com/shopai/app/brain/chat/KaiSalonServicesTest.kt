@@ -191,4 +191,33 @@ class KaiSalonServicesTest {
             assertTrue("[grocery] $line → ${all(t)}", s.note.entries.isEmpty() && t.card?.buttons.isNullOrEmpty())
         }
     }
+
+    /**
+     * Release check (20 Oct 2026): a count or a "did it" word between the service and its price — "gold facial onnu 900", "keratin
+     * panninom 3500" — is still that price (Kai asked "evlo?" again); and the mic's "ஃபுல் கால் வாக்ஸ்" is Full Legs Waxing (கால் = leg).
+     */
+    @Test fun thePriceSaidAfterACountOrAVerbIsThePrice() {
+        for ((typed, want, amount) in listOf(Triple("gold facial onnu 900", "Gold Facial", "900"), Triple("keratin panninom 3500", "Keratin Treatment", "3500"),
+            Triple("pedicure onnu 450", "Pedicure", "450"), Triple("full kaal wax 500", "Full Legs Waxing", "500"))) for (line in bothWays(typed)) {
+            val s = Shop()
+            val draft = s.say(line)
+            val shown = "₹" + "%,d".format(amount.toInt())
+            assertTrue("$line → ${all(draft)}", all(draft).contains(want) && all(draft).contains(shown) && draft.card?.buttons?.isNotEmpty() == true)
+            assertTrue("[$line] nothing before Confirm", s.note.entries.isEmpty())
+            s.confirm()
+            assertEquals(line, "$want ×1 ₹$amount", s.note.entries.single().note)
+        }
+        for (line in listOf("ஃபுல் கால் வாக்ஸ் 500", "கோல்ட் ஃபேஷியல் ஒன்னு 900")) {
+            val s = Shop()
+            val draft = s.say(line)
+            assertTrue("$line → ${all(draft)}", (all(draft).contains("Full Legs Waxing") || all(draft).contains("Gold Facial")) && draft.card?.buttons?.isNotEmpty() == true &&
+                !all(draft).contains("evlo") && !all(draft).contains("எவ்வளவு"))
+        }
+        // A word Kai doesn't know there ("semma") is never read as a different price: nothing saved, any draft at the price said.
+        Shop().let { s -> val t = s.say("keratin semma 3500"); assertTrue(all(t), s.note.entries.isEmpty() && (t.card == null || all(t).contains("₹3,500"))) }
+        // (a small number after a service is still how many — "head massage 2" is two, never ₹2; and two services keep their own prices)
+        val s = Shop()
+        val two = s.say("gold facial 900 pedicure 450")
+        assertTrue(all(two), all(two).contains("₹900") && all(two).contains("₹450"))
+    }
 }

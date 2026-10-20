@@ -116,6 +116,9 @@ object KaiProductSound {
     /** A name's key — and a one-word name of only an h and its vowel ("Hoe") heard by its h. */
     private fun nameKey(spoken: String): String = keyOf(spoken).ifEmpty { if (spoken.startsWith("h") && ' ' !in spoken.trim()) "h" else "" }
 
+    /** Kai's words for where goods are put ("rack-la", "shelf-la") — a product of that sound before a count is that product. */
+    private val placeWords = setOf("rack", "shelf", "selfu")
+
     private fun keyOf(spoken: String): String =
         spoken.split(' ').filter { it.isNotEmpty() }.joinToString("") { NameSound.key(it) }.replace(Regex("""(.)\1+"""), "$1")
 
@@ -176,7 +179,10 @@ object KaiProductSound {
                 if (run.any { w -> KaiSpokenWords.normalize(w.value).let { n -> n in sizeWords } }) return@firstNotNullOfOrNull null
                 // "6 எம்.எம். ஜல்லி": a goods name that starts with its size takes the number said before it.
                 val said = run.joinToString(" ") { it.value }
-                val known = run.all { KaiSpokenWords.normalize(it.value) != it.value }
+                // (a place word Kai knows — "ரேக்" = rack, said with "-ல" for where goods were put — is the shop's product when it is
+                // said right before its count: "ரேக் 7 ஆட் பண்ணு" is the Rake — release check, 20 Oct 2026)
+                val placeBeforeCount = span == 1 && KaiSpokenWords.normalize(run[0].value).lowercase() in placeWords && beforeQuantity(text, run.last().range.last + 1)
+                val known = !placeBeforeCount && run.all { KaiSpokenWords.normalize(it.value) != it.value }
                 goodsWritten[fold(said)]?.let { alias ->
                     // The shop's own product of that very name first ("சாமை" = Samai when Samai is kept, not the Little millet it also means).
                     // (only a name that sounds the same, sound for sound — "சமையல் எண்ணெய்" is Cooking oil, never Semolina)

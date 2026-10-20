@@ -171,6 +171,10 @@ object KaiSpokenWords {
         "கடன்" to "kadan", "கடனா" to "kadana", "கடனுக்கு" to "kadanuku", "பாக்கி" to "baaki", "பாக்கியா" to "baaki", "வெச்சிருக்கான்" to "vechirukkaan",
         "எனக்கு" to "enakku", "நான்" to "naan", "நா" to "naa", "அவன்" to "avan", "அவரு" to "avaru", "அவர்" to "avar", "அவங்க" to "avanga",
         "கிட்ட" to "kitta", "கிட்டே" to "kitta", "இருந்து" to "irundhu", "இருந்தது" to "irundhuchu",
+        // English said into the Tamil mic (release check, 20 Oct 2026: "ரிமைண்ட் மீ டுமாரோ அட் 5 பிஎம்" was set for today, "லட்சுமி பெய்டு 500" read the balance).
+        "டுமாரோ" to "tomorrow", "டுமாரொ" to "tomorrow", "டுமோரோ" to "tomorrow", "டுமார்ரோ" to "tomorrow", "டூமாரோ" to "tomorrow", "டுடே" to "today", "டூடே" to "today",
+        "பெய்டு" to "paid", "பெய்ட்" to "paid", "பெயிட்" to "paid", "பேய்டு" to "paid", "ரிசீவ்டு" to "received", "ரிசீவ்ட்" to "received", "சோல்டு" to "sold", "சோல்ட்" to "sold",
+        "ஆடட்" to "added", "ஆடெட்" to "added", "ஆட்டட்" to "added", "பாக்ஸஸ்" to "boxes", "பாக்சஸ்" to "boxes",
         "ஜிபே" to "gpay", "கூகுள்பே" to "gpay", "போன்பே" to "phonepe", "பேடிஎம்" to "paytm", "யுபிஐ" to "upi", "பே" to "pay", "ஜிபேல" to "gpay la",
         "பேமெண்ட்" to "payment", "பேமென்ட்" to "payment", "பேமண்ட்" to "payment", "செட்டில்" to "settle", "கிளியர்" to "clear",
         // "லட்சுமி 300 தந்தா", "குமார் கிட்ட பேசணும்", "ரெண்ட் கட்டணும்", "கரண்ட் பில் 1200 கட்டினேன்" (owner, 12 Oct 2026).
@@ -237,6 +241,9 @@ object KaiSpokenWords {
     )
 
     private val quarterWord = Regex("""(?<![$TA])கால்(?=\s+(?:கிலோ|லிட்டர்|லிட்டரு|மீட்டர்|டஜன்|லிட்டர்|kg|litre|meter)(?![$TA]))""")
+
+    /** "ஃபுல் கால் வாக்ஸ்": கால் is the leg here, not "call" (release check, 20 Oct 2026: sold as plain "Waxing"). */
+    private val legWax = Regex("""(?<![$TA])கால்\s+(?:வாக்ஸ்|வேக்ஸ்|வாக்சிங்|வேக்சிங்|வாக்ஸிங்)(?![$TA])""")
 
     private val tamilWord = Regex("""[$TA]+""")
 
@@ -326,11 +333,21 @@ object KaiSpokenWords {
         return s
     }
 
+    /**
+     * Typed spellings that join two words the mic writes apart: "nyabagapaduthu" is the mic's "ஞாபகப்படுத்து" = "nyabagam paduthu"
+     * (release check, 20 Oct 2026: typed, "…Kumar-kitta baaki ketkanum nyabagapaduthu" read Kumar's balance; by mic it set the
+     * reminder). Only these joined forms change; everything else typed passes through.
+     */
+    private val joinedRemind = Regex("""(?i)(?<![\p{L}])(?:nyabaga|gnabaga|gnyabaga|nyaabaga|ngyabaga|nyabagam|gnabagam)p(?:adu|adh)t?th?u(nga|ngo)?(?![\p{L}])""")
+
+    fun typed(text: String): String = if (hasTamil(text)) text else joinedRemind.replace(text) { m -> "nyabagam paduthu" + m.groupValues[1] }
+
     fun normalize(text: String): String {
         if (!hasTamil(text)) return text
         var s = amounts(spoken(text))
         // "கால் கிலோ" is a quarter kilo, not "call" (owner, 19 Oct 2026: "சுகர் கால் கிலோ வித்துச்சு").
         s = quarterWord.replace(s, "kaal")
+        s = legWax.replace(s, "kaal wax")
         // "டிசம்பர் 5ஆம் தேதிக்குள்": the day said with its "-ஆம்" (owner, 19 Oct 2026: "Sarath 5000 tharanum December 5" by mic asked
         // the due date again) — "5-aam", as "ஐந்தாம்" already reads.
         s = Regex("""(?<![\d])(\d{1,2})\s*(?:ஆம்|ம்|வது)(?![$TA])""").replace(s) { m -> "${m.groupValues[1]}-aam" }
