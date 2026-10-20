@@ -1,5 +1,6 @@
 package com.shopai.app.books.data
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -167,10 +168,19 @@ data class ProductEntity(
     val hsnConfirmedByUser: Boolean = false,
     val taxType: String,
     val gstBp: Int = 0,
+    /** False when the owner left GST blank — "GST not specified", never read as a 0% rate (owner, 20 Oct 2026). */
+    @ColumnInfo(defaultValue = "1") val gstSpecified: Boolean = true,
     val cessBp: Int = 0,
     val primaryUnit: String,
     val secondaryUnit: String? = null,
     val conversionMilli: Long? = null,
+    /** Further units with their conversion to the primary unit: "CARTON=144000;PACK=6000" ([com.shopai.app.books.model.ProductUnits.more]). */
+    val moreUnits: String? = null,
+    /** The unit a purchase / a sale of this product starts in (one of its units); null = the primary unit. */
+    val purchaseUnit: String? = null,
+    val salesUnit: String? = null,
+    /** The kind of business this product belongs to ([com.shopai.app.books.model.UnitMaster.Kind] name); null = the shop's own. */
+    val businessKind: String? = null,
     val purchasePricePaise: Long? = null,
     val sellingPricePaise: Long? = null,
     val mrpPaise: Long? = null,

@@ -45,6 +45,7 @@ import com.shopai.app.books.integration.BooksSession
 import com.shopai.app.books.model.Money
 import com.shopai.app.books.model.PartyKind
 import com.shopai.app.books.model.PaymentMode
+import com.shopai.app.books.model.ProductUnits
 import com.shopai.app.books.model.TaxType
 import com.shopai.app.books.model.TxnSource
 import com.shopai.app.data.AppContainer
@@ -181,7 +182,8 @@ private fun BillEditor(
             if (parsePercentBp(l.discount).isFailure) errs += BooksError(BooksErrorCode.INVALID_PRICE, "Check the discount of ${l.name}", "items[$i]")
             BillLine(l.product?.id, l.name, qty ?: 0, l.unit, rate, disc ?: 0, l.gstBp, l.taxType.name)
         }
-        val billPays = pays.mapNotNull { p ->
+        // (Credit = nothing received now: the whole bill goes on the party's credit, as an unpaid balance does)
+        val billPays = pays.filter { it.mode != PaymentMode.CREDIT }.mapNotNull { p ->
             val amount = parseRupees(p.amount).getOrElse { errs += BooksError(BooksErrorCode.INVALID_AMOUNT, "Check the amount paid", "payments"); null }
             amount?.takeIf { it > 0 }?.let { BillPayment(p.mode, it) }
         }
@@ -216,8 +218,14 @@ private fun BillEditor(
         "item" -> ProductPicker(
             s, onDismiss = { picking = null },
             onPick = { p ->
-                val price = if (sale) p.sellingPricePaise else p.purchasePricePaise
-                lines = lines + EditLine(p, p.name, "1", p.primaryUnit, paiseText(price), "", p.gstBp, TaxType.valueOf(p.taxType))
+                // The line starts in the product's sales / purchase unit (owner, 20 Oct 2026), priced by that unit's conversion.
+                val units = p.units()
+                val unit = (if (sale) p.salesUnit else p.purchaseUnit)?.takeIf(units::accepts) ?: p.primaryUnit
+                val price = (if (sale) p.sellingPricePaise else p.purchasePricePaise)?.let { list ->
+                    units.factorFor(unit)?.takeIf { it != 1000L }?.let { Money.times(list, it) } ?: list
+                }
+                // (GST left blank on the product: the line starts "not specified", never 0%)
+                lines = lines + EditLine(p, p.name, "1", unit, paiseText(price), "", p.gstBp.takeIf { p.gstSpecified }, TaxType.valueOf(p.taxType))
                 picking = null
             },
             onOneOff = { name ->
@@ -311,10 +319,14 @@ private fun BillEditor(
 
         SectionCard(stringResource(if (sale) R.string.bill_received_now else R.string.bill_paid_now)) {
             pays.forEachIndexed { i, p ->
-                ChoiceChips(PaymentMode.entries.filter { it != PaymentMode.CREDIT }, p.mode, { modeLabel(it) }) { m ->
-                    pays = pays.toMutableList().also { it[i] = EditPay(m, p.amount) }
+                // Credit only for a named party (a walk-in sale is paid now); it is the first payment's choice.
+                val modes = PaymentMode.entries.filter { it != PaymentMode.CREDIT || (i == 0 && party != null) }
+                ChoiceChips(modes, p.mode, { modeLabel(it) }) { m ->
+                    pays = pays.toMutableList().also { it[i] = EditPay(m, if (m == PaymentMode.CREDIT) "" else p.amount) }
                 }
-                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (p.mode == PaymentMode.CREDIT) {
+                    Text(stringResource(R.string.bill_all_on_credit), style = MaterialTheme.typography.bodyMedium, color = ShopAiThemeColors.onSurfaceVariant)
+                } else Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     DecimalField(stringResource(R.string.bill_amount), p.amount, { a -> pays = pays.toMutableList().also { it[i] = EditPay(p.mode, a) } }, modifier = Modifier.weight(1f))
                     totalPaise?.let { total ->
                         TextButton(onClick = {
@@ -324,14 +336,18 @@ private fun BillEditor(
                     }
                 }
             }
-            TextButton(onClick = { pays = pays + EditPay(PaymentMode.UPI, "") }) { Text(stringResource(R.string.bill_split_payment)) }
+            if (pays.none { it.mode == PaymentMode.CREDIT }) TextButton(onClick = { pays = pays + EditPay(PaymentMode.UPI, "") }) { Text(stringResource(R.string.bill_split_payment)) }
             Text(stringResource(R.string.bill_rest_on_credit), style = MaterialTheme.typography.bodySmall, color = ShopAiThemeColors.onSurfaceVariant)
         }
 
         // Live totals — the engine's quote, not a calculation of this screen.
         ShopCard {
             quote?.totals?.let { t ->
-                if (t.cgstPaise + t.sgstPaise + t.igstPaise + t.cessPaise > 0) Amount(stringResource(R.string.bill_tax), t.cgstPaise + t.sgstPaise + t.igstPaise + t.cessPaise)
+                if (t.discountPaise > 0) Amount(stringResource(R.string.bill_discount_total), -t.discountPaise)
+                if (t.taxPaise > 0) Amount(stringResource(R.string.bill_taxable), t.taxablePaise)
+                if (t.cgstPaise + t.sgstPaise > 0) Amount(stringResource(R.string.bill_cgst_sgst), t.cgstPaise + t.sgstPaise)
+                if (t.igstPaise > 0) Amount(stringResource(R.string.bill_igst), t.igstPaise)
+                if (t.cessPaise > 0) Amount(stringResource(R.string.books_cess), t.cessPaise)
                 if (t.roundOffPaise != 0L) Amount(stringResource(R.string.bill_round_off), t.roundOffPaise)
                 Amount(stringResource(R.string.bill_grand_total), t.grandTotalPaise, strong = true)
             } ?: Text(stringResource(R.string.bill_add_items_hint), color = ShopAiThemeColors.onSurfaceVariant)
@@ -350,6 +366,20 @@ private fun BillEditor(
                 }
             },
         )
+        // Save Draft: kept in the drafts list — no stock or money moves until Confirm (owner, 20 Oct 2026).
+        OutlinedButton(
+            onClick = {
+                scope.launch {
+                    val (d, errs) = toDraft()
+                    if (d == null) parseErrors = errs else {
+                        draftId = drafts.save(draftId, kind, d)
+                        onBack()
+                    }
+                }
+            },
+            enabled = lines.isNotEmpty(),
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text(stringResource(R.string.bill_save_draft)) }
         if (draftId != null) {
             TextButton(onClick = { scope.launch { drafts.discard(draftId!!); onBack() } }) { Text(stringResource(R.string.bill_discard_draft), color = Danger) }
         }
@@ -370,16 +400,24 @@ private fun LineEditor(line: EditLine, slabs: List<Int>, result: Long?, errors: 
             DecimalField(stringResource(R.string.bill_rate), line.rate, { onChange(line.copy(rate = it)) }, modifier = Modifier.weight(1f))
             DecimalField(stringResource(R.string.bill_disc_pct), line.discount, { onChange(line.copy(discount = it)) }, modifier = Modifier.weight(0.8f))
         }
-        val units = listOfNotNull(line.product?.primaryUnit, line.product?.secondaryUnit)
+        val units = line.product?.units()?.all.orEmpty()
         if (units.size > 1) ChoiceChips(units, line.unit, { it }) { u ->
             // Switching unit re-prices from the list price (engine converts stock).
             onChange(line.copy(unit = u, rate = ""))
         }
-        if (line.taxType == TaxType.GST) ChoiceChips(slabs, line.gstBp ?: 0, { "GST ${bpText(it)}%" }) { onChange(line.copy(gstBp = it)) }
+        if (line.taxType == TaxType.GST) {
+            // A product whose GST was left blank keeps "GST not specified" until a rate is chosen here.
+            val unset = line.product?.gstSpecified == false
+            ChoiceChips(if (unset) listOf<Int?>(null) + slabs else slabs, if (unset) line.gstBp else line.gstBp ?: 0,
+                { bp -> bp?.let { "GST ${bpText(it)}%" } ?: stringResource(R.string.books_gst_not_specified) }) { onChange(line.copy(gstBp = it)) }
+        }
         line.product?.hsnCode?.let { Text("HSN $it", style = MaterialTheme.typography.bodySmall, color = ShopAiThemeColors.onSurfaceVariant) }
         errors.forEach { Text(it.message, color = Danger, style = MaterialTheme.typography.bodySmall) }
     }
 }
+
+/** Every unit the product can be billed in (its stock unit, second unit and any more). */
+private fun ProductEntity.units() = ProductUnits(primaryUnit, secondaryUnit, conversionMilli, ProductUnits.parseMore(moreUnits))
 
 @Composable
 fun modeLabel(m: PaymentMode): String = stringResource(

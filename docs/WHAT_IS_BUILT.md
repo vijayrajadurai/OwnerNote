@@ -116,6 +116,17 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
 - Expiry for goods that can expire, in any shop. Batches and a 7-day alert. Old stock becomes an "OLD-STOCK" batch on
   Confirm.
 - Reports: stock on hand, low stock, fast and slow movers, profit and loss. A stock card shows the product's photo.
+- Inventory fields (owner, 20 Oct 2026; not yet checked on a phone — UI needs an Android Studio build):
+  - Dashboard: search (name / code / SKU / barcode, part of a code too), Add Product, Total Products and Low Stock tiles
+    (tap Low Stock to list only those).
+  - Add Product: business category (the shop's by default), required product category with the kind's own list, SKU
+    Auto (`books/model/ProductCategories.kt` `ProductCode`), GST "not specified" when left blank (never 0%).
+  - Unit Master for every kind of business (`books/model/UnitMaster.kt`): searchable by code / English / Tamil / short
+    form, the kind's units first, a new unit typed in English letters. Stock, purchase and sales unit per product, each
+    with its own conversion (`ProductUnits.more`); fixed ones (1 metre = 1,000 mm, 1 quintal = 100 kg) are filled in,
+    a box / strip / coil never is. Books DB v2 (`BooksDatabase.MIGRATION_1_2`). Test: `UnitMasterTest`.
+  - Bills: a line starts in the purchase / sales unit; Save draft; discount, taxable, CGST + SGST / IGST shown; Credit
+    as a payment choice for a named party. Stock change dialog: one-tap reasons (old stock = opening correction).
 
 ### Bills
 - Bill photo OCR (Tesseract), hardened on 50+ real bills:

@@ -124,9 +124,7 @@ class AppKaiTools(
         }.orEmpty()
         return list.map {
             val e = units[it.id]
-            val secondary = e?.secondaryUnit
-            val milli = e?.conversionMilli
-            val conversions = if (secondary != null && milli != null && milli > 0) mapOf(secondary to BigDecimal.valueOf(milli).divide(BigDecimal(1000))) else emptyMap()
+            val conversions = e?.let(::conversionsOf).orEmpty()
             com.shopai.app.brain.tools.ProductRef(it.id, it.name, it.unit, BigDecimal.valueOf(it.currentStock), conversions,
                 purchasePrice = e?.purchasePricePaise?.let(::rupees), sellingPrice = e?.sellingPricePaise?.let(::rupees),
                 minStock = e?.minStockMilli?.let(::qty), category = it.category, batchTracked = e?.batchTracked == true)
@@ -391,9 +389,13 @@ class AppKaiTools(
             }
         }
         val p = created ?: error("Product not saved")
-        val conversions = if (p.secondaryUnit != null && p.conversionMilli != null && p.conversionMilli > 0)
-            mapOf(p.secondaryUnit to BigDecimal.valueOf(p.conversionMilli).divide(BigDecimal(1000))) else emptyMap()
-        return com.shopai.app.brain.tools.ProductRef(p.id, p.name, p.primaryUnit, qty(s.ledger.stock(p.id)), conversions, batchTracked = p.batchTracked)
+        return com.shopai.app.brain.tools.ProductRef(p.id, p.name, p.primaryUnit, qty(s.ledger.stock(p.id)), conversionsOf(p), batchTracked = p.batchTracked)
+    }
+
+    /** Every unit the product holds a conversion for (its second unit and any more), as primary units in one of it. */
+    private fun conversionsOf(p: com.shopai.app.books.data.ProductEntity): Map<String, BigDecimal> {
+        val second = if (p.secondaryUnit != null && p.conversionMilli != null && p.conversionMilli > 0) mapOf(p.secondaryUnit to p.conversionMilli) else emptyMap()
+        return (second + com.shopai.app.books.model.ProductUnits.parseMore(p.moreUnits)).mapValues { BigDecimal.valueOf(it.value).divide(BigDecimal(1000)) }
     }
 
     override suspend fun expiring(until: LocalDate): List<com.shopai.app.brain.tools.BatchFact>? {
