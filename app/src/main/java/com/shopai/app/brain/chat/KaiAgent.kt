@@ -3881,6 +3881,28 @@ class KaiAgent(
 
     private val moneyScale = Regex("""(?i)(?<![\p{L}])(aayiram|ayiram|aayirathu|lakh|lakhs|latcham|thousand)(?![\p{L}])|ஆயிரம்|வாயிரம்|லட்சம்""")
 
+    /**
+     * The packs said with their size ([com.shopai.app.brain.tools.KaiStock.packsOfSize]) for [product]: the pack's size in the product's
+     * own unit kept for this chat (24 dabba of 500 g for Fevicol kept in kg → 1 can = 0.5 kg), the count of packs as the quantity; a
+     * product counted in that kind of pack itself (Apex kept in buckets, "4 litre 10 dabba") — that many of it. Else the parts as said
+     * (Kai asks what one pack holds).
+     */
+    private fun packsOf(product: com.shopai.app.brain.tools.ProductRef, text: String, parts: List<com.shopai.app.brain.tools.QtyPart>): List<com.shopai.app.brain.tools.QtyPart> {
+        val (count, size) = com.shopai.app.brain.tools.KaiStock.packsOfSize(text) ?: return parts
+        val units = com.shopai.app.brain.tools.KaiUnits
+        val base = units.canon(product.unit) ?: "PCS"
+        val pack = units.canon(count.unit) ?: return parts
+        if (pack == base) return listOf(com.shopai.app.brain.tools.QtyPart(count.qty, null))
+        // (a product kept in tins / buckets / cans: "10 dabba" of it is 10 of it — the size said is each one's)
+        val containers = setOf("CAN", "BUCKET", "TIN", "BOTTLE", "JAR", "DRUM", "BOX", "BAG", "ROLL", "COIL", "PACK")
+        if (base in containers && pack in containers && units.factor(product, pack, sessionUnits[product.id].orEmpty()) == null) return listOf(com.shopai.app.brain.tools.QtyPart(count.qty, null))
+        // A pack whose size for this product is known already: as said ("2 bag" of a 25 kg bag product).
+        if (units.factor(product, pack, sessionUnits[product.id].orEmpty()) != null) return listOf(count)
+        // Else all of it in the size's own unit: 24 × 500 g = 12,000 g (12 kg), 4 × 50 feet = 200 feet — a unit the product isn't kept in
+        // (feet for a pipe kept in metres) is then asked as before, never added to the count.
+        return listOf(com.shopai.app.brain.tools.QtyPart(units.clean(count.qty.multiply(size.qty)), size.unit))
+    }
+
     private suspend fun stockChange(raw: String, said: String, lang: KaiLang, products: List<com.shopai.app.brain.tools.ProductRef>, people: List<String>): KaiTurn? {
         val text = if (boughtGoods.containsMatchIn(raw) && !moneySaid.containsMatchIn(raw) && KaiCommands.personIn(raw, people) == null &&
             KaiEntityResolver.peopleIn(raw, people).isEmpty()) boughtGoods.replace(raw, "vandhuchu") else raw
@@ -3893,8 +3915,9 @@ class KaiAgent(
         // the payment path — never a product called "Selvi Kitta Irundhu" (owner, 16 Oct 2026).
         if (direct?.product == null && moneyScale.containsMatchIn(text) && !stockSaid.containsMatchIn(text)) return null
         val req = referred ?: direct
-            // "20 add pannu" after talking about Colgate — never when someone else is named (that is a payment).
-            ?: lastProduct?.takeIf { KaiCommands.personIn(text, people) == null }
+            // "20 add pannu" after talking about Colgate — never when someone else is named (that is a payment), and never when the line
+            // names a product of its own (release check, 20 Oct 2026: "Tata Tiscon 12mm 100 rod" became Ultratech Cement +112 bags).
+            ?: lastProduct?.takeIf { direct == null && KaiCommands.personIn(text, people) == null }
                 ?.let { p -> com.shopai.app.brain.tools.KaiStock.understand("${p.name} $text", products)?.takeIf { it.product?.id == p.id } }
             ?: return null
         // "Kumar kitta irundhu 500 vandhuchu", "Received 500 from Kumar": a person in the books, money with no stock word
@@ -3910,7 +3933,10 @@ class KaiAgent(
         val product = req.product ?: return unknownProduct(req, said, lang, products)
         lastProduct = product
         // Every quantity the owner said, in its own unit ("1 box 3 pieces"); converted to the product's unit below.
-        val parts = req.parts.ifEmpty { req.qty?.let { listOf(com.shopai.app.brain.tools.QtyPart(it, req.unit)) }.orEmpty() }
+        val parts0 = req.parts.ifEmpty { req.qty?.let { listOf(com.shopai.app.brain.tools.QtyPart(it, req.unit)) }.orEmpty() }
+        // "Fevicol arai kilo 24 dabba", "Garden pipe 50 adi 4 roll", "3 roll … oru roll 90 meter": that many packs, each that size —
+        // the size per pack is what one pack holds (24 × 500 g = 12 kg), never added to the count (release check, 20 Oct 2026).
+        val parts = packsOf(product, text, parts0)
         if (parts.isEmpty()) return looseOrPackAsk(product, req.incoming, said, lang, products) ?: askQuantity(product, req.incoming, said, lang)
         // "Colgate 5" with Colgate kept in pieces and boxes: which one? (never taken as pieces by itself)
         if (product.conversions.isNotEmpty() && parts.size == 1 && parts.single().unit == null &&
@@ -4027,9 +4053,12 @@ class KaiAgent(
         for (n in minOf(6, words.size) downTo 1) for (i in 0..words.size - n) {
             val w = words.subList(i, i + n)
             // (a unit word that starts the shop's names is a name word: "Bucket" of Bucket Small pack, "Carton box")
-            if (w.none { it.length >= 2 && it.any(Char::isLetter) && (st.unitOf(it) == null || names.any { n -> n.second.startsWith(" $it ") }) && !st.isStockWord(it) && it !in setOf("add", "stock", "pannu") }) continue
+            // (a size alone — "6 amp", "1 inch" — names no product: "Supreme pipe 1 inch" is never "which inch?")
+            if (w.none { it.length >= 2 && it.any(Char::isLetter) && (st.unitOf(it) == null || names.any { n -> n.second.startsWith(" $it ") }) && !st.isStockWord(it) && !st.isSizeWord(it) && it !in setOf("add", "stock", "pannu") }) continue
             val phrase = " " + w.joinToString(" ") + " "
-            val hits = names.filter { it.second.contains(phrase) }.map { it.first }
+            // ("Anchor switch 6A" with only Havells Switch 6A kept: another brand said right before — not that product)
+            // ("Havells switch 16 amp" with only the 6A kept: a size it doesn't have — another product)
+            val hits = names.filter { it.second.contains(phrase) && !st.otherBrand(words.getOrNull(i - 1), w, it.first.name) && !st.sizeConflict(line, it.first.name) }.map { it.first }
             if (hits.isNotEmpty()) return hits to phrase.trim()
         }
         return null
@@ -4260,8 +4289,19 @@ class KaiAgent(
      */
     private fun kindInShop(name: String, unit: String?, products: List<com.shopai.app.brain.tools.ProductRef>): com.shopai.app.brain.tools.ProductKind {
         val inv = com.shopai.app.brain.tools.KaiInventory
-        return inv.kindByName(name) ?: if (products.any { it.batchTracked }) com.shopai.app.brain.tools.ProductKind.PHARMACY else inv.kindByUnit(unit)
+        val byName = inv.kindByName(name)
+        // The shop's own kind of goods (most of its products' categories): a hardware shop's new "Tube light", "Rope", "Cable tie",
+        // "Sintex tank 1000 litre" are hardware — never asked a medicine's batch / expiry or a phone's model (release check, 20 Oct 2026).
+        val shopKind = products.mapNotNull { com.shopai.app.brain.tools.KaiExpiry.kindOfCategory(it.category) }.groupingBy { it }.eachCount()
+            .maxByOrNull { it.value }?.takeIf { it.value * 2 >= products.size && products.size >= 3 }?.key
+        val durable = setOf(com.shopai.app.brain.tools.ProductKind.HARDWARE, com.shopai.app.brain.tools.ProductKind.ELECTRICAL, com.shopai.app.brain.tools.ProductKind.AUTO, com.shopai.app.brain.tools.ProductKind.STATIONERY, com.shopai.app.brain.tools.ProductKind.KITCHENWARE, com.shopai.app.brain.tools.ProductKind.FOOTWEAR, com.shopai.app.brain.tools.ProductKind.GARMENT, com.shopai.app.brain.tools.ProductKind.TOYS)
+        if (shopKind != null && shopKind in durable && (byName == null || byName in setOf(com.shopai.app.brain.tools.ProductKind.PHARMACY, com.shopai.app.brain.tools.ProductKind.BAKERY, com.shopai.app.brain.tools.ProductKind.BEVERAGE, com.shopai.app.brain.tools.ProductKind.GROCERY, com.shopai.app.brain.tools.ProductKind.GENERAL) ||
+                byName == com.shopai.app.brain.tools.ProductKind.ELECTRONICS && !phoneGoods.containsMatchIn(name))) return shopKind
+        return byName ?: if (products.any { it.batchTracked }) com.shopai.app.brain.tools.ProductKind.PHARMACY else inv.kindByUnit(unit)
     }
+
+    /** Goods of a mobile shop by their name ("Type-C cable", "Samsung charger"): their model is asked anywhere. */
+    private val phoneGoods = Regex("""(?i)mobile|phone|charger|usb|type[\s-]?c|earphone|headphone|earbud|samsung|iphone|redmi|vivo|oppo|realme|power\s*bank|data\s*cable""")
 
     /** "<name> 650 10 strip": a name, its strength (650, 500mg), then the quantity and its unit. */
     private val strengthLine = Regex("""(?i)^(.*?[\p{L}\p{M}][\p{L}\p{M}\s.'-]*?)\s+(\d+(?:\.\d+)?)\s*(mg|mcg|ml)?\s+(\d+(?:\.\d+)?)\s*([\p{L}\p{M}]+)""")

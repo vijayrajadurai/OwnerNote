@@ -50,7 +50,7 @@ object KaiUnits {
             "VIAL", "VIALS" -> "VIAL"
             "KIT", "KITS" -> "KIT"
             "FT", "FEET", "FOOT" -> "FEET"
-            "METRE", "METERS", "METRES", "MTR", "MTRS", "METER" -> "METER"
+            "METRE", "METERS", "METRES", "MTR", "MTRS", "METER", "M" -> "METER"
             else -> it
         }
     }
