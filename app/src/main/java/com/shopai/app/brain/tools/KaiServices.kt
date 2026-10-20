@@ -496,6 +496,12 @@ object KaiServices {
         return out.sortedBy { it.start }
     }
 
+    /** Words said between a service and its price: "panninom", "aachu", "ஆச்சு" (the price after them is still that service's). */
+    private val fillerWords = setOf("pannom", "panninom", "pannunom", "pannitom", "pannittom", "panniten", "pannitten", "pannen", "panninen", "pannuvom",
+        "aachu", "achu", "aayiduchu", "ayiduchu", "mudinjidhu", "mudinjathu", "mudinjuthu", "pottom", "potten", "senjom", "senjen", "done", "panniyachu",
+        "பண்ணோம்", "பண்ணினோம்", "பண்ணுனோம்", "பண்ணிட்டோம்", "பண்ணிட்டேன்", "பண்ணேன்", "ஆச்சு", "ஆயிடுச்சு", "முடிஞ்சது", "முடிஞ்சிது", "போட்டோம்", "செஞ்சோம்")
+    private val priceAfterFiller = Regex("""^\s*(?:([\p{L}\p{M}\d]+)\s+)?(?:([\p{L}\p{M}]+)\s+)?(?:₹|rs\.?\s*)?(\d[\d,]*(?:\.\d+)?)\s*(?:rs|rupees|ruba|rubai|roobai|ரூபாய்|ரூ)?(?![\p{L}\p{M}\d])""")
+
     private fun number(token: String): Int? = token.toIntOrNull()?.takeIf { it in 1..999 } ?: numberWords[token.lowercase(Locale.ROOT)]
 
     /**
@@ -553,15 +559,28 @@ object KaiServices {
             val keptPrice = own.entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
             val countAfter = !countOfNext && value != null && m!!.groupValues[2].isEmpty() && number(before) == null && value <= BigDecimal.TEN &&
                 value.stripTrailingZeros().scale() <= 0 && (if (keptPrice != null) keptPrice.compareTo(value) != 0 else value < BigDecimal(5))
-            val amount = if (countOfNext || countAfter) null else value
+            var amount = if (countOfNext || countAfter) null else value
             if (amount != null) cursor = restAt + m!!.range.last + 1
+            // "gold facial onnu 900", "keratin panninom 3500", the mic's "பெடிக்யூர் ஒன்னு 450": a count and / or a "did it" word
+            // between the name and its price — the price is still the one said (release check, 20 Oct 2026: Kai asked "evlo?").
+            var leadCount: Int? = null
+            if (amount == null && number(before) == null) priceAfterFiller.find(rest)?.let { p ->
+                val first = p.groupValues[1]; val second = p.groupValues[2]
+                val count = first.takeIf { it.isNotEmpty() }?.let { w -> number(w)?.takeIf { it in 1..20 } }
+                val okFirst = first.isEmpty() || count != null || first in fillerWords
+                val okSecond = second.isEmpty() || second in fillerWords
+                val price = p.groupValues[3].replace(",", "").toBigDecimalOrNull()?.takeIf { it > BigDecimal.TEN }
+                if (okFirst && okSecond && (first.isNotEmpty() || second.isNotEmpty()) && price != null) {
+                    amount = price; leadCount = count; cursor = restAt + p.range.last + 1
+                }
+            }
             // "hair cutting rendu", "cutting onnu": a number word after it, as typed (the mic's "ரெண்டு" is read the same) — how many,
             // unless it is said right before the next service ("cutting rendu shaving": the next one's count).
             val wordAfter = if (m == null && number(before) == null) Regex("""^\s*([\p{L}\p{M}]+)(?![\p{L}\p{M}])""").find(rest)
                 ?.takeIf { w -> number(w.groupValues[1]) != null && !(found.getOrNull(i + 1) != null && rest.substring(w.range.last + 1).isBlank()) } else null
             if (wordAfter != null) cursor = restAt + wordAfter.range.last + 1
             if (!ok) continue
-            val qty = dur?.let { number(it.groupValues[1]) } ?: number(before) ?: (if (countAfter) value!!.toInt() else null)
+            val qty = dur?.let { number(it.groupValues[1]) } ?: number(before) ?: leadCount ?: (if (countAfter && amount == null) value!!.toInt() else null)
                 ?: wordAfter?.let { number(it.groupValues[1]) } ?: 1
             val per = dur?.groupValues?.get(2)?.let { if (Regex("""(?i)mani|hour|hr|மணி""").containsMatchIn(it)) "hour" else "day" }
             items += Item(name, qty, amount, per)

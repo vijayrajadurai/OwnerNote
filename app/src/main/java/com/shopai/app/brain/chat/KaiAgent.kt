@@ -1517,7 +1517,7 @@ class KaiAgent(
         // A product named in Tamil letters ("பிரிட்டானியா பிஸ்கட்", "டூர் தால்") is the shop's product it sounds like, as a whole
         // phrase — any product name, no list per name (KaiProductSound).
         // "Vengayathula evlo labam", "வெங்காயத்துல": the product with "-la" on it — Vengayam la (any product, by its own name).
-        val heard = if (!tamil) productCase(raw.trim(), runCatching { tools.products()?.map { it.name } }.getOrNull().orEmpty()) else {
+        val heard = if (!tamil) productCase(com.shopai.app.brain.tools.KaiSpokenWords.typed(raw.trim()), runCatching { tools.products()?.map { it.name } }.getOrNull().orEmpty()) else {
             val people = runCatching { books.snapshot()?.people.orEmpty() }.getOrDefault(emptyList())
             val productNames = runCatching { tools.products()?.map { it.name } }.getOrNull().orEmpty()
             // ("எம் 8" — a letter said before a number — is the size M8, as typed.)
@@ -1552,7 +1552,7 @@ class KaiAgent(
         // "Colgate 2 box irakkumadhi aachu", "naalaiku 9 manikku ezhuppi vidu", "Kumar 500 pakki vechutu ponaan": the owner's own words
         // for an intent, read as Kai's rules read it (KaiIntentWords — owner, 19 Oct 2026: "words maaralaam, intent purinjikkanum").
         val phrased = com.shopai.app.brain.tools.KaiLedgerPhrases.canonical(com.shopai.app.brain.tools.KaiIntentWords.canonical(
-            com.shopai.app.brain.tools.KaiInventory.joinProductWords(spelled(read))))
+            com.shopai.app.brain.tools.KaiInventory.joinProductWords(spelled(read)), runCatching { tools.products()?.map { it.name } }.getOrNull().orEmpty()))
         // "naan" / "enakku" / "suppliers" / "customers" right after Kai asked whose money it is: the full question, that side.
         val said0 = (if (brain.sideAsked) { brain.sideAsked = false; sideAnswered(phrased) } else null) ?: phrased
         // "… batch B20 expiry 06/2027" said with stock: kept for the stock / product draft and cut out of the line — a date or a

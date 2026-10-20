@@ -319,7 +319,10 @@ class KaiDailySales(
         val lower = " " + text.lowercase(Locale.ROOT) + " "
         val productSaid = names.any { n -> n.lowercase(Locale.ROOT).split(Regex("""\s+""")).take(2).joinToString(" ").let { head -> head.length >= 3 && lower.contains(" $head ") } }
         // The salon master list's names as the mic wrote them ("கோல்ட் ஃபேஷியல்" = gold facial), by sound — a beauty shop's only.
-        val heardServices = if (productSaid) text else KaiServices.withServiceSounds(text, kinds, people)
+        // (heard from the mic's own words first: "கோல்டு ஃபேஷியல்" — Kai's rules read "கோல்டு" as "gold" and leave "ஃபேஷியல்", so the two are
+        // no longer heard together as Gold Facial — release check, 20 Oct 2026)
+        val heardServices = if (productSaid) text else KaiServices.withServiceSounds(raw, kinds, people).takeIf { it != raw && com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(text) }
+            ?: KaiServices.withServiceSounds(text, kinds, people)
         val sale = (if (heardMenu && !productSaid) KaiServices.saleIn(sounded, prices, names, serviceShop, kinds)?.takeIf { l -> l.items.any { i -> priceOf(prices, i.name) != null } } else null)
             ?: (if (heardServices != text) KaiServices.saleIn(heardServices, prices, names, serviceShop, kinds) else null)
             ?: KaiServices.saleIn(text, prices, names, serviceShop, kinds)

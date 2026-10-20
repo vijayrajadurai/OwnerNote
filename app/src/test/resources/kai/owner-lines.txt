@@ -442,3 +442,11 @@ ENTRY  | Kumar full settlement pannitan                 | IN Kumar 4000
 ENTRY  | Kumar ellam clear pannitan                     | IN Kumar 4000
 ENTRY  | Kumar kanakku mudichitaan                      | IN Kumar 4000
 ENTRY  | Kumar muzhusa kuduthutan                       | IN Kumar 4000
+
+# Release check (20 Oct 2026): words never fed to Kai — typed, and as the ta-IN mic writes English said into it.
+REMIND | naalai kaalai 9:30-ku Kumar-kitta baaki ketkanum nyabagapaduthu | 2026-10-09 09:30 Kumar
+REMIND | naalu naal kazhichu kaalai 10 manikku GST file pannanum alert pannu | 2026-10-12 10:00 GST
+REMIND | ரிமைண்ட் மீ டுமாரோ அட் 5 பிஎம் டு கால் முருகன் | 2026-10-09 17:00 Murugan
+ENTRY  | லட்சுமி பெய்டு 500 பை போன்பே                  | IN Lakshmi 500
+STOCK  | ரிசீவ்டு 10 லக்ஸ் சோப் டுடே                    | Lux Soap 70
+STOCK  | சோல்டு 6 லக்ஸ் சோப்                           | Lux Soap 54
