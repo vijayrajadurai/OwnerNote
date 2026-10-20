@@ -230,7 +230,7 @@ object KaiProductSound {
             // product instead of adding to Ultratech (release check, 20 Oct 2026).
             val nameWords = name.trim().split(Regex("""\s+"""))
             val prev = words.getOrNull(i - 1)?.takeIf { it.range.last < from0 }?.value
-            val shown = if (prev != null && span < nameWords.size && KaiSpokenWords.hasTamil(prev) && KaiSpokenWords.normalize(prev) == prev &&
+            val shown = if (prev != null && from == from0 && prev.none(Char::isDigit) && span < nameWords.size && KaiSpokenWords.hasTamil(prev) && KaiSpokenWords.normalize(prev) == prev &&
                 !NameSound.same(words[i].value, nameWords.first()) && nameWords.none { NameSound.same(prev, it) } &&
                 people.none { p -> p.split(Regex("""\s+""")).any { NameSound.same(prev, it) } }) nameWords.takeLast(span).joinToString(" ") else name
             out.append(text, copied, from).append(shown)

@@ -61,6 +61,7 @@ class KaiHardwareStockInTest {
             if (btn.any { it.action is KaiAction.CreateProduct }) { offered = true; break }
             val txt = t.reply.text
             val ans = when {
+                Regex("""(?i)feet.{0,8}(evlo|எத்தனை) (m|meter)\b""").containsMatchIn(txt) -> "0.3048"
                 Regex("""(?i)evlo (m|meter|metre)\b|எத்தனை (m|meter)\b""").containsMatchIn(txt) -> "450"
                 Regex("""(?i)pieces-aa|pieces-ஆ""").containsMatchIn(txt) -> "pieces"
                 Regex("""(?i)evlo pieces|எத்தனை pieces""").containsMatchIn(txt) -> "10"

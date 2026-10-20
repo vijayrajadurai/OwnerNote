@@ -73,9 +73,6 @@ object KaiUnits {
         "KG" to "QUINTAL" -> BigDecimal("0.01")
         "KG" to "TONNE" -> BigDecimal("0.001")
         "QUINTAL" to "TONNE" -> BigDecimal("0.1")
-        // A foot is 0.3048 m everywhere (release check, 20 Oct 2026: "Garden pipe 50 adi 4 roll" for a pipe kept in metres).
-        "FEET" to "METER" -> BigDecimal("0.3048")
-        "METER" to "FEET" -> BigDecimal("3.28084")
         else -> null
     }
 

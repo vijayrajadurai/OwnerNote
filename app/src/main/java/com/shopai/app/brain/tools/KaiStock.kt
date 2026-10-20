@@ -376,8 +376,7 @@ object KaiStock {
         }
         val words = lower.split(' ').filter { it.isNotEmpty() }
         // The whole name said, not a part of a longer one: "Paint brush 5" is never "Paint", "Engine oil" never "Oil filter".
-        // (a size word — "sqmm", "inch", "amp" — is the size, never a name word: "Polycab wire 2.5 sqmm" is not Finolex Wire 1.5 sqmm)
-        fun nameWord(w: String) = w.first().isLetter() && w !in units && w !in fillers && w !in numberWords && w !in stockTokens && w !in sizeWords
+        fun nameWord(w: String) = w.first().isLetter() && w !in units && w !in fillers && w !in numberWords && w !in stockTokens
         fun wholeName(from: Int, to: Int) = (from == 0 || !nameWord(words[from - 1])) && (to >= words.size || !nameWord(words[to]))
         // "Biscuits 5" for "Biscuit", "paint 5" for a "பெயிண்ட்" kept in Tamil: the name word for word, one or many, in any script.
         val plain = words.map(::plainWord)
@@ -422,6 +421,8 @@ object KaiStock {
             var from = end
             while (from > 0 && words[from - 1].let { w -> nameWord(w) || w in units && from - 1 == 0 }) from--
             val said = words.subList(from, end)
+            // (a size word alone — "sqmm", "inch", "amp" — names nothing: "Polycab wire 2.5 sqmm 2 coil" is not Finolex Wire 1.5 sqmm)
+            if (said.isNotEmpty() && said.all { it in sizeWords }) continue
             if (said.sumOf { it.length } >= 3) named.withIndex().filter { (k, _) -> holds(idx.words[k], said) }.map { it.value }.singleOrNull()?.let { return it to said.joinToString(" ") }
             // "Fortune oil 5 litre" for "Sunflower Oil Fortune" (owner, 16 Oct 2026): two words or more of exactly one product's
             // name, in any order — the brand said first, as owners do.
@@ -434,7 +435,7 @@ object KaiStock {
             var to = start
             while (to < words.size && nameWord(words[to])) to++
             val said = words.subList(start, to)
-            if (said.isEmpty() || said.sumOf { it.length } < 3) continue
+            if (said.isEmpty() || said.sumOf { it.length } < 3 || said.all { it in sizeWords }) continue
             named.withIndex().filter { (k, _) -> holds(idx.words[k], said) || said.size >= 2 && said.all { it.length >= 3 } && holdsAnyOrder(idx.words[k], said) }
                 .map { it.value }.singleOrNull()?.let { return it to said.joinToString(" ") }
         }

@@ -3893,14 +3893,14 @@ class KaiAgent(
         val base = units.canon(product.unit) ?: "PCS"
         val pack = units.canon(count.unit) ?: return parts
         if (pack == base) return listOf(com.shopai.app.brain.tools.QtyPart(count.qty, null))
-        units.inProductUnit(product, size.qty, size.unit)?.takeIf { units.canon(size.unit) != pack }?.let { per ->
-            if (units.factor(product, pack, sessionUnits[product.id].orEmpty()) == null) sessionUnits.getOrPut(product.id) { HashMap() }[pack] = per
-            return listOf(count)
-        }
         // (a product kept in tins / buckets / cans: "10 dabba" of it is 10 of it — the size said is each one's)
         val containers = setOf("CAN", "BUCKET", "TIN", "BOTTLE", "JAR", "DRUM", "BOX", "BAG", "ROLL", "COIL", "PACK")
         if (base in containers && pack in containers && units.factor(product, pack, sessionUnits[product.id].orEmpty()) == null) return listOf(com.shopai.app.brain.tools.QtyPart(count.qty, null))
-        return parts
+        // A pack whose size for this product is known already: as said ("2 bag" of a 25 kg bag product).
+        if (units.factor(product, pack, sessionUnits[product.id].orEmpty()) != null) return listOf(count)
+        // Else all of it in the size's own unit: 24 × 500 g = 12,000 g (12 kg), 4 × 50 feet = 200 feet — a unit the product isn't kept in
+        // (feet for a pipe kept in metres) is then asked as before, never added to the count.
+        return listOf(com.shopai.app.brain.tools.QtyPart(units.clean(count.qty.multiply(size.qty)), size.unit))
     }
 
     private suspend fun stockChange(raw: String, said: String, lang: KaiLang, products: List<com.shopai.app.brain.tools.ProductRef>, people: List<String>): KaiTurn? {
