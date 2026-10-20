@@ -1,5 +1,11 @@
 # OwnerNote — working rules
 
+## Start here: `docs/WHAT_IS_BUILT.md` (owner, 20 Oct 2026)
+
+Several Claude sessions work on this repo at once. Before starting, read `docs/WHAT_IS_BUILT.md` (what the app already
+does, where it lives, how merges and tests work) and `git log --oneline origin/main | head -40`. When you finish a feature
+or fix, add a line to that page in the same commit.
+
 ## KAI follows its rulebook: `docs/KAI_PRINCIPLES.md` (owner, 12 Oct 2026)
 
 Every Kai change keeps the seven principles there (language, context, truthfulness, memory, safe actions, response

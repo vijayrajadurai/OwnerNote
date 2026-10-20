@@ -96,6 +96,7 @@ object KaiMicForm {
         onnara=ஒன்றரை rendara=ரெண்டரை kaal=கால் mukkal=முக்கால் senthil=செந்தில் dinesh=தினேஷ் ravikumar=ரவிக்குமார் murugesan=முருகேசன் customer=கஸ்டமர்
         sarath=சரத் december=டிசம்பர் october=அக்டோபர் tharuvan=தருவான்
         yeanuku=எனக்கு settlement=செட்டில்மென்ட் ellam=எல்லாம் mudichitaan=முடிச்சிட்டான் muzhusa=முழுசா
+        litre=லிட்டர் dabba=டப்பா coil=காயில் roll=ரோல் inch=இன்ச் mm=எம்எம் sheet=ஷீட் pepsodent=பெப்சோடென்ட்
         nyabagapaduthu=ஞாபகப்படுத்து naalu=நாலு kazhichu=கழிச்சு ketkanum=கேட்கணும் file=ஃபைல் alert=அலர்ட் panninom=பண்ணினோம் keratin=கெரட்டின் pedicure=பெடிக்யூர்
     """.trim().split(Regex("""\s+""")).associate { it.substringBefore('=') to it.substringAfter('=') }
 
