@@ -673,4 +673,10 @@ class AppKaiTools(
 
     override fun log(intent: String, tool: String, result: String, status: ActionStatus, reference: String?, input: String?): String =
         actionLog.add(intent, tool, result, status, reference, input)
+
+    private val understanding by lazy { KaiUnderstandingLog(context) }
+
+    override fun noteUnderstanding(outcome: com.shopai.app.brain.chat.KaiUnderstood, said: String) = understanding.note(outcome, said)
+
+    override fun understandingCounts(): com.shopai.app.brain.chat.KaiUnderstandingCounts = understanding.counts()
 }

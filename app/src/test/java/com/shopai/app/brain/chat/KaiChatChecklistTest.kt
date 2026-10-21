@@ -365,7 +365,8 @@ class KaiChatChecklistTest {
         assertTrue(t.reply.text.isNotBlank())
         hasNot(t, "clear-ah")
         assertNull(t.plan)
-        assertNull(t.card)
+        // (only the likely topics as buttons — owner, 21 Oct 2026 — never a draft or a report)
+        assertTrue(t.card == null || t.card!!.buttons.all { it.action is KaiAction.Say })
         nothingWritten()
     }
 

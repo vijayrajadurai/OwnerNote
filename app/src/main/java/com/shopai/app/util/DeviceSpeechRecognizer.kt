@@ -27,6 +27,8 @@ class DeviceSpeechRecognizer(context: Context) {
         onError: (Int) -> Unit,
         /** All the guesses, the phone's best first — given instead of [onResult] when set (Kai Chat picks the one it reads best). */
         onResults: ((List<String>) -> Unit)? = null,
+        /** The shop's own words (its people's and products' names): the recognizer leans to them where the phone allows it (Android 13+). */
+        biasing: List<String> = emptyList(),
     ) {
         if (!isAvailable()) {
             onError(SpeechRecognizer.ERROR_CLIENT)
@@ -89,6 +91,11 @@ class DeviceSpeechRecognizer(context: Context) {
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
             // Up to five guesses of the line: Kai Chat takes the one it reads best (the others use the first, as before).
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
+            // "Ammu", "Sri Balaji Agencies", "Colgate": names the phone otherwise hears as other words (owner, 21 Oct 2026). Phones that
+            // don't support it ignore it.
+            if (biasing.isNotEmpty() && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                putStringArrayListExtra(RecognizerIntent.EXTRA_BIASING_STRINGS, ArrayList(biasing.distinct().take(MAX_BIASING)))
+            }
             // A shop owner pauses mid-line ("Kumar … 2000 kuduthan"): wait a little longer before taking the line as finished.
             putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 2000L)
             putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 1500L)
@@ -107,4 +114,9 @@ class DeviceSpeechRecognizer(context: Context) {
     }
 
     fun isListening(): Boolean = active
+
+    private companion object {
+        /** The recognizer reads a short list best: the shop's most used names first. */
+        const val MAX_BIASING = 100
+    }
 }
