@@ -4678,7 +4678,7 @@ class KaiAgent(
     private val boughtGoods = Regex("""(?i)(?<![\p{L}])(?:vaang|vang)(?:inen|ineen|itten|iten|itaen|i\s*irukk?en|i\s*irukk?een|irukk?en|iyachu|iyaachu|unen|unaen|unan|inan|anen|i\s*i?rukk?aa?n|i\s*i?rukk?aanga|i\s*i?rukk?anga|iirukk?en)(?![\p{L}])""")
     private val moneySaid = Regex("""(?i)₹|(?<![\p{L}])(rs|rupees?|rupa|ruba|rubai|roobai|amount|panam|kaasu|cash|gpay|upi|aayiram|payment|kadan|credit)(?![\p{L}])""")
 
-    private val moneyScale = Regex("""(?i)(?<![\p{L}])(aayiram|ayiram|aayirathu|lakh|lakhs|latcham|thousand)(?![\p{L}])|ஆயிரம்|வாயிரம்|லட்சம்""")
+    private val moneyScale = Regex("""(?i)(?<![\p{L}])(aayiram|ayiram|aayirathu|lakhs?|laks?h?|lacs?|laksham|latcham|thousand|crores?|cr)(?![\p{L}])|ஆயிரம்|வாயிரம்|லட்சம்|லட்சத்து|கோடி""")
 
     /**
      * The packs said with their size ([com.shopai.app.brain.tools.KaiStock.packsOfSize]) for [product]: the pack's size in the product's
@@ -7120,7 +7120,12 @@ class KaiAgent(
                 ta = "ஓனர், $who-க்கு $o தான் கொடுக்கணும்; $a2 கொடுத்தா $e கூடுதல் — advance-ஆ சேமிக்கப்படும். சேர்க்கட்டுமா?",
                 tl = "Owner, $who-ku $o dhaan kudukkanum; $a2 kuduthaa $e extra — advance-ah save aagum. Add pannalama?",
                 en = "Owner, you owe $who only $o; paying $a2 is $e more — it will be kept as advance. Add this?")
-        } else pick(lang,
+        } else if (tooBig) pick(lang,
+            // "2 crore": read right, but above what one entry can hold — said plainly, never "Add pannalama?" with Confirm off.
+            ta = "ஓனர், ${KaiFormat.rupees(plan.amount.toDouble())} — ₹1 கோடிக்கு மேல ஒரு entry போட முடியாது. சரியான தொகை சொல்லுங்க; எதுவும் சேமிக்கல.",
+            tl = "Owner, ${KaiFormat.rupees(plan.amount.toDouble())} — ₹1 crore-ku mela oru entry poda mudiyaadhu. Sariyaana amount sollunga; edhuvum save pannala.",
+            en = "Owner, ${KaiFormat.rupees(plan.amount.toDouble())} — one entry can't be above ₹1 crore. Please say the right amount; nothing was saved.")
+        else pick(lang,
             ta = "நான் புரிஞ்சுகிட்டது இது ஓனர். சேர்க்கட்டுமா?",
             tl = "Owner, naan purinjukittadhu idhu. Add pannalama?",
             en = "Here's what I understood, Owner. Add this transaction?")

@@ -108,8 +108,16 @@ class KaiDailySales(
     private val dayClose = Regex("""(?i)(?<![\p{L}])(day\s*close|close\s*the\s*day|close\s*day|kadai\s*close|shop\s*close|sales\s*close|note\s*close|innaikku\s*close|innaiku\s*close|close\s*pannidu|close\s*pannu|close\s*panniru|mudinjiduchu|mudinjuduchu|mudinjiruchu|mudichitten|mudichiten)(?![\p{L}])|டே\s*க்ளோஸ்|கடை\s*க்ளோஸ்|க்ளோஸ்\s*பண்ணு|முடிஞ்சிடுச்சு|முடிஞ்சுடுச்சு""")
     private val thatsAll = Regex("""(?i)(?<![\p{L}])(avlo\s*dhaan|avlodhaan|avlothan|avlo\s*than|avlo\s*thaan|avlodhan|avvalavu\s*(?:dhaan|thaan|than)|that'?s\s*all)(?![\p{L}])|அவ்வளவுதான்|அவ்வளவு\s*தான்|அவ்ளோதான்|அவ்ளோ\s*தான்""")
     private val todayWord = Regex("""(?i)(?<![\p{L}])(innaikku|innaiku|inniki|inniku|innikku|today|indru|innaikkuu)(?![\p{L}])|இன்னைக்கு|இன்று""")
+    /** "list", "lisht", "pattiyal", "லிஸ்ட்", "பட்டியல்": a list asked for. */
+    private val listWord = Regex("""(?i)(?<![\p{L}])(list|lisht|lis|pattiyal|pattial)(?![\p{L}])|லிஸ்ட்|பட்டியல்""")
+    /** A list that is not the day's report: reminders, products, a shopping list. */
+    private val notDayList = Regex("""(?i)(?<![\p{L}])(remind\p{L}*|ninaivu\p{L}*|todo|to-do|items?|products?|porul\p{L}*|saamaan|saman|shopping|vaanga|menu|rate|price|service)(?![\p{L}])|ரிமைண்ட்|நினைவூட்ட|பொருள்|சாமான்|மெனு""")
+    /** The last report shown (from, to, when): "list kudu" right after it is that report again. */
+    private var lastReport: ShownReport? = null
+    private data class ShownReport(val from: LocalDate, val to: LocalDate, val kind: ChatPeriod.Kind?, val at: LocalDateTime)
+
     private val pdfWord = Regex("""(?i)(?<![\p{L}])(pdf|report|share|anuppu|whatsapp)(?![\p{L}])|பிடிஎஃப்|ரிப்போர்ட்|வாட்ஸ்அப்""")
-    private val noteWord = Regex("""(?i)(?<![\p{L}])(sales|sale|daily|note|cash\s*note|sales\s*note|day|innaikku|innaiku|inniki|nethu|vyabaram|kanakku)(?![\p{L}])|சேல்ஸ்|இன்னைக்கு|நேத்து""")
+    private val noteWord = Regex("""(?i)(?<![\p{L}])(sales|sale|daily|note|cash\s*note|sales\s*note|day|innaikku|innaiku|inniki|today|indru|nethu|yesterday|vyabaram|kanakku)(?![\p{L}])|சேல்ஸ்|இன்னைக்கு|இன்று|நேத்து""")
     private val stockAsk = Regex("""(?i)(?<![\p{L}])(stock|iruppu|irupu|irukku|iruku|kaila|kaiyila|left)(?![\p{L}])|ஸ்டாக்|இருப்பு|இருக்கு|கையில""")
     private val rateWord = Regex("""(?i)(?<![\p{L}])(rate|price|vilai|vilaiya|vela|charge|charges|amount)(?![\p{L}])|ரேட்|விலை""")
     private val changeWord = Regex("""(?i)(?<![\p{L}])(maathu|mathu|maathidu|change|ippo|ini|inimel|update|vachuko|vechuko|set)(?![\p{L}])|மாத்து|இனி|இப்போ""")
@@ -279,6 +287,17 @@ class KaiDailySales(
             (noteWord.containsMatchIn(text) || !noServices && (dayAsked != null || spanAsked != null) && !otherReport.containsMatchIn(text))) {
             spanAsked?.let { (from, to, kind) -> return rangePdfTurn(from, to, kind, lang) }
             return pdfTurn(dayAsked ?: today, lang)
+        }
+        // "today list", "innaiku list", "list kudu" — the day's report again, with its PDF (owner, 21 Oct 2026: "today report" then "today
+        // list" got "edha pathi sollureenga?" and no report). Only with a day said, or right after a report; never a stock / customer /
+        // reminder list, nor a person's.
+        val shown = lastReport?.takeIf { java.time.Duration.between(it.at, now()).toMinutes() in 0..10 }
+        if (listWord.containsMatchIn(text) && !namesPerson && !otherReport.containsMatchIn(text) && !notDayList.containsMatchIn(text) &&
+            text.split(Regex("""\s+""")).size <= 5 &&
+            (shown != null || noteWord.containsMatchIn(text) || !noServices && (dayAsked != null || spanAsked != null))) {
+            spanAsked?.let { (from, to, kind) -> return rangePdfTurn(from, to, kind, lang) }
+            if (dayAsked == null && !todayWord.containsMatchIn(text) && shown?.kind != null) return rangePdfTurn(shown.from, shown.to, shown.kind, lang)
+            return pdfTurn(dayAsked ?: if (todayWord.containsMatchIn(text)) today else shown?.from ?: today, lang)
         }
 
         // The day close: "innaikku avlothan", "day close pannu", "கடை க்ளோஸ்".
@@ -1040,6 +1059,7 @@ class KaiDailySales(
     }
 
     private suspend fun rangePdfTurn(from: LocalDate, to: LocalDate, kind: ChatPeriod.Kind, lang: KaiLang): KaiTurn {
+        lastReport = ShownReport(from, to, kind, now())
         val s = spanSales(from, to)
         val label = spanLabel(from, to, kind, lang)
         if (s.entries == 0) return turn(lang, KaiMood.NEUTRAL, ta = "$label Daily Sales Note-ல entry எதுவும் இல்ல ஓனர் — PDF-க்கு எதுவும் இல்ல.",
@@ -1051,10 +1071,22 @@ class KaiDailySales(
     }
 
     private suspend fun pdfTurn(day: LocalDate, lang: KaiLang): KaiTurn {
+        lastReport = ShownReport(day, day, null, now())
         val s = daySales(day)
         val label = dayLabel(day, lang)
-        if (s == null || s.entries == 0) return turn(lang, KaiMood.NEUTRAL, ta = "$label Daily Sales Note-ல entry எதுவும் இல்ல ஓனர் — PDF-க்கு எதுவும் இல்ல.",
-            tl = "$label Daily Sales Note-la entry edhuvum illa owner — PDF-ku edhuvum illa.", en = "$label: nothing in the Daily Sales Note, Owner — no PDF to make.")
+        if (s == null || s.entries == 0) {
+            // No Daily Sales Note entry that day: the books' own sales / purchase / expenses for it, said plainly — never a PDF of nothing.
+            val r = { a: BigDecimal? -> a?.takeIf { it.signum() > 0 }?.let { KaiFormat.rupees(it.toDouble()) } }
+            val sales = r(runCatching { tools.sales(day, day) }.getOrNull())
+            val bought = r(runCatching { tools.purchases(day, day) }.getOrNull())
+            val spent = r(runCatching { tools.expenses(day, day) }.getOrNull())
+            if (sales != null || bought != null || spent != null) return turn(lang, KaiMood.EXPLAINING,
+                ta = "$label Daily Sales Note-ல entry இல்ல ஓனர் — PDF-க்கு எதுவும் இல்ல. Books-ல: sales ${sales ?: "—"}, purchase ${bought ?: "—"}, செலவு ${spent ?: "—"}.",
+                tl = "$label Daily Sales Note-la entry illa owner — PDF-ku edhuvum illa. Books-la: sales ${sales ?: "—"}, purchase ${bought ?: "—"}, selavu ${spent ?: "—"}.",
+                en = "$label: nothing in the Daily Sales Note, Owner — no PDF to make. In the books: sales ${sales ?: "—"}, purchases ${bought ?: "—"}, expenses ${spent ?: "—"}.")
+            return turn(lang, KaiMood.NEUTRAL, ta = "$label Daily Sales Note-ல entry எதுவும் இல்ல ஓனர் — PDF-க்கு எதுவும் இல்ல.",
+                tl = "$label Daily Sales Note-la entry edhuvum illa owner — PDF-ku edhuvum illa.", en = "$label: nothing in the Daily Sales Note, Owner — no PDF to make.")
+        }
         return turn(lang, KaiMood.NEUTRAL, ta = "$label Daily Sales Note PDF ரெடி — மொத்தம் ${KaiFormat.rupees(s.totalIn)}. கீழ அழுத்தி share பண்ணுங்க.",
             tl = "$label Daily Sales Note PDF ready — mothama ${KaiFormat.rupees(s.totalIn)}. Keezha press panni share pannunga.",
             en = "$label's Daily Sales Note PDF is ready — total ${KaiFormat.rupees(s.totalIn)}. Tap below to share it.",

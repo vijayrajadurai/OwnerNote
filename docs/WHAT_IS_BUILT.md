@@ -250,6 +250,14 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
   (Add / Skip, kept in `UserPreferencesStore.kallapettiAskedDay`) and never required — money in / out work without it; Close day
   is an outlined "optional" button (an open day is still sent by itself the next day). Kai asks the kallapetti once at the first
   sale; "skip" / "venam" / "illa" / வேணாம் goes on with the sale. Test: `KaiDailySalesTest.theKallapettiIsAskedOnceAndSkippingGoesOnWithTheSale`.
+- Lakh / crore in Kai (owner, 21 Oct 2026: "credit debit la lakhs and crore la sonna add agala" — "2 lakh" was ₹2): a number and its
+  scale word are one amount in `KaiUnderstanding.amountsIn` — lakh / lakhs / lak / lac / laksham, crore / cr / core (never a cable's
+  "2 core wire"), and the mic's லட்சம் / லட்சத்து / கோடி (`KaiSpokenWords`, never the name Lakshmi; லாக் is a lock); "1 lakh 50 thousand"
+  = ₹1,50,000. Over ₹1 crore is said plainly with Confirm off. Test: `KaiBrainTest.lakhAndCroreAreOneAmount…`, owner-lines.
+- A day's list is its report (owner, 21 Oct 2026: "today report" then "today list" asked "edha pathi sollureenga?"): "today list",
+  "innaiku list", டுடே லிஸ்ட், and "list kudu" right after a report give the Daily Sales Note report with its PDF; "today report" is
+  the same as "innaiku report" for every shop; a day with no note entry says the books' sales / purchase / expenses. Stock / customer /
+  reminder lists are untouched. Test: `KaiDailySalesTest.todayReportThenTodayListSendsTheReport`.
 - The voice / bill screen no longer has the "Your sentence" box (its "Kumar-ku 2000-ku tharanum" example) or the Parse button.
 - Customers: a small Import beside the title. More → "Pazhaiya kanakku import" reads another app's Customer / Supplier
   List PDF and adds people with opening balances on Confirm. No other app's name is shown anywhere.

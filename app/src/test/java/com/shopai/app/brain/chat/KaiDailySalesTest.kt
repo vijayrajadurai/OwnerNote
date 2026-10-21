@@ -197,6 +197,30 @@ class KaiDailySalesTest {
         assertTrue(all(tamilPdf), all(tamilPdf).contains("PDF"))
     }
 
+    /** Owner, 21 Oct 2026: "today report" then "today list" got "edha pathi sollureenga?" — a list of the day is its report and PDF. */
+    @Test fun todayReportThenTodayListSendsTheReport() {
+        for (services in listOf(true, false)) {
+            val s = Shop(services = services)
+            s.note.entries += Note.Entry(today, BigDecimal("230"), false, "Hair cutting ×1 ₹150 · Shaving ×1 ₹80")
+            for (line in listOf("today report", "today list", "innaiku list", "டுடே லிஸ்ட்", "இன்னைக்கு லிஸ்ட்")) {
+                val t = s.say(line)
+                assertEquals("$services $line → ${all(t)}", KaiAction.ShareCashNote(today), t.card?.buttons?.firstOrNull()?.action)
+            }
+            // Right after the report, "list kudu" / "லிஸ்ட் குடு" is that report again.
+            for (line in bothWays("list kudu")) {
+                s.say("nethu report")
+                val t = s.say(line)
+                assertTrue("$services $line → ${all(t)}", all(t).contains("Nethu") || all(t).contains("நேத்து"))
+            }
+        }
+        // Never another list, and "list" alone with no report shown is asked about.
+        val s = Shop()
+        for (line in listOf("stock list", "reminder list", "list")) {
+            val t = s.say(line)
+            assertTrue("$line → ${all(t)}", t.card?.buttons?.none { it.action is KaiAction.ShareCashNote } != false)
+        }
+    }
+
     @Test fun thatsAllForTodayClosesTheDayOnlyOnConfirm() {
         for (line in listOf("innaikku avlothan", "இன்னைக்கு அவ்ளோதான்", "day close pannu")) {
             val s = Shop()

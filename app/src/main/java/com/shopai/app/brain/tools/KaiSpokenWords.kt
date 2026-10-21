@@ -184,7 +184,9 @@ object KaiSpokenWords {
         "வாடகை" to "vaadagai", "கரண்ட்" to "current", "சேலரி" to "salary", "சம்பளம்" to "sambalam", "செட்டில்ட்" to "settled",
         "கேஷ்" to "cash", "கேஷா" to "cash", "ஆன்லைன்" to "online", "ஆன்லைன்ல" to "online la", "டிரான்ஸ்பர்" to "transfer", "ட்ரான்ஸ்ஃபர்" to "transfer",
         "கிரெடிட்" to "credit", "கிரெடிட்ல" to "credit la", "க்ரெடிட்" to "credit", "டெபிட்" to "debit", "உதார்" to "udhaar",
-        "பெண்டிங்" to "pending", "பேலன்ஸ்" to "balance", "லிஸ்ட்" to "list", "டோட்டல்" to "total", "டோட்டலா" to "total", "டோட்டல்ல" to "total la", "மொத்தத்துல" to "mothathula", "மொத்தம்" to "motham", "மொத்தமா" to "mothama",
+        "பெண்டிங்" to "pending", "பேலன்ஸ்" to "balance", "லிஸ்ட்" to "list",
+        // "2 லட்சம்", "1 லட்சத்து 50 ஆயிரம்", "1 கோடி" — the scale words, never the name Lakshmi (owner, 21 Oct 2026: lakh / crore by mic).
+        "லட்சம்" to "lakh", "லட்சத்து" to "lakh", "லட்ச" to "lakh", "கோடி" to "crore", "க்ரோர்" to "crore", "குரோர்" to "crore", "டோட்டல்" to "total", "டோட்டலா" to "total", "டோட்டல்ல" to "total la", "மொத்தத்துல" to "mothathula", "மொத்தம்" to "motham", "மொத்தமா" to "mothama",
         "டியூ" to "due", "டேட்" to "date", "தேதி" to "thethi", "வேண்டாம்" to "venam", "வேணாம்" to "venam", "எடுத்துடு" to "eduthudu", "எடுத்துடுங்க" to "eduthudunga", "வேணும்" to "venum",
         "கஸ்டமர்" to "customer", "சப்ளையர்" to "supplier", "ஓனர்" to "owner", "அண்ணா" to "anna", "அண்ணே" to "anna", "சார்" to "sir",
         "சரி" to "seri", "ஓகே" to "ok", "ஆமா" to "aama", "ஆமாம்" to "aama", "இல்ல" to "illa", "இல்லை" to "illa", "தெரியாது" to "theriyaadhu", "தெரியல" to "theriyala", "தெரியலை" to "theriyala", "சேவ்" to "save",
@@ -268,11 +270,13 @@ object KaiSpokenWords {
     private val counts = mapOf("ஒரு" to 1, "ஒன்னு" to 1, "ரெண்டு" to 2, "இரண்டு" to 2, "மூணு" to 3, "மூன்று" to 3, "நாலு" to 4, "நான்கு" to 4,
         "அஞ்சு" to 5, "ஐந்து" to 5, "ஆறு" to 6, "ஏழு" to 7, "எட்டு" to 8, "ஒன்பது" to 9, "பத்து" to 10)
 
-    private fun amounts(raw: String): String = amountWords.replace(countThousand.replace(raw) { m -> "${counts.getValue(m.groupValues[1]) * 1000}" }) { m ->
+    private fun amounts(raw: String): String = countThousand.replace(raw) { m -> "${counts.getValue(m.groupValues[1]) * 1000}" }.let { said -> amountWords.replace(said) { m ->
         val (t, h, alone) = m.destructured
-        if (alone.isNotEmpty()) hundredsMap.getValue(alone).toString()
+        // "50 ஆயிரம்", "1 லட்சத்து 50 ஆயிரம்": the number said before it is its count — left for the amount reader (never "50 1000").
+        if (alone.isEmpty() && Regex("""\d\s*$""").containsMatchIn(said.substring(0, m.range.first))) m.value
+        else if (alone.isNotEmpty()) hundredsMap.getValue(alone).toString()
         else (thousandsMap.getValue(t) * 1000 + (hundredsMap[h] ?: 0)).toString()
-    }
+    } }
 
     /** English letters as ta-IN speech-to-text writes them ("பி" = B) — said before a number in a batch code ("பி 20" = B20). */
     private val codeLetters = mapOf("ஏ" to "A", "பி" to "B", "பீ" to "B", "சி" to "C", "சீ" to "C", "டி" to "D", "ஈ" to "E", "எஃப்" to "F", "ஜி" to "G",
