@@ -151,7 +151,9 @@ class KaiFlowFixesTest {
     @Test fun stockAloneAsksWhichAndTheReportsAreTheOnesAsked() {
         for (line in ways("stock")) {
             val t = Shop().say(line)
-            assertTrue("$line: ${all(t)}", Regex("(?i)endha stock|எந்த stock|which stock").containsMatchIn(t.reply.text) && t.card == null)
+            // (low stock / stock value / the list as buttons — owner, 21 Oct 2026 — never the list itself unasked)
+            assertTrue("$line: ${all(t)}", Regex("(?i)endha stock|எந்த stock|which stock").containsMatchIn(t.reply.text) &&
+                (t.card == null || t.card!!.buttons.all { it.action is KaiAction.Say } && t.card!!.lines.isEmpty()))
         }
         for (line in ways("customer report")) assertTrue(line, all(Shop().say(line)).contains("Kumar"))
         for (line in ways("expense report")) assertFalse(line, all(Shop().say(line)).contains("Daily Cash-la OUT"))

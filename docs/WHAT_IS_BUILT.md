@@ -281,6 +281,17 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
   `DeviceSpeechRecognizer`, Kai Chat only). A person + amount with a word Kai can't read gets three buttons — Payment Out /
   Payment In / Kadan (new `KaiMeaning.CREDIT`) — and the pick is kept. The "k" of the word after an amount is no longer cut
   ("3000 kudutten" was asked as `uduthten`). Training map: `docs/KAI_TRAINING.md`. Test: `KaiWordSoundTest`, owner-lines "Said any way".
+- "X illa Y" for every feature but reminders (owner, 21 Oct 2026: "Ammu anna ku 2000 tharanum" read as Ammu — "Ammu illa Ammu
+  anna" must go on with Ammu anna): an open money draft is the same entry for the person meant; a stock draft, a stock question,
+  profit, a balance, a statement are asked again for the one meant (`KaiAgent.correctionReplay`); "illa Ramesh" corrects the one
+  person / product of the last request. "illa naalaiku / sari / venam" stay answers. "Rice profit evlo" after Colgate's is Rice.
+- Not understood → asked, never a report (owner: "puriyalana question kekkanum, theva illama report show panna kudathu"): a
+  person or product with words Kai can't read ("Kumar blah", "Kumar 9876543210 credit") gets buttons — balance / statement /
+  payment, stock / rate / profit — not their balance. Kai's questions carry their likely answers as buttons (`KaiAction.Say`):
+  Colgate 5 came in / sold, Kumar 2000 paid / kadan / I paid, the topic menu, "stock", "report".
+- Kai counts how well it understood, on the phone only (`KaiUnderstood`, `data/kai/KaiUnderstandingLog.kt`): understood / asked /
+  corrected / cancelled and the last missed lines; "Kai evlo purinjuchu" answers it. The mic leans to the shop's names
+  (`EXTRA_BIASING_STRINGS`, Android 13+). Test: `KaiCorrectionReplayTest`.
 - The voice / bill screen no longer has the "Your sentence" box (its "Kumar-ku 2000-ku tharanum" example) or the Parse button.
 - Customers: a small Import beside the title. More → "Pazhaiya kanakku import" reads another app's Customer / Supplier
   List PDF and adds people with opening balances on Confirm. No other app's name is shown anywhere.

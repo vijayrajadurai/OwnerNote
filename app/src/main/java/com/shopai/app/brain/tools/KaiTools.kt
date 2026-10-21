@@ -307,4 +307,10 @@ interface KaiTools {
     // ---- audit ----
     /** [input]: the owner's words (text). Returns the reference id. */
     fun log(intent: String, tool: String, result: String, status: ActionStatus, reference: String? = null, input: String? = null): String = reference ?: "-"
+
+    /** How well Kai understood one line (understood first time, asked, corrected by the owner, its draft cancelled) — kept on the phone. */
+    fun noteUnderstanding(outcome: com.shopai.app.brain.chat.KaiUnderstood, said: String) {}
+
+    /** Kai's own count of how well it understood the owner, and the last lines it didn't; null when none is kept. */
+    fun understandingCounts(): com.shopai.app.brain.chat.KaiUnderstandingCounts? = null
 }

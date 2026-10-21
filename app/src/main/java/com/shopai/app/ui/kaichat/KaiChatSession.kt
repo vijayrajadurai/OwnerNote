@@ -118,9 +118,14 @@ class KaiChatSession(
 
     fun plan(key: String): ActionPlan? = agent.plan(key)
 
+    /** The shop's own names, for the mic to lean to (filled when Kai Chat opens). */
+    var micWords: List<String> = emptyList()
+        private set
+
     /** The shop's product names and its salon list made ready for the mic, off the main thread, when Kai Chat opens. */
     suspend fun warmUp(category: String?) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
         runCatching { agent.warmUp() }
+        micWords = runCatching { agent.micWords() }.getOrDefault(emptyList())
         com.shopai.app.brain.tools.KaiServices.warmUp(category)
     }
 
