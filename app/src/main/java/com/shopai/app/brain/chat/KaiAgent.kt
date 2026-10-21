@@ -4867,7 +4867,7 @@ class KaiAgent(
         val asked = item.asked
         // "Colgate 2 box vandhuchu", "Rice evlo irukku", "podalanga 10kg add panniko" while "1 bag evlo kg?" is open: a line of its
         // own — never read as the answer (owner's phone, 21 Oct 2026: its numbers went into this product). The question is put aside.
-        if (asked != null && isOtherLine(text, item.spec.name)) {
+        if (asked != null && isOtherLine(text, item.spec.name, asked)) {
             newItem = null
             parkedItem = item.spec.name to conversationState.conversationTurn
             return null
@@ -4888,15 +4888,17 @@ class KaiAgent(
     private var parkedItem: Pair<String, Long>? = null
 
     /** Words of an answer to a new product's question ("bag-ku 25 kg", "purchase 28", "oru box 48 pieces") — never a product's name. */
-    private val answerWords = Regex("""(?i)^(?:purchase|parchase|selling|sale|sales|rate|vilai|velai|price|mrp|size|batch|expiry|exp|per|oru|onnu|each|ovvoru|ovoru|adhu|athu|idhu|ithu|andha|indha|illa|skip|venam|aama|seri|ok|pieces?|pcs|nos|vaangina|vikkira|vikkura|varum|irukku|iruku|dhaan|than|thaan)$""")
+    private val answerWords = Regex("""(?i)^(?:purchase|parchase|selling|sale|sales|rate|vilai|velai|price|mrp|size|batch|expiry|exp|per|rs|inr|rupees?|rupay|rupa|ruba|roobai|rupaai|amount|thogai|oru|onnu|each|ovvoru|ovoru|adhu|athu|idhu|ithu|andha|indha|illa|skip|venam|aama|seri|ok|pieces?|pcs|nos|vaangina|vikkira|vikkura|varum|irukku|iruku|dhaan|than|thaan)$""")
 
     /**
      * A line that is not an answer to the open new product's question: it names a product the shop keeps, or starts with a name
      * of its own (not this product's, not a unit or an answer word) followed by a count — another stock line.
      */
-    private suspend fun isOtherLine(text: String, itemName: String): Boolean {
+    private suspend fun isOtherLine(text: String, itemName: String, asked: com.shopai.app.brain.tools.ItemField): Boolean {
         val products = runCatching { tools.products() }.getOrNull().orEmpty()
         if (productIn(text, products)?.let { !it.name.equals(itemName, ignoreCase = true) } == true) return true
+        // (a size / model / vehicle / batch / expiry answer is words and a number — "Type-C 25W", "Pulsar 150", "Redmi Note 12")
+        if (asked in setOf(com.shopai.app.brain.tools.ItemField.SIZE, com.shopai.app.brain.tools.ItemField.BATCH, com.shopai.app.brain.tools.ItemField.EXPIRY)) return false
         val name = com.shopai.app.brain.tools.KaiInventory.stockLine(text)?.first ?: return false
         val inv = com.shopai.app.brain.tools.KaiInventory
         val words = name.lowercase(Locale.ROOT).split(Regex("""\s+""")).map { it.replace(Regex("""(?:-?kku|-?ku|-?la|-?le)$"""), "") }
