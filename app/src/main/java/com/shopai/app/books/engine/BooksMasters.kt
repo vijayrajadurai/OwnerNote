@@ -151,6 +151,16 @@ class BooksMasters(
 
     fun cashAccountId(): String = "$biz-cash"
 
+    /** The business's type, as its profile's business types say (a service shop's services, a wholesaler's stock). */
+    suspend fun setBusinessType(type: BusinessType): MasterResult<BusinessEntity> = guard {
+        val b = dao.business(biz) ?: reject(BooksErrorCode.BUSINESS_NOT_SET_UP, "Set up the business first")
+        if (b.businessType == type.name) return@guard b
+        val updated = b.copy(businessType = type.name, updatedAt = now())
+        dao.upsertBusiness(updated)
+        audit("BUSINESS", biz, "TYPE")
+        updated
+    }
+
     /** What every invoice prints at the bottom: UPI id, bank details, terms. */
     suspend fun updateInvoiceDetails(upiId: String?, bankDetails: String?, terms: String?): MasterResult<BusinessEntity> = guard {
         val b = dao.business(biz) ?: reject(BooksErrorCode.BUSINESS_NOT_SET_UP, "Set up the business first")

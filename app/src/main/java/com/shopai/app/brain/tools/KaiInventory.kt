@@ -950,7 +950,9 @@ object KaiInventory {
     // ------------------------------------------------------------------ bills with goods
 
     private val buyWords = Regex("""(?i)(?<![\p{L}])(?:vaanginen|vaangunen|vanginen|vangunen|vaangitten|vaangiten|vaangi|purchase\s*(?:panninen|pannen|pannitten|panniten)?|bought|eduthen|வாங்கினேன்|வாங்கிட்டேன்)(?![\p{L}])""")
-    private val sellWords = Regex("""(?i)(?<![\p{L}])(?:credit\s+sale|sale|sold|vithen|vitthen|vithuten|kuduthen|kuduthuten|koduthen|koduthuten|கொடுத்தேன்|விற்றேன்)(?![\p{L}])""")
+    private val sellWords = Regex("""(?i)(?<![\p{L}])(?:credit\s+sale|sale|sold|vithen|vitthen|vithuten|kuduthen|kuduthuten|koduthen|koduthuten|anuppinen|anupinen|anuppunen|anuppiten|anupiten|anuppitten|anuppichen|anuppinom|anuppiachu|anuppiyachu|கொடுத்தேன்|விற்றேன்|அனுப்பினேன்)(?![\p{L}])""")
+    /** "Kumar 2 box Colgate vaanginaan": the customer bought it — a sale to them (owner, 21 Oct 2026), never the shop buying. */
+    private val theyBoughtWords = Regex("""(?i)(?<![\p{L}])(?:vaanginaan|vanginaan|vaanginan|vanginan|vaangunaan|vangunan|vaanginaar|vaanginaaru|vaanginaanga|vaangunaanga|vaangittu\s+ponaan|vaangittu\s+ponaanga|வாங்கினான்|வாங்குனான்|வாங்கினாங்க)(?![\p{L}])""")
     private val creditWords = Regex("""(?i)(?<![\p{L}])(?:credit|kadan|kadanaa|udhaar|udhari|baaki|bakki|later|apram\s+(?:tharen|tharuven|kudukkaren|tharuvaanga))(?![\p{L}])|கடன்""")
     private val cashWords = Regex("""(?i)(?<![\p{L}])(?:cash|rokkam|kaasu|panam\s+kuduthutaanga|paid|upi|gpay|g\s*pay|phonepe|paytm|bank|card)(?![\p{L}])""")
     private val freeWords = Regex("""(?i)(?<![\p{L}])(?:free|freeya|freeyaa|summa|ilavasam|sample)(?![\p{L}])|இலவசம்""")
@@ -958,6 +960,7 @@ object KaiInventory {
 
     fun buys(text: String) = buyWords.containsMatchIn(text)
     fun sells(text: String) = sellWords.containsMatchIn(text)
+    fun theyBought(text: String) = theyBoughtWords.containsMatchIn(text)
     /** true = on credit, false = paid now (cash / UPI …), null = not said. */
     fun creditOf(text: String): Boolean? = when {
         creditWords.containsMatchIn(text) -> true

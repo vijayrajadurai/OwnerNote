@@ -177,10 +177,12 @@ object KaiTeaching {
         }
 
         // Forget a phrase: "forget thooki kudu", "remove thooki kudu slang", "thooki kudu marandhudu".
-        Regex("""^(?:forget|remove|delete)\s+(?:the\s+)?(?:slang\s+|meaning\s+(?:of\s+)?)?(.+?)(?:\s+(?:slang|meaning))?$""").find(n)?.let { m ->
+        // (never a stock line — "Switch stock la 2 box remove pannu" is goods taken out: a count or "stock" said; 1600-line check, 21 Oct 2026)
+        val stockLine = Regex("""\d|(?<![\p{L}])(?:stock|stockla|stock-la)(?![\p{L}])|ஸ்டாக்""").containsMatchIn(n)
+        if (!stockLine) Regex("""^(?:forget|remove|delete)\s+(?:the\s+)?(?:slang\s+|meaning\s+(?:of\s+)?)?(.+?)(?:\s+(?:slang|meaning))?$""").find(n)?.let { m ->
             return TeachCommand.Forget(m.groupValues[1].trim().takeIf { it.isNotEmpty() })
         }
-        Regex("""^(.+?)\s*(?:a|ah|ai|va|vai|nu sonnadha|meaning)?\s+(?:marandhudu|maranthudu|marandhidu|marandhu vidu|forget pannu|remove pannu|delete pannu|forget|மறந்துடு)$""").find(n)?.let { m ->
+        if (!stockLine) Regex("""^(.+?)\s*(?:a|ah|ai|va|vai|nu sonnadha|meaning)?\s+(?:marandhudu|maranthudu|marandhidu|marandhu vidu|forget pannu|remove pannu|delete pannu|forget|மறந்துடு)$""").find(n)?.let { m ->
             val p = m.groupValues[1].trim().removeSuffix(" slang").trim()
             return TeachCommand.Forget(p.takeIf { it.isNotEmpty() && it !in setOf("idha", "adha", "this", "that") })
         }

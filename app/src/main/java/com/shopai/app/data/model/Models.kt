@@ -54,6 +54,8 @@ data class Business(
     val categories: List<String>? = null,
     /** The owner's own name for "Other Product Businesses". */
     val otherCategoryName: String? = null,
+    /** [BusinessKind] names the owner picked (SERVICE / RETAIL / WHOLESALE); null / empty for a business set up before. */
+    val businessTypes: List<String>? = null,
 )
 
 data class BusinessInput(
@@ -70,6 +72,8 @@ data class BusinessInput(
     /** Null = left as it is on the server (an older screen saving the profile never clears the picks). */
     val categories: List<String>? = null,
     val otherCategoryName: String? = null,
+    /** Null = left as it is on the server. */
+    val businessTypes: List<String>? = null,
 )
 
 data class DashboardSnapshot(

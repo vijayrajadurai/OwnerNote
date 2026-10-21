@@ -142,7 +142,7 @@ object KaiCommands {
         // The owner paid by UPI / GPay ("Ramesh-ku 400 GPay pannen", "pay pannitten").
         "pay pannitten", "payment pannitten", "gpay pannen", "gpay panniten", "gpay pannitten", "upi pannen", "upi pannitten", "transfer pannen", "transfer pannitten",
         "கொடுத்தேன்", "கொடுத்துட்டேன்", "அனுப்பினேன்", "கொடுத்தாச்சு", "குடுத்தேன்", "குடுத்துட்டேன்") + KaiFeed.paidWords
-    private val inWords = listOf("vanginen", "vaanginen", "vangunen", "vaangunen", "vangiten", "vaangiten", "vanginaen", "vangitten", "received", "got",
+    private val inWords = listOf("vanginen", "vaanginen", "vangunen", "vaangunen", "vangiten", "vaangiten", "vanginaen", "vangitten", "vaangitten", "vaangittom", "vaangitom", "vangitom", "received", "got",
         "vandhuchu", "vanthuchu", "vandhudhu", "thandhan", "thandhaan", "thandhaar", "thanthan", "kuduthan", "kuduthaan", "kuduthaar", "koduthan", "koduthaan", "koduthaar",
         // "Kumar 2000 kuduthutaan": he gave (and it's done) — the owner received it.
         "kuduthutaan", "kuduthuttaan", "kuduthutan", "kuduthittaan", "koduthutaan", "koduthuttaan", "kuduthutaanga", "kuduthaanga", "kuduthanga",

@@ -26,6 +26,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,7 +53,6 @@ import com.shopai.app.ui.components.CashEntrySheet
 import com.shopai.app.ui.components.CashEntrySheetMode
 import com.shopai.app.ui.components.CashTotalsSheet
 import com.shopai.app.ui.components.DetailScaffold
-import com.shopai.app.ui.components.PrimaryButton
 import com.shopai.app.ui.components.ShopAlertDialog
 import com.shopai.app.ui.theme.Danger
 import com.shopai.app.data.model.DailyCashTotals
@@ -70,6 +70,8 @@ import com.shopai.app.util.localDateKey
 import com.shopai.app.util.shareDailyCashNoteToWhatsApp
 import com.shopai.app.util.shiftDateKey
 import kotlinx.coroutines.Dispatchers
+import com.shopai.app.data.model.Feature
+import com.shopai.app.ui.components.hasFeature
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.Instant
@@ -108,8 +110,12 @@ fun DailyCashNoteScreen(
     val todayKey = localDateKey()
     val cashBoxReady = cashBoxAmount != null
     val canEdit = dayStatus == DailyCashDayStatus.OPEN && dateKey == todayKey
-    val canMoveMoney = canEdit && cashBoxReady
-    val canCloseDay = canMoveMoney && entries.isNotEmpty()
+    // (owner, 21 Oct 2026: the kallapetti is asked at day start, never required; closing the day is optional — an open day is sent
+    // by itself the next day)
+    val canMoveMoney = canEdit
+    val canCloseDay = canEdit && entries.isNotEmpty()
+    val kallapettiAskedDay by container.preferencesRepository.kallapettiAskedDayFlow.collectAsState(initial = todayKey)
+    val askKallapetti = canEdit && !loading && !cashBoxReady && kallapettiAskedDay != todayKey && !showOpeningSheet
     val submitErrorMessage = stringResource(R.string.cash_note_submit_error)
 
     fun reload() {
@@ -137,7 +143,10 @@ fun DailyCashNoteScreen(
         onBack = onBack,
         actions = {
             // The shop's Menu: items and prices the owner adds (Kai Chat sells from it).
-            TextButton(onClick = { showMenu = true }) { Text(stringResource(R.string.menu_title), fontWeight = FontWeight.SemiBold) }
+            // A service business's (a salon's, a hotel's); hidden for a shop that only sells goods.
+            if (hasFeature(Feature.SERVICE_MENU)) {
+                TextButton(onClick = { showMenu = true }) { Text(stringResource(R.string.menu_title), fontWeight = FontWeight.SemiBold) }
+            }
             IconButton(
                 enabled = !sharing && (cashBoxReady || entries.isNotEmpty()),
                 onClick = {
@@ -206,7 +215,7 @@ fun DailyCashNoteScreen(
                 },
             )
 
-            if (canEdit && !cashBoxReady) {
+            if (canEdit && !cashBoxReady && !loading) {
                 Text(
                     text = stringResource(R.string.cash_note_kallapetti_needed),
                     color = ShopAiThemeColors.onSurfaceVariant,
@@ -232,11 +241,16 @@ fun DailyCashNoteScreen(
             }
 
             if (canCloseDay) {
-                PrimaryButton(
-                    label = stringResource(R.string.cash_note_close_day),
-                    loading = isSubmitting,
-                    enabled = !isSubmitting,
-                    onClick = { showCloseConfirm = true },
+                com.shopai.app.ui.components.OutlinedButton(
+                    onClick = { if (!isSubmitting) showCloseConfirm = true },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(R.string.cash_note_close_day_optional))
+                }
+                Text(
+                    text = stringResource(R.string.cash_note_close_day_hint),
+                    color = ShopAiThemeColors.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall,
                 )
             }
 
@@ -413,6 +427,27 @@ fun DailyCashNoteScreen(
         )
     }
 
+    // Day start: "Kallapetti cash add pannanumaa?" — once a day, Skip keeps the day going without it.
+    if (askKallapetti) {
+        ShopAlertDialog(
+            onDismissRequest = { scope.launch { container.preferencesRepository.setKallapettiAsked(todayKey) } },
+            title = { Text(stringResource(R.string.cash_note_kallapetti_ask_title)) },
+            text = { Text(stringResource(R.string.cash_note_kallapetti_ask_body)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    scope.launch { container.preferencesRepository.setKallapettiAsked(todayKey) }
+                    openingDraft = ""
+                    showOpeningSheet = true
+                }) { Text(stringResource(R.string.cash_note_kallapetti_ask_add)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { scope.launch { container.preferencesRepository.setKallapettiAsked(todayKey) } }) {
+                    Text(stringResource(R.string.cash_note_kallapetti_ask_skip))
+                }
+            },
+        )
+    }
+
     if (showOpeningSheet) {
         ShopAlertDialog(
             onDismissRequest = { if (!isSaving) showOpeningSheet = false },
@@ -497,10 +532,9 @@ private fun CashBoxCard(
             )
         }
         if (canSetOpening) {
-            PrimaryButton(
-                label = stringResource(R.string.cash_note_kallapetti_enter),
-                onClick = onEnterOpening,
-            )
+            com.shopai.app.ui.components.OutlinedButton(onClick = onEnterOpening, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.cash_note_kallapetti_enter))
+            }
         }
     }
 }

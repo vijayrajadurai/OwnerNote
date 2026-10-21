@@ -28,6 +28,10 @@ object BusinessCategories {
     )
 
     const val OTHER = "OTHER_PRODUCTS"
+    /** "Other Services": a service shop's own kind, named by the owner like [OTHER]. */
+    const val OTHER_SERVICES = "OTHER_SERVICES"
+    const val HOTEL = "HOTEL_FOOD_SERVICE"
+    const val WHOLESALE = "WHOLESALE_GENERAL"
 
     private fun c(code: String, en: String, ta: String, icon: String, legacy: String, kind: UnitMaster.Kind, subs: String, service: Boolean = false) =
         Category(code, en, ta, icon, legacy, kind, subs.split(", ").map(String::trim), service)
@@ -117,12 +121,40 @@ object BusinessCategories {
             "Meals, Tiffin, Tea & Coffee, Snacks, Juices, Parcels", service = true),
         c("SALON_BEAUTY_SERVICE", "Salon & Beauty Parlour", "சலூன் & பியூட்டி பார்லர்", "✂️", "BEAUTY_SALON", UnitMaster.Kind.COSMETICS,
             "Haircut, Shaving, Facial, Waxing, Bridal Makeup, Beauty Products", service = true),
+        // Other service shops (owner, 21 Oct 2026: business types — a service shop picks its own kind).
+        c("TAILORING_BOUTIQUE", "Tailoring & Boutique", "தையல் & பொட்டிக்", "🪡", "OTHER", UnitMaster.Kind.TEXTILE,
+            "Stitching, Alteration, Blouse, Embroidery, Uniform Stitching", service = true),
+        c("MOBILE_REPAIR", "Mobile & Electronics Repair", "மொபைல் & எலக்ட்ரானிக்ஸ் ரிப்பேர்", "🔧", "OTHER", UnitMaster.Kind.MOBILE,
+            "Screen Replacement, Battery, Software, TV Repair, Laptop Repair", service = true),
+        c("VEHICLE_REPAIR", "Vehicle Repair & Garage", "வாகன ரிப்பேர் & கேரேஜ்", "🛠️", "OTHER", UnitMaster.Kind.AUTOMOBILE,
+            "Bike Service, Car Service, Puncture, Oil Change, Wash", service = true),
+        c("LAUNDRY_DRYCLEAN", "Laundry & Dry Clean", "லாண்டரி & டிரை கிளீன்", "👔", "OTHER", UnitMaster.Kind.OTHER,
+            "Ironing, Washing, Dry Clean, Saree Polish", service = true),
+        c("GYM_FITNESS", "Gym & Fitness", "ஜிம் & ஃபிட்னஸ்", "🏋️", "OTHER", UnitMaster.Kind.OTHER,
+            "Membership, Personal Training, Yoga, Supplements", service = true),
+        c("PHOTO_STUDIO", "Photo & Video Studio", "போட்டோ & வீடியோ ஸ்டுடியோ", "📷", "OTHER", UnitMaster.Kind.OTHER,
+            "Passport Photo, Wedding Shoot, Album, Video Editing", service = true),
+        c("PRINTING_XEROX", "Printing & Xerox", "பிரிண்டிங் & ஜெராக்ஸ்", "📠", "OTHER", UnitMaster.Kind.STATIONERY,
+            "Xerox, Printout, Lamination, Spiral Binding, Flex Printing", service = true),
+        c("CLINIC_HEALTH", "Clinic & Health Care", "கிளினிக் & மருத்துவ சேவை", "🩺", "OTHER", UnitMaster.Kind.PHARMACY,
+            "Consultation, Lab Test, Physiotherapy, Dental", service = true),
+        c("TUITION_COACHING", "Tuition & Coaching", "டியூஷன் & கோச்சிங்", "📖", "OTHER", UnitMaster.Kind.STATIONERY,
+            "Tuition Fees, Coaching Classes, Music Class, Computer Class", service = true),
+        c("EVENTS_DECOR", "Events & Decoration", "நிகழ்ச்சி & அலங்காரம்", "🎉", "OTHER", UnitMaster.Kind.OTHER,
+            "Decoration, Catering, Sound & Lights, Pandal, Flower Decoration", service = true),
+        c(OTHER_SERVICES, "Other Services", "மற்ற சேவைகள்", "➕", "OTHER", UnitMaster.Kind.OTHER, "General, Other", service = true),
     )
 
     private val byCode = all.associateBy { it.code }
 
     /** The 9 shown first as cards (the owner's first nine). */
     val popular: List<Category> = all.take(9)
+
+    /** The cards for a business of these kinds: the first nine of the categories it picks from (a service shop: its services). */
+    fun popularFor(allowed: List<Category>): List<Category> = allowed.take(9)
+
+    /** The "Other" a business of these kinds names its own kind under. */
+    fun otherFor(allowed: List<Category>): String = if (allowed.any { it.code == OTHER }) OTHER else OTHER_SERVICES
 
     fun of(code: String?): Category? = code?.let { byCode[it.trim().uppercase(Locale.ROOT)] }
 
@@ -141,12 +173,14 @@ object BusinessCategories {
     }
 
     /**
-     * The older single category for what the owner picked: a service shop's when one is picked (Kai's hotel / salon sales
-     * read it), else the first pick's; OTHER when nothing known is picked.
+     * The older single category for what the owner picked: a hotel's / salon's when one is picked (Kai's hotel / salon sales
+     * read it), else the first pick that has one of its own (a mobile shop with repairs stays MOBILE_ACCESSORIES); OTHER when
+     * nothing known is picked.
      */
     fun legacyFor(codes: List<String>): String {
         val picked = codes.mapNotNull(::of)
-        return (picked.firstOrNull { it.service } ?: picked.firstOrNull())?.legacy ?: BusinessCategory.OTHER.apiValue
+        val other = BusinessCategory.OTHER.apiValue
+        return (picked.firstOrNull { it.service && it.legacy != other } ?: picked.firstOrNull { it.legacy != other } ?: picked.firstOrNull())?.legacy ?: other
     }
 
     /** A business set up before (one older category, no list): the category it stands for, picked again in the new list. */
@@ -174,14 +208,17 @@ object BusinessCategories {
     /** The units and product categories the Add Product form suggests: the first product category picked (else a service one's). */
     fun unitKindFor(codes: List<String>): UnitMaster.Kind? {
         val picked = codes.mapNotNull(::of)
-        return (picked.firstOrNull { !it.service && it.code != OTHER } ?: picked.firstOrNull())?.unitKind
+        return (picked.firstOrNull { !it.service && it.code != OTHER } ?: picked.firstOrNull { it.code != OTHER_SERVICES } ?: picked.firstOrNull())?.unitKind
     }
 
     /** Product categories the picked business categories suggest, in order, once each. */
     fun subcategoriesFor(codes: List<String>): List<String> =
-        codes.mapNotNull(::of).filter { it.code != OTHER }.flatMap { it.subcategories }.distinct()
+        codes.mapNotNull(::of).filter { it.code != OTHER && it.code != OTHER_SERVICES }.flatMap { it.subcategories }.distinct()
 
     /** The picks are complete: at least one, and a name (2+ letters) when "Other Product Businesses" is one of them. */
     fun complete(codes: List<String>, otherName: String): Boolean =
-        codes.any { of(it) != null } && (OTHER !in codes || otherName.trim().length >= 2)
+        codes.any { of(it) != null } && (OTHER !in codes && OTHER_SERVICES !in codes || otherName.trim().length >= 2)
+
+    /** The picked category that takes the owner's own name, if any ("Other Product Businesses" / "Other Services"). */
+    fun namedOther(codes: List<String>): String? = codes.firstOrNull { it == OTHER || it == OTHER_SERVICES }
 }

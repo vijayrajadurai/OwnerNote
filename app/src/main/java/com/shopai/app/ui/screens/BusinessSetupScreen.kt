@@ -38,13 +38,17 @@ import com.shopai.app.R
 import com.shopai.app.data.AppContainer
 import com.shopai.app.data.model.BusinessCategories
 import com.shopai.app.data.model.BusinessInput
+import com.shopai.app.data.model.BusinessKind
+import com.shopai.app.data.model.FeatureSet
 import com.shopai.app.data.network.presentApiError
 import com.shopai.app.ui.components.ApiErrorAlertDialog
 import com.shopai.app.ui.components.BusinessCategoryPicker
+import com.shopai.app.ui.components.BusinessTypePicker
 import com.shopai.app.ui.components.OutlinedButton
 import com.shopai.app.ui.components.PrimaryButton
 import com.shopai.app.ui.components.ScreenContainer
 import com.shopai.app.ui.components.ShopTextField
+import com.shopai.app.ui.components.syncBooksType
 import com.shopai.app.ui.theme.Danger
 import com.shopai.app.ui.theme.OutfitFamily
 import com.shopai.app.ui.theme.Primary
@@ -66,7 +70,9 @@ fun BusinessSetupScreen(
     var step by remember { mutableIntStateOf(0) }
     var ownerName by remember { mutableStateOf("") }
     var businessName by remember { mutableStateOf("") }
-    // Every business category picked (several allowed) and the owner's own name for "Other Product Businesses".
+    // The business's types (they decide the app's features), every business category picked (several allowed) and the
+    // owner's own name for "Other Product / Service Businesses".
+    var kinds by remember { mutableStateOf(emptySet<BusinessKind>()) }
     var categories by remember { mutableStateOf(emptyList<String>()) }
     var otherCategoryName by remember { mutableStateOf("") }
     var city by remember { mutableStateOf("") }
@@ -108,6 +114,7 @@ fun BusinessSetupScreen(
 
     val step1Done = ownerName.trim().length >= 2 &&
         businessName.trim().length >= 2 &&
+        kinds.isNotEmpty() &&
         BusinessCategories.complete(categories, otherCategoryName)
     val step2Done = city.trim().length >= 2 &&
         Regex("^[1-9][0-9]{5}$").matches(pincode.trim()) &&
@@ -187,18 +194,37 @@ fun BusinessSetupScreen(
                     placeholder = stringResource(R.string.business_name_placeholder),
                 )
                 Text(
-                    text = stringResource(R.string.business_category),
+                    text = stringResource(R.string.business_type),
                     style = MaterialTheme.typography.bodyMedium,
                     color = ShopAiThemeColors.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 8.dp),
                 )
-                BusinessCategoryPicker(
-                    selected = categories,
-                    otherName = otherCategoryName,
-                    onSelectedChange = { categories = it },
-                    onOtherNameChange = { otherCategoryName = it },
+                BusinessTypePicker(
+                    selected = kinds,
+                    onSelectedChange = { picked ->
+                        kinds = picked
+                        // (a category the new types don't offer is taken off)
+                        val offered = FeatureSet.categoriesFor(picked).map { it.code }.toSet()
+                        categories = categories.filter { it in offered }
+                    },
                     modifier = Modifier.padding(bottom = 16.dp),
                 )
+                if (kinds.isNotEmpty()) {
+                    Text(
+                        text = stringResource(R.string.business_category),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = ShopAiThemeColors.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 8.dp),
+                    )
+                    BusinessCategoryPicker(
+                        selected = categories,
+                        otherName = otherCategoryName,
+                        onSelectedChange = { categories = it },
+                        onOtherNameChange = { otherCategoryName = it },
+                        modifier = Modifier.padding(bottom = 16.dp),
+                        allowed = FeatureSet.categoriesFor(kinds),
+                    )
+                }
             }
             1 -> {
                 ShopTextField(
@@ -286,7 +312,7 @@ fun BusinessSetupScreen(
                 loading = loading,
                 enabled = canSave,
                 onClick = {
-                    if (!BusinessCategories.complete(categories, otherCategoryName)) return@PrimaryButton
+                    if (kinds.isEmpty() || !BusinessCategories.complete(categories, otherCategoryName)) return@PrimaryButton
                     val shop = coords ?: return@PrimaryButton
                     scope.launch {
                         loading = true
@@ -301,7 +327,8 @@ fun BusinessSetupScreen(
                                     // (the older single category — what Kai's services and the server's own features read)
                                     category = BusinessCategories.legacyFor(categories),
                                     categories = categories,
-                                    otherCategoryName = otherCategoryName.trim().takeIf { BusinessCategories.OTHER in categories },
+                                    otherCategoryName = otherCategoryName.trim().takeIf { BusinessCategories.namedOther(categories) != null },
+                                    businessTypes = BusinessKind.entries.filter { it in kinds }.map { it.name },
                                     city = cityName,
                                     runningSinceYear = year,
                                     monthlyVolumeApprox = monthlyVolume.toIntOrNull(),
@@ -311,6 +338,7 @@ fun BusinessSetupScreen(
                                     locationSource = "GPS",
                                 ),
                             )
+                            syncBooksType(container, kinds)
                             onComplete()
                         }.onFailure {
                             container.presentApiError(it, errorSaveBusiness, { msg -> error = msg }, { msg -> alertError = msg })
