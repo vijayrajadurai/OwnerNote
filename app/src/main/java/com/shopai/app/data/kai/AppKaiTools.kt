@@ -16,6 +16,7 @@ import com.shopai.app.books.model.MoneyAccountKind
 import com.shopai.app.books.model.PartyKind
 import com.shopai.app.books.model.PaymentMode
 import com.shopai.app.books.model.TxnSource
+import com.shopai.app.books.model.TxnType
 import com.shopai.app.brain.tools.ActionOutcome
 import com.shopai.app.brain.tools.ActionPlan
 import com.shopai.app.brain.tools.ActionStatus
@@ -442,6 +443,18 @@ class AppKaiTools(
         val s = session() ?: return null
         return s.dao.topSold(s.ctx.businessId, from.toEpochDay().toInt(), to.toEpochDay().toInt(), limit)
             .map { ProductSalesFact(it.name, qty(it.qtyMilli), rupees(it.valuePaise)) }
+    }
+
+    override suspend fun itemRegister(purchase: Boolean, from: LocalDate, to: LocalDate): List<com.shopai.app.brain.tools.RegisterLine>? {
+        val s = session() ?: return null
+        val types = if (purchase) listOf(TxnType.PURCHASE.name, TxnType.PURCHASE_RETURN.name) else listOf(TxnType.SALE.name, TxnType.SALE_RETURN.name)
+        return s.dao.itemRegister(s.ctx.businessId, types, from.toEpochDay().toInt(), to.toEpochDay().toInt()).map {
+            com.shopai.app.brain.tools.RegisterLine(
+                date = LocalDate.ofEpochDay(it.date.toLong()), number = it.number, party = it.partyName?.takeIf { n -> n.isNotBlank() },
+                product = it.itemName, qty = qty(it.qtyMilli), unit = it.unit, baseQty = qty(it.baseQtyMilli), baseUnit = it.baseUnit ?: it.unit,
+                rate = rupees(it.ratePaise), value = rupees(it.taxablePaise), isReturn = it.txnType.endsWith("_RETURN"),
+            )
+        }
     }
 
     override suspend fun parties(name: String): List<PartyMatch>? {
