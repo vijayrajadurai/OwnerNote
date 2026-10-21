@@ -3820,7 +3820,9 @@ class KaiAgent(
 
     /** "5000 entry pannu", "Selvam ku payment pannidu", "Kumar-ku report send pannu", "5 box add pannu": the missing piece asked. */
     private suspend fun bareEntry(text: String, lang: KaiLang, people: List<String>): KaiTurn? {
-        Regex("""(?i)^₹?(\d[\d,]*)\s*(?:rupees|rs|ruba)?\s*(?:entry|add|note|podu)\s*(?:pannu|pannidu|podu|panniko)?$""").find(text)?.let { m ->
+        // ("20 add pannu" after a product is that product's stock; "oru entry podu" asks who and how much as before — an amount of 10+ only)
+        Regex("""(?i)^₹?(\d[\d,]*)\s*(?:rupees|rs|ruba)?\s*(?:entry|note)\s*(?:pannu|pannidu|podu|panniko)?$""").find(text)
+            ?.takeIf { (it.groupValues[1].replace(",", "").toBigDecimalOrNull() ?: BigDecimal.ZERO) >= BigDecimal.TEN }?.let { m ->
             val a = KaiFormat.rupees(m.groupValues[1].replace(",", "").toDouble())
             return say(lang, KaiMood.CLARIFY, "entry: who and which way",
                 ta = "$a — யாரு, எந்த பக்கம் ஓனர்? உதா: “Kumar ${m.groupValues[1]} குடுத்தான்” (வந்தது), “ABC Traders-க்கு ${m.groupValues[1]} குடுத்தேன்” (கொடுத்தது), “Kumar-க்கு ${m.groupValues[1]} கடன்”.",
