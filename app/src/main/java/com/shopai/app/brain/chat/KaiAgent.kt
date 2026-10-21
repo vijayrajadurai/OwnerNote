@@ -3777,7 +3777,8 @@ class KaiAgent(
 
     /** How a books name read by its sound is shown: "கணேஷ் (Ganesh)" when the owner typed it in English letters — the swap seen. */
     private fun shownAs(person: String, text: String): String {
-        if (!com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(person) || com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(text)) return person
+        // (a name that is all Tamil letters only — "குமார் Hotel" already says itself)
+        if (!com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(person) || person.any { it in 'A'..'z' } || com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(text)) return person
         val typed = Regex("""[A-Za-z]+""").findAll(text).map { it.value }.firstOrNull { com.shopai.app.util.NameSound.same(it, person) } ?: return person
         return "$person ($typed)"
     }

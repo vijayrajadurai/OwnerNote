@@ -36,6 +36,8 @@ class NameSoundTest {
         assertFalse(NameSound.same("kens", "கணேஷ்"))
         assertFalse(NameSound.same("gens", "கணேஷ்"))
         assertTrue(NameSound.same("Raj", "ராஜ்"))
+        assertTrue(NameSound.same("Shirt", "ஷர்ட்"))
+        assertTrue(NameSound.same("Shop", "ஷாப்"))
     }
 
     @Test

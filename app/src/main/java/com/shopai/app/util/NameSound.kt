@@ -135,14 +135,15 @@ object NameSound {
 
     /**
      * A one-syllable word in English letters against a Tamil name (owner's phone, 21 Oct 2026: a typed "kens" was taken as the
-     * books' "கணேஷ்" — the same consonants k-n-s): its vowel must open the Tamil name too ("o" / "u" may be Tamil's "ஆ" — "Shop" /
-     * "ஷாப்"), and the Tamil name has at most one more vowel. Longer words (names, loan words like "Horlicks" / "ஹார்லிக்ஸ்") are
+     * books' "கணேஷ்" — the same consonants k-n-s): its vowel must open the Tamil name too (English letters' "o" / "u", or a vowel
+     * before "r", may be Tamil's "அ" / "ஆ"), and the Tamil name has at most one more vowel. Longer words (names, loan words like "Horlicks" / "ஹார்லிக்ஸ்") are
      * left to their consonants as before.
      */
     private fun vowelsAgree(latinVowels: String, tamilVowels: String, latinWord: String): Boolean {
         val w = latinWord.trim()
         if (w.contains(' ') || latinVowels.length != 1 || tamilVowels.isEmpty()) return true
-        fun eq(l: Char, t: Char) = l == t || l in "ou" && t == 'a'
+        // ("o" / "u" written "ஆ" — "Shop" / "ஷாப்"; a vowel before "r" written "அ" — "Shirt" / "ஷர்ட்", "Burger" / "பர்கர்")
+        fun eq(l: Char, t: Char) = l == t || l in "ou" && t == 'a' || t == 'a' && w.lowercase().contains("${l}r")
         val cluster = Regex("""(?i)^[^aeiou][rlyv]""").containsMatchIn(w)
         val t = if (cluster && tamilVowels.length > 1 && tamilVowels[0] in "iu" && !eq(latinVowels[0], tamilVowels[0])) tamilVowels.drop(1) else tamilVowels
         return eq(latinVowels[0], t[0]) && t.length <= 2
