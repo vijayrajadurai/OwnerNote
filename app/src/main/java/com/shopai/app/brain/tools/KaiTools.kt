@@ -258,6 +258,12 @@ interface KaiTools {
     /** The business category the owner picked at setup ("GROCERY", "BEAUTY_SALON", "RESTAURANT_FOOD" …); null = unknown. */
     suspend fun businessCategory(): String? = null
     /**
+     * A stock-out the owner said was sold ("Onion 5 kg 100 ku vithuchu") — after Confirm — posted as a walk-in cash sale, so the
+     * books' sales, profit and fast / slow movers have it; the stock goes down with it. [amount] = the money said (null = the
+     * product's selling price). Null = not posted that way (no books, no price): Kai takes the stock out as before.
+     */
+    suspend fun cashSale(product: ProductRef, qty: BigDecimal, amount: BigDecimal?, said: String): ActionOutcome? = null
+    /**
      * Every business category the owner picked at setup ([com.shopai.app.data.model.BusinessCategories] codes) and the name typed
      * for "Other Product Businesses"; null = unknown (an older setup, or the profile can't be read).
      */

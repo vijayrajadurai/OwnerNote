@@ -369,7 +369,11 @@ object KaiSpokenWords {
     /** A Tanglish word back in the Tamil letters the mic writes it in ("mani" → "மணி"), else as Kai's voice spells it. */
     fun tamilOf(latin: String): String? = latin.lowercase().let { l -> words.firstOrNull { (_, v) -> v == l }?.first ?: KaiTamilVoice.tamil(l) }
 
-    private fun wordOf(w: String): String = wordMap[w] ?: if (w in goodsWords) w else dative(w)?.let { d -> wordMap[d.substringBefore('-')]?.let { "$it-${d.substringAfter('-')}" } ?: d } ?: w
+    private fun wordOf(w: String): String = wordMap[w] ?: if (w in goodsWords) w else dative(w)?.let { d ->
+        val stem = d.substringBefore('-')
+        // ("பேகுக்கு", "பாக்ஸுக்கு": a loan word ending in a consonant takes -உக்கு — பேக் + க்கு is bag-ku, kept as a name otherwise)
+        (wordMap[stem] ?: stem.takeIf { it.endsWith("ு") }?.let { wordMap[it.dropLast(1) + "்"] })?.let { "$it-${d.substringAfter('-')}" } ?: d
+    } ?: w
 
     /**
      * A phrase Kai keeps (a reminder's task) back in the owner's own words: each word [normalize] turned into Tanglish goes back to
