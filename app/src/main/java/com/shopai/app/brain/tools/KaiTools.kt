@@ -95,6 +95,9 @@ enum class ScheduleResult { EXACT, APPROXIMATE, NOTIFICATIONS_OFF, FAILED }
 /** Saving a product's unit conversion: done, the product already has a different second unit, or not possible here. */
 enum class ConversionSave { SAVED, OTHER_UNIT_SET, UNAVAILABLE }
 
+/** The setup's business categories: codes in the order picked, and the "Other Product Businesses" name. */
+data class ShopCategoryPicks(val codes: List<String>, val otherName: String? = null)
+
 /** A reminder saved by the engine; [duplicate] = the same reminder already existed (nothing new created). */
 data class ReminderSaved(val reminder: KaiReminder, val duplicate: Boolean, val result: ScheduleResult)
 
@@ -254,6 +257,11 @@ interface KaiTools {
     suspend fun sellsServices(): Boolean? = null
     /** The business category the owner picked at setup ("GROCERY", "BEAUTY_SALON", "RESTAURANT_FOOD" …); null = unknown. */
     suspend fun businessCategory(): String? = null
+    /**
+     * Every business category the owner picked at setup ([com.shopai.app.data.model.BusinessCategories] codes) and the name typed
+     * for "Other Product Businesses"; null = unknown (an older setup, or the profile can't be read).
+     */
+    suspend fun businessCategoryPicks(): ShopCategoryPicks? = null
 
     // ---- audit ----
     /** [input]: the owner's words (text). Returns the reference id. */

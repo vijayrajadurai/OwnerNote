@@ -73,6 +73,8 @@ object KaiUnits {
         "KG" to "QUINTAL" -> BigDecimal("0.01")
         "KG" to "TONNE" -> BigDecimal("0.001")
         "QUINTAL" to "TONNE" -> BigDecimal("0.1")
+        // (feet ↔ metre, yard ↔ metre are asked, never converted by Kai — "Rope 20 feet" for rope kept in metres: the owner's rule;
+        // the Add Product screen fills those in only for the owner to confirm)
         else -> null
     }
 

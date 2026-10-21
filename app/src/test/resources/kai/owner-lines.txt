@@ -460,3 +460,12 @@ STOCK  | Oil 1 litre 12 bottle vandhuchu               | Oil 252        # kept i
 STOCK  | Rice 2 kg 130 rupees ku vithuchu               | Rice 248
 STOCK  | Rice 2 kg 130 ku vithen                        | Rice 248
 ASK    | ABC Traders invoice kudu                       | ABC Traders; PDF
+
+# The app's screens by chat and voice (owner, 20 Oct 2026: "ipo add paniruka features ellam Kai-ku theriyanum, voice chat-laiyum link pannidu").
+ASK    | purchase bill podanum                          | Purchase bill
+ASK    | supplier bill entry pannanum                   | Purchase bill
+ASK    | kolmudhal bill podu                            | Purchase bill
+ASK    | draft bill ellam kaattu                        | Billing
+ASK    | pudhu product add pannanum                     | Add Product
+ASK    | en kadai enna vagai                            | Profile
+ASK    | kadai category maathanum                       | Profile
