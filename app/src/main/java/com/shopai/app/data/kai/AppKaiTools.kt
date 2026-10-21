@@ -178,6 +178,33 @@ class AppKaiTools(
      * Only called after the owner confirmed: a purchase from a supplier / a sale to a customer with its goods, posted by the
      * engine as ONE document (party balance + stock movement + any payment together — all or nothing).
      */
+    override suspend fun cashSale(product: com.shopai.app.brain.tools.ProductRef, qty: BigDecimal, amount: BigDecimal?, said: String): ActionOutcome? {
+        val s = session() ?: return null
+        return runCatching {
+            MoneyAccounts.ensureDefaults(s)
+            val p = s.dao.product(product.id)?.takeIf { it.businessId == s.ctx.businessId } ?: return null
+            // (the money said is what the customer paid — tax inside it; no price said → the product's selling price, none → not a sale here)
+            val rate = amount?.takeIf { it.signum() > 0 && qty.signum() > 0 }?.divide(qty, 2, RoundingMode.HALF_UP)
+            if (rate == null && p.sellingPricePaise == null) return null
+            val item = com.shopai.app.books.engine.ItemInput(
+                productId = p.id, qtyMilli = qty.multiply(BigDecimal(1000)).setScale(0, RoundingMode.HALF_UP).longValueExact(),
+                unit = p.primaryUnit, ratePaise = rate?.let(::paise), priceIncludesTax = if (rate != null) true else null,
+            )
+            val meta = com.shopai.app.books.engine.PostMeta(java.util.UUID.randomUUID().toString(), TxnSource.VOICE, notes = "Kai: ${said.take(80)}")
+            val items = s.engine.fillBatches(listOf(item), forSale = true, LocalDate.now())
+            val base = com.shopai.app.books.engine.SaleInput(partyId = null, date = LocalDate.now(), items = items, meta = meta)
+            val quote = s.engine.quoteSale(base)
+            val total = quote.totals?.grandTotalPaise?.takeIf { quote.ok && it > 0 } ?: return null
+            val account = MoneyAccounts.accountFor(s, com.shopai.app.books.model.PaymentMode.CASH) ?: return null
+            val draftId = voiceDraft(s, "SaleInput", said)
+            when (val r = s.engine.postSale(base.copy(received = listOf(com.shopai.app.books.engine.PaymentPart(account.id, com.shopai.app.books.model.PaymentMode.CASH, total)),
+                meta = meta.copy(draftId = draftId)))) {
+                is PostResult.Posted -> ActionOutcome.Done(r.txn.number, qty(s.ledger.stock(p.id)))
+                is PostResult.Rejected -> { runCatching { s.engine.discardDraft(draftId) }; null }
+            }
+        }.getOrNull()
+    }
+
     override suspend fun stockBill(bill: com.shopai.app.brain.tools.StockBill): ActionOutcome {
         val s = session() ?: return ActionOutcome.Failed("books unavailable")
         return runCatching {
