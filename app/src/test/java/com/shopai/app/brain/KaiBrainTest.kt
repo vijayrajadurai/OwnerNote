@@ -34,6 +34,8 @@ class KaiBrainTest {
             // Not a scale: a cable's core, a lamp, a lock, "crore" with no number, a span after the amount.
             "2 core wire 10 meter" to listOf(2.0, 10.0), "Kumar 2 lamp kuduthan" to listOf(2.0), "2 லாக் வந்துச்சு" to listOf(2.0),
             "crore la sonna add agala" to emptyList(), "Kumar 2 lakh 10 days" to listOf(200000.0, 10.0),
+            // Up to ₹99 crore in digits too; a 10-digit phone number is never money.
+            "Kumar 990000000 credit" to listOf(990000000.0), "Kumar 99,00,00,000" to listOf(990000000.0), "Kumar 9876543210" to emptyList(),
         )
         for ((text, amounts) in want) assertEquals(text, amounts, KaiUnderstanding.amountsIn(text, today))
     }

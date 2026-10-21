@@ -316,7 +316,7 @@
     <string name="customer_name">Customer name</string>
     <string name="supplier_name">Supplier name</string>
     <string name="amount_label">Amount (₹)</string>
-    <string name="amount_max_one_crore">Amount cannot be more than ₹1 crore.</string>
+    <string name="amount_max_one_crore">Amount cannot be more than ₹99 crore.</string>
     <string name="note_optional">Note (optional)</string>
     <string name="due_date_optional">Due date (optional)</string>
     <string name="due_date_placeholder">Tap to choose a date</string>

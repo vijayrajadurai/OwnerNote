@@ -7014,12 +7014,12 @@ class KaiAgent(
         sameNameFirst(r, kind, name, partyId, lang)?.let { return it }
         val prepared = tools.prepare(kind, name, partyId, r.amount!!, r.mode, r.said)
             ?: return say(lang, KaiMood.ERROR, "draft failed", ta = "இதை இப்போ தயார் பண்ண முடியல ஓனர்.", tl = "Owner, idha ippo ready panna mudiyala.", en = "I couldn't prepare this right now, Owner.")
-        // Above the ledger's limit (₹1 crore): never confirmable — a slip of the tongue or an extra zero (principle 5).
+        // Above the ledger's limit (₹99 crore — owner, 21 Oct 2026: "1 crore la irunthu 99 crore varaikkum"): never confirmable — a slip of the tongue or an extra zero (principle 5).
         val tooBig = com.shopai.app.util.exceedsMaxLedgerAmount(prepared.amount.toDouble())
         val plan = if (tooBig) prepared.copy(problems = prepared.problems + pick(lang,
-            ta = "₹1 கோடிக்கு மேல ஒரு entry போட முடியாது — சரியான தொகை சொல்லுங்க.",
-            tl = "₹1 crore-ku mela oru entry poda mudiyaadhu — sariyaana amount sollunga.",
-            en = "An entry can't be above ₹1 crore — please say the right amount.")) else prepared
+            ta = "₹99 கோடிக்கு மேல ஒரு entry போட முடியாது — சரியான தொகை சொல்லுங்க.",
+            tl = "₹99 crore-ku mela oru entry poda mudiyaadhu — sariyaana amount sollunga.",
+            en = "An entry can't be above ₹99 crore — please say the right amount.")) else prepared
         // The same entry as the one just saved (same person, amount and kind): said before Confirm — a second one only if meant.
         val repeat = conversationState.lastSaved?.takeIf { s -> conversationState.conversationTurn - s.turn <= 5 && s.kind == kind &&
             s.amount.compareTo(plan.amount) == 0 && samePerson(s.person, plan.partyName) }
@@ -7122,9 +7122,9 @@ class KaiAgent(
                 en = "Owner, you owe $who only $o; paying $a2 is $e more — it will be kept as advance. Add this?")
         } else if (tooBig) pick(lang,
             // "2 crore": read right, but above what one entry can hold — said plainly, never "Add pannalama?" with Confirm off.
-            ta = "ஓனர், ${KaiFormat.rupees(plan.amount.toDouble())} — ₹1 கோடிக்கு மேல ஒரு entry போட முடியாது. சரியான தொகை சொல்லுங்க; எதுவும் சேமிக்கல.",
-            tl = "Owner, ${KaiFormat.rupees(plan.amount.toDouble())} — ₹1 crore-ku mela oru entry poda mudiyaadhu. Sariyaana amount sollunga; edhuvum save pannala.",
-            en = "Owner, ${KaiFormat.rupees(plan.amount.toDouble())} — one entry can't be above ₹1 crore. Please say the right amount; nothing was saved.")
+            ta = "ஓனர், ${KaiFormat.rupees(plan.amount.toDouble())} — ₹99 கோடிக்கு மேல ஒரு entry போட முடியாது. சரியான தொகை சொல்லுங்க; எதுவும் சேமிக்கல.",
+            tl = "Owner, ${KaiFormat.rupees(plan.amount.toDouble())} — ₹99 crore-ku mela oru entry poda mudiyaadhu. Sariyaana amount sollunga; edhuvum save pannala.",
+            en = "Owner, ${KaiFormat.rupees(plan.amount.toDouble())} — one entry can't be above ₹99 crore. Please say the right amount; nothing was saved.")
         else pick(lang,
             ta = "நான் புரிஞ்சுகிட்டது இது ஓனர். சேர்க்கட்டுமா?",
             tl = "Owner, naan purinjukittadhu idhu. Add pannalama?",

@@ -1375,7 +1375,8 @@ class KaiOwnerSweepTest {
         // 5. safety
         conv("5 duplicate", listOf("Kumar 2000 kuduthan", "TAP", "Kumar 2000 kuduthan"), has("already", "ஏற்கனவே", "innoru", "இன்னொரு"))
         conv("5 balance change by chat", listOf("Kumar balance 3000 nu maathu"), none)
-        conv("5 huge amount", listOf("Kumar 50000000 kuduthan"), { t, s -> if (s.tools.saved.isEmpty() && t.last().card?.buttons?.none { it.action is KaiAction.ConfirmPlan && it.enabled } != false) null else "huge amount confirmable" })
+        // (the limit is ₹99 crore — owner, 21 Oct 2026; ₹5 crore is a real entry now)
+        conv("5 huge amount", listOf("Kumar 150 crore kuduthan"), { t, s -> if (s.tools.saved.isEmpty() && t.last().card?.buttons?.none { it.action is KaiAction.ConfirmPlan && it.enabled } != false) null else "huge amount confirmable" })
         conv("5 new person said", listOf("Suresh 2000 kuduthan"), has("pudhu", "new", "புது", "records-la illa", "இல்ல", "records-ல இல்ல"))
         // 6. quality
         conv("6 nonsense twice differs", listOf("asdf qwerty", "asdf qwerty"), { t, _ -> if (t[0].reply.text != t[1].reply.text) null else "same reply twice: ${t[1].reply.text}" })

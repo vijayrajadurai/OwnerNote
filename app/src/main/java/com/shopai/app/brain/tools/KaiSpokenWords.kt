@@ -227,7 +227,10 @@ object KaiSpokenWords {
         // money
         "பக்கி" to "pakki", "வச்சுட்டு" to "vachuttu", "வெச்சுட்டு" to "vachuttu", "போனான்" to "ponaan", "போனாங்க" to "ponaanga", "போயிட்டான்" to "poyitaan",
         "சொல்லிட்டு" to "sollitu", "போட்டுக்கோ" to "potukko", "பற்று" to "patru", "வச்சாங்க" to "vechaanga", "வெச்சாங்க" to "vechaanga", "வச்சான்" to "vechaan",
-        "பாதி" to "paadhi", "காசு" to "kaasu",
+        "பாதி" to "paadhi", "காசு" to "kaasu", "துட்டு" to "thuttu", "துட்ட" to "thuttu",
+        // "குடுத்துடேன்" — the mic's "I gave" with a soft d, as "குடுத்துட்டேன்" (owner, 21 Oct 2026: "kuduthuden" was read another way).
+        "குடுத்துடேன்" to "kuduthuten", "கொடுத்துடேன்" to "kuduthuten", "குடுத்துடான்" to "kuduthutaan", "கொடுத்துடான்" to "kuduthutaan",
+        "குடுத்துடாங்க" to "kuduthutaanga", "கொடுத்துடாங்க" to "kuduthutaanga",
         // expiry
         "முடியுற" to "mudiyura", "முடியப்போகுது" to "mudiyapogudhu", "நெருங்குது" to "nerungudhu", "கெட்டுப்" to "kettu", "போகும்" to "pogum",
         "தாண்டிடுச்சு" to "thaandiduchu", "தாண்டின" to "thaandina", "பெஸ்ட்" to "best", "பிஃபோர்" to "before", "பிபோர்" to "before",

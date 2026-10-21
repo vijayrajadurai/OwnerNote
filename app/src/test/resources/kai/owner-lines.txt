@@ -504,7 +504,20 @@ ENTRY  | Kumar ku 1 crore credit                           | CREDIT Kumar 100000
 ENTRY  | Ramesh 3 laksham kuduthan                         | IN Ramesh 300000
 ENTRY  | குமார் 1 லட்சத்து 50 ஆயிரம் குடுத்தான்               | IN Kumar 150000
 ENTRY  | செல்வத்துக்கு 2 லட்சம் கடன் குடுத்தேன்               | CREDIT Selvam 200000
-ASK    | Kumar ku 2 crore credit                           | ₹2,00,00,000
+ENTRY  | Kumar ku 2 crore credit                           | CREDIT Kumar 20000000
+# Up to ₹99 crore (owner, 21 Oct 2026: "1 crore la irunthu 99 crore varaikkum"); above it is said plainly, nothing saved.
+ENTRY  | Kumar ku 99 crore credit                          | CREDIT Kumar 990000000
+ASK    | Kumar ku 100 crore credit                         | ₹1,00,00,00,000;99
+
+# "kuduthuden" is "kuduthuten" typed with a soft d — the same entry (owner, 21 Oct 2026: one went to credit, the other to debit).
+ENTRY  | Kumar ku 2000 kuduthuden                          | CREDIT Kumar 2000
+ENTRY  | ABC Traders ku 3000 kuduthuden                    | OUT ABC Traders 3000
+ENTRY  | Ramesh 1500 kuduthudaan                           | IN Ramesh 1500
+# Who owes me — kaasu / panam / thuttu, asked and said.
+ASK    | enakku yaaru evlo thuttu tharanum                 | Kumar;Ramesh
+ASK    | yenakku yaru evlo kaasu tharanum                  | Kumar;Ramesh
+ENTRY  | Lakshmi enakku 2000 thuttu tharanum               | CREDIT Lakshmi 2000
+ENTRY  | Selvam 1500 panam tharanum                        | CREDIT Selvam 1500
 
 # A day's list is its report (owner, 21 Oct 2026: "today report" then "today list" asked "edha pathi sollureenga?").
 ASK    | innaiku list                                      | Daily Sales Note

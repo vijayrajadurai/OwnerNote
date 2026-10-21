@@ -29,7 +29,7 @@ object KaiMicForm {
         irundhu=இருந்து kaalai=காலை kaalaila=காலையில kadai=கடை kadan=கடன் kalichu=கழிச்சு kammiya=கம்மியா katti=கட்டி kattinan=கட்டினான்
         kattinen=கட்டினேன் kettupochu=கெட்டுப்போச்சு kg=கிலோ kitta=கிட்ட koduthen=கொடுத்தேன் kudhuthan=குடுத்தான் kudthan=குட்தான்
         kudukanum=குடுக்கணும் kudukkanum=குடுக்கணும் kudupanga=குடுப்பாங்க kuduthaan=குடுத்தான் kuduthaaru=குடுத்தாரு kuduthan=குடுத்தான்
-        kuduthanga=குடுத்தாங்க kuduthar=குடுத்தார் kuduthen=குடுத்தேன் kuduthutan=குடுத்துட்டான் kumar=குமார் la=ல lakh=லட்சம் lakhs=லட்சம் crore=கோடி lakshmi=லட்சுமி
+        kuduthanga=குடுத்தாங்க kuduthar=குடுத்தார் kuduthen=குடுத்தேன் kuduthuden=குடுத்துடேன் thuttu=துட்டு kuduthutan=குடுத்துட்டான் kumar=குமார் la=ல lakh=லட்சம் lakhs=லட்சம் crore=கோடி lakshmi=லட்சுமி
         late=லேட் list=லிஸ்ட் low=லோ lux=லக்ஸ் maal=மால் maasam=மாசம் masam=மாசம் maggi=மேகி manikku=மணிக்கு maniku=மணிக்கு moonu=மூணு moota=மூட்டை
         mothama=மொத்தமா move=மூவ் murugan=முருகன் muthu=முத்து naalai=நாளை naalaiku=நாளைக்கு naan=நான் neft=நெஃப்ட் nimisham=நிமிஷம்
         nyabagam=ஞாபகம் oda=ஓட oil=ஆயில் oru=ஒரு overdue=ஓவர்டியூ paduthu=படுத்து panam=பணம் panna=பண்ண pannanum=பண்ணணும்

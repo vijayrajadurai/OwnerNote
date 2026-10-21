@@ -258,6 +258,12 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
   "innaiku list", டுடே லிஸ்ட், and "list kudu" right after a report give the Daily Sales Note report with its PDF; "today report" is
   the same as "innaiku report" for every shop; a day with no note entry says the books' sales / purchase / expenses. Stock / customer /
   reminder lists are untouched. Test: `KaiDailySalesTest.todayReportThenTodayListSendsTheReport`.
+- One entry up to ₹99 crore (owner, 21 Oct 2026: "1 crore la irunthu 99 crore varaikkum"): `MAX_LEDGER_AMOUNT` in the app
+  (`util/PartyLedger.kt`, the Add Credit / Debit / bill screens and Kai) and the backend (`src/kai/numbers.ts`); above it Kai says so
+  with Confirm off. A 9-digit amount (990000000) is money; 10 digits with no commas is a phone number. Test: `PartyLedgerTest`,
+  `KaiOwnerSweepTest` principle 5 (₹150 crore), owner-lines.
+- "kuduthuden" / "koduthuden" / "kuduthudaan" (soft d) are "kuduthuten" / "kuduthutaan" (`KaiIntentWords`, mic: குடுத்துடேன்),
+  so both spellings give the same entry; "thuttu" / துட்டு is money like kaasu / panam. Test: owner-lines.
 - The voice / bill screen no longer has the "Your sentence" box (its "Kumar-ku 2000-ku tharanum" example) or the Parse button.
 - Customers: a small Import beside the title. More → "Pazhaiya kanakku import" reads another app's Customer / Supplier
   List PDF and adds people with opening balances on Confirm. No other app's name is shown anywhere.

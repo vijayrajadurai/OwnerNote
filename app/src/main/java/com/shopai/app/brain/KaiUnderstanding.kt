@@ -239,7 +239,8 @@ object KaiUnderstanding {
         var lastEnd = -1
         digitAmount.findAll(masked).forEach { m ->
             val digits = m.groupValues[1].replace(",", "")
-            if (digits.length >= 9) return@forEach // phone / account numbers
+            // A phone / account number (10 digits or more, no commas) is never money; "99,00,00,000" / "990000000" (99 crore) is.
+            if (digits.length >= 10 && !m.groupValues[1].contains(',') || digits.length > 12) return@forEach
             val value = digits.toDoubleOrNull() ?: return@forEach
             val scaleWord = scaleAfter.find(masked, m.range.last + 1)?.takeIf { it.range.first == m.range.last + 1 }
             val scale = when {

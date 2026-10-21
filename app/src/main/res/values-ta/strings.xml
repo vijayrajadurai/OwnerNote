@@ -274,7 +274,7 @@
     <string name="customer_name">வாடிக்கையாளர் பெயர்</string>
     <string name="supplier_name">சப்ளையர் பெயர்</string>
     <string name="amount_label">தொகை (₹)</string>
-    <string name="amount_max_one_crore">தொகை ₹1 கோடிக்கு மேல் இருக்கக்கூடாது.</string>
+    <string name="amount_max_one_crore">தொகை ₹99 கோடிக்கு மேல் இருக்கக்கூடாது.</string>
     <string name="note_optional">குறிப்பு — வேண்டுமானா</string>
     <string name="due_date_optional">கடைசி தேதி (வேண்டுமானா)</string>
     <string name="due_date_placeholder">தேதியைத் தேர்ந்தெடுக்க தட்டவும்</string>

@@ -46,9 +46,11 @@ class PartyLedgerTest {
     }
 
     @Test
-    fun exceedsMaxLedgerAmount_capsAtOneCrore() {
-        assertFalse(exceedsMaxLedgerAmount(10_000_000.0))
-        assertTrue(exceedsMaxLedgerAmount(10_000_001.0))
+    fun exceedsMaxLedgerAmount_capsAtNinetyNineCrore() {
+        // Owner, 21 Oct 2026: "1 crore la irunthu 99 crore varaikkum eduthukkanum".
+        assertFalse(exceedsMaxLedgerAmount(10_000_001.0))
+        assertFalse(exceedsMaxLedgerAmount(990_000_000.0))
+        assertTrue(exceedsMaxLedgerAmount(990_000_001.0))
         assertFalse(exceedsMaxLedgerAmount(1.0))
     }
 }
