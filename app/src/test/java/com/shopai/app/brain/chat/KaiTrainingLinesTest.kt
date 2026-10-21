@@ -250,6 +250,19 @@ class KaiTrainingLinesTest {
             assertTrue("$m: ${all(s.last)}", all(s.say(said("Kumar dhaan"))).contains("1,000"))
         }
         assertTrue(all(Shop().also { it.say("Ramesh anna evlo tharanum") }.tap { it == KaiAction.RelationPick(true) }).contains("700"))
+        // "aama" / "illa" — typed or as the mic writes them — answer it; "ok" answers neither and is asked again.
+        for ((answer, kumars) in listOf("aama" to true, "ஆமா" to true, "yes" to true, "illa" to false, "இல்ல" to false, "no" to false, "illa avanga akka" to false)) {
+            val s = Shop()
+            s.say("Kumar akka evlo tharanum")
+            val t = s.say(answer)
+            assertTrue("$answer → ${all(t)}", if (kumars) t.reply.text.contains("1,000") else Regex("thani kanakku illa|தனி கணக்கு இல்ல").containsMatchIn(t.reply.text))
+        }
+        for (ok in listOf("ok", "seri")) {
+            val s = Shop()
+            s.say("Kumar akka evlo tharanum")
+            assertTrue(ok, Regex("avare|vera aal").containsMatchIn(s.say(ok).reply.text))
+            assertTrue(ok, all(s.say("avare")).contains("1,000"))
+        }
         // A record of the whole name answers straight; a name alone is as before.
         assertTrue(all(Shop(extra = listOf(Party("c7", "Kumar Thambi", true, BigDecimal("2500")))).say("Kumar thambi evlo tharanum")).contains("2,500"))
         for (line in ways("Kumar evlo tharanum")) assertTrue(line, all(Shop().say(line)).contains("1,000"))

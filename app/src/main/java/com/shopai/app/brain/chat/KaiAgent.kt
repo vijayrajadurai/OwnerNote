@@ -3195,9 +3195,19 @@ class KaiAgent(
         val same = has("avare|avar\\s*dhaan|avan\\s*dhaan|aval\\s*dhaan|adhey|adhe|athe|same|dhaan|than|thaan|aama|ama|yes|correct|mariyadhai|respect|அவரே|அவர்\\s*தான்|அதே|தான்|ஆமா|ஆமாம்") ||
             has(Regex.escape(a.record.name.lowercase(Locale.ROOT))) && !relative
         val no = has("illa|illai|no|இல்ல|இல்லை")
+        // ("ok" / "seri" to an either-or question answers neither: asked again in short, the question kept)
+        val okOnly = Regex("""^(?:ok|okay|okey|seri|sari|hmm|ம்ம்|சரி|ஓகே)[\s.!]*$""").matches(t)
         return when {
             relative || no && !same -> relationPicked(a, false)
             same -> relationPicked(a, true)
+            okOnly -> {
+                relationAsk = a.copy(turn = conversationState.conversationTurn)
+                val n = a.record.name
+                say(a.lang, KaiMood.CLARIFY, "relation asked again",
+                    ta = "ஓனர், $n தானா, இல்ல $n-ஓட ${com.shopai.app.brain.tools.KaiRelations.inTamil(a.word)}-ஆ? “அவரே” இல்ல “வேற ஆள்”-ன்னு சொல்லுங்க.",
+                    tl = "Owner, $n dhaan-aa, illa $n-oda ${a.word}-aa? “avare” illa “vera aal”-nu sollunga.",
+                    en = "Owner, $n themself, or $n's ${a.word}? Say “same” or “someone else”.")
+            }
             else -> null
         }
     }
