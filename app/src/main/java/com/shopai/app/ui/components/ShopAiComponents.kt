@@ -308,7 +308,9 @@ fun BottomNavBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            BottomNavTab.entries.forEach { tab ->
+            // (Discover only for a business that buys and sells goods around it — owner's table, 21 Oct 2026)
+            val features = LocalFeatures.current
+            BottomNavTab.entries.filter { it != BottomNavTab.Discover || com.shopai.app.data.model.Feature.DISCOVER in features || it == active }.forEach { tab ->
                 val isActive = tab == active
                 val label = stringResource(tab.labelRes)
                 Row(

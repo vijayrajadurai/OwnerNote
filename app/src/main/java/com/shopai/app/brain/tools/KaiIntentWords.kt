@@ -114,6 +114,12 @@ object KaiIntentWords {
         r("""account\s*-?\s*(?:la|le|il)\s+(?:potukko|pottuko|pottukko|potuko|podu|podunga|eluthu|ezhudhu|vei|vai|serthuko|sethuko)|patru""") to "note pannu",
         // "Lakshmi 1000 varavu vechaanga": they paid in
         r("""(?:varavu|வரவு)\s+(?:vech|vach|pott)(?:aanga|anga|aan|an|aaru|aar|aru|ar|ittaan|itaan|ittaanga)""") to "kuduthaanga",
+        // "kuduthuden", "koduthuden", "kuduthiden": "kuduthuten" (I gave) typed with a soft d — the same entry (owner, 21 Oct 2026:
+        // "kuduthuten nu sonna credit la eduthukkuthu, kuduthuden nu sonna athu debit"); "kuduthudaan" (he gave) likewise.
+        r("""k[ou]duth?(?:u|i)dd?(?:en|een|aen)""") to "kuduthuten",
+        r("""k[ou]duth?(?:u|i)dd?(?:aanga|anga)""") to "kuduthutaanga",
+        r("""k[ou]duth?(?:u|i)dd?(?:aan|an)""") to "kuduthutaan",
+        r("""k[ou]duth?(?:u|i)dd?(?:aaru|aar|aru|ar)""") to "kuduthutaar",
         // "adaichuttaan", "katti mudichaan": paid it off
         r("""adai?ch(?:u|i)tt?(?:aan|an|aanga|anga|aaru|ar)|katti\s*mudich(?:aan|an|aanga|anga|aaru)""") to "kuduthaan",
         // "saraku kadanukku eduthen": bought on credit from a supplier

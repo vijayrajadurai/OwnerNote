@@ -40,6 +40,21 @@ class UserPreferencesStore(context: Context) {
     private val languageKey = stringPreferencesKey("app_language")
     private val themeKey = stringPreferencesKey("app_theme")
     private val userGuideCompletedKey = booleanPreferencesKey("user_guide_completed")
+    private val showAllFeaturesKey = booleanPreferencesKey("show_all_features")
+
+    /** The owner asked to see every feature, whatever the business type (Settings → "Show all features"). */
+    val showAllFeaturesFlow: Flow<Boolean> = appContext.userPrefsDataStore.data.map { prefs -> prefs[showAllFeaturesKey] == true }
+
+    /** The day ("2026-10-21") the Daily Cash Note last asked for the morning kallapetti — asked once a day, never required. */
+    private val kallapettiAskedKey = stringPreferencesKey("kallapetti_asked_day")
+    val kallapettiAskedDayFlow: Flow<String?> = appContext.userPrefsDataStore.data.map { prefs -> prefs[kallapettiAskedKey] }
+    suspend fun setKallapettiAsked(day: String) {
+        appContext.userPrefsDataStore.edit { prefs -> prefs[kallapettiAskedKey] = day }
+    }
+
+    suspend fun setShowAllFeatures(on: Boolean) {
+        appContext.userPrefsDataStore.edit { prefs -> prefs[showAllFeaturesKey] = on }
+    }
 
     val languageFlow: Flow<AppLanguage> = appContext.userPrefsDataStore.data.map { prefs ->
         AppLanguage.fromTag(prefs[languageKey])

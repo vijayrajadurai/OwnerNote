@@ -29,7 +29,7 @@ object KaiMicForm {
         irundhu=இருந்து kaalai=காலை kaalaila=காலையில kadai=கடை kadan=கடன் kalichu=கழிச்சு kammiya=கம்மியா katti=கட்டி kattinan=கட்டினான்
         kattinen=கட்டினேன் kettupochu=கெட்டுப்போச்சு kg=கிலோ kitta=கிட்ட koduthen=கொடுத்தேன் kudhuthan=குடுத்தான் kudthan=குட்தான்
         kudukanum=குடுக்கணும் kudukkanum=குடுக்கணும் kudupanga=குடுப்பாங்க kuduthaan=குடுத்தான் kuduthaaru=குடுத்தாரு kuduthan=குடுத்தான்
-        kuduthanga=குடுத்தாங்க kuduthar=குடுத்தார் kuduthen=குடுத்தேன் kuduthutan=குடுத்துட்டான் kumar=குமார் la=ல lakshmi=லட்சுமி
+        kuduthanga=குடுத்தாங்க kuduthar=குடுத்தார் kuduthen=குடுத்தேன் kuduthuden=குடுத்துடேன் thuttu=துட்டு kuduthutan=குடுத்துட்டான் kumar=குமார் la=ல lakh=லட்சம் lakhs=லட்சம் crore=கோடி lakshmi=லட்சுமி
         late=லேட் list=லிஸ்ட் low=லோ lux=லக்ஸ் maal=மால் maasam=மாசம் masam=மாசம் maggi=மேகி manikku=மணிக்கு maniku=மணிக்கு moonu=மூணு moota=மூட்டை
         mothama=மொத்தமா move=மூவ் murugan=முருகன் muthu=முத்து naalai=நாளை naalaiku=நாளைக்கு naan=நான் neft=நெஃப்ட் nimisham=நிமிஷம்
         nyabagam=ஞாபகம் oda=ஓட oil=ஆயில் oru=ஒரு overdue=ஓவர்டியூ paduthu=படுத்து panam=பணம் panna=பண்ண pannanum=பண்ணணும்
@@ -64,7 +64,7 @@ object KaiMicForm {
         ithuvaraikum=இதுவரைக்கும் avlothan=அவ்ளோதான் nethu=நேத்து service=சர்வீஸ் facial=ஃபேஷியல்
         pathi=பத்தி porul=பொருள் kadaila=கடையில irukura=இருக்குற kudukal=குடுக்கல் vangal=வாங்கல் ama=ஆமா
         kadaiku=கடைக்கு saman=சாமான் saraku=சரக்கு vandhuruku=வந்திருக்கு pannalama=பண்ணலாமா avlo=அவ்ளோ
-        avanga=அவங்க peru=பேரு namba=நம்ம namma=நம்ம vangunan=வாங்குனான் seathuko=சேர்த்துக்கோ serthuko=சேர்த்துக்கோ vengayam=வெங்காயம்
+        avanga=அவங்க peru=பேரு namba=நம்ம namma=நம்ம vangunan=வாங்குனான் amma=அம்மா appa=அப்பா machan=மச்சான் macha=மச்சா maama=மாமா thangachi=தங்கச்சி paiyan=பையன் ponnu=பொண்ணு chithappa=சித்தப்பா athai=அத்தை vaanginaan=வாங்கினான் vaanginaanga=வாங்கினாங்க seathuko=சேர்த்துக்கோ serthuko=சேர்த்துக்கோ vengayam=வெங்காயம்
         azhugiduchu=அழுகிடுச்சு azhugipochu=அழுகிப்போச்சு vaadiduchu=வாடிடுச்சு thakkali=தக்காளி kariveppilai=கறிவேப்பிலை loose=லூஸ் packet=பாக்கெட் kilo=கிலோ arai=அரை
         small=ஸ்மால் medium=மீடியம் large=லார்ஜ் family=ஃபேமிலி chinna=சின்ன periya=பெரிய
         pottan=போட்டான் potten=போட்டேன் adachitan=அடைச்சிட்டான் transfer=டிரான்ஸ்ஃபர் pannan=பண்ணான் gram=கிராம் ratri=ராத்திரி poota=பூட்ட

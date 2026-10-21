@@ -60,7 +60,7 @@ object KaiScreenLinks {
 
     /** The picked categories as the owner reads them ("Grocery & FMCG, Pooja items"). */
     fun names(codes: List<String>, otherName: String?, tamil: Boolean): List<String> = codes.mapNotNull { code ->
-        if (code == BusinessCategories.OTHER) otherName?.takeIf { it.isNotBlank() } ?: BusinessCategories.of(code)?.let { if (tamil) it.ta else it.en }
+        if (code == BusinessCategories.OTHER || code == BusinessCategories.OTHER_SERVICES) otherName?.takeIf { it.isNotBlank() } ?: BusinessCategories.of(code)?.let { if (tamil) it.ta else it.en }
         else BusinessCategories.of(code)?.let { if (tamil) it.ta else it.en }
     }
 }

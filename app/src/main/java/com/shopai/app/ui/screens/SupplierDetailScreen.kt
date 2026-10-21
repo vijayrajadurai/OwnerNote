@@ -138,7 +138,8 @@ fun SupplierDetailScreen(
                     )
                     if (booksOn) {
                         androidx.compose.foundation.layout.Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            com.shopai.app.ui.components.OutlinedButton(onClick = { onNewBill(detail.id) }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.bill_new_purchase)) }
+                            // (bills only for a business that keeps them — a salon records its services by chat)
+                            if (com.shopai.app.ui.components.hasFeature(com.shopai.app.data.model.Feature.BILLING)) com.shopai.app.ui.components.OutlinedButton(onClick = { onNewBill(detail.id) }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.bill_new_purchase)) }
                             com.shopai.app.ui.components.OutlinedButton(onClick = { onPayment(detail.id) }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.bill_make_payment)) }
                         }
                     }

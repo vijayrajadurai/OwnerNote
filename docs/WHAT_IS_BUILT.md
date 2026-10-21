@@ -220,6 +220,59 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
   search (names, Tamil, what the shop sells) and "View all"; several can be picked; "Other Product Businesses" takes a
   typed name. Saved as `categories` + `otherCategoryName` (backend `claude/business-categories`); `category` stays the
   older single value Kai and the server read (a service pick wins, else the first). Test: `BusinessCategoriesTest`.
+- Business types decide the features (owner, 21 Oct 2026, Phase 1; UI not yet checked on a phone): Setup / Profile pick
+  Service / Retail / Wholesale-Distributor (several allowed; a hotel, tea shop or mobile shop with repairs is Service + Retail)
+  before the categories, and the categories offered follow (11 service shops added, with "Other Services" and its own name).
+  `data/model/BusinessTypes.kt` (`FeatureSet`) holds the table: Service → Daily Cash "Menu"; Retail → stock, bills, HSN,
+  group buying, local offers, Discover tab; Wholesale → stock, bills, HSN. Read through `LocalFeatures`
+  (`ui/components/FeatureGate.kt`) by Home quick links, the bottom tabs, More and the Daily Cash Note. A business set up
+  before is read from its categories; nothing known shows everything. Settings → "Show all features" brings every one back.
+  Saved as `businessTypes` (backend `claude/business-types`); the books' type follows (a service shop is PRODUCT_AND_SERVICE,
+  so Kai's service sales work and stock still moves). Test: `BusinessTypesTest`.
+  The party screens' "New bill" follows Billing too.
+- Kai by business type (owner, 21 Oct 2026, Phase 2; `KaiTools.businessKinds`, read from the business each line): a service
+  business's own service Kai has no word for ("blouse stitching 350", "alteration 100 panninom") is a Daily Sales draft
+  (`KaiDailySales.newService`); a wholesaler's sale with no buyer asks "யாருக்கு?" (a customer → their credit bill, "cash" → the cash
+  sale), a named one ("Murugan Stores-ku 10 box Colgate anuppinen") is a credit bill; "Kumar 2 box Colgate vaanginaan" is a sale to
+  Kumar for every shop; "report" offers the type's reports (a salon's sales by service, a wholesaler's overdue) and "indha vaara
+  report" is the Daily Sales week only for a service shop. A type not known decides nothing. Test: `KaiBusinessKindsTest`.
+- The owner's 1600-line training check (21 Oct 2026, PDF "OwnerNote Kai 1600 Tamil Checked Training Examples"), every line typed
+  and as the mic writes it: 68% → 99.9% (the two left ask a new product's details, as they should). Fixed: a service sale said in
+  full ("… service ku 250 vaanginom", "… service sale 7500 note pannu"); "Kai, …" said to Kai; "confirm illa stop" / "save pannadhe"
+  cancel (one confirmed before); "<product> stock la 2 box remove pannu" is a stock-out (was "forget a word"); a physical count is
+  never posted as a cash sale; "low stock ah iruka?" answers yes / no; "<product> last month sales" is its sales, not stock; a pack
+  total asked; "total 3000; 1800 kuduthachu; balance sollu"; "bill 3500; 450 mattum kuduthanga" (₹450 drafted); "last 7 days
+  expenses PDF"; "August report"; "5000 entry pannu" / "Selvam ku payment pannidu" / "5 box add pannu" asked; a supplier's "250
+  pending" is the owner's to pay; one person's PDF asked before it goes to another; send / reminder status said plainly.
+  Test: `KaiTrainingLinesTest` and owner-lines.
+- A typed name is never another person by its consonants alone (owner's phone, 21 Oct 2026: "kens 2000 tharanum" with "கணேஷ்"
+  in the books became கணேஷ்): a one-syllable English word must share the Tamil name's opening vowel (`NameSound`); a books name in
+  Tamil read from English letters is shown with what was typed ("கணேஷ் (Ganesh)"); "Ganesh illa kens" moves the stated payment to
+  Kens and keeps that for the conversation. Test: `KaiTrainingLinesTest.aTypedNameIsNeverAnotherPerson…`, `NameSoundTest`.
+- Family / relation words after a name (owner, 21 Oct 2026: "Kumar thambi evlo tharanum" answered a record called "thambi";
+  "kumar akka" got Kumar's own balance): one list in `brain/tools/KaiRelations.kt` (thambi, anna, akka, thangachi, amma, appa,
+  machan / macha, maama, athai, chithappa, paiyan, ponnu, wife, friend… typed, as the mic writes them, in English). A question
+  about "<name> <relation>" with no record of that whole name asks once — that person (said respectfully) or their relative —
+  and keeps the pick for the conversation; the relative's answer says there is no account (never another person's money). Entries
+  keep their own question (`relationQuestion`, now on the same list). Test: `KaiTrainingLinesTest.aRelationAfterANameIsAskedNeverMerged`.
+- Daily Cash Note, kallapetti and Close day are optional (owner, 21 Oct 2026): the morning kallapetti is asked once a day
+  (Add / Skip, kept in `UserPreferencesStore.kallapettiAskedDay`) and never required — money in / out work without it; Close day
+  is an outlined "optional" button (an open day is still sent by itself the next day). Kai asks the kallapetti once at the first
+  sale; "skip" / "venam" / "illa" / வேணாம் goes on with the sale. Test: `KaiDailySalesTest.theKallapettiIsAskedOnceAndSkippingGoesOnWithTheSale`.
+- Lakh / crore in Kai (owner, 21 Oct 2026: "credit debit la lakhs and crore la sonna add agala" — "2 lakh" was ₹2): a number and its
+  scale word are one amount in `KaiUnderstanding.amountsIn` — lakh / lakhs / lak / lac / laksham, crore / cr / core (never a cable's
+  "2 core wire"), and the mic's லட்சம் / லட்சத்து / கோடி (`KaiSpokenWords`, never the name Lakshmi; லாக் is a lock); "1 lakh 50 thousand"
+  = ₹1,50,000. Over ₹1 crore is said plainly with Confirm off. Test: `KaiBrainTest.lakhAndCroreAreOneAmount…`, owner-lines.
+- A day's list is its report (owner, 21 Oct 2026: "today report" then "today list" asked "edha pathi sollureenga?"): "today list",
+  "innaiku list", டுடே லிஸ்ட், and "list kudu" right after a report give the Daily Sales Note report with its PDF; "today report" is
+  the same as "innaiku report" for every shop; a day with no note entry says the books' sales / purchase / expenses. Stock / customer /
+  reminder lists are untouched. Test: `KaiDailySalesTest.todayReportThenTodayListSendsTheReport`.
+- One entry up to ₹99 crore (owner, 21 Oct 2026: "1 crore la irunthu 99 crore varaikkum"): `MAX_LEDGER_AMOUNT` in the app
+  (`util/PartyLedger.kt`, the Add Credit / Debit / bill screens and Kai) and the backend (`src/kai/numbers.ts`); above it Kai says so
+  with Confirm off. A 9-digit amount (990000000) is money; 10 digits with no commas is a phone number. Test: `PartyLedgerTest`,
+  `KaiOwnerSweepTest` principle 5 (₹150 crore), owner-lines.
+- "kuduthuden" / "koduthuden" / "kuduthudaan" (soft d) are "kuduthuten" / "kuduthutaan" (`KaiIntentWords`, mic: குடுத்துடேன்),
+  so both spellings give the same entry; "thuttu" / துட்டு is money like kaasu / panam. Test: owner-lines.
 - The voice / bill screen no longer has the "Your sentence" box (its "Kumar-ku 2000-ku tharanum" example) or the Parse button.
 - Customers: a small Import beside the title. More → "Pazhaiya kanakku import" reads another app's Customer / Supplier
   List PDF and adds people with opening balances on Confirm. No other app's name is shown anywhere.

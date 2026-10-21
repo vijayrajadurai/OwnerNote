@@ -150,7 +150,7 @@ object KaiSpokenWords {
         "கோல்டு" to "gold", "தங்கம்" to "thangam", "பெட்ரோல்" to "petrol", "டீசல்" to "diesel", "டாலர்" to "dollar", "ரேட்" to "rate", "விலை" to "vilai",
         "ட்ரெயின்" to "train", "டிரெயின்" to "train", "ராசி" to "raasi", "பலன்" to "palan", "ரெசிபி" to "recipe",
         "ம்ம்" to "hmm", "ம்ம்ம்" to "hmm", "ஹ்ம்" to "hmm", "அய்யோ" to "ayyo", "ஐயோ" to "ayyo",
-        "வாங்குனேன்" to "vangunen", "வாங்குனான்" to "vangunan", "வாங்குனது" to "vangunadhu", "அனுப்பிச்சான்" to "anuppichan", "அனுப்பிச்சாரு" to "anuppichaaru",
+        "வாங்குனேன்" to "vangunen", "வாங்குனான்" to "vangunan", "வாங்கினான்" to "vaanginaan", "வாங்கினாரு" to "vaanginaaru", "வாங்கினாங்க" to "vaanginaanga", "வாங்குனது" to "vangunadhu", "அனுப்பிச்சான்" to "anuppichan", "அனுப்பிச்சாரு" to "anuppichaaru",
         "அனுப்பிச்சேன்" to "anuppichen", "தந்துட்டாங்க" to "thandhutaanga", "தந்துட்டாரு" to "thandhutaaru", "தராங்க" to "tharanga", "தர்றாங்க" to "tharraanga",
         "இறக்கினேன்" to "irakkinen", "இறக்கிட்டேன்" to "irakkitten", "பொட்டலம்" to "pottalam", "பொட்டலங்கள்" to "pottalangal", "பேக்" to "bag",
         "பேக்ஸ்" to "bags", "ஓவர்டியூ" to "overdue", "கஸ்டமர்ஸ்" to "customers", "சப்ளையர்ஸ்" to "suppliers", "எல்லா" to "ellaa", "எல்லாம்" to "ellam",
@@ -184,13 +184,15 @@ object KaiSpokenWords {
         "வாடகை" to "vaadagai", "கரண்ட்" to "current", "சேலரி" to "salary", "சம்பளம்" to "sambalam", "செட்டில்ட்" to "settled",
         "கேஷ்" to "cash", "கேஷா" to "cash", "ஆன்லைன்" to "online", "ஆன்லைன்ல" to "online la", "டிரான்ஸ்பர்" to "transfer", "ட்ரான்ஸ்ஃபர்" to "transfer",
         "கிரெடிட்" to "credit", "கிரெடிட்ல" to "credit la", "க்ரெடிட்" to "credit", "டெபிட்" to "debit", "உதார்" to "udhaar",
-        "பெண்டிங்" to "pending", "பேலன்ஸ்" to "balance", "லிஸ்ட்" to "list", "டோட்டல்" to "total", "டோட்டலா" to "total", "டோட்டல்ல" to "total la", "மொத்தத்துல" to "mothathula", "மொத்தம்" to "motham", "மொத்தமா" to "mothama",
+        "பெண்டிங்" to "pending", "பேலன்ஸ்" to "balance", "லிஸ்ட்" to "list",
+        // "2 லட்சம்", "1 லட்சத்து 50 ஆயிரம்", "1 கோடி" — the scale words, never the name Lakshmi (owner, 21 Oct 2026: lakh / crore by mic).
+        "லட்சம்" to "lakh", "லட்சத்து" to "lakh", "லட்ச" to "lakh", "கோடி" to "crore", "க்ரோர்" to "crore", "குரோர்" to "crore", "டோட்டல்" to "total", "டோட்டலா" to "total", "டோட்டல்ல" to "total la", "மொத்தத்துல" to "mothathula", "மொத்தம்" to "motham", "மொத்தமா" to "mothama",
         "டியூ" to "due", "டேட்" to "date", "தேதி" to "thethi", "வேண்டாம்" to "venam", "வேணாம்" to "venam", "எடுத்துடு" to "eduthudu", "எடுத்துடுங்க" to "eduthudunga", "வேணும்" to "venum",
         "கஸ்டமர்" to "customer", "சப்ளையர்" to "supplier", "ஓனர்" to "owner", "அண்ணா" to "anna", "அண்ணே" to "anna", "சார்" to "sir",
         "சரி" to "seri", "ஓகே" to "ok", "ஆமா" to "aama", "ஆமாம்" to "aama", "இல்ல" to "illa", "இல்லை" to "illa", "தெரியாது" to "theriyaadhu", "தெரியல" to "theriyala", "தெரியலை" to "theriyala", "சேவ்" to "save",
         "இப்போ" to "ippo", "இப்ப" to "ippa", "இப்பொழுது" to "ippo", "எப்போ" to "eppo", "எப்ப" to "eppa", "எப்படி" to "eppadi",
         "யார்" to "yaar", "யாரு" to "yaaru", "யாருக்கு" to "yaarukku", "யாருகிட்ட" to "yaarukitta", "யாரெல்லாம்" to "yaarellam",
-        "கொஞ்சம்" to "konjam", "ஃபுல்" to "full", "ஃபுல்லா" to "fulla", "எல்லாத்தையும்" to "ellathaiyum", "முடங்கியிருக்கு" to "mudangi irukku", "முடங்கி" to "mudangi", "விக்காத" to "vikkaadha", "மெதுவா" to "medhuva", "அறிக்கை" to "arikkai", "விக்குற" to "vikkura", "போகல" to "pogala", "கம்மி" to "kammi", "ல" to "la", "நோட்" to "note", "நோட்டு" to "note", "எழுது" to "ezhudhu", "எழுதிக்கோ" to "ezhudhiko", "எழுதிடு" to "ezhudhidu",
+        "கொஞ்சம்" to "konjam", "ஃபுல்" to "full", "ஃபுல்லா" to "fulla", "எல்லாத்தையும்" to "ellathaiyum", "முடங்கியிருக்கு" to "mudangi irukku", "முடங்கி" to "mudangi", "விக்காத" to "vikkaadha", "மெதுவா" to "medhuva", "அறிக்கை" to "arikkai", "விக்குற" to "vikkura", "போகல" to "pogala", "கம்மி" to "kammi", "ல" to "la", "நோட்" to "note", "சர்வீஸ்" to "service", "சர்வீஸுக்கு" to "service ku", "வாங்கினோம்" to "vaanginom", "ரிமூவ்" to "remove", "ரெக்கார்ட்" to "record", "பதிவு" to "pathivu", "அண்ணன்" to "annan", "அம்மா" to "amma", "அப்பா" to "appa", "மச்சான்" to "machan", "மச்சி" to "machi", "மாமா" to "maama", "மாமி" to "maami", "தங்கச்சி" to "thangachi", "பையன்" to "paiyan", "பொண்ணு" to "ponnu", "மகன்" to "magan", "மகள்" to "magal", "சித்தப்பா" to "chithappa", "சித்தி" to "chithi", "பெரியப்பா" to "periyappa", "பெரியம்மா" to "periyamma", "அத்தை" to "athai", "தாத்தா" to "thatha", "பாட்டி" to "paati", "மனைவி" to "manaivi", "பொண்டாட்டி" to "pondatti", "புருஷன்" to "purushan", "நண்பன்" to "nanban", "மாப்பிள்ளை" to "mappillai", "நோட்டு" to "note", "எழுது" to "ezhudhu", "எழுதிக்கோ" to "ezhudhiko", "எழுதிடு" to "ezhudhidu",
         "எழுதுங்க" to "ezhudhunga", "என்ட்ரி" to "entry", "அமௌண்ட்" to "amount", "அமவுண்ட்" to "amount", "அக்கவுண்ட்" to "account", "அக்கவுண்ட்ல" to "account la",
         "கூட" to "kooda", "ஸ்ரீ" to "sri", "குறைச்சிடு" to "kuraichidu", "மைனஸ்" to "minus", "கழி" to "kali", "லெஸ்" to "less", "இருந்தா" to "iruntha", "இருக்குற" to "irukura", "சேரு" to "seru", "சேத்துக்கோ" to "seathuko", "ஸ்டாக்க" to "stock ah", "போல" to "pola", "போகாத" to "pogaadha", "போவுது" to "pogudhu", "ஐட்டம்" to "item", "ஐட்டங்கள்" to "items", "நிக்குது" to "nikkudhu", "நிக்கிற" to "nikkira", "நிக்குற" to "nikkura", "விக்குது" to "vikkudhu", "ரிப்போர்ட்" to "report", "ரெஜிஸ்டர்" to "register", "ரெஜிஸ்டரு" to "register", "ரிஜிஸ்டர்" to "register", "வைஸ்" to "wise", "வாங்கினது" to "vaanginadhu", "வாங்குனது" to "vaangunadhu", "வாங்கியது" to "vaangiyadhu", "டீடெயில்ஸ்" to "details", "பர்ஃபார்மன்ஸ்" to "performance", "பெர்ஃபார்மன்ஸ்" to "performance", "எல்லாத்தயும்" to "ellathaiyum", "முழுசா" to "muzhusa", "ரூபாய்" to "rupees", "ரூபா" to "rupees",
         // ---- stock (what typed Tanglish already says) ----
@@ -225,7 +227,10 @@ object KaiSpokenWords {
         // money
         "பக்கி" to "pakki", "வச்சுட்டு" to "vachuttu", "வெச்சுட்டு" to "vachuttu", "போனான்" to "ponaan", "போனாங்க" to "ponaanga", "போயிட்டான்" to "poyitaan",
         "சொல்லிட்டு" to "sollitu", "போட்டுக்கோ" to "potukko", "பற்று" to "patru", "வச்சாங்க" to "vechaanga", "வெச்சாங்க" to "vechaanga", "வச்சான்" to "vechaan",
-        "பாதி" to "paadhi", "காசு" to "kaasu",
+        "பாதி" to "paadhi", "காசு" to "kaasu", "துட்டு" to "thuttu", "துட்ட" to "thuttu",
+        // "குடுத்துடேன்" — the mic's "I gave" with a soft d, as "குடுத்துட்டேன்" (owner, 21 Oct 2026: "kuduthuden" was read another way).
+        "குடுத்துடேன்" to "kuduthuten", "கொடுத்துடேன்" to "kuduthuten", "குடுத்துடான்" to "kuduthutaan", "கொடுத்துடான்" to "kuduthutaan",
+        "குடுத்துடாங்க" to "kuduthutaanga", "கொடுத்துடாங்க" to "kuduthutaanga",
         // expiry
         "முடியுற" to "mudiyura", "முடியப்போகுது" to "mudiyapogudhu", "நெருங்குது" to "nerungudhu", "கெட்டுப்" to "kettu", "போகும்" to "pogum",
         "தாண்டிடுச்சு" to "thaandiduchu", "தாண்டின" to "thaandina", "பெஸ்ட்" to "best", "பிஃபோர்" to "before", "பிபோர்" to "before",
@@ -268,11 +273,13 @@ object KaiSpokenWords {
     private val counts = mapOf("ஒரு" to 1, "ஒன்னு" to 1, "ரெண்டு" to 2, "இரண்டு" to 2, "மூணு" to 3, "மூன்று" to 3, "நாலு" to 4, "நான்கு" to 4,
         "அஞ்சு" to 5, "ஐந்து" to 5, "ஆறு" to 6, "ஏழு" to 7, "எட்டு" to 8, "ஒன்பது" to 9, "பத்து" to 10)
 
-    private fun amounts(raw: String): String = amountWords.replace(countThousand.replace(raw) { m -> "${counts.getValue(m.groupValues[1]) * 1000}" }) { m ->
+    private fun amounts(raw: String): String = countThousand.replace(raw) { m -> "${counts.getValue(m.groupValues[1]) * 1000}" }.let { said -> amountWords.replace(said) { m ->
         val (t, h, alone) = m.destructured
-        if (alone.isNotEmpty()) hundredsMap.getValue(alone).toString()
+        // "50 ஆயிரம்", "1 லட்சத்து 50 ஆயிரம்": the number said before it is its count — left for the amount reader (never "50 1000").
+        if (alone.isEmpty() && Regex("""\d\s*$""").containsMatchIn(said.substring(0, m.range.first))) m.value
+        else if (alone.isNotEmpty()) hundredsMap.getValue(alone).toString()
         else (thousandsMap.getValue(t) * 1000 + (hundredsMap[h] ?: 0)).toString()
-    }
+    } }
 
     /** English letters as ta-IN speech-to-text writes them ("பி" = B) — said before a number in a batch code ("பி 20" = B20). */
     private val codeLetters = mapOf("ஏ" to "A", "பி" to "B", "பீ" to "B", "சி" to "C", "சீ" to "C", "டி" to "D", "ஈ" to "E", "எஃப்" to "F", "ஜி" to "G",

@@ -19,6 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -31,7 +32,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.shopai.app.R
 import com.shopai.app.data.AppContainer
 import com.shopai.app.ui.components.BottomNavTab
+import com.shopai.app.ui.components.LocalFeatures
 import com.shopai.app.ui.kai.KaiContentCard
+import com.shopai.app.ui.more.MoreMenuCatalog
 import com.shopai.app.ui.more.MoreMenuItem
 import com.shopai.app.ui.more.MoreViewModel
 import com.shopai.app.ui.theme.OutfitFamily
@@ -56,6 +59,10 @@ fun MoreScreen(
         ),
     )
 
+    val features = LocalFeatures.current
+    val primaryItems = remember(features) { MoreMenuCatalog.shown(viewModel.primaryItems, features) }
+    val toolItems = remember(features) { MoreMenuCatalog.shown(viewModel.toolItems, features) }
+
     MainTabScaffold(activeTab = BottomNavTab.More, onNavigate = onNavigate) {
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
@@ -67,7 +74,7 @@ fun MoreScreen(
             item(span = { GridItemSpan(maxLineSpan) }) {
                 MoreHeroHeader()
             }
-            items(viewModel.primaryItems, key = { it.id }) { item ->
+            items(primaryItems, key = { it.id }) { item ->
                 MoreMenuItem(item = item, onClick = { onNavigate(item.route) })
             }
             item(span = { GridItemSpan(maxLineSpan) }) {
@@ -79,7 +86,7 @@ fun MoreScreen(
                     modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
                 )
             }
-            items(viewModel.toolItems, key = { it.id }) { item ->
+            items(toolItems, key = { it.id }) { item ->
                 MoreMenuItem(item = item, onClick = { onNavigate(item.route) })
             }
             item(span = { GridItemSpan(maxLineSpan) }) {

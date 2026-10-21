@@ -62,6 +62,13 @@ private const val HW_SAVED_KEY = "hw_saved_message"
 
 @Composable
 fun ShopAiApp(container: AppContainer) {
+    // The features this business sees by its type — Home, the tabs, More and the Daily Cash Note read them.
+    val features = com.shopai.app.ui.components.rememberFeatures(container)
+    androidx.compose.runtime.CompositionLocalProvider(com.shopai.app.ui.components.LocalFeatures provides features) { ShopAiAppContent(container) }
+}
+
+@Composable
+private fun ShopAiAppContent(container: AppContainer) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route

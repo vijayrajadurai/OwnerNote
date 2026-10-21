@@ -21,6 +21,25 @@ class KaiBrainTest {
     private fun record(text: String, known: List<String> = emptyList()) =
         KaiUnderstanding.understand(text, today, known) as KaiIntent.Record
 
+    // ------------------------------------------------ lakh / crore (owner, 21 Oct 2026: "lakhs and crore la sonna add agala")
+
+    @Test
+    fun lakhAndCroreAreOneAmountWordsNotInTheListAreNot() {
+        val want = mapOf(
+            "Kumar 2 lakh kuduthan" to listOf(200000.0), "Kumar 1.5 lakh credit" to listOf(150000.0), "Kumar 2 lakhs" to listOf(200000.0),
+            "Kumar 2 lak" to listOf(200000.0), "Kumar 3 laksham" to listOf(300000.0), "Kumar 1 crore" to listOf(10000000.0),
+            "Kumar 1 core credit" to listOf(10000000.0), "Kumar 1 lakh 50 thousand" to listOf(150000.0), "1 crore 20 lakh" to listOf(12000000.0),
+            "குமார் 2 லட்சம்" to listOf(200000.0), "1 லட்சத்து 50 ஆயிரம்" to listOf(150000.0), "குமார் 1 கோடி" to listOf(10000000.0),
+            "rendu lakh" to listOf(200000.0),
+            // Not a scale: a cable's core, a lamp, a lock, "crore" with no number, a span after the amount.
+            "2 core wire 10 meter" to listOf(2.0, 10.0), "Kumar 2 lamp kuduthan" to listOf(2.0), "2 லாக் வந்துச்சு" to listOf(2.0),
+            "crore la sonna add agala" to emptyList(), "Kumar 2 lakh 10 days" to listOf(200000.0, 10.0),
+            // Up to ₹99 crore in digits too; a 10-digit phone number is never money.
+            "Kumar 990000000 credit" to listOf(990000000.0), "Kumar 99,00,00,000" to listOf(990000000.0), "Kumar 9876543210" to emptyList(),
+        )
+        for ((text, amounts) in want) assertEquals(text, amounts, KaiUnderstanding.amountsIn(text, today))
+    }
+
     // ------------------------------------------------ one meaning, any language
 
     @Test

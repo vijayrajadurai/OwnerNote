@@ -44,6 +44,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.shopai.app.R
+import com.shopai.app.data.model.Feature
 import com.shopai.app.ui.theme.OutfitFamily
 import com.shopai.app.ui.theme.ShopAiThemeColors
 import com.shopai.app.ui.theme.Surface
@@ -60,6 +61,7 @@ fun HomeQuickLinks(
     onSeeAllClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    val features = LocalFeatures.current
     Column(modifier = modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -100,19 +102,19 @@ fun HomeQuickLinks(
             item {
                 HomeQuickLinkTile(stringResource(R.string.more_voice), Icons.Outlined.Mic, Color(0xFF0F7A5A), Color(0xFFDDF6EA), onSpeakClick)
             }
-            item {
+            if (Feature.GROUP_BUYING in features) item {
                 HomeQuickLinkTile(stringResource(R.string.more_group_buying), Icons.Outlined.Groups, Color(0xFF3D6BCC), Color(0xFFE8F1FC), onGroupBuyingClick)
             }
             item {
                 HomeQuickLinkTile(stringResource(R.string.more_reports), Icons.Outlined.BarChart, Color(0xFF7B5CDB), Color(0xFFF3ECFE), onReportsClick)
             }
-            item {
+            if (Feature.LOCAL_OFFERS in features) item {
                 HomeQuickLinkTile(stringResource(R.string.more_local_offers), Icons.Outlined.LocalOffer, Color(0xFFD9793C), Color(0xFFFFF3E6), onTodayOfferClick)
             }
             item {
                 HomeQuickLinkTile(stringResource(R.string.home_quick_loans), Icons.Outlined.AccountBalance, Color(0xFF1E8A5A), Color(0xFFE8F7EE), onLoansClick)
             }
-            item {
+            if (Feature.INVENTORY in features) item {
                 HomeQuickLinkTile(stringResource(R.string.home_quick_inventory), Icons.Outlined.Inventory2, Color(0xFF2A7A8C), Color(0xFFE4F4F6), onInventoryClick)
             }
         }

@@ -202,8 +202,12 @@ object KaiUnderstanding {
     private val tamilScales = mapOf(
         "ayiram" to 1_000, "aayiram" to 1_000, "ayirathu" to 1_000, "aayirathu" to 1_000, "ayram" to 1_000, "thousand" to 1_000,
         "latcham" to 100_000, "laksham" to 100_000, "lakh" to 100_000, "lakhs" to 100_000, "latsam" to 100_000,
-        "ஆயிரம்" to 1_000, "ஆயிரத்து" to 1_000, "லட்சம்" to 100_000,
+        "ஆயிரம்" to 1_000, "ஆயிரத்து" to 1_000, "லட்சம்" to 100_000, "லட்சத்து" to 100_000,
+        "lac" to 100_000, "lacs" to 100_000, "lak" to 100_000, "laksh" to 100_000,
+        "crore" to 10_000_000, "crores" to 10_000_000, "கோடி" to 10_000_000,
     )
+
+    private val countedScales = setOf("lac", "lacs", "lak", "laksh", "crore", "crores", "கோடி", "லட்சத்து")
 
     // "3000", "3,000", "₹3000", "3k", "3.5k", "3000rs", "3000/-". Not phone numbers.
     private val digitAmount = Regex("""(?<![\d.,/])(?:₹|rs\.?\s*)?(\d{1,3}(?:,\d{2,3})+|\d+(?:\.\d{1,2})?)\s*(k\b)?""", RegexOption.IGNORE_CASE)
@@ -228,16 +232,63 @@ object KaiUnderstanding {
         // adutha maasam 5 tharuvan" wasn't read — two amounts).
         masked = masked.replace(monthDay, " ")
         val found = mutableListOf<Double>()
+        // "2 lakh", "1.5 lakh", "1 crore", "2 லட்சம்", "50 ஆயிரம்": a number and its scale word are one amount; "1 lakh 50 thousand",
+        // "1 லட்சத்து 50 ஆயிரம்" — a smaller scaled part right after is added to it ("2 lakh 10 days" stays two numbers). (Owner,
+        // 21 Oct 2026: "lakh / crore la sonna add agala" — "2 lakh" was ₹2 and ₹1,00,000 at once.)
+        var last: Pair<Double, Double>? = null // the run's amount so far and its smallest scale
+        var lastEnd = -1
         digitAmount.findAll(masked).forEach { m ->
             val digits = m.groupValues[1].replace(",", "")
-            if (digits.length >= 9) return@forEach // phone / account numbers
+            // A phone / account number (10 digits or more, no commas) is never money; "99,00,00,000" / "990000000" (99 crore) is.
+            if (digits.length >= 10 && !m.groupValues[1].contains(',') || digits.length > 12) return@forEach
             val value = digits.toDoubleOrNull() ?: return@forEach
-            val amount = if (m.groupValues[2].isNotEmpty()) value * 1000 else value
-            if (amount > 0) found += amount
+            val scaleWord = scaleAfter.find(masked, m.range.last + 1)?.takeIf { it.range.first == m.range.last + 1 }
+            val scale = when {
+                m.groupValues[2].isNotEmpty() -> 1_000.0
+                scaleWord != null -> scaleOf(scaleWord.groupValues[1])
+                else -> 1.0
+            }
+            val amount = value * scale
+            val end = scaleWord?.range?.last ?: m.range.last
+            val run = last
+            if (run != null && run.second > 1.0 && scale > 1.0 && amount < run.second && runJoin.matches(masked.substring(lastEnd + 1, m.range.first))) {
+                found[found.lastIndex] = run.first + amount
+                last = (run.first + amount) to minOf(run.second, scale)
+            } else if (amount > 0) {
+                found += amount
+                last = amount to scale
+            }
+            lastEnd = end
         }
-        wordAmount(masked)?.let { found += it }
-        return found.distinct()
+        // The scaled numbers are read: their scale words are not counted again as "one lakh" by the word reader.
+        val wordsLeft = scaleAfter.findAll(masked).fold(masked) { acc, w ->
+            if (w.range.first > 0 && masked.substring(0, w.range.first).trimEnd().lastOrNull()?.isDigit() == true) acc.replaceRange(w.range, " ".repeat(w.value.length)) else acc
+        }
+        wordAmount(wordsLeft)?.let { found += it }
+        return found.map { Math.round(it * 100) / 100.0 }.distinct()
     }
+
+    /**
+     * The scale word right after a number: thousand / lakh / crore, as typed (lak, lac, laksh, laksham, core, cr …) and as the mic
+     * writes them (ஆயிரம், லட்சம், லட்சத்து, கோடி, க்ரோர்; never லாக் — a lock). A word not here is no scale ("2 lamp" stays 2).
+     */
+    private val scaleAfter = Regex(
+        """(?i)\s*-?\s*(thousands?|aayiram|ayiram|aayirathu|ayirathu|aayirathi|lakhs?|laks?h?s?|lacs?|lakhsh|laksham|lacham|latcham|latsam|latchham|""" +
+            """crores?|cro?re?s?|cr|karod|karodi|kodi|ஆயிரம்|ஆயிரத்து|லட்சம்|லட்சத்து|லட்ச|கோடி|க்ரோர்|குரோர்|""" +
+            // "1 core credit" (crore typed short) — never a cable's "2 core wire" / "3 core 2.5 sq mm".
+            """(?:cores?|கோர்)(?![\p{L}\p{M}])(?!\s*-?\s*(?:wire|cable|flex|copper|\d|mm|sq|வயர்|கேபிள்)))(?![\p{L}\p{M}])""",
+    )
+
+    private fun scaleOf(word: String): Double = word.lowercase(Locale.ROOT).let { w ->
+        when {
+            w.startsWith("th") || w.startsWith("aa") || w.startsWith("ay") || w.startsWith("ஆ") -> 1_000.0
+            w.startsWith("c") || w.startsWith("k") || w.startsWith("கோ") || w.startsWith("க்ர") || w.startsWith("குர") -> 10_000_000.0
+            else -> 100_000.0
+        }
+    }
+
+    /** What may stand between the parts of one amount: "1 lakh 50 thousand", "1 lakh-um 50 aayiram", "1 crore and 20 lakh". */
+    private val runJoin = Regex("""(?i)[\s-]*(?:(?:um|and|matrum|மற்றும்)[\s-]*)?""")
 
     // "moonu ayiram", "rendu ayirathu anjooru", "three thousand five hundred".
     private fun wordAmount(text: String): Double? {
@@ -250,6 +301,8 @@ object KaiUnderstanding {
             when {
                 t in tamilUnits -> { current += tamilUnits.getValue(t); saw = true }
                 t in tamilHundreds -> { current += tamilHundreds.getValue(t); saw = true }
+                // "lac" / "crore" / "கோடி" with no number before it is no amount ("crore la sonna"); "lakh" alone stays one lakh.
+                t in tamilScales && current == 0L && t in countedScales -> if (saw) break
                 t in tamilScales -> {
                     total += (if (current == 0L) 1 else current) * tamilScales.getValue(t)
                     current = 0

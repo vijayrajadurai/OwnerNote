@@ -36,8 +36,12 @@ class BusinessCategoriesTest {
         }
         // The cards: the owner's first nine.
         assertEquals(owner40.take(9), BusinessCategories.popular.map { it.en })
-        // A hotel and a salon can still pick themselves (the app's Daily Sales by chat serves them).
-        assertEquals(listOf("RESTAURANT_FOOD", "BEAUTY_SALON"), BusinessCategories.all.filter { it.service }.map { it.legacy })
+        // A hotel and a salon can still pick themselves (the app's Daily Sales by chat serves them); the other service shops
+        // (owner, 21 Oct 2026: business types) are OTHER to the server, ending with "Other Services".
+        val services = BusinessCategories.all.filter { it.service }
+        assertEquals(listOf("RESTAURANT_FOOD", "BEAUTY_SALON"), services.take(2).map { it.legacy })
+        assertTrue(services.drop(2).all { it.legacy == "OTHER" })
+        assertEquals(BusinessCategories.OTHER_SERVICES, services.last().code)
     }
 
     @Test fun searchFindsByNameTamilOrWhatTheShopSells() {
@@ -58,6 +62,9 @@ class BusinessCategoriesTest {
         assertEquals("FOOTWEAR", BusinessCategories.legacyFor(listOf("FOOTWEAR", "BAKERY_CONFECTIONERY")))
         // A tea shop that also sells snacks packets: Kai's hotel sales need RESTAURANT_FOOD.
         assertEquals("RESTAURANT_FOOD", BusinessCategories.legacyFor(listOf("GROCERY_FMCG", "HOTEL_FOOD_SERVICE")))
+        // A mobile shop with repairs keeps its own (repairs are OTHER to the server); a tailor alone is OTHER.
+        assertEquals("MOBILE_ACCESSORIES", BusinessCategories.legacyFor(listOf("MOBILE_REPAIR", "ELECTRONICS_MOBILES")))
+        assertEquals("OTHER", BusinessCategories.legacyFor(listOf("TAILORING_BOUTIQUE")))
         // Nothing known picked: OTHER, never another shop's category.
         assertEquals("OTHER", BusinessCategories.legacyFor(listOf("NOT_A_CODE")))
         assertEquals("OTHER", BusinessCategories.legacyFor(emptyList()))
@@ -69,6 +76,11 @@ class BusinessCategoriesTest {
         assertFalse(BusinessCategories.complete(listOf("FOOTWEAR", BusinessCategories.OTHER), " "))
         assertFalse(BusinessCategories.complete(listOf(BusinessCategories.OTHER), "a"))
         assertTrue(BusinessCategories.complete(listOf(BusinessCategories.OTHER), "Pooja items"))
+        // "Other Services" too (a service shop's own kind).
+        assertFalse(BusinessCategories.complete(listOf(BusinessCategories.OTHER_SERVICES), ""))
+        assertTrue(BusinessCategories.complete(listOf(BusinessCategories.OTHER_SERVICES), "Pest control"))
+        assertEquals(BusinessCategories.OTHER_SERVICES, BusinessCategories.namedOther(listOf("GYM_FITNESS", BusinessCategories.OTHER_SERVICES)))
+        assertNull(BusinessCategories.namedOther(listOf("GYM_FITNESS")))
     }
 
     @Test fun aBusinessSetUpBeforeIsReadIntoTheList() {

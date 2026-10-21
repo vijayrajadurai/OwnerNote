@@ -62,7 +62,7 @@ class KaiDailySalesTest {
         override suspend fun setCashOpening(day: LocalDate, amount: BigDecimal): ActionOutcome { note.opening[day] = amount; return ActionOutcome.Done("kallapetti", amount) }
         override suspend fun addCashSale(day: LocalDate, amount: BigDecimal, upi: Boolean, note: String): ActionOutcome {
             if (day in this.note.closed) return ActionOutcome.Failed("Day already submitted")
-            if (this.note.opening[day] == null) return ActionOutcome.Failed("Set kallapetti amount first")
+            // (the kallapetti is optional — owner, 21 Oct 2026 — as in DailyCashRepository)
             this.note.entries += Note.Entry(day, amount, upi, note)
             return ActionOutcome.Done("cash-${this.note.entries.size}", amount)
         }
@@ -93,6 +93,29 @@ class KaiDailySalesTest {
 
     /** [typed] and, when the mic would write it otherwise, the same line as the mic writes it. */
     private fun bothWays(typed: String): List<String> = listOfNotNull(typed, KaiMicForm.of(typed)?.takeIf { it != typed })
+
+    // ------------------------------------------------------------ the kallapetti: asked, never required (owner, 21 Oct 2026)
+
+    @Test fun theKallapettiIsAskedOnceAndSkippingGoesOnWithTheSale() {
+        for (skip in listOf("skip", "venam", "illa", "வேணாம்", "ஸ்கிப்")) {
+            val s = Shop()
+            s.say("oru hair cutting 150")
+            val asked = s.last!!
+            assertTrue("$skip: asked → ${all(asked)}", all(asked).contains("Kallapetti", ignoreCase = true) || all(asked).contains("கல்லாப்பெட்டி"))
+            val draft = s.say(skip)
+            assertTrue("$skip: the sale goes on → ${all(draft)}", draft.card?.buttons?.any { it.action is KaiAction.ConfirmSale } == true)
+            s.confirm()
+            assertTrue("$skip: saved without a kallapetti", s.note.entries.size == 1 && s.note.opening.isEmpty())
+            // Not asked again today: the next sale is a draft straight away.
+            val next = s.say("oru hair cutting")
+            assertTrue("$skip: not asked again → ${all(next)}", next.card?.buttons?.any { it.action is KaiAction.ConfirmSale } == true)
+        }
+        // "cancel" still drops the sale.
+        val c = Shop()
+        c.say("oru hair cutting 150")
+        c.say("cancel")
+        assertTrue(c.note.entries.isEmpty())
+    }
 
     // ------------------------------------------------------------ a first sale: the price once, the opening once, Confirm
 
@@ -172,6 +195,30 @@ class KaiDailySalesTest {
         assertEquals(KaiAction.ShareCashNote(yesterday), pdf.card?.buttons?.firstOrNull()?.action)
         val tamilPdf = s.say("இன்னைக்கு சேல்ஸ் பிடிஎஃப் குடு")
         assertTrue(all(tamilPdf), all(tamilPdf).contains("PDF"))
+    }
+
+    /** Owner, 21 Oct 2026: "today report" then "today list" got "edha pathi sollureenga?" — a list of the day is its report and PDF. */
+    @Test fun todayReportThenTodayListSendsTheReport() {
+        for (services in listOf(true, false)) {
+            val s = Shop(services = services)
+            s.note.entries += Note.Entry(today, BigDecimal("230"), false, "Hair cutting ×1 ₹150 · Shaving ×1 ₹80")
+            for (line in listOf("today report", "today list", "innaiku list", "டுடே லிஸ்ட்", "இன்னைக்கு லிஸ்ட்")) {
+                val t = s.say(line)
+                assertEquals("$services $line → ${all(t)}", KaiAction.ShareCashNote(today), t.card?.buttons?.firstOrNull()?.action)
+            }
+            // Right after the report, "list kudu" / "லிஸ்ட் குடு" is that report again.
+            for (line in bothWays("list kudu")) {
+                s.say("nethu report")
+                val t = s.say(line)
+                assertTrue("$services $line → ${all(t)}", all(t).contains("Nethu") || all(t).contains("நேத்து"))
+            }
+        }
+        // Never another list, and "list" alone with no report shown is asked about.
+        val s = Shop()
+        for (line in listOf("stock list", "reminder list", "list")) {
+            val t = s.say(line)
+            assertTrue("$line → ${all(t)}", t.card?.buttons?.none { it.action is KaiAction.ShareCashNote } != false)
+        }
     }
 
     @Test fun thatsAllForTodayClosesTheDayOnlyOnConfirm() {

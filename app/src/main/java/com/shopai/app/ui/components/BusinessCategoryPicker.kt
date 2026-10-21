@@ -45,7 +45,8 @@ import com.shopai.app.ui.theme.ShopAiThemeColors
 /**
  * The owner's business categories (owner, 20 Oct 2026): the 9 popular ones as cards, a search over all of them (names
  * and what they sell), "View all categories" for the full list, several picks allowed, and a name for "Other Product
- * Businesses". [selected] holds [BusinessCategories] codes in the order picked.
+ * Businesses". [selected] holds [BusinessCategories] codes in the order picked. [allowed] is the categories the business's
+ * types pick from (a salon sees the service shops, a retailer the product businesses — [com.shopai.app.data.model.FeatureSet.categoriesFor]).
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -55,17 +56,20 @@ fun BusinessCategoryPicker(
     onSelectedChange: (List<String>) -> Unit,
     onOtherNameChange: (String) -> Unit,
     modifier: Modifier = Modifier,
+    allowed: List<BusinessCategories.Category> = BusinessCategories.all,
 ) {
     val tamil = LocalConfiguration.current.locales[0].language == "ta"
     var query by remember { mutableStateOf("") }
     var showAll by remember { mutableStateOf(false) }
     fun toggle(code: String) = onSelectedChange(if (code in selected) selected - code else selected + code)
     fun name(c: BusinessCategories.Category) = if (tamil) c.ta else c.en
+    val allowedCodes = remember(allowed) { allowed.map { it.code }.toSet() }
+    val other = BusinessCategories.otherFor(allowed)
 
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(stringResource(R.string.business_category_many), style = MaterialTheme.typography.bodySmall, color = ShopAiThemeColors.onSurfaceVariant)
         // 3 × 3 cards of the popular categories.
-        BusinessCategories.popular.chunked(3).forEach { row ->
+        BusinessCategories.popularFor(allowed).chunked(3).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 row.forEach { c -> CategoryCard(c.icon, name(c), c.code in selected, Modifier.weight(1f)) { toggle(c.code) } }
             }
@@ -77,11 +81,11 @@ fun BusinessCategoryPicker(
             placeholder = stringResource(R.string.business_category_search_hint),
         )
         if (query.isNotBlank()) {
-            val hits = BusinessCategories.search(query)
+            val hits = BusinessCategories.search(query).filter { it.code in allowedCodes }
             if (hits.isEmpty()) {
                 Text(stringResource(R.string.business_category_none_found), style = MaterialTheme.typography.bodyMedium, color = ShopAiThemeColors.onSurfaceVariant)
-                CategoryRow(BusinessCategories.of(BusinessCategories.OTHER)!!, tamil, BusinessCategories.OTHER in selected) {
-                    if (BusinessCategories.OTHER !in selected) onSelectedChange(selected + BusinessCategories.OTHER)
+                CategoryRow(BusinessCategories.of(other)!!, tamil, other in selected) {
+                    if (other !in selected) onSelectedChange(selected + other)
                     if (otherName.isBlank()) onOtherNameChange(query.trim())
                     query = ""
                 }
@@ -90,7 +94,7 @@ fun BusinessCategoryPicker(
             }
         }
         OutlinedButton(onClick = { showAll = true }, modifier = Modifier.fillMaxWidth()) {
-            Text(stringResource(R.string.business_category_view_all, BusinessCategories.all.size))
+            Text(stringResource(R.string.business_category_view_all, allowed.size))
         }
         // Every pick (cards, search or the full list) shown together; tap one to take it off.
         if (selected.isNotEmpty()) {
@@ -100,7 +104,7 @@ fun BusinessCategoryPicker(
                 selected.mapNotNull(BusinessCategories::of).forEach { c -> CategoryChip(label = "${c.icon} ${name(c)}  ✕", selected = true, onClick = { toggle(c.code) }) }
             }
         }
-        if (BusinessCategories.OTHER in selected) {
+        if (BusinessCategories.namedOther(selected) != null) {
             ShopTextField(
                 label = stringResource(R.string.business_category_other_name),
                 value = otherName,
@@ -112,13 +116,13 @@ fun BusinessCategoryPicker(
     }
 
     if (showAll) {
-        AllCategoriesDialog(selected, tamil, onToggle = ::toggle, onDone = { showAll = false })
+        AllCategoriesDialog(selected, allowed, tamil, onToggle = ::toggle, onDone = { showAll = false })
     }
 }
 
 /** The full list: product businesses, then service shops, with its own search; the picks carry over as they are made. */
 @Composable
-private fun AllCategoriesDialog(selected: List<String>, tamil: Boolean, onToggle: (String) -> Unit, onDone: () -> Unit) {
+private fun AllCategoriesDialog(selected: List<String>, allowed: List<BusinessCategories.Category>, tamil: Boolean, onToggle: (String) -> Unit, onDone: () -> Unit) {
     var query by remember { mutableStateOf("") }
     Dialog(onDismissRequest = onDone, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Column(
@@ -135,7 +139,7 @@ private fun AllCategoriesDialog(selected: List<String>, tamil: Boolean, onToggle
                 onValueChange = { query = it },
                 placeholder = stringResource(R.string.business_category_search_hint),
             )
-            val shown = if (query.isBlank()) BusinessCategories.all else BusinessCategories.search(query)
+            val shown = if (query.isBlank()) allowed else BusinessCategories.search(query).filter { it in allowed }
             Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(top = 8.dp)) {
                 val (products, services) = shown.partition { !it.service }
                 products.forEach { c -> CategoryRow(c, tamil, c.code in selected) { onToggle(c.code) } }

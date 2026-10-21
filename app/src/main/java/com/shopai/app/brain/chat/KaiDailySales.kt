@@ -108,8 +108,16 @@ class KaiDailySales(
     private val dayClose = Regex("""(?i)(?<![\p{L}])(day\s*close|close\s*the\s*day|close\s*day|kadai\s*close|shop\s*close|sales\s*close|note\s*close|innaikku\s*close|innaiku\s*close|close\s*pannidu|close\s*pannu|close\s*panniru|mudinjiduchu|mudinjuduchu|mudinjiruchu|mudichitten|mudichiten)(?![\p{L}])|டே\s*க்ளோஸ்|கடை\s*க்ளோஸ்|க்ளோஸ்\s*பண்ணு|முடிஞ்சிடுச்சு|முடிஞ்சுடுச்சு""")
     private val thatsAll = Regex("""(?i)(?<![\p{L}])(avlo\s*dhaan|avlodhaan|avlothan|avlo\s*than|avlo\s*thaan|avlodhan|avvalavu\s*(?:dhaan|thaan|than)|that'?s\s*all)(?![\p{L}])|அவ்வளவுதான்|அவ்வளவு\s*தான்|அவ்ளோதான்|அவ்ளோ\s*தான்""")
     private val todayWord = Regex("""(?i)(?<![\p{L}])(innaikku|innaiku|inniki|inniku|innikku|today|indru|innaikkuu)(?![\p{L}])|இன்னைக்கு|இன்று""")
+    /** "list", "lisht", "pattiyal", "லிஸ்ட்", "பட்டியல்": a list asked for. */
+    private val listWord = Regex("""(?i)(?<![\p{L}])(list|lisht|lis|pattiyal|pattial)(?![\p{L}])|லிஸ்ட்|பட்டியல்""")
+    /** A list that is not the day's report: reminders, products, a shopping list. */
+    private val notDayList = Regex("""(?i)(?<![\p{L}])(remind\p{L}*|ninaivu\p{L}*|todo|to-do|items?|products?|porul\p{L}*|saamaan|saman|shopping|vaanga|menu|rate|price|service)(?![\p{L}])|ரிமைண்ட்|நினைவூட்ட|பொருள்|சாமான்|மெனு""")
+    /** The last report shown (from, to, when): "list kudu" right after it is that report again. */
+    private var lastReport: ShownReport? = null
+    private data class ShownReport(val from: LocalDate, val to: LocalDate, val kind: ChatPeriod.Kind?, val at: LocalDateTime)
+
     private val pdfWord = Regex("""(?i)(?<![\p{L}])(pdf|report|share|anuppu|whatsapp)(?![\p{L}])|பிடிஎஃப்|ரிப்போர்ட்|வாட்ஸ்அப்""")
-    private val noteWord = Regex("""(?i)(?<![\p{L}])(sales|sale|daily|note|cash\s*note|sales\s*note|day|innaikku|innaiku|inniki|nethu|vyabaram|kanakku)(?![\p{L}])|சேல்ஸ்|இன்னைக்கு|நேத்து""")
+    private val noteWord = Regex("""(?i)(?<![\p{L}])(sales|sale|daily|note|cash\s*note|sales\s*note|day|innaikku|innaiku|inniki|today|indru|nethu|yesterday|vyabaram|kanakku)(?![\p{L}])|சேல்ஸ்|இன்னைக்கு|இன்று|நேத்து""")
     private val stockAsk = Regex("""(?i)(?<![\p{L}])(stock|iruppu|irupu|irukku|iruku|kaila|kaiyila|left)(?![\p{L}])|ஸ்டாக்|இருப்பு|இருக்கு|கையில""")
     private val rateWord = Regex("""(?i)(?<![\p{L}])(rate|price|vilai|vilaiya|vela|charge|charges|amount)(?![\p{L}])|ரேட்|விலை""")
     private val changeWord = Regex("""(?i)(?<![\p{L}])(maathu|mathu|maathidu|change|ippo|ini|inimel|update|vachuko|vechuko|set)(?![\p{L}])|மாத்து|இனி|இப்போ""")
@@ -173,7 +181,13 @@ class KaiDailySales(
                 next(d, lang)
             }
             is OpeningAsked -> {
-                if (no.matches(text) || cancelWord.containsMatchIn(text) && amountsIn(text).isEmpty()) { waiting = null; return dropped(lang) }
+                // (the kallapetti is asked, never required — owner, 21 Oct 2026: "skip" / "venam" / "illa" goes on with the sale, and it is
+                // not asked again today; only "cancel" drops the sale)
+                if (Regex("""(?i)(?<![\p{L}])cancel(?![\p{L}])|கேன்சல்""").containsMatchIn(text) && amountsIn(text).isEmpty()) { waiting = null; return dropped(lang) }
+                if (no.matches(text) || skipOpening.containsMatchIn(text) && amountsIn(text).isEmpty()) {
+                    openingSkipped = now().toLocalDate()
+                    return next(w.draft.copy(needsOpening = false), lang)
+                }
                 val a = amountsIn(text).singleOrNull()?.takeIf { it.signum() >= 0 } ?: run {
                     if (text.split(Regex("""\s+""")).size <= 3) return askOpening(w.draft, lang, again = true)
                     waiting = null; return null
@@ -267,10 +281,23 @@ class KaiDailySales(
         val spanAsked = if (dayAsked == null) spanOf(text, people, today) else null
 
         // The PDF: "innaikku sales pdf kudu", "nethu report", "Oct 10 daily note pdf", "5th report PDF venum", "indha maasam sales PDF".
+        // (a shop that picked no Service: "indha vaara report" is its business's week, not the Daily Sales Note's — owner, 21 Oct 2026)
+        val noServices = runCatching { tools.businessKinds() }.getOrNull()?.let { com.shopai.app.data.model.BusinessKind.SERVICE !in it } == true
         if (pdfWord.containsMatchIn(text) && !namesPerson && Regex("""(?i)pdf|report|ரிப்போர்ட்|பிடிஎஃப்""").containsMatchIn(text) &&
-            (noteWord.containsMatchIn(text) || (dayAsked != null || spanAsked != null) && !otherReport.containsMatchIn(text))) {
+            (noteWord.containsMatchIn(text) || !noServices && (dayAsked != null || spanAsked != null) && !otherReport.containsMatchIn(text))) {
             spanAsked?.let { (from, to, kind) -> return rangePdfTurn(from, to, kind, lang) }
             return pdfTurn(dayAsked ?: today, lang)
+        }
+        // "today list", "innaiku list", "list kudu" — the day's report again, with its PDF (owner, 21 Oct 2026: "today report" then "today
+        // list" got "edha pathi sollureenga?" and no report). Only with a day said, or right after a report; never a stock / customer /
+        // reminder list, nor a person's.
+        val shown = lastReport?.takeIf { java.time.Duration.between(it.at, now()).toMinutes() in 0..10 }
+        if (listWord.containsMatchIn(text) && !namesPerson && !otherReport.containsMatchIn(text) && !notDayList.containsMatchIn(text) &&
+            text.split(Regex("""\s+""")).size <= 5 &&
+            (shown != null || noteWord.containsMatchIn(text) || !noServices && (dayAsked != null || spanAsked != null))) {
+            spanAsked?.let { (from, to, kind) -> return rangePdfTurn(from, to, kind, lang) }
+            if (dayAsked == null && !todayWord.containsMatchIn(text) && shown?.kind != null) return rangePdfTurn(shown.from, shown.to, shown.kind, lang)
+            return pdfTurn(dayAsked ?: if (todayWord.containsMatchIn(text)) today else shown?.from ?: today, lang)
         }
 
         // The day close: "innaikku avlothan", "day close pannu", "கடை க்ளோஸ்".
@@ -314,7 +341,9 @@ class KaiDailySales(
 
         // A sale — never a line about what Kai doesn't do ("biryani recipe sollu").
         if (namesPerson || KaiConversationCare.beyondBooks(text) != null) return null
-        val serviceShop = KaiServices.serviceCategory(category) || runCatching { tools.sellsServices() }.getOrNull() == true
+        // (a business that picked Service — a tailor, a repair shop — sells services whatever its category; owner, 21 Oct 2026)
+        val serviceShop = KaiServices.serviceCategory(category) || runCatching { tools.sellsServices() }.getOrNull() == true ||
+            runCatching { tools.businessKinds() }.getOrNull()?.contains(com.shopai.app.data.model.BusinessKind.SERVICE) == true
         // (the mic's own words only when Kai didn't already read them as the shop's product — "ஃப்ரோசன் பரோட்டா" is Frozen paratha)
         val lower = " " + text.lowercase(Locale.ROOT) + " "
         val productSaid = names.any { n -> n.lowercase(Locale.ROOT).split(Regex("""\s+""")).take(2).joinToString(" ").let { head -> head.length >= 3 && lower.contains(" $head ") } }
@@ -337,6 +366,86 @@ class KaiDailySales(
             ?: return otherShopsService(text, raw, sounded, prices, names, serviceShop, kinds, productSaid, lang)
         return startSale(sale, said, prices, lang)
     }
+
+    /**
+     * A service business's own service Kai has no word for (owner, 21 Oct 2026: business types — a tailor's "blouse stitching 350",
+     * "alteration 100 panninom", a repair shop's "screen replacement 1500"): its name and the amount said make a sale draft; Confirm
+     * puts it in the Daily Sales Note and keeps its price. Only for a business that picked Service, and only a line that is a name and
+     * an amount — never a person's name, the shop's product, a stock / money word; one word alone only with a count ("oru") or a
+     * "did it" word ("panninom"). Null otherwise: the line goes on to be asked about, never guessed.
+     */
+    suspend fun newService(said: String, lang0: KaiLang, products: List<ProductRef>, people: List<String>): KaiTurn? {
+        val kinds = runCatching { tools.businessKinds() }.getOrNull()
+        if (kinds == null || com.shopai.app.data.model.BusinessKind.SERVICE !in kinds) return null
+        val text = said.trim().trimEnd('.', '!', '?').replace(Regex("""\s+"""), " ")
+        if (KaiConversationCare.beyondBooks(text) != null) return null
+        val m = newServiceLine.matchEntire(text) ?: return null
+        val count = m.groupValues[1]
+        val words = m.groupValues[2].trim().split(' ')
+        if (words.size > 4 || words.any { w -> w.length < 2 || w.lowercase(Locale.ROOT) in notServiceWords }) return null
+        val didIt = m.groupValues[3].isNotEmpty() || m.groupValues[5].isNotEmpty()
+        if (words.size == 1 && count.isEmpty() && !didIt) return null
+        val lower = words.joinToString(" ").lowercase(Locale.ROOT)
+        if (people.any { p -> p.isNotBlank() && (words.any { it.equals(p, ignoreCase = true) } || lower.contains(p.lowercase(Locale.ROOT))) }) return null
+        if (products.any { p -> p.name.lowercase(Locale.ROOT).let { n -> n == lower || n.split(' ').first() == words.first().lowercase(Locale.ROOT) } }) return null
+        val amount = m.groupValues[4].replace(",", "").toBigDecimalOrNull()?.takeIf { it.signum() > 0 } ?: return null
+        val qty = count.takeIf { it.isNotEmpty() }?.let { c -> c.toIntOrNull() ?: newServiceCounts[c.lowercase(Locale.ROOT)] } ?: 1
+        val shown = words.joinToString(" ").replaceFirstChar { it.titlecase(Locale.ROOT) }
+        val upi = when { upiWord.containsMatchIn(text) -> true; cashWord.containsMatchIn(text) -> false; else -> null }
+        // (the amount said is the whole sale: "2 alteration 200" is ₹200 for both)
+        return startSale(KaiServices.SaleLine(listOf(KaiServices.Item(shown, qty, amount)), upi), said, prices(), ownersLang(text, lang0))
+    }
+
+    /**
+     * A service sale said in full (1600-line check, 21 Oct 2026): "blouse stitching service ku 250 vaanginom", "innaikku plumbing work
+     * service sale 7500 note pannu", "hair colouring service sale 5000 record pannu", and — for a business that picked Service —
+     * "hair colouring ku 120 vanginom". The service the owner named (Kai's word for it when it has one: "haircut" is Hair cutting) and
+     * the amount said: a sale draft; Confirm puts it in the Daily Sales Note. Never a person's name or the shop's product.
+     */
+    suspend fun serviceSaleSaid(said: String, lang0: KaiLang, products: List<ProductRef>, people: List<String>): KaiTurn? {
+        val text = said.trim().trimEnd('.', '!', '?').replace(Regex("""\s+"""), " ")
+        val m = serviceSaleLine.matchEntire(text) ?: return null
+        val serviceWord = m.groupValues[2].isNotBlank()
+        // (without the word "service": only money that came in, at a business that picked Service — "petrol ku 500 podu" is an expense)
+        if (!serviceWord && (m.groupValues[4].isEmpty() ||
+                runCatching { tools.businessKinds() }.getOrNull()?.contains(com.shopai.app.data.model.BusinessKind.SERVICE) != true)) return null
+        val name = m.groupValues[1].trim().replace(Regex("""(?i)^(?:innaikku|innaiku|inniki|today|indru)\s+"""), "").trim()
+        val words = name.split(' ')
+        if (name.isEmpty() || words.size > 5 || name.any(Char::isDigit) || words.any { it.lowercase(Locale.ROOT) in notServiceWords }) return null
+        val lower = name.lowercase(Locale.ROOT)
+        if (people.any { p -> p.isNotBlank() && (words.any { it.equals(p, ignoreCase = true) } || lower.contains(p.lowercase(Locale.ROOT))) }) return null
+        if (products.any { p -> p.name.equals(name, ignoreCase = true) }) return null
+        val amount = m.groupValues[3].replace(",", "").toBigDecimalOrNull()?.takeIf { it.signum() > 0 } ?: return null
+        val prices = prices()
+        val known = KaiServices.saleIn("$name $amount", prices, products.map { it.name }, true, null)?.items?.singleOrNull()
+        val item = known?.copy(amount = amount) ?: KaiServices.Item(name.replaceFirstChar { it.titlecase(Locale.ROOT) }, 1, amount)
+        val upi = when { upiWord.containsMatchIn(text) -> true; cashWord.containsMatchIn(text) -> false; else -> null }
+        return startSale(KaiServices.SaleLine(listOf(item), upi), said, prices, ownersLang(text, lang0))
+    }
+
+    /** "<name> [service [sale|charge]] [ku] [₹]N [rs] [vaanginom | note pannu | record pannu | podu] [cash / gpay]". */
+    private val serviceSaleLine = Regex(
+        """(?i)(.+?)\s+(?:((?:service|servis)(?:\s+(?:service|servis))?(?:\s+(?:sale|charge|charges|fees?))?)\s*(?:ku|kku)?|(?:ku|kku))\s+(?:₹|rs\.?\s*)?(\d[\d,]*(?:\.\d+)?)\s*(?:rs|rupees|ruba|rubai|roobai|ரூபாய்)?""" +
+            """\s*(?:(vaanginom|vanginom|vaangunom|vangunom|vaangitom|vangitom|vaanginen|vanginen|vaangiten|vandhuchu|vanthuchu)|aachu|""" +
+            """(?:note|record|entry|pathivu|add)\s+(?:pannu|pannidu|panniko|podu|pannunga)|podu|pottudu)?\s*(?:cash|gpay|upi|online)?""")
+
+    private val doneWords = "panninom|pannom|pannitom|panniten|pannen|pannunen|senjom|senjen|senjiten|mudichom|mudichen|aachu|mudinjuchu|" +
+        "பண்ணினோம்|பண்ணோம்|பண்ணேன்|செஞ்சோம்|செஞ்சேன்|முடிச்சோம்"
+    /** "[oru] <name, 1–4 words> [panninom] [₹]350 [rs] [panninom] [cash / gpay]". */
+    private val newServiceLine = Regex(
+        """(?i)(?:(oru|onnu|rendu|moonu|naalu|anju|\d{1,2})\s+)?([\p{L}\p{M}]+(?:\s+[\p{L}\p{M}]+){0,3}?)\s+(?:($doneWords|service|servis)\s+)?""" +
+            """(?:₹|rs\.?\s*)?(\d[\d,]*(?:\.\d+)?)\s*(?:rs|rupees|ruba|rubai|roobai|ரூபாய்|ku|kku)?\s*($doneWords)?\s*(?:cash|gpay|upi|online|kaasu)?""")
+    private val newServiceCounts = mapOf("oru" to 1, "onnu" to 1, "rendu" to 2, "moonu" to 3, "naalu" to 4, "anju" to 5)
+    /** Words that make a line something else — stock, money, a day, a unit, a question — never a service's name. */
+    private val notServiceWords = setOf(
+        "vandhuchu", "vanthuchu", "vandhathu", "vithuchu", "vittuchu", "vitthuchu", "vithen", "vitten", "stock", "kuduthan", "kuduthaan", "kuduthen",
+        "koduthan", "kudutha", "kuduthanga", "tharanum", "tharuvan", "kudukkanum", "kudukanum", "vaanginen", "vaanginaan", "vaangunen", "vaanganum",
+        "selavu", "expense", "expenses", "payment", "pending", "advance", "salary", "sambalam", "bill", "kadan", "kadana", "credit", "debit",
+        "report", "remind", "reminder", "rent", "vaadagai", "total", "balance", "baakki", "paakki", "cash", "gpay", "upi", "evlo", "evvalavu",
+        "enna", "yaar", "yaaru", "kg", "kilo", "box", "bag", "pcs", "piece", "pieces", "litre", "liter", "packet", "dozen", "meter", "naal",
+        "maasam", "today", "innaikku", "innaiku", "nethu", "naalaiku", "naalai", "sales", "sale", "loan", "emi", "interest", "vatti", "kasu",
+        "kaasu", "panam", "rupees", "rs", "add", "pannu", "podu", "minus", "plus", "receive", "received", "paid", "pay", "tharen", "tharaen",
+    )
 
     /**
      * "hair cutting onnu" in a grocery (owner's phone, 15 Oct 2026): a service of another kind of shop, said plainly — it is not
@@ -541,7 +650,7 @@ class KaiDailySales(
         val amounts = sale.items.map { i -> i.amount ?: priceOf(prices, i.name)?.multiply(BigDecimal(i.qty)) }
         // A price said with the sale ("oru cutting 150") for a service with none kept: kept with this Confirm.
         val learned = sale.items.filter { it.amount != null && it.qty == 1 && priceOf(prices, it.name) == null }.associate { it.name to it.amount!! }
-        val needsOpening = runCatching { tools.cashOpening(today) }.getOrNull() == null
+        val needsOpening = openingSkipped != today && runCatching { tools.cashOpening(today) }.getOrNull() == null
         val d = Draft(java.util.UUID.randomUUID().toString().take(8), sale.items, amounts, sale.upi == true, learned, null, needsOpening, said, lang)
         tools.log("daily_sales", "chat", "sale said: ${sale.items.joinToString { "${it.name} ×${it.qty}" }}", ActionStatus.ANSWERED, null, said)
         return next(d, lang)
@@ -611,13 +720,18 @@ class KaiDailySales(
             en = "Owner, $name isn't on your Menu — how much is $name$per? Tell me and I'll add it.")
     }
 
+    /** The day the owner skipped the morning kallapetti: not asked again that day. */
+    private var openingSkipped: LocalDate? = null
+    private val skipOpening = Regex("""(?i)(?<![\p{L}])(skip|venam|venaam|vendam|vendaam|venda|vidu|illa|illai|no|apram|appuram|later|theriyala|vendaa)(?![\p{L}])|வேணாம்|வேண்டாம்|ஸ்கிப்|இல்ல|அப்புறம்|தெரியல""")
+
+    /** "Kallapetti cash add pannanumaa?" — asked once at the day's first sale; never required (owner, 21 Oct 2026). */
     private fun askOpening(d: Draft, lang: KaiLang, again: Boolean = false): KaiTurn {
         waiting = OpeningAsked(d)
-        return if (again) turn(lang, KaiMood.CLARIFY, ta = "ஓனர், கல்லாப்பெட்டி opening தொகை மட்டும் சொல்லுங்க — உதா: “500”, இல்லனா “0”.",
-            tl = "Owner, Kallapetti opening amount mattum sollunga — eg: “500”, illana “0”.", en = "Owner, just the opening Kallapetti amount — e.g. “500”, or “0”.")
-        else turn(lang, KaiMood.CLARIFY, ta = "ஓனர், இன்னைக்கு Daily Sales Note-க்கு முதல்ல கல்லாப்பெட்டி opening வேணும் — காலைல கல்லாவுல எவ்வளவு cash இருந்துச்சு? (இல்லனா “0”)",
-            tl = "Owner, innaikku Daily Sales Note-ku mudhalla Kallapetti opening venum — kaalaila kallaa-la evlo cash irundhuchu? (illana “0”)",
-            en = "Owner, today's Daily Sales Note needs the opening Kallapetti first — how much cash was in it this morning? (or “0”)")
+        return if (again) turn(lang, KaiMood.CLARIFY, ta = "ஓனர், கல்லாப்பெட்டி தொகை மட்டும் சொல்லுங்க — உதா: “500”. வேணாம்னா “skip”.",
+            tl = "Owner, Kallapetti amount mattum sollunga — eg: “500”. Venam-na “skip”.", en = "Owner, just the Kallapetti amount — e.g. “500”. Or “skip”.")
+        else turn(lang, KaiMood.CLARIFY, ta = "ஓனர், இன்னைக்கு கல்லாப்பெட்டி cash சேர்க்கணுமா? காலைல கல்லாவுல எவ்வளவு இருந்துச்சு? (வேணாம்னா “skip” — sale அப்படியே போடுவேன்)",
+            tl = "Owner, innaikku Kallapetti cash add pannanum-aa? Kaalaila kallaa-la evlo irundhuchu? (Venam-na “skip” — sale appadiye podren)",
+            en = "Owner, add today's Kallapetti cash? How much was in it this morning? (Or “skip” — I'll go on with the sale)")
     }
 
     private fun lines(d: Draft): List<String> = d.items.mapIndexed { i, it ->
@@ -945,6 +1059,7 @@ class KaiDailySales(
     }
 
     private suspend fun rangePdfTurn(from: LocalDate, to: LocalDate, kind: ChatPeriod.Kind, lang: KaiLang): KaiTurn {
+        lastReport = ShownReport(from, to, kind, now())
         val s = spanSales(from, to)
         val label = spanLabel(from, to, kind, lang)
         if (s.entries == 0) return turn(lang, KaiMood.NEUTRAL, ta = "$label Daily Sales Note-ல entry எதுவும் இல்ல ஓனர் — PDF-க்கு எதுவும் இல்ல.",
@@ -956,10 +1071,22 @@ class KaiDailySales(
     }
 
     private suspend fun pdfTurn(day: LocalDate, lang: KaiLang): KaiTurn {
+        lastReport = ShownReport(day, day, null, now())
         val s = daySales(day)
         val label = dayLabel(day, lang)
-        if (s == null || s.entries == 0) return turn(lang, KaiMood.NEUTRAL, ta = "$label Daily Sales Note-ல entry எதுவும் இல்ல ஓனர் — PDF-க்கு எதுவும் இல்ல.",
-            tl = "$label Daily Sales Note-la entry edhuvum illa owner — PDF-ku edhuvum illa.", en = "$label: nothing in the Daily Sales Note, Owner — no PDF to make.")
+        if (s == null || s.entries == 0) {
+            // No Daily Sales Note entry that day: the books' own sales / purchase / expenses for it, said plainly — never a PDF of nothing.
+            val r = { a: BigDecimal? -> a?.takeIf { it.signum() > 0 }?.let { KaiFormat.rupees(it.toDouble()) } }
+            val sales = r(runCatching { tools.sales(day, day) }.getOrNull())
+            val bought = r(runCatching { tools.purchases(day, day) }.getOrNull())
+            val spent = r(runCatching { tools.expenses(day, day) }.getOrNull())
+            if (sales != null || bought != null || spent != null) return turn(lang, KaiMood.EXPLAINING,
+                ta = "$label Daily Sales Note-ல entry இல்ல ஓனர் — PDF-க்கு எதுவும் இல்ல. Books-ல: sales ${sales ?: "—"}, purchase ${bought ?: "—"}, செலவு ${spent ?: "—"}.",
+                tl = "$label Daily Sales Note-la entry illa owner — PDF-ku edhuvum illa. Books-la: sales ${sales ?: "—"}, purchase ${bought ?: "—"}, selavu ${spent ?: "—"}.",
+                en = "$label: nothing in the Daily Sales Note, Owner — no PDF to make. In the books: sales ${sales ?: "—"}, purchases ${bought ?: "—"}, expenses ${spent ?: "—"}.")
+            return turn(lang, KaiMood.NEUTRAL, ta = "$label Daily Sales Note-ல entry எதுவும் இல்ல ஓனர் — PDF-க்கு எதுவும் இல்ல.",
+                tl = "$label Daily Sales Note-la entry edhuvum illa owner — PDF-ku edhuvum illa.", en = "$label: nothing in the Daily Sales Note, Owner — no PDF to make.")
+        }
         return turn(lang, KaiMood.NEUTRAL, ta = "$label Daily Sales Note PDF ரெடி — மொத்தம் ${KaiFormat.rupees(s.totalIn)}. கீழ அழுத்தி share பண்ணுங்க.",
             tl = "$label Daily Sales Note PDF ready — mothama ${KaiFormat.rupees(s.totalIn)}. Keezha press panni share pannunga.",
             en = "$label's Daily Sales Note PDF is ready — total ${KaiFormat.rupees(s.totalIn)}. Tap below to share it.",
