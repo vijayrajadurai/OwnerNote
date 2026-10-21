@@ -222,6 +222,7 @@ fun KaiChatScreen(
         heard = null
         speech.startListening(
             languageTag = "ta-IN",
+            biasing = session.micWords,
             onPartialResult = { heard = it },
             onResult = { spoken ->
                 listening = false

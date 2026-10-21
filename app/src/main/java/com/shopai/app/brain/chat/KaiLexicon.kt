@@ -27,6 +27,7 @@ object KaiLexicon {
         kadai kadaila kadaiku shop vyabaaram vyabaram business velai kanakku panam kaasu rokkam baaki bakki selavu varavu
         nalla nallaa semma sari seri aama ama illa okva sapadu saapadu tea coffee
         call phone message remind reminder nyabagam marakkama
+        kitta kita kitte oda ooda kku eppa ippa epa
         owner sir anna akka thambi thangachi amma appa bro kai
         நான் நீ நீங்க நீங்கள் உன் உங்க உங்கள் என் எனக்கு
     """.trim().split(Regex("""\s+""")).toSet()
