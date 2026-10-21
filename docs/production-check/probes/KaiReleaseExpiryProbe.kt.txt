@@ -1,0 +1,104 @@
+package com.shopai.app.brain.chat
+
+import com.shopai.app.brain.BusinessSnapshot
+import com.shopai.app.brain.KaiLang
+import com.shopai.app.brain.PartyFacts
+import com.shopai.app.brain.PartyHistory
+import com.shopai.app.brain.chat.KaiInventoryChatTest.Inventory
+import com.shopai.app.brain.tools.BatchFact
+import com.shopai.app.brain.tools.KaiExpiry
+import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import java.math.BigDecimal
+import java.time.LocalDate
+import java.time.LocalDateTime
+
+/**
+ * Stock about to expire (owner, 13 Oct 2026), for the shops that track it — medical, grocery, bakery & sweets, cosmetics, seeds /
+ * fertilizer / pesticides, dairy & frozen, pet food, paint & adhesives, catering, FMCG wholesale: "expiry aagapora stock ellam sollu
+ * / kudu" typed and spoken, a window ("intha vaaram", "innaikku", "expired"), one product, FEFO (which batch first), and the daily
+ * alert's text. Read-only from the batch records; nothing written; what has no batch record isn't in it.
+ */
+class KaiReleaseExpiryProbe {
+    private val now = LocalDateTime.of(2026, 10, 13, 10, 0)
+    private val today: LocalDate = now.toLocalDate()
+
+    private class Books : KaiBooks {
+        override suspend fun snapshot() = BusinessSnapshot(customers = emptyList(), suppliers = emptyList())
+        override suspend fun history(party: PartyFacts): PartyHistory? = null
+        override suspend fun cashBook(from: LocalDate, to: LocalDate) = null
+    }
+
+    private fun b(product: String, batch: String, inDays: Long, qty: String, unit: String) = BatchFact(product, batch, today.plusDays(inDays), BigDecimal(qty), unit)
+
+    /** One batch-tracked product from each kind of shop, with expiries from 3 days ago to 4 months ahead. */
+    private val batches = listOf(
+        b("Paracetamol", "P1", 20, "40", "STRIP"), b("Paracetamol", "P2", 120, "60", "STRIP"),       // medical
+        b("Cough Syrup", "S7", -3, "6", "BOTTLE"),                                                   // medical, expired
+        b("Milk", "M2", 1, "20", "PACK"), b("Milk", "M3", 3, "30", "PACK"),                         // grocery / dairy
+        b("Bread", "B5", 0, "12", "PCS"),                                                            // grocery, today
+        b("Cream Cake", "C1", 2, "4", "PCS"),                                                        // bakery
+        b("Sunscreen", "SN4", 25, "10", "PCS"),                                                      // cosmetics
+        b("Paddy Seeds", "PS9", 6, "15", "PACK"),                                                    // seeds
+        b("Pesticide", "PT2", 90, "8", "BOTTLE"),                                                    // pesticides, far
+        b("Paneer", "PN1", -1, "3", "KG"),                                                           // dairy, expired
+        b("Dog Food", "DF3", 40, "5", "BAG"),                                                        // pet food
+        b("Fevicol", "FV2", 15, "9", "KG"),                                                          // adhesives
+        b("Tomato Sauce", "TS6", 10, "24", "BOTTLE"),                                                // catering
+        b("Mango Juice", "J8", 5, "48", "PCS"),                                                      // FMCG wholesale
+    )
+
+    private fun kai(): Pair<KaiAgent, Inventory> {
+        val inv = Inventory()
+        batches.map { it.product }.distinct().forEachIndexed { i, n ->
+            inv.items += Inventory.Item("e$i", n, batches.first { it.product == n }.unit, batches.filter { it.product == n }.fold(BigDecimal.ZERO) { a, x -> a + x.qty }, emptyMap(), null, null, "Shop", null)
+        }
+        inv.batches += batches
+        return KaiAgent(KaiBusinessBrain(Books()), Books(), inv, { now }) to inv
+    }
+
+    private fun ask(q: String): Pair<String, Inventory> {
+        val (k, inv) = kai()
+        val t = runBlocking { k.ask(q) }
+        return (t.reply.text + "\n" + t.card?.lines.orEmpty().joinToString("\n")) to inv
+    }
+
+    private fun shows(text: String, vararg batch: String) = batch.filter { !text.contains("Batch $it ") }
+    private fun hides(text: String, vararg batch: String) = batch.filter { text.contains("Batch $it ") }
+    @Test fun releaseCheck() {
+        val qs = listOf(
+            "kaalavadhi aaga pora porul enna" to "near", "காலாவதி ஆகப்போற பொருள் என்ன" to "near",
+            "which items will expire this week" to "week", "விச் ஐட்டம்ஸ் வில் எக்ஸ்பையர் திஸ் வீக்" to "week",
+            "indha vaaram expire aagura stock sollu" to "week", "இந்த வாரம் எக்ஸ்பையர் ஆகுற ஸ்டாக் சொல்லு" to "week",
+            "already expire aana marundhu edhu" to "expired", "ஏற்கனவே எக்ஸ்பையர் ஆன மருந்து எது" to "expired",
+            "paal packet eppo expire" to "milk", "பால் பாக்கெட் எப்போ எக்ஸ்பையர்" to "milk",
+            "endha batch first vikkanum" to "fefo", "எந்த பேட்ச் ஃபர்ஸ்ட் விக்கணும்" to "fefo",
+        )
+        val out = StringBuilder()
+        for ((q, kind) in qs) {
+            val t = ask(q).first
+            val ok = when (kind) {
+                "near" -> shows(t, "B5", "M2").isEmpty() && hides(t, "P2", "PT2").isEmpty()
+                // the 7-day window: today .. +7 (B5 0, C1 2, M2 1, M3 3, J8 5, PS9 6) — never FV2 (15) / P1 (20)
+                "week" -> shows(t, "B5", "C1", "M2", "M3", "J8", "PS9").isEmpty() && hides(t, "FV2", "P1", "P2").isEmpty()
+                "expired" -> shows(t, "S7", "PN1").isEmpty() && hides(t, "P2", "M2").isEmpty()
+                "milk" -> t.contains("Milk") && hides(t, "P1", "P2", "PT2").isEmpty()
+                else -> t.contains("M2") && t.contains("P1")
+            }
+            out.append(if (ok) "PASS" else "FAIL").append(" | expiry $kind | ").append(q).append("\n   ").append(t.replace("\n", " / ").take(400)).append("\n")
+        }
+        // The daily 7-day alert (morning notification): expired + within 7 days, nothing beyond; Tamil / Tanglish / English.
+        for (lang in KaiLang.entries) {
+            val a = KaiExpiry.alert(batches, today, lang)
+            val body = a?.body.orEmpty()
+            val ok = a != null && a.count == 8 && listOf("Cough Syrup", "Paneer", "Bread", "Milk").all { body.contains(it) } && a.title.contains("2")
+            out.append(if (ok) "PASS" else "FAIL").append(" | expiry alert $lang | ").append(a?.title).append("\n   ").append(body.replace("\n", " / ")).append("\n")
+        }
+        val none = KaiExpiry.alert(batches.filter { it.expiry.isAfter(today.plusDays(7)) }, today, KaiLang.TANGLISH)
+        out.append(if (none == null) "PASS" else "FAIL").append(" | expiry alert: nothing within 7 days → no notification\n")
+        java.io.File(System.getProperty("probe.out") ?: "expiry-release.txt").writeText(out.toString())
+    }
+}

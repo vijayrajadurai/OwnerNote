@@ -1,0 +1,31 @@
+PASS | expiry near | kaalavadhi aaga pora porul enna
+   Owner, 30 naal-kulla 12 batch expiry, 2 already expire aachu. / Cough Syrup — Batch S7 — 6 bottles — October 10th (3 naal munnaadi expire aachu) / Paneer — Batch PN1 — 3 kg — nethu (1 naal munnaadi expire aachu) / Bread — Batch B5 — 12 pieces — innaikku (innaikku expire) / Milk — Batch M2 — 20 packets — naalaikku (naalaikku expire) / Cream Cake — Batch C1 — 4 pieces — October 15th (2 naal-la) / Mi
+PASS | expiry near | காலாவதி ஆகப்போற பொருள் என்ன
+   ஓனர், 30 நாளுக்குள் 12 batch காலாவதி, 2 already expire ஆச்சு. / Cough Syrup — Batch S7 — 6 bottles — அக்டோபர் 10 (3 நாள் முன்னாடி expire ஆச்சு) / Paneer — Batch PN1 — 3 kg — நேத்து (1 நாள் முன்னாடி expire ஆச்சு) / Bread — Batch B5 — 12 pieces — இன்னைக்கு (இன்னைக்கு expire) / Milk — Batch M2 — 20 packets — நாளைக்கு (நாளைக்கு expire) / Cream Cake — Batch C1 — 4 pieces — அக்டோபர் 15 (2 நாள்ல) / Milk 
+PASS | expiry week | which items will expire this week
+   Owner, 8 batches within 7 days, 2 already expired. / Cough Syrup — Batch S7 — 6 bottles — October 10th (expired 3 days ago) / Paneer — Batch PN1 — 3 kg — yesterday (expired 1 days ago) / Bread — Batch B5 — 12 pieces — today (expires today) / Milk — Batch M2 — 20 packets — tomorrow (expires tomorrow) / Cream Cake — Batch C1 — 4 pieces — October 15th (in 2 days) / Milk — Batch M3 — 30 packets — Octo
+FAIL | expiry week | விச் ஐட்டம்ஸ் வில் எக்ஸ்பையர் திஸ் வீக்
+   Owner, எதைப் பத்தி சொல்றீங்க? Credit / debit (கொடுக்கல் வாங்கல்) பத்தியா, stock (கடையில இருக்கிற பொருள்) பத்தியா, reminder பத்தியா? / 
+PASS | expiry week | indha vaaram expire aagura stock sollu
+   Owner, 7 naal-kulla 8 batch expiry, 2 already expire aachu. / Cough Syrup — Batch S7 — 6 bottles — October 10th (3 naal munnaadi expire aachu) / Paneer — Batch PN1 — 3 kg — nethu (1 naal munnaadi expire aachu) / Bread — Batch B5 — 12 pieces — innaikku (innaikku expire) / Milk — Batch M2 — 20 packets — naalaikku (naalaikku expire) / Cream Cake — Batch C1 — 4 pieces — October 15th (2 naal-la) / Milk
+PASS | expiry week | இந்த வாரம் எக்ஸ்பையர் ஆகுற ஸ்டாக் சொல்லு
+   ஓனர், 7 நாளுக்குள் 8 batch காலாவதி, 2 already expire ஆச்சு. / Cough Syrup — Batch S7 — 6 bottles — அக்டோபர் 10 (3 நாள் முன்னாடி expire ஆச்சு) / Paneer — Batch PN1 — 3 kg — நேத்து (1 நாள் முன்னாடி expire ஆச்சு) / Bread — Batch B5 — 12 pieces — இன்னைக்கு (இன்னைக்கு expire) / Milk — Batch M2 — 20 packets — நாளைக்கு (நாளைக்கு expire) / Cream Cake — Batch C1 — 4 pieces — அக்டோபர் 15 (2 நாள்ல) / Milk — 
+FAIL | expiry expired | already expire aana marundhu edhu
+   Owner, 30 naal-kulla 12 batch expiry, 2 already expire aachu. / Cough Syrup — Batch S7 — 6 bottles — October 10th (3 naal munnaadi expire aachu) / Paneer — Batch PN1 — 3 kg — nethu (1 naal munnaadi expire aachu) / Bread — Batch B5 — 12 pieces — innaikku (innaikku expire) / Milk — Batch M2 — 20 packets — naalaikku (naalaikku expire) / Cream Cake — Batch C1 — 4 pieces — October 15th (2 naal-la) / Mi
+FAIL | expiry expired | ஏற்கனவே எக்ஸ்பையர் ஆன மருந்து எது
+   ஓனர், 30 நாளுக்குள் 12 batch காலாவதி, 2 already expire ஆச்சு. / Cough Syrup — Batch S7 — 6 bottles — அக்டோபர் 10 (3 நாள் முன்னாடி expire ஆச்சு) / Paneer — Batch PN1 — 3 kg — நேத்து (1 நாள் முன்னாடி expire ஆச்சு) / Bread — Batch B5 — 12 pieces — இன்னைக்கு (இன்னைக்கு expire) / Milk — Batch M2 — 20 packets — நாளைக்கு (நாளைக்கு expire) / Cream Cake — Batch C1 — 4 pieces — அக்டோபர் 15 (2 நாள்ல) / Milk 
+FAIL | expiry milk | paal packet eppo expire
+   Owner, 30 naal-kulla 12 batch expiry, 2 already expire aachu. / Cough Syrup — Batch S7 — 6 bottles — October 10th (3 naal munnaadi expire aachu) / Paneer — Batch PN1 — 3 kg — nethu (1 naal munnaadi expire aachu) / Bread — Batch B5 — 12 pieces — innaikku (innaikku expire) / Milk — Batch M2 — 20 packets — naalaikku (naalaikku expire) / Cream Cake — Batch C1 — 4 pieces — October 15th (2 naal-la) / Mi
+PASS | expiry milk | பால் பாக்கெட் எப்போ எக்ஸ்பையர்
+   ஓனர், 30 நாளுக்குள் Milk 2 batch காலாவதி. / Milk — Batch M2 — 20 packets — நாளைக்கு (நாளைக்கு expire) / Milk — Batch M3 — 30 packets — அக்டோபர் 16 (3 நாள்ல)
+PASS | expiry fefo | endha batch first vikkanum
+   Owner, mudhalla expire aagura batch-a mudhalla vikkanum (FEFO): / Cough Syrup — Batch S7 — 6 bottles — October 10th (3 naal munnaadi expire aachu) / Paneer — Batch PN1 — 3 kg — nethu (1 naal munnaadi expire aachu) / Bread — Batch B5 — 12 pieces — innaikku (innaikku expire) / Milk — Batch M2 — 20 packets — naalaikku (naalaikku expire) / Cream Cake — Batch C1 — 4 pieces — October 15th (2 naal-la) / 
+PASS | expiry fefo | எந்த பேட்ச் ஃபர்ஸ்ட் விக்கணும்
+   ஓனர், முதல்ல expire ஆகுற batch-ஐ முதல்ல விக்கணும் (FEFO): / Cough Syrup — Batch S7 — 6 bottles — அக்டோபர் 10 (3 நாள் முன்னாடி expire ஆச்சு) / Paneer — Batch PN1 — 3 kg — நேத்து (1 நாள் முன்னாடி expire ஆச்சு) / Bread — Batch B5 — 12 pieces — இன்னைக்கு (இன்னைக்கு expire) / Milk — Batch M2 — 20 packets — நாளைக்கு (நாளைக்கு expire) / Cream Cake — Batch C1 — 4 pieces — அக்டோபர் 15 (2 நாள்ல) / Mango Jui
+PASS | expiry alert TAMIL | ⚠️ Expiry alert: 8 stock (2 expire ஆச்சு)
+   Cough Syrup — 6 bottles — 3 நாள் முன்னாடி expire ஆச்சு / Paneer — 3 kg — 1 நாள் முன்னாடி expire ஆச்சு / Bread — 12 pieces — இன்னைக்கு expire / Milk — 20 packets — நாளைக்கு expire / Cream Cake — 4 pieces — 2 நாள்ல / + இன்னும் 3
+PASS | expiry alert TANGLISH | ⚠️ Expiry alert: 8 stock (2 expire aachu)
+   Cough Syrup — 6 bottles — 3 naal munnaadi expire aachu / Paneer — 3 kg — 1 naal munnaadi expire aachu / Bread — 12 pieces — innaikku expire / Milk — 20 packets — naalaikku expire / Cream Cake — 4 pieces — 2 naal-la / + innum 3
+PASS | expiry alert ENGLISH | ⚠️ Expiry alert: 8 batches (2 expired)
+   Cough Syrup — 6 bottles — expired 3 days ago / Paneer — 3 kg — expired 1 days ago / Bread — 12 pieces — expires today / Milk — 20 packets — expires tomorrow / Cream Cake — 4 pieces — in 2 days / + 3 more
+PASS | expiry alert: nothing within 7 days → no notification
