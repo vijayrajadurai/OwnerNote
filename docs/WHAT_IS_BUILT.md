@@ -211,6 +211,15 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
   search (names, Tamil, what the shop sells) and "View all"; several can be picked; "Other Product Businesses" takes a
   typed name. Saved as `categories` + `otherCategoryName` (backend `claude/business-categories`); `category` stays the
   older single value Kai and the server read (a service pick wins, else the first). Test: `BusinessCategoriesTest`.
+- Business types decide the features (owner, 21 Oct 2026, Phase 1; UI not yet checked on a phone): Setup / Profile pick
+  Service / Retail / Wholesale-Distributor (several allowed; a hotel, tea shop or mobile shop with repairs is Service + Retail)
+  before the categories, and the categories offered follow (11 service shops added, with "Other Services" and its own name).
+  `data/model/BusinessTypes.kt` (`FeatureSet`) holds the table: Service → Daily Cash "Menu"; Retail → stock, bills, HSN,
+  group buying, local offers, Discover tab; Wholesale → stock, bills, HSN. Read through `LocalFeatures`
+  (`ui/components/FeatureGate.kt`) by Home quick links, the bottom tabs, More and the Daily Cash Note. A business set up
+  before is read from its categories; nothing known shows everything. Settings → "Show all features" brings every one back.
+  Saved as `businessTypes` (backend `claude/business-types`); the books' type follows (a service shop is PRODUCT_AND_SERVICE,
+  so Kai's service sales work and stock still moves). Test: `BusinessTypesTest`.
 - The voice / bill screen no longer has the "Your sentence" box (its "Kumar-ku 2000-ku tharanum" example) or the Parse button.
 - Customers: a small Import beside the title. More → "Pazhaiya kanakku import" reads another app's Customer / Supplier
   List PDF and adds people with opening balances on Confirm. No other app's name is shown anywhere.

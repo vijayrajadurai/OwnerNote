@@ -47,10 +47,14 @@ import com.shopai.app.R
 import com.shopai.app.data.AppContainer
 import com.shopai.app.data.model.Business
 import com.shopai.app.data.model.BusinessCategories
+import com.shopai.app.data.model.BusinessKind
+import com.shopai.app.data.model.FeatureSet
 import com.shopai.app.data.model.BusinessInput
 import com.shopai.app.data.network.presentApiError
 import com.shopai.app.ui.components.ApiErrorAlertDialog
 import com.shopai.app.ui.components.BusinessCategoryPicker
+import com.shopai.app.ui.components.BusinessTypePicker
+import com.shopai.app.ui.components.syncBooksType
 import com.shopai.app.ui.components.DetailScaffold
 import com.shopai.app.ui.components.PrimaryButton
 import com.shopai.app.ui.components.ShopTextField
@@ -75,6 +79,7 @@ fun ProfileEditScreen(
     var photoPath by remember { mutableStateOf<String?>(null) }
     var ownerName by remember { mutableStateOf("") }
     var businessName by remember { mutableStateOf("") }
+    var kinds by remember { mutableStateOf(emptySet<BusinessKind>()) }
     var categories by remember { mutableStateOf(emptyList<String>()) }
     var otherCategoryName by remember { mutableStateOf("") }
     var city by remember { mutableStateOf("") }
@@ -140,6 +145,8 @@ fun ProfileEditScreen(
                     businessName = business.businessName
                     // (set up before the list: its one older category, read into the list)
                     categories = BusinessCategories.picked(business)
+                    // (set up before the types: read from its categories — a salon is Service, a hotel Service + Retail)
+                    kinds = FeatureSet.kindsOf(business)
                     otherCategoryName = business.otherCategoryName.orEmpty()
                     city = business.city
                     runningSinceYear = business.runningSinceYear?.toString().orEmpty()
@@ -166,6 +173,7 @@ fun ProfileEditScreen(
 
     val isValid = ownerName.trim().length >= 2 &&
         businessName.trim().length >= 2 &&
+        kinds.isNotEmpty() &&
         BusinessCategories.complete(categories, otherCategoryName) &&
         city.trim().length >= 2 &&
         coords != null
@@ -271,6 +279,22 @@ fun ProfileEditScreen(
             )
 
             Text(
+                text = stringResource(R.string.business_type),
+                style = MaterialTheme.typography.bodyMedium,
+                color = ShopAiThemeColors.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
+            BusinessTypePicker(
+                selected = kinds,
+                onSelectedChange = { picked ->
+                    kinds = picked
+                    // (a category the new types don't offer is taken off)
+                    val offered = FeatureSet.categoriesFor(picked).map { it.code }.toSet()
+                    categories = categories.filter { it in offered }
+                },
+                modifier = Modifier.padding(bottom = 16.dp),
+            )
+            Text(
                 text = stringResource(R.string.business_category),
                 style = MaterialTheme.typography.bodyMedium,
                 color = ShopAiThemeColors.onSurfaceVariant,
@@ -282,6 +306,7 @@ fun ProfileEditScreen(
                 onSelectedChange = { categories = it },
                 onOtherNameChange = { otherCategoryName = it },
                 modifier = Modifier.padding(bottom = 16.dp),
+                allowed = FeatureSet.categoriesFor(kinds),
             )
 
             ShopTextField(
@@ -355,7 +380,7 @@ fun ProfileEditScreen(
                 loading = loading,
                 enabled = isValid && !loading,
                 onClick = {
-                    if (!BusinessCategories.complete(categories, otherCategoryName)) return@PrimaryButton
+                    if (kinds.isEmpty() || !BusinessCategories.complete(categories, otherCategoryName)) return@PrimaryButton
                     val current = existing
                     val shop = coords
                     scope.launch {
@@ -368,7 +393,8 @@ fun ProfileEditScreen(
                                     businessName = businessName.trim(),
                                     category = BusinessCategories.legacyFor(categories),
                                     categories = categories,
-                                    otherCategoryName = otherCategoryName.trim().takeIf { BusinessCategories.OTHER in categories },
+                                    otherCategoryName = otherCategoryName.trim().takeIf { BusinessCategories.namedOther(categories) != null },
+                                    businessTypes = BusinessKind.entries.filter { it in kinds }.map { it.name },
                                     city = city.trim(),
                                     runningSinceYear = runningSinceYear.toIntOrNull(),
                                     monthlyVolumeApprox = monthlyVolume.toIntOrNull(),
@@ -378,6 +404,7 @@ fun ProfileEditScreen(
                                     locationSource = if (shop != null) "GPS" else current?.locationSource,
                                 ),
                             )
+                            syncBooksType(container, kinds)
                             onBack()
                         }.onFailure {
                             container.presentApiError(it, errorSave, { msg -> error = msg }, { msg -> alertError = msg })

@@ -131,6 +131,24 @@ fun SettingsScreen(
                 )
             }
 
+            // The features the business type hides (a salon's stock, a wholesaler's offers) brought back by the owner.
+            Text(stringResource(R.string.show_all_features_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.show_all_features_subtitle), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            ShopCard {
+                val showAllFeatures by container.preferencesRepository.showAllFeaturesFlow.collectAsState(initial = false)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(stringResource(R.string.show_all_features_toggle), modifier = Modifier.weight(1f))
+                    Switch(
+                        checked = showAllFeatures,
+                        onCheckedChange = { checked -> coroutineScope.launch { container.preferencesRepository.setShowAllFeatures(checked) } },
+                    )
+                }
+            }
+
             Text(stringResource(R.string.voice_checkin_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text(stringResource(R.string.voice_checkin_subtitle), color = MaterialTheme.colorScheme.onSurfaceVariant)
             ShopCard {

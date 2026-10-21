@@ -70,6 +70,8 @@ import com.shopai.app.util.localDateKey
 import com.shopai.app.util.shareDailyCashNoteToWhatsApp
 import com.shopai.app.util.shiftDateKey
 import kotlinx.coroutines.Dispatchers
+import com.shopai.app.data.model.Feature
+import com.shopai.app.ui.components.hasFeature
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.Instant
@@ -137,7 +139,10 @@ fun DailyCashNoteScreen(
         onBack = onBack,
         actions = {
             // The shop's Menu: items and prices the owner adds (Kai Chat sells from it).
-            TextButton(onClick = { showMenu = true }) { Text(stringResource(R.string.menu_title), fontWeight = FontWeight.SemiBold) }
+            // A service business's (a salon's, a hotel's); hidden for a shop that only sells goods.
+            if (hasFeature(Feature.SERVICE_MENU)) {
+                TextButton(onClick = { showMenu = true }) { Text(stringResource(R.string.menu_title), fontWeight = FontWeight.SemiBold) }
+            }
             IconButton(
                 enabled = !sharing && (cashBoxReady || entries.isNotEmpty()),
                 onClick = {

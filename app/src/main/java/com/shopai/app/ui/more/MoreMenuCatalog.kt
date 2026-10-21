@@ -3,6 +3,7 @@ package com.shopai.app.ui.more
 import androidx.annotation.StringRes
 import androidx.compose.ui.graphics.Color
 import com.shopai.app.R
+import com.shopai.app.data.model.Feature
 import com.shopai.app.ui.navigation.Routes
 
 enum class MoreMenuIcon {
@@ -46,6 +47,18 @@ object MoreMenuPages {
 }
 
 object MoreMenuCatalog {
+    /** The feature an entry belongs to (the business type decides it); entries not here are every business's. */
+    private val featureOf: Map<String, Feature> = mapOf(
+        "categories" to Feature.INVENTORY,
+        "transactions" to Feature.BILLING,
+        "group_buying" to Feature.GROUP_BUYING,
+        "hsn" to Feature.HSN_MASTER,
+        "offers" to Feature.LOCAL_OFFERS,
+    )
+
+    fun shown(entries: List<MoreMenuEntry>, features: Set<Feature>): List<MoreMenuEntry> =
+        entries.filter { e -> featureOf[e.id]?.let { it in features } ?: true }
+
     val primary: List<MoreMenuEntry> = listOf(
         MoreMenuEntry(
             id = "profile",

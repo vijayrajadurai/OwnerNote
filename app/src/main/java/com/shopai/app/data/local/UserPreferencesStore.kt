@@ -40,6 +40,14 @@ class UserPreferencesStore(context: Context) {
     private val languageKey = stringPreferencesKey("app_language")
     private val themeKey = stringPreferencesKey("app_theme")
     private val userGuideCompletedKey = booleanPreferencesKey("user_guide_completed")
+    private val showAllFeaturesKey = booleanPreferencesKey("show_all_features")
+
+    /** The owner asked to see every feature, whatever the business type (Settings → "Show all features"). */
+    val showAllFeaturesFlow: Flow<Boolean> = appContext.userPrefsDataStore.data.map { prefs -> prefs[showAllFeaturesKey] == true }
+
+    suspend fun setShowAllFeatures(on: Boolean) {
+        appContext.userPrefsDataStore.edit { prefs -> prefs[showAllFeaturesKey] = on }
+    }
 
     val languageFlow: Flow<AppLanguage> = appContext.userPrefsDataStore.data.map { prefs ->
         AppLanguage.fromTag(prefs[languageKey])

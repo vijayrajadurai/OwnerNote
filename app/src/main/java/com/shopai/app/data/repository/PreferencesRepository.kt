@@ -15,4 +15,6 @@ class PreferencesRepository(private val store: UserPreferencesStore) {
     suspend fun setTheme(theme: AppThemeMode) = store.setTheme(theme)
     suspend fun hasCompletedUserGuide(): Boolean = store.hasCompletedUserGuide()
     suspend fun setUserGuideCompleted() = store.setUserGuideCompleted()
+    val showAllFeaturesFlow: Flow<Boolean> = store.showAllFeaturesFlow
+    suspend fun setShowAllFeatures(on: Boolean) = store.setShowAllFeatures(on)
 }

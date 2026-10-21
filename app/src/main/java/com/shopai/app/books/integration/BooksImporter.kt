@@ -10,13 +10,13 @@ import com.shopai.app.books.engine.PostMeta
 import com.shopai.app.books.engine.PostResult
 import com.shopai.app.books.engine.ProductInput
 import com.shopai.app.books.engine.BooksErrorCode
-import com.shopai.app.books.model.BusinessType
 import com.shopai.app.books.model.Money
 import com.shopai.app.books.model.PartyKind
 import com.shopai.app.books.model.Qty
 import com.shopai.app.books.model.TxnSource
 import com.shopai.app.data.api.ShopAiApi
 import com.shopai.app.data.model.Business
+import com.shopai.app.data.model.FeatureSet
 import com.shopai.app.data.model.InventoryProduct
 import com.shopai.app.data.model.PartySummary
 import com.shopai.app.data.repository.BusinessRepository
@@ -95,7 +95,7 @@ class BooksImporter(
             masters.setupBusiness(
                 BusinessSetup(
                     name = business.businessName.ifBlank { "My business" },
-                    type = typeFor(business.category),
+                    type = FeatureSet.booksType(FeatureSet.kindsOf(business)),
                     ownerName = business.ownerName,
                     phone = business.phone,
                 ),
@@ -193,11 +193,6 @@ class BooksImporter(
             )
             if (posted is PostResult.Rejected) throw BooksRejectedException(posted.errors)
         }
-    }
-
-    private fun typeFor(category: String): BusinessType = when (category) {
-        "RESTAURANT_FOOD", "BEAUTY_SALON" -> BusinessType.PRODUCT_AND_SERVICE
-        else -> BusinessType.RETAILER
     }
 
     private fun validMobile(raw: String): String? = raw.filter(Char::isDigit).takeLast(10).takeIf { it.length == 10 && it[0] in "6789" }
