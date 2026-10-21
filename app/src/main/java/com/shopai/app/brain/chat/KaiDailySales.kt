@@ -267,8 +267,10 @@ class KaiDailySales(
         val spanAsked = if (dayAsked == null) spanOf(text, people, today) else null
 
         // The PDF: "innaikku sales pdf kudu", "nethu report", "Oct 10 daily note pdf", "5th report PDF venum", "indha maasam sales PDF".
+        // (a shop that picked no Service: "indha vaara report" is its business's week, not the Daily Sales Note's — owner, 21 Oct 2026)
+        val noServices = runCatching { tools.businessKinds() }.getOrNull()?.let { com.shopai.app.data.model.BusinessKind.SERVICE !in it } == true
         if (pdfWord.containsMatchIn(text) && !namesPerson && Regex("""(?i)pdf|report|ரிப்போர்ட்|பிடிஎஃப்""").containsMatchIn(text) &&
-            (noteWord.containsMatchIn(text) || (dayAsked != null || spanAsked != null) && !otherReport.containsMatchIn(text))) {
+            (noteWord.containsMatchIn(text) || !noServices && (dayAsked != null || spanAsked != null) && !otherReport.containsMatchIn(text))) {
             spanAsked?.let { (from, to, kind) -> return rangePdfTurn(from, to, kind, lang) }
             return pdfTurn(dayAsked ?: today, lang)
         }
@@ -314,7 +316,9 @@ class KaiDailySales(
 
         // A sale — never a line about what Kai doesn't do ("biryani recipe sollu").
         if (namesPerson || KaiConversationCare.beyondBooks(text) != null) return null
-        val serviceShop = KaiServices.serviceCategory(category) || runCatching { tools.sellsServices() }.getOrNull() == true
+        // (a business that picked Service — a tailor, a repair shop — sells services whatever its category; owner, 21 Oct 2026)
+        val serviceShop = KaiServices.serviceCategory(category) || runCatching { tools.sellsServices() }.getOrNull() == true ||
+            runCatching { tools.businessKinds() }.getOrNull()?.contains(com.shopai.app.data.model.BusinessKind.SERVICE) == true
         // (the mic's own words only when Kai didn't already read them as the shop's product — "ஃப்ரோசன் பரோட்டா" is Frozen paratha)
         val lower = " " + text.lowercase(Locale.ROOT) + " "
         val productSaid = names.any { n -> n.lowercase(Locale.ROOT).split(Regex("""\s+""")).take(2).joinToString(" ").let { head -> head.length >= 3 && lower.contains(" $head ") } }
@@ -337,6 +341,53 @@ class KaiDailySales(
             ?: return otherShopsService(text, raw, sounded, prices, names, serviceShop, kinds, productSaid, lang)
         return startSale(sale, said, prices, lang)
     }
+
+    /**
+     * A service business's own service Kai has no word for (owner, 21 Oct 2026: business types — a tailor's "blouse stitching 350",
+     * "alteration 100 panninom", a repair shop's "screen replacement 1500"): its name and the amount said make a sale draft; Confirm
+     * puts it in the Daily Sales Note and keeps its price. Only for a business that picked Service, and only a line that is a name and
+     * an amount — never a person's name, the shop's product, a stock / money word; one word alone only with a count ("oru") or a
+     * "did it" word ("panninom"). Null otherwise: the line goes on to be asked about, never guessed.
+     */
+    suspend fun newService(said: String, lang0: KaiLang, products: List<ProductRef>, people: List<String>): KaiTurn? {
+        val kinds = runCatching { tools.businessKinds() }.getOrNull()
+        if (kinds == null || com.shopai.app.data.model.BusinessKind.SERVICE !in kinds) return null
+        val text = said.trim().trimEnd('.', '!', '?').replace(Regex("""\s+"""), " ")
+        if (KaiConversationCare.beyondBooks(text) != null) return null
+        val m = newServiceLine.matchEntire(text) ?: return null
+        val count = m.groupValues[1]
+        val words = m.groupValues[2].trim().split(' ')
+        if (words.size > 4 || words.any { w -> w.length < 2 || w.lowercase(Locale.ROOT) in notServiceWords }) return null
+        val didIt = m.groupValues[3].isNotEmpty() || m.groupValues[5].isNotEmpty()
+        if (words.size == 1 && count.isEmpty() && !didIt) return null
+        val lower = words.joinToString(" ").lowercase(Locale.ROOT)
+        if (people.any { p -> p.isNotBlank() && (words.any { it.equals(p, ignoreCase = true) } || lower.contains(p.lowercase(Locale.ROOT))) }) return null
+        if (products.any { p -> p.name.lowercase(Locale.ROOT).let { n -> n == lower || n.split(' ').first() == words.first().lowercase(Locale.ROOT) } }) return null
+        val amount = m.groupValues[4].replace(",", "").toBigDecimalOrNull()?.takeIf { it.signum() > 0 } ?: return null
+        val qty = count.takeIf { it.isNotEmpty() }?.let { c -> c.toIntOrNull() ?: newServiceCounts[c.lowercase(Locale.ROOT)] } ?: 1
+        val shown = words.joinToString(" ").replaceFirstChar { it.titlecase(Locale.ROOT) }
+        val upi = when { upiWord.containsMatchIn(text) -> true; cashWord.containsMatchIn(text) -> false; else -> null }
+        // (the amount said is the whole sale: "2 alteration 200" is ₹200 for both)
+        return startSale(KaiServices.SaleLine(listOf(KaiServices.Item(shown, qty, amount)), upi), said, prices(), ownersLang(text, lang0))
+    }
+
+    private val doneWords = "panninom|pannom|pannitom|panniten|pannen|pannunen|senjom|senjen|senjiten|mudichom|mudichen|aachu|mudinjuchu|" +
+        "பண்ணினோம்|பண்ணோம்|பண்ணேன்|செஞ்சோம்|செஞ்சேன்|முடிச்சோம்"
+    /** "[oru] <name, 1–4 words> [panninom] [₹]350 [rs] [panninom] [cash / gpay]". */
+    private val newServiceLine = Regex(
+        """(?i)(?:(oru|onnu|rendu|moonu|naalu|anju|\d{1,2})\s+)?([\p{L}\p{M}]+(?:\s+[\p{L}\p{M}]+){0,3}?)\s+(?:($doneWords|service|servis)\s+)?""" +
+            """(?:₹|rs\.?\s*)?(\d[\d,]*(?:\.\d+)?)\s*(?:rs|rupees|ruba|rubai|roobai|ரூபாய்|ku|kku)?\s*($doneWords)?\s*(?:cash|gpay|upi|online|kaasu)?""")
+    private val newServiceCounts = mapOf("oru" to 1, "onnu" to 1, "rendu" to 2, "moonu" to 3, "naalu" to 4, "anju" to 5)
+    /** Words that make a line something else — stock, money, a day, a unit, a question — never a service's name. */
+    private val notServiceWords = setOf(
+        "vandhuchu", "vanthuchu", "vandhathu", "vithuchu", "vittuchu", "vitthuchu", "vithen", "vitten", "stock", "kuduthan", "kuduthaan", "kuduthen",
+        "koduthan", "kudutha", "kuduthanga", "tharanum", "tharuvan", "kudukkanum", "kudukanum", "vaanginen", "vaanginaan", "vaangunen", "vaanganum",
+        "selavu", "expense", "expenses", "payment", "pending", "advance", "salary", "sambalam", "bill", "kadan", "kadana", "credit", "debit",
+        "report", "remind", "reminder", "rent", "vaadagai", "total", "balance", "baakki", "paakki", "cash", "gpay", "upi", "evlo", "evvalavu",
+        "enna", "yaar", "yaaru", "kg", "kilo", "box", "bag", "pcs", "piece", "pieces", "litre", "liter", "packet", "dozen", "meter", "naal",
+        "maasam", "today", "innaikku", "innaiku", "nethu", "naalaiku", "naalai", "sales", "sale", "loan", "emi", "interest", "vatti", "kasu",
+        "kaasu", "panam", "rupees", "rs", "add", "pannu", "podu", "minus", "plus", "receive", "received", "paid", "pay", "tharen", "tharaen",
+    )
 
     /**
      * "hair cutting onnu" in a grocery (owner's phone, 15 Oct 2026): a service of another kind of shop, said plainly — it is not

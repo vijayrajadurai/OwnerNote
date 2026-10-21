@@ -127,6 +127,8 @@ sealed interface KaiAction {
     data class PickCategory(val category: String) : KaiAction
     /** "Avare" / "Vera aal" to "Lokesh already customer-aa irukkaar — avare-vaa?" (one name on both sides, owner, 20 Oct 2026). */
     data class SameName(val same: Boolean) : KaiAction
+    /** "Cash sale" to a wholesaler's "யாருக்கு?": the stock-out goes in as a walk-in cash sale after all (still a draft). */
+    data class BuyerCash(val key: String) : KaiAction
 }
 
 /**
@@ -1023,6 +1025,8 @@ class KaiAgent(
      */
     /** The language Kai's last "what is this about?" was asked in — a one-word answer ("stock") keeps it. */
     private var clarifyLang: KaiLang? = null
+    /** What the business does, read at the start of each line (null = unknown). */
+    private var kindsNow: Set<com.shopai.app.data.model.BusinessKind>? = null
 
     private fun guidedTopic(said: String, saidLang: KaiLang): KaiTurn? {
         // ("stock ah pathi", "ஸ்டாக் பத்தியா", "credit debit pathi dhaan": the topic word with its "about" said after it)
@@ -1104,10 +1108,23 @@ class KaiAgent(
                 ta = "சரி ஓனர், யாரோட பாக்கி? பேர் சொல்லுங்க (“Kumar எவ்வளவு தரணும்”), இல்ல “மொத்தம் எவ்வளவு வரணும்”.",
                 tl = "Seri Owner, yaaroda baaki? Peru sollunga (“Kumar evlo tharanum”), illa “motham evlo varanum”.",
                 en = "Okay Owner, whose balance? Say the name (“how much does Kumar owe”), or “total receivable”.")
-            report -> { topicAsked = "report" to conversationState.conversationTurn; say(lang, KaiMood.CLARIFY, "guided: which report",
-                ta = "எந்த report ஓனர்? Sales, stock, கொடுக்கல்-வாங்கல், expiry?",
-                tl = "Endha report Owner? Sales, stock, kudukkal-vaangal, expiry?",
-                en = "Which report, Owner? Sales, stock, money given / taken, or expiry?") }
+            // The reports the business's type has (owner, 21 Oct 2026): a salon's sales by service, a wholesaler's late payers.
+            report -> { topicAsked = "report" to conversationState.conversationTurn; val k = kindsNow.orEmpty(); when {
+                k.isNotEmpty() && com.shopai.app.data.model.BusinessKind.SERVICE in k && com.shopai.app.data.model.BusinessKind.RETAIL !in k &&
+                    com.shopai.app.data.model.BusinessKind.WHOLESALE !in k -> say(lang, KaiMood.CLARIFY, "guided: which report (service)",
+                    ta = "எந்த report ஓனர்? Sales (service வாரியா), கொடுக்கல்-வாங்கல், செலவு?",
+                    tl = "Endha report Owner? Sales (service vaariyaa), kudukkal-vaangal, selavu?",
+                    en = "Which report, Owner? Sales by service, money given / taken, or expenses?")
+                com.shopai.app.data.model.BusinessKind.WHOLESALE in k && com.shopai.app.data.model.BusinessKind.RETAIL !in k ->
+                    say(lang, KaiMood.CLARIFY, "guided: which report (wholesale)",
+                    ta = "எந்த report ஓனர்? Sales, stock, overdue (யார் லேட்டா தர்றாங்க), கொடுக்கல்-வாங்கல்?",
+                    tl = "Endha report Owner? Sales, stock, overdue (yaar late-aa tharaanga), kudukkal-vaangal?",
+                    en = "Which report, Owner? Sales, stock, overdue (who is paying late), or money given / taken?")
+                else -> say(lang, KaiMood.CLARIFY, "guided: which report",
+                    ta = "எந்த report ஓனர்? Sales, stock, கொடுக்கல்-வாங்கல், expiry?",
+                    tl = "Endha report Owner? Sales, stock, kudukkal-vaangal, expiry?",
+                    en = "Which report, Owner? Sales, stock, money given / taken, or expiry?")
+            } }
             moneyWord != null -> { topicAsked = "money:$moneyWord" to conversationState.conversationTurn; say(lang, KaiMood.CLARIFY, "guided: $moneyWord",
                 ta = "ஓனர், இன்னைக்கு $moneyWord எவ்வளவு வந்துச்சுனு பார்க்கணுமா, இல்ல payment note பண்ணணுமா?",
                 tl = "Owner, innaikku $moneyWord evlo vandhuchu-nu paakkanum-aa, illa payment note pannanum-aa?",
@@ -1930,6 +1947,7 @@ class KaiAgent(
         val earlier = KaiConversationCare.namedFromEarlier(listed, brain.peopleTalkedAbout()) ?: listed
         // "ippa evlo tharanum" right after talking about Akash: Akash's balance now — not everyone's list.
         val people0 = runCatching { books.snapshot()?.people.orEmpty() }.getOrDefault(emptyList())
+        kindsNow = runCatching { tools.businessKinds() }.getOrNull()
         val onTopic = personOnTopic?.takeIf { conversationState.conversationTurn - it.second <= 3 }?.first
             ?: conversationState.lastSaved?.takeIf { conversationState.conversationTurn - it.turn <= 3 }?.person
         // "meedhi eppo tharuvaan" right after Kumar's entry: Kumar's due date — never a person called "Meedhi".
@@ -2077,6 +2095,7 @@ class KaiAgent(
         // "aama" / "venam" to a product change; "credit" / "28" / "box" to a bill with goods.
         if (openPayment == null) productEditAnswer(said)?.let { return it }
         if (openPayment == null) billAnswer(said)?.let { return it }
+        if (openPayment == null) buyerAnswer(said, people0)?.let { return it }
 
         // "pudhu" / "adhey" after "already ₹2,000 records-la irukku — adhey-aa, pudhusaa?".
         if (openPayment == null && conversationState.duplicateAskedTurn >= 0) duplicateAnswer(said, lang)?.let { return it }
@@ -2438,6 +2457,8 @@ class KaiAgent(
                     // way is asked — never "edha pathi?", never the balance with the amount dropped (owner, 19 Oct 2026).
                     ?: products?.takeIf { plans.isEmpty() }?.let { stockWayMissing(text, lang, it, people) }
                     ?: (if (plans.isEmpty() && askDepth == 1) entryWayMissing(text, lang, people, products) else null)
+                    // A service business's own service Kai has no word for: "blouse stitching 350" — a sale draft, never "edha pathi?".
+                    ?: (if (plans.isEmpty() && askDepth == 1) dailySales.newService(said, lang, products.orEmpty(), people) else null)
                     ?: run {
                         val answer = questionOrLearn(routed, text, said, lang, at.toLocalDate(), people, products.orEmpty())
                         if (answer.reply.intent != ChatIntent.UNKNOWN) conversationState.currentIntent = "BUSINESS_QUERY"
@@ -4340,6 +4361,8 @@ class KaiAgent(
         if (product.conversions.isNotEmpty() && parts.size == 1 && parts.single().unit == null &&
             text.lowercase(Locale.ROOT).split(Regex("""[\s,.!?]+""")).none { com.shopai.app.brain.tools.KaiInventory.unitOf(it) != null })
             return askUnitPick(product, parts.single().qty, req.incoming, said, lang)
+        // A wholesaler's sale with no buyer said: "யாருக்கு?" (owner, 21 Oct 2026).
+        if (!req.incoming) buyerAsked(product, parts, said, lang, people)?.let { return it }
         return draftParts(product, parts, req.incoming, said, lang)
     }
 
@@ -5239,8 +5262,10 @@ class KaiAgent(
     private suspend fun stockBillLine(text: String, said: String, lang: KaiLang, product: com.shopai.app.brain.tools.ProductRef, people: List<String>): KaiTurn? {
         val inv = com.shopai.app.brain.tools.KaiInventory
         val name = com.shopai.app.brain.KaiUnderstanding.knownPerson(text, people) ?: return null
-        val buying = inv.buys(text)
-        val selling = !buying && inv.sells(text)
+        // ("Kumar 2 box Colgate vaanginaan": the customer bought it — a sale to Kumar, never the shop buying)
+        val theyBought = inv.theyBought(text)
+        val buying = !theyBought && inv.buys(text)
+        val selling = theyBought || !buying && inv.sells(text)
         if (!buying && !selling) return null
         val party = runCatching { tools.parties(name) }.getOrNull()?.let { KaiEntityResolver.sameName(name, it) }?.distinctBy { it.id }
             ?.filter { it.customer == selling }?.singleOrNull() ?: return null
@@ -5252,7 +5277,75 @@ class KaiAgent(
             lastProduct = product
             return draftParts(product, parts, false, "Free · $said", lang)
         }
-        val b = BillItem(newKey(), buying, party, product, parts, inv.moneyIn(text), null, inv.creditOf(text), inv.modeOf(text), said, lang, conversationState.conversationTurn, null)
+        // A wholesaler's sale to a shop is on credit unless paid is said (owner, 21 Oct 2026: "Murugan Stores-ku 10 carton anuppinen" = a
+        // bill and its baaki) — the draft says Credit before Confirm; anyone else is asked "credit-aa, cash-aa?".
+        val credit = inv.creditOf(text) ?: if (selling && sellsWholesale()) true else null
+        val b = BillItem(newKey(), buying, party, product, parts, inv.moneyIn(text), null, credit, if (credit == true) PaymentMode.CREDIT else inv.modeOf(text),
+            said, lang, conversationState.conversationTurn, null)
+        return billStep(b)
+    }
+
+    /** The business picked Wholesale / Distributor (null = unknown: never decided on a guess). */
+    private suspend fun sellsWholesale() = runCatching { tools.businessKinds() }.getOrNull()?.contains(com.shopai.app.data.model.BusinessKind.WHOLESALE) == true
+
+    /** A wholesaler's stock-out with no buyer said: "யாருக்கு?" is open (the line and its goods kept for the answer). */
+    private data class BuyerAsk(val key: String, val product: com.shopai.app.brain.tools.ProductRef, val parts: List<com.shopai.app.brain.tools.QtyPart>,
+        val said: String, val lang: KaiLang, val turn: Long)
+    private var buyerAsk: BuyerAsk? = null
+
+    /**
+     * A sale said with no buyer by a business that only sells wholesale (owner, 21 Oct 2026: "Colgate 10 box vithuchu" — "யாருக்கு?
+     * cash-aa credit-aa?"): never taken as a walk-in cash sale by itself. Damage, a free give-away, "cash" said, or a shop that also
+     * sells retail: null (as before).
+     */
+    private suspend fun buyerAsked(product: com.shopai.app.brain.tools.ProductRef, parts: List<com.shopai.app.brain.tools.QtyPart>, said: String,
+        lang: KaiLang, people: List<String>): KaiTurn? {
+        val kinds = runCatching { tools.businessKinds() }.getOrNull() ?: return null
+        if (com.shopai.app.data.model.BusinessKind.WHOLESALE !in kinds || com.shopai.app.data.model.BusinessKind.RETAIL in kinds) return null
+        val inv = com.shopai.app.brain.tools.KaiInventory
+        if (com.shopai.app.brain.tools.KaiStock.reasonOf(said) != null || inv.isFree(said) || inv.creditOf(said) == false) return null
+        if (KaiCommands.personIn(said, people) != null || KaiEntityResolver.peopleIn(said, people).isNotEmpty()) return null
+        val key = newKey()
+        buyerAsk = BuyerAsk(key, product, parts, said, lang, conversationState.conversationTurn)
+        lastProduct = product
+        val goods = product.name + " — " + com.shopai.app.brain.tools.KaiUnits.describe(parts, product.unit)
+        tools.log(com.shopai.app.brain.tools.KaiIntents.STOCK_OUT, "kai", "$goods: buyer asked", ActionStatus.ANSWERED, null, said)
+        return KaiTurn(
+            ChatReply(pick(lang,
+                ta = "யாருக்கு ஓனர்? Customer பேரு சொல்லுங்க (credit bill போடுறேன்) — இல்ல cash sale-ஆ?",
+                tl = "Yaarukku Owner? Customer per sollunga (credit bill podaren) — illa cash sale-aa?",
+                en = "Sold to whom, Owner? Say the customer (I'll make a credit bill) — or was it a cash sale?"), KaiMood.CLARIFY, ChatIntent.GENERAL_BUSINESS_QUERY),
+            KaiCard(listOf(goods, pick(lang, ta = "ஸ்டாக் எதுவும் மாறல.", tl = "Stock edhuvum maaralai.", en = "Nothing in stock has changed.")),
+                listOf(KaiButton(pick(lang, ta = "Cash sale", tl = "Cash sale", en = "Cash sale"), KaiAction.BuyerCash(key)), KaiButton(cancelLabel(lang), KaiAction.CancelStock(key)))),
+        )
+    }
+
+    /** The answer to "யாருக்கு?": a customer of the books → their bill (on credit unless paid is said); "cash" → the cash sale. */
+    private suspend fun buyerAnswer(said: String, people: List<String>): KaiTurn? {
+        val a = buyerAsk ?: return null
+        if (conversationState.conversationTurn - a.turn > 2) { buyerAsk = null; return null }
+        if (KaiConversationSemantics.cancelsDraft(said)) return act(KaiAction.CancelStock(a.key), a.lang)
+        val inv = com.shopai.app.brain.tools.KaiInventory
+        val text = com.shopai.app.brain.tools.KaiSpokenWords.normalize(said)
+        val name = com.shopai.app.brain.KaiUnderstanding.knownPerson(text, people) ?: KaiCommands.personIn(text, people)
+        if (name == null) {
+            if (inv.creditOf(text) == false && text.trim().split(Regex("""\s+""")).size <= 3) return act(KaiAction.BuyerCash(a.key), a.lang)
+            // Another line altogether ("Kumar 2000 kuduthan", a new stock line): the question is let go, the line goes on as itself.
+            if (text.any(Char::isDigit) || text.trim().split(Regex("""\s+""")).size > 3) { buyerAsk = null; return null }
+            return say(a.lang, KaiMood.CLARIFY, "buyer: not a customer",
+                ta = "ஓனர், அந்தப் பேர்ல customer இல்ல. Customer பேரு சொல்லுங்க, இல்ல “cash”-ன்னு சொல்லுங்க.",
+                tl = "Owner, andha per-la customer illa. Customer per sollunga, illa “cash”-nu sollunga.",
+                en = "Owner, there's no customer by that name. Say the customer's name, or say “cash”.")
+        }
+        val party = runCatching { tools.parties(name) }.getOrNull()?.let { KaiEntityResolver.sameName(name, it) }?.distinctBy { it.id }
+            ?.filter { it.customer }?.singleOrNull() ?: run {
+                buyerAsk = null
+                return null
+            }
+        buyerAsk = null
+        val credit = inv.creditOf(text) ?: true
+        val b = BillItem(newKey(), false, party, a.product, a.parts, inv.moneyIn(a.said), null, credit, if (credit) PaymentMode.CREDIT else inv.modeOf(text),
+            "${party.name} · ${a.said}", a.lang, conversationState.conversationTurn, null)
         return billStep(b)
     }
 
@@ -6135,6 +6228,11 @@ class KaiAgent(
                 return switchTo(action.category, sw, lang)
             }
             is KaiAction.SameName -> return sameNamePicked(action.same, lang)
+            is KaiAction.BuyerCash -> {
+                val a = buyerAsk?.takeIf { it.key == action.key } ?: return null
+                buyerAsk = null
+                return draftParts(a.product, a.parts, false, a.said, a.lang)
+            }
             is KaiAction.StatementFor -> {
                 val p = runCatching { books.snapshot() }.getOrNull()?.parties
                     ?.firstOrNull { it.id == action.partyId && (it.side == com.shopai.app.brain.Direction.RECEIVABLE) == action.customer } ?: return null
@@ -6226,6 +6324,7 @@ class KaiAgent(
             stockLineAskedTurn = -10L
             productEdit?.takeIf { it.key == action.key }?.let { productEdit = null }
             billItem?.takeIf { it.key == action.key }?.let { billItem = null }
+            buyerAsk?.takeIf { it.key == action.key }?.let { buyerAsk = null }
             newItem?.takeIf { it.key == action.key || action.key == "new" }?.let { newItem = null
                 tools.log(com.shopai.app.brain.tools.KaiIntents.STOCK_IN, "draft", "${it.spec.name}: new product cancelled", ActionStatus.CANCELLED, null, it.said) }
             say(lang, KaiMood.NEUTRAL, null, ta = "சரி, ரத்து பண்ணிட்டேன். எதுவும் சேமிக்கல.", tl = "Seri Owner, cancel pannitten. Edhuvum save aagala.", en = "Cancelled, Owner. Nothing was saved.")

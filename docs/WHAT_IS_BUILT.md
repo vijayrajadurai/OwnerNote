@@ -220,6 +220,13 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
   before is read from its categories; nothing known shows everything. Settings → "Show all features" brings every one back.
   Saved as `businessTypes` (backend `claude/business-types`); the books' type follows (a service shop is PRODUCT_AND_SERVICE,
   so Kai's service sales work and stock still moves). Test: `BusinessTypesTest`.
+  The party screens' "New bill" follows Billing too.
+- Kai by business type (owner, 21 Oct 2026, Phase 2; `KaiTools.businessKinds`, read from the business each line): a service
+  business's own service Kai has no word for ("blouse stitching 350", "alteration 100 panninom") is a Daily Sales draft
+  (`KaiDailySales.newService`); a wholesaler's sale with no buyer asks "யாருக்கு?" (a customer → their credit bill, "cash" → the cash
+  sale), a named one ("Murugan Stores-ku 10 box Colgate anuppinen") is a credit bill; "Kumar 2 box Colgate vaanginaan" is a sale to
+  Kumar for every shop; "report" offers the type's reports (a salon's sales by service, a wholesaler's overdue) and "indha vaara
+  report" is the Daily Sales week only for a service shop. A type not known decides nothing. Test: `KaiBusinessKindsTest`.
 - The voice / bill screen no longer has the "Your sentence" box (its "Kumar-ku 2000-ku tharanum" example) or the Parse button.
 - Customers: a small Import beside the title. More → "Pazhaiya kanakku import" reads another app's Customer / Supplier
   List PDF and adds people with opening balances on Confirm. No other app's name is shown anywhere.

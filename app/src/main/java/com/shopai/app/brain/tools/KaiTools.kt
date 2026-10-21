@@ -96,7 +96,12 @@ enum class ScheduleResult { EXACT, APPROXIMATE, NOTIFICATIONS_OFF, FAILED }
 enum class ConversionSave { SAVED, OTHER_UNIT_SET, UNAVAILABLE }
 
 /** The setup's business categories: codes in the order picked, and the "Other Product Businesses" name. */
-data class ShopCategoryPicks(val codes: List<String>, val otherName: String? = null)
+data class ShopCategoryPicks(
+    val codes: List<String>,
+    val otherName: String? = null,
+    /** What the business does (owner, 21 Oct 2026): Service / Retail / Wholesale — picked, else read from its categories; empty = unknown. */
+    val kinds: Set<com.shopai.app.data.model.BusinessKind> = emptySet(),
+)
 
 /** A reminder saved by the engine; [duplicate] = the same reminder already existed (nothing new created). */
 data class ReminderSaved(val reminder: KaiReminder, val duplicate: Boolean, val result: ScheduleResult)
@@ -268,6 +273,12 @@ interface KaiTools {
      * for "Other Product Businesses"; null = unknown (an older setup, or the profile can't be read).
      */
     suspend fun businessCategoryPicks(): ShopCategoryPicks? = null
+
+    /**
+     * What the business does — Service / Retail / Wholesale, several allowed (a hotel is Service + Retail); null = unknown (nothing
+     * is decided on a guess). A salon's "oru facial 500" is a service sale; a wholesaler's "vithuchu" is asked "yaarukku?".
+     */
+    suspend fun businessKinds(): Set<com.shopai.app.data.model.BusinessKind>? = businessCategoryPicks()?.kinds?.takeIf { it.isNotEmpty() }
 
     // ---- audit ----
     /** [input]: the owner's words (text). Returns the reference id. */

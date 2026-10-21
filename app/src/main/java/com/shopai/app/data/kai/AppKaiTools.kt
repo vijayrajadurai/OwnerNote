@@ -636,7 +636,6 @@ class AppKaiTools(
     private var categoryRead: Pair<Long, String?>? = null
 
     override suspend fun businessCategory(): String? {
-        categoryRead?.takeIf { System.currentTimeMillis() - it.first < 30 * 60_000L }?.let { return it.second }
         val read = runCatching { category?.invoke() }.getOrNull()
         // (a failed read keeps the last one known — the profile doesn't change mid-day)
         if (read != null || categoryRead == null) categoryRead = System.currentTimeMillis() to (read ?: categoryRead?.second)
@@ -646,10 +645,11 @@ class AppKaiTools(
     private var picksRead: Pair<Long, com.shopai.app.brain.tools.ShopCategoryPicks?>? = null
 
     override suspend fun businessCategoryPicks(): com.shopai.app.brain.tools.ShopCategoryPicks? {
-        picksRead?.takeIf { System.currentTimeMillis() - it.first < 30 * 60_000L }?.let { return it.second }
+        // (read each time: the business last read or saved is at hand, so a type changed in Profile counts at once)
         val b = runCatching { business?.invoke() }.getOrNull()
         // (a business set up before the list: its one older category, read into the list; a failed read keeps the last one known)
-        val read = b?.let { com.shopai.app.brain.tools.ShopCategoryPicks(com.shopai.app.data.model.BusinessCategories.picked(it), it.otherCategoryName) }
+        val read = b?.let { com.shopai.app.brain.tools.ShopCategoryPicks(com.shopai.app.data.model.BusinessCategories.picked(it), it.otherCategoryName,
+            com.shopai.app.data.model.FeatureSet.kindsOf(it)) }
         if (read != null || picksRead == null) picksRead = System.currentTimeMillis() to (read ?: picksRead?.second)
         return picksRead?.second
     }
