@@ -137,6 +137,10 @@ object KaiCommands {
 
     // ------------------------------------------------------------ payments
 
+    /** The words the payment rules read (I paid / they paid) — every form of them stays as it is when Kai matches words by sound. */
+    val paidWords: List<String> get() = outWords
+    val receivedWords: List<String> get() = inWords
+
     private val outWords = listOf("kuduthen", "koduthen", "kuduthuten", "kuduthutten", "koduthuten", "kuduthaachu", "kuduthachu", "kuduthiten", "kudutha",
         "gave", "given", "paid", "pay panniten", "payment panniten", "pay pannen", "anuppinen", "anupinen", "anuppiten", "anupiten", "sent",
         // The owner paid by UPI / GPay ("Ramesh-ku 400 GPay pannen", "pay pannitten").

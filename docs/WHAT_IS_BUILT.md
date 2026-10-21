@@ -273,6 +273,14 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
   `KaiOwnerSweepTest` principle 5 (₹150 crore), owner-lines.
 - "kuduthuden" / "koduthuden" / "kuduthudaan" (soft d) are "kuduthuten" / "kuduthutaan" (`KaiIntentWords`, mic: குடுத்துடேன்),
   so both spellings give the same entry; "thuttu" / துட்டு is money like kaasu / panam. Test: owner-lines.
+- Kai understands it said any way (owner, 21 Oct 2026: "voice-la nariya correct solla matanga, but kai athoda intent ah
+  purinjikanum"): before Kai asks what a word means, the word is matched by sound to Kai's own (`brain/tools/KaiWordSound.kt`:
+  "taranum" = tharanum, "kaden" = kadan, "kudutten" = kuduthen, "vandhathu" = vandhuchu, "kensal" = cancel, "sels" = sales,
+  "expairy" = expiry) — never a line Kai already reads, never the shop's names, a money / stock verb only after the amount; the
+  owner's own taught words come first. The mic now gives up to five guesses and Kai takes the one it reads best (`KaiHeard`,
+  `DeviceSpeechRecognizer`, Kai Chat only). A person + amount with a word Kai can't read gets three buttons — Payment Out /
+  Payment In / Kadan (new `KaiMeaning.CREDIT`) — and the pick is kept. The "k" of the word after an amount is no longer cut
+  ("3000 kudutten" was asked as `uduthten`). Training map: `docs/KAI_TRAINING.md`. Test: `KaiWordSoundTest`, owner-lines "Said any way".
 - The voice / bill screen no longer has the "Your sentence" box (its "Kumar-ku 2000-ku tharanum" example) or the Parse button.
 - Customers: a small Import beside the title. More → "Pazhaiya kanakku import" reads another app's Customer / Supplier
   List PDF and adds people with opening balances on Confirm. No other app's name is shown anywhere.
