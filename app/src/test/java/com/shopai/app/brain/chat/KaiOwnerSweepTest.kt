@@ -109,6 +109,14 @@ class KaiOwnerSweepTest {
         override suspend fun sales(from: LocalDate, to: LocalDate) = money[from.toString().take(7)]?.first
         override suspend fun purchases(from: LocalDate, to: LocalDate) = money[from.toString().take(7)]?.second
         override suspend fun expenses(from: LocalDate, to: LocalDate) = money[from.toString().take(7)]?.third
+        /** The item register's bill lines (owner, 21 Oct 2026): this month's purchase and sales bills. */
+        override suspend fun itemRegister(purchase: Boolean, from: LocalDate, to: LocalDate) = (if (purchase) listOf(
+            reg(3, "PUR-0101", "ABC Traders", "Colgate", "96", "PCS", "28"), reg(5, "PUR-0102", "Murugan Stores", "Rice", "250", "KG", "56"),
+        ) else listOf(reg(6, "INV-0201", null, "Rice", "20", "KG", "65"), reg(6, "INV-0201", null, "Colgate", "10", "PCS", "35")))
+            .filter { !it.date.isBefore(from) && !it.date.isAfter(to) }
+        private fun reg(day: Int, no: String, party: String?, product: String, qty: String, unit: String, rate: String) =
+            com.shopai.app.brain.tools.RegisterLine(LocalDate.of(2026, 10, day), no, party, product, BigDecimal(qty), unit, BigDecimal(qty), unit,
+                BigDecimal(rate), BigDecimal(qty).multiply(BigDecimal(rate)))
         override suspend fun topProducts(from: LocalDate, to: LocalDate, limit: Int) = listOf(
             ProductSalesFact("Rice", BigDecimal("320"), BigDecimal("17600")), ProductSalesFact("Colgate", BigDecimal("90"), BigDecimal("4500")),
         ).take(limit)

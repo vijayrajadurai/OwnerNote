@@ -447,6 +447,67 @@ object KaiCommands {
     private val expiryWord = Regex("""(?<![\p{L}])(expiry|expire|expired|expiring|expires|exp\s*date|kaalavadhi|kalavadhi|kaalavathi|best\s*before|use\s*-?\s*by|shelf\s*life|fefo|first\s+expiry)|(endha|entha|yentha|which)\s+batch\s+(first|mudhal|modhal)|காலாவதி|எக்ஸ்பைரி|எக்ஸ்பையர்|எக்ஸ்பைர்""")
     private val expiryAsk = Regex("""(?<![\p{L}])(list|evlo|enna|edhu|ethu|yedhu|endha|entha|yentha|aagura|agura|aagudhu|aaguthu|agudhu|aagum|aaga|aagapora|agapora|aagappora|pogudhu|poguthu|pora|varudhu|varuthu|kudu|sollu|kaattu|kaatu|which|show|soon|month|maasam|week|vaaram|report|medicine|medicines|marundhu|batch|batches|items?|products?|stock|eppo|eppa|when|date|aach\w*|fefo|first|mudhal|innaikku|naalaikku)(?![\p{L}])|ஆகுற|ஆகுது|ஆகப்போற|லிஸ்ட்|மருந்து|எந்த|குடு|சொல்லு|எப்போ|ஆச்சு|ஸ்டாக்""")
 
+    /** Which bills an item-register question is about. */
+    enum class RegisterSide { PURCHASE, SALES, BOTH }
+
+    /**
+     * An item-register question: [side]; [plain] — only "sales report" / "sales list" (in a shop that sells services that is the
+     * Daily Sales Note's, so Kai takes it only for a goods shop); [product] — the words a product could be in ("Cinthol purchase
+     * evlo"), matched to the shop's products by the caller.
+     */
+    data class RegisterAsk(val side: RegisterSide, val plain: Boolean, val product: String?)
+
+    /**
+     * "purchase register", "sales register", "item wise purchase report", "item wise report", "purchase report", "enna enna
+     * vaanginen", "Cinthol evlo vaanginen", "Cinthol sales evlo" (owner, 21 Oct 2026: item-wise purchase and sales register,
+     * said when asked) — typed, or as the mic's Tamil reads after [KaiSpokenWords.normalize]. Never a stock line ("Cinthol 10
+     * vandhuchu", "register 5 vaanginen" — a register is a stationery product too), a bill to enter ("purchase bill podu") or a
+     * money line. Null: not this question.
+     */
+    fun asksItemRegister(text: String): RegisterAsk? {
+        val t = " " + text.lowercase(Locale.ROOT).replace(Regex("""[?!.,;:]"""), " ").replace(Regex("""\s+"""), " ") + " "
+        fun has(r: Regex) = r.containsMatchIn(t)
+        // A count with a stock / money verb is a line to enter, not a question ("Cinthol 10 vandhuchu", "Kumar 500 kuduthan").
+        if (Regex("""\d""").containsMatchIn(t) && has(registerEntryVerb)) return null
+        if (has(registerBillEntry)) return null
+        val reg = has(registerWord)
+        val itemWise = has(registerItemWise)
+        val buy = has(registerBuy)
+        val sell = has(registerSell)
+        val side = when {
+            buy && sell || !buy && !sell -> RegisterSide.BOTH
+            buy -> RegisterSide.PURCHASE
+            else -> RegisterSide.SALES
+        }
+        if (reg && (buy || sell || itemWise || has(registerItemWord))) return RegisterAsk(side, false, null)
+        if (itemWise && (buy || sell || has(registerAsk))) return RegisterAsk(side, false, null)
+        if (has(registerWhatAll) && (buy || sell)) return RegisterAsk(side, false, null)
+        // "purchase report", "kolmudhal list", "vaangina list": the purchases item by item.
+        if (buy && !sell && has(registerReportNoun)) return RegisterAsk(RegisterSide.PURCHASE, false, null)
+        // "sales report", "sales list": the sales item by item — in a goods shop.
+        if (sell && !buy && has(registerReportNoun)) return RegisterAsk(RegisterSide.SALES, true, null)
+        // "Cinthol purchase evlo", "Cinthol evlo vaanginen", "Cinthol sales evlo": one product's lines (the caller finds the product).
+        if ((buy || sell) && !(buy && sell) && has(registerHowMuch)) {
+            val rest = t.replace(registerBuy, " ").replace(registerSell, " ").replace(registerHowMuch, " ").replace(registerFiller, " ")
+                .replace(Regex("""\s+"""), " ").trim()
+            if (rest.isNotEmpty() && rest.any(Char::isLetter)) return RegisterAsk(side, false, rest)
+        }
+        return null
+    }
+
+    private val registerWord = Regex("""(?<![\p{L}])(register|registers|rejister|rejistar|regester|registar|pathivedu)(?![\p{L}])|பதிவேடு""")
+    private val registerItemWise = Regex("""(?<![\p{L}])(item\s*-?\s*wise|items?\s*-?\s*vaari\p{L}*|product\s*-?\s*wise|porul\s*-?\s*vaari\p{L}*|ovvoru\s+(?:item|porul|product))(?![\p{L}])""")
+    private val registerItemWord = Regex("""(?<![\p{L}])(item|items|product|products|porul|saamaan)(?![\p{L}])""")
+    private val registerBuy = Regex("""(?<![\p{L}])(purchase|purchases|purchasing|purchased|kolmudhal|vaangina|vaanginadhu|vaanginathu|vaangunadhu|vaangunathu|vaangiyadhu|vaanginen|vaangunen|vaangirukken|vaangirukom|vangina|vanginen|vangunen)(?![\p{L}])""")
+    private val registerSell = Regex("""(?<![\p{L}])(sales|sale|sold|selling|vitha|vithadhu|vithathu|vithen|vitten|vithuchu|vithurukku|vithirukku|vikkapattadhu|virpanai|viyabaram|vyabaaram)(?![\p{L}])""")
+    private val registerAsk = Regex("""(?<![\p{L}])(report|list|details|detail|vivaram|statement|summary|kaattu|kaatu|kudu|sollu|evlo|enna|show|paakkanum|paakanum|venum)(?![\p{L}])""")
+    private val registerReportNoun = Regex("""(?<![\p{L}])(report|list|details|vivaram|statement|summary)(?![\p{L}])""")
+    private val registerWhatAll = Regex("""(?<![\p{L}])(enna\s+enna|ennenna|edhedhu|what\s+all|which\s+items)(?![\p{L}])""")
+    private val registerHowMuch = Regex("""(?<![\p{L}])(evlo|evvalavu|how\s+much|how\s+many|ethana|ethanai|eththana)(?![\p{L}])""")
+    private val registerFiller = Regex("""(?<![\p{L}])(indha|intha|maasam|masam|month|this|innaiku|innaikku|inniku|today|vaaram|week|pona|last|naan|nan|naanga|i|did|we|the|of|in|la|le|ku|motham|mothama|total|aachu|achu|irukku|iruku|ellam|ellaam|owner)(?![\p{L}])""")
+    private val registerEntryVerb = Regex("""(?<![\p{L}])(vandhuchu|vanthuchu|vandhurukku|vandhirukku|vaanginen|vanginen|vaangunen|vithuchu|vithen|vitten|irakkinen|kuduthan|kuduthaan|kuduthen|tharanum|kudukkanum|add|podu|pannu|udanjiduchu|kettupochu)(?![\p{L}])""")
+    private val registerBillEntry = Regex("""(?<![\p{L}])bill\s+(?:podu|podanum|poda|add|entry|scan|pannu|pannanum)(?![\p{L}])|(?<![\p{L}])(?:supplier|sales|purchase)\s+bill\s+entry(?![\p{L}])""")
+
     fun asksStockReport(text: String) = stockReport.containsMatchIn(text)
     fun asksStockValue(text: String) = stockMoney.containsMatchIn(text)
 

@@ -521,3 +521,10 @@ ENTRY  | Selvam 1500 panam tharanum                        | CREDIT Selvam 1500
 
 # A day's list is its report (owner, 21 Oct 2026: "today report" then "today list" asked "edha pathi sollureenga?").
 ASK    | innaiku list                                      | Daily Sales Note
+
+# Item register (owner, 21 Oct 2026: "item wise purchase and sales register aaganum, report ketta sollanum") — from the bills
+ASK    | purchase register                              | ₹16,688; Colgate
+ASK    | sales register                                 | ₹1,650; Rice
+ASK    | item wise report                               | ₹16,688; ₹1,650
+ASK    | Colgate evlo vaanginen                         | 96; ₹2,688
+ASK    | indha maasam enna enna vaanginen               | ₹16,688

@@ -26,6 +26,12 @@ data class PartyBalanceRow(val partyId: String, val balancePaise: Long)
 data class StockRow(val qtyMilli: Long, val valuePaise: Long)
 data class TopSoldRow(val productId: String, val name: String, val qtyMilli: Long, val valuePaise: Long)
 
+/** One item line of a confirmed purchase / sales bill (or its return), for the item register. */
+data class RegisterRow(
+    val date: Int, val number: String, val partyName: String?, val txnType: String, val itemName: String,
+    val qtyMilli: Long, val unit: String, val baseQtyMilli: Long, val baseUnit: String?, val ratePaise: Long, val taxablePaise: Long,
+)
+
 data class ProductStockRow(val productId: String, val qtyMilli: Long, val valuePaise: Long)
 
 data class HsnSummaryRow(
@@ -378,6 +384,18 @@ interface BooksDao {
            GROUP BY productId HAVING valuePaise > 0 ORDER BY valuePaise DESC LIMIT :limit""",
     )
     suspend fun topSold(businessId: String, from: Int, to: Int, limit: Int): List<TopSoldRow>
+
+    /** The item register: item lines of confirmed bills of these types between two days, oldest first. */
+    @Query(
+        """SELECT i.date AS date, t.number AS number, t.partyName AS partyName, i.txnType AS txnType, i.itemName AS itemName,
+                  i.qtyMilli AS qtyMilli, i.unit AS unit, i.baseQtyMilli AS baseQtyMilli, p.primaryUnit AS baseUnit,
+                  i.ratePaise AS ratePaise, i.taxablePaise AS taxablePaise
+           FROM txn_items i JOIN txns t ON t.id = i.txnId LEFT JOIN products p ON p.id = i.productId
+           WHERE i.businessId = :businessId AND i.active = 1 AND t.status = 'CONFIRMED' AND i.txnType IN (:types)
+             AND i.date BETWEEN :from AND :to
+           ORDER BY i.date, t.number, i.lineNo""",
+    )
+    suspend fun itemRegister(businessId: String, types: List<String>, from: Int, to: Int): List<RegisterRow>
 
     @Query(
         """SELECT COALESCE(SUM(-valuePaise), 0) FROM stock_movements

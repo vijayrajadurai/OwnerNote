@@ -17,7 +17,7 @@ object KaiMicForm {
 
     /** Tanglish / English loan words → how ta-IN speech-to-text writes them. */
     private val words: Map<String, String> = """
-        podanum=போடணும் draft=டிராஃப்ட் kaattu=காட்டு product=ப்ராடக்ட் en=என் vagai=வகை kolmudhal=கொள்முதல் sachet=சாஷே pouch=பவுச் drum=டிரம் jar=ஜார் bale=பேல் reel=ரீல் spool=ஸ்பூல் cone=கோன் ampoule=ஆம்பியூல் dose=டோஸ் yard=யார்டு gajam=கஜம் category=கேட்டகிரி maathanum=மாத்தணும்
+        podanum=போடணும் draft=டிராஃப்ட் kaattu=காட்டு product=ப்ராடக்ட் en=என் vagai=வகை kolmudhal=கொள்முதல் register=ரெஜிஸ்டர் wise=வைஸ் vaangiyadhu=வாங்கியது sachet=சாஷே pouch=பவுச் drum=டிரம் jar=ஜார் bale=பேல் reel=ரீல் spool=ஸ்பூல் cone=கோன் ampoule=ஆம்பியூல் dose=டோஸ் yard=யார்டு gajam=கஜம் category=கேட்டகிரி maathanum=மாத்தணும்
         aachu=ஆச்சு aagiduchu=ஆயிடுச்சு aayiram=ஆயிரம் abc=ஏபிசி add=ஆட் adhigama=அதிகமா agala=ஆகல aguthu=ஆகுது ah=ஆ akka=அக்கா
         anna=அண்ணா anupiten=அனுப்பிட்டேன் anuppiachu=அனுப்பியாச்சு anuppichan=அனுப்பிச்சான் anuppichen=அனுப்பிச்சேன் anuppinan=அனுப்பினான்
         anuppinen=அனுப்பினேன் anuppitan=அனுப்பிட்டான் arisi=அரிசி baaki=பாக்கி bag=பேக் avare=அவரே vera=வேற aal=ஆள் theriyaadhu=தெரியாது theriyala=தெரியல bgs=பேக்ஸ் balance=பேலன்ஸ் baniya=பனியா baniyan=பனியன்

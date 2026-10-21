@@ -131,6 +131,15 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
     report" is the expenses, never an expense entry. Profit with the books unreadable says so (not "Kai has no P&L").
   - A stock-out that is a sale ("vithuchu", not damage / wastage / own use) goes to the books as a walk-in cash sale
     (`KaiTools.cashSale`), so sales, profit and fast / slow movers have it; the draft shows "Cash sale: ₹…" first.
+- Item register (owner, 21 Oct 2026; test `KaiItemRegisterTest`, owner-lines): every item line of the purchase / sales bills
+  (returns count against), this month unless said, read-only from `txn_items` (`BooksDao.itemRegister`, `KaiTools.itemRegister`):
+  - "purchase register", "sales register", "item wise report" (both sides), "purchase report", "enna enna vaanginen" → item by
+    item, quantity in the stock unit and value before GST, with the total. "sales report" is the register only in a goods
+    shop (a service shop keeps the Daily Sales Note's).
+  - "Cinthol evlo vaanginen", "Rin Soap sales evlo" → that product's lines bill by bill (date, bill no, party). Words that name
+    no product ("Kumar kitta evlo vaanginen") stay the money question.
+  - "report" alone asks "Sales, purchase, stock…?"; "purchase" to it is the purchase register. Nothing recorded is said, with
+    where lines come from (purchase bill / bill scan; sales bill or "vithuchu" in chat). Mic: "பர்சேஸ் ரெஜிஸ்டர்", "ஐட்டம் வைஸ்".
 - Goods arriving ("kadaiku saraku vandhuruku") → items one by one into a list, saved together on the list's Confirm.
 - Expiry for goods that can expire, in any shop. Batches and a 7-day alert. Old stock becomes an "OLD-STOCK" batch on
   Confirm.
