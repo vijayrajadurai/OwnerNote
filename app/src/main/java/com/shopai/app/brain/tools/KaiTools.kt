@@ -25,6 +25,25 @@ data class BatchFact(val product: String, val batchNo: String, val expiry: java.
 
 data class ProductSalesFact(val name: String, val qty: BigDecimal, val value: BigDecimal)
 
+/**
+ * One item line of a purchase or sales bill — the item register (owner, 21 Oct 2026). [qty] / [unit]: as the bill has it;
+ * [baseQty] / [baseUnit]: in the product's stock unit, so lines of one product add up. [value]: before GST. A return
+ * ([isReturn]) is the same line taken back: it counts against the item.
+ */
+data class RegisterLine(
+    val date: LocalDate,
+    val number: String,
+    val party: String?,
+    val product: String,
+    val qty: BigDecimal,
+    val unit: String,
+    val baseQty: BigDecimal,
+    val baseUnit: String,
+    val rate: BigDecimal,
+    val value: BigDecimal,
+    val isReturn: Boolean = false,
+)
+
 /** A customer or supplier in the books. [balance]: what they owe me (customer) / what I owe them (supplier). */
 data class PartyMatch(
     val id: String, val name: String, val customer: Boolean, val phone: String?, val balance: BigDecimal,
@@ -180,6 +199,11 @@ interface KaiTools {
     /** Batches with stock that expire on or before [until] (expired ones too), from the books' batch records; null = unavailable. */
     suspend fun expiring(until: java.time.LocalDate): List<BatchFact>? = null
     suspend fun topProducts(from: LocalDate, to: LocalDate, limit: Int): List<ProductSalesFact>? = null
+    /**
+     * The item register: every item line of the purchase bills ([purchase] true, with purchase returns) or the sales bills
+     * (false, with sale returns) between two days, oldest first. Null: the books can't be read.
+     */
+    suspend fun itemRegister(purchase: Boolean, from: LocalDate, to: LocalDate): List<RegisterLine>? = null
     suspend fun parties(name: String): List<PartyMatch>? = null
 
     // ---- financial actions: prepare (no write) → confirm (engine) ----
