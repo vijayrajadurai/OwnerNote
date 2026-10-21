@@ -490,3 +490,7 @@ ASK    | last 7 days expenses PDF kudu                     | 7
 
 # A typed name is never another person by its consonants alone (owner's phone, 21 Oct 2026: "kens" became "கணேஷ்").
 ASK    | kens 2000 tharanum                                | Kens;₹2,000
+
+# A relation after a name (owner's phone, 21 Oct 2026: "kumar akka" was given Kumar's own balance): asked, never merged.
+ASK    | kumar akka evlo tharanum                          | Kumar;akka
+ASK    | Kumar oda appa balance enna                       | Kumar;appa

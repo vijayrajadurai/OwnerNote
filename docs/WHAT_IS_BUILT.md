@@ -240,6 +240,12 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
   in the books became கணேஷ்): a one-syllable English word must share the Tamil name's opening vowel (`NameSound`); a books name in
   Tamil read from English letters is shown with what was typed ("கணேஷ் (Ganesh)"); "Ganesh illa kens" moves the stated payment to
   Kens and keeps that for the conversation. Test: `KaiTrainingLinesTest.aTypedNameIsNeverAnotherPerson…`, `NameSoundTest`.
+- Family / relation words after a name (owner, 21 Oct 2026: "Kumar thambi evlo tharanum" answered a record called "thambi";
+  "kumar akka" got Kumar's own balance): one list in `brain/tools/KaiRelations.kt` (thambi, anna, akka, thangachi, amma, appa,
+  machan / macha, maama, athai, chithappa, paiyan, ponnu, wife, friend… typed, as the mic writes them, in English). A question
+  about "<name> <relation>" with no record of that whole name asks once — that person (said respectfully) or their relative —
+  and keeps the pick for the conversation; the relative's answer says there is no account (never another person's money). Entries
+  keep their own question (`relationQuestion`, now on the same list). Test: `KaiTrainingLinesTest.aRelationAfterANameIsAskedNeverMerged`.
 - The voice / bill screen no longer has the "Your sentence" box (its "Kumar-ku 2000-ku tharanum" example) or the Parse button.
 - Customers: a small Import beside the title. More → "Pazhaiya kanakku import" reads another app's Customer / Supplier
   List PDF and adds people with opening balances on Confirm. No other app's name is shown anywhere.

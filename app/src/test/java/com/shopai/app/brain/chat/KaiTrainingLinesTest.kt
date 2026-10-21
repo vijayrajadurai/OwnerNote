@@ -215,6 +215,46 @@ class KaiTrainingLinesTest {
         }
     }
 
+    /**
+     * Family / relation words (owner's phone, 21 Oct 2026: "Kumar thambi evlo tharanum" answered a record called "thambi"; "kumar
+     * akka evlo tharanum" said Kumar's own ₹4,000; "akka thambi anna amma appa macha — family inthamari nariya varum"): a relation
+     * after a name, with no record of that whole name, is asked once — that person, or their relative — and never another
+     * person's money. Every word of the list, typed and as the mic writes it.
+     */
+    @Test fun aRelationAfterANameIsAskedNeverMerged() {
+        val thambi = listOf(Party("c8", "thambi", true, BigDecimal("5000")))
+        for (typed in listOf("Kumar thambi evlo tharanum", "kumar akka evlo tharanum", "Kumar oda appa balance enna", "Kumar amma evlo tharanum",
+                "Kumar anna pending evlo", "Kumar machan evlo tharanum", "Kumar macha balance sollu", "Kumar paiyan statement PDF kudu",
+                "Kumar thangachi evlo tharanum", "Kumar's brother balance", "Kumar mama evlo tharanum")) for (line in ways(typed)) {
+            val s = Shop(extra = thambi)
+            val t = s.say(line)
+            assertTrue("$line → ${all(t)}", t.card?.buttons?.count { it.action is KaiAction.RelationPick } == 2)
+            assertFalse("$line: another person's money → ${all(t)}", t.reply.text.contains("5,000"))
+            assertTrue(line, s.nothingWritten())
+        }
+        // The relative: no account of theirs — said, never Kumar's balance; "na kumar thambi kekuran" is that answer too.
+        for (m in listOf(false, true)) {
+            fun said(l: String) = if (m) KaiMicForm.of(l) ?: l else l
+            val s = Shop(extra = thambi)
+            s.say(said("Kumar thambi evlo tharanum"))
+            val t = s.say(said("na kumar thambi kekuran"))
+            assertTrue("$m: ${all(t)}", Regex("thani kanakku illa|தனி கணக்கு இல்ல").containsMatchIn(t.reply.text) && !t.reply.text.contains("1,000 tharanum"))
+            // Kept: asked again in the same conversation, the same answer — no question.
+            assertTrue("$m kept", s.say(said("Kumar thambi evlo tharanum")).card?.buttons?.none { it.action is KaiAction.RelationPick } != false)
+        }
+        // The person themself (said respectfully): their balance.
+        for (m in listOf(false, true)) {
+            fun said(l: String) = if (m) KaiMicForm.of(l) ?: l else l
+            val s = Shop()
+            s.say(said("Kumar akka evlo tharanum"))
+            assertTrue("$m: ${all(s.last)}", all(s.say(said("Kumar dhaan"))).contains("1,000"))
+        }
+        assertTrue(all(Shop().also { it.say("Ramesh anna evlo tharanum") }.tap { it == KaiAction.RelationPick(true) }).contains("700"))
+        // A record of the whole name answers straight; a name alone is as before.
+        assertTrue(all(Shop(extra = listOf(Party("c7", "Kumar Thambi", true, BigDecimal("2500")))).say("Kumar thambi evlo tharanum")).contains("2,500"))
+        for (line in ways("Kumar evlo tharanum")) assertTrue(line, all(Shop().say(line)).contains("1,000"))
+    }
+
     @Test fun onePersonsPdfIsAskedBeforeItGoesToAnotherAndSendStatusIsSaidPlainly() {
         for (line in ways("illa Ramesh-ku anuppu")) {
             val s = Shop()

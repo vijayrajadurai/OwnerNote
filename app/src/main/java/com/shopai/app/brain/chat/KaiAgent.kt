@@ -129,6 +129,8 @@ sealed interface KaiAction {
     data class SameName(val same: Boolean) : KaiAction
     /** "Cash sale" to a wholesaler's "யாருக்கு?": the stock-out goes in as a walk-in cash sale after all (still a draft). */
     data class BuyerCash(val key: String) : KaiAction
+    /** To "Kumar akka — Kumar dhaan-aa, illa Kumar-oda akka-aa?": [same] = that person themself, else their relative. */
+    data class RelationPick(val same: Boolean) : KaiAction
 }
 
 /**
@@ -3083,12 +3085,6 @@ class KaiAgent(
     /** Same-named records Kai told apart in this conversation ("Chennai Lokesh"), so a draft / save line says which one. */
     private val chosenLabels = HashMap<String, String>()
 
-    private val relationWords = setOf(
-        "thambi", "thamby", "anna", "annan", "akka", "amma", "appa", "paiyan", "payyan", "magan", "ponnu", "magal", "wife", "husband",
-        "purushan", "pondatti", "mama", "maama", "machan", "machaan", "mami", "athai", "chithappa", "periyappa", "chithi", "periyamma",
-        "thatha", "paati", "thangachi", "thangai", "brother", "sister", "son", "daughter", "father", "mother", "uncle", "aunty",
-        "தம்பி", "அண்ணா", "அண்ணன்", "அக்கா", "அம்மா", "அப்பா", "மகன்", "மகள்", "மாமா", "மச்சான்", "தங்கச்சி", "மனைவி",
-    )
     /** "Praba thambi …" asked: the answer picks the record or a new person (typed / spoken, or its button). */
     private data class RelationChoice(val key: String, val record: PartyMatch, val phrase: String, val kind: PlanKind, val word: String)
     private var relationChoice: RelationChoice? = null
@@ -3107,8 +3103,7 @@ class KaiAgent(
         // still asked: the same Kumar, or a new supplier?)
         val record = KaiEntityResolver.sameName(person, all).filter { it.customer == receivable }.distinctBy { it.id }.singleOrNull()
             ?: KaiEntityResolver.sameName(person, all).distinctBy { it.id }.singleOrNull() ?: return null
-        val relation = Regex("""(?i)(?<![\p{L}\p{M}])${Regex.escape(person)}\s+([\p{L}\p{M}]+)""").find(text)
-            ?.groupValues?.get(1)?.lowercase(Locale.ROOT)?.replace(Regex("""(?i)(kitta|kita|ukku|kku|ku|oda|-)+$"""), "")?.takeIf { it in relationWords }
+        val relation = com.shopai.app.brain.tools.KaiRelations.after(text, person)
         val (word, phrase) = relation?.let { it to "$person ${it.replaceFirstChar { c -> c.titlecase(Locale.ROOT) }}" }
             ?: qualifierIn(text, person, listOf(record))?.takeIf { (_, p) -> all.none { it.name.equals(p, ignoreCase = true) } } ?: return null
         val r = PaymentRequest(newKey(), person, amount, outgoing = outgoing, mode = mode, said = text, dueDate = due)
@@ -3134,6 +3129,79 @@ class KaiAgent(
         )
     }
 
+    /** A "<name> <relation>" question asked (which person it is), its line, and the turn. */
+    private data class RelationAsk(val record: PartyMatch, val phrase: String, val word: String, val line: String, val lang: KaiLang, val turn: Long)
+    private var relationAsk: RelationAsk? = null
+    /** The owner's answers this conversation: "kumar akka" → true (Kumar himself) / false (Kumar's akka, someone else). */
+    private val relationPicks = HashMap<String, Boolean>()
+
+    private val recordQuestion = Regex("""(?i)(?<![\p{L}])(?:evlo|evvalavu|evalo|eppo|eppa|enna|balance|baaki|bakki|pending|statement|pdf|history|kanakku|ledger|""" +
+        """kaattu|kaatu|sollu|kekuran|kekkuren|kekuren|ketten|kettein|last|due|tharanum|kudukkanum|varanum|report)(?![\p{L}])|எவ்வளவு|எப்போ|பாக்கி|கணக்கு|\?""")
+
+    /**
+     * "Kumar akka evlo tharanum", "Kumar thambi balance", "na kumar thambi kekuran" (owner's phone, 21 Oct 2026: Kumar's own ₹4,000
+     * was said for his akka; a record called "thambi" was said for Kumar's thambi): a relation word after a name in the books, with
+     * no record or reference of that whole name — the owner is asked once whether it is that person (said respectfully) or their
+     * relative, and the pick is kept for the conversation. Never another person's money for them. Entries keep their own question.
+     */
+    private suspend fun relationQuestionAsked(text: String, lang: KaiLang, people: List<String>): KaiTurn? {
+        if (!recordQuestion.containsMatchIn(text)) return null
+        // (an entry with an amount — "Kumar akka enakku 500 tharanum" — is asked by the entry's own relation question)
+        if (Regex("""\d{2,}""").containsMatchIn(text)) return null
+        // (the name a relation follows — never a record that is itself a relation word: "Kumar thambi" with a "thambi" kept is Kumar's)
+        val named = people.filter { p -> p.isNotBlank() && !com.shopai.app.brain.tools.KaiRelations.isRelation(p) &&
+            Regex("""(?i)(?<![\p{L}\p{M}])${Regex.escape(p)}(?![\p{L}\p{M}])""").containsMatchIn(text) }.sortedByDescending { it.length } +
+            listOfNotNull(KaiCommands.personIn(text, people))
+        val person = named.firstOrNull { com.shopai.app.brain.tools.KaiRelations.after(text, it) != null } ?: return null
+        val word = com.shopai.app.brain.tools.KaiRelations.after(text, person) ?: return null
+        val phrase = "$person ${word.replaceFirstChar { it.titlecase(Locale.ROOT) }}"
+        // A record, or the owner's own name for one, of the whole phrase ("Kumar Thambi"): the plain answer finds it.
+        if (people.any { it.equals(phrase, ignoreCase = true) } || turnRefs[phrase.lowercase(Locale.ROOT)] != null) return null
+        val record = runCatching { tools.parties(person) }.getOrNull()?.let { KaiEntityResolver.sameName(person, it) }?.distinctBy { it.id }?.singleOrNull() ?: return null
+        relationPicks[phrase.lowercase(Locale.ROOT)]?.let { same -> return relationPicked(RelationAsk(record, phrase, word, text, lang, conversationState.conversationTurn), same) }
+        relationAsk = RelationAsk(record, phrase, word, text, lang, conversationState.conversationTurn)
+        val bal = KaiFormat.rupees(record.balance.toDouble())
+        tools.log("relation asked", "kai", phrase, ActionStatus.ANSWERED, null, text)
+        return KaiTurn(ChatReply(pick(lang,
+            ta = "ஓனர், '$phrase'-னு சொன்னீங்க — ${record.name} தானா (records-ல $bal), இல்ல ${record.name}-ஓட ${com.shopai.app.brain.tools.KaiRelations.inTamil(word)} (வேற ஆள்)-ஆ?",
+            tl = "Owner, '$phrase'-nu sonneenga — ${record.name} dhaan-aa (records-la $bal), illa ${record.name}-oda $word (vera aal)-aa?",
+            en = "Owner, you said '$phrase' — is that ${record.name} ($bal in the records), or ${record.name}'s $word (someone else)?"),
+            KaiMood.CLARIFY, ChatIntent.GENERAL_BUSINESS_QUERY),
+            KaiCard(emptyList(), listOf(
+                KaiButton("${record.name} · $bal", KaiAction.RelationPick(true), primary = true),
+                KaiButton(pick(lang, ta = "${record.name}-ஓட ${com.shopai.app.brain.tools.KaiRelations.inTamil(word)}", tl = "${record.name}-oda $word", en = "${record.name}'s $word"), KaiAction.RelationPick(false)),
+            )))
+    }
+
+    /** The owner's pick: that person themself (the question answered for them), or their relative (no record of that name — said). */
+    private suspend fun relationPicked(a: RelationAsk, same: Boolean): KaiTurn {
+        relationAsk = null
+        relationPicks[a.phrase.lowercase(Locale.ROOT)] = same
+        if (same) return askAs(a.lang, com.shopai.app.brain.tools.KaiRelations.without(a.line, a.record.name))
+        return say(a.lang, KaiMood.EXPLAINING, "relation: someone else",
+            ta = "ஓனர், '${a.phrase}'-க்கு records-ல தனி கணக்கு இல்ல. ${a.record.name}-ஓட பாக்கி ${a.record.name}-ஓடது மட்டும் தான். '${a.phrase}'-க்கு கணக்கு போடணும்னா “${a.phrase} எனக்கு 500 தரணும்”-ன்னு சொல்லுங்க.",
+            tl = "Owner, '${a.phrase}'-ku records-la thani kanakku illa. ${a.record.name}-oda baaki ${a.record.name}-odadhu mattum dhaan. '${a.phrase}'-ku kanakku podanum-na “${a.phrase} enakku 500 tharanum”-nu sollunga.",
+            en = "Owner, there's no account for '${a.phrase}' in the records — ${a.record.name}'s balance is only ${a.record.name}'s. To start one, say “${a.phrase} owes me 500”.")
+    }
+
+    /** The typed / spoken answer: "Kumar dhaan" / "avare" / "aama" → the person; "vera aal" / "akka" / "illa" → the relative. */
+    private suspend fun relationAskAnswered(said: String): KaiTurn? {
+        val a = relationAsk?.takeIf { conversationState.conversationTurn - it.turn <= 2 } ?: run { relationAsk = null; return null }
+        val t = com.shopai.app.brain.tools.KaiSpokenWords.normalize(said).lowercase(Locale.ROOT).trim()
+        if (Regex("""\d{2,}""").containsMatchIn(t) || t.split(Regex("""\s+""")).size > 6) return null
+        fun has(w: String) = Regex("""(?<![\p{L}\p{M}])($w)(?![\p{L}\p{M}])""").containsMatchIn(t)
+        val relative = t.split(Regex("""\s+""")).any { com.shopai.app.brain.tools.KaiRelations.shown(it) == a.word } ||
+            has("vera|veru|veroru|pudhu|puthu|new|different|someone\\s+else|relative|vera\\s+aal|வேற|வேறு|புது")
+        val same = has("avare|avar\\s*dhaan|avan\\s*dhaan|aval\\s*dhaan|adhey|adhe|athe|same|dhaan|than|thaan|aama|ama|yes|correct|mariyadhai|respect|அவரே|அவர்\\s*தான்|அதே|தான்|ஆமா|ஆமாம்") ||
+            has(Regex.escape(a.record.name.lowercase(Locale.ROOT))) && !relative
+        val no = has("illa|illai|no|இல்ல|இல்லை")
+        return when {
+            relative || no && !same -> relationPicked(a, false)
+            same -> relationPicked(a, true)
+            else -> null
+        }
+    }
+
     /** Words said next to a name that are never who it is (KaiCommands.notQualifiers). */
     private val notQualifiers get() = KaiCommands.notQualifiers
     private val verbEnding = Regex("""(aan|an|aaru|aru|aanga|anga|nga|inen|en|anum|num|chu|dhu|thu|tha|dha|ttu|tten|ten|rom|vom|kku|ணும்|ான்|ார்|ாங்க|ேன்|து|சு|க்கு)$""")
@@ -3157,7 +3225,7 @@ class KaiAgent(
         fun usable(raw: String): String? {
             val w = raw.substringBefore('-')
             val k = w.lowercase(Locale.ROOT)
-            if (w.length < 3 || k in known || k in notQualifiers || k in relationWords || KaiEntityResolver.isFunctionWord(k) ||
+            if (w.length < 3 || k in known || k in notQualifiers || com.shopai.app.brain.tools.KaiRelations.isRelation(k) || KaiEntityResolver.isFunctionWord(k) ||
                 k in com.shopai.app.brain.tools.KaiFeed.notNames) return null
             if (verbEnding.containsMatchIn(k) || samePerson(k, person) || com.shopai.app.brain.KaiUnderstanding.isNumberWord(k)) return null
             // "Karthik kuduthar 5000", "Divya pay pannitaan": the verb, never a second name ("Karthik Kuduthar").
@@ -3653,6 +3721,8 @@ class KaiAgent(
         val text = said.trim().trimEnd('.', '!', '?').replace(Regex("""\s+"""), " ")
         val lang = KaiConversationSemantics.phraseLang(text, lang0)
         nameCorrection(text, lang, people)?.let { return it }
+        if (relationAsk != null) relationAskAnswered(said)?.let { return it }
+        relationQuestionAsked(text, lang, people)?.let { return it }
         otherRecipient(text, lang, people)?.let { return it }
         packTotal(text, lang)?.let { return it }
         remainingBalance(text, lang)?.let { return it }
@@ -6570,6 +6640,7 @@ class KaiAgent(
                 return switchTo(action.category, sw, lang)
             }
             is KaiAction.SameName -> return sameNamePicked(action.same, lang)
+            is KaiAction.RelationPick -> return relationAsk?.let { relationPicked(it, action.same) }
             is KaiAction.BuyerCash -> {
                 val a = buyerAsk?.takeIf { it.key == action.key } ?: return null
                 buyerAsk = null

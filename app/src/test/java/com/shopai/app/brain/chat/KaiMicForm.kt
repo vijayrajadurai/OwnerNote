@@ -64,7 +64,7 @@ object KaiMicForm {
         ithuvaraikum=இதுவரைக்கும் avlothan=அவ்ளோதான் nethu=நேத்து service=சர்வீஸ் facial=ஃபேஷியல்
         pathi=பத்தி porul=பொருள் kadaila=கடையில irukura=இருக்குற kudukal=குடுக்கல் vangal=வாங்கல் ama=ஆமா
         kadaiku=கடைக்கு saman=சாமான் saraku=சரக்கு vandhuruku=வந்திருக்கு pannalama=பண்ணலாமா avlo=அவ்ளோ
-        avanga=அவங்க peru=பேரு namba=நம்ம namma=நம்ம vangunan=வாங்குனான் vaanginaan=வாங்கினான் vaanginaanga=வாங்கினாங்க seathuko=சேர்த்துக்கோ serthuko=சேர்த்துக்கோ vengayam=வெங்காயம்
+        avanga=அவங்க peru=பேரு namba=நம்ம namma=நம்ம vangunan=வாங்குனான் amma=அம்மா appa=அப்பா machan=மச்சான் macha=மச்சா maama=மாமா thangachi=தங்கச்சி paiyan=பையன் ponnu=பொண்ணு chithappa=சித்தப்பா athai=அத்தை vaanginaan=வாங்கினான் vaanginaanga=வாங்கினாங்க seathuko=சேர்த்துக்கோ serthuko=சேர்த்துக்கோ vengayam=வெங்காயம்
         azhugiduchu=அழுகிடுச்சு azhugipochu=அழுகிப்போச்சு vaadiduchu=வாடிடுச்சு thakkali=தக்காளி kariveppilai=கறிவேப்பிலை loose=லூஸ் packet=பாக்கெட் kilo=கிலோ arai=அரை
         small=ஸ்மால் medium=மீடியம் large=லார்ஜ் family=ஃபேமிலி chinna=சின்ன periya=பெரிய
         pottan=போட்டான் potten=போட்டேன் adachitan=அடைச்சிட்டான் transfer=டிரான்ஸ்ஃபர் pannan=பண்ணான் gram=கிராம் ratri=ராத்திரி poota=பூட்ட
