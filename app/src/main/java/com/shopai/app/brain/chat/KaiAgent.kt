@@ -1105,9 +1105,9 @@ class KaiAgent(
                 tl = "Seri Owner, yaaroda baaki? Peru sollunga (“Kumar evlo tharanum”), illa “motham evlo varanum”.",
                 en = "Okay Owner, whose balance? Say the name (“how much does Kumar owe”), or “total receivable”.")
             report -> { topicAsked = "report" to conversationState.conversationTurn; say(lang, KaiMood.CLARIFY, "guided: which report",
-                ta = "எந்த report ஓனர்? Sales, stock, கொடுக்கல்-வாங்கல், expiry?",
-                tl = "Endha report Owner? Sales, stock, kudukkal-vaangal, expiry?",
-                en = "Which report, Owner? Sales, stock, money given / taken, or expiry?") }
+                ta = "எந்த report ஓனர்? Sales, purchase, stock, கொடுக்கல்-வாங்கல், expiry?",
+                tl = "Endha report Owner? Sales, purchase, stock, kudukkal-vaangal, expiry?",
+                en = "Which report, Owner? Sales, purchases, stock, money given / taken, or expiry?") }
             moneyWord != null -> { topicAsked = "money:$moneyWord" to conversationState.conversationTurn; say(lang, KaiMood.CLARIFY, "guided: $moneyWord",
                 ta = "ஓனர், இன்னைக்கு $moneyWord எவ்வளவு வந்துச்சுனு பார்க்கணுமா, இல்ல payment note பண்ணணுமா?",
                 tl = "Owner, innaikku $moneyWord evlo vandhuchu-nu paakkanum-aa, illa payment note pannanum-aa?",
@@ -1136,6 +1136,8 @@ class KaiAgent(
         fun has(p: String) = Regex("""(?<![\p{L}\p{M}])(?:$p)(?![\p{L}\p{M}])""").containsMatchIn(t)
         if (t.split(Regex("""\s+""")).size > 12) return null
         val sales = has("sales|sale|vyabaaram|viyabaram|vandha panam|சேல்ஸ்|விற்பனை|வியாபாரம்")
+        val bought = has("purchase|purchases|kolmudhal|vaangina|vaanginadhu|பர்சேஸ்|பர்ச்சேஸ்|கொள்முதல்")
+        val itemWise = has("item wise|itemwise|register|ஐட்டம் வைஸ்|ரெஜிஸ்டர்")
         val stockW = has("stock|ஸ்டாக்|porul|பொருள்")
         val expiry = has("expiry|காலாவதி|எக்ஸ்பைரி|எக்ஸ்பையரி")
         val spend = has("selavu|expense|expenses|செலவு")
@@ -1143,6 +1145,11 @@ class KaiAgent(
         val see = has("paakkanum|paakanum|paaru|paru|kaattu|kaatu|sollu|evlo|aamaa|aama|ama|yes|seri|sari|ok|venum|பார்க்கணும்|பாரு|காட்டு|சொல்லு|எவ்வளவு|ஆமா|சரி|வேணும்")
         val note = has("note|podu|pannanum|pannu|entry|kuduthan|kuduthaan|kuduthen|vandhuchu|நோட்|போடு|பண்ணணும்|பண்ணு")
         val line = when {
+            // "purchase" / "item wise" to "Endha report?": the item register (owner, 21 Oct 2026); "sales" stays the month's sales.
+            kind == "report" && bought && sales -> "item wise report"
+            kind == "report" && bought -> "purchase register"
+            kind == "report" && sales && itemWise -> "sales register"
+            kind == "report" && itemWise -> "item wise report"
             kind == "report" && sales -> "indha maasam sales evlo"
             kind == "report" && expiry -> "expiry list kudu"
             kind == "report" && stockW -> "stock report"
@@ -1978,6 +1985,8 @@ class KaiAgent(
         val afterBrief = briefJustShown
         briefJustShown = false
         // The Daily Sales Note's own question (a service's price, the opening Kallapetti, Confirm on a sale / the day close): its answer.
+        // "purchase register", "item wise sales report", "Cinthol evlo vaanginen": the item register from the bills (owner, 21 Oct 2026).
+        if (plans.isEmpty()) itemRegisterAsked(said, lang, people0)?.let { return it }
         if (plans.isEmpty()) dailySales.answer(said, raw, lang)?.let { return it }
         // "pulungal arisi 10bgs" → "edha pathi?" → "stock" → "vandhuchu": the line Kai asked about, finished by this word — read as
         // one line ("pulungal arisi 10bgs vandhuchu"), never "vandhuchu" alone as money (owner's phone, 15 Oct 2026).
@@ -6947,6 +6956,117 @@ class KaiAgent(
         return KaiTurn(
             ChatReply(reply, KaiMood.HAPPY, ChatIntent.MONTHLY_SALES),
             KaiCard(top.mapIndexed { i, p -> "${i + 1}. ${p.name} — ${sold(p)}${KaiFormat.rupees(p.value.toDouble())}" }, emptyList()),
+        )
+    }
+
+    /**
+     * The item register (owner, 21 Oct 2026: "item wise purchase and sales register aaganum, report ketta sollanum"): every item
+     * line of the purchase / sales bills in the period (this month unless said), summed item by item — or one product's lines,
+     * bill by bill. Read-only, from the books; nothing kept means it says so and where the lines come from. Null: not this question.
+     */
+    private suspend fun itemRegisterAsked(said: String, lang: KaiLang, people: List<String>): KaiTurn? {
+        val ask = com.shopai.app.brain.tools.KaiCommands.asksItemRegister(said) ?: return null
+        val side = ask.side
+        // "sales report" alone in a shop that sells services is the Daily Sales Note's.
+        if (ask.plain && runCatching { tools.sellsServices() }.getOrNull() != false) return null
+        val today = now().toLocalDate()
+        val period = KaiChatUnderstanding.understand(said, today, people).period
+            ?: ChatPeriod(today.withDayOfMonth(1), today, ChatPeriod.Kind.THIS_MONTH)
+        val to = minOf(period.to, today)
+        val buy = side != com.shopai.app.brain.tools.KaiCommands.RegisterSide.SALES
+        val sell = side != com.shopai.app.brain.tools.KaiCommands.RegisterSide.PURCHASE
+        // "Cinthol evlo vaanginen": the lines of the products those words name (Cinthol 100g and Cinthol 200g alike).
+        val words = ask.product?.split(' ')?.filter { w -> w.length >= 2 && w.any(Char::isLetter) }.orEmpty()
+        fun named(name: String) = words.isNotEmpty() && words.all { w -> Regex("""(?i)(?<![\p{L}])${Regex.escape(w)}""").containsMatchIn(name) }
+        val shopNamed = if (ask.product != null) runCatching { tools.products() }.getOrNull().orEmpty().filter { named(it.name) }.map { it.name } else emptyList()
+        val bought = if (buy) tools.itemRegister(true, period.from, to) ?: return if (ask.product == null) unverified(lang, "item register") else null else emptyList()
+        val sold = if (sell) tools.itemRegister(false, period.from, to) ?: return if (ask.product == null) unverified(lang, "item register") else null else emptyList()
+        val label = periodName(period, lang, today)
+        fun r(a: BigDecimal) = KaiFormat.rupees(a.toDouble())
+        fun signed(l: com.shopai.app.brain.tools.RegisterLine, v: BigDecimal) = if (l.isReturn) v.negate() else v
+        if (ask.product != null) {
+            val b = bought.filter { named(it.product) }
+            val s = sold.filter { named(it.product) }
+            // Words that name no product of the shop and no line ("Kumar kitta evlo vaanginen"): not this question.
+            if (b.isEmpty() && s.isEmpty() && shopNamed.isEmpty()) return null
+            val what = shopNamed.firstOrNull()?.takeIf { shopNamed.size == 1 } ?: (b + s).firstOrNull()?.product?.takeIf { (b + s).map { l -> l.product }.distinct().size == 1 }
+                ?: ask.product.split(' ').joinToString(" ") { w -> w.replaceFirstChar(Char::uppercase) }
+            tools.log("item register", "books", "$what: ${b.size} bought, ${s.size} sold", ActionStatus.ANSWERED)
+            if (b.isEmpty() && s.isEmpty()) return say(lang, KaiMood.CLARIFY, null,
+                ta = "ஓனர், $label $what-க்கு ${if (buy) "purchase" else "sales"} bill-ல item எதுவும் பதிவுல இல்ல.",
+                tl = "Owner, $label $what-ku ${if (buy) "purchase" else "sales"} bill-la item edhuvum record-la illa.",
+                en = "Owner, there are no ${if (buy) "purchase" else "sales"} bill lines for $what ${label.lowercase(Locale.ROOT)}.")
+            fun line(l: com.shopai.app.brain.tools.RegisterLine, mark: String) = "${KaiFormat.date(l.date, lang, today)} · ${l.number}" +
+                (l.party?.let { " · $it" }.orEmpty()) + " — " + (if (l.isReturn) pickLang(lang, ta = "திருப்பி ", tl = "return ", en = "return ") else "") +
+                "$mark${l.product} ${qty(l.qty, l.unit)} × ${r(l.rate)} = ${r(l.value)}"
+            val many = b.isNotEmpty() && s.isNotEmpty()
+            val bIn = pickLang(lang, ta = "வாங்கியது ", tl = "Vaangiyadhu ", en = "Bought ")
+            val sOut = pickLang(lang, ta = "வித்தது ", tl = "Vithadhu ", en = "Sold ")
+            val rows = b.map { line(it, if (many) bIn else "") } + s.map { line(it, if (many) sOut else "") }
+            fun total(ls: List<com.shopai.app.brain.tools.RegisterLine>) = ls.fold(BigDecimal.ZERO) { a, l -> a + signed(l, l.baseQty) } to ls.fold(BigDecimal.ZERO) { a, l -> a + signed(l, l.value) }
+            val unit = (b + s).first().baseUnit
+            val parts = buildList {
+                if (b.isNotEmpty()) total(b).let { (q, v) -> add(pickLang(lang, ta = "வாங்கியது ${qty(q, unit)} — ${r(v)}", tl = "vaangiyadhu ${qty(q, unit)} — ${r(v)}", en = "bought ${qty(q, unit)} — ${r(v)}")) }
+                if (s.isNotEmpty()) total(s).let { (q, v) -> add(pickLang(lang, ta = "வித்தது ${qty(q, unit)} — ${r(v)}", tl = "vithadhu ${qty(q, unit)} — ${r(v)}", en = "sold ${qty(q, unit)} — ${r(v)}")) }
+            }.joinToString(", ")
+            return KaiTurn(
+                ChatReply(pickLang(lang, ta = "ஓனர், $label $what: $parts (GST இல்லாம).", tl = "Owner, $label $what: $parts (GST illaama).",
+                    en = "Owner, ${label.lowercase(Locale.ROOT)} $what: $parts (before GST)."), KaiMood.EXPLAINING, ChatIntent.GENERAL_BUSINESS_QUERY),
+                KaiCard(rows.take(12) + (if (rows.size > 12) listOf(pickLang(lang, ta = "+ இன்னும் ${rows.size - 12}", tl = "+ innum ${rows.size - 12}", en = "+ ${rows.size - 12} more")) else emptyList()), emptyList()),
+            )
+        }
+        tools.log("item register", "books", "${side.name}: ${bought.size} bought, ${sold.size} sold", ActionStatus.ANSWERED)
+        if (bought.isEmpty() && sold.isEmpty()) return when (side) {
+            com.shopai.app.brain.tools.KaiCommands.RegisterSide.PURCHASE -> say(lang, KaiMood.CLARIFY, null,
+                ta = "ஓனர், $label purchase bill-ல item எதுவும் பதிவுல இல்ல. Purchase bill போடுங்க (இல்ல bill photo scan பண்ணுங்க) — அதுல இருக்குற item எல்லாம் register-ல வரும்.",
+                tl = "Owner, $label purchase bill-la item edhuvum record-la illa. Purchase bill podunga (illa bill photo scan pannunga) — adhula irukura item ellaam register-la varum.",
+                en = "Owner, there are no items on purchase bills ${label.lowercase(Locale.ROOT)}. Enter a purchase bill (or scan the bill's photo) and its items show in the register.")
+            com.shopai.app.brain.tools.KaiCommands.RegisterSide.SALES -> say(lang, KaiMood.CLARIFY, null,
+                ta = "ஓனர், $label sales bill-ல item எதுவும் பதிவுல இல்ல. Sales bill போடுங்க, இல்ல “Cinthol 2 வித்துச்சு”-னு சொல்லுங்க — register-ல வரும்.",
+                tl = "Owner, $label sales bill-la item edhuvum record-la illa. Sales bill podunga, illa “Cinthol 2 vithuchu”-nu sollunga — register-la varum.",
+                en = "Owner, there are no items on sales bills ${label.lowercase(Locale.ROOT)}. Make a sales bill, or say “Cinthol 2 sold” — it shows in the register.")
+            com.shopai.app.brain.tools.KaiCommands.RegisterSide.BOTH -> say(lang, KaiMood.CLARIFY, null,
+                ta = "ஓனர், $label purchase, sales bill-ல item எதுவும் பதிவுல இல்ல — bill போட்டா item-wise register-ல வரும்.",
+                tl = "Owner, $label purchase, sales bill-la item edhuvum record-la illa — bill pottaa item-wise register-la varum.",
+                en = "Owner, there are no items on purchase or sales bills ${label.lowercase(Locale.ROOT)} — bills you enter show in the item-wise register.")
+        }
+        // Item by item: quantity in the product's stock unit and value before GST; returns count against the item.
+        class Sum(val name: String, val unit: String) { var q = BigDecimal.ZERO; var v = BigDecimal.ZERO; var bq = BigDecimal.ZERO; var bv = BigDecimal.ZERO }
+        val sums = linkedMapOf<String, Sum>()
+        bought.forEach { l -> sums.getOrPut(l.product.lowercase(Locale.ROOT)) { Sum(l.product, l.baseUnit) }.apply { bq += signed(l, l.baseQty); bv += signed(l, l.value) } }
+        sold.forEach { l -> sums.getOrPut(l.product.lowercase(Locale.ROOT)) { Sum(l.product, l.baseUnit) }.apply { q += signed(l, l.baseQty); v += signed(l, l.value) } }
+        val totalBought = bought.fold(BigDecimal.ZERO) { a, l -> a + signed(l, l.value) }
+        val totalSold = sold.fold(BigDecimal.ZERO) { a, l -> a + signed(l, l.value) }
+        val bWord = pickLang(lang, ta = "வாங்கியது", tl = "vaangiyadhu", en = "bought")
+        val sWord = pickLang(lang, ta = "வித்தது", tl = "vithadhu", en = "sold")
+        val rows = when (side) {
+            com.shopai.app.brain.tools.KaiCommands.RegisterSide.PURCHASE -> sums.values.sortedByDescending { it.bv }.map { "${it.name} — ${qty(it.bq, it.unit)} — ${r(it.bv)}" }
+            com.shopai.app.brain.tools.KaiCommands.RegisterSide.SALES -> sums.values.sortedByDescending { it.v }.map { "${it.name} — ${qty(it.q, it.unit)} — ${r(it.v)}" }
+            com.shopai.app.brain.tools.KaiCommands.RegisterSide.BOTH -> sums.values.sortedByDescending { it.bv + it.v }.map { s ->
+                s.name + " — " + listOfNotNull(
+                    s.takeIf { it.bq.signum() != 0 || it.bv.signum() != 0 }?.let { "$bWord ${qty(it.bq, it.unit)} ${r(it.bv)}" },
+                    s.takeIf { it.q.signum() != 0 || it.v.signum() != 0 }?.let { "$sWord ${qty(it.q, it.unit)} ${r(it.v)}" },
+                ).joinToString(" · ")
+            }
+        }
+        val items = sums.size
+        val head = when (side) {
+            com.shopai.app.brain.tools.KaiCommands.RegisterSide.PURCHASE -> pickLang(lang,
+                ta = "ஓனர், $label purchase register: $items item, ${bought.size} bill line — மொத்தம் ${r(totalBought)} (GST இல்லாம).",
+                tl = "Owner, $label purchase register: $items item, ${bought.size} bill line — mothama ${r(totalBought)} (GST illaama).",
+                en = "Owner, ${label.lowercase(Locale.ROOT)} purchase register: $items item${if (items == 1) "" else "s"}, ${bought.size} bill line${if (bought.size == 1) "" else "s"} — ${r(totalBought)} in all (before GST).")
+            com.shopai.app.brain.tools.KaiCommands.RegisterSide.SALES -> pickLang(lang,
+                ta = "ஓனர், $label sales register: $items item, ${sold.size} bill line — மொத்தம் ${r(totalSold)} (GST இல்லாம).",
+                tl = "Owner, $label sales register: $items item, ${sold.size} bill line — mothama ${r(totalSold)} (GST illaama).",
+                en = "Owner, ${label.lowercase(Locale.ROOT)} sales register: $items item${if (items == 1) "" else "s"}, ${sold.size} bill line${if (sold.size == 1) "" else "s"} — ${r(totalSold)} in all (before GST).")
+            com.shopai.app.brain.tools.KaiCommands.RegisterSide.BOTH -> pickLang(lang,
+                ta = "ஓனர், $label item-wise register: வாங்கியது ${r(totalBought)}, வித்தது ${r(totalSold)} (GST இல்லாம).",
+                tl = "Owner, $label item-wise register: vaangiyadhu ${r(totalBought)}, vithadhu ${r(totalSold)} (GST illaama).",
+                en = "Owner, ${label.lowercase(Locale.ROOT)} item-wise register: bought ${r(totalBought)}, sold ${r(totalSold)} (before GST).")
+        }
+        return KaiTurn(
+            ChatReply(head, KaiMood.EXPLAINING, ChatIntent.GENERAL_BUSINESS_QUERY),
+            KaiCard(rows.take(15) + (if (rows.size > 15) listOf(pickLang(lang, ta = "+ இன்னும் ${rows.size - 15} item", tl = "+ innum ${rows.size - 15} item", en = "+ ${rows.size - 15} more items")) else emptyList()), emptyList()),
         )
     }
 
