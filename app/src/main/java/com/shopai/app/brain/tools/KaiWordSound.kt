@@ -163,7 +163,8 @@ object KaiWordSound {
             if (i > 0 && w[0].isUpperCase()) return@mapIndexedNotNull null
             // "Kannanku", "Kannan kitta": a person.
             if (caseOn.containsMatchIn(lower) || caseAfter.containsMatchIn(text.substring(m.range.last + 1))) return@mapIndexedNotNull null
-            val k = nearest(w) ?: return@mapIndexedNotNull null
+            // (only to one of Kai's own words above: a rule's form — "pottaanga" — keeps itself but is never what another word becomes)
+            val k = nearest(w)?.takeIf { it in curated } ?: return@mapIndexedNotNull null
             if (k.kind.verb && (firstAmount == null || m.range.first < firstAmount || ms.any { o -> o !== m && isVerb(o.value) })) return@mapIndexedNotNull null
             if (k.kind.verb && k.kind in saidKinds || k.to in saidWords) return@mapIndexedNotNull null
             m to k
