@@ -25,6 +25,8 @@ class DeviceSpeechRecognizer(context: Context) {
         onPartialResult: (String) -> Unit = {},
         onResult: (String) -> Unit,
         onError: (Int) -> Unit,
+        /** All the guesses, the phone's best first — given instead of [onResult] when set (Kai Chat picks the one it reads best). */
+        onResults: ((List<String>) -> Unit)? = null,
     ) {
         if (!isAvailable()) {
             onError(SpeechRecognizer.ERROR_CLIENT)
@@ -56,11 +58,12 @@ class DeviceSpeechRecognizer(context: Context) {
 
                     override fun onResults(results: Bundle?) {
                         active = false
-                        val spoken = results
+                        val guesses = results
                             ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                            ?.firstOrNull()
+                            .orEmpty().filter { it.isNotBlank() }
+                        val spoken = guesses.firstOrNull()
                         if (!spoken.isNullOrBlank()) {
-                            onResult(spoken)
+                            if (onResults != null) onResults(guesses) else onResult(spoken)
                         } else {
                             onError(SpeechRecognizer.ERROR_NO_MATCH)
                         }
@@ -84,7 +87,8 @@ class DeviceSpeechRecognizer(context: Context) {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, languageTag)
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+            // Up to five guesses of the line: Kai Chat takes the one it reads best (the others use the first, as before).
+            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
             // A shop owner pauses mid-line ("Kumar … 2000 kuduthan"): wait a little longer before taking the line as finished.
             putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 2000L)
             putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 1500L)

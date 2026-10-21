@@ -528,3 +528,19 @@ ASK    | sales register                                 | ₹1,650; Rice
 ASK    | item wise report                               | ₹16,688; ₹1,650
 ASK    | Colgate evlo vaanginen                         | 96; ₹2,688
 ASK    | indha maasam enna enna vaanginen               | ₹16,688
+
+# Said any way (owner, 21 Oct 2026: "voice-la nariya correct solla matanga, but kai athoda intent ah purinjikanum — yeppadi
+# sonnalum"): a word Kai can't read is the word of Kai's it sounds like (KaiWordSound) — only when Kai would otherwise ask.
+ENTRY  | Kumar 2000 thandan                                | IN Kumar 2000
+ENTRY  | ABC Traders ku 3000 kudutten                      | OUT ABC Traders 3000
+ENTRY  | ABC Traders ku 3000 katinen                       | OUT ABC Traders 3000
+ENTRY  | ABC Traders ku 3000 kattunen                      | OUT ABC Traders 3000
+# ("kaden" sounds like both "kadan" (credit) and "katten" (I paid): Kai asks with buttons — never chooses)
+ASK    | Kumar ku 500 kaden                                | ₹500;credit
+ENTRY  | Kumar 500 kredit                                  | CREDIT Kumar 500
+ENTRY  | Kumar 500 taranum                                 | CREDIT Kumar 500
+ENTRY  | Kumar kitta 500 vananum                           | CREDIT Kumar 500
+ENTRY  | ABC Traders ku 5000 kudukannum                    | DEBIT ABC Traders 5000
+STOCK  | Colgate 2 box vandhathu                           | Colgate 336
+STOCK  | Colgate 2 box erakkinen                           | Colgate 336
+STOCK  | Rice 10 kg vithuchi                               | Rice 240

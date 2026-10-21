@@ -650,6 +650,8 @@ object KaiFeed {
         evalo = evlo
         evvlo = evlo
         yevvalavu = evvalavu
+        # "Kumar kitta irunthu 2000 vanthathu" (any-way check, 21 Oct 2026): "from", however it is typed
+        irunthu = irundhu
         nalaiku = naalaiku
         nalaikku = naalaiku
         naalaikku = naalaiku

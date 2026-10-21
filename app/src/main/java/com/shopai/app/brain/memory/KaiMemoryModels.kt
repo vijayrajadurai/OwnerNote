@@ -48,6 +48,8 @@ enum class LearningState { UNKNOWN, OBSERVED, SUGGESTED, OWNER_CONFIRMED, DISABL
 enum class KaiMeaning(val canonical: String, val ta: String, val tl: String, val en: String, val financial: Boolean) {
     PAYMENT_OUT("kuduthen", "பணம் கொடுத்தது (Payment Out)", "Payment Out", "Payment Out", true),
     PAYMENT_IN("vanginen", "பணம் வந்தது (Payment In)", "Payment In", "Payment In", true),
+    /** They owe me (owner, 21 Oct 2026: a person and an amount with a word Kai can't read — "thandhaara / kudutheengala / kadan-aa?"). */
+    CREDIT("kadan", "கடன் (Credit)", "Kadan (Credit)", "Credit (they owe you)", true),
     STOCK_IN("stock in", "ஸ்டாக் உள்ளே (Stock In)", "Stock In", "Stock In", true),
     STOCK_OUT("stock out", "ஸ்டாக் வெளியே (Stock Out)", "Stock Out", "Stock Out", true),
     BUSINESS_SUMMARY("business summary sollu", "வியாபார சுருக்கம்", "Business summary", "Business summary", false),
@@ -114,7 +116,7 @@ data class KaiMemory(
             MemoryType.CORRECTION -> "BUSINESS_TERM"
             MemoryType.PREFERENCE -> "PREFERENCE"
             MemoryType.ACTION_ALIAS -> when (meaning) {
-                KaiMeaning.PAYMENT_IN, KaiMeaning.PAYMENT_OUT -> "PAYMENT_TERM"
+                KaiMeaning.PAYMENT_IN, KaiMeaning.PAYMENT_OUT, KaiMeaning.CREDIT -> "PAYMENT_TERM"
                 KaiMeaning.STOCK_IN, KaiMeaning.STOCK_OUT -> "STOCK_TERM"
                 else -> "BUSINESS_TERM"
             }
