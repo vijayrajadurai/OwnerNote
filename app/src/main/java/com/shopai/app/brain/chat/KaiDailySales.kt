@@ -371,6 +371,39 @@ class KaiDailySales(
         return startSale(KaiServices.SaleLine(listOf(KaiServices.Item(shown, qty, amount)), upi), said, prices(), ownersLang(text, lang0))
     }
 
+    /**
+     * A service sale said in full (1600-line check, 21 Oct 2026): "blouse stitching service ku 250 vaanginom", "innaikku plumbing work
+     * service sale 7500 note pannu", "hair colouring service sale 5000 record pannu", and — for a business that picked Service —
+     * "hair colouring ku 120 vanginom". The service the owner named (Kai's word for it when it has one: "haircut" is Hair cutting) and
+     * the amount said: a sale draft; Confirm puts it in the Daily Sales Note. Never a person's name or the shop's product.
+     */
+    suspend fun serviceSaleSaid(said: String, lang0: KaiLang, products: List<ProductRef>, people: List<String>): KaiTurn? {
+        val text = said.trim().trimEnd('.', '!', '?').replace(Regex("""\s+"""), " ")
+        val m = serviceSaleLine.matchEntire(text) ?: return null
+        val serviceWord = m.groupValues[2].isNotBlank()
+        // (without the word "service": only money that came in, at a business that picked Service — "petrol ku 500 podu" is an expense)
+        if (!serviceWord && (m.groupValues[4].isEmpty() ||
+                runCatching { tools.businessKinds() }.getOrNull()?.contains(com.shopai.app.data.model.BusinessKind.SERVICE) != true)) return null
+        val name = m.groupValues[1].trim().replace(Regex("""(?i)^(?:innaikku|innaiku|inniki|today|indru)\s+"""), "").trim()
+        val words = name.split(' ')
+        if (name.isEmpty() || words.size > 5 || name.any(Char::isDigit) || words.any { it.lowercase(Locale.ROOT) in notServiceWords }) return null
+        val lower = name.lowercase(Locale.ROOT)
+        if (people.any { p -> p.isNotBlank() && (words.any { it.equals(p, ignoreCase = true) } || lower.contains(p.lowercase(Locale.ROOT))) }) return null
+        if (products.any { p -> p.name.equals(name, ignoreCase = true) }) return null
+        val amount = m.groupValues[3].replace(",", "").toBigDecimalOrNull()?.takeIf { it.signum() > 0 } ?: return null
+        val prices = prices()
+        val known = KaiServices.saleIn("$name $amount", prices, products.map { it.name }, true, null)?.items?.singleOrNull()
+        val item = known?.copy(amount = amount) ?: KaiServices.Item(name.replaceFirstChar { it.titlecase(Locale.ROOT) }, 1, amount)
+        val upi = when { upiWord.containsMatchIn(text) -> true; cashWord.containsMatchIn(text) -> false; else -> null }
+        return startSale(KaiServices.SaleLine(listOf(item), upi), said, prices, ownersLang(text, lang0))
+    }
+
+    /** "<name> [service [sale|charge]] [ku] [₹]N [rs] [vaanginom | note pannu | record pannu | podu] [cash / gpay]". */
+    private val serviceSaleLine = Regex(
+        """(?i)(.+?)\s+(?:((?:service|servis)(?:\s+(?:service|servis))?(?:\s+(?:sale|charge|charges|fees?))?)\s*(?:ku|kku)?|(?:ku|kku))\s+(?:₹|rs\.?\s*)?(\d[\d,]*(?:\.\d+)?)\s*(?:rs|rupees|ruba|rubai|roobai|ரூபாய்)?""" +
+            """\s*(?:(vaanginom|vanginom|vaangunom|vangunom|vaangitom|vangitom|vaanginen|vanginen|vaangiten|vandhuchu|vanthuchu)|aachu|""" +
+            """(?:note|record|entry|pathivu|add)\s+(?:pannu|pannidu|panniko|podu|pannunga)|podu|pottudu)?\s*(?:cash|gpay|upi|online)?""")
+
     private val doneWords = "panninom|pannom|pannitom|panniten|pannen|pannunen|senjom|senjen|senjiten|mudichom|mudichen|aachu|mudinjuchu|" +
         "பண்ணினோம்|பண்ணோம்|பண்ணேன்|செஞ்சோம்|செஞ்சேன்|முடிச்சோம்"
     /** "[oru] <name, 1–4 words> [panninom] [₹]350 [rs] [panninom] [cash / gpay]". */

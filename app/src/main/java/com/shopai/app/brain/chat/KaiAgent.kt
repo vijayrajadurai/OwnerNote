@@ -317,7 +317,9 @@ internal object KaiConversationSemantics {
     fun cancelsDraft(text: String): Boolean {
         val n = text.lowercase(Locale.ROOT).trim().replace(Regex("[.!?]+$"), "").replace(Regex("\\s+"), " ")
         if (correctionAmount(text) != null && listOf("illai", "illa", "actually", "wrong", "no", "இல்லை").any(n::contains)) return false
-        return n in setOf("venda", "venam", "venaam", "vendaam", "vendam", "cancel", "skip", "vidunga", "viddu", "no", "no need", "illa", "illai", "வேண்டாம்") ||
+        // ("Kai, confirm illa stop", "save pannadhe": a confirm said with a no is a cancel — 1600-line check, 21 Oct 2026)
+        if (notNow.containsMatchIn(n)) return true
+        return n in setOf("venda", "venam", "venaam", "vendaam", "vendam", "cancel", "skip", "vidunga", "viddu", "no", "no need", "illa", "illai", "வேண்டாம்", "stop") ||
             listOf("cancel pannu", "cancel pannunga", "don't add", "dont add", "add panna vendam", "add pannadhe", "வேண்டாம்").any(n::contains)
     }
 
@@ -328,7 +330,7 @@ internal object KaiConversationSemantics {
 
     /** "note panniko", "save pannu", "kanakkula podu", "serthu vidu": the owner asks for the stated payment to go into the books. */
     private val saveWords = Regex(
-        """(?<![\p{L}])(?:note|save|add|record|entry)\s*-?\s*(?:pannu|panniko|pannikko|pannikkonga|pannunga|pannikonga|pannidu|panniru|pannirunga|podu|pottudu)(?![\p{L}])|""" +
+        """(?<![\p{L}])(?:note|save|add|record|entry|pathivu)\s*-?\s*(?:pannu|panniko|pannikko|pannikkonga|pannunga|pannikonga|pannidu|panniru|pannirunga|podu|pottudu)(?![\p{L}])|""" +
             """(?<![\p{L}])(?:kanakku\s*-?\s*la|kanakkula|kanakkil|account\s*-?\s*la|accountla|books\s*-?\s*la|ledger\s*-?\s*la)\s*(?:podu|pottudu|pottu\s*vai|ezhudhu|add\s*pannu|serthudu|serthu\s*vidu)(?![\p{L}])|""" +
             """(?<![\p{L}])(?:serthu\s*vidu|serthudu|saerthu\s*vidu)(?![\p{L}])|(?<![\p{L}])(?:save|add)\s+it(?![\p{L}])|""" +
             // "confirm" said to a stated payment: show its card (the card's Confirm still does the save).
@@ -348,7 +350,11 @@ internal object KaiConversationSemantics {
         "aamam", "amam", "ஆமாம்", "எஸ்", "யெஸ்", "ஓகே சரி", "சரி ஓகே",
     )
 
-    fun savesDraft(text: String): Boolean = !asksIfSaved(text) && saveWords.containsMatchIn(plain(text))
+    fun savesDraft(text: String): Boolean = !asksIfSaved(text) && saveWords.containsMatchIn(plain(text)) && !notNow.containsMatchIn(plain(text))
+    /** "confirm illa", "save pannadhe", "add panna vendam", "stop": a save word with a no — never a save. */
+    private val notNow = Regex(
+        """(?<![\p{L}])(?:confirm|save|add|podu|entry|record)\s*-?\s*(?:pannu\s+)?(?:illa|illai|venam|venaam|vendam|vendaam|venda|pannadhe|pannadha|pannaadhe|pannatha|""" +
+            """panna\s*(?:venam|vendam|vendaam|venaam|koodadhu)|வேண்டாம்|இல்ல|இல்லை)(?![\p{L}])|(?<![\p{L}])(?:stop|nippaattu|niruthu|ஸ்டாப்|நிறுத்து)(?![\p{L}])""")
     private val filler = Regex("""(?<![\p{L}])(seri|sari|ok|okay|idha|idhai|adha|adhai|atha|athai|ithu|idhu|athu|adhu|this|that|ama|aama|yes|ippo|now|ellam|motham|பண்ணு|அதை|இதை|சரி)(?![\p{L}])""")
     /** Nothing but the save words ("save panniko", "seri, kanakkula podu") — or with [person] named — not "Colgate stock add pannu". */
     fun onlySave(text: String, person: String? = null): Boolean {
@@ -359,7 +365,7 @@ internal object KaiConversationSemantics {
     }
     /** The language a short Tanglish phrase is in ("add pannitiya?" reads as English to a word counter). */
     fun phraseLang(text: String, lang: com.shopai.app.brain.KaiLang): com.shopai.app.brain.KaiLang =
-        if (lang == com.shopai.app.brain.KaiLang.ENGLISH && Regex("""(?i)pann|podu|aagi|achaa|aacha|serthu|kanakku|(?<![a-z])(adhu|athu|idhu|ithu|athula|adhula|avan|avar|eppa|eppo|irukka|irukku|tharanum|kudukkanum|vaanganum)(?![a-z])|-?(aa|ah)\?""").containsMatchIn(text)) com.shopai.app.brain.KaiLang.TANGLISH else lang
+        if (lang == com.shopai.app.brain.KaiLang.ENGLISH && Regex("""(?i)pann|podu|aagi|achaa|aacha|serthu|kanakku|(?<![a-z])(adhu|athu|idhu|ithu|athula|adhula|avan|avar|eppa|eppo|irukka|irukku|iruka|iruku|tharanum|kudukkanum|vaanganum)(?![a-z])|-?(aa|ah)\?""").containsMatchIn(text)) com.shopai.app.brain.KaiLang.TANGLISH else lang
     fun asksIfSaved(text: String): Boolean = savedQuestion.containsMatchIn(plain(text))
     /** A bare "ama" / "seri" / "ok" / "yes" — or "seri add pannu" — said to a draft Kai just showed. */
     fun confirmsDraft(text: String): Boolean = plain(text) in yesWords || savesDraft(text)
@@ -688,7 +694,7 @@ class KaiAgent(
         if (shopPicks == null) shopPicks = runCatching { tools.businessCategoryPicks()?.codes }.getOrNull().orEmpty()
         if (askDepth == 0 && !KaiConversationCare.asksWhatWasAsked(raw)) { recentAsks.addLast(raw.trim()); while (recentAsks.size > 6) recentAsks.removeFirst() }
         askDepth++
-        try { answerOwner(raw) } finally { askDepth-- }
+        try { answerOwner(withoutKai(raw)) } finally { askDepth-- }
     }.let { t ->
         // "Akash account clear" right after Akash paid ₹1,000 more than he owed: the advance is said too.
         val adv = advanceTold?.takeIf { (p, _) -> p == personOnTopic?.first && t.card == null && t.reply.text.contains(p) &&
@@ -709,6 +715,13 @@ class KaiAgent(
         lastPlainAnswer = if (t.card == null && t.reply.mood != KaiMood.CLARIFY && !KaiConversationCare.ownerDidNotFollow(raw)) raw to turnLang else null
         lastKaiTurn = t
     }
+
+    /**
+     * "Kai, PDF share pannu", "கை, confirm இல்ல stop": the owner calling Kai by name — the line is what follows (never a person or a
+     * product called Kai). Typed "Kai" with a comma or a space; the mic's "கை" only with a comma (alone it is a hand).
+     */
+    private fun withoutKai(raw: String): String =
+        Regex("""^\s*(?:(?:hey|hi|hello|ok|ஹாய்|ஹலோ)\s+)?(?:(?i:kai)\s*[,:!.-]?\s+|(?i:kai)\s*[,:!.-]\s*|(?:கை|காய்)\s*[,:!-]\s*)(?=\S)""").replace(raw, "")
 
     /** What Kai said last (the question a category switch puts aside is asked again from it). */
     private var lastKaiTurn: KaiTurn? = null
@@ -1997,6 +2010,9 @@ class KaiAgent(
         briefJustShown = false
         // The Daily Sales Note's own question (a service's price, the opening Kallapetti, Confirm on a sale / the day close): its answer.
         if (plans.isEmpty()) dailySales.answer(said, raw, lang)?.let { return it }
+        // "blouse stitching service ku 250 vaanginom", "plumbing work service sale 7500 note pannu": a service sale said in full.
+        if (plans.isEmpty() && !dailySales.busy()) dailySales.serviceSaleSaid(said, lang, runCatching { tools.products() }.getOrNull().orEmpty(), people0)?.let { return it }
+        if (plans.isEmpty() && stockPlans.isEmpty()) lineChecks(said, lang, people0)?.let { return it }
         // "pulungal arisi 10bgs" → "edha pathi?" → "stock" → "vandhuchu": the line Kai asked about, finished by this word — read as
         // one line ("pulungal arisi 10bgs vandhuchu"), never "vandhuchu" alone as money (owner's phone, 15 Oct 2026).
         // "Pulungal Arisi 10 bags — vandhucha, vithucha?" → "stock": yes, stock — the same question, the line kept (never a stock
@@ -2519,7 +2535,9 @@ class KaiAgent(
             val direction = when (owed) {
                 com.shopai.app.brain.tools.OwedDirection.RECEIVABLE -> KaiConversationPaymentDirection.PAYMENT_IN
                 com.shopai.app.brain.tools.OwedDirection.PAYABLE -> KaiConversationPaymentDirection.PAYMENT_OUT
-                null -> if (ownerIsRecipient || !Regex("(?i)\\btharanum\\b|தரணும்").containsMatchIn(text)) KaiConversationPaymentDirection.PAYMENT_IN
+                // ("Meena ku 250 pending iruku" with Meena only a supplier: the owner owes Meena — the books say which side; 1600-line check)
+                null -> if (!ownerIsRecipient && !Regex("(?i)\\btharanum\\b|தரணும்").containsMatchIn(text) && supplierOnly(person)) KaiConversationPaymentDirection.PAYMENT_OUT
+                    else if (ownerIsRecipient || !Regex("(?i)\\btharanum\\b|தரணும்").containsMatchIn(text)) KaiConversationPaymentDirection.PAYMENT_IN
                     else KaiConversationPaymentDirection.PAYMENT_OUT
             }
             remember(person, amount, direction, text, lang)
@@ -3615,6 +3633,241 @@ class KaiAgent(
         conversationState.statedDraftKey = null
         conversationState.pendingDraft = null
         conversationState.pendingConfirmation = false
+    }
+
+    /** [name] is in the books only as a supplier (never decided when the books can't be read or the name is on both sides). */
+    private suspend fun supplierOnly(name: String): Boolean {
+        val found = runCatching { tools.parties(name) }.getOrNull()?.let { KaiEntityResolver.sameName(name, it) }.orEmpty()
+        return found.isNotEmpty() && found.none { it.customer }
+    }
+
+    // ------------------------------------------------------------ lines the 1600-line check found read as something else (21 Oct 2026)
+
+    /**
+     * Lines from the owner's 1600-line check that Kai read as something else: a pack total asked ("11 box iruku; oru box la 12
+     * pieces; total evlo?"), a balance worked out ("total 3000; 1800 kuduthachu; balance sollu"), a part payment of a bill ("bill
+     * 3500; 450 mattum kuduthanga"), an entry with a piece missing ("5000 entry pannu", "Selvam ku payment pannidu", "5 box add
+     * pannu"), whether a send / a reminder went through, and two people with one name. Nothing is written here.
+     */
+    private suspend fun lineChecks(said: String, lang0: KaiLang, people: List<String>): KaiTurn? {
+        val text = said.trim().trimEnd('.', '!', '?').replace(Regex("""\s+"""), " ")
+        val lang = KaiConversationSemantics.phraseLang(text, lang0)
+        otherRecipient(text, lang, people)?.let { return it }
+        packTotal(text, lang)?.let { return it }
+        remainingBalance(text, lang)?.let { return it }
+        partialPaid(text, lang)?.let { return it }
+        bareEntry(text, lang, people)?.let { return it }
+        expenseAsk(text, lang)?.let { return it }
+        monthReport(text, lang)?.let { return it }
+        if (sendAsk.containsMatchIn(text)) return say(lang, KaiMood.EXPLAINING, "send status",
+            ta = "ஓனர், WhatsApp / share-ல நீங்க Send அழுத்தினா தான் போகும் — அது போச்சா-ன்னு Kai-க்கு தெரியாது. WhatsApp-ல பாருங்க; வேணும்னா PDF-ஐ திரும்ப share பண்ணலாம்.",
+            tl = "Owner, WhatsApp / share-la neenga Send press panna dhaan pogum — adhu pochaa-nu Kai-ku theriyaadhu. WhatsApp-la paarunga; venumna PDF-a thirumba share pannalaam.",
+            en = "Owner, it goes only when you press Send in WhatsApp / share — Kai can't see whether it went. Check WhatsApp; I can share the PDF again if you want.")
+        if (reminderAsk.containsMatchIn(text)) return reminderStatus(lang)
+        if (twoNames.containsMatchIn(text)) return say(lang, KaiMood.CLARIFY, "two people one name",
+            ta = "எந்த customer ஓனர்? அவங்க phone number, ஊர் இல்ல கடை பேர் சொல்லுங்க — சரியானவங்களை எடுக்கறேன்.",
+            tl = "Endha customer Owner? Avanga phone number, oor illa kadai per sollunga — sariyaanavanga-a edukkuren.",
+            en = "Which customer, Owner? Tell me their phone number, town or shop name — I'll pick the right one.")
+        return null
+    }
+
+    /**
+     * "last 7 days expenses PDF kudu", "kadandha 7 naal selavu evlo": the expenses of that span from the books (never "Days" read as a
+     * person, never the 7 as an expense). There is no expense PDF yet — said plainly, with the total.
+     */
+    private suspend fun expenseAsk(text: String, lang: KaiLang): KaiTurn? {
+        if (!Regex("""(?i)(?<![\p{L}])(?:selavu|selavugal|expense|expenses|selavukal)(?![\p{L}])|செலவு""").containsMatchIn(text)) return null
+        val pdf = Regex("""(?i)(?<![\p{L}])(?:pdf|report)(?![\p{L}])|பிடிஎஃப்|ரிப்போர்ட்""").containsMatchIn(text)
+        if (!pdf && !Regex("""(?i)(?<![\p{L}])(?:evlo|evvalavu|enna|sollu|kaattu|kaatu|total|motham)(?![\p{L}])|எவ்வளவு|\?""").containsMatchIn(text)) return null
+        val today = now().toLocalDate()
+        val days = Regex("""(?i)(?<![\p{L}])(?:last|kadandha|kadantha|pona|past)\s+(\d{1,3})\s*(?:days?|naal|naatkal|naalu|dhinam|நாள்)""").find(text)?.groupValues?.get(1)?.toLongOrNull()
+        // (a plain "indha maasam selavu evlo" stays the Daily Cash Note's answer; only a span of days, or a PDF asked, is read here)
+        if (days == null && !pdf) return null
+        val (from, to, label) = when {
+            days != null && days in 1..366 -> Triple(today.minusDays(days - 1), today,
+                pick(lang, ta = "கடந்த $days நாள்", tl = "kadandha $days naal", en = "the last $days days"))
+            else -> KaiChatUnderstanding.understand(text, today, emptyList()).period?.let { p -> Triple(p.from, p.to, periodLabel(p, lang)) } ?: return null
+        }
+        val spent = runCatching { tools.expenses(from, to) }.getOrNull()
+        val noPdf = if (pdf) pick(lang, ta = " (செலவு PDF இன்னும் Kai-ல இல்ல — மொத்தம் சொல்லிட்டேன்.)", tl = " (Selavu PDF innum Kai-la illa — mothama sollitten.)",
+            en = " (There's no expense PDF in Kai yet — that's the total.)") else ""
+        tools.log("expenses", "books", label, ActionStatus.ANSWERED, null, text)
+        if (spent == null) return say(lang, KaiMood.EXPLAINING, "expenses: none",
+            ta = "ஓனர், $label செலவு எதுவும் books-ல இல்ல.$noPdf", tl = "Owner, $label selavu edhuvum books-la illa.$noPdf", en = "Owner, the books have no expenses for $label.$noPdf")
+        val a = KaiFormat.rupees(spent.toDouble())
+        return say(lang, KaiMood.EXPLAINING, "expenses",
+            ta = "ஓனர், $label செலவு $a.$noPdf", tl = "Owner, $label selavu $a.$noPdf", en = "Owner, expenses for $label: $a.$noPdf")
+    }
+
+    private val reportMonths = listOf(
+        listOf("january", "jan", "ஜனவரி"), listOf("february", "feb", "பிப்ரவரி"), listOf("march", "mar", "மார்ச்"), listOf("april", "apr", "ஏப்ரல்"),
+        listOf("may", "மே"), listOf("june", "jun", "ஜூன்"), listOf("july", "jul", "ஜூலை"), listOf("august", "aug", "ஆகஸ்ட்"),
+        listOf("september", "sep", "sept", "செப்டம்பர்"), listOf("october", "oct", "அக்டோபர்"), listOf("november", "nov", "நவம்பர்"), listOf("december", "dec", "டிசம்பர்"),
+    )
+
+    /**
+     * "August sales report kudu", "July report illa August report venum": that month's figures from the books — the month said last
+     * when one is put aside for another. A month still to come is last year's.
+     */
+    private suspend fun monthReport(text: String, lang: KaiLang): KaiTurn? {
+        if (!Regex("""(?i)(?<![\p{L}])(?:report|reports|sales|vyabaram|kanakku|pdf)(?![\p{L}])|ரிப்போர்ட்|விற்பனை|கணக்கு""").containsMatchIn(text)) return null
+        val lower = text.lowercase(Locale.ROOT)
+        val said = reportMonths.withIndex().flatMap { (i, names) -> names.mapNotNull { n ->
+            Regex("""(?<![\p{L}])${Regex.escape(n)}(?![\p{L}])""").findAll(lower).lastOrNull()?.let { m -> m.range.first to i + 1 } } }
+        val month = said.maxByOrNull { it.first }?.second ?: return null
+        // ("Oct 10 sales", "5th August report": one day's — the Daily Sales Note answers those)
+        if (reportMonths[month - 1].any { n -> Regex("""(?<![\p{L}])${Regex.escape(n)}\s*-?\s*\d{1,2}(?!\d)|(?<!\d)\d{1,2}\s*(?:st|nd|rd|th|aam|am)?\s*${Regex.escape(n)}(?![\p{L}])""").containsMatchIn(lower) }) return null
+        val today = now().toLocalDate()
+        val year = if (month > today.monthValue) today.year - 1 else today.year
+        val from = LocalDate.of(year, month, 1)
+        val to = minOf(from.withDayOfMonth(from.lengthOfMonth()), today)
+        val name = from.format(java.time.format.DateTimeFormatter.ofPattern("MMMM", Locale.ENGLISH))
+        val sales = runCatching { tools.sales(from, to) }.getOrNull()
+        val bought = runCatching { tools.purchases(from, to) }.getOrNull()
+        val spent = runCatching { tools.expenses(from, to) }.getOrNull()
+        tools.log("month report", "books", name, ActionStatus.ANSWERED, null, text)
+        val pdf = KaiButton(pick(lang, ta = "📄 Daily Sales PDF", tl = "📄 Daily Sales PDF", en = "📄 Daily Sales PDF"), KaiAction.ShareCashNote(from, to))
+        if (sales == null && bought == null && spent == null) return KaiTurn(ChatReply(pick(lang,
+            ta = "ஓனர், $name மாச sales / purchase / செலவு எதுவும் books-ல இல்ல.", tl = "Owner, $name maasam sales / purchase / selavu edhuvum books-la illa.",
+            en = "Owner, the books have no sales, purchases or expenses for $name."), KaiMood.EXPLAINING, ChatIntent.GENERAL_BUSINESS_QUERY), KaiCard(emptyList(), listOf(pdf)))
+        val r = { a: BigDecimal? -> a?.let { KaiFormat.rupees(it.toDouble()) } ?: "—" }
+        return KaiTurn(ChatReply(pick(lang,
+            ta = "ஓனர், $name report: sales ${r(sales)}, purchase ${r(bought)}, செலவு ${r(spent)}.",
+            tl = "Owner, $name report: sales ${r(sales)}, purchase ${r(bought)}, selavu ${r(spent)}.",
+            en = "Owner, $name: sales ${r(sales)}, purchases ${r(bought)}, expenses ${r(spent)}."), KaiMood.EXPLAINING, ChatIntent.GENERAL_BUSINESS_QUERY),
+            KaiCard(emptyList(), listOf(pdf)))
+    }
+
+    /** The statement PDF Kai made last (whose, which span, the turn) — "adhe PDF Selvam-ku anuppalama?" is about it. */
+    private data class LastStatement(val partyId: String, val name: String, val customer: Boolean, val from: LocalDate?, val to: LocalDate, val turn: Long)
+    private var lastStatement: LastStatement? = null
+
+    /**
+     * "illa Ramesh-ku anuppu", "adhe PDF Selvam-ku anuppalama?" right after Kumar's statement: Kumar's PDF is Kumar's own details —
+     * Kai asks before it goes to someone else (the owner shares it and picks the contact), or offers Ramesh's own statement.
+     */
+    private suspend fun otherRecipient(text: String, lang: KaiLang, people: List<String>): KaiTurn? {
+        val last = lastStatement?.takeIf { conversationState.conversationTurn - it.turn <= 4 } ?: return null
+        val m = Regex("""(?i)^(?:illa|illai|no|adhe|athe|andha|same|indha)?\s*(?:pdf|report|file)?\s*(.+?)\s*-?\s*(?:ku|kku|க்கு|ukku)\s+(?:anuppu|anuppidu|anuppalama|anuppalaama|anuppava|anuppavaa|send\s+pannu|send\s+pannidu|share\s+pannu)\s*\??$""").find(text) ?: return null
+        val who = KaiCommands.personIn(m.groupValues[1], people) ?: m.groupValues[1].trim().split(' ').last().replaceFirstChar { it.titlecase(Locale.ROOT) }
+        if (who.equals(last.name, ignoreCase = true) || who.isBlank()) return null
+        val other = runCatching { tools.parties(who) }.getOrNull()?.let { KaiEntityResolver.sameName(who, it) }?.singleOrNull()
+        val buttons = listOfNotNull(
+            KaiButton(pick(lang, ta = "${last.name} PDF share", tl = "${last.name} PDF share", en = "Share ${last.name}'s PDF"),
+                KaiAction.ShareStatement(last.partyId, last.name, last.customer, last.from, last.to, whatsapp = false)),
+            other?.let { o -> KaiButton(pick(lang, ta = "${o.name} statement", tl = "${o.name} statement", en = "${o.name}'s statement"), KaiAction.StatementFor(o.id, o.customer, last.from, last.to)) },
+        )
+        tools.log("statement recipient", "kai", "${last.name} → $who asked", ActionStatus.ANSWERED, null, text)
+        return KaiTurn(ChatReply(pick(lang,
+            ta = "ஓனர், அது ${last.name}-ஓட கணக்கு PDF — $who-க்கு அனுப்பணுமா? அனுப்பணும்னா “${last.name} PDF share”-ஐ தொட்டு WhatsApp-ல $who-ஐ தேர்ந்தெடுங்க. $who-ஓட சொந்த கணக்கு வேணும்னா “$who statement”-ஐ தொடுங்க.",
+            tl = "Owner, adhu ${last.name}-oda kanakku PDF — $who-ku anuppanum-aa? Anuppanum-na “${last.name} PDF share”-a thottu WhatsApp-la $who-a select pannunga. $who-oda sondha kanakku venum-na “$who statement”-a thodunga.",
+            en = "Owner, that's ${last.name}'s statement — send it to $who? Tap “Share ${last.name}'s PDF” and pick $who in WhatsApp. For $who's own statement, tap “$who's statement”."),
+            KaiMood.CLARIFY, ChatIntent.GENERAL_BUSINESS_QUERY), KaiCard(emptyList(), buttons))
+    }
+
+    /** "LED bulb 11 box iruku; oru box la 12 pieces; total evlo?": worked out and said — a question, never a stock-in. */
+    private suspend fun packTotal(text: String, lang: KaiLang): KaiTurn? {
+        if (!Regex("""(?i)(?<![\p{L}])(?:total|motham|mothama)(?![\p{L}])|மொத்தம்""").containsMatchIn(text) ||
+            !Regex("""(?i)(?<![\p{L}])(?:evlo|evvalavu|enna|ethana|how\s*many|how\s*much)(?![\p{L}])|எவ்வளவு|எத்தனை""").containsMatchIn(text)) return null
+        val m = Regex("""(?i)^(.*?)\s*(\d+(?:\.\d+)?)\s*([\p{L}]+).*?(?:oru|1|one|ஒரு)\s+([\p{L}]+)\s*-?\s*(?:la|le|il|ல|ல்)\s+(\d+(?:\.\d+)?)\s*([\p{L}]+)""").find(text) ?: return null
+        val inv = com.shopai.app.brain.tools.KaiInventory
+        val pack = inv.unitOf(m.groupValues[3]) ?: return null
+        if (inv.unitOf(m.groupValues[4]) != pack) return null
+        val count = m.groupValues[2].toBigDecimal()
+        val per = m.groupValues[5].toBigDecimal()
+        val base = inv.unitOf(m.groupValues[6]) ?: m.groupValues[6]
+        val total = count.multiply(per).stripTrailingZeros()
+        val name = m.groupValues[1].trim().takeIf { it.isNotEmpty() }?.let { "$it: " }.orEmpty()
+        val many = inv.many(base)
+        tools.log("pack total", "kai", "$count × $per", ActionStatus.ANSWERED, null, text)
+        return say(lang, KaiMood.EXPLAINING, "pack total",
+            ta = "$name${count.toPlainString()} ${inv.one(pack)} × ${per.toPlainString()} = ${total.toPlainString()} $many ஓனர். (Stock எதுவும் மாறல — சேர்க்கணும்னா “வந்துச்சு”-ன்னு சொல்லுங்க.)",
+            tl = "$name${count.toPlainString()} ${inv.one(pack)} × ${per.toPlainString()} = ${total.toPlainString()} $many Owner. (Stock edhuvum maaralai — serkkanum-na “vandhuchu”-nu sollunga.)",
+            en = "$name${count.toPlainString()} ${inv.one(pack)} × ${per.toPlainString()} = ${total.toPlainString()} $many, Owner. (Nothing in stock changed — say “came in” to add it.)")
+    }
+
+    private val paidVerb = """kuduthachu|kuduthaachu|kuduthaanga|kuduthanga|kuduthan|kuduthaan|kuduthaar|kuduthar|kuduthutaan|kuduthutaanga|kattinaan|kattinan|kattinanga|""" +
+        """kattiyachu|kattiyaachu|anuppinaan|anuppinan|thandhaan|thandhanga|vandhuchu|vanthuchu|paid|vaanginen|vanginen|vaangiten|vangiten"""
+
+    /** "Suresh total 3000; 1800 kuduthachu; balance sollu": the owner's own numbers worked out, and what the books say. */
+    private suspend fun remainingBalance(text: String, lang: KaiLang): KaiTurn? {
+        val m = Regex("""(?i)^(.+?)\s+(?:total|bill|motham)\s*(?:amount)?\s*₹?(\d[\d,]*)\s*[;,.]?\s*₹?(\d[\d,]*)\s*(?:mattum\s+)?(?:$paidVerb)\s*[;,.]?\s*(?:balance|meedhi|meethi|baaki|baakki|bakki)\s*(?:evlo|enna|sollu|kaattu|kaatu)?$""").find(text) ?: return null
+        val name = m.groupValues[1].trim()
+        val total = m.groupValues[2].replace(",", "").toBigDecimal()
+        val paid = m.groupValues[3].replace(",", "").toBigDecimal()
+        val left = total - paid
+        val r = { a: BigDecimal -> KaiFormat.rupees(a.toDouble()) }
+        val books = runCatching { tools.parties(name) }.getOrNull()?.let { KaiEntityResolver.sameName(name, it) }?.singleOrNull()
+        val inBooks = books?.let { pick(lang, ta = " பதிவுல ${it.name} பாக்கி ${r(it.balance)}.", tl = " Records-la ${it.name} baaki ${r(it.balance)}.", en = " The books show ${it.name} at ${r(it.balance)}.") }.orEmpty()
+        tools.log("remaining balance", "kai", "$name ${total - paid}", ActionStatus.ANSWERED, null, text)
+        return say(lang, KaiMood.EXPLAINING, "remaining balance",
+            ta = "ஓனர், ${r(total)} − ${r(paid)} = ${r(left)} பாக்கி (நீங்க சொன்னபடி).$inBooks எதுவும் சேமிக்கல.",
+            tl = "Owner, ${r(total)} − ${r(paid)} = ${r(left)} baaki (neenga sonnapadi).$inBooks Edhuvum save pannala.",
+            en = "Owner, ${r(total)} − ${r(paid)} = ${r(left)} left (as you said).$inBooks Nothing was saved.")
+    }
+
+    /** "Selvam bill 3500; 450 mattum kuduthanga": the ₹450 paid is the payment (a draft); the bill and what is left are said. */
+    private suspend fun partialPaid(text: String, lang: KaiLang): KaiTurn? {
+        val m = Regex("""(?i)^(.+?)\s+(?:bill|total)\s*₹?(\d[\d,]*)\s*[;,.]?\s*₹?(\d[\d,]*)\s*(?:mattum|matum|only|dhaan|than)\s+($paidVerb)$""").find(text) ?: return null
+        val bill = m.groupValues[2].replace(",", "").toBigDecimal()
+        val paid = m.groupValues[3].replace(",", "").toBigDecimal()
+        if (paid > bill) return null
+        val r = { a: BigDecimal -> KaiFormat.rupees(a.toDouble()) }
+        val turn = askAs(lang, "${m.groupValues[1].trim()} ${m.groupValues[3]} ${m.groupValues[4]}")
+        return withPrefix(pick(lang, ta = "பில் ${r(bill)}-ல ${r(paid)} மட்டும் — மீதி ${r(bill - paid)}.", tl = "Bill ${r(bill)}-la ${r(paid)} mattum — meedhi ${r(bill - paid)}.",
+            en = "Bill ${r(bill)}, only ${r(paid)} paid — ${r(bill - paid)} left."), turn)
+    }
+
+    /** "5000 entry pannu", "Selvam ku payment pannidu", "Kumar-ku report send pannu", "5 box add pannu": the missing piece asked. */
+    private suspend fun bareEntry(text: String, lang: KaiLang, people: List<String>): KaiTurn? {
+        Regex("""(?i)^₹?(\d[\d,]*)\s*(?:rupees|rs|ruba)?\s*(?:entry|add|note|podu)\s*(?:pannu|pannidu|podu|panniko)?$""").find(text)?.let { m ->
+            val a = KaiFormat.rupees(m.groupValues[1].replace(",", "").toDouble())
+            return say(lang, KaiMood.CLARIFY, "entry: who and which way",
+                ta = "$a — யாரு, எந்த பக்கம் ஓனர்? உதா: “Kumar ${m.groupValues[1]} குடுத்தான்” (வந்தது), “ABC Traders-க்கு ${m.groupValues[1]} குடுத்தேன்” (கொடுத்தது), “Kumar-க்கு ${m.groupValues[1]} கடன்”.",
+                tl = "$a — yaaru, endha pakkam Owner? Eg: “Kumar ${m.groupValues[1]} kuduthan” (vandhadhu), “ABC Traders ku ${m.groupValues[1]} kuduthen” (kuduthadhu), “Kumar ku ${m.groupValues[1]} credit”.",
+                en = "$a — who, and which way, Owner? E.g. “Kumar paid ${m.groupValues[1]}”, “paid ABC Traders ${m.groupValues[1]}”, “Kumar ${m.groupValues[1]} credit”.")
+        }
+        Regex("""(?i)^(.+?)\s*-?\s*(?:ku|kku|க்கு)\s+payment\s+(?:pannidu|pannu|podu|kudu|pannanum)$""").find(text)?.let { m ->
+            // (a person in the books only — "yaaruku payment pannanum" is a question for the records)
+            val who = KaiCommands.personIn(m.groupValues[1], people) ?: return@let
+            return say(lang, KaiMood.CLARIFY, "payment: how much",
+                ta = "$who-க்கு எவ்வளவு கொடுக்கணும் ஓனர்? ($who உங்களுக்கு கொடுத்ததுன்னா “$who 500 குடுத்தான்”-ன்னு சொல்லுங்க.)",
+                tl = "$who-ku evlo kudukkanum Owner? ($who ungalukku kuduthadhu-na “$who 500 kuduthan”-nu sollunga.)",
+                en = "How much do you pay $who, Owner? (If $who paid you, say “$who paid 500”.)")
+        }
+        Regex("""(?i)^(.+?)\s*-?\s*(?:ku|kku|க்கு)\s+report\s+(?:send|anuppu|share|kudu)\s*(?:pannu|pannidu)?$""").find(text)?.let { m ->
+            val who = KaiCommands.personIn(m.groupValues[1], people) ?: return@let
+            return say(lang, KaiMood.CLARIFY, "report: which",
+                ta = "$who-க்கு எந்த report ஓனர்? அவங்க கணக்கு statement-ஆ? “$who credit history PDF குடு”-ன்னு சொன்னா ரெடி பண்றேன் — WhatsApp-ல நீங்க Send அழுத்துங்க.",
+                tl = "$who-ku endha report Owner? Avanga kanakku statement-aa? “$who credit history PDF kudu”-nu sonna ready pannuren — WhatsApp-la neenga Send press pannunga.",
+                en = "Which report for $who, Owner? Their account statement? Say “$who credit history PDF” and I'll make it — you press Send in WhatsApp.")
+        }
+        Regex("""(?i)^(?:oru|\d+(?:\.\d+)?)\s*([\p{L}]+)\s+(?:stock\s+)?(?:add|podu|serthu\s*vidu)\s*(?:pannu|pannidu|podu)?$""").find(text)?.let { m ->
+            if (com.shopai.app.brain.tools.KaiInventory.unitOf(m.groupValues[1]) == null) return@let
+            return say(lang, KaiMood.CLARIFY, "stock: which product",
+                ta = "எந்த product-க்கு ஓனர்? உதா: “Colgate ${text.substringBefore(' ')} ${m.groupValues[1]} add பண்ணு”.",
+                tl = "Endha product-ku Owner? Eg: “Colgate ${text.substringBefore(' ')} ${m.groupValues[1]} add pannu”.",
+                en = "Which product, Owner? E.g. “Colgate ${text.substringBefore(' ')} ${m.groupValues[1]} add”.")
+        }
+        return null
+    }
+
+    private val sendAsk = Regex("""(?i)(?<![\p{L}])(?:send|anupp\p{L}*)\s+(?:aagala|agala|aagaliya|aacha|aachaa|aagiducha|aagudha|status|pochaa|pochaa?)(?![\p{L}])|send\s+status|அனுப்பல|போகல""")
+    private val reminderAsk = Regex("""(?i)(?<![\p{L}])reminder\s+(?:save\s+)?(?:aagala|agala|aagiducha|agiducha|aacha|aachaa|set\s+aacha|set\s+aagala|irukka|irukaa)(?![\p{L}])|ரிமைண்டர்\s+(?:சேவ்\s+)?ஆகல""")
+    private val twoNames = Regex("""(?i)(?<![\p{L}])(?:customer|supplier|kasttamar)\s+(?:name|per|peru)\s+(?:rendu|2|two)\s+(?:per|peru|aal|pear)(?![\p{L}])""")
+
+    /** "reminder save aagala pola": the reminder last set, from the reminders kept — never a new one started. */
+    private fun reminderStatus(lang: KaiLang): KaiTurn {
+        val r = runCatching { tools.reminders() }.getOrNull().orEmpty().filter { it.open }.maxByOrNull { it.triggerAt }
+            ?: return say(lang, KaiMood.CLARIFY, "reminder status: none",
+                ta = "ஓனர், எந்த reminder-உம் சேமிக்கப்படல. என்ன, எப்போ-ன்னு சொல்லுங்க: “நாளைக்கு 10 மணிக்கு Kumar-க்கு call பண்ண remind பண்ணு”.",
+                tl = "Owner, endha reminder-um save aagala. Enna, eppo-nu sollunga: “naalaiku 10 manikku Kumar ku call panna remind pannu”.",
+                en = "Owner, no reminder is saved. Tell me what and when: “remind me to call Kumar tomorrow at 10”.")
+        val at = java.time.Instant.ofEpochMilli(r.triggerAt).atZone(runCatching { java.time.ZoneId.of(r.zone) }.getOrDefault(java.time.ZoneId.systemDefault()))
+            .format(java.time.format.DateTimeFormatter.ofPattern("MMM d, h:mm a", Locale.ENGLISH))
+        return say(lang, KaiMood.HAPPY, "reminder status",
+            ta = "ஓனர், reminder சேமிச்சிருக்கேன் ✅ ${r.title} — $at.", tl = "Owner, reminder save aagi irukku ✅ ${r.title} — $at.",
+            en = "Owner, the reminder is saved ✅ ${r.title} — $at.")
     }
 
     /** The stated payment, kept for the short answers that complete it ("10", "next month", "5000"). */
@@ -5072,11 +5325,52 @@ class KaiAgent(
         .sortedByDescending { it.name.length }
         .firstOrNull { Regex("""(?i)(?<![\p{L}])${Regex.escape(it.name)}(?![\p{L}])""").containsMatchIn(text) }
 
+    /**
+     * "Soap last month sales evlo?", "Rice indha maasam evlo vithuchu?": that product's sales in that span, from the books (1600-line
+     * check, 21 Oct 2026) — never its stock instead, and never a figure the books don't have.
+     */
+    private suspend fun productSales(text: String, lang0: KaiLang, product: com.shopai.app.brain.tools.ProductRef, people: List<String>): KaiTurn? {
+        if (!Regex("""(?i)(?<![\p{L}])(?:sales|sale|vithadhu|vithathu|vitthadhu|vithuchu|vyabaram|sold)(?![\p{L}])|விற்பனை|வித்தது|சேல்ஸ்""").containsMatchIn(text)) return null
+        if (!Regex("""(?i)(?<![\p{L}])(?:evlo|evvalavu|enna|how\s*much|how\s*many|sollu|kaattu|kaatu)(?![\p{L}])|எவ்வளவு|\?""").containsMatchIn(text)) return null
+        val today = now().toLocalDate()
+        val period = KaiChatUnderstanding.understand(text, today, people).period ?: return null
+        val lang = KaiConversationSemantics.phraseLang(text, lang0)
+        val label = periodLabel(period, lang)
+        val facts = runCatching { tools.topProducts(period.from, period.to, 500) }.getOrNull() ?: return say(lang, KaiMood.CLARIFY, "product sales: books unavailable",
+            ta = "ஓனர், $label ${product.name} sales கணக்கை books-ல படிக்க முடியல.",
+            tl = "Owner, $label ${product.name} sales kanakku books-la padikka mudiyala.",
+            en = "Owner, I couldn't read ${product.name}'s sales for $label from the books.")
+        val f = facts.firstOrNull { it.name.equals(product.name, ignoreCase = true) }
+        tools.log("product sales", "books", "${product.name} $label", ActionStatus.ANSWERED, null, text)
+        if (f == null || f.qty.signum() == 0) return say(lang, KaiMood.EXPLAINING, "product sales: none",
+            ta = "ஓனர், $label ${product.name} sale எதுவும் books-ல இல்ல.",
+            tl = "Owner, $label ${product.name} sale edhuvum books-la illa.",
+            en = "Owner, the books have no ${product.name} sales for $label.")
+        val q = com.shopai.app.brain.tools.KaiInventory.shown(f.qty, product.unit)
+        val money = KaiFormat.rupees(f.value.toDouble())
+        return say(lang, KaiMood.EXPLAINING, "product sales",
+            ta = "ஓனர், $label ${product.name} — $q வித்தது, $money.",
+            tl = "Owner, $label ${product.name} — $q vithadhu, $money.",
+            en = "Owner, ${product.name} for $label — $q sold, $money.")
+    }
+
+    private fun periodLabel(p: ChatPeriod, lang: KaiLang): String = when (p.kind) {
+        ChatPeriod.Kind.TODAY -> pick(lang, ta = "இன்னைக்கு", tl = "innaikku", en = "today")
+        ChatPeriod.Kind.YESTERDAY -> pick(lang, ta = "நேத்து", tl = "nethu", en = "yesterday")
+        ChatPeriod.Kind.THIS_WEEK -> pick(lang, ta = "இந்த வாரம்", tl = "indha vaaram", en = "this week")
+        ChatPeriod.Kind.LAST_WEEK -> pick(lang, ta = "போன வாரம்", tl = "pona vaaram", en = "last week")
+        ChatPeriod.Kind.THIS_MONTH -> pick(lang, ta = "இந்த மாசம்", tl = "indha maasam", en = "this month")
+        ChatPeriod.Kind.LAST_MONTH -> pick(lang, ta = "போன மாசம்", tl = "pona maasam", en = "last month")
+        else -> "${p.from.format(java.time.format.DateTimeFormatter.ofPattern("MMM d", Locale.ENGLISH))} – ${p.to.format(java.time.format.DateTimeFormatter.ofPattern("MMM d", Locale.ENGLISH))}"
+    }
+
     private suspend fun inventoryChat(text: String, said: String, lang: KaiLang, products: List<com.shopai.app.brain.tools.ProductRef>, people: List<String>): KaiTurn? {
         val inv = com.shopai.app.brain.tools.KaiInventory
         if (inv.asksSummary(text)) return inventorySummary(products, lang, list = false)
         if (inv.asksList(text)) return inventorySummary(products, lang, list = true)
         val product = productIn(text, products) ?: return null
+        // "Soap last month sales evlo?": that product's sales, not its stock.
+        productSales(text, lang, product, people)?.let { return it }
         // Goods with a customer / supplier of the books: one bill (ledger + stock together).
         stockBillLine(text, said, lang, product, people)?.let { return it }
         return when (val ask = inv.productAsk(text)) {
@@ -5549,7 +5843,7 @@ class KaiAgent(
      */
     private fun withSaleLine(turn: KaiTurn, product: com.shopai.app.brain.tools.ProductRef, qty: BigDecimal, said: String, lang: KaiLang): KaiTurn {
         val card = turn.card ?: return turn
-        if (com.shopai.app.brain.tools.KaiStock.reasonOf(said) != null) return turn
+        if (com.shopai.app.brain.tools.KaiStock.reasonOf(said) != null || said.startsWith(physicalNote)) return turn
         val price = product.sellingPrice ?: return turn
         val shown = KaiFormat.rupees(qty.multiply(price).toDouble())
         return turn.copy(card = card.copy(lines = card.lines + pick(lang, ta = "Cash sale: $shown (விற்பனை விலைப்படி)",
@@ -5867,7 +6161,8 @@ class KaiAgent(
         val product = if (plan.startsTracking) plan.product.copy(batchTracked = true) else plan.product
         // A sale ("vithuchu" — not damage, wastage, own use, free): a cash sale in the books, so sales / profit / fast movers have it
         // (owner, 21 Oct 2026); where the books can't take it as a sale, the stock is taken out as before.
-        val sale = !plan.incoming && com.shopai.app.brain.tools.KaiStock.reasonOf(plan.said) == null
+        // (a physical count's adjustment is never a sale — "Rice stock count 6 bag nu set pannu"; 1600-line check, 21 Oct 2026)
+        val sale = !plan.incoming && com.shopai.app.brain.tools.KaiStock.reasonOf(plan.said) == null && !plan.said.startsWith(physicalNote)
         val saved = if (plan.incoming && plan.batch != null) tools.stockInBatch(product, plan.qty, note, plan.batch)
             else (if (sale) tools.cashSale(plan.product, plan.qty, saleAmountFor[key], note) else null)
                 ?: tools.changeStock(plan.product, plan.qty, plan.incoming, note)
@@ -6920,7 +7215,20 @@ class KaiAgent(
             // "Colgate 240 pieces — 5 boxes": the product's own pack size, when it fits exactly.
             val packs = lastProduct?.takeIf { it.name.equals(f.name, ignoreCase = true) }
                 ?.let { com.shopai.app.brain.tools.KaiInventory.packView(it, f.qty) }?.takeIf { !it.contains('+') }?.let { " ($it)" }.orEmpty()
-            return say(lang, KaiMood.EXPLAINING, null, ta = "${f.name} stock $q$packs இருக்கு ஓனர்.", tl = "Owner, ${f.name} stock $q$packs irukku.", en = "${f.name}: $q$packs in stock, Owner.")
+            // "Cement low stock ah iruka?": yes or no against its minimum, never only the count (1600-line check, 21 Oct 2026).
+            val l = KaiConversationSemantics.phraseLang(turnRaw, lang)
+            if (Regex("""(?i)(?<![\p{L}])(?:low|kammi|kammiya|kuraivu|kuraiva|kuraivaa)(?![\p{L}])|குறைவ|லோ""").containsMatchIn(turnRaw)) {
+                val min = f.reorderAt ?: return say(l, KaiMood.EXPLAINING, null,
+                    ta = "${f.name} stock $q$packs இருக்கு ஓனர்; low-ஆன்னு பார்க்க minimum (reorder level) set ஆகல.",
+                    tl = "Owner, ${f.name} stock $q$packs irukku; low-aa-nu paakka minimum (reorder level) set aagala.",
+                    en = "${f.name}: $q$packs in stock, Owner — no minimum (reorder level) is set to call it low.")
+                val low = f.qty <= min
+                return say(l, if (low) KaiMood.CONCERNED else KaiMood.HAPPY, null,
+                    ta = if (low) "ஆமா ஓனர், ${f.name} low stock — $q$packs தான் இருக்கு (minimum ${qty(min, f.unit)})." else "இல்ல ஓனர், ${f.name} low இல்ல — $q$packs இருக்கு (minimum ${qty(min, f.unit)}).",
+                    tl = if (low) "Aamaa Owner, ${f.name} low stock — $q$packs dhaan irukku (minimum ${qty(min, f.unit)})." else "Illa Owner, ${f.name} low illa — $q$packs irukku (minimum ${qty(min, f.unit)}).",
+                    en = if (low) "Yes Owner, ${f.name} is low — only $q$packs (minimum ${qty(min, f.unit)})." else "No Owner, ${f.name} isn't low — $q$packs (minimum ${qty(min, f.unit)}).")
+            }
+            return say(l, KaiMood.EXPLAINING, null, ta = "${f.name} stock $q$packs இருக்கு ஓனர்.", tl = "Owner, ${f.name} stock $q$packs irukku.", en = "${f.name}: $q$packs in stock, Owner.")
         }
         return KaiTurn(
             ChatReply(pick(lang, ta = "Stock விவரம் ஓனர்:", tl = "Owner, stock details:", en = "Stock, Owner:"), KaiMood.EXPLAINING, ChatIntent.GENERAL_BUSINESS_QUERY),
@@ -7558,6 +7866,7 @@ class KaiAgent(
             ta = "சரி ஓனர் — $n-ஓட கணக்கு PDF ரெடி ($period): $sums. $how",
             tl = "Seri Owner — $n-oda statement PDF ready ($period): $sums. $how",
             en = "Okay Owner — $n's statement PDF is ready ($period): $sums. $how")
+        lastStatement = LastStatement(p.id, n, customer, from, to, conversationState.conversationTurn)
         return KaiTurn(
             ChatReply(reply, KaiMood.EXPLAINING, ChatIntent.CUSTOMER_HISTORY),
             KaiCard(

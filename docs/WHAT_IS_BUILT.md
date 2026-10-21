@@ -227,6 +227,15 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
   sale), a named one ("Murugan Stores-ku 10 box Colgate anuppinen") is a credit bill; "Kumar 2 box Colgate vaanginaan" is a sale to
   Kumar for every shop; "report" offers the type's reports (a salon's sales by service, a wholesaler's overdue) and "indha vaara
   report" is the Daily Sales week only for a service shop. A type not known decides nothing. Test: `KaiBusinessKindsTest`.
+- The owner's 1600-line training check (21 Oct 2026, PDF "OwnerNote Kai 1600 Tamil Checked Training Examples"), every line typed
+  and as the mic writes it: 68% → 99.9% (the two left ask a new product's details, as they should). Fixed: a service sale said in
+  full ("… service ku 250 vaanginom", "… service sale 7500 note pannu"); "Kai, …" said to Kai; "confirm illa stop" / "save pannadhe"
+  cancel (one confirmed before); "<product> stock la 2 box remove pannu" is a stock-out (was "forget a word"); a physical count is
+  never posted as a cash sale; "low stock ah iruka?" answers yes / no; "<product> last month sales" is its sales, not stock; a pack
+  total asked; "total 3000; 1800 kuduthachu; balance sollu"; "bill 3500; 450 mattum kuduthanga" (₹450 drafted); "last 7 days
+  expenses PDF"; "August report"; "5000 entry pannu" / "Selvam ku payment pannidu" / "5 box add pannu" asked; a supplier's "250
+  pending" is the owner's to pay; one person's PDF asked before it goes to another; send / reminder status said plainly.
+  Test: `KaiTrainingLinesTest` and owner-lines.
 - The voice / bill screen no longer has the "Your sentence" box (its "Kumar-ku 2000-ku tharanum" example) or the Parse button.
 - Customers: a small Import beside the title. More → "Pazhaiya kanakku import" reads another app's Customer / Supplier
   List PDF and adds people with opening balances on Confirm. No other app's name is shown anywhere.

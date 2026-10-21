@@ -475,3 +475,15 @@ ASK    | customer report                                | Kumar
 
 # A customer who bought it (owner, 21 Oct 2026: business types): "vaanginaan" is a sale to them, never the shop buying.
 STOCK  | Kumar 1 box Colgate credit-la vaanginaan        | Colgate 192
+
+# The owner's 1600-line training check (21 Oct 2026): lines Kai read as something else before.
+ENTRY  | Selvam kitta irunthu 500 vaangitten              | IN Selvam 500
+ENTRY  | Selvam bill 3500; 450 mattum kuduthanga           | IN Selvam 450
+STOCK  | Colgate stock la 1 box remove pannu               | Colgate 192
+ASK    | Colgate 11 box iruku; oru box la 12 pieces; total evlo? | 132
+ASK    | Kumar total 3000; 1800 kuduthachu; balance sollu  | ₹1,200
+ASK    | Murugan Stores ku 250 pending iruku               | Murugan Stores;₹250;pay
+ASK    | Colgate low stock ah iruka?                       | Colgate;240;50
+ASK    | 5000 entry pannu                                  | ₹5,000;Kumar
+ASK    | Kai, 5 box add pannu                              | Colgate
+ASK    | last 7 days expenses PDF kudu                     | 7
