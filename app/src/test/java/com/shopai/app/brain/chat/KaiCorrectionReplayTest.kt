@@ -113,16 +113,17 @@ class KaiCorrectionReplayTest {
 
     @Test fun everyFeatureButRemindersTakesTheCorrection() {
         for ((first, fix, want) in listOf(
-            Triple("Colgate stock evlo", "Colgate illa Rice", "Rice stock"),
-            Triple("Colgate stock evlo", "illa Rice", "Rice stock"),
-            Triple("Colgate profit evlo", "Colgate illa Rice", "Rice oru kg"),
+            Triple("Colgate stock evlo", "Colgate illa Rice", "250"),
+            Triple("Colgate stock evlo", "illa Rice", "250"),
+            Triple("Colgate profit evlo", "Colgate illa Rice", "₹9"),
             Triple("Kumar evlo tharanum", "Kumar illa Ramesh", "₹1,250"),
             Triple("Kumar statement PDF kudu", "Kumar illa Ramesh", "Ramesh"),
-        )) {
+        )) for ((f, x) in bothWays(first, fix).map { it[0] to it[1] }) {
+            // typed, and as the mic writes it ("கோல்கேட் இல்ல ரைஸ்")
             val s = Shop()
-            s.say(first)
-            val t = s.say(fix)
-            assertTrue("$first / $fix → ${all(t)}", all(t).contains("illa — ") && all(t).contains(want))
+            s.say(f)
+            val t = s.say(x)
+            assertTrue("$f / $x → ${all(t)}", (all(t).contains("illa — ") || all(t).contains("இல்ல — ")) && all(t).contains(want))
         }
         // "Rice profit evlo" right after Colgate's: Rice — never Colgate's again.
         val s = Shop()
@@ -132,11 +133,11 @@ class KaiCorrectionReplayTest {
 
     @Test fun anAnswerIsNeverTakenForAName() {
         // A word not a name ("naalaiku", "sari", "venam") after "illa" is the answer it is, never a correction.
-        for (answer in listOf("illa naalaiku", "illa sari", "illa venam")) {
+        for (answer in listOf("illa naalaiku", "illa sari", "illa venam")) for ((f, x) in bothWays("Ammu anna ku 2000 tharanum", answer).map { it[0] to it[1] }) {
             val s = Shop()
-            s.say("Ammu anna ku 2000 tharanum")
-            val t = s.say(answer)
-            assertFalse("$answer → ${all(t)}", all(t).contains("illa — "))
+            s.say(f)
+            val t = s.say(x)
+            assertFalse("$x → ${all(t)}", all(t).contains("illa — ") || all(t).contains("இல்ல — "))
         }
         // A reminder is not replayed by "X illa Y".
         val s = Shop()
