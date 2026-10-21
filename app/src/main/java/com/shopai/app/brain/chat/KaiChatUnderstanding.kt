@@ -270,6 +270,8 @@ object KaiChatUnderstanding {
                 else -> ChatIntent.UPCOMING_COLLECTIONS
             }
             payWords -> ChatIntent.TOTAL_PAYABLE
+            // "customer report", "customers list": who owes and how much — not the business summary.
+            has(" customer", " kastamar", " கஸ்டமர்") && has(" report", " list", " details", " ரிப்போர்ட்") -> ChatIntent.UPCOMING_COLLECTIONS
             has(" summary", " eppadi pogudhu", " epdi pogudhu", " epdi irukku", " eppadi irukku", " how is", " how's", " report", " nilamai", " status",
                 " important", " mukkiyam", " முக்கியம்", " எப்படி") -> ChatIntent.BUSINESS_SUMMARY
             has(" kanakku", " money", " panam", " kaasu", " cash") -> ChatIntent.GENERAL_BUSINESS_QUERY
@@ -378,13 +380,13 @@ object KaiChatUnderstanding {
             has(" nethu", " netru", " yesterday", " நேத்து", " நேற்று") -> return today.minusDays(1).let { ChatPeriod(it, it, ChatPeriod.Kind.YESTERDAY) }
             has(" next week", " adutha vaaram", " aduththa vaaram", " adutha week", " next vaaram", " அடுத்த வாரம்") ->
                 return ChatPeriod(monday.plusWeeks(1), monday.plusWeeks(1).plusDays(6), ChatPeriod.Kind.NEXT_WEEK)
-            has(" this week", " indha week", " intha week", " indha vaaram", " intha vaaram", " இந்த வாரம்") ->
+            has(" this week", " indha week", " intha week", " indha vaaram", " intha vaaram", " இந்த வாரம்", " weekly", " week report", " vaara report") ->
                 return ChatPeriod(monday, monday.plusDays(6), ChatPeriod.Kind.THIS_WEEK)
             has(" next month", " adutha maasam", " aduththa maasam", " adutha month", " next maasam", " அடுத்த மாசம்", " அடுத்த மாதம்") ->
                 return ChatPeriod(nextMonthStart, nextMonthStart.plusMonths(1).minusDays(1), ChatPeriod.Kind.NEXT_MONTH)
             has(" last month", " pona maasam", " poona maasam", " pona month", " போன மாசம்") ->
                 return today.withDayOfMonth(1).minusMonths(1).let { ChatPeriod(it, it.plusMonths(1).minusDays(1), ChatPeriod.Kind.LAST_MONTH) }
-            has(" this month", " indha month", " intha month", " indha maasam", " intha maasam", " month ", " maasam", " இந்த மாசம்", " மாதம்") ->
+            has(" this month", " indha month", " intha month", " indha maasam", " intha maasam", " month ", " maasam", " இந்த மாசம்", " மாதம்", " monthly") ->
                 return today.withDayOfMonth(1).let { ChatPeriod(it, it.plusMonths(1).minusDays(1), ChatPeriod.Kind.THIS_MONTH) }
         }
         // A written date: 10.10.2026, 10/10/2026, October 10, October 10th.

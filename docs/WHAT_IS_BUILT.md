@@ -123,6 +123,14 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
   labam evlo" sums today's stock sales (₹100 + ₹50 = ₹150) and their profit — kept with Kai's memory (no books table yet).
 - Stock-in of goods that can expire asks the expiry date; a date said next goes onto the draft (hardware never asked).
   "skip" / "illa" / "theriyaadhu" keeps the draft with no expiry (never cancels it); a customer return is not asked.
+- Kai's flow fixes (owner's phone, 21 Oct 2026; test `KaiFlowFixesTest`):
+  - A new product's open question ("1 bag evlo kg?") takes only its answer: another product's line, a question, a money
+    line or another new product is its own (said: "Aashirvad Atta innum serkala"). "bag-ku 25 kg" is never money.
+  - "aama" / "seri confirm pannu" / "ஆமா" said to a stock draft confirms it (a number said is a correction).
+  - "stock" alone asks which; "customer report" lists who owes; "weekly / monthly report" is that period; "expense
+    report" is the expenses, never an expense entry. Profit with the books unreadable says so (not "Kai has no P&L").
+  - A stock-out that is a sale ("vithuchu", not damage / wastage / own use) goes to the books as a walk-in cash sale
+    (`KaiTools.cashSale`), so sales, profit and fast / slow movers have it; the draft shows "Cash sale: ₹…" first.
 - Goods arriving ("kadaiku saraku vandhuruku") → items one by one into a list, saved together on the list's Confirm.
 - Expiry for goods that can expire, in any shop. Batches and a 7-day alert. Old stock becomes an "OLD-STOCK" batch on
   Confirm.

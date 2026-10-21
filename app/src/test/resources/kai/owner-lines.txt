@@ -469,3 +469,6 @@ ASK    | draft bill ellam kaattu                        | Billing
 ASK    | pudhu product add pannanum                     | Add Product
 ASK    | en kadai enna vagai                            | Profile
 ASK    | kadai category maathanum                       | Profile
+
+# The owner's phone, 21 Oct 2026: a word alone asks, reports are the ones asked for.
+ASK    | customer report                                | Kumar

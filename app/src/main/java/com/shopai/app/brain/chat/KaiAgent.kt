@@ -693,6 +693,13 @@ class KaiAgent(
             Regex("""(?i)clear|pending\s*illa|baaki\s*illa|பாக்கி எதுவும் இல்ல|nothing\s*(is\s*)?(due|pending)|no\s*balance""").containsMatchIn(t.reply.text) }
         if (adv == null) t else t.copy(reply = t.reply.copy(text = t.reply.text + pick(turnLang, ta = " ${adv.second} advance-ஆ இருக்கு.",
             tl = " ${adv.second} advance-aa irukku.", en = " ${adv.second} is kept as advance.")))
+    }.let { t ->
+        // The new product put aside by this line: said once, so it isn't lost silently (nothing of it was saved).
+        val parked = parkedItem?.takeIf { it.second == conversationState.conversationTurn }?.first
+        if (parked == null) t else { parkedItem = null; t.copy(reply = t.reply.copy(text = t.reply.text + pick(turnLang,
+            ta = "\n($parked இன்னும் சேர்க்கல — வேணும்னா அப்புறம் திரும்ப சொல்லுங்க.)",
+            tl = "\n($parked innum serkala — venumna appuram thirumba sollunga.)",
+            en = "\n($parked isn't added yet — say it again later if you want it.)"))) }
     }.also { t ->
         kaiAskedAfterDraft = conversationState.draftShownTurn != conversationState.conversationTurn &&
             (t.reply.mood == KaiMood.CLARIFY || t.card?.buttons?.isNotEmpty() == true || t.reply.text.trimEnd().endsWith("?"))
@@ -731,7 +738,7 @@ class KaiAgent(
     private fun pendingTopic(): Topic? {
         val turn = conversationState.conversationTurn
         // (goods said one by one keep their own way: a payment or a balance question in between is answered as itself — owner, 11 Oct)
-        if (newItem?.let { it.asked != null && turn - it.turn <= 2 } == true || unitQuestion != null || stockQuestion != null ||
+        if (newItem?.let { it.asked != null && turn - it.turn <= 3 } == true || unitQuestion != null || stockQuestion != null ||
             productHalf?.let { turn - it.third <= 1 } == true) return Topic.STOCK
         if (incompletePayment != null || conversationState.pendingQuestion != null && turn - conversationState.pendingAskedTurn <= 1) return Topic.MONEY
         return null
@@ -747,6 +754,10 @@ class KaiAgent(
         val product = productIn(t, products)
         val person = KaiCommands.personIn(t, people) ?: Regex("""(?i)(?<![\p{L}])([A-Za-z]{3,})\s*-?\s*(?:ku|kku|ukku|kitta)(?![\p{L}])""").find(t)?.groupValues?.get(1)
             ?.takeUnless { Regex("""(?i)^(?:innaik|naalaik|enak|unak|yaaruk|yaruk|avanuk|avaruk|maasam|stock|box|bag)""").containsMatchIn(it) }
+        // ("bag-ku 25 kg", "boxku 48 pieces": a count with its unit is goods — never money, even after "-ku")
+        val counted = Regex("""\d+(?:\.\d+)?\s*([\p{L}]+)""").findAll(t).any { com.shopai.app.brain.tools.KaiInventory.unitOf(it.groupValues[1]) != null }
+        // (any word before "-ku" reads as a name — "Bag-ku" too — so only a money word makes a counted line money)
+        if (counted && !moneyWord.containsMatchIn(t)) return if (product != null) Topic.STOCK else null
         val money = com.shopai.app.brain.tools.KaiPaymentDirection.of(t) != null || moneyWord.containsMatchIn(t)
         // ("Kumar 500" — a person of the books with an amount — is money too: which way is asked after.)
         if (product == null && (money && (person != null || t.any(Char::isDigit)) || KaiCommands.personIn(t, people) != null && t.any(Char::isDigit))) return Topic.MONEY
@@ -815,7 +826,7 @@ class KaiAgent(
         val key = card.buttons.firstNotNullOfOrNull { (it.action as? KaiAction.ConfirmStock)?.key } ?: return turn
         saleAmountFor[key] = amount
         val shown = KaiFormat.rupees(amount.toDouble())
-        return turn.copy(card = card.copy(lines = card.lines + pick(lang, ta = "விற்ற தொகை: $shown", tl = "Vitha thogai: $shown", en = "Sold for: $shown")))
+        return turn.copy(card = card.copy(lines = card.lines.filterNot { it.startsWith("Cash sale:") } + pick(lang, ta = "விற்ற தொகை: $shown (cash sale)", tl = "Vitha thogai: $shown (cash sale)", en = "Sold for: $shown (cash sale)")))
     }
 
     /** A confirmed stock-out that was a sale: kept for "innaiku evlo sale / labam" (the amount said, else at the selling price). */
@@ -1164,7 +1175,7 @@ class KaiAgent(
     /** "current bill 1200 kattinen", "rent kattanum", "petrol 500 selavu": an expense — never a person called "Current" / "Rent". */
     private fun expenseLine(text: String, lang: KaiLang, people: List<String>): KaiTurn? {
         // "indha maasam selavu evlo", "செலவு எவ்வளவு": a question about the expenses — the books answer it (owner, 17 Oct 2026).
-        if (text.none(Char::isDigit) && Regex("""(?i)(?<![\p{L}\p{M}])(evlo|evvalavu|ewlo|enna|how\s+much|total|motham|mothama|list|kaattu|kaatu|sollu|எவ்வளவு|எவ்ளோ|மொத்தம்|என்ன|சொல்லு|காட்டு)(?![\p{L}\p{M}])""").containsMatchIn(text)) return null
+        if (text.none(Char::isDigit) && Regex("""(?i)(?<![\p{L}\p{M}])(evlo|evvalavu|ewlo|enna|how\s+much|total|motham|mothama|list|kaattu|kaatu|sollu|report|details|statement|எவ்வளவு|எவ்ளோ|மொத்தம்|என்ன|சொல்லு|காட்டு|ரிப்போர்ட்)(?![\p{L}\p{M}])""").containsMatchIn(text)) return null
         if (!expenseWord.containsMatchIn(text) || KaiEntityResolver.peopleIn(text, people).isNotEmpty() ||
             Regex("""(?i)remind|nyabagam|ninaivu|alarm|booking|ரிமைண்ட்|ஞாபக|நினைவு""").containsMatchIn(text)) return null
         val what = expenseWord.find(text)!!.value.trim()
@@ -2059,6 +2070,8 @@ class KaiAgent(
         // "Colgate 2 box, Rice 3 moota vandhuchu" with no question before: the same, one draft at a time.
         if (openPayment == null) goods(said, lang)?.let { return it }
         if (openPayment == null) stockDraftCancel(said, lang)?.let { return it }
+        // "aama" / "seri confirm pannu" said to a stock draft: its Confirm button, by voice too.
+        if (openPayment == null) stockDraftConfirm(said, lang)?.let { return it }
         // "box" / "pieces" to "Colgate 5 — 5 pieces-aa, 5 boxes-aa?".
         if (openPayment == null) unitPicked(said, lang)?.let { return it }
         // "aama" / "venam" to a product change; "credit" / "28" / "box" to a bill with goods.
@@ -2380,6 +2393,11 @@ class KaiAgent(
                 // "How much Colgate in stock?": the product the books know by that name, not the words around it.
                 val product = cmd.product?.let { p -> productNamed(text, products) ?: p }
                 product?.let { rememberProduct(it) }
+                // "stock" said alone: which stock — never the whole list unasked (owner, 21 Oct 2026: "theva illatha report").
+                if (product == null && stockTopicWord.matches(said.trim())) return say(lang, KaiMood.CLARIFY, "stock: which",
+                    ta = "எந்த stock ஓனர்? ஒரு பொருள் பேர் சொல்லுங்க (உதா: “Rice stock எவ்வளவு”), இல்ல “low stock”, “stock value”, “எல்லா stock list”.",
+                    tl = "Endha stock Owner? Oru porul peru sollunga (eg: “Rice stock evlo”), illa “low stock”, “stock value”, “ella stock list”.",
+                    en = "Which stock, Owner? Name a product (e.g. “how much Rice”), or say “low stock”, “stock value” or “full stock list”.")
                 stock(product, lang)
             }
             KaiCommand.LowStock -> lowStock(lang)
@@ -4847,6 +4865,13 @@ class KaiAgent(
             return itemStep(item.key, item.spec.copy(qty = q, unit = u ?: item.spec.unit), item.said, l)
         }
         val asked = item.asked
+        // "Colgate 2 box vandhuchu", "Rice evlo irukku", "podalanga 10kg add panniko" while "1 bag evlo kg?" is open: a line of its
+        // own — never read as the answer (owner's phone, 21 Oct 2026: its numbers went into this product). The question is put aside.
+        if (asked != null && isOtherLine(text, item.spec.name)) {
+            newItem = null
+            parkedItem = item.spec.name to conversationState.conversationTurn
+            return null
+        }
         if (asked == null) {
             // The summary is on screen: "aama" / "seri" / "add pannu" saves it; a detail said now updates the summary.
             if (said.none(Char::isDigit) && (KaiConversationSemantics.confirmsDraft(said) || KaiConversationSemantics.onlySave(said))) return confirmNewItem(item.key, l)
@@ -4859,10 +4884,48 @@ class KaiAgent(
         return itemStep(item.key, inv.withDetails(answered, text).let { if (asked == com.shopai.app.brain.tools.ItemField.PURCHASE || asked == com.shopai.app.brain.tools.ItemField.SELLING) answered else it }, item.said, l)
     }
 
+    /** The new product put aside when the owner went on to another line, and the turn — said once with that line's reply. */
+    private var parkedItem: Pair<String, Long>? = null
+
+    /** Words of an answer to a new product's question ("bag-ku 25 kg", "purchase 28", "oru box 48 pieces") — never a product's name. */
+    private val answerWords = Regex("""(?i)^(?:purchase|parchase|selling|sale|sales|rate|vilai|velai|price|mrp|size|batch|expiry|exp|per|oru|onnu|each|ovvoru|ovoru|adhu|athu|idhu|ithu|andha|indha|illa|skip|venam|aama|seri|ok|pieces?|pcs|nos|vaangina|vikkira|vikkura|varum|irukku|iruku|dhaan|than|thaan)$""")
+
+    /**
+     * A line that is not an answer to the open new product's question: it names a product the shop keeps, or starts with a name
+     * of its own (not this product's, not a unit or an answer word) followed by a count — another stock line.
+     */
+    private suspend fun isOtherLine(text: String, itemName: String): Boolean {
+        val products = runCatching { tools.products() }.getOrNull().orEmpty()
+        if (productIn(text, products)?.let { !it.name.equals(itemName, ignoreCase = true) } == true) return true
+        val name = com.shopai.app.brain.tools.KaiInventory.stockLine(text)?.first ?: return false
+        val inv = com.shopai.app.brain.tools.KaiInventory
+        val words = name.lowercase(Locale.ROOT).split(Regex("""\s+""")).map { it.replace(Regex("""(?:-?kku|-?ku|-?la|-?le)$"""), "") }
+            .filter { it.isNotBlank() && inv.unitOf(it) == null && !answerWords.matches(it) }
+        if (words.isEmpty()) return false
+        val own = itemName.lowercase(Locale.ROOT).split(Regex("""\s+"""))
+        return words.none { w -> own.any { it.startsWith(w) || w.startsWith(it) } }
+    }
+
     /**
      * "illa 3 box dhaan" / "3 box dhaan" right after a stock draft on a product the books have: the quantity is corrected in the
      * same draft (same key, nothing written) — never a second entry. The unit said first is kept when none is said now.
      */
+    /**
+     * "aama", "seri", "confirm pannu", "ஆமா" right after a stock draft: the same as tapping its Confirm (owner's phone, 21 Oct 2026:
+     * a yes by voice was asked "edha pathi?"). Only a yes with no number — "seri 3 box" is a correction, read before this.
+     */
+    private suspend fun stockDraftConfirm(said: String, lang: KaiLang): KaiTurn? {
+        val last = lastDraft?.takeIf { it.second == "STOCK" } ?: return null
+        val plan = stockPlans.values.lastOrNull { it.said == last.first } ?: return null
+        if (said.any(Char::isDigit)) return null
+        val short = said.trim().split(Regex("""\s+""")).size <= 4
+        val yes = KaiConversationSemantics.confirmsDraft(said) ||
+            short && Regex("""(?i)(?<![\p{L}])(confirm|save|ok|okay|add\s*pannu|podu|seri)(?![\p{L}])|உறுதி|சேவ்""").containsMatchIn(said)
+        if (!yes) return null
+        lastDraft = null
+        return act(KaiAction.ConfirmStock(plan.key), lang)
+    }
+
     /** "venam" / "cancel" / "வேண்டாம்" right after a stock draft: the draft is dropped and nothing is saved. */
     private suspend fun stockDraftCancel(said: String, lang: KaiLang): KaiTurn? {
         val last = lastDraft?.takeIf { it.second == "STOCK" } ?: return null
@@ -5382,7 +5445,20 @@ class KaiAgent(
             ta = "Expiry date என்ன ஓனர்? (உதா: 25/12/2026). Expiry இல்லன்னா அப்படியே Confirm பண்ணுங்க.",
             tl = "Expiry date enna Owner? (eg: 25/12/2026). Expiry illa-na appadiye Confirm pannunga.",
             en = "What's the expiry date, Owner? (e.g. 25/12/2026). No expiry? Just tap Confirm."))
-        return turn
+        return if (!incoming) withSaleLine(turn, product, qty, said, lang) else turn
+    }
+
+    /**
+     * A stock-out that is a sale: the draft says it goes into the books as a cash sale, at the selling price (the money said
+     * replaces it — "Vitha thogai"), so nothing is saved that the owner didn't see before Confirm.
+     */
+    private fun withSaleLine(turn: KaiTurn, product: com.shopai.app.brain.tools.ProductRef, qty: BigDecimal, said: String, lang: KaiLang): KaiTurn {
+        val card = turn.card ?: return turn
+        if (com.shopai.app.brain.tools.KaiStock.reasonOf(said) != null) return turn
+        val price = product.sellingPrice ?: return turn
+        val shown = KaiFormat.rupees(qty.multiply(price).toDouble())
+        return turn.copy(card = card.copy(lines = card.lines + pick(lang, ta = "Cash sale: $shown (விற்பனை விலைப்படி)",
+            tl = "Cash sale: $shown (selling vilai padi)", en = "Cash sale: $shown (at the selling price)")))
     }
 
     /** "batch B20", "expiry 06/2027" said with new stock of a batch-tracked product (typed or spoken); null = neither said. */
@@ -5694,8 +5770,12 @@ class KaiAgent(
                 ta = "சேமிக்க முடியல ஓனர்: ${f.reason}. எதுவும் சேமிக்கல.", tl = "Owner, save aagala: ${f.reason}. Edhuvum save aagala.", en = "It wasn't saved, Owner: ${f.reason}. Nothing was saved.")
         }
         val product = if (plan.startsTracking) plan.product.copy(batchTracked = true) else plan.product
+        // A sale ("vithuchu" — not damage, wastage, own use, free): a cash sale in the books, so sales / profit / fast movers have it
+        // (owner, 21 Oct 2026); where the books can't take it as a sale, the stock is taken out as before.
+        val sale = !plan.incoming && com.shopai.app.brain.tools.KaiStock.reasonOf(plan.said) == null
         val saved = if (plan.incoming && plan.batch != null) tools.stockInBatch(product, plan.qty, note, plan.batch)
-            else tools.changeStock(plan.product, plan.qty, plan.incoming, note)
+            else (if (sale) tools.cashSale(plan.product, plan.qty, saleAmountFor[key], note) else null)
+                ?: tools.changeStock(plan.product, plan.qty, plan.incoming, note)
         return when (val outcome = saved) {
             is ActionOutcome.Done -> {
                 tools.log(intent, "inventory engine", "${plan.product.name} ${input?.let { "$it = " }.orEmpty()}${qty(plan.qty, plan.unit)} saved", ActionStatus.CONFIRMED, null, plan.said)
@@ -7199,8 +7279,9 @@ class KaiAgent(
             tax -> pick(lang, ta = "ஓனர், GST / tax கணக்கு Kai-ல இன்னும் இல்ல — அதுக்கு உங்க auditor-அ கேளுங்க.", tl = "Owner, GST / tax kanakku Kai-la innum illa — adhukku unga auditor-a kelunga.",
                 en = "Owner, Kai doesn't keep GST / tax accounts yet — please ask your auditor.")
             sheet -> pick(lang, ta = "ஓனர், balance sheet Kai-ல இன்னும் இல்ல.", tl = "Owner, balance sheet Kai-la innum illa.", en = "Owner, Kai doesn't make a balance sheet yet.")
-            profit -> pick(lang, ta = "ஓனர், லாபம் (profit & loss) கணக்கு Kai-ல இன்னும் இல்ல.", tl = "Owner, labam (profit & loss) kanakku Kai-la innum illa.",
-                en = "Owner, Kai doesn't keep a profit & loss account yet.")
+            // (the profit report reads the books; reaching here, they couldn't be read — said so, never "Kai has no profit report")
+            profit -> pick(lang, ta = "ஓனர், லாபம் (profit & loss) கணக்கு போட இப்போ உங்க books-ஐ படிக்க முடியல.", tl = "Owner, labam (profit & loss) kanakku poda ippo unga books-a padikka mudiyala.",
+                en = "Owner, I can't read your books right now to work out the profit & loss.")
             else -> pick(lang, ta = "ஓனர், $untracked தனியா Kai பதிவுல இல்ல.", tl = "Owner, $untracked thaniyaa Kai record-la illa.", en = "Owner, $untracked isn't recorded separately in Kai.")
         }
         return KaiTurn(ChatReply(head + figures + rough, KaiMood.EXPLAINING, ChatIntent.GENERAL_BUSINESS_QUERY))
