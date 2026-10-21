@@ -567,10 +567,10 @@ object KaiFeed {
     val units: Map<String, String> = pairs("""
         pottalam = PACKET
         pottalangal = PACKET
-        sachet = PACKET
-        sachets = PACKET
-        jar = BOTTLE
-        jars = BOTTLE
+        sachet = SACHET
+        sachets = SACHET
+        jar = JAR
+        jars = JAR
         # A tin of paint / ghee is a can, its size per product (owner's 10-category guide: "tin capacity varies").
         tin = CAN
         tins = CAN

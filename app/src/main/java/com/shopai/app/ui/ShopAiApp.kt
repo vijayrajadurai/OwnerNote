@@ -631,6 +631,11 @@ fun ShopAiApp(container: AppContainer) {
                         "REMINDERS" -> navController.navigate(Routes.Reminders)
                         // "GST bill podu": Kai chat doesn't make bills — the bill editor does (for that customer when Kai knew who).
                         "SALE_BILL" -> navController.navigate(Routes.billEditor("SALE", id.ifBlank { null }))
+                        // The screens Kai points to by chat or voice: purchase bill, draft bills, Add Product, the shop's categories.
+                        "PURCHASE_BILL" -> navController.navigate(Routes.billEditor("PURCHASE", id.ifBlank { null }))
+                        "BILLING" -> navController.navigate(Routes.Billing)
+                        "NEW_PRODUCT" -> navController.navigate(Routes.productForm())
+                        "PROFILE" -> navController.navigate(Routes.Profile)
                     }
                 },
             )

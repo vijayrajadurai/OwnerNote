@@ -127,6 +127,15 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
 - Expiry for goods that can expire, in any shop. Batches and a 7-day alert. Old stock becomes an "OLD-STOCK" batch on
   Confirm.
 - Reports: stock on hand, low stock, fast and slow movers, profit and loss. A stock card shows the product's photo.
+- Kai knows the new screens and units (owner, 20 Oct 2026), typed and by mic (`brain/chat/KaiScreenLinks.kt`):
+  - "purchase bill podu" / "supplier bill entry" → Purchase bill; "draft bill" → Billing; "pudhu product add pannanum"
+    → Add Product; "en kadai enna vagai" → says the setup categories, button to Profile. "sales bill" says the number
+    and date fill in by themselves. A link saves nothing.
+  - Unit Master pack units by chat: jar, pouch, sachet, drum, bunch, bale, cone, spool, reel, ampoule, dose, yard, sq.m
+    (sachet / jar are their own units now, not packet / bottle). Kai's conversions stay its own list: feet / yard for goods
+    in metres are asked (owner's rule); a box / jar is never assumed.
+  - Products Kai creates are "GST not specified"; a second unit told to Kai is kept beside the first (`moreUnits`).
+  - A new shop (under 3 products): a new product's kind follows its setup categories. Test: `KaiFeatureLinksTest`.
 - Inventory fields (owner, 20 Oct 2026; not yet checked on a phone — UI needs an Android Studio build):
   - Dashboard: search (name / code / SKU / barcode, part of a code too), Add Product, Total Products and Low Stock tiles
     (tap Low Stock to list only those).

@@ -119,6 +119,13 @@ object KaiStock {
         "kit" to "KIT", "kits" to "KIT", "கிட்" to "KIT", "feet" to "FEET", "ft" to "FEET", "adi" to "FEET", "அடி" to "FEET",
         // Steel rods / TMT bars counted by the rod (release check, 20 Oct 2026: "Tata Tiscon 12mm 100 rod").
         "rod" to "ROD", "rods" to "ROD", "kambi" to "ROD", "கம்பி" to "ROD",
+        // The Unit Master's pack units (owner, 20 Oct 2026: every unit of the Add Product screen is Kai's too). mm / cm / inch / mg
+        // stay a product's size ("12 mm pipe", "Dolo 650 mg"), never its quantity.
+        "jar" to "JAR", "jars" to "JAR", "pouch" to "POUCH", "pouches" to "POUCH", "sachet" to "SACHET", "sachets" to "SACHET",
+        "drum" to "DRUM", "drums" to "DRUM", "bunch" to "BUNCH", "bunches" to "BUNCH", "bale" to "BALE", "bales" to "BALE",
+        "spool" to "SPOOL", "spools" to "SPOOL", "reel" to "REEL", "reels" to "REEL", "cone" to "CONE", "cones" to "CONE",
+        "ampoule" to "AMPOULE", "ampoules" to "AMPOULE", "dose" to "DOSE", "doses" to "DOSE",
+        "yard" to "YARD", "yards" to "YARD", "gajam" to "YARD", "sqm" to "SQM",
     ) + KaiFeed.units
 
     private val reasons = listOf(
