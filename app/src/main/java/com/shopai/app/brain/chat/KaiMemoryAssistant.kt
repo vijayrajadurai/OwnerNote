@@ -195,6 +195,13 @@ class KaiMemoryAssistant(private val access: KaiMemoryAccess) {
     // Never "podu" / "pottu" (put — stock in).
     private val goneWord = Regex("""(?i)^(po(?![dt])|vith|vitt|kett|udanj|damage|out|sold|kammi|kurai)|^போ(?!ட)|^வித்|^கெட்|^உடைஞ்""")
 
+    /** The line's unknown words are close to words the owner taught ("thooki kudunga" ~ "thooki kudu"): the owner's own word comes first. */
+    suspend fun taughtLike(text: String, people: List<String>, products: List<String>): Boolean {
+        val mem = access.current() ?: return false
+        val phrase = KaiTeaching.unknownPhrase(text, people, products) ?: return false
+        return mem.similar(phrase) != null
+    }
+
     suspend fun unknown(text: String, original: String, lang: KaiLang, people: List<String>, products: List<String>): KaiTurn? {
         val mem = access.current() ?: return null
         val phrase = KaiTeaching.unknownPhrase(text, people, products) ?: return null
@@ -205,7 +212,8 @@ class KaiMemoryAssistant(private val access: KaiMemoryAccess) {
             // "Mambalam 30kg poiruchi": a word like "po-" (went), "vith-" (sold), "kett-" (spoilt) is stock going out — asked first.
             product != null && amount && goneWord.containsMatchIn(phrase) -> listOf(KaiMeaning.STOCK_OUT, KaiMeaning.STOCK_IN)
             product != null && amount -> listOf(KaiMeaning.STOCK_IN, KaiMeaning.STOCK_OUT)
-            person != null && amount -> listOf(KaiMeaning.PAYMENT_OUT, KaiMeaning.PAYMENT_IN)
+            // (a person and an amount: they paid, I paid, or they owe me — the three, as buttons; the pick is kept for this owner)
+            person != null && amount -> listOf(KaiMeaning.PAYMENT_OUT, KaiMeaning.PAYMENT_IN, KaiMeaning.CREDIT)
             else -> {
                 mem.observe(phrase, null)
                 return null

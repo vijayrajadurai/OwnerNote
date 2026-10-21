@@ -62,6 +62,8 @@ object KaiTeaching {
         return when {
             has("payment out", "pay out", "money out", "paid out", "panam kudukkuradhu", "panam kuduthadhu", "kudukkuradhu", "பணம் கொடுத்தது", "கொடுத்தது") -> KaiMeaning.PAYMENT_OUT
             has("payment in", "money in", "panam vandhadhu", "vasool", "collection", "received payment", "பணம் வந்தது", "வசூல்") -> KaiMeaning.PAYMENT_IN
+            // ("X na tharanum" is an entry said, never a teaching — only the meaning's own name: kadan / credit)
+            has("kadan", "credit", "கடன்") -> KaiMeaning.CREDIT
             has("stock in", "stock add", "stock ulla", "stock ullae", "inward", "ஸ்டாக் உள்ளே", "ஸ்டாக் சேர்") -> KaiMeaning.STOCK_IN
             has("stock out", "stock remove", "stock veliya", "stock veliye", "outward", "ஸ்டாக் வெளியே") -> KaiMeaning.STOCK_OUT
             has("business summary", "summary", "kanakku summary", "வியாபார சுருக்கம்") -> KaiMeaning.BUSINESS_SUMMARY
@@ -257,7 +259,8 @@ object KaiTeaching {
         (people + products).filter { it.isNotBlank() }.map(KaiPrivateMemory::normalize).sortedByDescending { it.length }.forEach { name ->
             t = t.replace(Regex("""(?<![\p{L}\p{M}])${Regex.escape(name)}(?![\p{L}\p{M}])"""), " ")
         }
-        val tokens = t.replace(Regex("""₹?\d[\d,.]*\s*k?"""), " ").split(Regex("""\s+""")).filter { it.isNotEmpty() }
+        // ("2k" is 2000, but "3000 kudutten" keeps its "k": the word after the amount is never cut — it was asked as "uduthten")
+        val tokens = t.replace(Regex("""₹?\d[\d,.]*(?:\s*k(?![\p{L}]))?"""), " ").split(Regex("""\s+""")).filter { it.isNotEmpty() }
         // (every unit the stock rules read is known too — "10bgs" is 10 bags, never a word to teach)
         val unknown = tokens.filter { it !in known && com.shopai.app.brain.tools.KaiStock.unitOf(it) == null && it.length >= 2 }
         if (unknown.isEmpty() || unknown.size > 3) return null

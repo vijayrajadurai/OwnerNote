@@ -228,6 +228,12 @@ fun KaiChatScreen(
                 heard = null
                 send(spoken, voice = true)
             },
+            // The phone's guesses of the line (owner, 21 Oct 2026: "voice-la correct-a solla matanga"): Kai takes the one it reads best.
+            onResults = { guesses ->
+                listening = false
+                heard = null
+                scope.launch { send(session.bestHeard(guesses), voice = true) }
+            },
             onError = {
                 // The recognizer gave up (silence, no final match) after it had already heard words: those words go to Kai —
                 // never dropped (owner, 18 Oct 2026: "mic-la sonna varamatikuthu").

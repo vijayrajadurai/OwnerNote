@@ -73,6 +73,11 @@ class KaiChatSession(
 
     fun takeDirect(): Pair<Long, KaiAction>? = pendingDirect.also { pendingDirect = null }
 
+    /** The mic's guesses of one spoken line → the one Kai reads best (off the main thread); the first when it can't tell. */
+    suspend fun bestHeard(guesses: List<String>): String = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+        runCatching { agent.bestHeard(guesses) }.getOrNull()?.takeIf { it.isNotBlank() } ?: guesses.first()
+    }
+
     /**
      * The owner's words — typed, or spoken ([voice]: speech-to-text). Both go
      * to the same Kai (same understanding, same private shop language, same

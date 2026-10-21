@@ -47,6 +47,10 @@ data class StockRequest(
  * owner confirms before the inventory engine is called.
  */
 object KaiStock {
+    /** The words the stock rules read (in / out) — every form of them stays as it is when Kai matches words by sound. */
+    val stockInWords: List<String> get() = inWords
+    val stockOutWords: List<String> get() = outWords
+
     /** Stock coming in: "add stock", "new stock", "stock vandhiruku", "pudhu stock", "pudhusa vandhuruku", "inventory-ku podu". */
     private val inWords = listOf(
         "stock in", "stock add", "add stock", "add pannu", "add panniten", "add pannunga", "add panni", "add", "serthu", "sethu", "serthudu",

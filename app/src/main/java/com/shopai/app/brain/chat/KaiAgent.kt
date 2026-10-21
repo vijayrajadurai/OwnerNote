@@ -321,6 +321,8 @@ internal object KaiConversationSemantics {
         if (correctionAmount(text) != null && listOf("illai", "illa", "actually", "wrong", "no", "இல்லை").any(n::contains)) return false
         // ("Kai, confirm illa stop", "save pannadhe": a confirm said with a no is a cancel — 1600-line check, 21 Oct 2026)
         if (notNow.containsMatchIn(n)) return true
+        // "thappu cancel", "sari cancel", "adhu cancel" — a short line ending in cancel, with no amount (any-way check, 21 Oct 2026).
+        if (Regex("""(?<![\p{L}])cancel(?:\s+(?:pannu|pannunga|pannidu))?$""").containsMatchIn(n) && n.split(' ').size <= 3 && n.none(Char::isDigit)) return true
         return n in setOf("venda", "venam", "venaam", "vendaam", "vendam", "cancel", "skip", "vidunga", "viddu", "no", "no need", "illa", "illai", "வேண்டாம்", "stop") ||
             listOf("cancel pannu", "cancel pannunga", "don't add", "dont add", "add panna vendam", "add pannadhe", "வேண்டாம்").any(n::contains)
     }
@@ -616,6 +618,14 @@ class KaiAgent(
      * Prepares the shop's product names for hearing by sound ahead (owner, 20 Oct 2026: "Kai response konjam late"): done when Kai
      * Chat opens, off the main thread, so the first spoken line doesn't wait for it. Reads only; nothing else changes.
      */
+    /** Of the mic's guesses of one line, the one Kai reads best ([KaiHeard]); the phone's first unless another is clearly better. */
+    suspend fun bestHeard(guesses: List<String>): String {
+        if (guesses.size <= 1) return guesses.firstOrNull().orEmpty()
+        val people = runCatching { books.snapshot()?.people.orEmpty() }.getOrDefault(emptyList())
+        val products = runCatching { tools.products()?.map { it.name } }.getOrNull().orEmpty()
+        return guesses[KaiHeard.pick(guesses, people, products, now().toLocalDate())]
+    }
+
     suspend fun warmUp() {
         val names = runCatching { tools.products()?.map { it.name } }.getOrNull().orEmpty()
         if (names.isNotEmpty()) runCatching { com.shopai.app.brain.tools.KaiProductSound.withProducts("ஒரு", names) }
@@ -1330,6 +1340,43 @@ class KaiAgent(
     private var forcedLang: KaiLang? = null
 
     /** The owner's spellings of Kai's words, as the feed knows them ("totel ah" = "total ah"). */
+    /**
+     * Words neither Kai nor the owner's memory knows, with a person and an amount (or a product and a count): first the line read with
+     * a word that sounds like one of Kai's ("Kumar 500 taranum" = tharanum), else Kai asks what the words mean.
+     */
+    private suspend fun unknownAsked(text: String, said: String, lang: KaiLang, people: List<String>, products: List<String>): KaiTurn? =
+        // (the owner's own taught words first: "thooki kudunga" like the taught "thooki kudu" is asked as that, never re-read by sound)
+        (if (learner?.taughtLike(text, people, products) == true) null
+            else soundRetry(text, com.shopai.app.brain.memory.KaiTeaching.unknownPhrase(text, people, products)?.split(' '), lang))
+            ?: learner?.unknown(text, said, lang, people, products)
+
+    /** A product and a count with a word Kai can't read: first that word by sound ("Colgate 2 box vandhathu"), else in or out is asked. */
+    private suspend fun stockWayOrSound(text: String, lang: KaiLang, products: List<com.shopai.app.brain.tools.ProductRef>, people: List<String>): KaiTurn? =
+        soundRetry(text, com.shopai.app.brain.memory.KaiTeaching.unknownPhrase(text, people, products.map { it.name })?.split(' '), lang)
+            ?: stockWayMissing(text, lang, products, people)
+
+    /** A sound retry is running: it is never retried again. */
+    private var soundRetrying = false
+
+    /**
+     * Before Kai asks what [words] mean: the line again with each of them as the word of Kai's it sounds like ("taranum" = tharanum,
+     * "kensal" = cancel, "vandhathu" = vandhuchu — [com.shopai.app.brain.tools.KaiWordSound]; owner, 21 Oct 2026: "voice-la correct-a
+     * solla matanga, intent purinjikanum"). Only words Kai couldn't read — a line it reads is never changed; the shop's own people and
+     * products are never touched. Null: none of them sounds like one of Kai's words (Kai asks, as before).
+     */
+    private suspend fun soundRetry(text: String, words: Collection<String>?, lang: KaiLang): KaiTurn? {
+        if (soundRetrying || words.isNullOrEmpty()) return null
+        val people = runCatching { books.snapshot()?.people.orEmpty() }.getOrDefault(emptyList())
+        val keep = (people + runCatching { tools.products()?.map { it.name } }.getOrNull().orEmpty())
+            .flatMap { it.lowercase(Locale.ROOT).split(Regex("""[^\p{L}]+""")) }.filter { it.isNotEmpty() }.toSet()
+        val fixed = com.shopai.app.brain.tools.KaiWordSound.fixWords(text, words.flatMap { it.split(' ') }, keep) ?: return null
+        tools.log("word by sound", "kai", fixed, ActionStatus.ANSWERED, null, text)
+        val keepLang = forcedLang
+        soundRetrying = true
+        forcedLang = lang
+        return try { answerOwner(fixed) } finally { soundRetrying = false; forcedLang = keepLang }
+    }
+
     private fun spelled(text: String): String = Regex("""[\p{L}]+""").replace(text) { m ->
         com.shopai.app.brain.tools.KaiFeed.spellings[m.value.lowercase(Locale.ROOT)] ?: com.shopai.app.brain.tools.KaiFeed.verbSpelling(m.value) ?: m.value
     }
@@ -2414,7 +2461,7 @@ class KaiAgent(
             }
             stockChange(text, said, lang, products, people)?.let { return it }
             // (with the owner's word memory, its own guess comes first — "pochaanga" sounds like went: "stock out pannradha?")
-            if (plans.isEmpty() && learner == null) stockWayMissing(text, lang, products, people)?.let { return it }
+            if (plans.isEmpty() && learner == null) stockWayOrSound(text, lang, products, people)?.let { return it }
         }
         if (com.shopai.app.brain.tools.KaiIntents.isBillScan(text)) {
             val cmd = KaiCommands.route(text, at, people)
@@ -2479,7 +2526,7 @@ class KaiAgent(
                     }
                 }
                 conversation(text, said, lang, at)
-                    ?: learner?.unknown(text, said, lang, people, products.orEmpty().map { it.name })
+                    ?: unknownAsked(text, said, lang, people, products.orEmpty().map { it.name })
                     // A product and a count / a person and an amount with a word neither Kai nor the owner's memory knows: which
                     // way is asked — never "edha pathi?", never the balance with the amount dropped (owner, 19 Oct 2026).
                     ?: products?.takeIf { plans.isEmpty() }?.let { stockWayMissing(text, lang, it, people) }
@@ -4674,6 +4721,9 @@ class KaiAgent(
         val answer = question(applied, lang, today, people)
         if (answer.reply.intent != ChatIntent.UNKNOWN || learner == null) return answer
         val names = (people + products.map { it.name }).flatMap { KaiPrivateMemory.normalize(it).split(' ') }.toSet()
+        // "innaiku sels evlo": a word Kai can't read that sounds like one of its own — the line read with it, before asking.
+        val unread = KaiPrivateMemory.normalize(text).split(' ').filter { w -> w.length >= 3 && w.all(Char::isLetter) && w !in names && !KaiLexicon.knows(w) }
+        soundRetry(text, unread, lang)?.let { return it }
         return learner.unknownWord(text, said, lang) { w -> w in names || KaiLexicon.knows(w) } ?: answer
     }
 
@@ -7347,6 +7397,8 @@ class KaiAgent(
     private suspend fun stock(product: String?, lang: KaiLang): KaiTurn {
         product?.let { rememberProduct(it) }
         val facts = tools.stock(product) ?: return unverified(lang, "stock")
+        // "expairy aagura stock": no product by that name, but a word that sounds like one of Kai's (expiry) — the line read with it.
+        if (facts.isEmpty() && product != null) soundRetry(ownerWords, product.split(' '), lang)?.let { return it }
         if (facts.isEmpty()) return say(lang, KaiMood.CLARIFY, null,
             ta = "${product ?: "அந்த"} பொருள் inventory-ல இல்ல ஓனர்.", tl = "Owner, ${product ?: "andha"} product inventory-la illa.", en = "${product ?: "That product"} isn't in your inventory, Owner.")
         tools.log("stock ${product ?: "all"}", "inventory", "${facts.size} items", ActionStatus.ANSWERED)
