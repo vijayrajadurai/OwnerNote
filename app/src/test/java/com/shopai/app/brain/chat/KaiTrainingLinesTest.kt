@@ -80,9 +80,9 @@ class KaiTrainingLinesTest {
         override suspend fun entities(): List<KnownEntity> = emptyList()
     }
 
-    private inner class Shop(kinds: Set<BusinessKind>? = setOf(BusinessKind.SERVICE, BusinessKind.RETAIL)) {
+    private inner class Shop(kinds: Set<BusinessKind>? = setOf(BusinessKind.SERVICE, BusinessKind.RETAIL), extra: List<Party> = emptyList()) {
         val ps = listOf(Party("c1", "Kumar", true, BigDecimal("1000")), Party("c2", "Selvam", true, BigDecimal("4000")), Party("c3", "Ramesh", true, BigDecimal("700")),
-            Party("s1", "Meena", false, BigDecimal("900")))
+            Party("s1", "Meena", false, BigDecimal("900"))) + extra
         val inv = Inventory().apply {
             parties.clear()
             items += Inventory.Item("i1", "Rice", "KG", BigDecimal("250"), mapOf("BAG" to BigDecimal("25")), BigDecimal("56"), BigDecimal("65"), "Grocery", null, BigDecimal("50"))
@@ -189,6 +189,29 @@ class KaiTrainingLinesTest {
             s.say(line)
             s.tap { it is KaiAction.ConfirmPlan }
             assertEquals(line, PlanKind.PAYMENT_IN, s.tools.saved.singleOrNull()?.kind)
+        }
+    }
+
+    /**
+     * The owner's phone (21 Oct 2026): "kens 2000 tharanum" with "கணேஷ்" in the books became கணேஷ் (the same consonants k-n-s), "Ganesh
+     * illa kens" was read as Ganesh's balance, and "kens enaku 2000 tharanum" was கணேஷ் again. Typed and as the mic writes it.
+     */
+    @Test fun aTypedNameIsNeverAnotherPersonAndACorrectionIsKept() {
+        val ganesh = listOf(Party("c9", "கணேஷ்", true, BigDecimal("2000")))
+        for (line in ways("kens 2000 tharanum")) {
+            val t = Shop(extra = ganesh).say(line)
+            assertTrue("$line → ${all(t)}", t.reply.text.contains("Kens") && !t.reply.text.contains("கணேஷ்"))
+        }
+        // "Ganesh" typed is still the books' கணேஷ் — and the reply shows both, so a swap is seen.
+        assertTrue(all(Shop(extra = ganesh).say("Ganesh 2000 tharanum")).contains("கணேஷ் (Ganesh)"))
+        // A name the sound rule still takes for the books' person: "X illa Y" moves the payment to Y and keeps it so.
+        for (m in listOf(false, true)) {
+            fun said(l: String) = if (m) KaiMicForm.of(l) ?: l else l
+            val s = Shop(extra = ganesh)
+            s.say(said("Ganesh 2000 tharanum"))
+            val fixed = s.say(said("Ganesh illa Ganeshan"))
+            assertTrue("$m: ${all(fixed)}", fixed.reply.text.contains("Ganeshan") && fixed.reply.text.contains("2,000"))
+            assertTrue(s.nothingWritten())
         }
     }
 

@@ -236,6 +236,10 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
   expenses PDF"; "August report"; "5000 entry pannu" / "Selvam ku payment pannidu" / "5 box add pannu" asked; a supplier's "250
   pending" is the owner's to pay; one person's PDF asked before it goes to another; send / reminder status said plainly.
   Test: `KaiTrainingLinesTest` and owner-lines.
+- A typed name is never another person by its consonants alone (owner's phone, 21 Oct 2026: "kens 2000 tharanum" with "கணேஷ்"
+  in the books became கணேஷ்): a one-syllable English word must share the Tamil name's opening vowel (`NameSound`); a books name in
+  Tamil read from English letters is shown with what was typed ("கணேஷ் (Ganesh)"); "Ganesh illa kens" moves the stated payment to
+  Kens and keeps that for the conversation. Test: `KaiTrainingLinesTest.aTypedNameIsNeverAnotherPerson…`, `NameSoundTest`.
 - The voice / bill screen no longer has the "Your sentence" box (its "Kumar-ku 2000-ku tharanum" example) or the Parse button.
 - Customers: a small Import beside the title. More → "Pazhaiya kanakku import" reads another app's Customer / Supplier
   List PDF and adds people with opening balances on Confirm. No other app's name is shown anywhere.

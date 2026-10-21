@@ -2510,10 +2510,10 @@ class KaiAgent(
         val hasReceivableMeaning = owed != null || Regex("(?i)\\b(tharanum|tharanum|pending|baaki|bakki|owe|owes|collect|varanum)\\b|தரணும்|பாக்கி")
             .containsMatchIn(text)
         // The person: one in the books, or — for a stated debt — the name the sentence starts with ("Kumaran enaku 3000 tharanum").
-        val person = KaiCommands.personIn(text, people)
+        val person = unlessCorrected(KaiCommands.personIn(text, people)
             // A Tamil-script name too ("சுஜித் எனக்கு 2000 தரணும்").
             ?: com.shopai.app.brain.KaiUnderstanding.personPhraseIn(text)
-            ?.takeIf { owed != null && it.length >= 3 && Regex("""[\p{L}\p{M} ]+""").matches(it) }
+            ?.takeIf { owed != null && it.length >= 3 && Regex("""[\p{L}\p{M} ]+""").matches(it) }, text)
         // "Kumar enakku 3000 tharanum, next month 10-ku": the 10 belongs to the date, not the amount.
         val saidDate = datePhrase.find(text)?.value?.let(::dayOfPhrase)
         val amountText = if (saidDate != null) datePhrase.replace(text, " ") else text
@@ -2556,7 +2556,7 @@ class KaiAgent(
                 return dueDateResolved(saidDate, person, amount, direction, lang, text)
             }
             conversationState.pendingQuestion = KaiPendingQuestion.DUE_DATE
-            return askDueDate(conversationState.stated?.label ?: person, amount, direction, lang)
+            return askDueDate(conversationState.stated?.label ?: shownAs(person, text), amount, direction, lang)
         }
         // "Kumar-ku cash kudukanum": who and which way, but no amount — ask only the amount.
         if (owed != null && person != null && amount == null && cmd == KaiCommand.Question && !asking) {
@@ -3652,6 +3652,7 @@ class KaiAgent(
     private suspend fun lineChecks(said: String, lang0: KaiLang, people: List<String>): KaiTurn? {
         val text = said.trim().trimEnd('.', '!', '?').replace(Regex("""\s+"""), " ")
         val lang = KaiConversationSemantics.phraseLang(text, lang0)
+        nameCorrection(text, lang, people)?.let { return it }
         otherRecipient(text, lang, people)?.let { return it }
         packTotal(text, lang)?.let { return it }
         remainingBalance(text, lang)?.let { return it }
@@ -3736,6 +3737,49 @@ class KaiAgent(
             tl = "Owner, $name report: sales ${r(sales)}, purchase ${r(bought)}, selavu ${r(spent)}.",
             en = "Owner, $name: sales ${r(sales)}, purchases ${r(bought)}, expenses ${r(spent)}."), KaiMood.EXPLAINING, ChatIntent.GENERAL_BUSINESS_QUERY),
             KaiCard(emptyList(), listOf(pdf)))
+    }
+
+    /** Names the owner said are not the books' person this conversation ("Ganesh illa kens": "kens" → never "கணேஷ்" again). */
+    private val notThisPerson = mutableListOf<Pair<String, String>>()
+
+    /**
+     * "Ganesh illa kens", "கணேஷ் இல்ல kens" right after a stated payment (owner's phone, 21 Oct 2026): the person was wrong — the same
+     * amount and side, now for the name said, and that name is never read as the other one again in this conversation.
+     */
+    private fun nameCorrection(text: String, lang: KaiLang, people: List<String>): KaiTurn? {
+        val st = conversationState.stated?.takeIf { it.amount != null && conversationState.conversationTurn - conversationState.pendingAskedTurn <= 3 } ?: return null
+        val m = Regex("""(?i)^(?:illa\s+|illai\s+|no\s+)?([\p{L}\p{M}]+(?:\s[\p{L}\p{M}]+)?)\s+(?:illa|illai|alla|not|இல்ல|இல்லை)\s*,?\s+([\p{L}\p{M}]+(?:\s[\p{L}\p{M}]+){0,2})$""").find(text) ?: return null
+        val wrong = m.groupValues[1].trim()
+        val right = m.groupValues[2].trim()
+        val stated = st.person
+        if (!(wrong.equals(stated, ignoreCase = true) || com.shopai.app.util.NameSound.same(wrong, stated) || st.label?.equals(wrong, ignoreCase = true) == true)) return null
+        if (right.equals(stated, ignoreCase = true) || right.split(' ').any { it.lowercase(Locale.ROOT) in notNameWords }) return null
+        val name = people.firstOrNull { it.equals(right, ignoreCase = true) } ?: right.split(' ').joinToString(" ") { it.replaceFirstChar { c -> c.titlecase(Locale.ROOT) } }
+        notThisPerson += right.lowercase(Locale.ROOT) to stated
+        remember(name, st.amount, st.direction, text, lang)
+        conversationState.stated = conversationState.stated?.copy(newPerson = true)
+        conversationState.pendingQuestion = KaiPendingQuestion.DUE_DATE
+        tools.log("name correction", "kai", "$stated → $name", ActionStatus.ANSWERED, null, text)
+        return withPrefix(pick(lang, ta = "சரி ஓனர், $stated இல்ல — $name.", tl = "Seri Owner, $stated illa — $name.", en = "Okay Owner, not $stated — $name."),
+            askDueDate(name, st.amount!!, st.direction, lang))
+    }
+
+    private val notNameWords = setOf("amount", "date", "credit", "debit", "stock", "payment", "tharanum", "kudukkanum", "vandhuchu", "kuduthan",
+        "kuduthen", "venam", "vendam", "illa", "sari", "seri", "ok", "cash", "upi", "gpay", "pannu", "podu")
+
+    /** The person read from the line, unless the owner already said that word is not them ("kens" after "Ganesh illa kens"). */
+    private fun unlessCorrected(person: String?, text: String): String? {
+        person ?: return null
+        val said = notThisPerson.firstOrNull { (w, booksName) -> booksName == person && Regex("""(?i)(?<![\p{L}])${Regex.escape(w)}(?![\p{L}\p{M}])""").containsMatchIn(text) }
+            ?: return person
+        return said.first.split(' ').joinToString(" ") { it.replaceFirstChar { c -> c.titlecase(Locale.ROOT) } }
+    }
+
+    /** How a books name read by its sound is shown: "கணேஷ் (Ganesh)" when the owner typed it in English letters — the swap seen. */
+    private fun shownAs(person: String, text: String): String {
+        if (!com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(person) || com.shopai.app.brain.tools.KaiSpokenWords.hasTamil(text)) return person
+        val typed = Regex("""[A-Za-z]+""").findAll(text).map { it.value }.firstOrNull { com.shopai.app.util.NameSound.same(it, person) } ?: return person
+        return "$person ($typed)"
     }
 
     /** The statement PDF Kai made last (whose, which span, the turn) — "adhe PDF Selvam-ku anuppalama?" is about it. */
@@ -6656,6 +6700,7 @@ class KaiAgent(
         goodsClear()
         dailySales.reset()
         halfSaid = null
+        notThisPerson.clear()
         unclearLine = null
         guidedLine = null
         recentAsks.clear()

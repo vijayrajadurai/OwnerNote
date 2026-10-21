@@ -17,6 +17,8 @@ class NameSoundTest {
             "Nadhiya" to "நதியா", "Nadiya" to "நதியா", "Deekshitha" to "தீக்ஷிதா", "Silver" to "சில்வர்", "Abi" to "அபி",
             // "ங்க" is the "ng" English letters write.
             "Thangam" to "தங்கம்", "Ranga" to "ரங்கா", "Lungi" to "லுங்கி",
+            // (the vowels agree too — owner's phone, 21 Oct 2026; Tamil's opening vowel for a cluster allowed)
+            "Lakshmi" to "லட்சுமி", "Priya" to "பிரியா", "Prakash" to "பிரகாஷ்", "Vijay" to "விஜய்", "Murugan" to "முருகன்",
         ).forEach { (en, ta) ->
             assertTrue("$en ~ $ta", NameSound.same(en, ta))
             assertTrue("$ta ~ $en", NameSound.same(ta, en))
@@ -30,6 +32,10 @@ class NameSoundTest {
         assertFalse(NameSound.same("Appu", "அபி"))
         assertFalse(NameSound.same("Kumar", "Kamar"))
         assertFalse(NameSound.same("Selvam", "செல்வி"))
+        // A typed "kens" was taken as the books' "கணேஷ்" (same consonants k-n-s, other vowels): never the same person.
+        assertFalse(NameSound.same("kens", "கணேஷ்"))
+        assertFalse(NameSound.same("gens", "கணேஷ்"))
+        assertTrue(NameSound.same("Raj", "ராஜ்"))
     }
 
     @Test
