@@ -65,9 +65,7 @@ class DailyCashRepository(
         note: String?,
     ): DailyCashEntry = withContext(Dispatchers.IO) {
         requireOpenDay(date)
-        if (getCashBoxSnapshot(date) == null) {
-            throw IllegalStateException("Set kallapetti amount first")
-        }
+        // (the morning kallapetti is asked, never required — owner, 21 Oct 2026: money in / out work without it)
         dao.ensureDayOpen(
             DailyCashDayEntity(date = date, status = "OPEN", submittedAt = null, openingBalance = null),
         )

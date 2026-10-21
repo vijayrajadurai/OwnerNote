@@ -62,7 +62,7 @@ class KaiDailySalesTest {
         override suspend fun setCashOpening(day: LocalDate, amount: BigDecimal): ActionOutcome { note.opening[day] = amount; return ActionOutcome.Done("kallapetti", amount) }
         override suspend fun addCashSale(day: LocalDate, amount: BigDecimal, upi: Boolean, note: String): ActionOutcome {
             if (day in this.note.closed) return ActionOutcome.Failed("Day already submitted")
-            if (this.note.opening[day] == null) return ActionOutcome.Failed("Set kallapetti amount first")
+            // (the kallapetti is optional — owner, 21 Oct 2026 — as in DailyCashRepository)
             this.note.entries += Note.Entry(day, amount, upi, note)
             return ActionOutcome.Done("cash-${this.note.entries.size}", amount)
         }
@@ -93,6 +93,29 @@ class KaiDailySalesTest {
 
     /** [typed] and, when the mic would write it otherwise, the same line as the mic writes it. */
     private fun bothWays(typed: String): List<String> = listOfNotNull(typed, KaiMicForm.of(typed)?.takeIf { it != typed })
+
+    // ------------------------------------------------------------ the kallapetti: asked, never required (owner, 21 Oct 2026)
+
+    @Test fun theKallapettiIsAskedOnceAndSkippingGoesOnWithTheSale() {
+        for (skip in listOf("skip", "venam", "illa", "வேணாம்", "ஸ்கிப்")) {
+            val s = Shop()
+            s.say("oru hair cutting 150")
+            val asked = s.last!!
+            assertTrue("$skip: asked → ${all(asked)}", all(asked).contains("Kallapetti", ignoreCase = true) || all(asked).contains("கல்லாப்பெட்டி"))
+            val draft = s.say(skip)
+            assertTrue("$skip: the sale goes on → ${all(draft)}", draft.card?.buttons?.any { it.action is KaiAction.ConfirmSale } == true)
+            s.confirm()
+            assertTrue("$skip: saved without a kallapetti", s.note.entries.size == 1 && s.note.opening.isEmpty())
+            // Not asked again today: the next sale is a draft straight away.
+            val next = s.say("oru hair cutting")
+            assertTrue("$skip: not asked again → ${all(next)}", next.card?.buttons?.any { it.action is KaiAction.ConfirmSale } == true)
+        }
+        // "cancel" still drops the sale.
+        val c = Shop()
+        c.say("oru hair cutting 150")
+        c.say("cancel")
+        assertTrue(c.note.entries.isEmpty())
+    }
 
     // ------------------------------------------------------------ a first sale: the price once, the opening once, Confirm
 

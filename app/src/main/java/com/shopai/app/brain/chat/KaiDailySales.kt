@@ -173,7 +173,13 @@ class KaiDailySales(
                 next(d, lang)
             }
             is OpeningAsked -> {
-                if (no.matches(text) || cancelWord.containsMatchIn(text) && amountsIn(text).isEmpty()) { waiting = null; return dropped(lang) }
+                // (the kallapetti is asked, never required — owner, 21 Oct 2026: "skip" / "venam" / "illa" goes on with the sale, and it is
+                // not asked again today; only "cancel" drops the sale)
+                if (Regex("""(?i)(?<![\p{L}])cancel(?![\p{L}])|கேன்சல்""").containsMatchIn(text) && amountsIn(text).isEmpty()) { waiting = null; return dropped(lang) }
+                if (no.matches(text) || skipOpening.containsMatchIn(text) && amountsIn(text).isEmpty()) {
+                    openingSkipped = now().toLocalDate()
+                    return next(w.draft.copy(needsOpening = false), lang)
+                }
                 val a = amountsIn(text).singleOrNull()?.takeIf { it.signum() >= 0 } ?: run {
                     if (text.split(Regex("""\s+""")).size <= 3) return askOpening(w.draft, lang, again = true)
                     waiting = null; return null
@@ -625,7 +631,7 @@ class KaiDailySales(
         val amounts = sale.items.map { i -> i.amount ?: priceOf(prices, i.name)?.multiply(BigDecimal(i.qty)) }
         // A price said with the sale ("oru cutting 150") for a service with none kept: kept with this Confirm.
         val learned = sale.items.filter { it.amount != null && it.qty == 1 && priceOf(prices, it.name) == null }.associate { it.name to it.amount!! }
-        val needsOpening = runCatching { tools.cashOpening(today) }.getOrNull() == null
+        val needsOpening = openingSkipped != today && runCatching { tools.cashOpening(today) }.getOrNull() == null
         val d = Draft(java.util.UUID.randomUUID().toString().take(8), sale.items, amounts, sale.upi == true, learned, null, needsOpening, said, lang)
         tools.log("daily_sales", "chat", "sale said: ${sale.items.joinToString { "${it.name} ×${it.qty}" }}", ActionStatus.ANSWERED, null, said)
         return next(d, lang)
@@ -695,13 +701,18 @@ class KaiDailySales(
             en = "Owner, $name isn't on your Menu — how much is $name$per? Tell me and I'll add it.")
     }
 
+    /** The day the owner skipped the morning kallapetti: not asked again that day. */
+    private var openingSkipped: LocalDate? = null
+    private val skipOpening = Regex("""(?i)(?<![\p{L}])(skip|venam|venaam|vendam|vendaam|venda|vidu|illa|illai|no|apram|appuram|later|theriyala|vendaa)(?![\p{L}])|வேணாம்|வேண்டாம்|ஸ்கிப்|இல்ல|அப்புறம்|தெரியல""")
+
+    /** "Kallapetti cash add pannanumaa?" — asked once at the day's first sale; never required (owner, 21 Oct 2026). */
     private fun askOpening(d: Draft, lang: KaiLang, again: Boolean = false): KaiTurn {
         waiting = OpeningAsked(d)
-        return if (again) turn(lang, KaiMood.CLARIFY, ta = "ஓனர், கல்லாப்பெட்டி opening தொகை மட்டும் சொல்லுங்க — உதா: “500”, இல்லனா “0”.",
-            tl = "Owner, Kallapetti opening amount mattum sollunga — eg: “500”, illana “0”.", en = "Owner, just the opening Kallapetti amount — e.g. “500”, or “0”.")
-        else turn(lang, KaiMood.CLARIFY, ta = "ஓனர், இன்னைக்கு Daily Sales Note-க்கு முதல்ல கல்லாப்பெட்டி opening வேணும் — காலைல கல்லாவுல எவ்வளவு cash இருந்துச்சு? (இல்லனா “0”)",
-            tl = "Owner, innaikku Daily Sales Note-ku mudhalla Kallapetti opening venum — kaalaila kallaa-la evlo cash irundhuchu? (illana “0”)",
-            en = "Owner, today's Daily Sales Note needs the opening Kallapetti first — how much cash was in it this morning? (or “0”)")
+        return if (again) turn(lang, KaiMood.CLARIFY, ta = "ஓனர், கல்லாப்பெட்டி தொகை மட்டும் சொல்லுங்க — உதா: “500”. வேணாம்னா “skip”.",
+            tl = "Owner, Kallapetti amount mattum sollunga — eg: “500”. Venam-na “skip”.", en = "Owner, just the Kallapetti amount — e.g. “500”. Or “skip”.")
+        else turn(lang, KaiMood.CLARIFY, ta = "ஓனர், இன்னைக்கு கல்லாப்பெட்டி cash சேர்க்கணுமா? காலைல கல்லாவுல எவ்வளவு இருந்துச்சு? (வேணாம்னா “skip” — sale அப்படியே போடுவேன்)",
+            tl = "Owner, innaikku Kallapetti cash add pannanum-aa? Kaalaila kallaa-la evlo irundhuchu? (Venam-na “skip” — sale appadiye podren)",
+            en = "Owner, add today's Kallapetti cash? How much was in it this morning? (Or “skip” — I'll go on with the sale)")
     }
 
     private fun lines(d: Draft): List<String> = d.items.mapIndexed { i, it ->
