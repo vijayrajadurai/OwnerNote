@@ -338,15 +338,6 @@ fun HomeScreen(
                     ).toList(),
                     onClick = { onNavigate(Routes.KaiChat) },
                 )
-                // Vaanganum / Kodukkanum right under Kai (owner, 22 Oct 2026) — the same card as before, moved up.
-                com.shopai.app.ui.books.CreditDebitSummaryCard(
-                    container = container,
-                    refreshKey = cashFlow,
-                    onOpenCustomers = { onNavigate(Routes.Customers) },
-                    onOpenSuppliers = { onNavigate(Routes.Suppliers) },
-                    pendingReceivables = cashFlow?.pendingReceivables,
-                    pendingPayables = cashFlow?.pendingPayables,
-                )
                 HomeMomentsRow(
                     moments = homeMoments(
                         todayIn = cashNoteSummary?.totalIn,
@@ -357,7 +348,15 @@ fun HomeScreen(
                     ),
                     edge = 0.dp,
                 )
-                KaiDiaryHeader()
+                // Vaanganum / Kodukkanum, small, where the diary heading was (owner, 22 Oct 2026).
+                HomeMoneyChips(
+                    container = container,
+                    refreshKey = cashFlow,
+                    fallbackToGet = cashFlow?.pendingReceivables,
+                    fallbackToGive = cashFlow?.pendingPayables,
+                    onCustomers = { onNavigate(Routes.Customers) },
+                    onSuppliers = { onNavigate(Routes.Suppliers) },
+                )
                 if (carouselItems.isNotEmpty()) {
                     HomePaymentReminderCard(
                         items = carouselItems.take(2),

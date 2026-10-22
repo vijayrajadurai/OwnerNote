@@ -1707,7 +1707,6 @@ NewonX — Owner Note. Use Help & Support in the app.]]></string>
     <!-- OwnerNote Home: Kai Chat first (owner, 22 Oct 2026) -->
     <string name="home_bell">Nyabagangal</string>
     <string name="home_profile">Profile</string>
-    <string name="home_diary_title">KAI-ODA DIARY · INNAIKKU</string>
     <string name="home_kai_says">Kai solraar</string>
     <string name="home_kai_brief">Innaikku</string>
     <string name="home_seen">Seri, paathen</string>
@@ -1770,4 +1769,5 @@ NewonX — Owner Note. Use Help & Support in the app.]]></string>
     <string name="friendly_tell_kai">Kai-kitta sollunga</string>
     <string name="friendly_details_show">Vivaram paarunga</string>
     <string name="friendly_details_hide">Vivaram moodunga</string>
+    <string name="home_late_count">%1$d late</string>
 </resources>

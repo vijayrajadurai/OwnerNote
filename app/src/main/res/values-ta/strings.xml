@@ -1652,7 +1652,6 @@ NewonX — Owner Note. ஆப்பில் உதவி & ஆதரவு.]]><
     <!-- OwnerNote Home: Kai Chat first (owner, 22 Oct 2026) -->
     <string name="home_bell">நினைவூட்டல்கள்</string>
     <string name="home_profile">சுயவிவரம்</string>
-    <string name="home_diary_title">KAI-ஓட டைரி · இன்னைக்கு</string>
     <string name="home_kai_says">Kai சொல்றார்</string>
     <string name="home_kai_brief">இன்னைக்கு</string>
     <string name="home_seen">சரி, பார்த்தேன்</string>
@@ -1715,4 +1714,5 @@ NewonX — Owner Note. ஆப்பில் உதவி & ஆதரவு.]]><
     <string name="friendly_tell_kai">Kai-கிட்ட சொல்லுங்க</string>
     <string name="friendly_details_show">விவரம் பாருங்க</string>
     <string name="friendly_details_hide">விவரம் மூடுங்க</string>
+    <string name="home_late_count">%1$d late</string>
 </resources>

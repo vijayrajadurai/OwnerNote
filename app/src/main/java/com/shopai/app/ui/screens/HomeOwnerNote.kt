@@ -258,24 +258,67 @@ fun homeMoments(
     }
 }
 
-/** "KAI-ODA DIARY · INNAIKKU" with the small veshti stripe. */
+/**
+ * Vaanganum / Kodukkanum, small, in one row where the diary heading was (owner, 22 Oct 2026). The same figures as the
+ * old summary card: from the books when they are in use, else the dashboard's pending totals. Tapping opens Customers /
+ * Suppliers. Read only.
+ */
 @Composable
-fun KaiDiaryHeader(modifier: Modifier = Modifier) {
+fun HomeMoneyChips(
+    container: com.shopai.app.data.AppContainer,
+    refreshKey: Any?,
+    fallbackToGet: Double?,
+    fallbackToGive: Double?,
+    onCustomers: () -> Unit,
+    onSuppliers: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var get by remember { mutableStateOf<com.shopai.app.books.engine.DueSummary?>(null) }
+    var give by remember { mutableStateOf<com.shopai.app.books.engine.DueSummary?>(null) }
+    androidx.compose.runtime.LaunchedEffect(refreshKey) {
+        val s = container.books.session() ?: return@LaunchedEffect
+        val today = LocalDate.now()
+        get = s.ledger.receivableDue(today)
+        give = s.ledger.payableDue(today)
+    }
+    val getText = get?.let { com.shopai.app.books.billing.InvoicePdf.money(it.totalPaise) } ?: fallbackToGet?.let { com.shopai.app.util.formatInr(it) } ?: "—"
+    val giveText = give?.let { com.shopai.app.books.billing.InvoicePdf.money(it.totalPaise) } ?: fallbackToGive?.let { com.shopai.app.util.formatInr(it) } ?: "—"
+    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        MoneyChip(stringResource(R.string.home_receivable), getText, get?.overdueCount ?: 0, true, Modifier.weight(1f), onCustomers)
+        MoneyChip(stringResource(R.string.home_payable), giveText, give?.overdueCount ?: 0, false, Modifier.weight(1f), onSuppliers)
+    }
+}
+
+@Composable
+private fun MoneyChip(label: String, amount: String, late: Int, incoming: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    val fg = if (incoming) Color(0xFF15803D) else Color(0xFFB91C1C)
+    val bg = if (incoming) Color(0xFFDCFCE7) else Color(0xFFFEE2E2)
+    val shape = RoundedCornerShape(16.dp)
     Row(
-        modifier.fillMaxWidth(),
+        modifier
+            .height(52.dp)
+            .shadow(4.dp, shape, ambientColor = Color(0x0F0F172A), spotColor = Color(0x0F0F172A))
+            .clip(shape)
+            .background(Color.White)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Box(Modifier.width(22.dp).clip(RoundedCornerShape(2.dp))) { VeshtiBand() }
-        Text(
-            text = stringResource(R.string.home_diary_title),
-            color = KaiInk.InkSoft,
-            fontSize = 11.5.sp,
-            fontWeight = FontWeight.ExtraBold,
-            letterSpacing = 1.2.sp,
-            maxLines = 1,
-        )
-        Box(Modifier.weight(1f).height(1.dp).background(KaiInk.Line))
+        Box(Modifier.size(28.dp).clip(RoundedCornerShape(9.dp)).background(bg), contentAlignment = Alignment.Center) {
+            Text(if (incoming) "↓" else "↑", color = fg, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
+        }
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = if (late > 0) "$label · " + stringResource(R.string.home_late_count, late) else label,
+                color = if (late > 0) Color(0xFFB45309) else KaiInk.InkSoft,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(amount, color = fg, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
     }
 }
 

@@ -339,11 +339,12 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
 - Kai Chat first, OwnerNote's own look (owner, 22 Oct 2026). UI only; what is sent, answered and saved is unchanged:
   - Home (`HomeScreen`, `HomeOwnerNote.kt`, `ui/kai/KaiVisuals.kt`):
     - "Vanakkam Owner 👋" header — "Owner" is OwnerNote's own word, kept.
-    - Vaanganum / Kodukkanum (`CreditDebitSummaryCard`, the same card as before) right under the Kai bar.
+    - Vaanganum / Kodukkanum as two small chips (`HomeMoneyChips`, the same books figures as the old summary card, late count
+      shown) where the "KAI-ODA DIARY" heading was; tap → Customers / Suppliers.
     - A small "Kai-kitta kelunga" bar with a turning green-gold (veshti) border and rotating examples per business type → Kai Chat.
     - Square tiles: Kai, today's cash in, reminders, Stock. Money shown short by `util/shortRupees`
       (`ShortRupeesTest`); a figure not loaded shows "—".
-    - "KAI-ODA DIARY · INNAIKKU": Kai's brief as a diary card ("Seri, paathen", Kai-kitta kelunga, Kelunga plays it again).
+    - Kai's brief as a diary card ("Seri, paathen", Kai-kitta kelunga, Kelunga plays it again).
       The other Home cards stay as before.
   - Bottom bar: dark and floating, with Kai's face (mic) raised in the middle → Kai Chat (`BottomNavBar(onKai)`).
   - Kai Chat (`KaiChatLook.kt`):
