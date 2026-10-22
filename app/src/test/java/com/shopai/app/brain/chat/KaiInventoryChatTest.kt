@@ -133,6 +133,12 @@ class KaiInventoryChatTest {
             bills += bill
             return ActionOutcome.Done("BILL-${bills.size}", i.stock)
         }
+        /** The bills saved, as the books' item register (each on [billDay]). */
+        var billDay: java.time.LocalDate = java.time.LocalDate.of(2026, 10, 22)
+        override suspend fun itemRegister(purchase: Boolean, from: java.time.LocalDate, to: java.time.LocalDate) =
+            bills.filter { it.purchase == purchase }.takeIf { !billDay.isBefore(from) && !billDay.isAfter(to) }.orEmpty().mapIndexed { n, b ->
+                com.shopai.app.brain.tools.RegisterLine(billDay, "BILL-${n + 1}", b.partyName, b.product.name, b.qty, b.product.unit, b.qty, b.product.unit, b.rate, b.total)
+            }
         override suspend fun prepare(kind: PlanKind, partyName: String, partyId: String?, amount: BigDecimal, mode: PaymentMode, said: String) =
             ActionPlan("pay${payments.size}", kind, partyName, partyId, amount, mode, said = said)
         override suspend fun confirm(plan: ActionPlan): ActionOutcome {
