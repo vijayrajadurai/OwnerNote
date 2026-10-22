@@ -19,6 +19,16 @@ data class KaiAskProgress(
     /** This question's place (1-based) and the questions in all, counting the usual ones still to come. */
     val step: Int,
     val steps: Int,
+    /** The answer is a number (a rate, a pack size): the card offers its number pad. */
+    val number: Boolean = false,
+    /** That number is money (a rate): the pad shows ₹. */
+    val money: Boolean = false,
+    /** Asking the selling rate: what one [per] cost and how many came — the card shows the profit as the owner types (never saved). */
+    val cost: BigDecimal? = null,
+    val count: BigDecimal? = null,
+    /** [count] as Kai says it ("100 pcs"). */
+    val countLabel: String? = null,
+    val per: String? = null,
 )
 
 object KaiAsks {
@@ -61,13 +71,21 @@ object KaiAsks {
         val later = listOf(ItemField.PURCHASE to spec.purchase, ItemField.SELLING to spec.selling)
             .count { (f, v) -> v == null && f != asked && f !in spec.skipped && (asked != ItemField.SELLING || f != ItemField.PURCHASE) }
         val step = answered + 1
-        return KaiAskProgress(known, label(asked, lang), step, step + later)
+        val selling = asked == ItemField.SELLING
+        return KaiAskProgress(known, label(asked, lang), step, step + later,
+            number = asked == ItemField.PURCHASE || selling || asked == ItemField.PER_PACK,
+            money = asked == ItemField.PURCHASE || selling,
+            cost = if (selling) com.shopai.app.brain.tools.KaiInventory.costPerSellingUnit(spec) else null,
+            count = if (selling) com.shopai.app.brain.tools.KaiInventory.countInSellingUnit(spec) else null,
+            countLabel = if (selling) com.shopai.app.brain.tools.KaiInventory.countInSellingUnit(spec)
+                ?.let { com.shopai.app.brain.tools.KaiInventory.shown(it, com.shopai.app.brain.tools.KaiInventory.sellingUnit(spec)) } else null,
+            per = if (selling) com.shopai.app.brain.tools.KaiInventory.one(com.shopai.app.brain.tools.KaiInventory.sellingUnit(spec)) else null)
     }
 
     /** "1 box-la evlo pieces?" for a product the shop has: the product, the quantity said, and the pack size asked. */
     fun ofUnit(product: String, qty: BigDecimal?, unitSaid: String?, baseUnit: String, lang: KaiLang): KaiAskProgress = KaiAskProgress(
         known = listOfNotNull(label(null, lang) to product, qty?.let { label(ItemField.QTY, lang) to "${n(it)} ${unit(unitSaid)}".trim() }),
         asking = "1 ${unit(unitSaid)} = ? ${unit(baseUnit)}".replace("  ", " "),
-        step = 1, steps = 1,
+        step = 1, steps = 1, number = true,
     )
 }

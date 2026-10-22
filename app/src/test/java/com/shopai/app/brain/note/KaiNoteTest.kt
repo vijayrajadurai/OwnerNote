@@ -11,6 +11,7 @@ import com.shopai.app.brain.chat.KaiBooks
 import com.shopai.app.brain.chat.KaiBusinessBrain
 import com.shopai.app.brain.chat.KaiInventoryChatTest.Inventory
 import com.shopai.app.brain.chat.KaiMemoryAccess
+import com.shopai.app.brain.chat.KaiMicForm
 import com.shopai.app.brain.chat.KaiTurn
 import com.shopai.app.brain.memory.InMemoryKaiMemoryStore
 import com.shopai.app.brain.memory.KaiPrivateMemory
@@ -304,6 +305,35 @@ class KaiNoteTest {
         assertTrue("no question card for the new product", seen > 0)
         // Nothing pending: no card.
         assertNull(kai().first.askProgress(KaiLang.TANGLISH))
+    }
+
+    /**
+     * The selling-rate question carries what one piece cost and how many came (owner, 22 Oct 2026: the card shows the profit as the
+     * rate is typed), and the pad's answer — the number, as the owner's line — goes on like typing it; typed and by mic.
+     */
+    @Test fun theSellingRateQuestionKnowsTheCost() {
+        for (line in listOf("Noodles 100 pcs vandhuchu", KaiMicForm.of("Noodles 100 pcs vandhuchu") ?: "நூடுல்ஸ் 100 பீஸ் வந்துச்சு")) {
+            val (agent, _) = kai()
+            var t = runBlocking { agent.ask(line) }
+            var selling: KaiAskProgress? = null
+            var turns = 0
+            while (t.reply.mood == KaiMood.CLARIFY && turns++ < 8) {
+                val p = agent.askProgress(KaiLang.TANGLISH)
+                if (p?.asking == KaiAsks.label(com.shopai.app.brain.tools.ItemField.SELLING, KaiLang.TANGLISH)) { selling = p; break }
+                // A price asked: the number pad's line; anything else: skip.
+                val answer = if (p?.asking == KaiAsks.label(com.shopai.app.brain.tools.ItemField.PURCHASE, KaiLang.TANGLISH)) "50" else "skip"
+                if (p?.number == true) assertTrue("«$line» ${p.asking}", p.asking.isNotBlank())
+                t = runBlocking { agent.ask(answer) }
+            }
+            val p = selling ?: error("«$line» never asked the selling rate: ${t.reply.text}")
+            assertTrue(p.number && p.money)
+            assertEquals(0, BigDecimal("50").compareTo(p.cost))
+            assertEquals(0, BigDecimal("100").compareTo(p.count))
+            assertEquals("100 pieces", p.countLabel)
+            // The pad's "60" is the owner's line: the entry goes on to its summary / next question, nothing saved yet.
+            val next = runBlocking { agent.ask("60") }
+            assertTrue("«$line» ${next.reply.text}", next.reply.text.contains("60") || next.card != null || next.reply.mood == KaiMood.CLARIFY)
+        }
     }
 
     @Test fun aServiceSaleCardIsWrittenRowByRow() {
