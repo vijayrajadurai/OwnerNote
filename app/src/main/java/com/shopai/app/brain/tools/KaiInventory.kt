@@ -975,7 +975,25 @@ object KaiInventory {
     private val moneyInText = Regex("""(?i)(?:₹|rs\.?)\s*(\d[\d,]*(?:\.\d+)?)|(?<![\p{L}\d])(\d[\d,]*(?:\.\d+)?)\s*(?:rs|rupees?|rupa|ரூபாய்)(?![\p{L}])""")
 
     fun buys(text: String) = buyWords.containsMatchIn(text)
-    fun sells(text: String) = sellWords.containsMatchIn(text)
+    fun sells(text: String) = sellWords.containsMatchIn(text) || saleStem.containsMatchIn(text)
+
+    /**
+     * Goods sold, said any way (owner, 22 Oct 2026: "sale pannitan / vithutan / vithachu / kuduthurukan"): the verb's stem, any ending —
+     * vith- / vitth- (sold), "sale" with pann- / aach- / aag-, anupp- (sent). Given (kuduth- / koduth-) is a sale only when said to
+     * them ("Kumaran store-ku … kuduthurukan"): "Kumar 5 box kuduthaan" is Kumar giving, never the shop selling.
+     */
+    private val saleStem = Regex("""(?i)(?<![\p{L}])(?:vit?th(?!i)\p{L}*|sale\s+(?:pann|aach|aag|poach|pooch)\p{L}*|anupp\p{L}*)""")
+    private val giveStem = Regex("""(?i)(?<![\p{L}])(?:kudu?th\p{L}*|kodu?th\p{L}*)""")
+
+    /** [name] said with "-ku" / "kadaiku" / "store-ku" in [text]: the goods went to them. */
+    fun toThem(text: String, name: String): Boolean = Regex("""(?i)(?<![\p{L}])${Regex.escape(name)}\s*-?\s*(?:(?:kadai|kada|store|stores|shop|mart)\s*-?\s*)?(?:k?ku|ukku|kk?u)(?![\p{L}])""")
+        .containsMatchIn(text)
+
+    /** A sale verb other than "given" (vithen, sale pannen, anuppinen): "Kumar-ku evlo kuduthen" is money, "evlo vithen" is goods. */
+    fun soldSaid(text: String): Boolean = sells(giveStem.replace(text, " "))
+
+    /** Goods sold to [name]: a sale verb, or "given" said to them. */
+    fun sellsTo(text: String, name: String): Boolean = sells(text) || (giveStem.containsMatchIn(text) && toThem(text, name))
     fun theyBought(text: String) = theyBoughtWords.containsMatchIn(text)
     /** true = on credit, false = paid now (cash / UPI …), null = not said. */
     fun creditOf(text: String): Boolean? = when {

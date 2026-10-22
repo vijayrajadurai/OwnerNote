@@ -313,6 +313,15 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
   owner said (no box question for "100 pcs"). An answered question folds to one "✓" line. Kai's rules and replies are unchanged;
   nothing is saved before Confirm. Test: `KaiAskPadTest`, `KaiNoteTest.theSellingRateQuestionKnowsTheCost`,
   `KaiCorrectionReplayTest.theMoneyQuestionSaysWhatEachAnswerDoes`.
+- Goods sold to a shop, said any way (owner, 22 Oct 2026: "100 box noodles Kumaran store ku / kadaiku / Malligai ku sale pannitan /
+  vithutan / vithachu / kuduthurukan"), wholesale or retail: one bill — the stock down and the shop's balance up together, after
+  Confirm (credit / cash asked; a wholesaler's is credit). Sale verbs by stem (`KaiInventory.saleStem`: vith- / sale pann- / anupp-;
+  "kuduth-" only said to them, so "Kumar 5 box kuduthaan" is never a sale); the shop matched with its shop word ("Kumaran kadai" =
+  "Kumaran Store", `KaiAgent.shopBuyer`); a shop the books don't have is asked (add them, or cash sale) — before, the stock went out
+  and the buyer was lost. "Kumaran store ku enna vithen / evlo vithen / enna kuduthen", "… enna vaanginaanga", "ABC Traders kitta enna
+  vaanginen", with a period or not, answer every product, how much and the money from the item register (returns off) and what they
+  owe now (`KaiAgent.goodsAsked`); "evlo kuduthen" stays a money question. Typed = mic (`KaiSpokenWords`: வித்தாச்சு,
+  குடுத்துருக்கான் …). Test: `KaiSaleToShopTest`, owner-lines.
 - The voice / bill screen no longer has the "Your sentence" box (its "Kumar-ku 2000-ku tharanum" example) or the Parse button.
 - Customers: a small Import beside the title. More → "Pazhaiya kanakku import" reads another app's Customer / Supplier
   List PDF and adds people with opening balances on Confirm. No other app's name is shown anywhere.

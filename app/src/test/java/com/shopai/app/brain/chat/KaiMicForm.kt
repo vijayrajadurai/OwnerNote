@@ -37,6 +37,7 @@ object KaiMicForm {
         pannuvanga=பண்ணுவாங்க pay=பே payment=பேமெண்ட் pending=பெண்டிங் petti=பெட்டி phone=போன் phonepe=போன்பே pochu=போச்சு
         poganum=போகணும் ponaan=போனான் pottalam=பொட்டலம் ramesh=ரமேஷ் ravi=ரவி remind=ரிமைண்ட் rendu=ரெண்டு return=ரிட்டர்ன்
         rice=ரைஸ் rs=ரூபாய் rupees=ரூபாய் saamaan=சாமான் saavi=சாவி saayangalam=சாயங்காலம் sale=சேல் selvam=செல்வம் settle=செட்டில்
+        vithen=வித்தேன் vithachu=வித்தாச்சு vithutan=வித்துட்டான் vithan=வித்தான் kuduthurukan=குடுத்துருக்கான் kuduthurukken=குடுத்துருக்கேன் kumaran=குமரன் malligai=மல்லிகை
         soap=சோப் sollu=சொல்லு stock=ஸ்டாக் stores=ஸ்டோர்ஸ் sujith=சுஜித் sujithukku=சுஜித்துக்கு supplier=சப்ளையர் thaandi=தாண்டி
         thandhaan=தந்தான் thandhutaanga=தந்துட்டாங்க thanthan=தந்தான் tharanga=தராங்க tharanum=தரணும் tharuvan=தருவான்
         tharuvana=தருவானா tharuvanga=தருவாங்க tharuvara=தருவாரா time=டைம் total=டோட்டல் totala=டோட்டலா totel=டோட்டல் traders=டிரேடர்ஸ்

@@ -251,6 +251,8 @@ class KaiOwnerSweepTest {
                 txt.contains("evlo pieces") || txt.contains("எத்தனை pieces") -> s.say("12")
                 txt.contains("rate evlo") || txt.contains("rate எவ்வளவு") || txt.contains("'skip'") -> s.say(answer("skip"))
                 txt.contains("Stock add pannattuma") -> s.say(answer("aama"))
+                // Goods sold to a customer: "credit-aa, cash-aa?" — on credit.
+                txt.contains("cash-aa") || txt.contains("cash-ஆ") -> s.say(answer("credit"))
                 else -> return fail(said, s, "no stock draft")
             }
         }

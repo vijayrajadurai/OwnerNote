@@ -31,11 +31,18 @@ STOCK  | ennai 1 box vandhuchu                          | Oil 252
 STOCK  | Colgate 1 box vandhuchu batch B7 expiry 06/2027  | Colgate 288    # a batch code / expiry date is never the quantity
 STOCK  | Maggi 10 pottalam vandhuchu                    | Maggi 120    # Kai asks pieces per packet; the test answers 12
 STOCK  | Colgate 2 box stock add pannu                  | Colgate 336  # one product: the old stock flow, not the goods question
+# Goods sold to a customer said any way (owner, 22 Oct 2026): one bill, the stock down after Confirm.
+STOCK  | Kumar ku 1 box Colgate vithutten               | Colgate 192
+STOCK  | Kumar kadaiku 2 kg rice kuduthurukan           | Rice 248
+STOCK  | 5 Colgate Ramesh ku sale pannitan              | Colgate 235
+STOCK  | Ramesh ku 1 bag rice vithachu                  | Rice 225
 
 REMIND | naalaiku kaalaila 11 manikku Selvam kitta panam vaanga remind pannu | 2026-10-09 11:00 Selvam
 REMIND | innaiku 4 manikku ABC Traders ku call panna remind pannu            | 2026-10-08 16:00 ABC Traders
 
 ASK    | Kumar evlo baaki                               | ₹4,000
+ASK    | ABC Traders kitta enna vaanginen               | Colgate; ₹2,688
+ASK    | Murugan Stores kitta evlo vaanginen            | Rice; ₹14,000
 ASK    | Ennai stock evlo                               | 240
 ASK    | Innaiku yaaru yaaru kudukkanum                 | Kumar; Ramesh
 ASK    | Selvam eppo tharuvan                           | Selvam
