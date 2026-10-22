@@ -714,6 +714,22 @@ object KaiInventory {
         }
     }
 
+    /** What one [sellingUnit] cost, from the purchase rate the owner said (null when unknown) — the question card's profit line. */
+    fun costPerSellingUnit(spec: ItemSpec): BigDecimal? {
+        val p = spec.purchase ?: return null
+        val pf = factor(spec, spec.purchasePer ?: purchaseUnit(spec)) ?: return null
+        val sf = factor(spec, sellingUnit(spec)) ?: return null
+        return p.multiply(sf).divide(pf, 4, RoundingMode.HALF_UP).stripTrailingZeros()
+    }
+
+    /** How many [sellingUnit]s came in (null when unknown). */
+    fun countInSellingUnit(spec: ItemSpec): BigDecimal? {
+        val q = spec.qty ?: return null
+        val f = factor(spec, spec.unit ?: return null) ?: return null
+        val sf = factor(spec, sellingUnit(spec))?.takeIf { it.signum() > 0 } ?: return null
+        return q.multiply(f).divide(sf, 4, RoundingMode.HALF_UP).stripTrailingZeros()
+    }
+
     fun totals(spec: ItemSpec): ItemTotals? {
         val qty = spec.qty ?: return null
         if (spec.unit == null) return null
