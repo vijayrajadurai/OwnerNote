@@ -13,6 +13,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -74,7 +76,14 @@ class BillStockRow(val line: BillStock.Line) {
     var newUnit by mutableStateOf(BillStock.productUnit(line.billUnit))
     /** Ticked, not in the inventory, with a name and a quantity: added as a new product on save, its stock in by the bill. */
     val creates: Boolean get() = include && line.product == null && parsedQty != null && newName.isNotBlank() && newUnit.isNotBlank()
+
+    /** Ticked but not ready (no quantity; a new product without its name / unit): holds the save until the owner fills it. */
+    fun needsCheck(stockIn: Boolean): Boolean =
+        include && ((line.product != null && parsedQty == null) || (stockIn && line.product == null && !creates))
 }
+
+/** Item rows a bill's review draws before "show all". */
+private const val BILL_ROWS_SHOWN = 20
 
 /** A bill item not in the inventory, as the save adds it: a new product (at the bill's rate) and its stock in. */
 data class NewBillProduct(
@@ -330,6 +339,8 @@ fun BillEntrySection(
     onSave: () -> Unit,
     /** Drop the draft without saving anything. */
     onCancel: (() -> Unit)? = null,
+    /** While a long bill's items are saved: how far ("Stock: 37 / 125"). */
+    progress: String? = null,
 ) {
     val required = stringResource(R.string.bill_required)
     val isSupplier = state.type == TransactionSaveType.DEBIT
@@ -532,7 +543,18 @@ fun BillEntrySection(
                 color = ShopAiThemeColors.primary,
                 modifier = Modifier.padding(top = 12.dp),
             )
-            state.stockRows.forEach { row -> BillStockRowView(row, state.stockIn) }
+            // A long bill (owner's 125-item PDF, 22 Oct 2026): the first rows and every row that needs a check are drawn at once,
+            // the rest on "show all" — drawing all of them made the screen slow to open. All of them move on save, shown or not.
+            var showAll by remember(state.stockRows) { mutableStateOf(false) }
+            val checkFirst = remember(state.stockRows) { state.stockRows.filter { it.needsCheck(state.stockIn) }.toSet() }
+            val shown = if (showAll || state.stockRows.size <= BILL_ROWS_SHOWN) state.stockRows
+            else state.stockRows.filterIndexed { i, row -> i < BILL_ROWS_SHOWN || row in checkFirst }
+            shown.forEach { row -> key(row) { BillStockRowView(row, state.stockIn) } }
+            if (shown.size < state.stockRows.size) {
+                TextButton(onClick = { showAll = true }) {
+                    Text(stringResource(R.string.bill_stock_show_all, state.stockRows.size - shown.size), fontWeight = FontWeight.SemiBold)
+                }
+            }
         }
     }
 
@@ -544,6 +566,7 @@ fun BillEntrySection(
             modifier = Modifier.padding(top = 8.dp),
         )
     }
+    progress?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = ShopAiThemeColors.primary, modifier = Modifier.padding(top = 8.dp)) }
     PrimaryButton(
         label = stringResource(R.string.bill_save),
         loading = saving,

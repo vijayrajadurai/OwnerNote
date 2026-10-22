@@ -726,10 +726,12 @@ object BillTextParser {
     private fun findItems(lines: List<String>, endExclusive: Int): List<BillLineItem> {
         val items = mutableListOf<BillLineItem>()
         // The rows start under the table's header: the shop's banner above it ("GROCERIES | FMCG | HOUSEHOLD …") is no item.
-        val header = (0 until endExclusive.coerceAtMost(lines.size)).lastOrNull { isColumnHeader(lines[it]) }
+        // A table over several pages prints its header again on each (owner's 125-item PDF, 22 Oct 2026): every page's rows count.
+        val header = (0 until endExclusive.coerceAtMost(lines.size)).firstOrNull { isColumnHeader(lines[it]) }
         for (index in (header?.plus(1) ?: 0) until endExclusive.coerceAtMost(lines.size)) {
             val line = lines[index]
             val lower = line.lowercase()
+            if (isColumnHeader(line) || pageFooter.containsMatchIn(lower)) continue
             // "Dated: 4-Oct-2026": a date with its month in letters is never an item (only here: a buyer line can end in one).
             if (looksLikeMetadata(lower) || monthDate.containsMatchIn(lower)) continue
             if (nonItemWords.any { containsWord(lower, it) } || isReferenceLine(line)) continue
@@ -752,6 +754,9 @@ object BillTextParser {
         return items
     }
 
+    // "Page 2", "Page 2 of 3", "Page 2/3": a page's footer, never an item at ₹2.
+    private val pageFooter = Regex("""(?<![\p{L}])page\s*\d+(?:\s*(?:of|/)\s*\d+)?\s*$""")
+
     private val qtyTimesRate = Regex("""\d\s*[x×*]\s*\d""", RegexOption.IGNORE_CASE)
     private val headerField = Regex("""^\p{L}[\p{L} .]{1,20}:""")
 
@@ -766,7 +771,9 @@ object BillTextParser {
         "quintal", "quintals", "qtl", "tonne", "tonnes", "ton", "tons", "cft", "strip", "strips", "vial", "vials", "tablet", "tablets", "tab", "tabs",
         "capsule", "capsules", "sachet", "sachets", "kit", "kits", "load", "loads", "length", "lengths", "board", "boards", "ft", "feet", "bottle", "bottles",
         // A lorry of sand, a drum of paint (owner's bills, 17 Oct 2026) — and the scan's slips for "Pcs" ("Pes", "Pce").
-        "lorry", "lorries", "drum", "drums", "pes", "pce", "pcs.")
+        "lorry", "lorries", "drum", "drums", "pes", "pce", "pcs.",
+        // (owner's 125-item PDF, 22 Oct 2026: the unit printed as a word)
+        "pieces", "piece", "packets", "packet", "packs", "pack", "jars", "jar", "pouches", "pouch", "grams", "gram", "trays", "tray", "cases", "case", "tins")
 
     /**
      * Splits a GST table row: the HSN/SAC code leaves the description, and the
@@ -861,7 +868,9 @@ object BillTextParser {
         "sqft", "sft", "cans", "can", "tin", "rolls", "roll", "pairs", "pair", "bundles", "bundle", "coils", "coil", "buckets", "bucket", "cartons", "carton",
         "tubes", "tube", "quintals", "quintal", "qtl", "tonnes", "tonne", "tons", "ton", "cft", "strips", "strip", "vials", "vial", "tablets", "tablet",
         "tabs", "tab", "capsules", "capsule", "sachets", "sachet", "kits", "kit", "loads", "load", "lengths", "length", "boards", "board", "feet", "ft", "bottles", "bottle",
-        "lorries", "lorry", "drums", "drum", "pes", "pce").joinToString("|")
+        "lorries", "lorry", "drums", "drum", "pes", "pce",
+        // (owner's 125-item PDF, 22 Oct 2026: the unit printed as a word)
+        "pieces", "piece", "packets", "packet", "packs", "pack", "jars", "jar", "pouches", "pouch", "grams", "gram", "trays", "tray", "cases", "case", "tins").joinToString("|")
 
     private fun tokenAmountOrZero(token: String): BigDecimal? {
         val plain = token.replace(",", "")
@@ -873,7 +882,7 @@ object BillTextParser {
 
     /** "SUPPLIER DETAILS", "Supplier :", "Vendor", "Sold by" — never "Supplier Ref / GSTIN / Invoice No". */
     private val supplierHeading = Regex(
-        """(?i)(?<![\p{L}])(?:supplier|vendor|seller|sold\s+by|supplied\s+by)(?:\s+(?:details?|name|info(?:rmation)?))?(?!\s*(?:ref|reference|code|gstin|gst|inv|invoice|no\b|#|id\b|bill\s*no))\s*[:\-]?""",
+        """(?i)(?<![\p{L}(])(?:supplier|vendor|seller|sold\s+by|supplied\s+by)(?:\s+(?:details?|name|info(?:rmation)?))?(?!\s*(?:ref|reference|code|gstin|gst|inv|invoice|no\b|#|id\b|bill\s*no))\s*[:\-]?""",
     )
     private const val SUPPLIER_HEADER_LINES = 20
     private val otherHeadings = Regex("""(?i)(?<![\p{L}])(?:bill(?:ed)?\s*to|ship(?:ped)?\s*to|buyer|consignee|customer(?:\s*details)?|sold\s*to|deliver(?:y|ed)?\s*to)(?![\p{L}])\s*[:\-]?""")

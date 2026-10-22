@@ -53,15 +53,62 @@ object PdfText {
         return out
     }
 
+    /** A stream's bytes, its filters undone in order (Flate, ASCII85 — ReportLab's "/ASCII85Decode /FlateDecode" —, ASCIIHex). */
     private fun data(o: Obj): ByteArray? {
-        val raw = o.stream ?: return null
-        if (!o.dict.contains("/FlateDecode")) return if (o.dict.contains("/Filter")) null else raw
-        return runCatching {
-            val inf = Inflater(); inf.setInput(raw)
-            val buf = ByteArray(8192); val bos = ByteArrayOutputStream()
-            while (!inf.finished()) { val n = inf.inflate(buf); if (n == 0 && (inf.needsInput() || inf.needsDictionary())) break; bos.write(buf, 0, n) }
-            inf.end(); bos.toByteArray()
-        }.getOrNull()
+        var bytes = o.stream ?: return null
+        val filters = Regex("""/Filter\s*(\[[^\]]*]|/\w+)""").find(o.dict)?.groupValues?.get(1)?.let { f -> Regex("""/(\w+)""").findAll(f).map { it.groupValues[1] }.toList() }.orEmpty()
+        for (f in filters) bytes = when (f) {
+            "FlateDecode", "Fl" -> inflate(bytes)
+            "ASCII85Decode", "A85" -> ascii85(bytes)
+            "ASCIIHexDecode", "AHx" -> asciiHex(bytes)
+            else -> null
+        } ?: return null
+        return bytes
+    }
+
+    private fun inflate(raw: ByteArray): ByteArray? = runCatching {
+        val inf = Inflater(); inf.setInput(raw)
+        val buf = ByteArray(8192); val bos = ByteArrayOutputStream()
+        while (!inf.finished()) { val n = inf.inflate(buf); if (n == 0 && (inf.needsInput() || inf.needsDictionary())) break; bos.write(buf, 0, n) }
+        inf.end(); bos.toByteArray()
+    }.getOrNull()
+
+    private fun ascii85(raw: ByteArray): ByteArray? {
+        val out = ByteArrayOutputStream()
+        val group = IntArray(5); var n = 0
+        var i = if (raw.size >= 2 && raw[0] == '<'.code.toByte() && raw[1] == '~'.code.toByte()) 2 else 0
+        while (i < raw.size) {
+            val c = raw[i++].toInt() and 0xFF
+            when {
+                c == '~'.code -> break
+                c == 'z'.code && n == 0 -> repeat(4) { out.write(0) }
+                c in '!'.code..'u'.code -> {
+                    group[n++] = c - '!'.code
+                    if (n == 5) {
+                        val v = group.fold(0L) { acc, d -> acc * 85 + d }
+                        for (k in 3 downTo 0) out.write((v shr (8 * k)).toInt() and 0xFF)
+                        n = 0
+                    }
+                }
+                c <= 32 -> {}
+                else -> return null
+            }
+        }
+        // A last group of 2–4 digits: padded with 'u', its first n − 1 bytes kept.
+        if (n == 1) return null
+        if (n > 1) {
+            for (k in n until 5) group[k] = 84
+            val v = group.fold(0L) { acc, d -> acc * 85 + d }
+            for (k in 0 until n - 1) out.write((v shr (8 * (3 - k))).toInt() and 0xFF)
+        }
+        return out.toByteArray()
+    }
+
+    private fun asciiHex(raw: ByteArray): ByteArray? {
+        val h = StringBuilder()
+        for (b in raw) { val ch = (b.toInt() and 0xFF).toChar(); if (ch == '>') break; if (ch.isLetterOrDigit()) h.append(ch) }
+        if (h.length % 2 == 1) h.append('0')
+        return runCatching { ByteArray(h.length / 2) { k -> h.substring(k * 2, k * 2 + 2).toInt(16).toByte() } }.getOrNull()
     }
 
     private val ref = Regex("""(\d+)\s+0\s+R""")
