@@ -6026,9 +6026,10 @@ class KaiAgent(
         val party = runCatching { tools.parties(name) }.getOrNull()?.let { KaiEntityResolver.sameName(name, it) }?.distinctBy { it.id }
             ?.firstOrNull { it.customer == !purchase }
         val who = party?.name ?: name
-        val lines = runCatching { tools.itemRegister(purchase, from, to) }.getOrNull() ?: return say(lang, KaiMood.CLARIFY, "goods with party: books unavailable",
-            ta = "ஓனர், $who கணக்கை books-ல படிக்க முடியல.", tl = "Owner, $who kanakku books-la padikka mudiyala.", en = "Owner, I couldn't read $who's bills from the books.")
+        // No item register, or "evlo" with no item lines (money entries only): the ledger's answer, as before.
+        val lines = runCatching { tools.itemRegister(purchase, from, to) }.getOrNull() ?: return null
         val mine = lines.filter { it.party?.trim()?.equals(who, ignoreCase = true) == true }
+        if (mine.isEmpty() && !whatQuestion.containsMatchIn(text)) return null
         tools.log(if (purchase) "goods bought from party" else "goods sold to party", "books", "$who ${label ?: "all"}: ${mine.size} lines", ActionStatus.ANSWERED, null, text)
         val span = label?.let { "$it " } ?: ""
         if (mine.isEmpty()) return if (purchase) say(lang, KaiMood.EXPLAINING, "goods bought: none",

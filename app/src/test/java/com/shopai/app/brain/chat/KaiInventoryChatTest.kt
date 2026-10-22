@@ -133,9 +133,9 @@ class KaiInventoryChatTest {
             bills += bill
             return ActionOutcome.Done("BILL-${bills.size}", i.stock)
         }
-        /** The bills saved, as the books' item register (each on [billDay]). */
+        /** The bills saved, as the books' item register (each on [billDay]); none saved: no register (as before). */
         var billDay: java.time.LocalDate = java.time.LocalDate.of(2026, 10, 22)
-        override suspend fun itemRegister(purchase: Boolean, from: java.time.LocalDate, to: java.time.LocalDate) =
+        override suspend fun itemRegister(purchase: Boolean, from: java.time.LocalDate, to: java.time.LocalDate) = if (bills.isEmpty()) null else
             bills.filter { it.purchase == purchase }.takeIf { !billDay.isBefore(from) && !billDay.isAfter(to) }.orEmpty().mapIndexed { n, b ->
                 com.shopai.app.brain.tools.RegisterLine(billDay, "BILL-${n + 1}", b.partyName, b.product.name, b.qty, b.product.unit, b.qty, b.product.unit, b.rate, b.total)
             }

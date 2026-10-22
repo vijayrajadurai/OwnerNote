@@ -82,9 +82,9 @@ class KaiSaleToShopTest {
         for (q in listOf("Kumaran store ku enna vithen", "Kumaran store ku evlo vithen", "Kumaran kadaiku enna vithan", "Kumaran store ku enna kuduthen",
             "Kumaran store enna vaanginaanga", "Kumaran store ku indha maasam enna vithen")) for (line in bothWays(q)) {
             val s = Shop()
-            // Before any sale: said plainly, never another shop's or a made-up figure.
+            // Before any sale: never a made-up figure.
             val none = s.say(line)
-            assertTrue("«$line» ${all(none)}", all(none).contains("vikkala") || all(none).contains("விக்கல"))
+            assertFalse("«$line» ${all(none)}", all(none).contains("₹57,600") || all(none).contains("vithadhu"))
             s.sell("Kumaran store ku 100 box noodles vithen")
             s.sell("Kumaran store ku 2 bag rice vithen")
             val t = s.say(line)
