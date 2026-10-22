@@ -50,18 +50,77 @@ object PdfText {
             } else out[num] = Obj(body, null)
             m = head.find(text, end)
         }
+        // PDF 1.5+ files (Word's "minimum size", iText, many billing apps) keep their small objects — pages, fonts — packed in
+        // compressed object streams: "num offset" pairs, then the objects from /First.
+        for (o in out.values.filter { Regex("""/Type\s*/ObjStm\b""").containsMatchIn(it.dict) }) {
+            val bytes = data(o) ?: continue
+            val first = Regex("""/First\s+(\d+)""").find(o.dict)?.groupValues?.get(1)?.toIntOrNull()?.takeIf { it <= bytes.size } ?: continue
+            val pairs = Regex("""\d+""").findAll(latin1(bytes, 0, first)).map { it.value.toInt() }.toList().chunked(2).filter { it.size == 2 }
+            pairs.forEachIndexed { k, (num, off) ->
+                val from = first + off
+                val to = pairs.getOrNull(k + 1)?.let { first + it[1] } ?: bytes.size
+                if (from in 0..to && to <= bytes.size && num !in out) out[num] = Obj(latin1(bytes, from, to).trim(), null)
+            }
+        }
         return out
     }
 
+    /** A stream's bytes, its filters undone in order (Flate, ASCII85 — ReportLab's "/ASCII85Decode /FlateDecode" —, ASCIIHex). */
     private fun data(o: Obj): ByteArray? {
-        val raw = o.stream ?: return null
-        if (!o.dict.contains("/FlateDecode")) return if (o.dict.contains("/Filter")) null else raw
-        return runCatching {
-            val inf = Inflater(); inf.setInput(raw)
-            val buf = ByteArray(8192); val bos = ByteArrayOutputStream()
-            while (!inf.finished()) { val n = inf.inflate(buf); if (n == 0 && (inf.needsInput() || inf.needsDictionary())) break; bos.write(buf, 0, n) }
-            inf.end(); bos.toByteArray()
-        }.getOrNull()
+        var bytes = o.stream ?: return null
+        val filters = Regex("""/Filter\s*(\[[^\]]*]|/\w+)""").find(o.dict)?.groupValues?.get(1)?.let { f -> Regex("""/(\w+)""").findAll(f).map { it.groupValues[1] }.toList() }.orEmpty()
+        for (f in filters) bytes = when (f) {
+            "FlateDecode", "Fl" -> inflate(bytes)
+            "ASCII85Decode", "A85" -> ascii85(bytes)
+            "ASCIIHexDecode", "AHx" -> asciiHex(bytes)
+            else -> null
+        } ?: return null
+        return bytes
+    }
+
+    private fun inflate(raw: ByteArray): ByteArray? = runCatching {
+        val inf = Inflater(); inf.setInput(raw)
+        val buf = ByteArray(8192); val bos = ByteArrayOutputStream()
+        while (!inf.finished()) { val n = inf.inflate(buf); if (n == 0 && (inf.needsInput() || inf.needsDictionary())) break; bos.write(buf, 0, n) }
+        inf.end(); bos.toByteArray()
+    }.getOrNull()
+
+    private fun ascii85(raw: ByteArray): ByteArray? {
+        val out = ByteArrayOutputStream()
+        val group = IntArray(5); var n = 0
+        var i = if (raw.size >= 2 && raw[0] == '<'.code.toByte() && raw[1] == '~'.code.toByte()) 2 else 0
+        while (i < raw.size) {
+            val c = raw[i++].toInt() and 0xFF
+            when {
+                c == '~'.code -> break
+                c == 'z'.code && n == 0 -> repeat(4) { out.write(0) }
+                c in '!'.code..'u'.code -> {
+                    group[n++] = c - '!'.code
+                    if (n == 5) {
+                        val v = group.fold(0L) { acc, d -> acc * 85 + d }
+                        for (k in 3 downTo 0) out.write((v shr (8 * k)).toInt() and 0xFF)
+                        n = 0
+                    }
+                }
+                c <= 32 -> {}
+                else -> return null
+            }
+        }
+        // A last group of 2–4 digits: padded with 'u', its first n − 1 bytes kept.
+        if (n == 1) return null
+        if (n > 1) {
+            for (k in n until 5) group[k] = 84
+            val v = group.fold(0L) { acc, d -> acc * 85 + d }
+            for (k in 0 until n - 1) out.write((v shr (8 * (3 - k))).toInt() and 0xFF)
+        }
+        return out.toByteArray()
+    }
+
+    private fun asciiHex(raw: ByteArray): ByteArray? {
+        val h = StringBuilder()
+        for (b in raw) { val ch = (b.toInt() and 0xFF).toChar(); if (ch == '>') break; if (ch.isLetterOrDigit()) h.append(ch) }
+        if (h.length % 2 == 1) h.append('0')
+        return runCatching { ByteArray(h.length / 2) { k -> h.substring(k * 2, k * 2 + 2).toInt(16).toByte() } }.getOrNull()
     }
 
     private val ref = Regex("""(\d+)\s+0\s+R""")
@@ -169,6 +228,8 @@ object PdfText {
     private data class Name(val n: String) : Tok
     private data class Arr(val items: List<Tok>) : Tok
     private data class Op(val op: String) : Tok
+    /** An inline dictionary (a marked-content span's properties: its /ActualText). */
+    private class Dict(val raw: ByteArray) : Tok
     private object Skip : Tok
 
     private class Lexer(val s: ByteArray) {
@@ -211,14 +272,15 @@ object PdfText {
                     return Str(out.toByteArray())
                 }
                 c == '<'.code && i + 1 < s.size && s[i + 1].toInt() == '<'.code -> {
-                    // a dictionary (marked content properties): skipped whole
+                    // a dictionary (marked content properties): kept whole, as it is
+                    val st = i
                     var depth = 0
                     while (i < s.size - 1) {
                         if (s[i].toInt() == '<'.code && s[i + 1].toInt() == '<'.code) { depth++; i += 2; continue }
                         if (s[i].toInt() == '>'.code && s[i + 1].toInt() == '>'.code) { depth--; i += 2; if (depth == 0) break; continue }
                         i++
                     }
-                    return Skip
+                    return Dict(s.copyOfRange(st, minOf(i, s.size)))
                 }
                 c == '<'.code -> {
                     i++; val sb = StringBuilder()
@@ -254,6 +316,15 @@ object PdfText {
         }
     }
 
+    /** A marked-content span's /ActualText ("<FEFF0BAA0BCD>" = "ப்"), or null when it has none. */
+    private fun actualText(dict: ByteArray): String? {
+        val at = latin1(dict).indexOf("/ActualText").takeIf { it >= 0 } ?: return null
+        val str = Lexer(dict.copyOfRange(at + "/ActualText".length, dict.size)).next() as? Str ?: return null
+        val b = str.b
+        return if (b.size >= 2 && (b[0].toInt() and 0xFF) == 0xFE && (b[1].toInt() and 0xFF) == 0xFF) String(b, 2, b.size - 2, Charsets.UTF_16BE)
+        else latin1(b)
+    }
+
     /** a b c d e f — a PDF matrix. */
     private class M(val a: Float, val b: Float, val c: Float, val d: Float, val e: Float, val f: Float) {
         fun times(o: M) = M(a * o.a + b * o.c, a * o.b + b * o.d, c * o.a + d * o.c, c * o.b + d * o.d, e * o.a + f * o.c + o.e, e * o.b + f * o.d + o.f)
@@ -272,10 +343,16 @@ object PdfText {
         var font: Font? = null; var size = 1f; var leading = 0f
         var charSpace = 0f; var wordSpace = 0f; var hScale = 1f
         val args = mutableListOf<Tok>()
+        // Marked-content spans open now; a span with /ActualText (LibreOffice / Word's Tamil and other joined letters: "ப்" drawn as
+        // glyphs the font maps to "ப") gives its words in place of its glyphs' — one run, from its first glyph to its last.
+        val marks = ArrayDeque<Boolean>()
+        var actual: String? = null
+        var actualDepth = 0
+        var actualRun: Run? = null
         fun emit(bytes: ByteArray) {
             val f = font ?: return
             val codes = f.codes(bytes)
-            val text = codes.joinToString("") { f.text(it) }
+            val text = if (actual != null) "\u0000" else codes.joinToString("") { f.text(it) }
             // How far the text moves: each glyph's width, the character / word spacing, the horizontal scale.
             val advance = codes.sumOf { c -> ((f.width(c) / 1000f * size + charSpace + (if (f.text(c) == " ") wordSpace else 0f)) * hScale).toDouble() }.toFloat()
             if (text.isNotEmpty()) {
@@ -283,7 +360,8 @@ object PdfText {
                 val p = tm.times(ctm)
                 val end = M(1f, 0f, 0f, 1f, advance, 0f).times(tm).times(ctm)
                 val h = kotlin.math.sqrt(m.c * m.c + m.d * m.d)
-                out += Run(page, p.e, p.f, h, text, end.e)
+                if (actual != null) actualRun = actualRun?.copy(endX = end.e) ?: Run(page, p.e, p.f, h, actual!!, end.e)
+                else out += Run(page, p.e, p.f, h, text, end.e)
             }
             tm = M(1f, 0f, 0f, 1f, advance, 0f).times(tm)
         }
@@ -293,6 +371,16 @@ object PdfText {
             if (t !is Op) { if (t != Skip) args += t; continue }
             fun n(k: Int) = (args.getOrNull(args.size - k) as? Num)?.v ?: 0f
             when (t.op) {
+                "BMC" -> marks.addLast(false)
+                "BDC" -> {
+                    val said = if (actual == null) (args.lastOrNull() as? Dict)?.let { actualText(it.raw) } else null
+                    marks.addLast(said != null)
+                    if (said != null) { actual = said; actualDepth = marks.size; actualRun = null }
+                }
+                "EMC" -> {
+                    if (actual != null && marks.size == actualDepth) { actualRun?.let { out += it }; actual = null; actualRun = null }
+                    marks.removeLastOrNull()
+                }
                 "q" -> stack.addLast(ctm)
                 "Q" -> ctm = stack.removeLastOrNull() ?: ctm
                 "cm" -> if (args.size >= 6) ctm = M(n(6), n(5), n(4), n(3), n(2), n(1)).times(ctm)

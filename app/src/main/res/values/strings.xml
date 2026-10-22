@@ -1578,6 +1578,8 @@ NewonX — Owner Note. Use Help & Support in the app.]]></string>
     <string name="morning_notification_signed_out">Sign in to use the morning notification.</string>
     <!-- A scanned bill's items: stock in (supplier bill) / stock out (customer bill), moved only when the bill is saved. -->
     <string name="bill_stock_title_in">Stock in from this bill</string>
+    <string name="bill_stock_show_all">Show all items (%1$d more)</string>
+    <string name="bill_stock_saving">Saving stock… %1$d / %2$d</string>
     <string name="bill_stock_title_out">Stock out (sold on this bill)</string>
     <string name="bill_stock_change">Stock %1$s → %2$s %3$s</string>
     <string name="bill_stock_short">Only %1$s %2$s in stock — check the quantity</string>
