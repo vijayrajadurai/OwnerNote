@@ -107,6 +107,22 @@ private suspend fun readPdfPages(context: Context, uri: Uri, recognizer: DeviceT
         }.orEmpty()
     }
 
+/** A bill PDF's own text ([com.shopai.app.util.BillPdf]) — null for a scan, or a file over 20 MB (no bill is that big). */
+private fun readPdfText(context: Context, uri: Uri): String? {
+    val bytes = context.contentResolver.openInputStream(uri)?.use { input ->
+        val out = java.io.ByteArrayOutputStream()
+        val buffer = ByteArray(64 * 1024)
+        while (true) {
+            val n = input.read(buffer)
+            if (n < 0) break
+            out.write(buffer, 0, n)
+            if (out.size() > MAX_PDF_TEXT_BYTES) return null
+        }
+        out.toByteArray()
+    } ?: return null
+    return com.shopai.app.util.BillPdf.text(bytes)
+}
+
 /** An Excel (.xlsx) or CSV bill's cells as text lines (null when it can't be read); files over 10 MB are not bills. */
 private fun readSheetText(context: Context, uri: Uri, name: String?, mime: String?): String? {
     val bytes = context.contentResolver.openInputStream(uri)?.use { input ->
@@ -130,6 +146,9 @@ private fun readSheetText(context: Context, uri: Uri, name: String?, mime: Strin
 private const val MAX_PDF_PAGES = 3
 private const val PDF_PAGE_WIDTH_PX = 2000
 private const val MAX_SHEET_BYTES = 10 * 1024 * 1024
+private const val MAX_PDF_TEXT_BYTES = 20 * 1024 * 1024
+/** A bill with more items than this shows its save's progress. */
+private const val BILL_PROGRESS_FROM = 10
 
 /** What the file picker offers for a bill: photos, PDFs, Excel and CSV sheets. */
 private val BILL_FILE_TYPES = arrayOf(
@@ -192,6 +211,8 @@ fun DocumentCaptureSection(
     var info by remember { mutableStateOf<String?>(null) }
     var alertError by remember { mutableStateOf<String?>(null) }
     var billSaving by remember { mutableStateOf(false) }
+    // "Stock: 37 / 125" while a long bill's items are saved (owner's 125-item PDF, 22 Oct 2026).
+    var stockProgress by remember { mutableStateOf<String?>(null) }
 
     val errorOcrEmpty = stringResource(R.string.error_ocr_empty)
     val errorOcrFailed = stringResource(R.string.error_ocr_failed)
@@ -205,11 +226,13 @@ fun DocumentCaptureSection(
     val stockMovedFormat = stringResource(R.string.bill_stock_moved)
     val stockFailedFormat = stringResource(R.string.bill_stock_failed)
     val productsAddedFormat = stringResource(R.string.bill_stock_new_added)
+    val stockSavingFormat = stringResource(R.string.bill_stock_saving)
 
     // ---- Reading a photo ----
 
     suspend fun fillBillFromText(text: String, ocrConfidence: Int = -1) {
-        val local = BillTextParser.parse(text)
+        // (a 125-item bill: read off the screen's thread, so the screen never stalls)
+        val local = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { BillTextParser.parse(text) }
         // Debug builds only: the OCR text and what was read from it, for checking real bills.
         if (com.shopai.app.BuildConfig.DEBUG) {
             android.util.Log.d("BillOcr", "OCR text:\n$text")
@@ -231,7 +254,8 @@ fun DocumentCaptureSection(
         // The bill's items matched to the shop's products: the stock it moves (checked on the review, moved only on save).
         val products = runCatching { container.kaiTools.products() }.getOrNull().orEmpty()
         // "Intha bill la irukura stock ah add / kammi pannu" said to Kai before the scan: that way; else by the bill.
-        bill.setStockLines(com.shopai.app.util.BillStock.lines(local.items, products), com.shopai.app.util.BillStock.Request.take())
+        val stockLines = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { com.shopai.app.util.BillStock.lines(local.items, products) }
+        bill.setStockLines(stockLines, com.shopai.app.util.BillStock.Request.take())
         // Kai: what he read on the bill, and whether the total needs a check.
         container.kaiBrain.announce(
             com.shopai.app.brain.KaiResponder.billRead(
@@ -297,7 +321,7 @@ fun DocumentCaptureSection(
 
     /**
      * A bill uploaded as a file (owner, 15 Oct 2026: "photo or PDF or Excel upload"): a photo is read as from the gallery; a PDF's
-     * pages are drawn and read like photos; an Excel (.xlsx) or CSV sheet's cells are read as they are (no OCR). All of it goes
+     * own text is read (a scanned PDF: its pages drawn and read like photos); an Excel (.xlsx) or CSV sheet's cells are read as they are (no OCR). All of it goes
      * to the same review — party, total, items and the stock they move — and nothing is saved before the owner saves it.
      */
     fun runFile(uri: Uri) {
@@ -316,13 +340,20 @@ fun DocumentCaptureSection(
                 error = null
                 info = null
                 runCatching {
-                    val pages = readPdfPages(context, uri, recognizer)
-                    val text = pages.joinToString("\n") { it.text }.trim()
-                    if (text.isBlank()) {
-                        error = errorOcrEmpty
+                    // A PDF made by a billing app: its own text, every page, read in milliseconds (exact — nothing guessed).
+                    val own = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { readPdfText(context, uri) }
+                    if (own != null) {
+                        fillBillFromText(own, 100)
                     } else {
-                        val known = pages.map { it.meanConfidence }.filter { it >= 0 }
-                        fillBillFromText(text, if (known.isEmpty()) -1 else known.sum() / known.size)
+                        // A scanned PDF (pictures only): its first pages drawn and read with OCR.
+                        val pages = readPdfPages(context, uri, recognizer)
+                        val text = pages.joinToString("\n") { it.text }.trim()
+                        if (text.isBlank()) {
+                            error = errorOcrEmpty
+                        } else {
+                            val known = pages.map { it.meanConfidence }.filter { it >= 0 }
+                            fillBillFromText(text, if (known.isEmpty()) -1 else known.sum() / known.size)
+                        }
                     }
                 }.onFailure { error = errorOcrFailed }
                 processing = false
@@ -464,7 +495,15 @@ fun DocumentCaptureSection(
             val stockFailed = mutableListOf<String>()
             var stockMoved = 0
             val stockIn = bill.stockIn
-            for ((product, qty, batchNo, expiry) in bill.stockToMove) {
+            val toMove = bill.stockToMove
+            val toAdd = bill.productsToAdd
+            val stockCount = toMove.size + toAdd.size
+            var stockDone = 0
+            fun stepDone() {
+                stockDone++
+                if (stockCount > BILL_PROGRESS_FROM) stockProgress = stockSavingFormat.format(stockDone, stockCount)
+            }
+            for ((product, qty, batchNo, expiry) in toMove) {
                 val moved = runCatching {
                     // A medical / grocery bill's row with its expiry: the stock comes in as that batch (kept by batch from now on,
                     // the stock so far its old-stock batch), so the expiry list and the 7-day alert have it.
@@ -481,11 +520,12 @@ fun DocumentCaptureSection(
                     }
                 }.getOrDefault(false)
                 if (moved) stockMoved++ else stockFailed += product.name
+                stepDone()
             }
             // Items not in the inventory that the owner ticked on a supplier bill: each added as a new product (at the bill's rate),
             // then its stock in with this bill as the reason — only now, after the entry is saved.
             var productsAdded = 0
-            for (item in bill.productsToAdd) {
+            for (item in toAdd) {
                 val added = runCatching {
                     // The row's batch / expiry go with the new product (kept by batch), and its stock comes in as that batch.
                     val expiry = item.expiry?.takeIf { com.shopai.app.brain.tools.KaiExpiry.canExpire(null, item.name) }
@@ -503,7 +543,9 @@ fun DocumentCaptureSection(
                     }
                 }.getOrDefault(false)
                 if (added) stockMoved++ else stockFailed += item.name
+                stepDone()
             }
+            stockProgress = null
 
             bill.reset()
             selectedBillId = savedId
@@ -647,7 +689,7 @@ fun DocumentCaptureSection(
     info?.let { Text(it, color = ShopAiThemeColors.primary, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 8.dp)) }
 
     if (bill.visible) {
-        BillEntrySection(state = bill, saving = billSaving, onSave = { saveBill() }, onCancel = { bill.reset() })
+        BillEntrySection(state = bill, saving = billSaving, onSave = { saveBill() }, onCancel = { bill.reset() }, progress = stockProgress)
     }
 }
 
