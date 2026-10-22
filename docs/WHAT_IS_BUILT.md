@@ -322,6 +322,17 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
   vaanginen", with a period or not, answer every product, how much and the money from the item register (returns off) and what they
   owe now (`KaiAgent.goodsAsked`); "evlo kuduthen" stays a money question. Typed = mic (`KaiSpokenWords`: வித்தாச்சு,
   குடுத்துருக்கான் …). Test: `KaiSaleToShopTest`, owner-lines.
+- Three screens made for the owner's thumb (owner, 22 Oct 2026, previews approved; screens only — saving unchanged):
+  - Kai's money draft is the Confirm card (`ui/kai/KaiConfirmCard.kt`): what it is and the amount big, Kai's rows, the balance
+    before → after, one big Confirm, then Edit / Cancel (Kai's own buttons). Stock / goods drafts keep the notebook scene.
+  - Add Credit / Add Debit are three steps (`ui/screens/MoneyEntryFlow.kt`): who (they owe me / I owe them, the shop's people as
+    faces with their balance, search, a new name) → how much (number pad, the amount in words — `util/AmountWords.kt` — quick
+    +₹100…) → is this right (one sentence, balance before → after, due in 7 / 15 / 30 days or another date — still required, a
+    WhatsApp reminder for a credit). The same entry, party creation and Kai message as before.
+  - The bill review starts with a summary (`BillEntrySection.BillSummaryCard`): purchase / sale, who, the total big, items / GST /
+    paid; only what needs a check, one tap each (right / change, Kai's offered name or total, how much was paid); every field under
+    "Bill details", open by itself when something there must be filled. Same fields and Save rule. Test: `AmountWordsTest`.
+  Not done: undo after Confirm ("Maathu" in the preview) — it needs a books void, a logic change, left for its own step.
 - The voice / bill screen no longer has the "Your sentence" box (its "Kumar-ku 2000-ku tharanum" example) or the Parse button.
 - Customers: a small Import beside the title. More → "Pazhaiya kanakku import" reads another app's Customer / Supplier
   List PDF and adds people with opening balances on Confirm. No other app's name is shown anywhere.

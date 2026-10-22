@@ -32,6 +32,8 @@ data class KaiChatMessage(
     val voice: Boolean = false,
     /** Kai asking: what he has so far and the one thing asked (the question card's chips), null otherwise. */
     val ask: com.shopai.app.brain.note.KaiAskProgress? = null,
+    /** A money draft's plan (who, how much, the balance before → after): the Confirm card reads it; null otherwise. */
+    val plan: com.shopai.app.brain.tools.ActionPlan? = null,
 )
 
 /**
@@ -136,7 +138,7 @@ class KaiChatSession(
     suspend fun showRang(id: String) {
         val lang = KaiLanguage.forAppLocale()
         val turn = agent.rang(id, lang) ?: return
-        messages += KaiChatMessage(nextId++, fromOwner = false, text = turn.reply.text, mood = turn.reply.mood, card = turn.card, lang = lang)
+        messages += KaiChatMessage(nextId++, fromOwner = false, text = turn.reply.text, mood = turn.reply.mood, card = turn.card, lang = lang, plan = turn.plan)
         lastMood = turn.reply.mood
         lastReplyAt = System.currentTimeMillis()
     }
@@ -201,7 +203,7 @@ class KaiChatSession(
         closeSpentDrafts()
         val id = nextId++
         val ask = if (result.reply.mood == KaiMood.CLARIFY) runCatching { agent.askProgress(lang) }.getOrNull() else null
-        messages += KaiChatMessage(id, fromOwner = false, text = result.reply.text, mood = result.reply.mood, card = result.card, lang = lang, ask = ask)
+        messages += KaiChatMessage(id, fromOwner = false, text = result.reply.text, mood = result.reply.mood, card = result.card, lang = lang, ask = ask, plan = result.plan)
         // The notebook follows the real draft: the open one spent (saved / dropped / failed), and this answer's new draft.
         note = note.answered(result.reply.mood, spent = note.note?.let { com.shopai.app.brain.note.KaiNoteReader.spent(agent, it) } == true,
             newNote = runCatching { com.shopai.app.brain.note.KaiNoteReader.noteFor(agent, id, result.card, lang, java.time.LocalDate.now()) }.getOrNull(),

@@ -1,5 +1,18 @@
 package com.shopai.app.ui.screens
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -345,7 +358,12 @@ fun BillEntrySection(
     val required = stringResource(R.string.bill_required)
     val isSupplier = state.type == TransactionSaveType.DEBIT
 
-    ShopCard(modifier = Modifier.padding(top = 12.dp)) {
+    // Summary first (owner, 22 Oct 2026, preview approved): the bill at a glance and only what needs a check; every field is in
+    // "Bill details" — open by itself when something there must be filled (no name, no date, no total, a stock row to fix).
+    var showDetails by remember(state.stockRows, state.visible) { mutableStateOf(needsDetails(state)) }
+    BillSummaryCard(state, showDetails) { showDetails = it }
+
+    if (showDetails) ShopCard(modifier = Modifier.padding(top = 12.dp)) {
         Text(
             stringResource(R.string.bill_details_title),
             style = MaterialTheme.typography.bodyLarge,
@@ -568,7 +586,8 @@ fun BillEntrySection(
     }
     progress?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = ShopAiThemeColors.primary, modifier = Modifier.padding(top = 8.dp)) }
     PrimaryButton(
-        label = stringResource(R.string.bill_save),
+        label = state.parsedTotal?.takeIf { state.canSave }?.let { stringResource(R.string.bill_save_with, com.shopai.app.util.formatInr(it.toDouble())) }
+            ?: stringResource(R.string.bill_save),
         loading = saving,
         enabled = state.canSave,
         modifier = Modifier.padding(top = 12.dp),
@@ -578,6 +597,152 @@ fun BillEntrySection(
         TextButton(onClick = cancel, enabled = !saving, modifier = Modifier.padding(top = 4.dp)) { Text(stringResource(R.string.bill_cancel)) }
     }
 }
+
+/** "Bill details" must be open: something there has to be filled that the summary's checks can't (or a stock row to fix). */
+private fun needsDetails(state: BillEntryState): Boolean =
+    (state.partyName.isBlank() && state.shopSuggestion == null) || state.billDate == null ||
+        (state.parsedTotal == null && state.totalSuggestion == null && state.totalInWords == null) ||
+        state.stockRows.any { it.needsCheck(state.stockIn) }
+
+/**
+ * The bill at a glance: purchase / sale, who, the date and number, the total big, items / GST / paid; then only what needs the
+ * owner's check, each answered with one tap (right / change, the name or total Kai offers, how much was paid); then the stock and
+ * the details on "show". Every tap sets the same field the form below sets — nothing is saved here.
+ */
+@Composable
+private fun BillSummaryCard(state: BillEntryState, showDetails: Boolean, onShowDetails: (Boolean) -> Unit) {
+    val supplier = state.type == TransactionSaveType.DEBIT
+    var paidAnswered by remember(state.stockRows, state.visible) { mutableStateOf(state.paid.isNotBlank()) }
+    val shape = RoundedCornerShape(20.dp)
+    Column(Modifier.padding(top = 12.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(Modifier.fillMaxWidth().clip(shape).background(Color.White).border(1.dp, SumLine, shape).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(if (supplier) R.string.bill_sum_purchase else R.string.bill_sum_sale), color = SumPurple, fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clip(RoundedCornerShape(13.dp)).background(SumPurpleWash).padding(horizontal = 10.dp, vertical = 4.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(listOfNotNull(state.billDate?.let { com.shopai.app.util.formatLocalDateForDisplay(it) }, state.invoiceNumber.trim().takeIf { it.isNotEmpty() })
+                    .joinToString(" · "), color = SumMuted, fontSize = 12.sp, maxLines = 2)
+            }
+            Text(state.partyName.ifBlank { stringResource(R.string.bill_sum_no_name) }, color = if (state.partyName.isBlank()) SumMuted else SumLabel,
+                fontSize = 17.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 22.sp)
+            Text(state.parsedTotal?.let { com.shopai.app.util.formatInr(it.toDouble()) } ?: "₹ —", color = SumLabel, fontSize = 34.sp, fontWeight = FontWeight.ExtraBold)
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                if (state.stockRows.isNotEmpty()) MiniTile(stringResource(R.string.bill_sum_items), state.stockRows.size.toString(), Modifier.weight(1f))
+                MiniTile(stringResource(R.string.bill_sum_gst), state.tax?.takeIf { !state.taxNeedsCheck }?.let { com.shopai.app.util.formatInr(it.toDouble()) } ?: "—", Modifier.weight(1f))
+                MiniTile(stringResource(R.string.bill_sum_paid), if (state.paid.isBlank() && !paidAnswered) "?" else state.parsedPaid?.let { com.shopai.app.util.formatInr(it.toDouble()) } ?: "?", Modifier.weight(1f))
+            }
+        }
+
+        // Only what needs the owner's check — one tap each.
+        val checks = mutableListOf<@Composable () -> Unit>()
+        for (field in listOf(BillField.SHOP, BillField.PERSON, BillField.TOTAL).filter { it in state.toVerify }) {
+            val (question, value) = when (field) {
+                BillField.SHOP -> stringResource(R.string.bill_check_shop) to state.shopName
+                BillField.PERSON -> stringResource(R.string.bill_check_person) to state.customerName
+                else -> stringResource(R.string.bill_check_total) to (state.parsedTotal?.let { com.shopai.app.util.formatInr(it.toDouble()) } ?: state.total)
+            }
+            checks += { CheckItem(question, value, stringResource(R.string.bill_check_ok), { state.verified(field) }) { onShowDetails(true) } }
+        }
+        state.shopSuggestion?.let { name ->
+            checks += { CheckItem(stringResource(R.string.bill_check_suggest_shop), name, stringResource(R.string.bill_check_use), { state.useShopSuggestion() }) { onShowDetails(true) } }
+        }
+        state.totalSuggestion?.let { t ->
+            checks += { CheckItem(stringResource(R.string.bill_check_suggest_total), com.shopai.app.util.formatInr(t.toDouble()), stringResource(R.string.bill_check_use), { state.useTotalSuggestion() }) { onShowDetails(true) } }
+        }
+        state.totalInWords?.let { w ->
+            checks += { CheckItem(stringResource(R.string.bill_check_words), com.shopai.app.util.formatInr(w.toDouble()), stringResource(R.string.bill_check_use), { state.useTotalInWords() }) { onShowDetails(true) } }
+        }
+        if (state.billDate == null) checks += { CheckItem(stringResource(R.string.bill_check_no_date), null, stringResource(R.string.bill_check_set), { onShowDetails(true) }, null) }
+        // How much was paid on the bill (blank is nothing paid, as before): one tap.
+        if (!paidAnswered && state.paid.isBlank() && BillScanWarning.PAID_UNKNOWN in state.warnings) checks += {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(stringResource(if (supplier) R.string.bill_check_paid_supplier else R.string.bill_check_paid_customer), color = SumLabel, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    SumChoice(stringResource(R.string.bill_check_paid_none), Modifier.weight(1f)) { state.paid = "0"; paidAnswered = true }
+                    SumChoice(stringResource(R.string.bill_check_paid_all), Modifier.weight(1f)) { state.parsedTotal?.let { state.paid = it.toPlainString() }; paidAnswered = true }
+                    SumChoice(stringResource(R.string.bill_check_paid_some), Modifier.weight(1f)) { paidAnswered = true; onShowDetails(true) }
+                }
+            }
+        }
+        if (checks.isNotEmpty()) Column(
+            Modifier.fillMaxWidth().clip(shape).background(SumWarnWash).border(1.5.dp, SumWarnLine, shape).padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text("⚠ " + stringResource(R.string.bill_check_title, checks.size), color = SumWarnInk, fontSize = 14.5.sp, fontWeight = FontWeight.ExtraBold)
+            checks.forEach { it() }
+        } else if (state.canSave) Text("✓ " + stringResource(R.string.bill_check_all_done), color = SumGreen, fontSize = 14.sp, fontWeight = FontWeight.Bold,
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(SumGreenWash).padding(horizontal = 12.dp, vertical = 10.dp))
+
+        // The stock the bill moves, and every field — on "show".
+        if (state.stockRows.isNotEmpty()) SumRow(
+            stringResource(if (state.stockIn) R.string.bill_sum_stock_in else R.string.bill_sum_stock_out, state.stockRows.size),
+            stringResource(R.string.bill_sum_stock_detail, state.stockRows.count { it.line.product != null }, state.stockRows.count { it.line.product == null }),
+            stringResource(if (showDetails) R.string.bill_sum_hide else R.string.bill_sum_show),
+        ) { onShowDetails(!showDetails) }
+        SumRow(stringResource(R.string.bill_sum_details), stringResource(R.string.bill_sum_details_sub),
+            stringResource(if (showDetails) R.string.bill_sum_hide else R.string.bill_sum_show)) { onShowDetails(!showDetails) }
+    }
+}
+
+@Composable
+private fun MiniTile(label: String, value: String, modifier: Modifier) {
+    Column(modifier.clip(RoundedCornerShape(10.dp)).background(SumTile).padding(8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(label, color = SumMuted, fontSize = 11.5.sp)
+        Text(value, color = SumLabel, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+    }
+}
+
+/** One check: the question, what was read, "right" and "change" (open the field). */
+@Composable
+private fun CheckItem(question: String, value: String?, ok: String, onOk: () -> Unit, onChange: (() -> Unit)?) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(question, color = SumLabel, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        value?.takeIf { it.isNotBlank() }?.let { Text(it, color = SumLabel, fontSize = 15.sp, fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color.White).border(1.5.dp, SumLine, RoundedCornerShape(12.dp))
+                .padding(horizontal = 12.dp, vertical = 10.dp)) }
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            SumChoice(ok, Modifier.weight(1f), dark = true, onClick = onOk)
+            onChange?.let { SumChoice(stringResource(R.string.bill_check_change), Modifier.weight(1f), onClick = it) }
+        }
+    }
+}
+
+@Composable
+private fun SumChoice(label: String, modifier: Modifier, dark: Boolean = false, onClick: () -> Unit) {
+    Box(modifier.heightIn(min = 46.dp).clip(RoundedCornerShape(12.dp)).background(if (dark) SumInk else Color.White)
+        .border(1.5.dp, if (dark) SumInk else SumLine, RoundedCornerShape(12.dp)).clickable(onClick = onClick).padding(horizontal = 8.dp),
+        contentAlignment = Alignment.Center) {
+        Text(label, color = if (dark) Color.White else SumLabel, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+    }
+}
+
+@Composable
+private fun SumRow(title: String, sub: String, action: String, onClick: () -> Unit) {
+    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Color.White).border(1.dp, SumLine, RoundedCornerShape(16.dp))
+        .clickable(onClick = onClick).padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(title, color = SumLabel, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            Text(sub, color = SumBody, fontSize = 12.5.sp)
+        }
+        Text(action, color = SumBlue, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+private val SumInk = Color(0xFF1A1530)
+private val SumLabel = Color(0xFF1C1C1E)
+private val SumBody = Color(0xFF4A4A4F)
+private val SumMuted = Color(0xFF5C5C61)
+private val SumLine = Color(0xFFE5E5EA)
+private val SumTile = Color(0xFFF6F6F9)
+private val SumBlue = Color(0xFF0A5DB8)
+private val SumGreen = Color(0xFF0A6B4B)
+private val SumGreenWash = Color(0xFFE3F5EC)
+private val SumPurple = Color(0xFF4B3A8C)
+private val SumPurpleWash = Color(0xFFEEEAF7)
+private val SumWarnInk = Color(0xFF7A3E00)
+private val SumWarnWash = Color(0xFFFFF8EC)
+private val SumWarnLine = Color(0xFFF3D19C)
 
 /** Under a field read from the bill but not certain: check it, then confirm (or just edit it). */
 @Composable
