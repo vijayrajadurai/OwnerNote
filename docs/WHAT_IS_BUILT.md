@@ -336,6 +336,30 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
 - The voice / bill screen no longer has the "Your sentence" box (its "Kumar-ku 2000-ku tharanum" example) or the Parse button.
 - Customers: a small Import beside the title. More → "Pazhaiya kanakku import" reads another app's Customer / Supplier
   List PDF and adds people with opening balances on Confirm. No other app's name is shown anywhere.
+- Kai Chat first, OwnerNote's own look (owner, 22 Oct 2026). UI only; what is sent, answered and saved is unchanged:
+  - Home (`HomeScreen`, `HomeOwnerNote.kt`, `ui/kai/KaiVisuals.kt`):
+    - "Vanakkam, <owner>" header.
+    - A small "Kai-kitta kelunga" bar with a turning green-gold (veshti) border and rotating examples per business type → Kai Chat.
+    - Square tiles: Kai, today's cash in, to collect, to pay, reminders, Stock. Money shown short by `util/shortRupees`
+      (`ShortRupeesTest`); a figure not loaded shows "—".
+    - "KAI-ODA DIARY · INNAIKKU": Kai's brief as a diary card ("Seri, paathen", Kai-kitta kelunga, Kelunga plays it again).
+      The other Home cards stay as before.
+  - Bottom bar: dark and floating, with Kai's face (mic) raised in the middle → Kai Chat (`BottomNavBar(onKai)`).
+  - Kai Chat (`KaiChatLook.kt`):
+    - Night-green backdrop with a dot grid; Kai in a turning ring of light; glass bubbles; hopping typing dots.
+    - The mic as a glowing orb; while it records, a full-screen voice mode (Kai standing, the words heard,
+      "Mudinjudhu ✓" = the same as tapping the mic).
+  - Customer detail 4b (`CustomerDetailHero.kt`):
+    - The balance big with what came in so far and the days late.
+    - "Panam vandhuchu" (Books payment), "Kadan kudunga" (Add Credit).
+    - One green WhatsApp reminder: the Tamil / Tanglish message is shown, then WhatsApp opens with it typed (`util/WhatsAppText.kt`;
+      the owner sends).
+    - Statement PDF (the same `shareStatement` as Kai) and Sale bill. No call button.
+  - Stock 5b: Items · Value · Kammi counts, "Kammi mudhalla / Ellaam", a bar per product. − / + open the same Stock out / in box.
+  - Error / empty 7b (`ui/components/FriendlyState.kt`): plain words, "Neenga pottadhu edhuvum azhiyala", one main button,
+    details on request. Used on Stock and Customer detail.
+  - Respectful wording: button words end in -unga / -ங்க ("paduthunga", "Save பண்ணுங்க", "பணம் வந்துச்சு").
+  - Pictures: the owner's transparent Kai (`drawable-nodpi/kai_mascot*.webp`).
 
 ## 4. Fixes from the owner's phone (examples worth knowing)
 - "sri balaji ku 786 kuduthutan" was drafted as a new debit (786 → 1,572). "-ku" now means the owner paid
@@ -348,6 +372,7 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
 
 ## 5. Still open / to check on a real phone
 - Android UI that was written without compiling here needs an Android Studio build and a phone check:
+  - Home / bottom bar / Kai Chat look / Customer 4b / Stock 5b / FriendlyState (22 Oct 2026)
   - bill upload (PDF / Excel / CSV, `DocumentCaptureSection`)
   - CashNoteShare
   - the note scene's images

@@ -1,6 +1,9 @@
 package com.shopai.app.ui.screens
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -98,6 +101,8 @@ fun InventoryScreen(
     var matches by remember { mutableStateOf<Set<String>?>(null) }
     // The Low Stock tile tapped: only the products at or below their minimum.
     var lowOnly by remember { mutableStateOf(false) }
+    // Low stock first (owner, 22 Oct 2026); "Ellaam" keeps the list's own order.
+    var lowFirst by remember { mutableStateOf(true) }
     LaunchedEffect(Unit) { booksOn = container.books.session() != null }
     var archived by remember { mutableStateOf(emptyList<com.shopai.app.books.data.ProductEntity>()) }
     var showArchived by remember { mutableStateOf(false) }
@@ -246,10 +251,14 @@ fun InventoryScreen(
             PrimaryButton(label = stringResource(R.string.inv_new_product), onClick = { if (booksOn) onNewProduct() else showNewProduct = true })
             if (!loading && error == null) {
                 val lowCount = products.count { computeStockStatus(it.currentStock, it.minimumStock) == STOCK_STATUS_LOW_STOCK }
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    StockTile(stringResource(R.string.inv_total_products), products.size, selected = !lowOnly, alert = false, Modifier.weight(1f)) { lowOnly = false }
-                    StockTile(stringResource(R.string.inv_low_stock_tile), lowCount, selected = lowOnly, alert = lowCount > 0, Modifier.weight(1f)) { lowOnly = !lowOnly }
+                // Version 5b (owner, 22 Oct 2026): Items · Value · Kammi across the top, low stock first.
+                val stockValue = products.sumOf { p -> p.currentStock.coerceAtLeast(0.0) * (p.purchasePrice ?: 0.0) }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    StockStat(stringResource(R.string.inv_stat_items), products.size.toString(), selected = !lowOnly, alert = false, Modifier.weight(1f)) { lowOnly = false }
+                    if (stockValue > 0) StockStat(stringResource(R.string.inv_stat_value), com.shopai.app.util.shortRupees(stockValue), selected = false, alert = false, Modifier.weight(1f)) {}
+                    StockStat(stringResource(R.string.inv_stat_low), lowCount.toString(), selected = lowOnly, alert = lowCount > 0, Modifier.weight(1f)) { lowOnly = !lowOnly }
                 }
+                StockSegments(lowFirst = lowFirst, onLowFirst = { lowFirst = it })
             }
 
             summary?.let { s ->
@@ -306,74 +315,40 @@ fun InventoryScreen(
                 loading -> Box(Modifier.fillMaxSize().padding(top = 48.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
-                error != null -> Text(error!!, color = ShopAiThemeColors.onSurface)
-                products.isEmpty() -> Text(
-                    stringResource(R.string.inv_empty),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = ShopAiThemeColors.onSurfaceVariant,
+                // Error / empty, version 7b (owner, 22 Oct 2026): what happened in plain words and what to do next.
+                error != null -> com.shopai.app.ui.components.FriendlyState(
+                    kind = com.shopai.app.ui.components.FriendlyKind.NET,
+                    title = stringResource(R.string.friendly_load_title),
+                    body = stringResource(R.string.friendly_load_body),
+                    safe = stringResource(R.string.friendly_nothing_lost),
+                    primaryLabel = stringResource(R.string.friendly_try_again),
+                    onPrimary = { reload() },
+                    details = error,
+                )
+                products.isEmpty() -> com.shopai.app.ui.components.FriendlyState(
+                    kind = com.shopai.app.ui.components.FriendlyKind.EMPTY,
+                    title = stringResource(R.string.friendly_no_products_title),
+                    body = stringResource(R.string.friendly_no_products_body),
+                    primaryLabel = stringResource(R.string.friendly_tell_kai),
+                    onPrimary = onOpenKaiChat,
+                    secondaryLabel = stringResource(R.string.inv_new_product),
+                    onSecondary = { if (booksOn) onNewProduct() else showNewProduct = true },
                 )
                 else -> products.filter { p ->
                     // (without the books: the name, SKU or barcode typed, matched here)
                     val q = query.trim()
                     (matches?.contains(p.id) ?: (q.isEmpty() || listOfNotNull(p.name, p.sku, p.barcode).any { it.contains(q, ignoreCase = true) })) &&
                         (!lowOnly || computeStockStatus(p.currentStock, p.minimumStock) == STOCK_STATUS_LOW_STOCK)
+                }.let { list ->
+                    if (lowFirst) list.sortedByDescending { computeStockStatus(it.currentStock, it.minimumStock) == STOCK_STATUS_LOW_STOCK } else list
                 }.forEach { product ->
-                    ShopCard(
-                        modifier = Modifier.clickable { onOpenProduct(product.id) },
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                            // Animated picture for the product's kind (rice sack for grocery, bottle, shirt, …).
-                            ProductArt(name = product.name, category = product.category, unit = product.unit)
-                            Spacer(Modifier.width(12.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                                    Text(
-                                        text = product.name,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = ShopAiThemeColors.onSurface,
-                                        modifier = Modifier.weight(1f),
-                                    )
-                                    val status = computeStockStatus(product.currentStock, product.minimumStock)
-                                    Text(
-                                        text = if (status == STOCK_STATUS_LOW_STOCK) {
-                                            stringResource(R.string.inv_status_low)
-                                        } else {
-                                            stringResource(R.string.inv_status_healthy)
-                                        },
-                                        style = MaterialTheme.typography.labelLarge,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = if (status == STOCK_STATUS_LOW_STOCK) Danger else Success,
-                                    )
-                                }
-                                Text(
-                                    text = product.category,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = ShopAiThemeColors.onSurfaceVariant,
-                                )
-                                Text(
-                                    text = stringResource(R.string.inv_current_stock_line, formatQty(product.currentStock), product.unit),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = ShopAiThemeColors.onSurface,
-                                    modifier = Modifier.padding(top = 6.dp),
-                                )
-                                Text(
-                                    text = stringResource(R.string.inv_min_stock_line, formatQty(product.minimumStock), product.unit),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = ShopAiThemeColors.onSurfaceVariant,
-                                )
-                            }
-                        }
-                        Spacer(Modifier.height(8.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedButton(onClick = { stockChangeTarget = product to true }) {
-                                Text(stringResource(R.string.inv_stock_in))
-                            }
-                            OutlinedButton(onClick = { stockChangeTarget = product to false }) {
-                                Text(stringResource(R.string.inv_stock_out))
-                            }
-                        }
-                    }
+                    // + / − open the same Stock in / Stock out box as before (quantity, reason, then save).
+                    StockRow(
+                        product = product,
+                        onOpen = { onOpenProduct(product.id) },
+                        onPlus = { stockChangeTarget = product to true },
+                        onMinus = { stockChangeTarget = product to false },
+                    )
                 }
             }
             if (booksOn) {
@@ -385,6 +360,98 @@ fun InventoryScreen(
                 }
             }
             Spacer(Modifier.height(24.dp))
+        }
+    }
+}
+
+/** One of the counts across the top (Items / Value / Kammi); Kammi shows only the low ones. */
+@Composable
+private fun StockStat(label: String, value: String, selected: Boolean, alert: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
+    Column(
+        modifier
+            .clip(shape)
+            .then(Modifier.background(if (alert) androidx.compose.ui.graphics.Color(0xFFFEF2F2) else androidx.compose.ui.graphics.Color.White, shape))
+            .border(if (selected || alert) 1.5.dp else 1.dp, if (alert) androidx.compose.ui.graphics.Color(0xFFFECACA) else if (selected) androidx.compose.ui.graphics.Color(0xFF111827) else androidx.compose.ui.graphics.Color(0xFFECEAE5), shape)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Text(label, style = MaterialTheme.typography.labelMedium, color = if (alert) androidx.compose.ui.graphics.Color(0xFFB91C1C) else ShopAiThemeColors.onSurfaceVariant)
+        Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = if (alert) androidx.compose.ui.graphics.Color(0xFFB91C1C) else ShopAiThemeColors.onSurface, maxLines = 1)
+    }
+}
+
+/** "Kammi mudhalla" / "Ellaam". */
+@Composable
+private fun StockSegments(lowFirst: Boolean, onLowFirst: (Boolean) -> Unit) {
+    val outer = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+    Row(
+        Modifier.fillMaxWidth().clip(outer).background(androidx.compose.ui.graphics.Color(0xFFECEAE5), outer).padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        for ((label, on) in listOf(stringResource(R.string.inv_low_first) to true, stringResource(R.string.inv_all) to false)) {
+            val picked = lowFirst == on
+            val inner = androidx.compose.foundation.shape.RoundedCornerShape(9.dp)
+            Box(
+                Modifier
+                    .weight(1f)
+                    .height(38.dp)
+                    .clip(inner)
+                    .background(if (picked) androidx.compose.ui.graphics.Color.White else androidx.compose.ui.graphics.Color.Transparent, inner)
+                    .clickable { onLowFirst(on) },
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(label, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = if (picked) androidx.compose.ui.graphics.Color(0xFF111827) else androidx.compose.ui.graphics.Color(0xFF6B7280))
+            }
+        }
+    }
+}
+
+/** A product: its picture, stock against the minimum (red when low), a bar, and − / + for stock out / in. */
+@Composable
+private fun StockRow(product: InventoryProduct, onOpen: () -> Unit, onPlus: () -> Unit, onMinus: () -> Unit) {
+    val low = computeStockStatus(product.currentStock, product.minimumStock) == STOCK_STATUS_LOW_STOCK
+    val card = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(card)
+            .background(androidx.compose.ui.graphics.Color.White, card)
+            .border(1.dp, androidx.compose.ui.graphics.Color(0xFFECEAE5), card)
+            .clickable(onClick = onOpen)
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        ProductArt(name = product.name, category = product.category, unit = product.unit)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(product.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = ShopAiThemeColors.onSurface, maxLines = 1)
+            Text(
+                text = stringResource(R.string.inv_stock_vs_min, formatQty(product.currentStock), product.unit, formatQty(product.minimumStock)),
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.SemiBold,
+                color = if (low) Danger else ShopAiThemeColors.onSurfaceVariant,
+                maxLines = 1,
+            )
+            val cover = if (product.minimumStock > 0) (product.currentStock / (product.minimumStock * 3)).toFloat() else 1f
+            Box(Modifier.fillMaxWidth().height(4.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(2.dp)).background(androidx.compose.ui.graphics.Color(0xFFF3F4F6), androidx.compose.foundation.shape.RoundedCornerShape(2.dp))) {
+                Box(
+                    Modifier
+                        .fillMaxWidth(cover.coerceIn(0.04f, 1f))
+                        .height(4.dp)
+                        .background(if (low) androidx.compose.ui.graphics.Color(0xFFEF4444) else androidx.compose.ui.graphics.Color(0xFF10B981), androidx.compose.foundation.shape.RoundedCornerShape(2.dp)),
+                )
+            }
+        }
+        val pill = androidx.compose.foundation.shape.RoundedCornerShape(14.dp)
+        Row(Modifier.height(44.dp).clip(pill).background(androidx.compose.ui.graphics.Color(0xFFF3F4F6), pill), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.width(44.dp).height(44.dp).clickable(onClick = onMinus), contentAlignment = Alignment.Center) {
+                Text("−", style = MaterialTheme.typography.titleLarge, color = ShopAiThemeColors.onSurface)
+            }
+            Box(Modifier.width(44.dp).height(44.dp).clickable(onClick = onPlus), contentAlignment = Alignment.Center) {
+                Text("+", style = MaterialTheme.typography.titleLarge, color = ShopAiThemeColors.onSurface)
+            }
         }
     }
 }

@@ -56,6 +56,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -100,6 +101,7 @@ import com.shopai.app.ui.theme.ShopAiTheme
 import com.shopai.app.ui.theme.ShopAiThemeColors
 import com.shopai.app.brain.KaiLanguage
 import com.shopai.app.brain.KaiReply
+import com.shopai.app.ui.kai.KaiAskStrip
 import com.shopai.app.ui.kai.KaiBriefCard
 import com.shopai.app.ui.kai.KaiState
 import com.shopai.app.ui.kai.state
@@ -295,17 +297,13 @@ fun HomeScreen(
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             HomeGradientHeader {
-                DashboardGreetingHeader(
-                    shopName = business?.businessName.orEmpty(),
-                    location = shopLocationLabel(business?.areaLabel, business?.city.orEmpty()),
+                OwnerNoteHomeHeader(
                     ownerName = business?.ownerName.orEmpty(),
+                    shopName = business?.businessName.orEmpty(),
                     unreadCount = unreadReminders,
-                    onNotificationsClick = { onNavigate(Routes.Reminders) },
-                    onProfileClick = { onNavigate(Routes.Profile) },
-                    onSettingsClick = { onNavigate(Routes.Settings) },
-                    onGradient = false,
                     photoPath = profilePhotoPath,
-                    modifier = Modifier.padding(horizontal = 16.dp),
+                    onBell = { onNavigate(Routes.Reminders) },
+                    onProfile = { onNavigate(Routes.Profile) },
                 )
 
                 /*
@@ -327,10 +325,48 @@ fun HomeScreen(
                     .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
+                // Kai Chat is the app's main feature (owner, 22 Oct 2026): a small "Kai-kitta kelunga" bar first.
+                val kinds = com.shopai.app.data.model.FeatureSet.kindsOf(business)
+                KaiAskStrip(
+                    title = stringResource(R.string.home_ask_kai),
+                    examples = stringArrayResource(
+                        when {
+                            com.shopai.app.data.model.BusinessKind.SERVICE in kinds && com.shopai.app.data.model.BusinessKind.RETAIL !in kinds -> R.array.home_kai_examples_service
+                            com.shopai.app.data.model.BusinessKind.WHOLESALE in kinds -> R.array.home_kai_examples_wholesale
+                            else -> R.array.home_kai_examples_retail
+                        },
+                    ).toList(),
+                    onClick = { onNavigate(Routes.KaiChat) },
+                )
+                HomeMomentsRow(
+                    moments = homeMoments(
+                        todayIn = cashNoteSummary?.totalIn,
+                        toCollect = cashFlow?.pendingReceivables,
+                        toPay = cashFlow?.pendingPayables,
+                        reminderCount = carouselItems.size,
+                        urgentReminders = unreadReminders,
+                        stock = com.shopai.app.data.model.Feature.INVENTORY in com.shopai.app.ui.components.LocalFeatures.current,
+                        onNavigate = onNavigate,
+                    ),
+                    edge = 0.dp,
+                )
+                KaiDiaryHeader()
                 if (carouselItems.isNotEmpty()) {
                     HomePaymentReminderCard(
                         items = carouselItems.take(2),
                         onClick = { onNavigate(Routes.reminderDetail(carouselItems.first().id)) },
+                    )
+                } else if (kaiBriefDone) {
+                    KaiDiaryCard(
+                        title = stringResource(R.string.home_kai_brief),
+                        line = when {
+                            kaiBrief != null -> kaiBrief!!.display
+                            priorities.isEmpty() -> stringResource(R.string.kai_brief_clear)
+                            else -> stringResource(R.string.kai_brief_count, priorities.size)
+                        },
+                        onAsk = { onNavigate(Routes.KaiChat) },
+                        actionLabel = kaiBrief?.let { stringResource(R.string.home_listen) },
+                        onAction = kaiBrief?.let { brief -> { container.kaiBrain.say(brief) {} } },
                     )
                 } else {
                     KaiBriefCard(
@@ -356,9 +392,6 @@ fun HomeScreen(
                         count = morningCount,
                         onClick = { onNavigate(Routes.morningWork()) },
                         modifier = Modifier.fillMaxWidth(),
-                    )
-                    HomeAskKaiCard(
-                        onClick = { onNavigate(Routes.KaiChat) },
                     )
                 }
                 HomeQuickLinks(
@@ -514,59 +547,6 @@ fun HomeScreen(
             }
             }
         }
-    }
-}
-
-@Composable
-private fun HomeAskKaiCard(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .shadow(8.dp, RoundedCornerShape(20.dp), ambientColor = Color(0x1A1E6B4E), spotColor = Color(0x1A1E6B4E))
-            .clip(RoundedCornerShape(20.dp))
-            .background(Color.White)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .background(Primary.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.Chat,
-                contentDescription = null,
-                tint = Primary,
-                modifier = Modifier.size(24.dp),
-            )
-        }
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(
-                text = stringResource(R.string.kai_chat_entry_title),
-                fontWeight = FontWeight.Bold,
-                color = com.shopai.app.ui.theme.TextPrimary,
-                maxLines = 1,
-            )
-            Text(
-                text = stringResource(R.string.kai_chat_entry_body),
-                style = MaterialTheme.typography.bodySmall,
-                color = com.shopai.app.ui.theme.TextSecondary,
-                maxLines = 3,
-            )
-        }
-        Icon(
-            imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-            contentDescription = null,
-            tint = Primary,
-            modifier = Modifier.size(22.dp),
-        )
     }
 }
 
