@@ -43,4 +43,59 @@ class BillPdfTest {
         assertTrue(com.shopai.app.books.integration.PdfText.lines(noBill.toByteArray(Charsets.ISO_8859_1)).isNotEmpty())
         assertNull(BillPdf.text(noBill.toByteArray(Charsets.ISO_8859_1)))
     }
+
+    // The same 4-item GST bill made three ways (owner, 22 Oct 2026: "intha format mattum read pannuma, illa all format ah").
+    private fun fourItems(file: String) {
+        val bill = BillTextParser.parse(BillPdf.text(pdf(file))!!)
+        assertEquals(file, "Kumar Traders", bill.merchantName)
+        assertEquals(file, 0, BigDecimal("22323.00").compareTo(bill.total))
+        assertEquals(file, "KT-2041", bill.invoiceNumber)
+        // Every item, its name whole (a name wrapped in its cell put back together), without the S.No column in front.
+        assertEquals(file, listOf("Ponni Rice 25kg Bag", "Sugar 1kg", "Sunflower Oil 1L", "துவரம் பருப்பு 1kg"), bill.items.map { it.description })
+        assertEquals(file, listOf(1, 2, 3, 4), bill.items.map { it.rowNo })
+        assertEquals(file, 0, BigDecimal("21260.00").compareTo(BillTextParser.sum(bill.items)))
+    }
+
+    @Test fun aBrowserPrintedBillIsRead() = fourItems("browser-gst-bill.pdf")
+
+    // Word / LibreOffice: "Ponni Rice 25kg" above the row's numbers and "Bag" below them; the Tamil "ப்" drawn as joined glyphs.
+    @Test fun aWordProcessorBillIsRead() = fourItems("libreoffice-gst-bill.pdf")
+
+    @Test fun aNumberThatIsTheProductsNameStays() {
+        val bill = BillTextParser.parse("Ravi Stores\nItem Qty Rate Amount\n7 Up 500ml 2 40.00 80.00\n5 Star Chocolate 3 10.00 30.00\nTotal 110.00")
+        assertEquals(listOf("7 Up 500ml", "5 Star Chocolate"), bill.items.map { it.description })
+    }
+
+    /** A bill PDF its app saved compressed (PDF 1.5 object streams: Word's "minimum size", iText): the page and font are packed. */
+    @Test fun aPdfWithObjectStreamsIsRead() {
+        val content = "BT /F1 11 Tf 40 800 Td (Anbu Agencies) Tj 0 -20 Td (Item Qty Rate Amount) Tj 0 -16 Td (Ponni Rice 25kg 2 1,250.00 2,500.00) Tj " +
+            "0 -16 Td (Toor Dal 1kg 5 160.00 800.00) Tj 0 -20 Td (Grand Total 3,300.00) Tj ET"
+        fun deflate(b: ByteArray): ByteArray {
+            val d = java.util.zip.Deflater(); d.setInput(b); d.finish()
+            val out = java.io.ByteArrayOutputStream(); val buf = ByteArray(4096)
+            while (!d.finished()) out.write(buf, 0, d.deflate(buf))
+            return out.toByteArray()
+        }
+        val objs = listOf(
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
+        )
+        var off = 0
+        val header = StringBuilder(); val body = StringBuilder()
+        objs.forEachIndexed { k, o -> header.append("${listOf(1, 2, 3, 4)[k]} $off "); body.append(o).append('\n'); off += o.length + 1 }
+        val packed = deflate((header.toString() + body).toByteArray(Charsets.ISO_8859_1))
+        val stream = deflate(content.toByteArray(Charsets.ISO_8859_1))
+        val out = java.io.ByteArrayOutputStream()
+        fun w(t: String) = out.write(t.toByteArray(Charsets.ISO_8859_1))
+        w("%PDF-1.5\n")
+        w("5 0 obj << /Length ${stream.size} /Filter /FlateDecode >> stream\n"); out.write(stream); w("\nendstream endobj\n")
+        w("6 0 obj << /Type /ObjStm /N 4 /First ${header.length} /Length ${packed.size} /Filter /FlateDecode >> stream\n"); out.write(packed); w("\nendstream endobj\n")
+        w("%%EOF")
+        val bill = BillTextParser.parse(BillPdf.text(out.toByteArray())!!)
+        assertEquals("Anbu Agencies", bill.merchantName)
+        assertEquals(0, BigDecimal("3300.00").compareTo(bill.total))
+        assertEquals(listOf("Ponni Rice 25kg", "Toor Dal 1kg"), bill.items.map { it.description })
+    }
 }

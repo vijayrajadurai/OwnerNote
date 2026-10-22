@@ -299,6 +299,11 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
   a title is not the supplier heading; piece / packet / pack / jar / pouch / gram / tray / case are units. The parse runs off the
   screen's thread; the review draws the first 20 rows and every row that needs a check ("Show all items (105 more)"); a long
   bill's save shows "Saving stock… 37 / 125". Test: `BillPdfTest` (the owner's sample PDF in `test/resources/bills`).
+- Bill PDFs from any app (owner, 22 Oct 2026: "intha format mattum read pannuma, illa all format ah"): `PdfText` now reads PDF 1.5
+  object streams (Word's "minimum size", iText — before, those went to slow OCR) and a span's /ActualText (Word / LibreOffice's
+  Tamil: "பருப்பு", not "பருபபு"); `BillPdf.joinWrapped` puts an item name wrapped in its cell back into its row ("Ponni Rice 25kg"
+  above the numbers, "Bag" below); a counted S.No column (1, 2, 3 …) leaves the names, a lone "7 Up" keeps its number. The same
+  bill printed from a browser and saved from LibreOffice reads the same. Password PDFs still can't be read. Test: `BillPdfTest`.
 - The voice / bill screen no longer has the "Your sentence" box (its "Kumar-ku 2000-ku tharanum" example) or the Parse button.
 - Customers: a small Import beside the title. More → "Pazhaiya kanakku import" reads another app's Customer / Supplier
   List PDF and adds people with opening balances on Confirm. No other app's name is shown anywhere.

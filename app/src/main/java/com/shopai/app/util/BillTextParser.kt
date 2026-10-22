@@ -751,8 +751,23 @@ object BillTextParser {
             }
             items += itemColumns(line, description, amount)
         }
-        return items
+        return numbered(items)
     }
+
+    /**
+     * "1 Ponni Rice 25kg Bag", "2 Sugar 1kg": the table's S.No column read into each name. Taken out only when the rows count
+     * on by one (1, 2, 3 …) — a lone "7 Up 500ml" or "5 Star" keeps its number, it is the product's name.
+     */
+    private fun numbered(items: List<BillLineItem>): List<BillLineItem> {
+        if (items.size < 2) return items
+        val lead = items.map { it.rowNo ?: rowNumber.find(it.description)?.groupValues?.get(1)?.toIntOrNull() }
+        if (lead.any { it == null } || lead.zipWithNext().any { (a, b) -> b != a!! + 1 }) return items
+        return items.mapIndexed { i, item ->
+            if (item.rowNo != null) item else item.copy(description = item.description.replaceFirst(rowNumber, "").trim(), rowNo = lead[i])
+        }
+    }
+
+    private val rowNumber = Regex("""^(\d{1,3})[.)]?\s+(?=\p{L})""")
 
     // "Page 2", "Page 2 of 3", "Page 2/3": a page's footer, never an item at ₹2.
     private val pageFooter = Regex("""(?<![\p{L}])page\s*\d+(?:\s*(?:of|/)\s*\d+)?\s*$""")
