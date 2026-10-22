@@ -377,12 +377,18 @@ fun KaiChatScreen(
                     val note = session.note.note?.takeIf { it.messageId == m.id }
                     if (m.fromOwner) OwnerBubble(if (m.voice) "🎙 ${m.text}" else m.text)
                     // Kai asking the one thing he needs: a clear question card (owner, 17 Oct 2026).
-                    else if (note == null && m.mood == com.shopai.app.brain.KaiMood.CLARIFY) com.shopai.app.ui.kai.KaiAskCard(
-                        question = m.text, card = m.card, lang = m.lang, closed = m.cardClosed || session.thinking, onTap = { tap(m.id, it) },
-                        progress = m.ask,
-                        // The mic on the newest question: answer it by voice.
-                        onMic = if (m.id == session.messages.lastOrNull()?.id && !listening) ({ onMic() }) else null,
-                    ) else {
+                    else if (note == null && m.mood == com.shopai.app.brain.KaiMood.CLARIFY) {
+                        val newest = m.id == session.messages.lastOrNull()?.id
+                        com.shopai.app.ui.kai.KaiAskCard(
+                            // An answered question (anything said after it) folds to one line.
+                            question = m.text, card = m.card, lang = m.lang, closed = m.cardClosed || session.thinking || !newest, onTap = { tap(m.id, it) },
+                            progress = m.ask,
+                            // The mic on the newest question: answer it by voice.
+                            onMic = if (newest && !listening) ({ onMic() }) else null,
+                            // Its number pad: the number goes as the owner's line, the same as typing it.
+                            onAnswer = if (newest) ({ answer -> send(answer) }) else null,
+                        )
+                    } else {
                         KaiBubble(m.text)
                         m.card?.let { card ->
                             // The draft waiting for Confirm (and how it ended): Kai's notebook in the shop; older cards as before.

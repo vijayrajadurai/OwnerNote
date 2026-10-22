@@ -304,6 +304,15 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
   Tamil: "பருப்பு", not "பருபபு"); `BillPdf.joinWrapped` puts an item name wrapped in its cell back into its row ("Ponni Rice 25kg"
   above the numbers, "Bag" below); a counted S.No column (1, 2, 3 …) leaves the names, a lone "7 Up" keeps its number. The same
   bill printed from a browser and saved from LibreOffice reads the same. Password PDFs still can't be read. Test: `BillPdfTest`.
+- Kai's question card, made for the owner's thumb (owner, 22 Oct 2026, preview approved): the question short and big
+  (`KaiCard.headline` — "Kumar ₹2,000 — enna aachu?") with the books' figure first (`KaiCard.context`); each likely answer a big
+  tile with an icon and what it does (`KaiButton.hint` — "Kumar tharanum ₹1,000 → ₹3,000"); a big "Vaayaala sollunga" mic and
+  "Venaam". A number asked (purchase / selling rate, pack size) gets the card's own number pad (`brain/note/KaiAskPad.kt`): the
+  profit while the selling rate is typed ("Oru piece-ku labam ₹10 · 100 pieces-ku ₹1,000", a loss said in red), three rates to tap
+  (cost +10/20/30 %), "Adutha →" sends the number as the owner's line — the same as typing or saying it. Kai asks in the unit the
+  owner said (no box question for "100 pcs"). An answered question folds to one "✓" line. Kai's rules and replies are unchanged;
+  nothing is saved before Confirm. Test: `KaiAskPadTest`, `KaiNoteTest.theSellingRateQuestionKnowsTheCost`,
+  `KaiCorrectionReplayTest.theMoneyQuestionSaysWhatEachAnswerDoes`.
 - The voice / bill screen no longer has the "Your sentence" box (its "Kumar-ku 2000-ku tharanum" example) or the Parse button.
 - Customers: a small Import beside the title. More → "Pazhaiya kanakku import" reads another app's Customer / Supplier
   List PDF and adds people with opening balances on Confirm. No other app's name is shown anywhere.

@@ -166,6 +166,24 @@ class KaiCorrectionReplayTest {
         }
     }
 
+    /** Owner, 22 Oct 2026: the question card asks it short, and each answer says what it does to the books — typed and by mic. */
+    @Test fun theMoneyQuestionSaysWhatEachAnswerDoes() {
+        for (line in listOfNotNull("Kumar 2000", KaiMicForm.of("Kumar 2000"))) {
+            val s = Shop()
+            val t = s.say(line)
+            val card = t.card!!
+            assertTrue("$line → ${card.headline}", card.headline!!.contains("Kumar") && card.headline!!.contains("₹2,000"))
+            assertTrue("$line → ${card.context}", card.context!!.contains("₹1,000"))
+            // Kumar owes ₹1,000: kadan makes it ₹3,000; the other two say money in / out.
+            val hints = card.buttons.map { it.hint.orEmpty() }
+            assertTrue(hints.toString(), hints.any { it.contains("₹1,000 → ₹3,000") })
+            assertTrue(hints.toString(), hints.any { it.contains("Payment In") } && hints.any { it.contains("Payment Out") })
+            // The spoken reply keeps the full question; nothing saved.
+            assertTrue(t.reply.text.contains("₹1,000"))
+            assertTrue(s.tools.saved.isEmpty())
+        }
+    }
+
     @Test fun kaiCountsHowWellItUnderstood() {
         val s = Shop()
         s.say("Kumar evlo tharanum")

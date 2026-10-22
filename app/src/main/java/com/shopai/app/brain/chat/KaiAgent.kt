@@ -30,7 +30,8 @@ import java.util.Locale
 import java.util.UUID
 
 /** A button under a Kai message. */
-data class KaiButton(val label: String, val action: KaiAction, val primary: Boolean = false, val enabled: Boolean = true)
+/** A card's button; [hint] says in a few words what tapping it does ("Kumar tharanum ₹1,000 → ₹3,000") — shown under the label. */
+data class KaiButton(val label: String, val action: KaiAction, val primary: Boolean = false, val enabled: Boolean = true, val hint: String? = null)
 
 /** What a button does. Financial ones go back to the agent; the rest are phone actions the screen performs. */
 sealed interface KaiAction {
@@ -169,6 +170,9 @@ data class KaiCard(
     val buttons: List<KaiButton>,
     val warning: String? = null,
     val stock: List<com.shopai.app.brain.note.KaiStockRow>? = null,
+    /** A question card's short question ("Kumar ₹2,000 — enna aachu?") and what the books say first ("Ippo Kumar tharanum ₹1,000"). */
+    val headline: String? = null,
+    val context: String? = null,
 )
 
 /**
@@ -1487,13 +1491,7 @@ class KaiAgent(
                 else "The records say ${p.name} owes $owed. ${p.name} $a — did ${p.name} pay $a, or does ${p.name} owe $a more (credit), Owner?")
                 .let { t ->
                     val n = amount.stripTrailingZeros().toPlainString()
-                    if (supplier) withChoices(t, lang,
-                        Choice("நான் கொடுத்தேன்", "Naan kuduthen", "I paid", "${p.name} ku $n kuduthen"),
-                        Choice("புதுசா வாங்கினேன் (debit)", "Pudhusaa vaanginen (debit)", "Bought on credit (debit)", "naan ${p.name} ku $n tharanum"))
-                    else withChoices(t, lang,
-                        Choice("${p.name} கொடுத்தார்", "${p.name} kuduthaar", "${p.name} paid", "${p.name} $n kuduthaar"),
-                        Choice("கடன் (credit)", "Kadan (credit)", "Credit", "${p.name} $n tharanum"),
-                        Choice("நான் கொடுத்தேன்", "Naan kuduthen", "I paid", "${p.name} ku $n kuduthen"))
+                    moneyChoices(t, lang, p.name, p.pending, amount.toDouble(), supplier, n)
                 }
         }
         // "call pannu" right after Selvam's balance: call Selvam (owner, 12 Oct 2026: "idhu Selvam pathiyaa?").
@@ -8406,11 +8404,41 @@ class KaiAgent(
     }
 
     /** A choice under Kai's question: its label in the three languages and the line it says for the owner (owner, 21 Oct 2026). */
-    private data class Choice(val ta: String, val tl: String, val en: String, val line: String)
+    private data class Choice(val ta: String, val tl: String, val en: String, val line: String, val hint: String? = null)
+
+    /**
+     * "Kumar 2000" with no verb: the card asks it short ("Kumar ₹2,000 — enna aachu?", the balance first) and each button says what
+     * it does to the books ("Kumar tharanum ₹1,000 → ₹3,000") — the same lines as before, tapped or said (owner, 22 Oct 2026).
+     */
+    private fun moneyChoices(t: KaiTurn, lang: KaiLang, name: String, pending: Double, amount: Double, supplier: Boolean, n: String): KaiTurn {
+        val a = KaiFormat.rupees(amount)
+        fun r(x: Double) = KaiFormat.rupees(kotlin.math.abs(x))
+        val headline = pick(lang, ta = "$name $a — என்ன ஆச்சு?", tl = "$name $a — enna aachu?", en = "$name $a — what happened?")
+        val turn = if (supplier) withChoices(t, lang,
+            Choice("நான் கொடுத்தேன்", "Naan kuduthen", "I paid", "$name ku $n kuduthen",
+                hint = pick(lang, ta = "நான் தரணும் ${r(pending)} → ${r(pending - amount)}", tl = "Naan tharanum ${r(pending)} → ${r(pending - amount)}",
+                    en = "I owe ${r(pending)} → ${r(pending - amount)}").takeIf { pending - amount >= 0 }
+                    ?: pick(lang, ta = "$a போச்சு · Payment Out", tl = "$a pochu · Payment Out", en = "$a paid · Payment Out")),
+            Choice("புதுசா வாங்கினேன் (debit)", "Pudhusaa vaanginen (debit)", "Bought on credit (debit)", "naan $name ku $n tharanum",
+                hint = pick(lang, ta = "நான் தரணும் ${r(pending)} → ${r(pending + amount)}", tl = "Naan tharanum ${r(pending)} → ${r(pending + amount)}",
+                    en = "I owe ${r(pending)} → ${r(pending + amount)}")))
+        else withChoices(t, lang,
+            Choice("$name கொடுத்தார்", "$name kuduthaar", "$name paid", "$name $n kuduthaar",
+                hint = pick(lang, ta = "$a வந்துச்சு · Payment In", tl = "$a vandhuchu · Payment In", en = "$a came in · Payment In")),
+            Choice("கடன் (credit)", "Kadan (credit)", "Credit", "$name $n tharanum",
+                hint = pick(lang, ta = "$name தரணும் ${r(pending)} → ${r(pending + amount)}", tl = "$name tharanum ${r(pending)} → ${r(pending + amount)}",
+                    en = "$name owes ${r(pending)} → ${r(pending + amount)}")),
+            Choice("நான் கொடுத்தேன்", "Naan kuduthen", "I paid", "$name ku $n kuduthen",
+                hint = pick(lang, ta = "$a போச்சு · Payment Out", tl = "$a pochu · Payment Out", en = "$a paid · Payment Out")))
+        val context = if (supplier) pick(lang, ta = "இப்போ நீங்க $name-க்கு தரணும்: ${r(pending)}", tl = "Ippo neenga $name-ku tharanum: ${r(pending)}",
+            en = "Now you owe $name: ${r(pending)}")
+        else pick(lang, ta = "இப்போ $name தரணும்: ${r(pending)}", tl = "Ippo $name tharanum: ${r(pending)}", en = "Now $name owes: ${r(pending)}")
+        return turn.copy(card = turn.card?.copy(headline = headline, context = context))
+    }
 
     /** [turn] with its 2–3 likely meanings as buttons ([KaiAction.Say]) — the owner taps one instead of saying it again. */
     private fun withChoices(turn: KaiTurn, lang: KaiLang, vararg choices: Choice): KaiTurn = if (turn.card != null) turn else
-        turn.copy(card = KaiCard(emptyList(), choices.map { c -> KaiButton(pick(lang, c.ta, c.tl, c.en), KaiAction.Say(c.line)) }))
+        turn.copy(card = KaiCard(emptyList(), choices.map { c -> KaiButton(pick(lang, c.ta, c.tl, c.en), KaiAction.Say(c.line), hint = c.hint) }))
 
     private fun say(lang: KaiLang, mood: KaiMood, log: String?, ta: String, tl: String, en: String): KaiTurn {
         log?.let { tools.log(it, "kai", "asked", ActionStatus.ANSWERED) }
