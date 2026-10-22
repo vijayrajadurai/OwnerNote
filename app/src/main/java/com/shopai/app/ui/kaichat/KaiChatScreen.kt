@@ -304,7 +304,8 @@ fun KaiChatScreen(
     fullNote?.let { n ->
         val m = session.messages.firstOrNull { it.id == n.messageId }
         val card = m?.card
-        if (m != null && card != null) androidx.compose.ui.window.Dialog(
+        // A money draft is its own Confirm card in the chat (owner, 22 Oct 2026) — no full-screen note for it.
+        if (m != null && card != null && !isMoneyDraft(card)) androidx.compose.ui.window.Dialog(
             onDismissRequest = { fullNoteClosed = n.messageId },
             properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
         ) {
@@ -391,8 +392,12 @@ fun KaiChatScreen(
                     } else {
                         KaiBubble(m.text)
                         m.card?.let { card ->
+                            // A money draft: the Confirm card — the amount big, the balance before → after, one big Confirm.
+                            if (isMoneyDraft(card)) com.shopai.app.ui.kai.KaiConfirmCard(
+                                card = card, plan = m.plan, lang = m.lang, closed = m.cardClosed || session.thinking, onTap = { tap(m.id, it) },
+                            )
                             // The draft waiting for Confirm (and how it ended): Kai's notebook in the shop; older cards as before.
-                            if (note != null) com.shopai.app.ui.kai.KaiNoteScene(
+                            else if (note != null) com.shopai.app.ui.kai.KaiNoteScene(
                                 flow = session.note, note = note, card = card, category = shopCategory,
                                 closed = m.cardClosed || session.thinking, onWritten = { session.noteWritten() },
                                 onTap = { tap(m.id, it) }, modifier = Modifier.padding(top = 4.dp),
@@ -449,6 +454,9 @@ fun KaiChatScreen(
         }
     }
 }
+
+/** A money draft (Confirm / Edit / Cancel on a payment, credit or debit): shown as the Confirm card. */
+private fun isMoneyDraft(card: com.shopai.app.brain.chat.KaiCard): Boolean = card.buttons.any { it.action is com.shopai.app.brain.chat.KaiAction.ConfirmPlan }
 
 /**
  * The owner's line a draft came from: the first of the owner's lines since Kai last answered without a question ("vengayam
