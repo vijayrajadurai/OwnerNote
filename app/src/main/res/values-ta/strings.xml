@@ -141,8 +141,8 @@
     <string name="reminder_share_card_sent_by">send by %1$s</string>
     <string name="cd_payment_reminder_card">%1$s க்கான பண நினைவூட்டல், %2$s, %3$s</string>
     <string name="cd_notifications_unread">அறிவிப்புகள், %1$d படிக்காதவை</string>
-    <string name="home_receivable">வரவேண்டியது</string>
-    <string name="home_payable">கொடுப்பது</string>
+    <string name="home_receivable">வாங்கணும்</string>
+    <string name="home_payable">கொடுக்கணும்</string>
     <string name="home_business_health">வியாபார நிலை</string>
     <string name="health_stable">நிலையான</string>
     <string name="health_watch">கவனம்</string>
@@ -1650,8 +1650,6 @@ NewonX — Owner Note. ஆப்பில் உதவி & ஆதரவு.]]><
     <string name="bill_sum_show">பாருங்க</string>
     <string name="bill_sum_hide">மூடுங்க</string>
     <!-- OwnerNote Home: Kai Chat first (owner, 22 Oct 2026) -->
-    <string name="home_hello">வணக்கம், %1$s</string>
-    <string name="home_hello_plain">வணக்கம்</string>
     <string name="home_bell">நினைவூட்டல்கள்</string>
     <string name="home_profile">சுயவிவரம்</string>
     <string name="home_diary_title">KAI-ஓட டைரி · இன்னைக்கு</string>
@@ -1663,8 +1661,6 @@ NewonX — Owner Note. ஆப்பில் உதவி & ஆதரவு.]]><
     <string name="home_listen">கேளுங்க</string>
     <string name="home_tile_kai">Kai</string>
     <string name="home_tile_today">இன்னைக்கு</string>
-    <string name="home_tile_collect">வசூல்</string>
-    <string name="home_tile_pay">கொடுக்கணும்</string>
     <string name="home_tile_reminders">நினைவூட்டல்</string>
     <string name="home_tile_stock">ஸ்டாக்</string>
     <string-array name="home_kai_examples_retail">

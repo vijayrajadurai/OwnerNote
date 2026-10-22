@@ -124,8 +124,8 @@
     <!-- Home -->
     <string name="home_fallback_name">Owner Note</string>
     <string name="home_greeting">Hello, %1$s 👋</string>
-    <string name="home_receivable">To collect</string>
-    <string name="home_payable">To pay</string>
+    <string name="home_receivable">Vaanganum</string>
+    <string name="home_payable">Kodukkanum</string>
     <string name="home_net_position">Net position</string>
     <string name="home_reminders_carousel_title">Upcoming reminders</string>
     <string name="home_payment_reminders_heading">Today’s Payment Reminders</string>
@@ -1705,8 +1705,6 @@ NewonX — Owner Note. Use Help & Support in the app.]]></string>
     <string name="bill_sum_show">Show</string>
     <string name="bill_sum_hide">Hide</string>
     <!-- OwnerNote Home: Kai Chat first (owner, 22 Oct 2026) -->
-    <string name="home_hello">Vanakkam, %1$s</string>
-    <string name="home_hello_plain">Vanakkam</string>
     <string name="home_bell">Nyabagangal</string>
     <string name="home_profile">Profile</string>
     <string name="home_diary_title">KAI-ODA DIARY · INNAIKKU</string>
@@ -1718,8 +1716,6 @@ NewonX — Owner Note. Use Help & Support in the app.]]></string>
     <string name="home_listen">Kelunga</string>
     <string name="home_tile_kai">Kai</string>
     <string name="home_tile_today">Innaikku</string>
-    <string name="home_tile_collect">Vasool</string>
-    <string name="home_tile_pay">Kodukkanum</string>
     <string name="home_tile_reminders">Nyabagam</string>
     <string name="home_tile_stock">Stock</string>
     <string-array name="home_kai_examples_retail">

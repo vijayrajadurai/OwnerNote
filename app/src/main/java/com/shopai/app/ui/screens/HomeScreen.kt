@@ -338,11 +338,18 @@ fun HomeScreen(
                     ).toList(),
                     onClick = { onNavigate(Routes.KaiChat) },
                 )
+                // Vaanganum / Kodukkanum right under Kai (owner, 22 Oct 2026) — the same card as before, moved up.
+                com.shopai.app.ui.books.CreditDebitSummaryCard(
+                    container = container,
+                    refreshKey = cashFlow,
+                    onOpenCustomers = { onNavigate(Routes.Customers) },
+                    onOpenSuppliers = { onNavigate(Routes.Suppliers) },
+                    pendingReceivables = cashFlow?.pendingReceivables,
+                    pendingPayables = cashFlow?.pendingPayables,
+                )
                 HomeMomentsRow(
                     moments = homeMoments(
                         todayIn = cashNoteSummary?.totalIn,
-                        toCollect = cashFlow?.pendingReceivables,
-                        toPay = cashFlow?.pendingPayables,
                         reminderCount = carouselItems.size,
                         urgentReminders = unreadReminders,
                         stock = com.shopai.app.data.model.Feature.INVENTORY in com.shopai.app.ui.components.LocalFeatures.current,
@@ -437,14 +444,6 @@ fun HomeScreen(
                     Text(error!!, color = Danger)
                 }
 
-                com.shopai.app.ui.books.CreditDebitSummaryCard(
-                    container = container,
-                    refreshKey = cashFlow,
-                    onOpenCustomers = { onNavigate(Routes.Customers) },
-                    onOpenSuppliers = { onNavigate(Routes.Suppliers) },
-                    pendingReceivables = cashFlow?.pendingReceivables,
-                    pendingPayables = cashFlow?.pendingPayables,
-                )
 
                 /*
                 health?.let { h ->

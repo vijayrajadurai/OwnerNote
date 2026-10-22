@@ -68,7 +68,8 @@ fun OwnerNoteHomeHeader(
     ) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
-                text = if (ownerName.isBlank()) stringResource(R.string.home_hello_plain) else stringResource(R.string.home_hello, ownerName),
+                // "Vanakkam Owner" — OwnerNote's own greeting (owner, 22 Oct 2026).
+                text = stringResource(R.string.kai_greeting),
                 color = KaiInk.Ink,
                 fontSize = 19.sp,
                 fontWeight = FontWeight.ExtraBold,
@@ -229,14 +230,12 @@ fun HomeMomentsRow(moments: List<HomeMoment>, modifier: Modifier = Modifier, edg
 }
 
 /**
- * Home's tiles from what Home already loads: Kai, today's cash in (Daily Cash Note), to collect, to pay, reminders and,
+ * Home's tiles from what Home already loads: Kai, today's cash in (Daily Cash Note), reminders and,
  * for a shop with stock, Stock. A figure not loaded yet shows "—", never a made-up number.
  */
 @Composable
 fun homeMoments(
     todayIn: Double?,
-    toCollect: Double?,
-    toPay: Double?,
     reminderCount: Int,
     urgentReminders: Int,
     stock: Boolean,
@@ -247,8 +246,6 @@ fun homeMoments(
     return buildList {
         add(HomeMoment(stringResource(R.string.home_tile_kai), null, listOf(Color(0xFFECFDF5), Color(0xFFD1FAE5)), kai = true) { onNavigate(com.shopai.app.ui.navigation.Routes.KaiChat) })
         add(HomeMoment(stringResource(R.string.home_tile_today), money(todayIn), listOf(Color(0xFF10B981), Color(0xFF047857))) { onNavigate(com.shopai.app.ui.navigation.Routes.DailyCashNote) })
-        add(HomeMoment(stringResource(R.string.home_tile_collect), money(toCollect), listOf(Color(0xFFF59E0B), Color(0xFFB45309))) { onNavigate(com.shopai.app.ui.navigation.Routes.Customers) })
-        add(HomeMoment(stringResource(R.string.home_tile_pay), money(toPay), listOf(Color(0xFF60A5FA), Color(0xFF1D4ED8))) { onNavigate(com.shopai.app.ui.navigation.Routes.Suppliers) })
         add(
             HomeMoment(
                 stringResource(R.string.home_tile_reminders),

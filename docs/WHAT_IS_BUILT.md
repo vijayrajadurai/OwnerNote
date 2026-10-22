@@ -338,9 +338,10 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
   List PDF and adds people with opening balances on Confirm. No other app's name is shown anywhere.
 - Kai Chat first, OwnerNote's own look (owner, 22 Oct 2026). UI only; what is sent, answered and saved is unchanged:
   - Home (`HomeScreen`, `HomeOwnerNote.kt`, `ui/kai/KaiVisuals.kt`):
-    - "Vanakkam, <owner>" header.
+    - "Vanakkam Owner 👋" header — "Owner" is OwnerNote's own word, kept.
+    - Vaanganum / Kodukkanum (`CreditDebitSummaryCard`, the same card as before) right under the Kai bar.
     - A small "Kai-kitta kelunga" bar with a turning green-gold (veshti) border and rotating examples per business type → Kai Chat.
-    - Square tiles: Kai, today's cash in, to collect, to pay, reminders, Stock. Money shown short by `util/shortRupees`
+    - Square tiles: Kai, today's cash in, reminders, Stock. Money shown short by `util/shortRupees`
       (`ShortRupeesTest`); a figure not loaded shows "—".
     - "KAI-ODA DIARY · INNAIKKU": Kai's brief as a diary card ("Seri, paathen", Kai-kitta kelunga, Kelunga plays it again).
       The other Home cards stay as before.
