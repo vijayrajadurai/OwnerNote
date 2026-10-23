@@ -1770,4 +1770,16 @@ NewonX — Owner Note. Use Help & Support in the app.]]></string>
     <string name="friendly_details_show">Vivaram paarunga</string>
     <string name="friendly_details_hide">Vivaram moodunga</string>
     <string name="home_late_count">%1$d late</string>
+    <!-- Home diary cards (owner, 23 Oct 2026) -->
+    <string name="home_sales_title">Innaikku sales</string>
+    <string name="home_sales_line">Innaikku %1$s vandhuchu.</string>
+    <string name="home_sales_empty">Innaikku sales innum podala — Kai-kitta sollunga, illa Cash Note-la podunga.</string>
+    <string name="home_in_out">Vandhadhu %1$s · Ponadhu %2$s</string>
+    <string name="home_cash_note">Cash Note</string>
+    <string name="home_vasool_title">Vasool nyabagam</string>
+    <string name="home_vasool_line">%1$d per-kitta vasool pannanum.</string>
+    <string name="home_see">Paarunga</string>
+    <string name="home_work_title">Innaikku velai</string>
+    <string name="home_work_line">Innaikku %1$d mukkiyamana velai irukku.</string>
+    <string name="home_work_none">Innaikku mukkiyamana velai edhuvum illa.</string>
 </resources>

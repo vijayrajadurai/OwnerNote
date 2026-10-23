@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Chat
+import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -144,6 +145,7 @@ data class HomeMoment(
     val colors: List<Color>,
     val badge: String? = null,
     val kai: Boolean = false,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
     val onClick: () -> Unit,
 )
 
@@ -193,6 +195,8 @@ fun HomeMomentsRow(moments: List<HomeMoment>, modifier: Modifier = Modifier, edg
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier.fillMaxSize(),
                             )
+                        } else if (m.icon != null) {
+                            Icon(m.icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(26.dp))
                         } else {
                             Text(
                                 text = m.value.orEmpty(),
@@ -254,7 +258,7 @@ fun homeMoments(
                 badge = urgentReminders.takeIf { it > 0 }?.toString(),
             ) { onNavigate(com.shopai.app.ui.navigation.Routes.Reminders) },
         )
-        if (stock) add(HomeMoment(stringResource(R.string.home_tile_stock), "▦", listOf(Color(0xFFF87171), Color(0xFFB91C1C))) { onNavigate(com.shopai.app.ui.navigation.Routes.Inventory) })
+        if (stock) add(HomeMoment(stringResource(R.string.home_tile_stock), null, listOf(Color(0xFFF87171), Color(0xFFB91C1C)), icon = androidx.compose.material.icons.Icons.Outlined.Inventory2) { onNavigate(com.shopai.app.ui.navigation.Routes.Inventory) })
     }
 }
 
@@ -281,8 +285,8 @@ fun HomeMoneyChips(
         get = s.ledger.receivableDue(today)
         give = s.ledger.payableDue(today)
     }
-    val getText = get?.let { com.shopai.app.books.billing.InvoicePdf.money(it.totalPaise) } ?: fallbackToGet?.let { com.shopai.app.util.formatInr(it) } ?: "—"
-    val giveText = give?.let { com.shopai.app.books.billing.InvoicePdf.money(it.totalPaise) } ?: fallbackToGive?.let { com.shopai.app.util.formatInr(it) } ?: "—"
+    val getText = get?.let { com.shopai.app.util.formatInr(it.totalPaise / 100.0) } ?: fallbackToGet?.let { com.shopai.app.util.formatInr(it) } ?: "—"
+    val giveText = give?.let { com.shopai.app.util.formatInr(it.totalPaise / 100.0) } ?: fallbackToGive?.let { com.shopai.app.util.formatInr(it) } ?: "—"
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         MoneyChip(stringResource(R.string.home_receivable), getText, get?.overdueCount ?: 0, true, Modifier.weight(1f), onCustomers)
         MoneyChip(stringResource(R.string.home_payable), giveText, give?.overdueCount ?: 0, false, Modifier.weight(1f), onSuppliers)
@@ -411,5 +415,161 @@ fun KaiDiaryCard(
             }
         }
         VeshtiBand()
+    }
+}
+
+/** Today's sales from the Daily Cash Note, as a Kai diary card with Kai beside the figure; opens the Cash Note. */
+@Composable
+fun HomeSalesCard(summary: com.shopai.app.data.model.TodayCashSummary?, onOpen: () -> Unit, onAsk: () -> Unit) {
+    val totalIn = summary?.totalIn ?: 0.0
+    val totalOut = summary?.totalOut ?: 0.0
+    KaiDiaryCard(
+        title = stringResource(R.string.home_sales_title),
+        line = if (totalIn > 0) stringResource(R.string.home_sales_line, com.shopai.app.util.formatInr(totalIn)) else stringResource(R.string.home_sales_empty),
+        onAsk = onAsk,
+        actionLabel = stringResource(R.string.home_cash_note),
+        onAction = onOpen,
+        body = {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(150.dp)
+                    .background(Brush.linearGradient(listOf(Color(0xFF047857), Color(0xFF064E3B), Color(0xFF052E2B))))
+                    .clickable(onClick = onOpen),
+            ) {
+                Image(
+                    painter = androidx.compose.ui.res.painterResource(R.drawable.kai_mascot_bust),
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.align(Alignment.BottomEnd).height(140.dp),
+                )
+                Column(Modifier.padding(16.dp).fillMaxWidth(0.62f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(stringResource(R.string.home_tile_today).uppercase(), color = KaiInk.Mint, fontSize = 11.5.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.2.sp)
+                    Text(com.shopai.app.util.formatInr(totalIn), color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1)
+                    Text(
+                        stringResource(R.string.home_in_out, com.shopai.app.util.formatInr(totalIn), com.shopai.app.util.formatInr(totalOut)),
+                        color = KaiInk.Mint,
+                        fontSize = 12.sp,
+                        maxLines = 2,
+                    )
+                }
+            }
+        },
+    )
+}
+
+/** Payments due (the reminders Home already reads): who, how much, when — as a Kai diary card. */
+@Composable
+fun HomeVasoolCard(
+    items: List<com.shopai.app.ui.reminders.PaymentReminder>,
+    total: Int,
+    onOpen: (String) -> Unit,
+    onAll: () -> Unit,
+    onAsk: () -> Unit,
+) {
+    KaiDiaryCard(
+        title = stringResource(R.string.home_vasool_title),
+        line = stringResource(R.string.home_vasool_line, total),
+        onAsk = onAsk,
+        actionLabel = stringResource(R.string.home_see),
+        onAction = onAll,
+        body = {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .background(Brush.linearGradient(listOf(Color(0xFFFFF7ED), Color(0xFFFEF3C7))))
+                    .padding(12.dp),
+            ) {
+                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Color.White.copy(alpha = 0.9f)).padding(horizontal = 12.dp)) {
+                    items.forEachIndexed { i, r ->
+                        if (i > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0xFFF1F1F1)))
+                        Row(
+                            Modifier.fillMaxWidth().clickable { onOpen(r.id) }.padding(vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            val tone = listOf(Color(0xFFFEE2E2) to Color(0xFFB91C1C), Color(0xFFFEF3C7) to Color(0xFF92400E), Color(0xFFDBEAFE) to Color(0xFF1D4ED8))[i % 3]
+                            Box(Modifier.size(38.dp).clip(RoundedCornerShape(12.dp)).background(tone.first), contentAlignment = Alignment.Center) {
+                                Text(r.partyName.trim().take(1).uppercase().ifBlank { "•" }, color = tone.second, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
+                            }
+                            Column(Modifier.weight(1f)) {
+                                Text(r.partyName.ifBlank { r.description }, color = KaiInk.Ink, fontSize = 14.5.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(
+                                    com.shopai.app.util.formatDisplayDate(r.dueDateIso),
+                                    color = if (r.urgency == com.shopai.app.ui.reminders.ReminderUrgency.OVERDUE) Color(0xFFB91C1C) else Color(0xFFB45309),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                )
+                            }
+                            r.amount?.let { Text(com.shopai.app.util.formatInr(it), color = KaiInk.Ink, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold) }
+                        }
+                    }
+                }
+            }
+        },
+    )
+}
+
+/** Kai's Morning Work count as a diary card; opens the guided work. Hidden until the count is known. */
+@Composable
+fun HomeWorkCard(count: Int?, onOpen: () -> Unit, onAsk: () -> Unit) {
+    count ?: return
+    KaiDiaryCard(
+        title = stringResource(R.string.home_work_title),
+        line = if (count > 0) stringResource(R.string.home_work_line, count) else stringResource(R.string.home_work_none),
+        onAsk = onAsk,
+        actionLabel = stringResource(R.string.home_see),
+        onAction = onOpen,
+    )
+}
+
+/** One quick action under the diary: a coloured icon and its name. */
+data class HomeAction(
+    val label: String,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+    val from: Color,
+    val to: Color,
+    val onClick: () -> Unit,
+)
+
+/** The quick actions (the same places Quick Links opened), four to a row, white tiles with coloured icons. */
+@Composable
+fun HomeActionGrid(actions: List<HomeAction>) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        actions.chunked(4).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                row.forEach { a ->
+                    Column(
+                        Modifier
+                            .weight(1f)
+                            .shadow(4.dp, RoundedCornerShape(18.dp), ambientColor = Color(0x0D0F172A), spotColor = Color(0x0D0F172A))
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(Color.White)
+                            .clickable(onClick = a.onClick)
+                            .padding(top = 10.dp, bottom = 8.dp, start = 4.dp, end = 4.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Box(
+                            Modifier.size(40.dp).clip(RoundedCornerShape(13.dp)).background(Brush.linearGradient(listOf(a.from, a.to))),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(a.icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+                        }
+                        Text(
+                            a.label,
+                            color = Color(0xFF334155),
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 2,
+                            lineHeight = 14.sp,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        )
+                    }
+                }
+                repeat(4 - row.size) { Box(Modifier.weight(1f)) }
+            }
+        }
     }
 }

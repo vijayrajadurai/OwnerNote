@@ -344,8 +344,10 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
     - A small "Kai-kitta kelunga" bar with a turning green-gold (veshti) border and rotating examples per business type → Kai Chat.
     - Square tiles: Kai, today's cash in, reminders, Stock. Money shown short by `util/shortRupees`
       (`ShortRupeesTest`); a figure not loaded shows "—".
-    - Kai's brief as a diary card ("Seri, paathen", Kai-kitta kelunga, Kelunga plays it again).
-      The other Home cards stay as before.
+    - Kai's diary cards (23 Oct 2026, "preview-la kattuna mari"): Kai's brief ("Seri, paathen", Kelunga plays it again), today's
+      sales from the Daily Cash Note with Kai beside the figure (→ Cash Note), payments due from the reminders (→ each reminder /
+      all), the morning work count (→ Morning Work), then quick actions as tiles (Speak, Reports, Inventory, Group buying, Offers,
+      Loans, See all — the same places, the same feature gates). Cream background; chips show whole rupees.
   - Bottom bar: dark and floating, with Kai's face (mic) raised in the middle → Kai Chat (`BottomNavBar(onKai)`).
   - Kai Chat (`KaiChatLook.kt`):
     - Night-green backdrop with a dot grid; Kai in a turning ring of light; glass bubbles; hopping typing dots.

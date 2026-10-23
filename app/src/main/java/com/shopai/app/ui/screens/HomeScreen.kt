@@ -28,6 +28,13 @@ import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.outlined.MoreHoriz
+import androidx.compose.material.icons.outlined.AccountBalance
+import androidx.compose.material.icons.outlined.LocalOffer
+import androidx.compose.material.icons.outlined.Groups
+import androidx.compose.material.icons.outlined.Inventory2
+import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -295,7 +302,7 @@ fun HomeScreen(
         padContent = false,
         applyTopInset = false,
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize().background(com.shopai.app.ui.kai.KaiInk.Paper)) {
             HomeGradientHeader {
                 OwnerNoteHomeHeader(
                     ownerName = business?.ownerName.orEmpty(),
@@ -357,12 +364,9 @@ fun HomeScreen(
                     onCustomers = { onNavigate(Routes.Customers) },
                     onSuppliers = { onNavigate(Routes.Suppliers) },
                 )
-                if (carouselItems.isNotEmpty()) {
-                    HomePaymentReminderCard(
-                        items = carouselItems.take(2),
-                        onClick = { onNavigate(Routes.reminderDetail(carouselItems.first().id)) },
-                    )
-                } else if (kaiBriefDone) {
+                // Kai's diary under the money chips (owner, 23 Oct 2026: "preview-la kattuna mari"): Kai's brief, today's sales,
+                // payments due, the morning work, then the quick actions — the same places the old cards opened.
+                if (kaiBriefDone) {
                     KaiDiaryCard(
                         title = stringResource(R.string.home_kai_brief),
                         line = when {
@@ -376,36 +380,39 @@ fun HomeScreen(
                     )
                 } else {
                     KaiBriefCard(
-                        state = when {
-                            kaiBriefDone -> KaiState.IDLE
-                            kaiSpeaking -> KaiState.SPEAKING
-                            else -> KaiState.GREETING
-                        },
+                        state = if (kaiSpeaking) KaiState.SPEAKING else KaiState.GREETING,
                         line = when {
-                            !kaiBriefDone && !kaiSpeaking -> stringResource(R.string.kai_greeting)
+                            !kaiSpeaking -> stringResource(R.string.kai_greeting)
                             kaiBrief != null -> kaiBrief!!.display
                             priorities.isEmpty() -> stringResource(R.string.kai_brief_clear)
                             else -> stringResource(R.string.kai_brief_count, priorities.size)
                         },
-                        mouthLevel = if (kaiBriefDone) 0f else kaiMouth,
-                        compact = kaiBriefDone,
+                        mouthLevel = kaiMouth,
+                        compact = false,
                         speakingAs = kaiBrief?.mood?.state(),
                         onTap = { onNavigate(Routes.VoiceEntry) },
                     )
                 }
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    com.shopai.app.ui.morning.MorningWorkCard(
-                        count = morningCount,
-                        onClick = { onNavigate(Routes.morningWork()) },
-                        modifier = Modifier.fillMaxWidth(),
+                HomeSalesCard(
+                    summary = cashNoteSummary,
+                    onOpen = { onNavigate(Routes.DailyCashNote) },
+                    onAsk = { onNavigate(Routes.KaiChat) },
+                )
+                if (carouselItems.isNotEmpty()) {
+                    HomeVasoolCard(
+                        items = carouselItems.take(3),
+                        total = carouselItems.size,
+                        onOpen = { id -> onNavigate(Routes.reminderDetail(id)) },
+                        onAll = { onNavigate(Routes.Reminders) },
+                        onAsk = { onNavigate(Routes.KaiChat) },
                     )
                 }
-                HomeQuickLinks(
-                    onSpeakClick = { onNavigate(Routes.VoiceEntry) },
-                    onGroupBuyingClick = { onNavigate(Routes.GroupBuying) },
-                    onReportsClick = { onNavigate(Routes.AiInsights) },
-                    onTodayOfferClick = { onNavigate(Routes.LocalOffers) },
-                    onLoansClick = {
+                HomeWorkCard(
+                    count = morningCount,
+                    onOpen = { onNavigate(Routes.morningWork()) },
+                    onAsk = { onNavigate(Routes.KaiChat) },
+                )
+                val openLoans: () -> Unit = {
                         val opp = funding
                         if (opp != null) {
                             onNavigate(Routes.fundingQualification(opp.id))
@@ -422,13 +429,18 @@ fun HomeScreen(
                                 }
                             }
                         }
+                }
+                val features = com.shopai.app.ui.components.LocalFeatures.current
+                HomeActionGrid(
+                    buildList {
+                        add(HomeAction(stringResource(R.string.more_voice), androidx.compose.material.icons.Icons.Outlined.Mic, Color(0xFF34D399), Color(0xFF059669)) { onNavigate(Routes.VoiceEntry) })
+                        add(HomeAction(stringResource(R.string.more_reports), androidx.compose.material.icons.Icons.Outlined.BarChart, Color(0xFFA78BFA), Color(0xFF6D28D9)) { onNavigate(Routes.AiInsights) })
+                        if (com.shopai.app.data.model.Feature.INVENTORY in features) add(HomeAction(stringResource(R.string.home_quick_inventory), androidx.compose.material.icons.Icons.Outlined.Inventory2, Color(0xFF38BDF8), Color(0xFF0369A1)) { onNavigate(Routes.Inventory) })
+                        if (com.shopai.app.data.model.Feature.GROUP_BUYING in features) add(HomeAction(stringResource(R.string.more_group_buying), androidx.compose.material.icons.Icons.Outlined.Groups, Color(0xFF60A5FA), Color(0xFF1D4ED8)) { onNavigate(Routes.GroupBuying) })
+                        if (com.shopai.app.data.model.Feature.LOCAL_OFFERS in features) add(HomeAction(stringResource(R.string.more_local_offers), androidx.compose.material.icons.Icons.Outlined.LocalOffer, Color(0xFFFBBF24), Color(0xFFB45309)) { onNavigate(Routes.LocalOffers) })
+                        add(HomeAction(stringResource(R.string.home_quick_loans), androidx.compose.material.icons.Icons.Outlined.AccountBalance, Color(0xFF4ADE80), Color(0xFF15803D), openLoans))
+                        add(HomeAction(stringResource(R.string.home_see_all), androidx.compose.material.icons.Icons.Outlined.MoreHoriz, Color(0xFF94A3B8), Color(0xFF475569)) { onNavigate(Routes.More) })
                     },
-                    onInventoryClick = { onNavigate(Routes.Inventory) },
-                    onSeeAllClick = { onNavigate(Routes.More) },
-                )
-                DailyCashHomeCard(
-                    summary = cashNoteSummary,
-                    onClick = { onNavigate(Routes.DailyCashNote) },
                 )
 
             if (loading) {
@@ -614,7 +626,7 @@ private fun HomeGradientHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.background)
+            .background(com.shopai.app.ui.kai.KaiInk.Paper)
             .then(
                 if (view.isInEditMode) {
                     Modifier

@@ -1715,4 +1715,16 @@ NewonX — Owner Note. ஆப்பில் உதவி & ஆதரவு.]]><
     <string name="friendly_details_show">விவரம் பாருங்க</string>
     <string name="friendly_details_hide">விவரம் மூடுங்க</string>
     <string name="home_late_count">%1$d late</string>
+    <!-- Home diary cards (owner, 23 Oct 2026) -->
+    <string name="home_sales_title">இன்னைக்கு sales</string>
+    <string name="home_sales_line">இன்னைக்கு %1$s வந்துச்சு.</string>
+    <string name="home_sales_empty">இன்னைக்கு sales இன்னும் போடல — Kai-கிட்ட சொல்லுங்க, இல்ல Cash Note-ல போடுங்க.</string>
+    <string name="home_in_out">வந்தது %1$s · போனது %2$s</string>
+    <string name="home_cash_note">Cash Note</string>
+    <string name="home_vasool_title">வசூல் நினைவூட்டல்</string>
+    <string name="home_vasool_line">%1$d பேர்கிட்ட வசூல் பண்ணணும்.</string>
+    <string name="home_see">பாருங்க</string>
+    <string name="home_work_title">இன்னைக்கு வேலை</string>
+    <string name="home_work_line">இன்னைக்கு %1$d முக்கியமான வேலை இருக்கு.</string>
+    <string name="home_work_none">இன்னைக்கு முக்கியமான வேலை எதுவும் இல்ல.</string>
 </resources>
