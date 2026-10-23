@@ -1911,7 +1911,11 @@ class KaiAgent(
             runCatching { tools.products()?.map { it.name } }.getOrNull().orEmpty()
 
     /** A line about the shop's bills, expenses, products and stock — null when it is none of these (see [answerOwner]). */
-    private suspend fun shopLine(spoken: String, said: String, lang: KaiLang, people: List<String>, products: List<com.shopai.app.brain.tools.ProductRef>?): KaiTurn? {
+    private suspend fun shopLine(spoken0: String, said: String, lang: KaiLang, people: List<String>, products: List<com.shopai.app.brain.tools.ProductRef>?): KaiTurn? {
+        // "80 gram Colgate", "water bottle 50 liter": the shop's own product name, so the size is never read as goods sold.
+        val spoken = products?.let { withProductNames(spoken0, it) } ?: spoken0
+        // "Mithun store ku Colgate 20 piece" → "aprm water bottle 10 can": the next line of the same sale (owner, 23 Oct 2026).
+        if (plans.isEmpty() && products != null) billFollowUp(spoken, said, lang, products, people)?.let { return it }
         if (plans.isEmpty()) com.shopai.app.brain.tools.KaiIntents.billStock(spoken)?.let { return billStockScan(it, lang, said) }
         // The answer to Kai's "Endha report?" / "Indha maasam enna?" / "Lux stock paakkanum-aa?" — that line, whole.
         if (plans.isEmpty()) topicAnswer(said, lang)?.let { return it }
@@ -5718,6 +5722,58 @@ class KaiAgent(
 
     // ------------------------------------------------------------ inventory by chat: edits, details, summary, bills
 
+    /** A size in a product's name: "Colgate 80g", "Water Bottle 50L", "Rice 25 kg". */
+    private val sizeInName = Regex("""(?i)(?<![\p{L}\d.])(\d+(?:\.\d+)?)\s*(kg|kgs|g|gm|gms|gram|grams|ml|l|lt|ltr|ltrs|litre|litres|liter|liters)(?![\p{L}])""")
+
+    private fun sizeSaid(unit: String): String = when (unit.lowercase(Locale.ROOT)) {
+        "kg", "kgs" -> "kg|kgs|kilo|kilos|kilogram|kilograms"
+        "g", "gm", "gms", "gram", "grams" -> "g|gm|gms|gram|grams|grm"
+        "ml" -> "ml|mili|milli|millilitre|milliliter"
+        else -> "l|lt|ltr|ltrs|litre|litres|liter|liters|lit"
+    }
+
+    /**
+     * A product whose name holds a size, said the way people say it (owner, 23 Oct 2026: "Mithun store ku 80 gram Colgate 20 piece",
+     * "50 liter water bottle 10 can" for "Colgate 80g" / "Water Bottle 50L"): the size apart or first, or the name alone when no
+     * other product has that name — the shop's own name put in its place. Before, "80 gram" was read as 80 grams sold.
+     */
+    private fun withProductNames(text: String, products: List<com.shopai.app.brain.tools.ProductRef>): String {
+        var out = text
+        val sized = products.filter { it.name.isNotBlank() && sizeInName.containsMatchIn(it.name) }.sortedByDescending { it.name.length }
+        if (sized.isEmpty()) return text
+        val base = { name: String -> sizeInName.replace(name, " ").replace(Regex("""\s+"""), " ").trim() }
+        for (p in sized) {
+            val name = base(p.name).takeIf { it.length >= 3 } ?: continue
+            val m = sizeInName.find(p.name) ?: continue
+            val size = """${Regex.escape(m.groupValues[1])}\s*(?:${sizeSaid(m.groupValues[2])})"""
+            val words = name.split(' ').joinToString("""\s+""") { Regex.escape(it) }
+            out = Regex("""(?i)(?<![\p{L}\d])(?:$size\s+$words|$words\s+$size)(?![\p{L}])""").replace(out, Regex.escapeReplacement(p.name))
+            // The name alone: only when it is no other product's name (Colgate 80g and Colgate 150g: "Colgate" stays asked).
+            val alone = products.none { it.id != p.id && Regex("""(?i)(?<![\p{L}])${Regex.escape(name)}(?![\p{L}])""").containsMatchIn(it.name) }
+            if (alone) out = Regex("""(?i)(?<![\p{L}\d])$words(?!\s*\d)(?![\p{L}])""").replace(out, Regex.escapeReplacement(p.name))
+        }
+        return out
+    }
+
+    /** The shop's sale (or purchase) just drafted by chat: who, which way, and the turn — for "apram …" (the next line of it). */
+    private var lastBillTo: Triple<String, Boolean, Long>? = null
+    private val nextItem = Regex("""(?i)^\s*(?:apram|aprm|appuram|apparam|aprom|apuram|innum|inum|also|and|adhoda|athoda|then|piragu|piraku)(?![\p{L}])\s*,?""")
+
+    /**
+     * "Mithun store ku Colgate 20 piece" → "aprm water bottle 10 can" (owner, 23 Oct 2026): a line that starts with "apram / innum /
+     * also", names a product with a quantity and no one, right after a sale (or purchase) was drafted — the next line of that same
+     * bill, to the same shop, drafted the same way (Confirm before anything changes).
+     */
+    private suspend fun billFollowUp(text: String, said: String, lang: KaiLang, products: List<com.shopai.app.brain.tools.ProductRef>, people: List<String>): KaiTurn? {
+        val (name, selling, turn) = lastBillTo ?: return null
+        if (conversationState.conversationTurn - turn > 4 || !nextItem.containsMatchIn(text)) return null
+        if (shopBuyer(text, people) != null || KaiEntityResolver.peopleIn(text, people).isNotEmpty()) return null
+        val product = productIn(text, products) ?: return null
+        val rest = nextItem.replace(text, "").trim()
+        val line = if (selling) "$name ku $rest" else "$name kitta $rest vaanginen"
+        return stockBillLine(line, said, lang, product, people)
+    }
+
     private fun productIn(text: String, products: List<com.shopai.app.brain.tools.ProductRef>) = products.filter { it.name.isNotBlank() }
         .sortedByDescending { it.name.length }
         .firstOrNull { Regex("""(?i)(?<![\p{L}])${Regex.escape(it.name)}(?![\p{L}])""").containsMatchIn(text) }
@@ -5958,7 +6014,10 @@ class KaiAgent(
         // ("Kumar 2 box Colgate vaanginaan": the customer bought it — a sale to Kumar, never the shop buying)
         val theyBought = inv.theyBought(text)
         val buying = !theyBought && inv.buys(text)
-        val selling = theyBought || !buying && inv.sellsTo(text, spokenName(text, name))
+        // "Mithun store ku 80 gram Colgate 20 piece" (owner, 23 Oct 2026): no verb, goods with a count said to a shop of the books —
+        // a sale to them (drafted; Confirm before the stock or the balance changes). A question ("… evlo?") is never one.
+        val selling = theyBought || !buying && (inv.sellsTo(text, spokenName(text, name)) ||
+            inv.toThem(text, spokenName(text, name)) && !goodsQuestion.containsMatchIn(text) && !whenQuestion.containsMatchIn(text))
         if (!buying && !selling) return null
         val party = runCatching { tools.parties(name) }.getOrNull()?.let { KaiEntityResolver.sameName(name, it) }?.distinctBy { it.id }
             ?.filter { it.customer == selling }?.singleOrNull() ?: return null
@@ -5976,6 +6035,7 @@ class KaiAgent(
         val credit = inv.creditOf(text) ?: if (selling && sellsWholesale()) true else null
         val b = BillItem(newKey(), buying, party, product, parts, inv.moneyIn(text), null, credit, if (credit == true) PaymentMode.CREDIT else inv.modeOf(text),
             said, lang, conversationState.conversationTurn, null)
+        lastBillTo = Triple(party.name, selling, conversationState.conversationTurn)
         return billStep(b)
     }
 
@@ -5999,6 +6059,8 @@ class KaiAgent(
 
     /** "enna / evlo / what / how much …" — a question about goods, not an entry. */
     private val goodsQuestion = Regex("""(?i)(?<![\p{L}])(?:enna|ennenna|evlo|evalo|evvalavu|edhu|ethu|ethana|ethanai|what|how\s+much|how\s+many|list|sollu|kaattu|kaatu)(?![\p{L}])|எவ்வளவு|என்ன|\?""")
+    /** "ennaiku / eppo / when …": when it happened (owner, 23 Oct 2026: "Mithun store ku ennaiku sale pannom"). */
+    private val whenQuestion = Regex("""(?i)(?<![\p{L}])(?:ennaiku|ennaikku|ennaikki|ennaiki|eppo|eppa|yeppo|yeppa|when|endha\s+naal|entha\s+naal|endha\s+date|entha\s+date)(?![\p{L}])|என்னைக்கு|எப்போ|எப்ப""")
     private val whatQuestion = Regex("""(?i)(?<![\p{L}])(?:enna|ennenna|edhu|ethu|what|list)(?![\p{L}])|என்ன""")
 
     /**
@@ -6008,7 +6070,8 @@ class KaiAgent(
      * maasam", "nethu") is that period; else all of it. "Kumar-ku evlo kuduthen" stays a money question (only "enna kuduthen" is goods).
      */
     private suspend fun goodsAsked(text: String, lang: KaiLang, people: List<String>): KaiTurn? {
-        if (!goodsQuestion.containsMatchIn(text)) return null
+        val askWhen = whenQuestion.containsMatchIn(text)
+        if (!goodsQuestion.containsMatchIn(text) && !askWhen) return null
         val inv = com.shopai.app.brain.tools.KaiInventory
         // A quantity with its unit is an entry ("Kumaran store-ku 10 box noodles vithen"), not a question.
         if (com.shopai.app.brain.tools.KaiStock.partsIn(text).any { it.unit != null }) return null
@@ -6019,7 +6082,8 @@ class KaiAgent(
         val sold = theyBought || (!purchase && (inv.soldSaid(text) || (whatQuestion.containsMatchIn(text) && inv.sellsTo(text, asSaid))))
         if (!purchase && !sold) return null
         val today = now().toLocalDate()
-        val period = KaiChatUnderstanding.understand(text, today, people).period
+        // ("ennaiku" is "when", never "innaiku" = today: the period is read without it)
+        val period = KaiChatUnderstanding.understand(whenQuestion.replace(text, " "), today, people).period
         val from = period?.from ?: LocalDate.of(2000, 1, 1)
         val to = period?.to ?: today
         val label = period?.let { periodLabel(it, lang) }
@@ -6029,7 +6093,7 @@ class KaiAgent(
         // No item register, or "evlo" with no item lines (money entries only): the ledger's answer, as before.
         val lines = runCatching { tools.itemRegister(purchase, from, to) }.getOrNull() ?: return null
         val mine = lines.filter { it.party?.trim()?.equals(who, ignoreCase = true) == true }
-        if (mine.isEmpty() && !whatQuestion.containsMatchIn(text)) return null
+        if (mine.isEmpty() && !whatQuestion.containsMatchIn(text) && !askWhen) return null
         tools.log(if (purchase) "goods bought from party" else "goods sold to party", "books", "$who ${label ?: "all"}: ${mine.size} lines", ActionStatus.ANSWERED, null, text)
         val span = label?.let { "$it " } ?: ""
         if (mine.isEmpty()) return if (purchase) say(lang, KaiMood.EXPLAINING, "goods bought: none",
@@ -6056,6 +6120,27 @@ class KaiAgent(
         val money = KaiFormat.rupees(total.toDouble())
         val owes = party?.balance?.takeIf { it.signum() > 0 }?.let { KaiFormat.rupees(it.toDouble()) }
         val last = mine.maxOf { it.date }
+        if (askWhen) {
+            // "Ennaiku sale pannom": the days, latest first — what went that day and its money.
+            val days = mine.groupBy { it.date }.toSortedMap(compareByDescending { it })
+            fun day(d: LocalDate, ls: List<com.shopai.app.brain.tools.RegisterLine>): String {
+                val v = ls.fold(BigDecimal.ZERO) { a, l -> a + l.value.multiply(BigDecimal(if (l.isReturn) -1 else 1)) }
+                val what = ls.filter { !it.isReturn }.map { it.product }.distinct().take(3).joinToString(", ")
+                return KaiFormat.date(d, lang, today) + " — " + what + " · " + KaiFormat.rupees(v.toDouble())
+            }
+            val latest = day(days.firstKey(), days.getValue(days.firstKey()))
+            val more = days.size - 1
+            val whenReply = if (purchase) pick(lang,
+                ta = "ஓனர், ${span}$who கிட்ட கடைசியா வாங்கினது: $latest." + (if (more > 0) " மொத்தம் ${days.size} நாள் வாங்கியிருக்கீங்க." else ""),
+                tl = "Owner, ${span}$who kitta kadaisiyaa vaanginadhu: $latest." + (if (more > 0) " Mothamaa ${days.size} naal vaangirukeenga." else ""),
+                en = "Owner, last bought from $who: $latest." + (if (more > 0) " ${days.size} days in all." else ""))
+            else pick(lang,
+                ta = "ஓனர், ${span}$who-க்கு கடைசியா sale பண்ணது: $latest." + (if (more > 0) " மொத்தம் ${days.size} நாள் sale பண்ணியிருக்கீங்க." else ""),
+                tl = "Owner, ${span}$who-ku kadaisiyaa sale pannadhu: $latest." + (if (more > 0) " Mothamaa ${days.size} naal sale panniyirukeenga." else ""),
+                en = "Owner, last sold to $who: $latest." + (if (more > 0) " ${days.size} days in all." else ""))
+            val dayLines = days.entries.take(10).map { (d, ls) -> day(d, ls) } + pick(lang, ta = "மொத்தம் — $money", tl = "Mothamaa — $money", en = "Total — $money")
+            return KaiTurn(ChatReply(whenReply, KaiMood.EXPLAINING, ChatIntent.GENERAL_BUSINESS_QUERY), KaiCard(dayLines, emptyList()))
+        }
         val reply = if (purchase) pick(lang,
             ta = "ஓனர், ${span}$who கிட்ட வாங்கினது: $said — மொத்தம் $money." + (owes?.let { " இப்போ $who-க்கு $it கொடுக்கணும்." } ?: ""),
             tl = "Owner, ${span}$who kitta vaanginadhu: $said — mothamaa $money." + (owes?.let { " Ippo $who-ku $it kudukkanum." } ?: ""),

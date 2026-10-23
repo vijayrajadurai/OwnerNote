@@ -322,6 +322,12 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
   vaanginen", with a period or not, answer every product, how much and the money from the item register (returns off) and what they
   owe now (`KaiAgent.goodsAsked`); "evlo kuduthen" stays a money question. Typed = mic (`KaiSpokenWords`: வித்தாச்சு,
   குடுத்துருக்கான் …). Test: `KaiSaleToShopTest`, owner-lines.
+- A wholesaler's sale said in two lines (owner, 23 Oct 2026: "Mithun store ku 80 gram Colgate 20 piece" → "aprm 50 liter water
+  bottle 10 can"): a size said apart or first is the product's own name ("Colgate 80g", `KaiAgent.withProductNames`; the name alone
+  only when no other product has it — two Colgates stay asked), never 80 grams sold; goods with a count said to a shop with no verb
+  are a sale to them; "apram / innum / also" right after is the next line to the same shop (`billFollowUp`). Each is a draft —
+  Confirm before stock or balance moves. "Mithun store ku enna / evlo / ennaiku sale pannom" on any later day: the goods and money,
+  or the days latest first ("ennaiku" is "when", never "innaiku"). Mic: என்னைக்கு, கேன். Test: `KaiWholesaleTwoLineSaleTest`, owner-lines.
 - Three screens made for the owner's thumb (owner, 22 Oct 2026, previews approved; screens only — saving unchanged):
   - Kai's money draft is the Confirm card (`ui/kai/KaiConfirmCard.kt`): what it is and the amount big, Kai's rows, the balance
     before → after, one big Confirm, then Edit / Cancel (Kai's own buttons). Stock / goods drafts keep the notebook scene.
