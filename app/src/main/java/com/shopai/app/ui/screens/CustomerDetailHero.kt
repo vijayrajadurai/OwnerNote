@@ -54,22 +54,27 @@ fun CustomerHeroSection(
     lateDays: Int,
     onPaymentIn: (() -> Unit)?,
     onCredit: () -> Unit,
-    onWhatsApp: () -> Unit,
+    onWhatsApp: (() -> Unit)?,
     onStatement: () -> Unit,
     onSaleBill: (() -> Unit)?,
+    /**
+     * Supplier page in the same design (owner, 23 Oct 2026): "Neenga kodukkanum", what was paid so far, "Panam kuduthen"
+     * (payment) and "Vaangunadhu podunga" (Add Debit), a purchase bill instead of a sale bill, and no WhatsApp reminder.
+     */
+    incoming: Boolean = true,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             Box(
-                Modifier.size(56.dp).clip(RoundedCornerShape(18.dp)).background(Color(0xFFFDE7CF)),
+                Modifier.size(56.dp).clip(RoundedCornerShape(18.dp)).background(if (incoming) Color(0xFFFDE7CF) else Color(0xFFFEE2E2)),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(name.trim().take(1).uppercase(), color = Color(0xFF92400E), fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
+                Text(name.trim().take(1).uppercase(), color = if (incoming) Color(0xFF92400E) else Color(0xFFB91C1C), fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
             }
             Column(Modifier.weight(1f)) {
                 Text(name, color = HeroInk, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
-                    listOfNotNull(phone?.takeIf { it.isNotBlank() }, stringResource(R.string.party_customer_label), stringResource(R.string.party_entries_count, entries)).joinToString(" · "),
+                    listOfNotNull(phone?.takeIf { it.isNotBlank() }, stringResource(if (incoming) R.string.party_customer_label else R.string.party_supplier_label), stringResource(R.string.party_entries_count, entries)).joinToString(" · "),
                     color = Color(0xFF6B7280),
                     fontSize = 13.sp,
                     maxLines = 1,
@@ -89,7 +94,7 @@ fun CustomerHeroSection(
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    stringResource(R.string.party_to_receive).uppercase(),
+                    stringResource(if (incoming) R.string.party_to_receive else R.string.party_to_give).uppercase(),
                     color = Color(0xFF9CA3AF),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
@@ -120,35 +125,46 @@ fun CustomerHeroSection(
                         )
                     }
                     Row(Modifier.fillMaxWidth()) {
-                        Text(stringResource(R.string.party_came_in, formatInr(paid)), color = Color(0xFFD1D5DB), fontSize = 12.5.sp, modifier = Modifier.weight(1f))
+                        Text(stringResource(if (incoming) R.string.party_came_in else R.string.party_paid_out, formatInr(paid)), color = Color(0xFFD1D5DB), fontSize = 12.5.sp, modifier = Modifier.weight(1f))
                         Text(stringResource(R.string.party_total_label, formatInr(total)), color = Color(0xFFD1D5DB), fontSize = 12.5.sp)
                     }
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (onPaymentIn != null) {
-                    HeroButton(stringResource(R.string.party_payment_in), Icons.Filled.ArrowDownward, Color(0xFF15803D), Color.White, HeroInk, Modifier.weight(1f), onPaymentIn)
+                    HeroButton(
+                        stringResource(if (incoming) R.string.party_payment_in else R.string.party_payment_out),
+                        if (incoming) Icons.Filled.ArrowDownward else Icons.Filled.ArrowUpward,
+                        if (incoming) Color(0xFF15803D) else Color(0xFFB91C1C),
+                        Color.White, HeroInk, Modifier.weight(1f), onPaymentIn,
+                    )
                 }
-                HeroButton(stringResource(R.string.party_give_credit), Icons.Filled.ArrowUpward, Color(0xFFFCD34D), Color(0x1FFFFFFF), Color.White, Modifier.weight(1f), onCredit)
+                HeroButton(
+                    stringResource(if (incoming) R.string.party_give_credit else R.string.party_add_purchase),
+                    if (incoming) Icons.Filled.ArrowUpward else Icons.Filled.ArrowDownward,
+                    Color(0xFFFCD34D), Color(0x1FFFFFFF), Color.White, Modifier.weight(1f), onCredit,
+                )
             }
         }
 
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-                .clip(RoundedCornerShape(18.dp))
-                .background(Color(0xFF15803D))
-                .clickable(onClick = onWhatsApp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-        ) {
-            Text("🟢  " + stringResource(R.string.party_wa_remind), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1)
+        if (onWhatsApp != null) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(Color(0xFF15803D))
+                    .clickable(onClick = onWhatsApp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                Text("🟢  " + stringResource(R.string.party_wa_remind), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1)
+            }
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlineTile(stringResource(R.string.party_statement_pdf), Icons.Outlined.Description, Modifier.weight(1f), onStatement)
-            if (onSaleBill != null) OutlineTile(stringResource(R.string.party_sale_bill), Icons.AutoMirrored.Outlined.ReceiptLong, Modifier.weight(1f), onSaleBill)
+            if (onSaleBill != null) OutlineTile(stringResource(if (incoming) R.string.party_sale_bill else R.string.bill_new_purchase), Icons.AutoMirrored.Outlined.ReceiptLong, Modifier.weight(1f), onSaleBill)
         }
     }
 }
@@ -161,7 +177,8 @@ private fun HeroButton(label: String, icon: ImageVector, iconTint: Color, bg: Co
         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
     ) {
         Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(18.dp))
-        Text(label, color = fg, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        // Tamil labels are long ("பணம் வந்துச்சு"): two lines, never cut off.
+        Text(label, color = fg, fontSize = 14.sp, lineHeight = 17.sp, fontWeight = FontWeight.ExtraBold, maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
     }
 }
 
@@ -178,7 +195,7 @@ private fun OutlineTile(label: String, icon: ImageVector, modifier: Modifier, on
         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
     ) {
         Icon(icon, contentDescription = null, tint = HeroInk, modifier = Modifier.size(20.dp))
-        Text(label, color = HeroInk, fontSize = 14.5.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+        Text(label, color = HeroInk, fontSize = 14.sp, lineHeight = 17.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
     }
 }
 

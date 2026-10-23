@@ -116,8 +116,21 @@ fun PartyDirectoryBody(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text(title, color = KaiInk.Ink, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f))
-                if (newPartyLabel != null && onNewParty != null) HeaderPill(newPartyLabel, Icons.Outlined.PersonAdd, onNewParty)
+                // One line, never broken letter by letter ("வாடிக்கையாளர்" is long); "+ New customer" is an icon so the title has room.
+                Text(title, color = KaiInk.Ink, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                if (newPartyLabel != null && onNewParty != null) {
+                    Box(
+                        Modifier
+                            .size(38.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color.White)
+                            .border(1.dp, KaiInk.Line, RoundedCornerShape(12.dp))
+                            .clickable(onClick = onNewParty),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(Icons.Outlined.PersonAdd, contentDescription = newPartyLabel, tint = KaiInk.Ink, modifier = Modifier.size(19.dp))
+                    }
+                }
                 if (importLabel != null && onImport != null) HeaderPill(importLabel, Icons.Outlined.UploadFile, onImport)
             }
             Box(Modifier.weight(1f).fillMaxWidth()) {

@@ -29,12 +29,10 @@ import com.shopai.app.data.model.pendingAmount
 import com.shopai.app.data.network.presentApiError
 import com.shopai.app.ui.components.ApiErrorAlertDialog
 import com.shopai.app.ui.components.DetailScaffold
-import com.shopai.app.ui.components.PrimaryButton
 import com.shopai.app.ui.theme.Danger
-import com.shopai.app.ui.theme.LedgerDebit
 import com.shopai.app.ui.theme.ShopAiThemeColors
 import com.shopai.app.util.buildPayableLedger
-import com.shopai.app.util.formatInr
+import kotlinx.coroutines.launch
 
 @Composable
 fun SupplierDetailScreen(
@@ -65,6 +63,8 @@ fun SupplierDetailScreen(
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
     val errorLoad = stringResource(R.string.suppliers_error)
     val paymentError = stringResource(R.string.party_payment_error)
 
@@ -118,31 +118,43 @@ fun SupplierDetailScreen(
                         .padding(horizontal = 24.dp, vertical = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    if (detail.phone != null) {
-                        Text(
-                            text = detail.phone,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = ShopAiThemeColors.onSurfaceVariant,
-                        )
-                    }
+                    // The same design as the customer page (owner, 23 Oct 2026): the balance big, "Panam kuduthen" (Books payment) and
+                    // "Vaangunadhu podunga" (Add Debit), Statement PDF and a purchase bill — the flows this screen already had.
+                    val total = detail.transactions.sumOf { com.shopai.app.data.model.parseMoney(it.amount) }
+                    val today = java.time.LocalDate.now()
+                    val lateDays = detail.transactions
+                        .filter { it.status != "PAID" && it.pendingAmount() > 0 }
+                        .mapNotNull { com.shopai.app.util.parseIsoToLocalDate(it.dueDate) }
+                        .filter { it.isBefore(today) }
+                        .maxOfOrNull { java.time.temporal.ChronoUnit.DAYS.between(it, today).toInt() } ?: 0
+                    CustomerHeroSection(
+                        name = detail.name,
+                        phone = detail.phone,
+                        entries = detail.transactions.size,
+                        pending = totalPending,
+                        total = total,
+                        lateDays = lateDays,
+                        onPaymentIn = if (booksOn) ({ onPayment(detail.id) }) else null,
+                        onCredit = { onAddDebit(detail.id, detail.name) },
+                        onWhatsApp = null,
+                        onStatement = {
+                            scope.launch {
+                                val lang = if (java.util.Locale.getDefault().language == "ta") com.shopai.app.brain.KaiLang.TAMIL else com.shopai.app.brain.KaiLang.TANGLISH
+                                val shared = runCatching {
+                                    com.shopai.app.ui.kaichat.shareStatement(
+                                        container, context,
+                                        com.shopai.app.brain.chat.KaiAction.ShareStatement(detail.id, detail.name, false, null, today, whatsapp = false),
+                                        lang,
+                                    )
+                                }
+                                if (shared.isFailure) android.widget.Toast.makeText(context, com.shopai.app.ui.kaichat.pdfFailed(lang), android.widget.Toast.LENGTH_LONG).show()
+                            }
+                        },
+                        // (bills only for a business that keeps them — a salon records its services by chat)
+                        onSaleBill = if (booksOn && com.shopai.app.ui.components.hasFeature(com.shopai.app.data.model.Feature.BILLING)) ({ onNewBill(detail.id) }) else null,
+                        incoming = false,
+                    )
                     com.shopai.app.ui.books.PartyMasterInfo(container, detail.id, reloadKey)
-                    Text(
-                        text = stringResource(R.string.party_total_pending, formatInr(totalPending)),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = LedgerDebit,
-                    )
-                    PrimaryButton(
-                        label = stringResource(R.string.party_add_debit),
-                        onClick = { onAddDebit(detail.id, detail.name) },
-                    )
-                    if (booksOn) {
-                        androidx.compose.foundation.layout.Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            // (bills only for a business that keeps them — a salon records its services by chat)
-                            if (com.shopai.app.ui.components.hasFeature(com.shopai.app.data.model.Feature.BILLING)) com.shopai.app.ui.components.OutlinedButton(onClick = { onNewBill(detail.id) }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.bill_new_purchase)) }
-                            com.shopai.app.ui.components.OutlinedButton(onClick = { onPayment(detail.id) }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.bill_make_payment)) }
-                        }
-                    }
                     Text(
                         text = stringResource(R.string.party_transactions_title),
                         style = MaterialTheme.typography.titleMedium,

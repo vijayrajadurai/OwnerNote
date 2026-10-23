@@ -1761,6 +1761,16 @@ NewonX — Owner Note. Use Help & Support in the app.]]></string>
     <string name="party_wa_remind">WhatsApp-la nyabagam paduthunga</string>
     <string name="party_statement_pdf">Statement PDF</string>
     <string name="party_sale_bill">Sale bill</string>
+    <string name="party_supplier_label">Supplier</string>
+    <string name="party_to_give">Neenga kodukkanum</string>
+    <string name="party_paid_out">%1$s kuduthaachu</string>
+    <string name="party_payment_out">Panam kuduthen</string>
+    <string name="party_add_purchase">Vaangunadhu podunga</string>
+    <string name="party_label_credit">Kadan kuduthadhu</string>
+    <string name="party_label_payment_in">Panam vandhadhu</string>
+    <string name="party_label_debit">Vaangunadhu (baaki)</string>
+    <string name="party_label_payment_out">Panam kuduthadhu</string>
+    <string name="party_label_opening">Pazhaiya kanakku-la irundha baaki</string>
     <string name="party_wa_sheet_title">%1$s-ku indha message pogum</string>
     <string name="party_wa_send">WhatsApp-la anuppunga</string>
     <string name="party_wa_not_now">Venaam</string>

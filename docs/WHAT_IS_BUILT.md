@@ -378,6 +378,11 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
     - A late customer row has a WhatsApp button (the customer page's message, the owner sends).
     - At the bottom one big "Kadan kudunga" / "Vaangunadhu podunga" (the same Add Credit / Add Debit) and "Contact".
   - Customer detail 4b (`CustomerDetailHero.kt`):
+    - Supplier detail in the same design (23 Oct 2026, `CustomerHeroSection(incoming = false)`): "Neenga kodukkanum", what was
+      paid so far, "Panam kuduthen" (Books payment) and "Vaangunadhu podunga" (Add Debit), Statement PDF and purchase bill, no
+      WhatsApp reminder.
+    - Tamil all the way down: the transaction / history words had no Tamil strings; the app's own entry words ("Payment made",
+      "Balance brought from the OwnerNote ledger") show in the app's language (`ledgerLabelText`); hero buttons wrap to two lines.
     - The balance big with what came in so far and the days late.
     - "Panam vandhuchu" (Books payment), "Kadan kudunga" (Add Credit).
     - One green WhatsApp reminder: the Tamil / Tanglish message is shown, then WhatsApp opens with it typed (`util/WhatsAppText.kt`;
