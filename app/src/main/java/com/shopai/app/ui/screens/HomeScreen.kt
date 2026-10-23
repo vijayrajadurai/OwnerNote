@@ -441,7 +441,6 @@ fun HomeScreen(
                             onSend = {
                                 com.shopai.app.util.openWhatsAppText(context, null, homeOrderListText(context, business?.businessName.orEmpty(), stockRows))
                             },
-                            onAsk = { onNavigate(Routes.KaiChat) },
                         )
                     }
                 }
@@ -450,7 +449,6 @@ fun HomeScreen(
                         figures = figures,
                         fallbackTotal = cashFlow?.pendingReceivables,
                         onOpen = { onNavigate(Routes.Customers) },
-                        onAsk = { onNavigate(Routes.KaiChat) },
                     )
                     stockCard()
                 }
@@ -458,7 +456,6 @@ fun HomeScreen(
                     kind = homeKind,
                     figures = figures,
                     onOpen = { onNavigate(Routes.DailyCashNote) },
-                    onAsk = { onNavigate(Routes.KaiChat) },
                 )
                 if (homeKind == com.shopai.app.util.HomeKind.RETAIL) stockCard()
                 if (carouselItems.isNotEmpty()) {
@@ -467,13 +464,11 @@ fun HomeScreen(
                         total = carouselItems.size,
                         onOpen = { id -> onNavigate(Routes.reminderDetail(id)) },
                         onAll = { onNavigate(Routes.Reminders) },
-                        onAsk = { onNavigate(Routes.KaiChat) },
                     )
                 }
                 HomeWorkCard(
                     count = morningCount,
                     onOpen = { onNavigate(Routes.morningWork()) },
-                    onAsk = { onNavigate(Routes.KaiChat) },
                 )
                 val openLoans: () -> Unit = {
                         val opp = funding

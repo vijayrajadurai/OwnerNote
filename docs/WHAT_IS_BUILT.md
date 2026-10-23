@@ -361,6 +361,8 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
       Loans, See all — the same places, the same feature gates). Chips show whole rupees.
     - Mixed-green background for every business type (23 Oct 2026, `Modifier.kaiGreenBackdrop()` in `KaiVisuals.kt`): mint at
       the top fading to green-white, two soft glows, a faint dot grid; tile edges in `KaiInk.Leaf`.
+    - Diary cards end with their one action only (23 Oct 2026: no "Seri, paathen", no message button; the stock card keeps
+      its WhatsApp send).
       Kai's brief has no card once spoken (owner, 23 Oct 2026: "ithu mattum remove pannu"); it is the Kai tile's story.
   - Bottom bar: dark and floating, with Kai's face (mic) raised in the middle → Kai Chat (`BottomNavBar(onKai)`).
   - Kai Chat (`KaiChatLook.kt`):

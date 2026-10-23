@@ -103,7 +103,7 @@ private fun dayShort(date: LocalDate, isToday: Boolean): String =
  * a service business. Opens the Cash Note.
  */
 @Composable
-fun HomeSalesWeekCard(kind: HomeKind, figures: HomeFigures?, onOpen: () -> Unit, onAsk: () -> Unit) {
+fun HomeSalesWeekCard(kind: HomeKind, figures: HomeFigures?, onOpen: () -> Unit) {
     val week = figures?.week
     var picked by remember(week) { mutableIntStateOf(6) }
     val day = week?.getOrNull(picked)
@@ -129,7 +129,6 @@ fun HomeSalesWeekCard(kind: HomeKind, figures: HomeFigures?, onOpen: () -> Unit,
     KaiDiaryCard(
         title = stringResource(R.string.home_sales_title),
         line = line,
-        onAsk = onAsk,
         actionLabel = stringResource(R.string.home_cash_note),
         onAction = onOpen,
         tag = if (service) Triple(stringResource(R.string.home_tag_sales), Color(0xFFFCE7F3), Color(0xFFBE185D))
@@ -209,7 +208,7 @@ fun HomeSalesWeekCard(kind: HomeKind, figures: HomeFigures?, onOpen: () -> Unit,
  * owes suppliers. From the books; without them only the total from the dashboard. Opens Customers.
  */
 @Composable
-fun HomeDueCard(figures: HomeFigures?, fallbackTotal: Double?, onOpen: () -> Unit, onAsk: () -> Unit) {
+fun HomeDueCard(figures: HomeFigures?, fallbackTotal: Double?, onOpen: () -> Unit) {
     val ageing = figures?.ageing
     val onTime = ageing?.currentPaise ?: 0L
     val late30 = ageing?.days1to30Paise ?: 0L
@@ -220,7 +219,6 @@ fun HomeDueCard(figures: HomeFigures?, fallbackTotal: Double?, onOpen: () -> Uni
     KaiDiaryCard(
         title = stringResource(R.string.home_due_title),
         line = if (lateMore > 0) stringResource(R.string.home_due_line_late, totalText, formatInr(lateMore / 100.0)) else stringResource(R.string.home_due_line, totalText),
-        onAsk = onAsk,
         actionLabel = stringResource(R.string.home_due_cta),
         onAction = onOpen,
         tag = Triple(stringResource(R.string.home_tag_due), Color(0xFFDBEAFE), Color(0xFF1D4ED8)),
@@ -280,12 +278,11 @@ private fun DueBox(label: String, paise: Long, dot: Color, modifier: Modifier) {
  * the supplier and presses send. "Order list" opens Stock. Read only.
  */
 @Composable
-fun HomeStockCard(rows: List<StockWatchRow>, onOpen: () -> Unit, onSend: () -> Unit, onAsk: () -> Unit) {
+fun HomeStockCard(rows: List<StockWatchRow>, onOpen: () -> Unit, onSend: () -> Unit) {
     val low = rows.count { it.level == StockLevel.LOW }
     KaiDiaryCard(
         title = stringResource(R.string.home_stock_title),
         line = if (low > 0) stringResource(R.string.home_stock_line, low) else stringResource(R.string.home_stock_near),
-        onAsk = onAsk,
         actionLabel = stringResource(R.string.home_stock_cta),
         onAction = onOpen,
         tag = Triple(stringResource(R.string.home_tag_stock), Color(0xFFFEE2E2), Color(0xFFB91C1C)),

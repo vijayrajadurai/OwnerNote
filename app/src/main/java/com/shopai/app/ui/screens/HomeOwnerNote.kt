@@ -19,7 +19,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.Notifications
@@ -341,14 +340,13 @@ private fun MoneyChip(label: String, amount: String, late: Int, incoming: Boolea
 }
 
 /**
- * A Kai diary card: Kai's face and "Kai solraar", what Kai says, an optional body, then
- * "Seri, paathen" (only marks it seen on this screen), Kai-kitta kelunga, and one action.
+ * A Kai diary card: Kai's face and "Kai solraar", what Kai says, an optional body, then its action
+ * (owner, 23 Oct 2026: no "Seri, paathen" and no message button).
  */
 @Composable
 fun KaiDiaryCard(
     title: String,
     line: String,
-    onAsk: () -> Unit,
     modifier: Modifier = Modifier,
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
@@ -358,7 +356,6 @@ fun KaiDiaryCard(
     /** A green send button (the owner shares the card's list on WhatsApp). */
     onSend: (() -> Unit)? = null,
 ) {
-    var seen by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(26.dp)
     Column(
         modifier
@@ -404,30 +401,6 @@ fun KaiDiaryCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Box(
-                Modifier
-                    .height(40.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(if (seen) Color(0xFFDCFCE7) else Color.White)
-                    .border(1.5.dp, if (seen) Color(0xFF86EFAC) else KaiInk.Line, RoundedCornerShape(14.dp))
-                    .clickable { seen = !seen }
-                    .padding(horizontal = 14.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = stringResource(if (seen) R.string.home_seen_done else R.string.home_seen),
-                    color = if (seen) Color(0xFF15803D) else Color(0xFF44403C),
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    maxLines = 1,
-                )
-            }
-            Box(
-                Modifier.size(40.dp).clip(CircleShape).background(Color(0xFFF5F3EE)).clickable(onClick = onAsk),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(Icons.AutoMirrored.Outlined.Chat, contentDescription = stringResource(R.string.home_ask_kai), tint = KaiInk.Ink, modifier = Modifier.size(19.dp))
-            }
             onSend?.let { send ->
                 Box(
                     Modifier.size(40.dp).clip(CircleShape).background(Color(0xFFDCFCE7)).clickable(onClick = send),
@@ -462,12 +435,10 @@ fun HomeVasoolCard(
     total: Int,
     onOpen: (String) -> Unit,
     onAll: () -> Unit,
-    onAsk: () -> Unit,
 ) {
     KaiDiaryCard(
         title = stringResource(R.string.home_vasool_title),
         line = stringResource(R.string.home_vasool_line, total),
-        onAsk = onAsk,
         actionLabel = stringResource(R.string.home_see),
         onAction = onAll,
         body = {
@@ -510,12 +481,11 @@ fun HomeVasoolCard(
 
 /** Kai's Morning Work count as a diary card; opens the guided work. Hidden until the count is known. */
 @Composable
-fun HomeWorkCard(count: Int?, onOpen: () -> Unit, onAsk: () -> Unit) {
+fun HomeWorkCard(count: Int?, onOpen: () -> Unit) {
     count ?: return
     KaiDiaryCard(
         title = stringResource(R.string.home_work_title),
         line = if (count > 0) stringResource(R.string.home_work_line, count) else stringResource(R.string.home_work_none),
-        onAsk = onAsk,
         actionLabel = stringResource(R.string.home_see),
         onAction = onOpen,
     )
