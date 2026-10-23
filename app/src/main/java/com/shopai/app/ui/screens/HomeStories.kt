@@ -208,12 +208,13 @@ fun HomeStoryViewer(
 }
 
 /**
- * The stories behind the Home tiles, from what Home already loaded: Kai's brief, the reminders, and
+ * The stories behind the Home tiles, from what Home already loaded: Kai's brief, today's Daily Cash Note, the reminders, and
  * (for a shop with stock) the products at or under their minimum. A figure not loaded is said plainly, never made up.
  */
 @Composable
 fun homeStories(
     brief: String,
+    today: com.shopai.app.data.model.TodayCashSummary?,
     reminders: List<com.shopai.app.ui.reminders.PaymentReminder>,
     lowStock: List<com.shopai.app.data.model.InventoryProduct>?,
     stock: Boolean,
@@ -225,6 +226,13 @@ fun homeStories(
             HomeStory(
                 "kai", stringResource(R.string.home_kai_says), stringResource(R.string.kai_greeting), brief,
                 stringResource(R.string.home_ask_kai), routes.KaiChat, listOf(Color(0xFF047857), Color(0xFF052E2B)),
+            ),
+        )
+        add(
+            HomeStory(
+                "today", stringResource(R.string.home_tile_today), inr(today?.totalIn ?: 0.0),
+                stringResource(R.string.home_in_out, inr(today?.totalIn ?: 0.0), inr(today?.totalOut ?: 0.0)),
+                stringResource(R.string.story_today_cta), routes.DailyCashNote, listOf(Color(0xFF059669), Color(0xFF064E3B)),
             ),
         )
         val late = reminders.count { it.urgency == com.shopai.app.ui.reminders.ReminderUrgency.OVERDUE }

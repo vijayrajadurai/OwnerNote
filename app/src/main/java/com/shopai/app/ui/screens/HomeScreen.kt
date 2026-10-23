@@ -319,6 +319,7 @@ fun HomeScreen(
                     priorities.isEmpty() -> stringResource(R.string.kai_brief_clear)
                     else -> stringResource(R.string.kai_brief_count, priorities.size)
                 },
+                today = cashNoteSummary,
                 reminders = carouselItems,
                 lowStock = lowStock,
                 stock = inventoryOn,
@@ -380,6 +381,7 @@ fun HomeScreen(
                 )
                 HomeMomentsRow(
                     moments = homeMoments(
+                        todayIn = cashNoteSummary?.totalIn,
                         reminderCount = carouselItems.size,
                         urgentReminders = unreadReminders,
                         stock = inventoryOn,
