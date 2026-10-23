@@ -194,6 +194,21 @@ fun HomeScreen(
     }
 
     LaunchedEffect(Unit) { reload() }
+
+    // Home tile stories (owner, 23 Oct 2026): which story is open, and the products at or under their minimum for the
+    // Stock story — read from Inventory, never saved.
+    var storyAt by remember { mutableStateOf<Int?>(null) }
+    var lowStock by remember { mutableStateOf<List<com.shopai.app.data.model.InventoryProduct>?>(null) }
+    val inventoryOn = com.shopai.app.data.model.Feature.INVENTORY in com.shopai.app.ui.components.LocalFeatures.current
+    LaunchedEffect(loading, inventoryOn) {
+        if (loading || !inventoryOn) return@LaunchedEffect
+        runCatching {
+            container.inventoryRepository.listProducts().filter {
+                com.shopai.app.data.inventory.computeStockStatus(it.currentStock, it.minimumStock) ==
+                    com.shopai.app.data.inventory.STOCK_STATUS_LOW_STOCK
+            }
+        }.onSuccess { lowStock = it }
+    }
     // Signed in (after login / account switch): this owner's own morning notification, nobody else's.
     LaunchedEffect(Unit) { container.restoreMorningNotification() }
 
@@ -296,6 +311,25 @@ fun HomeScreen(
         it.urgency == ReminderUrgency.OVERDUE || it.urgency == ReminderUrgency.DUE_TODAY
     }
 
+    storyAt?.let { start ->
+        HomeStoryViewer(
+            stories = homeStories(
+                brief = when {
+                    kaiBrief != null -> kaiBrief!!.display
+                    priorities.isEmpty() -> stringResource(R.string.kai_brief_clear)
+                    else -> stringResource(R.string.kai_brief_count, priorities.size)
+                },
+                today = cashNoteSummary,
+                reminders = carouselItems,
+                lowStock = lowStock,
+                stock = inventoryOn,
+            ),
+            start = start,
+            onClose = { storyAt = null },
+            onOpen = onNavigate,
+        )
+    }
+
     MainTabScaffold(
         activeTab = BottomNavTab.Home,
         onNavigate = onNavigate,
@@ -350,8 +384,10 @@ fun HomeScreen(
                         todayIn = cashNoteSummary?.totalIn,
                         reminderCount = carouselItems.size,
                         urgentReminders = unreadReminders,
-                        stock = com.shopai.app.data.model.Feature.INVENTORY in com.shopai.app.ui.components.LocalFeatures.current,
+                        stock = inventoryOn,
                         onNavigate = onNavigate,
+                        lowStock = lowStock?.size,
+                        onStory = { storyAt = it },
                     ),
                     edge = 0.dp,
                 )

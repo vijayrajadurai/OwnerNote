@@ -344,6 +344,10 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
     - A small "Kai-kitta kelunga" bar with a turning green-gold (veshti) border and rotating examples per business type → Kai Chat.
     - Square tiles: Kai, today's cash in, reminders, Stock. Money shown short by `util/shortRupees`
       (`ShortRupeesTest`); a figure not loaded shows "—".
+    - Tile stories (`HomeStories.kt`, 23 Oct 2026): a tile tap opens a full-screen Kai story with golden progress bars — Kai's
+      brief, today's in / out, reminders (names, amounts, late count), Stock kammi (products at or under their minimum, read from
+      Inventory; the Stock tile carries that count). Six seconds each; right tap next, left tap back, ✕ closes; the white button
+      and the reply bar open the existing screen / Kai Chat. Read only — nothing is saved.
     - Kai's diary cards (23 Oct 2026, "preview-la kattuna mari"): Kai's brief ("Seri, paathen", Kelunga plays it again), today's
       sales from the Daily Cash Note with Kai beside the figure (→ Cash Note), payments due from the reminders (→ each reminder /
       all), the morning work count (→ Morning Work), then quick actions as tiles (Speak, Reports, Inventory, Group buying, Offers,

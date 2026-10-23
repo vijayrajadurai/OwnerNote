@@ -244,21 +244,24 @@ fun homeMoments(
     urgentReminders: Int,
     stock: Boolean,
     onNavigate: (String) -> Unit,
+    lowStock: Int? = null,
+    /** Opens the tile's Kai story (index = tile position); null opens the screen straight away. */
+    onStory: ((Int) -> Unit)? = null,
 ): List<HomeMoment> {
     val dash = "—"
     fun money(v: Double?) = v?.let { com.shopai.app.util.shortRupees(it) } ?: dash
     return buildList {
-        add(HomeMoment(stringResource(R.string.home_tile_kai), null, listOf(Color(0xFFECFDF5), Color(0xFFD1FAE5)), kai = true) { onNavigate(com.shopai.app.ui.navigation.Routes.KaiChat) })
-        add(HomeMoment(stringResource(R.string.home_tile_today), money(todayIn), listOf(Color(0xFF10B981), Color(0xFF047857))) { onNavigate(com.shopai.app.ui.navigation.Routes.DailyCashNote) })
+        add(HomeMoment(stringResource(R.string.home_tile_kai), null, listOf(Color(0xFFECFDF5), Color(0xFFD1FAE5)), kai = true) { onStory?.invoke(0) ?: onNavigate(com.shopai.app.ui.navigation.Routes.KaiChat) })
+        add(HomeMoment(stringResource(R.string.home_tile_today), money(todayIn), listOf(Color(0xFF10B981), Color(0xFF047857))) { onStory?.invoke(1) ?: onNavigate(com.shopai.app.ui.navigation.Routes.DailyCashNote) })
         add(
             HomeMoment(
                 stringResource(R.string.home_tile_reminders),
                 reminderCount.toString(),
                 listOf(Color(0xFFA78BFA), Color(0xFF6D28D9)),
                 badge = urgentReminders.takeIf { it > 0 }?.toString(),
-            ) { onNavigate(com.shopai.app.ui.navigation.Routes.Reminders) },
+            ) { onStory?.invoke(2) ?: onNavigate(com.shopai.app.ui.navigation.Routes.Reminders) },
         )
-        if (stock) add(HomeMoment(stringResource(R.string.home_tile_stock), null, listOf(Color(0xFFF87171), Color(0xFFB91C1C)), icon = androidx.compose.material.icons.Icons.Outlined.Inventory2) { onNavigate(com.shopai.app.ui.navigation.Routes.Inventory) })
+        if (stock) add(HomeMoment(stringResource(R.string.home_tile_stock), null, listOf(Color(0xFFF87171), Color(0xFFB91C1C)), badge = lowStock?.takeIf { it > 0 }?.toString(), icon = androidx.compose.material.icons.Icons.Outlined.Inventory2) { onStory?.invoke(3) ?: onNavigate(com.shopai.app.ui.navigation.Routes.Inventory) })
     }
 }
 
