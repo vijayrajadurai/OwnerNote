@@ -660,6 +660,9 @@ object KaiProductSound {
                 // "Tyre", "Tire", "Wire", "Fire" = tayar, wayar, fayar — as the mic writes them ("டயர்", "வயர்", "ஃபயர்"), never "tire" heard
                 // as drive (owner, 23 Oct 2026: "Tyre en USB-nu padikkudhu — namba enna solromo adhaan varanum").
                 .replace(Regex("""(?<=[^aeiou])[iy]re$"""), "ayar")
+                // "Phenyl", "Phenol" = finayil, finol — as said and as the mic writes it ("பினாயில்"): the ph-e is a "fi", its -yl is
+                // "-ayil" — Flagyl stays flajil (owner, 23 Oct 2026: "பினாயில்" alone was a new product).
+                .replace(Regex("""^phe(?=n[aeiouy])"""), "fi").replace(Regex("""(?<=^fin)yl$"""), "ayil")
                 // "Hydraulic" = haidraulic, "Nylon" = nailon: a y between consonants is a vowel; "Gel", "Emergency", "Agent": a soft g.
                 .replace(Regex("""^gy"""), "jy").replace(Regex("""(?<=^[^aeiouy]{1,2})y(?=[^aeiouy])"""), "i").replace(Regex("""^ge(?=[lmnr])"""), "je")
                 .replace(Regex("""(?<=[aeiour])g(?=en)"""), "j")

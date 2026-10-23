@@ -268,6 +268,13 @@ class KaiProductSoundTest {
             val got = KaiProductSound.withProductWords(KaiProductSound.withProducts(mic, auto, people), auto, people)
             assertTrue("$mic → $got", got.startsWith(want))
         }
+        // "பினாயில்" alone or with "சின்ன பேக்" is Phenyl (it was a new product) — and still not fennel.
+        val clean = listOf("Phenyl Small pack", "Phenyl Large pack", "Fennel seeds Small pack", "Floor cleaner Small pack")
+        for ((mic, want) in listOf("பினாயில் 7" to "Phenyl 7", "பினாயில் சின்ன பேக் 7" to "Phenyl சின்ன", "பினாயில் ஸ்மால் பேக் 7" to "Phenyl Small pack 7",
+                "ஃபென்னல் சீட்ஸ் 7" to "Fennel seeds 7")) {
+            val got = KaiProductSound.withProductWords(KaiProductSound.withProducts(mic, clean, people), clean, people)
+            assertTrue("$mic → $got", got.startsWith(want))
+        }
         // A word Kai has no product for stays as said: "ஹோட்டல்" is not Hoe.
         assertTrue(KaiProductSound.withProducts("ஹோட்டல் 7", shop, people).startsWith("ஹோட்டல்"))
     }
