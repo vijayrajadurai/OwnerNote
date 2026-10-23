@@ -1712,8 +1712,6 @@ NewonX — Owner Note. Use Help & Support in the app.]]></string>
     <string name="home_seen_done">✓ Paathachu</string>
     <string name="home_ask_kai">Kai-kitta kelunga</string>
     <string name="home_tile_kai">Kai</string>
-    <string name="home_tile_today">Innaikku</string>
-    <string name="home_tile_reminders">Nyabagam</string>
     <string name="home_tile_stock">Stock</string>
     <string-array name="home_kai_examples_retail">
         <item>Kumar 2000 kadan</item>
@@ -1772,14 +1770,69 @@ NewonX — Owner Note. Use Help & Support in the app.]]></string>
     <string name="home_sales_title">Innaikku sales</string>
     <string name="home_sales_line">Innaikku %1$s vandhuchu.</string>
     <string name="home_sales_empty">Innaikku sales innum podala — Kai-kitta sollunga, illa Cash Note-la podunga.</string>
-    <string name="home_in_out">Vandhadhu %1$s · Ponadhu %2$s</string>
+    <string name="home_tile_sales">Sales</string>
+    <string name="home_tile_services">Services</string>
+    <string name="home_tile_vasool">Vasool</string>
+    <string name="home_tile_late">Late</string>
+    <string name="home_tile_sent">Anuppinadhu</string>
+    <string name="home_tile_give">Kodukkanum</string>
+    <string name="home_badge_low">kammi</string>
+    <string name="home_tag_sales">Sales</string>
+    <string name="home_tag_due">Tharanum</string>
+    <string name="home_tag_stock">Stock</string>
+    <string name="home_sales_label">Innaikku sales</string>
+    <string name="home_sales_label_service">Innaikku · %1$d entry</string>
+    <string name="home_sales_line_service">Innaikku %1$d entry, %2$s.</string>
+    <string name="home_sales_more">Nethu-vida %1$d%% adhigam.</string>
+    <string name="home_sales_less">Nethu-vida %1$d%% kammi.</string>
+    <string name="home_delta_up">▲ %1$d%% munnaal-vida</string>
+    <string name="home_delta_down">▼ %1$d%% munnaal-vida</string>
+    <string name="home_cash_upi">Cash %1$s · UPI %2$s</string>
+    <string name="home_day_today">Inru</string>
+    <string name="home_due_title">Kadaigal tharanum</string>
+    <string name="home_due_label">KADAIGAL THARANUM</string>
+    <string name="home_due_line">Kadaigal %1$s tharanum.</string>
+    <string name="home_due_line_late">Kadaigal %1$s tharanum. %2$s 30 naal mela late.</string>
+    <string name="home_due_give">Neenga kodukkanum %1$s</string>
+    <string name="home_due_ontime">Time-la</string>
+    <string name="home_due_1to30">1–30 naal late</string>
+    <string name="home_due_30plus">30+ naal late</string>
+    <string name="home_due_cta">Kadaigal</string>
+    <string name="home_stock_title">Stock</string>
+    <string name="home_stock_line">%1$d porul kammi. Order list ready — supplier-ku anuppalaam.</string>
+    <string name="home_stock_near">Sila porul kammi aaga pogudhu — munnaadiye order pannalaam.</string>
+    <string name="home_stock_media">Stock kammi aagudhu</string>
+    <string name="home_stock_cta">Order list</string>
+    <string name="home_stock_send">WhatsApp-la anuppunga</string>
+    <string name="home_order_title">Order list — %1$s</string>
+    <string name="home_order_line">• %1$s — %2$s irukku</string>
+    <string name="story_not_loaded">Idhu innum load aagala.</string>
+    <string name="story_services_tag">Innaikku services</string>
+    <string name="story_services_text">Cash Note-la innaikku %1$s vandhuchu.</string>
+    <string name="story_vasool_tag">Vaanga vendiyadhu</string>
+    <string name="story_vasool_cta">Customers paarunga</string>
+    <string name="story_late_tag">Late kadaigal</string>
+    <string name="story_late_text">%1$d bill due thethi thaandiduchu.</string>
+    <string name="story_late_cta">Kadaigal paarunga</string>
+    <string name="story_sent_tag">Innaikku anuppinadhu</string>
+    <string name="story_sent_text">Innaikku kadaigalukku vithadhu — books-la potta bill.</string>
+    <string name="story_give_tag">Neenga kodukkanum</string>
+    <string name="story_give_text">%1$d bill baaki · %2$d late.</string>
+    <string name="story_give_cta">Suppliers paarunga</string>
+    <string-array name="home_week_days">
+        <item>Thi</item>
+        <item>Sev</item>
+        <item>Pu</item>
+        <item>Vya</item>
+        <item>Ve</item>
+        <item>Sa</item>
+        <item>Nya</item>
+    </string-array>
     <string name="story_close">Moodunga</string>
     <string name="story_reply">Kai-kku reply pannunga…</string>
     <string name="story_today_cta">Cash Note paarunga</string>
-    <string name="story_rem_value">%1$d per</string>
     <string name="story_rem_late">%1$d late</string>
     <string name="story_rem_none">Innaikku vasool nyabagam edhuvum illa.</string>
-    <string name="story_rem_cta">Nyabagam paarunga</string>
     <string name="story_stock_tag">Stock kammi</string>
     <string name="story_stock_value">%1$d porul</string>
     <string name="story_stock_text">%1$s — order pannunga.</string>

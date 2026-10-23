@@ -1657,8 +1657,6 @@ NewonX — Owner Note. ஆப்பில் உதவி & ஆதரவு.]]><
     <string name="home_seen_done">✓ பார்த்தாச்சு</string>
     <string name="home_ask_kai">Kai-கிட்ட கேளுங்க</string>
     <string name="home_tile_kai">Kai</string>
-    <string name="home_tile_today">இன்னைக்கு</string>
-    <string name="home_tile_reminders">நினைவூட்டல்</string>
     <string name="home_tile_stock">ஸ்டாக்</string>
     <string-array name="home_kai_examples_retail">
         <item>குமார் 2000 கடன்</item>
@@ -1717,14 +1715,69 @@ NewonX — Owner Note. ஆப்பில் உதவி & ஆதரவு.]]><
     <string name="home_sales_title">இன்னைக்கு sales</string>
     <string name="home_sales_line">இன்னைக்கு %1$s வந்துச்சு.</string>
     <string name="home_sales_empty">இன்னைக்கு sales இன்னும் போடல — Kai-கிட்ட சொல்லுங்க, இல்ல Cash Note-ல போடுங்க.</string>
-    <string name="home_in_out">வந்தது %1$s · போனது %2$s</string>
+    <string name="home_tile_sales">சேல்ஸ்</string>
+    <string name="home_tile_services">சர்வீஸ்</string>
+    <string name="home_tile_vasool">வசூல்</string>
+    <string name="home_tile_late">லேட்</string>
+    <string name="home_tile_sent">அனுப்பினது</string>
+    <string name="home_tile_give">கொடுக்கணும்</string>
+    <string name="home_badge_low">கம்மி</string>
+    <string name="home_tag_sales">Sales</string>
+    <string name="home_tag_due">தரணும்</string>
+    <string name="home_tag_stock">Stock</string>
+    <string name="home_sales_label">இன்னைக்கு sales</string>
+    <string name="home_sales_label_service">இன்னைக்கு · %1$d entry</string>
+    <string name="home_sales_line_service">இன்னைக்கு %1$d entry, %2$s.</string>
+    <string name="home_sales_more">நேத்து-விட %1$d%% அதிகம்.</string>
+    <string name="home_sales_less">நேத்து-விட %1$d%% கம்மி.</string>
+    <string name="home_delta_up">▲ %1$d%% முன்னாள்-விட</string>
+    <string name="home_delta_down">▼ %1$d%% முன்னாள்-விட</string>
+    <string name="home_cash_upi">கேஷ் %1$s · UPI %2$s</string>
+    <string name="home_day_today">இன்று</string>
+    <string name="home_due_title">கடைகள் தரணும்</string>
+    <string name="home_due_label">கடைகள் தரணும்</string>
+    <string name="home_due_line">கடைகள் %1$s தரணும்.</string>
+    <string name="home_due_line_late">கடைகள் %1$s தரணும். %2$s 30 நாள் மேல லேட்.</string>
+    <string name="home_due_give">நீங்க கொடுக்கணும் %1$s</string>
+    <string name="home_due_ontime">டைம்-ல</string>
+    <string name="home_due_1to30">1–30 நாள் லேட்</string>
+    <string name="home_due_30plus">30+ நாள் லேட்</string>
+    <string name="home_due_cta">கடைகள்</string>
+    <string name="home_stock_title">ஸ்டாக்</string>
+    <string name="home_stock_line">%1$d பொருள் கம்மி. Order list ரெடி — supplier-க்கு அனுப்பலாம்.</string>
+    <string name="home_stock_near">சில பொருள் கம்மி ஆகப் போகுது — முன்னாடியே order பண்ணலாம்.</string>
+    <string name="home_stock_media">ஸ்டாக் கம்மி ஆகுது</string>
+    <string name="home_stock_cta">Order list</string>
+    <string name="home_stock_send">WhatsApp-ல அனுப்புங்க</string>
+    <string name="home_order_title">Order list — %1$s</string>
+    <string name="home_order_line">• %1$s — %2$s இருக்கு</string>
+    <string name="story_not_loaded">இது இன்னும் லோட் ஆகல.</string>
+    <string name="story_services_tag">இன்னைக்கு சர்வீஸ்</string>
+    <string name="story_services_text">Cash Note-ல இன்னைக்கு %1$s வந்துச்சு.</string>
+    <string name="story_vasool_tag">வாங்க வேண்டியது</string>
+    <string name="story_vasool_cta">கஸ்டமர்ஸ் பாருங்க</string>
+    <string name="story_late_tag">லேட் கடைகள்</string>
+    <string name="story_late_text">%1$d பில் due தேதி தாண்டிடுச்சு.</string>
+    <string name="story_late_cta">கடைகள் பாருங்க</string>
+    <string name="story_sent_tag">இன்னைக்கு அனுப்பினது</string>
+    <string name="story_sent_text">இன்னைக்கு கடைகளுக்கு வித்தது — books-ல போட்ட பில்.</string>
+    <string name="story_give_tag">நீங்க கொடுக்கணும்</string>
+    <string name="story_give_text">%1$d பில் பாக்கி · %2$d லேட்.</string>
+    <string name="story_give_cta">சப்ளையர்ஸ் பாருங்க</string>
+    <string-array name="home_week_days">
+        <item>தி</item>
+        <item>செ</item>
+        <item>பு</item>
+        <item>வி</item>
+        <item>வெ</item>
+        <item>ச</item>
+        <item>ஞா</item>
+    </string-array>
     <string name="story_close">மூடுங்க</string>
     <string name="story_reply">Kai-க்கு reply பண்ணுங்க…</string>
     <string name="story_today_cta">கேஷ் நோட் பாருங்க</string>
-    <string name="story_rem_value">%1$d பேர்</string>
     <string name="story_rem_late">%1$d லேட்</string>
     <string name="story_rem_none">இன்னைக்கு வசூல் நினைவூட்டல் எதுவும் இல்ல.</string>
-    <string name="story_rem_cta">நினைவூட்டல் பாருங்க</string>
     <string name="story_stock_tag">ஸ்டாக் கம்மி</string>
     <string name="story_stock_value">%1$d பொருள்</string>
     <string name="story_stock_text">%1$s — ஆர்டர் பண்ணுங்க.</string>

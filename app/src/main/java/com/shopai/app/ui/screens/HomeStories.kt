@@ -208,62 +208,106 @@ fun HomeStoryViewer(
 }
 
 /**
- * The stories behind the Home tiles, from what Home already loaded: Kai's brief, today's Daily Cash Note, the reminders, and
- * (for a shop with stock) the products at or under their minimum. A figure not loaded is said plainly, never made up.
+ * Which tiles (and stories, in the same order) each Home has (owner, 23 Oct 2026 — the 6p / 6q / 6r previews):
+ * a shop: Kai, Sales, Vasool, Stock; a service business: Kai, Sales, Services, Vasool; wholesale: Kai, Late, Anuppinadhu,
+ * Kodukkanum, Stock. Stock only when the business keeps stock.
+ */
+fun homeTileKeys(kind: com.shopai.app.util.HomeKind, stock: Boolean): List<String> = when (kind) {
+    com.shopai.app.util.HomeKind.RETAIL -> listOfNotNull("kai", "sales", "vasool", "stock".takeIf { stock })
+    com.shopai.app.util.HomeKind.SERVICE -> listOf("kai", "sales", "services", "vasool")
+    com.shopai.app.util.HomeKind.WHOLESALE -> listOfNotNull("kai", "late", "sent", "give", "stock".takeIf { stock })
+}
+
+/**
+ * The stories behind the Home tiles, from what Home already loaded: Kai's brief, the Daily Cash Note, the books' dues,
+ * the reminders and the products at or under their minimum. A figure not loaded is said plainly, never made up.
  */
 @Composable
 fun homeStories(
+    keys: List<String>,
     brief: String,
-    today: com.shopai.app.data.model.TodayCashSummary?,
+    figures: HomeFigures?,
+    fallbackToGet: Double?,
     reminders: List<com.shopai.app.ui.reminders.PaymentReminder>,
     lowStock: List<com.shopai.app.data.model.InventoryProduct>?,
-    stock: Boolean,
 ): List<HomeStory> {
     val routes = com.shopai.app.ui.navigation.Routes
     val inr = { v: Double -> com.shopai.app.util.formatInr(v) }
-    return buildList {
-        add(
-            HomeStory(
-                "kai", stringResource(R.string.home_kai_says), stringResource(R.string.kai_greeting), brief,
+    val dash = "—"
+    val notLoaded = stringResource(R.string.story_not_loaded)
+    val today = figures?.today
+    return keys.map { key ->
+        when (key) {
+            "kai" -> HomeStory(
+                key, stringResource(R.string.home_kai_says), stringResource(R.string.kai_greeting), brief,
                 stringResource(R.string.home_ask_kai), routes.KaiChat, listOf(Color(0xFF047857), Color(0xFF052E2B)),
-            ),
-        )
-        add(
-            HomeStory(
-                "today", stringResource(R.string.home_tile_today), inr(today?.totalIn ?: 0.0),
-                stringResource(R.string.home_in_out, inr(today?.totalIn ?: 0.0), inr(today?.totalOut ?: 0.0)),
-                stringResource(R.string.story_today_cta), routes.DailyCashNote, listOf(Color(0xFF059669), Color(0xFF064E3B)),
-            ),
-        )
-        val late = reminders.count { it.urgency == com.shopai.app.ui.reminders.ReminderUrgency.OVERDUE }
-        val who = reminders.take(3).joinToString(" · ") { r -> r.partyName + (r.amount?.let { " " + inr(it) } ?: "") }
-        add(
-            HomeStory(
-                "reminders", stringResource(R.string.home_tile_reminders), stringResource(R.string.story_rem_value, reminders.size),
-                when {
-                    reminders.isEmpty() -> stringResource(R.string.story_rem_none)
-                    late > 0 -> stringResource(R.string.story_rem_late, late) + " — " + who
-                    else -> who
-                },
-                stringResource(R.string.story_rem_cta), routes.Reminders, listOf(Color(0xFF7C3AED), Color(0xFF2E1065)),
-            ),
-        )
-        if (stock) {
-            val low = lowStock.orEmpty()
-            val names = low.take(3).joinToString(", ") { p -> "${p.name} ${com.shopai.app.util.formatQty(p.currentStock)} ${p.unit}" } +
-                if (low.size > 3) "…" else ""
-            add(
+            )
+            "sales" -> {
+                val d = figures?.week?.getOrNull(5)?.let { y -> today?.let { com.shopai.app.util.salesDeltaPercent(it.total, y.total) } }
                 HomeStory(
-                    "stock", stringResource(R.string.story_stock_tag),
-                    if (lowStock == null) "—" else stringResource(R.string.story_stock_value, low.size),
+                    key, stringResource(R.string.home_sales_label), today?.let { inr(it.total) } ?: dash,
+                    today?.let { t ->
+                        stringResource(R.string.home_cash_upi, inr(t.cash), inr(t.upi)) +
+                            (d?.let { "\n" + stringResource(if (it >= 0) R.string.home_delta_up else R.string.home_delta_down, kotlin.math.abs(it)) } ?: "")
+                    } ?: notLoaded,
+                    stringResource(R.string.story_today_cta), routes.DailyCashNote, listOf(Color(0xFF059669), Color(0xFF064E3B)),
+                )
+            }
+            "services" -> HomeStory(
+                key, stringResource(R.string.story_services_tag), today?.count?.toString() ?: dash,
+                today?.let { stringResource(R.string.story_services_text, inr(it.total)) } ?: notLoaded,
+                stringResource(R.string.story_today_cta), routes.DailyCashNote, listOf(Color(0xFF7C3AED), Color(0xFF2E1065)),
+            )
+            "vasool" -> {
+                val late = reminders.count { it.urgency == com.shopai.app.ui.reminders.ReminderUrgency.OVERDUE }
+                val who = reminders.take(3).joinToString(" · ") { r -> r.partyName + (r.amount?.let { " " + inr(it) } ?: "") }
+                val total = figures?.receivable?.let { it.totalPaise / 100.0 } ?: fallbackToGet
+                HomeStory(
+                    key, stringResource(R.string.story_vasool_tag), total?.let(inr) ?: dash,
+                    when {
+                        reminders.isEmpty() -> stringResource(R.string.story_rem_none)
+                        late > 0 -> stringResource(R.string.story_rem_late, late) + " — " + who
+                        else -> who
+                    },
+                    stringResource(R.string.story_vasool_cta), routes.Customers, listOf(Color(0xFFB45309), Color(0xFF451A03)),
+                )
+            }
+            "late" -> {
+                val r = figures?.receivable
+                HomeStory(
+                    key, stringResource(R.string.story_late_tag), r?.let { inr(it.overduePaise / 100.0) } ?: dash,
+                    r?.let { stringResource(R.string.story_late_text, it.overdueCount) } ?: notLoaded,
+                    stringResource(R.string.story_late_cta), routes.Customers, listOf(Color(0xFFB91C1C), Color(0xFF450A0A)),
+                )
+            }
+            "sent" -> HomeStory(
+                key, stringResource(R.string.story_sent_tag), figures?.salesTodayPaise?.let { inr(it / 100.0) } ?: dash,
+                if (figures?.salesTodayPaise != null) stringResource(R.string.story_sent_text) else notLoaded,
+                stringResource(R.string.story_late_cta), routes.Customers, listOf(Color(0xFF1D4ED8), Color(0xFF172554)),
+            )
+            "give" -> {
+                val p = figures?.payable
+                HomeStory(
+                    key, stringResource(R.string.story_give_tag), p?.let { inr(it.totalPaise / 100.0) } ?: dash,
+                    p?.let { stringResource(R.string.story_give_text, it.count, it.overdueCount) } ?: notLoaded,
+                    stringResource(R.string.story_give_cta), routes.Suppliers, listOf(Color(0xFFB45309), Color(0xFF451A03)),
+                )
+            }
+            else -> {
+                val low = lowStock.orEmpty()
+                val names = low.take(3).joinToString(", ") { p -> "${p.name} ${com.shopai.app.util.formatQty(p.currentStock)} ${p.unit}" } +
+                    if (low.size > 3) "…" else ""
+                HomeStory(
+                    key, stringResource(R.string.story_stock_tag),
+                    if (lowStock == null) dash else stringResource(R.string.story_stock_value, low.size),
                     when {
                         lowStock == null -> stringResource(R.string.story_stock_loading)
                         low.isEmpty() -> stringResource(R.string.story_stock_ok)
                         else -> stringResource(R.string.story_stock_text, names)
                     },
                     stringResource(R.string.story_stock_cta), routes.Inventory, listOf(Color(0xFFB91C1C), Color(0xFF450A0A)),
-                ),
-            )
+                )
+            }
         }
     }
 }

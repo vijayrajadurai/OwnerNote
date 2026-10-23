@@ -342,10 +342,18 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
     - Vaanganum / Kodukkanum as two small chips (`HomeMoneyChips`, the same books figures as the old summary card, late count
       shown) where the "KAI-ODA DIARY" heading was; tap → Customers / Suppliers.
     - A small "Kai-kitta kelunga" bar with a turning green-gold (veshti) border and rotating examples per business type → Kai Chat.
-    - Square tiles: Kai, today's cash in, reminders, Stock. Money shown short by `util/shortRupees`
-      (`ShortRupeesTest`); a figure not loaded shows "—".
+    - A separate Home per business type (23 Oct 2026, `HomeKinds.kt`, `util/HomeFigures.kt`, `HomeFiguresTest`; service-only →
+      service, any wholesale → wholesale, else retail). Tiles: shop — Kai, Sales, Vasool, Stock; service — Kai, Sales, Services,
+      Vasool; wholesale — Kai, Late, Anuppinadhu, Kodukkanum, Stock. Money shown short by `util/shortRupees` (`ShortRupeesTest`);
+      a figure not loaded shows "—".
+    - Sales card with the Daily Cash Note's details: today's total, against yesterday (no percent when yesterday was empty),
+      cash · UPI, seven bars (tap a day) — green for a shop, deep pink for service; read from this phone only
+      (`DailyCashRepository.listLocalEntries`). Wholesale opens with "Kadaigal tharanum": customer dues by age from the books
+      (on time / 1–30 / 30+ days late) and what is owed to suppliers.
+    - Stock card for retail and wholesale: products at or under twice their minimum, emptiest first, with red / amber / green
+      bars; the send button opens WhatsApp with the order list typed in (the owner sends), "Order list" opens Stock.
     - Tile stories (`HomeStories.kt`, 23 Oct 2026): a tile tap opens a full-screen Kai story with golden progress bars — Kai's
-      brief, today's in / out, reminders (names, amounts, late count), Stock kammi (products at or under their minimum, read from
+      brief, today's sales, dues and reminders, Stock kammi (products at or under their minimum, read from
       Inventory; the Stock tile carries that count). Six seconds each; right tap next, left tap back, ✕ closes; the white button
       and the reply bar open the existing screen / Kai Chat. Read only — nothing is saved.
     - Kai's diary cards (23 Oct 2026, "preview-la kattuna mari"): today's sales from the Daily Cash Note with Kai beside the figure (→ Cash Note), payments due from the reminders (→ each reminder /

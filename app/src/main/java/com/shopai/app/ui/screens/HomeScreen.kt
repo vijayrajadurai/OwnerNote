@@ -196,19 +196,31 @@ fun HomeScreen(
     LaunchedEffect(Unit) { reload() }
 
     // Home tile stories (owner, 23 Oct 2026): which story is open, and the products at or under their minimum for the
-    // Stock story — read from Inventory, never saved.
+    // Stock story and card — read from Inventory, never saved.
     var storyAt by remember { mutableStateOf<Int?>(null) }
-    var lowStock by remember { mutableStateOf<List<com.shopai.app.data.model.InventoryProduct>?>(null) }
+    var products by remember { mutableStateOf<List<com.shopai.app.data.model.InventoryProduct>?>(null) }
     val inventoryOn = com.shopai.app.data.model.Feature.INVENTORY in com.shopai.app.ui.components.LocalFeatures.current
     LaunchedEffect(loading, inventoryOn) {
         if (loading || !inventoryOn) return@LaunchedEffect
-        runCatching {
-            container.inventoryRepository.listProducts().filter {
-                com.shopai.app.data.inventory.computeStockStatus(it.currentStock, it.minimumStock) ==
-                    com.shopai.app.data.inventory.STOCK_STATUS_LOW_STOCK
-            }
-        }.onSuccess { lowStock = it }
+        runCatching { container.inventoryRepository.listProducts() }.onSuccess { products = it }
     }
+    val lowStock = remember(products) {
+        products?.filter {
+            com.shopai.app.data.inventory.computeStockStatus(it.currentStock, it.minimumStock) ==
+                com.shopai.app.data.inventory.STOCK_STATUS_LOW_STOCK
+        }
+    }
+    val stockRows = remember(products) { com.shopai.app.util.stockWatch(products.orEmpty()) }
+    // A separate Home per business type (owner, 23 Oct 2026): the week of Daily Cash Note sales and the books' dues behind
+    // its tiles and cards. Read only.
+    var figures by remember { mutableStateOf<HomeFigures?>(null) }
+    LaunchedEffect(loading) {
+        if (loading) return@LaunchedEffect
+        figures = runCatching { loadHomeFigures(container) }.getOrNull()
+    }
+    val kinds = com.shopai.app.data.model.FeatureSet.kindsOf(business)
+    val homeKind = com.shopai.app.util.homeKindOf(kinds)
+    val tileKeys = homeTileKeys(homeKind, inventoryOn)
     // Signed in (after login / account switch): this owner's own morning notification, nobody else's.
     LaunchedEffect(Unit) { container.restoreMorningNotification() }
 
@@ -314,15 +326,16 @@ fun HomeScreen(
     storyAt?.let { start ->
         HomeStoryViewer(
             stories = homeStories(
+                keys = tileKeys,
                 brief = when {
                     kaiBrief != null -> kaiBrief!!.display
                     priorities.isEmpty() -> stringResource(R.string.kai_brief_clear)
                     else -> stringResource(R.string.kai_brief_count, priorities.size)
                 },
-                today = cashNoteSummary,
+                figures = figures,
+                fallbackToGet = cashFlow?.pendingReceivables,
                 reminders = carouselItems,
                 lowStock = lowStock,
-                stock = inventoryOn,
             ),
             start = start,
             onClose = { storyAt = null },
@@ -367,25 +380,23 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 // Kai Chat is the app's main feature (owner, 22 Oct 2026): a small "Kai-kitta kelunga" bar first.
-                val kinds = com.shopai.app.data.model.FeatureSet.kindsOf(business)
                 KaiAskStrip(
                     title = stringResource(R.string.home_ask_kai),
                     examples = stringArrayResource(
-                        when {
-                            com.shopai.app.data.model.BusinessKind.SERVICE in kinds && com.shopai.app.data.model.BusinessKind.RETAIL !in kinds -> R.array.home_kai_examples_service
-                            com.shopai.app.data.model.BusinessKind.WHOLESALE in kinds -> R.array.home_kai_examples_wholesale
-                            else -> R.array.home_kai_examples_retail
+                        when (homeKind) {
+                            com.shopai.app.util.HomeKind.SERVICE -> R.array.home_kai_examples_service
+                            com.shopai.app.util.HomeKind.WHOLESALE -> R.array.home_kai_examples_wholesale
+                            com.shopai.app.util.HomeKind.RETAIL -> R.array.home_kai_examples_retail
                         },
                     ).toList(),
                     onClick = { onNavigate(Routes.KaiChat) },
                 )
                 HomeMomentsRow(
                     moments = homeMoments(
-                        todayIn = cashNoteSummary?.totalIn,
-                        reminderCount = carouselItems.size,
-                        urgentReminders = unreadReminders,
-                        stock = inventoryOn,
-                        onNavigate = onNavigate,
+                        keys = tileKeys,
+                        service = homeKind == com.shopai.app.util.HomeKind.SERVICE,
+                        figures = figures,
+                        fallbackToGet = cashFlow?.pendingReceivables,
                         lowStock = lowStock?.size,
                         onStory = { storyAt = it },
                     ),
@@ -418,11 +429,37 @@ fun HomeScreen(
                         onTap = { onNavigate(Routes.VoiceEntry) },
                     )
                 }
-                HomeSalesCard(
-                    summary = cashNoteSummary,
+                // Per business type (owner, 23 Oct 2026): wholesale opens with what the shops owe by age; a shop and a service
+                // business with the Daily Cash Note's sales and its details; retail and wholesale get the stock card.
+                val context = androidx.compose.ui.platform.LocalContext.current
+                val stockCard: @Composable () -> Unit = {
+                    if (inventoryOn && stockRows.isNotEmpty()) {
+                        HomeStockCard(
+                            rows = stockRows,
+                            onOpen = { onNavigate(Routes.Inventory) },
+                            onSend = {
+                                com.shopai.app.util.openWhatsAppText(context, null, homeOrderListText(context, business?.businessName.orEmpty(), stockRows))
+                            },
+                            onAsk = { onNavigate(Routes.KaiChat) },
+                        )
+                    }
+                }
+                if (homeKind == com.shopai.app.util.HomeKind.WHOLESALE) {
+                    HomeDueCard(
+                        figures = figures,
+                        fallbackTotal = cashFlow?.pendingReceivables,
+                        onOpen = { onNavigate(Routes.Customers) },
+                        onAsk = { onNavigate(Routes.KaiChat) },
+                    )
+                    stockCard()
+                }
+                HomeSalesWeekCard(
+                    kind = homeKind,
+                    figures = figures,
                     onOpen = { onNavigate(Routes.DailyCashNote) },
                     onAsk = { onNavigate(Routes.KaiChat) },
                 )
+                if (homeKind == com.shopai.app.util.HomeKind.RETAIL) stockCard()
                 if (carouselItems.isNotEmpty()) {
                     HomeVasoolCard(
                         items = carouselItems.take(3),

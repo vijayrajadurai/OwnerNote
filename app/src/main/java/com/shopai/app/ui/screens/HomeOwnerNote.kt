@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Chat
+import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.Icon
@@ -234,34 +235,44 @@ fun HomeMomentsRow(moments: List<HomeMoment>, modifier: Modifier = Modifier, edg
 }
 
 /**
- * Home's tiles from what Home already loads: Kai, today's cash in (Daily Cash Note), reminders and,
- * for a shop with stock, Stock. A figure not loaded yet shows "—", never a made-up number.
+ * Home's tiles, one per story key ([homeTileKeys]), from what Home already loads. A figure not loaded yet shows "—",
+ * never a made-up number. Each tile opens its story (index = tile position).
  */
 @Composable
 fun homeMoments(
-    todayIn: Double?,
-    reminderCount: Int,
-    urgentReminders: Int,
-    stock: Boolean,
-    onNavigate: (String) -> Unit,
-    lowStock: Int? = null,
-    /** Opens the tile's Kai story (index = tile position); null opens the screen straight away. */
-    onStory: ((Int) -> Unit)? = null,
+    keys: List<String>,
+    service: Boolean,
+    figures: HomeFigures?,
+    fallbackToGet: Double?,
+    lowStock: Int?,
+    onStory: (Int) -> Unit,
 ): List<HomeMoment> {
     val dash = "—"
     fun money(v: Double?) = v?.let { com.shopai.app.util.shortRupees(it) } ?: dash
-    return buildList {
-        add(HomeMoment(stringResource(R.string.home_tile_kai), null, listOf(Color(0xFFECFDF5), Color(0xFFD1FAE5)), kai = true) { onStory?.invoke(0) ?: onNavigate(com.shopai.app.ui.navigation.Routes.KaiChat) })
-        add(HomeMoment(stringResource(R.string.home_tile_today), money(todayIn), listOf(Color(0xFF10B981), Color(0xFF047857))) { onStory?.invoke(1) ?: onNavigate(com.shopai.app.ui.navigation.Routes.DailyCashNote) })
-        add(
-            HomeMoment(
-                stringResource(R.string.home_tile_reminders),
-                reminderCount.toString(),
-                listOf(Color(0xFFA78BFA), Color(0xFF6D28D9)),
-                badge = urgentReminders.takeIf { it > 0 }?.toString(),
-            ) { onStory?.invoke(2) ?: onNavigate(com.shopai.app.ui.navigation.Routes.Reminders) },
-        )
-        if (stock) add(HomeMoment(stringResource(R.string.home_tile_stock), null, listOf(Color(0xFFF87171), Color(0xFFB91C1C)), badge = lowStock?.takeIf { it > 0 }?.toString(), icon = androidx.compose.material.icons.Icons.Outlined.Inventory2) { onStory?.invoke(3) ?: onNavigate(com.shopai.app.ui.navigation.Routes.Inventory) })
+    val today = figures?.today
+    return keys.mapIndexed { i, key ->
+        val open = { onStory(i) }
+        when (key) {
+            "kai" -> HomeMoment(stringResource(R.string.home_tile_kai), null, listOf(Color(0xFFECFDF5), Color(0xFFD1FAE5)), kai = true, onClick = open)
+            "sales" -> HomeMoment(
+                stringResource(R.string.home_tile_sales), money(today?.total),
+                if (service) listOf(Color(0xFFF472B6), Color(0xFFBE185D)) else listOf(Color(0xFF10B981), Color(0xFF047857)), onClick = open,
+            )
+            "services" -> HomeMoment(stringResource(R.string.home_tile_services), today?.count?.toString() ?: dash, listOf(Color(0xFFA78BFA), Color(0xFF6D28D9)), onClick = open)
+            "vasool" -> HomeMoment(
+                stringResource(R.string.home_tile_vasool), money(figures?.receivable?.let { it.totalPaise / 100.0 } ?: fallbackToGet),
+                listOf(Color(0xFFF59E0B), Color(0xFFB45309)),
+                badge = figures?.receivable?.overdueCount?.takeIf { it > 0 }?.toString(), onClick = open,
+            )
+            "late" -> HomeMoment(stringResource(R.string.home_tile_late), figures?.receivable?.overdueCount?.toString() ?: dash, listOf(Color(0xFFF87171), Color(0xFFB91C1C)), onClick = open)
+            "sent" -> HomeMoment(stringResource(R.string.home_tile_sent), money(figures?.salesTodayPaise?.let { it / 100.0 }), listOf(Color(0xFF60A5FA), Color(0xFF1D4ED8)), onClick = open)
+            "give" -> HomeMoment(stringResource(R.string.home_tile_give), money(figures?.payable?.let { it.totalPaise / 100.0 }), listOf(Color(0xFFFBBF24), Color(0xFFB45309)), onClick = open)
+            else -> HomeMoment(
+                stringResource(R.string.home_tile_stock), lowStock?.toString(), listOf(Color(0xFFF87171), Color(0xFFB91C1C)),
+                badge = lowStock?.takeIf { it > 0 }?.let { stringResource(R.string.home_badge_low) },
+                icon = if (lowStock == null) androidx.compose.material.icons.Icons.Outlined.Inventory2 else null, onClick = open,
+            )
+        }
     }
 }
 
@@ -342,6 +353,10 @@ fun KaiDiaryCard(
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
     body: (@Composable () -> Unit)? = null,
+    /** A small topic pill on the right of the heading ("SALES", "STOCK") with its background and text colour. */
+    tag: Triple<String, Color, Color>? = null,
+    /** A green send button (the owner shares the card's list on WhatsApp). */
+    onSend: (() -> Unit)? = null,
 ) {
     var seen by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(26.dp)
@@ -361,6 +376,17 @@ fun KaiDiaryCard(
             Column(Modifier.weight(1f)) {
                 Text(title, color = KaiInk.Ink, fontSize = 14.5.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1)
                 Text(stringResource(R.string.home_kai_says), color = KaiInk.InkSoft, fontSize = 12.sp, maxLines = 1)
+            }
+            tag?.let { (label, bg, fg) ->
+                Text(
+                    label.uppercase(),
+                    color = fg,
+                    fontSize = 10.5.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 0.8.sp,
+                    maxLines = 1,
+                    modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(bg).padding(horizontal = 8.dp, vertical = 4.dp),
+                )
             }
         }
         Text(
@@ -402,6 +428,14 @@ fun KaiDiaryCard(
             ) {
                 Icon(Icons.AutoMirrored.Outlined.Chat, contentDescription = stringResource(R.string.home_ask_kai), tint = KaiInk.Ink, modifier = Modifier.size(19.dp))
             }
+            onSend?.let { send ->
+                Box(
+                    Modifier.size(40.dp).clip(CircleShape).background(Color(0xFFDCFCE7)).clickable(onClick = send),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(Icons.AutoMirrored.Outlined.Send, contentDescription = stringResource(R.string.home_stock_send), tint = Color(0xFF15803D), modifier = Modifier.size(18.dp))
+                }
+            }
             Box(Modifier.weight(1f))
             if (actionLabel != null && onAction != null) {
                 Box(
@@ -419,46 +453,6 @@ fun KaiDiaryCard(
         }
         VeshtiBand()
     }
-}
-
-/** Today's sales from the Daily Cash Note, as a Kai diary card with Kai beside the figure; opens the Cash Note. */
-@Composable
-fun HomeSalesCard(summary: com.shopai.app.data.model.TodayCashSummary?, onOpen: () -> Unit, onAsk: () -> Unit) {
-    val totalIn = summary?.totalIn ?: 0.0
-    val totalOut = summary?.totalOut ?: 0.0
-    KaiDiaryCard(
-        title = stringResource(R.string.home_sales_title),
-        line = if (totalIn > 0) stringResource(R.string.home_sales_line, com.shopai.app.util.formatInr(totalIn)) else stringResource(R.string.home_sales_empty),
-        onAsk = onAsk,
-        actionLabel = stringResource(R.string.home_cash_note),
-        onAction = onOpen,
-        body = {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .height(150.dp)
-                    .background(Brush.linearGradient(listOf(Color(0xFF047857), Color(0xFF064E3B), Color(0xFF052E2B))))
-                    .clickable(onClick = onOpen),
-            ) {
-                Image(
-                    painter = androidx.compose.ui.res.painterResource(R.drawable.kai_mascot_bust),
-                    contentDescription = null,
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier.align(Alignment.BottomEnd).height(140.dp),
-                )
-                Column(Modifier.padding(16.dp).fillMaxWidth(0.62f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(stringResource(R.string.home_tile_today).uppercase(), color = KaiInk.Mint, fontSize = 11.5.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.2.sp)
-                    Text(com.shopai.app.util.formatInr(totalIn), color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1)
-                    Text(
-                        stringResource(R.string.home_in_out, com.shopai.app.util.formatInr(totalIn), com.shopai.app.util.formatInr(totalOut)),
-                        color = KaiInk.Mint,
-                        fontSize = 12.sp,
-                        maxLines = 2,
-                    )
-                }
-            }
-        },
-    )
 }
 
 /** Payments due (the reminders Home already reads): who, how much, when — as a Kai diary card. */
