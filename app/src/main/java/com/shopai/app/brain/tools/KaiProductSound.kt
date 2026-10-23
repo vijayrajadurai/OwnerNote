@@ -263,15 +263,27 @@ object KaiProductSound {
      * "cable-னா என்ன?"). Only a code the shop's own names have, the same number, and a Tamil word with the word's sound.
      */
     fun withWordCodes(text: String, productNames: List<String>): String {
-        val codes = productNames.flatMap { it.split(Regex("""[\s/()\-_,|]+""")) }
-            .mapNotNull { w -> Regex("""^([A-Za-z]{2,})(\d+)$""").find(w)?.let { m -> Triple(w, m.groupValues[1], m.groupValues[2]) } }
-            .distinctBy { it.first.lowercase() }
+        val codes = wordCodes(productNames)
         if (codes.isEmpty()) return text
         return Regex("""(?<![\p{L}\p{M}])([\u0B80-\u0BFF]+)\s+(\d+)(?![\d.])""").replace(text) { m ->
             val (word, digits) = m.destructured
             val key = NameSound.key(word).takeIf { it.length >= 2 } ?: return@replace m.value
             codes.firstOrNull { (_, letters, number) -> number == digits && NameSound.key(spoken(letters)) == key }?.first ?: m.value
         }
+    }
+
+    /** The shop's word-and-number codes (Cat6 → "Cat6", cat, 6) with each code word's sound — worked out once per list of names. */
+    private val codeCache = object : LinkedHashMap<List<String>, List<Triple<String, String, String>>>(8, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<List<String>, List<Triple<String, String, String>>>?) = size > 4
+    }
+
+    private fun wordCodes(productNames: List<String>): List<Triple<String, String, String>> {
+        synchronized(codeCache) { codeCache[productNames]?.let { return it } }
+        val codes = productNames.flatMap { it.split(Regex("""[\s/()\-_,|]+""")) }
+            .mapNotNull { w -> Regex("""^([A-Za-z]{2,})(\d+)$""").find(w)?.let { m -> Triple(w, m.groupValues[1], m.groupValues[2]) } }
+            .distinctBy { it.first.lowercase() }
+        synchronized(codeCache) { codeCache[productNames.toList()] = codes }
+        return codes
     }
 
     fun withProductWords(text: String, productNames: List<String>, people: List<String> = emptyList()): String {
