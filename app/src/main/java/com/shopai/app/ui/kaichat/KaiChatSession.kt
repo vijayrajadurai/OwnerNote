@@ -143,6 +143,12 @@ class KaiChatSession(
         lastReplyAt = System.currentTimeMillis()
     }
 
+    /** Kai வசூல்: money came in by UPI — Kai says it and asks whose account (the draft waits for Confirm). */
+    suspend fun showUpi(credit: com.shopai.app.brain.tools.UpiCredit) {
+        val lang = KaiLanguage.forAppLocale()
+        respond(lang) { agent.upiReceived(credit, lang) }
+    }
+
     /** Edit: the draft is prepared again with the owner's changes (the old card is closed). */
     suspend fun revise(messageId: Long, key: String, name: String, amount: BigDecimal, mode: PaymentMode, outgoing: Boolean) {
         val index = messages.indexOfFirst { it.id == messageId }

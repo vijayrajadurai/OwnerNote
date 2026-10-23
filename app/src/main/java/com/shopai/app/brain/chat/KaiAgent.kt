@@ -702,6 +702,10 @@ class KaiAgent(
     /** A reminder rang and the owner opened it: its message with Call / Snooze / Done. */
     fun rang(id: String, lang: KaiLang): KaiTurn? = reminders.rang(id, lang)
 
+    /** Kai வசூல்: money came in by UPI (a payment app's notification) — whose account, and the draft (Confirm first). */
+    private val vasool = KaiVasool(tools, books)
+    suspend fun upiReceived(credit: com.shopai.app.brain.tools.UpiCredit, lang: KaiLang): KaiTurn = vasool.received(credit, lang) { line -> ask(line) }
+
     /**
      * Kai's last reply asked the owner something other than the open draft (a choice, a missing time, Save for a word,
      * "neenga saptingala?"): a bare "seri" / "ama" answers that question, not the draft.

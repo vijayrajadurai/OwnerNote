@@ -39,6 +39,11 @@ class MainActivity : AppCompatActivity() {
             intent.removeExtra(com.shopai.app.notifications.MorningWorkAlarms.EXTRA_OPEN_MORNING_WORK)
             com.shopai.app.notifications.MorningWorkInbox.open()
         }
+        // Kai வசூல்: a payment alert was tapped — Kai Chat opens on that payment.
+        com.shopai.app.notifications.KaiUpiAlert.creditFrom(intent)?.let { credit ->
+            com.shopai.app.notifications.KaiUpiAlert.clearExtras(intent!!)
+            com.shopai.app.notifications.KaiUpiInbox.open(credit)
+        }
         val id = intent?.getStringExtra(com.shopai.app.notifications.KaiReminderEngine.EXTRA_OPEN_REMINDER) ?: return
         intent.removeExtra(com.shopai.app.notifications.KaiReminderEngine.EXTRA_OPEN_REMINDER)
         com.shopai.app.notifications.KaiReminderInbox.open(id)
