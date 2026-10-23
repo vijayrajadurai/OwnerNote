@@ -15,8 +15,6 @@ import com.shopai.app.data.network.presentApiError
 import com.shopai.app.ui.components.ApiErrorAlertDialog
 import com.shopai.app.ui.components.BottomNavTab
 import com.shopai.app.ui.components.PartyDirectoryBody
-import com.shopai.app.ui.theme.LedgerDebit
-import com.shopai.app.ui.theme.LedgerDebitMuted
 import com.shopai.app.util.normalizeIndianPhone
 import com.shopai.app.util.rememberContactPicker
 
@@ -72,17 +70,17 @@ fun SuppliersScreen(
 
     ApiErrorAlertDialog(message = alertError, onDismiss = { alertError = null })
 
-    MainTabScaffold(activeTab = BottomNavTab.Suppliers, onNavigate = onNavigate) {
+    MainTabScaffold(activeTab = BottomNavTab.Suppliers, onNavigate = onNavigate, padContent = false, applyTopInset = false) {
         PartyDirectoryBody(
             title = stringResource(R.string.suppliers_title),
-            contactLabel = stringResource(R.string.suppliers_add_contact),
-            addLabel = stringResource(R.string.suppliers_add),
+            incoming = false,
+            contactLabel = stringResource(R.string.party_contact),
+            addLabel = stringResource(R.string.party_add_supplier),
+            searchHint = stringResource(R.string.party_search_supplier),
             emptyText = stringResource(R.string.suppliers_empty),
             parties = suppliers,
             loading = loading,
             error = error,
-            avatarAccent = LedgerDebit,
-            avatarAccentMuted = LedgerDebitMuted,
             onContactClick = pickContact,
             onAddClick = { onAddDebit(null, "", null) },
             onPartyClick = onOpenSupplier,

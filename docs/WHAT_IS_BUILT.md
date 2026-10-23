@@ -369,6 +369,14 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
     - Night-green backdrop with a dot grid; Kai in a turning ring of light; glass bubbles; hopping typing dots.
     - The mic as a glowing orb; while it records, a full-screen voice mode (Kai standing, the words heard,
       "Mudinjudhu ✓" = the same as tapping the mic).
+  - Customers / Suppliers lists (23 Oct 2026, `PartyListComponents.kt`, `util/PartyGroups.kt`, `PartyGroupsTest`):
+    - Mixed-green background; on top the total still open ("Vaanganum" green / "Kodukkanum" red), how many people, and how
+      much is late against on time.
+    - Search by name or phone digits; chips Ellaam / Late / Indha vaaram / Mudinjadhu.
+    - Rows grouped late first (most days late on top), then due this week, later, cleared; each row says "25 naal late",
+      "3 naal-la due · 26 Oct", "Due 20 Nov" or "Mudinjadhu ✓" — no empty "—" line.
+    - A late customer row has a WhatsApp button (the customer page's message, the owner sends).
+    - At the bottom one big "Kadan kudunga" / "Vaangunadhu podunga" (the same Add Credit / Add Debit) and "Contact".
   - Customer detail 4b (`CustomerDetailHero.kt`):
     - The balance big with what came in so far and the days late.
     - "Panam vandhuchu" (Books payment), "Kadan kudunga" (Add Credit).

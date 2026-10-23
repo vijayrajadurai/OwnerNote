@@ -15,8 +15,6 @@ import com.shopai.app.data.network.presentApiError
 import com.shopai.app.ui.components.ApiErrorAlertDialog
 import com.shopai.app.ui.components.BottomNavTab
 import com.shopai.app.ui.components.PartyDirectoryBody
-import com.shopai.app.ui.theme.LedgerCredit
-import com.shopai.app.ui.theme.LedgerCreditMuted
 import com.shopai.app.util.normalizeIndianPhone
 import com.shopai.app.util.rememberContactPicker
 
@@ -74,17 +72,29 @@ fun CustomersScreen(
 
     ApiErrorAlertDialog(message = alertError, onDismiss = { alertError = null })
 
-    MainTabScaffold(activeTab = BottomNavTab.Customers, onNavigate = onNavigate) {
+    // WhatsApp reminder from a late row: the same Tamil / Tanglish message as the customer's page; the owner sends it.
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var shopName by remember { mutableStateOf("") }
+    LaunchedEffect(Unit) { shopName = runCatching { container.businessRepository.getMyBusiness()?.businessName }.getOrNull().orEmpty() }
+
+    MainTabScaffold(activeTab = BottomNavTab.Customers, onNavigate = onNavigate, padContent = false, applyTopInset = false) {
         PartyDirectoryBody(
             title = stringResource(R.string.customers_title),
-            contactLabel = stringResource(R.string.customers_add_contact),
-            addLabel = stringResource(R.string.customers_add),
+            incoming = true,
+            contactLabel = stringResource(R.string.party_contact),
+            addLabel = stringResource(R.string.party_add_customer),
+            searchHint = stringResource(R.string.party_search_customer),
             emptyText = stringResource(R.string.customers_empty),
             parties = customers,
             loading = loading,
             error = error,
-            avatarAccent = LedgerCredit,
-            avatarAccentMuted = LedgerCreditMuted,
+            onWhatsApp = { p ->
+                val due = com.shopai.app.util.parseIsoToLocalDate(p.nextDueDate)
+                    ?.let { context.getString(R.string.party_wa_due, it.format(java.time.format.DateTimeFormatter.ofPattern("d MMM", java.util.Locale.ENGLISH))) }
+                    .orEmpty()
+                val message = context.getString(R.string.party_wa_message, p.name, com.shopai.app.util.formatInr(p.pendingTotal), due, shopName.ifBlank { "OwnerNote" })
+                runCatching { com.shopai.app.util.openWhatsAppText(context, p.phone, message) }
+            },
             onContactClick = pickContact,
             onAddClick = { onAddCredit(null, "", null) },
             onPartyClick = onOpenCustomer,
