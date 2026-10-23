@@ -1557,6 +1557,8 @@ NewonX — Owner Note. Use Help & Support in the app.]]></string>
     <string name="kai_reminder_continue_in_chat">Continue in Kai Chat</string>
     <!-- Kai — private shop language (this business only) -->
     <string name="kai_chat_listening">Listening…</string>
+    <string name="kai_mic_failed">The mic couldn’t start (error %1$d). Tap the mic and speak again.</string>
+    <string name="kai_mic_unavailable">Voice typing isn’t available on this phone. Turn on Google voice typing, or type your message.</string>
     <string name="kai_chat_speak">Speak to Kai</string>
     <!-- Bill scanner: camera permission -->
     <string name="bill_camera_permission">Owner, bill scan panna camera permission venum.</string>

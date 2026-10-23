@@ -1504,6 +1504,8 @@ NewonX — Owner Note. ஆப்பில் உதவி & ஆதரவு.]]><
     <string name="kai_reminder_continue_in_chat">Kai Chat-ல தொடருங்க</string>
     <!-- Kai — private shop language (this business only) -->
     <string name="kai_chat_listening">கேக்கறேன்…</string>
+    <string name="kai_mic_failed">Mic தொடங்கல (error %1$d). திரும்ப mic-ஐ தொட்டு பேசுங்க.</string>
+    <string name="kai_mic_unavailable">இந்த phone-ல voice typing இல்ல. Google voice typing-ஐ on பண்ணுங்க, இல்லைனா type பண்ணுங்க.</string>
     <string name="kai_chat_speak">Kai-கிட்ட பேசுங்க</string>
     <!-- Bill scanner: camera permission -->
     <string name="bill_camera_permission">ஓனர், பில் ஸ்கேன் பண்ண கேமரா அனுமதி வேணும்.</string>
