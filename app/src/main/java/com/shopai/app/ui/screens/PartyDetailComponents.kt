@@ -135,7 +135,7 @@ private fun TransactionCard(
         }
         if (!description.isNullOrBlank()) {
             Text(
-                text = description,
+                text = ledgerLabelText(description),
                 style = MaterialTheme.typography.bodyMedium,
                 color = ShopAiThemeColors.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp),
@@ -285,7 +285,7 @@ fun LedgerHistorySection(lines: List<LedgerLine>) {
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = line.label,
+                        text = ledgerLabelText(line.label),
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Medium,
                         color = ShopAiThemeColors.onSurface,
@@ -340,4 +340,18 @@ private fun transactionStatusLabel(status: String): String = when (status) {
     "PAID" -> stringResource(R.string.party_status_paid)
     "PARTIALLY_PAID" -> stringResource(R.string.party_status_partial)
     else -> stringResource(R.string.party_status_pending)
+}
+
+/**
+ * The words the app itself writes into an entry (Credit given, Payment made, Balance brought from the OwnerNote ledger) in
+ * the app's language (owner, 23 Oct 2026: "Tamil-la vechaalum English-la varudhu"). What the owner typed is shown as typed.
+ */
+@Composable
+fun ledgerLabelText(label: String): String = when (label) {
+    "Credit given" -> stringResource(R.string.party_label_credit)
+    "Payment received" -> stringResource(R.string.party_label_payment_in)
+    "Debit owed" -> stringResource(R.string.party_label_debit)
+    "Payment made" -> stringResource(R.string.party_label_payment_out)
+    "Balance brought from the OwnerNote ledger" -> stringResource(R.string.party_label_opening)
+    else -> label
 }

@@ -64,6 +64,7 @@ fun MainTabScaffold(
                 if (tab != activeTab) onNavigate(route)
             },
             modifier = Modifier.align(Alignment.BottomCenter),
+            onKai = { onNavigate(Routes.KaiChat) },
         )
     }
 }

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.Home
@@ -285,68 +286,90 @@ fun BottomNavBar(
     active: BottomNavTab,
     onTabSelected: (BottomNavTab) -> Unit,
     modifier: Modifier = Modifier,
+    onKai: (() -> Unit)? = null,
 ) {
-    val pillShape = RoundedCornerShape(999.dp)
+    // Dark floating bar with Kai's face raised in the middle — Kai Chat is the app's main feature (owner, 22 Oct 2026).
+    val barShape = RoundedCornerShape(24.dp)
     Box(
         modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(start = 20.dp, end = 20.dp, bottom = 14.dp),
+            .padding(start = 14.dp, end = 14.dp, bottom = 14.dp),
         contentAlignment = Alignment.Center,
     ) {
+        // (Discover only for a business that buys and sells goods around it — owner's table, 21 Oct 2026)
+        val features = LocalFeatures.current
+        val tabs = BottomNavTab.entries.filter { it != BottomNavTab.Discover || com.shopai.app.data.model.Feature.DISCOVER in features || it == active }
+        val kaiAt = if (onKai != null) (tabs.size + 1) / 2 else -1
         Row(
             modifier = Modifier
-                .shadow(
-                    elevation = 18.dp,
-                    shape = pillShape,
-                    ambientColor = Color.Black.copy(alpha = 0.12f),
-                    spotColor = Color.Black.copy(alpha = 0.18f),
-                )
-                .clip(pillShape)
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(horizontal = 8.dp, vertical = 7.dp),
+                .fillMaxWidth()
+                .height(64.dp)
+                .shadow(elevation = 18.dp, shape = barShape, clip = false, ambientColor = Color.Black.copy(alpha = 0.25f), spotColor = Color.Black.copy(alpha = 0.35f))
+                .background(com.shopai.app.ui.kai.KaiInk.Ink, barShape),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            // (Discover only for a business that buys and sells goods around it — owner's table, 21 Oct 2026)
-            val features = LocalFeatures.current
-            BottomNavTab.entries.filter { it != BottomNavTab.Discover || com.shopai.app.data.model.Feature.DISCOVER in features || it == active }.forEach { tab ->
+            tabs.forEachIndexed { index, tab ->
+                if (index == kaiAt && onKai != null) BottomNavKai(onKai)
                 val isActive = tab == active
                 val label = stringResource(tab.labelRes)
-                Row(
+                Column(
                     modifier = Modifier
-                        .clip(pillShape)
-                        .background(
-                            if (isActive) com.shopai.app.ui.theme.HeaderGreenStart else Color.Transparent,
-                        )
+                        .weight(1f)
+                        .clip(RoundedCornerShape(16.dp))
                         .clickable { onTabSelected(tab) }
-                        .padding(
-                            horizontal = if (isActive) 16.dp else 12.dp,
-                            vertical = 10.dp,
-                        ),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        .padding(vertical = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(3.dp),
                 ) {
                     Icon(
                         imageVector = tab.icon,
                         contentDescription = label,
-                        tint = if (isActive) {
-                            MaterialTheme.colorScheme.onPrimary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
+                        tint = if (isActive) Color.White else Color(0xFFA8A29E),
                         modifier = Modifier.size(22.dp),
                     )
-                    if (isActive) {
-                        Text(
-                            text = label,
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            maxLines = 1,
-                        )
-                    }
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
+                        color = if (isActive) Color.White else Color(0xFFA8A29E),
+                        maxLines = 1,
+                    )
                 }
+            }
+            if (kaiAt >= tabs.size && onKai != null) BottomNavKai(onKai)
+        }
+    }
+}
+
+@Composable
+private fun RowScope.BottomNavKai(onKai: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .weight(1f)
+            .height(64.dp),
+        contentAlignment = Alignment.TopCenter,
+    ) {
+        Box(
+            modifier = Modifier
+                .graphicsLayer { translationY = -24.dp.toPx() }
+                .size(60.dp)
+                .shadow(10.dp, androidx.compose.foundation.shape.CircleShape, ambientColor = Color(0xFF047857), spotColor = Color(0xFF047857))
+                .clip(androidx.compose.foundation.shape.CircleShape)
+                .clickable(onClick = onKai),
+            contentAlignment = Alignment.Center,
+        ) {
+            com.shopai.app.ui.kai.KaiFace(size = 60.dp, ring = 3.dp)
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .size(20.dp)
+                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .background(Color(0xFF059669))
+                    .border(2.dp, com.shopai.app.ui.kai.KaiInk.Ink, androidx.compose.foundation.shape.CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Filled.Mic, contentDescription = stringResource(R.string.kai_chat_entry_title), tint = Color.White, modifier = Modifier.size(11.dp))
             }
         }
     }

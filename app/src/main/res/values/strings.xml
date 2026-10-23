@@ -124,8 +124,8 @@
     <!-- Home -->
     <string name="home_fallback_name">Owner Note</string>
     <string name="home_greeting">Hello, %1$s 👋</string>
-    <string name="home_receivable">To collect</string>
-    <string name="home_payable">To pay</string>
+    <string name="home_receivable">Vaanganum</string>
+    <string name="home_payable">Kodukkanum</string>
     <string name="home_net_position">Net position</string>
     <string name="home_reminders_carousel_title">Upcoming reminders</string>
     <string name="home_payment_reminders_heading">Today’s Payment Reminders</string>
@@ -200,16 +200,12 @@
 
     <!-- Customers / Suppliers -->
     <string name="customers_title">Customers</string>
-    <string name="customers_add">+ Credit</string>
-    <string name="customers_add_contact">+ Contact credit</string>
     <string name="customers_empty">No customers yet. Add from contacts or record a credit.</string>
     <string name="customers_error">Could not load customer list.</string>
     <string name="customers_import_success">Customer added from contacts.</string>
     <string name="customers_import_exists">This contact is already in your customer list.</string>
     <string name="contacts_pick_failed">Could not read the selected contact. Check contacts permission and try again.</string>
     <string name="suppliers_title">Suppliers</string>
-    <string name="suppliers_add">+ Debit</string>
-    <string name="suppliers_add_contact">+ Contact debit</string>
     <string name="suppliers_empty">No suppliers yet. Add from contacts or record a debit.</string>
     <string name="suppliers_error">Could not load supplier list.</string>
     <string name="suppliers_import_success">Supplier added from contacts.</string>
@@ -231,10 +227,33 @@
     <string name="party_payment_error">Could not record payment.</string>
     <string name="party_txn_pending">Pending: %1$s</string>
     <string name="party_due_date">Due: %1$s</string>
-    <string name="party_section_today">Today</string>
-    <string name="party_section_yesterday">Yesterday</string>
-    <string name="party_section_tomorrow">Tomorrow</string>
-    <string name="party_section_no_due">No due date</string>
+    <string name="party_total_get">VAANGANUM</string>
+    <string name="party_total_give">KODUKKANUM</string>
+    <string name="party_people">%1$d per</string>
+    <string name="party_late_sum">● %1$d per late · %2$s</string>
+    <string name="party_on_time">Time-la %1$s</string>
+    <string name="party_search_customer">Per illa phone number thedunga</string>
+    <string name="party_search_supplier">Supplier per thedunga</string>
+    <string name="party_chip_all">Ellaam · %1$d</string>
+    <string name="party_chip_late">Late · %1$d</string>
+    <string name="party_chip_week">Indha vaaram · %1$d</string>
+    <string name="party_chip_cleared">Mudinjadhu · %1$d</string>
+    <string name="party_group_late">LATE</string>
+    <string name="party_group_week">INDHA VAARAM</string>
+    <string name="party_group_later">APRAM</string>
+    <string name="party_group_cleared">MUDINJADHU</string>
+    <string name="party_group_note">%1$d per · %2$s</string>
+    <string name="party_row_late">%1$d naal late</string>
+    <string name="party_row_today">Innaikku due</string>
+    <string name="party_row_soon">%1$d naal-la due · %2$s</string>
+    <string name="party_row_later">Due %1$s</string>
+    <string name="party_row_no_due">Due date illa</string>
+    <string name="party_row_cleared">Mudinjadhu ✓</string>
+    <string name="party_add_customer">Kadan kudunga</string>
+    <string name="party_add_supplier">Vaangunadhu podunga</string>
+    <string name="party_contact">Contact</string>
+    <string name="party_list_none">Indha thedalukku yaarum illa.</string>
+    <string name="party_remind_wa">WhatsApp nyabagam</string>
     <string name="party_running_balance">Balance: %1$s</string>
     <string name="party_status_paid">Paid</string>
     <string name="party_status_partial">Partially paid</string>
@@ -1616,7 +1635,7 @@ NewonX — Owner Note. Use Help & Support in the app.]]></string>
     <string name="bill_stock_new_added">%1$d new product(s) added to Inventory.</string>
     <!-- The salon master list on the Menu (owner, 19 Oct 2026) -->
     <string name="menu_pick_list">Service list-la irundhu edunga (%1$d)</string>
-    <string name="menu_hide_list">Service list moodu</string>
+    <string name="menu_hide_list">Service list moodunga</string>
     <!-- Customer / supplier list import (owner, 19 Oct 2026) -->
     <string name="party_import_short">Import</string>
     <string name="party_import_title">Pazhaiya kanakku import</string>
@@ -1633,7 +1652,7 @@ NewonX — Owner Note. Use Help & Support in the app.]]></string>
     <string name="party_import_due">Vasool: %1$s</string>
     <string name="party_import_they_owe">%1$s tharanum</string>
     <string name="party_import_you_owe">%1$s kudukkanum</string>
-    <string name="party_import_confirm">Confirm — %1$d per save pannu</string>
+    <string name="party_import_confirm">Confirm — %1$d per save pannunga</string>
     <string name="party_import_saved">✅ Save aachu: %1$d per add aanaanga (%2$d balance-oda).</string>
     <string name="party_import_already">Already irundhavanga (maathala): %1$s</string>
     <string name="party_import_failed">Save aagala. Edhuvum maaralai — marubadiyum try pannunga.</string>
@@ -1704,4 +1723,154 @@ NewonX — Owner Note. Use Help & Support in the app.]]></string>
     <string name="bill_sum_details_sub">Every field — GST, due date, items</string>
     <string name="bill_sum_show">Show</string>
     <string name="bill_sum_hide">Hide</string>
+    <!-- OwnerNote Home: Kai Chat first (owner, 22 Oct 2026) -->
+    <string name="home_bell">Nyabagangal</string>
+    <string name="home_profile">Profile</string>
+    <string name="home_kai_says">Kai solraar</string>
+    <string name="home_ask_kai">Kai-kitta kelunga</string>
+    <string name="home_tile_kai">Kai</string>
+    <string name="home_tile_stock">Stock</string>
+    <string-array name="home_kai_examples_retail">
+        <item>Kumar 2000 kadan</item>
+        <item>Maggi 2 box vandhuchu</item>
+        <item>Innaikku evlo sales?</item>
+    </string-array>
+    <string-array name="home_kai_examples_service">
+        <item>Oru haircut 150</item>
+        <item>Meena 800 kadan</item>
+        <item>Innaikku evlo?</item>
+    </string-array>
+    <string-array name="home_kai_examples_wholesale">
+        <item>Kumaran store ku 100 box noodles vithen</item>
+        <item>Anbu Mart 20000 kuduthaanga</item>
+        <item>Yaar yaar tharanum?</item>
+    </string-array>
+    <string name="kai_chat_online">Online · Tamil, English-la pesunga</string>
+    <string name="kai_voice_listening">KEKKUREN</string>
+    <string name="kai_voice_title">Sollunga</string>
+    <string name="kai_voice_done">Mudinjudhu ✓</string>
+    <!-- Customer detail 4b (owner, 22 Oct 2026) -->
+    <string name="party_customer_label">Customer</string>
+    <string name="party_entries_count">%1$d entries</string>
+    <string name="party_to_receive">Ungalukku varavendiyadhu</string>
+    <string name="party_days_late">%1$d naal late</string>
+    <string name="party_came_in">%1$s vandhuchu</string>
+    <string name="party_total_label">Mothamaa %1$s</string>
+    <string name="party_payment_in">Panam vandhuchu</string>
+    <string name="party_give_credit">Kadan kudunga</string>
+    <string name="party_wa_remind">WhatsApp-la nyabagam paduthunga</string>
+    <string name="party_statement_pdf">Statement PDF</string>
+    <string name="party_sale_bill">Sale bill</string>
+    <string name="party_supplier_label">Supplier</string>
+    <string name="party_to_give">Neenga kodukkanum</string>
+    <string name="party_paid_out">%1$s kuduthaachu</string>
+    <string name="party_payment_out">Panam kuduthen</string>
+    <string name="party_add_purchase">Vaangunadhu podunga</string>
+    <string name="party_label_credit">Kadan kuduthadhu</string>
+    <string name="party_label_payment_in">Panam vandhadhu</string>
+    <string name="party_label_debit">Vaangunadhu (baaki)</string>
+    <string name="party_label_payment_out">Panam kuduthadhu</string>
+    <string name="party_label_opening">Pazhaiya kanakku-la irundha baaki</string>
+    <string name="party_wa_sheet_title">%1$s-ku indha message pogum</string>
+    <string name="party_wa_send">WhatsApp-la anuppunga</string>
+    <string name="party_wa_not_now">Venaam</string>
+    <string name="party_wa_message">Vanakkam %1$s 🙏\nUnga kanakku-la %2$s baaki irukku%3$s.\nUngalukku mudinjappo kudunga. Nandri!\n— %4$s</string>
+    <string name="party_wa_due">" (due %1$s)"</string>
+    <!-- Stock 5b and error / empty 7b (owner, 22 Oct 2026) -->
+    <string name="inv_stat_items">Items</string>
+    <string name="inv_stat_value">Value</string>
+    <string name="inv_stat_low">Kammi</string>
+    <string name="inv_low_first">Kammi mudhalla</string>
+    <string name="inv_all">Ellaam</string>
+    <string name="inv_stock_vs_min">%1$s %2$s · min %3$s</string>
+    <string name="friendly_load_title">Konjam problem</string>
+    <string name="friendly_load_body">Net on-la irukka-nu paarunga. Konja neram kazhichu thirumba try pannunga.</string>
+    <string name="friendly_nothing_lost">Neenga pottadhu edhuvum azhiyala</string>
+    <string name="friendly_try_again">Thirumba try pannunga</string>
+    <string name="friendly_no_products_title">Innum product illa</string>
+    <string name="friendly_no_products_body">Kai-kitta “Maggi 2 box vandhuchu” nu sollunga — Kai stock-la serthudum.</string>
+    <string name="friendly_tell_kai">Kai-kitta sollunga</string>
+    <string name="friendly_details_show">Vivaram paarunga</string>
+    <string name="friendly_details_hide">Vivaram moodunga</string>
+    <string name="home_late_count">%1$d late</string>
+    <!-- Home diary cards (owner, 23 Oct 2026) -->
+    <string name="home_sales_title">Innaikku sales</string>
+    <string name="home_sales_line">Innaikku %1$s vandhuchu.</string>
+    <string name="home_sales_empty">Innaikku sales innum podala — Kai-kitta sollunga, illa Cash Note-la podunga.</string>
+    <string name="home_tile_sales">Sales</string>
+    <string name="home_tile_services">Services</string>
+    <string name="home_tile_vasool">Vasool</string>
+    <string name="home_tile_late">Late</string>
+    <string name="home_tile_sent">Anuppinadhu</string>
+    <string name="home_tile_give">Kodukkanum</string>
+    <string name="home_badge_low">kammi</string>
+    <string name="home_tag_sales">Sales</string>
+    <string name="home_tag_due">Tharanum</string>
+    <string name="home_tag_stock">Stock</string>
+    <string name="home_sales_label">Innaikku sales</string>
+    <string name="home_sales_label_service">Innaikku · %1$d entry</string>
+    <string name="home_sales_line_service">Innaikku %1$d entry, %2$s.</string>
+    <string name="home_sales_more">Nethu-vida %1$d%% adhigam.</string>
+    <string name="home_sales_less">Nethu-vida %1$d%% kammi.</string>
+    <string name="home_delta_up">▲ %1$d%% munnaal-vida</string>
+    <string name="home_delta_down">▼ %1$d%% munnaal-vida</string>
+    <string name="home_cash_upi">Cash %1$s · UPI %2$s</string>
+    <string name="home_day_today">Inru</string>
+    <string name="home_due_title">Kadaigal tharanum</string>
+    <string name="home_due_label">KADAIGAL THARANUM</string>
+    <string name="home_due_line">Kadaigal %1$s tharanum.</string>
+    <string name="home_due_line_late">Kadaigal %1$s tharanum. %2$s 30 naal mela late.</string>
+    <string name="home_due_give">Neenga kodukkanum %1$s</string>
+    <string name="home_due_ontime">Time-la</string>
+    <string name="home_due_1to30">1–30 naal late</string>
+    <string name="home_due_30plus">30+ naal late</string>
+    <string name="home_due_cta">Kadaigal</string>
+    <string name="home_stock_title">Stock</string>
+    <string name="home_stock_line">%1$d porul kammi. Order list ready — supplier-ku anuppalaam.</string>
+    <string name="home_stock_near">Sila porul kammi aaga pogudhu — munnaadiye order pannalaam.</string>
+    <string name="home_stock_media">Stock kammi aagudhu</string>
+    <string name="home_stock_cta">Order list</string>
+    <string name="home_stock_send">WhatsApp-la anuppunga</string>
+    <string name="home_order_title">Order list — %1$s</string>
+    <string name="home_order_line">• %1$s — %2$s irukku</string>
+    <string name="story_not_loaded">Idhu innum load aagala.</string>
+    <string name="story_services_tag">Innaikku services</string>
+    <string name="story_services_text">Cash Note-la innaikku %1$s vandhuchu.</string>
+    <string name="story_vasool_tag">Vaanga vendiyadhu</string>
+    <string name="story_vasool_cta">Customers paarunga</string>
+    <string name="story_late_tag">Late kadaigal</string>
+    <string name="story_late_text">%1$d bill due thethi thaandiduchu.</string>
+    <string name="story_late_cta">Kadaigal paarunga</string>
+    <string name="story_sent_tag">Innaikku anuppinadhu</string>
+    <string name="story_sent_text">Innaikku kadaigalukku vithadhu — books-la potta bill.</string>
+    <string name="story_give_tag">Neenga kodukkanum</string>
+    <string name="story_give_text">%1$d bill baaki · %2$d late.</string>
+    <string name="story_give_cta">Suppliers paarunga</string>
+    <string-array name="home_week_days">
+        <item>Thi</item>
+        <item>Sev</item>
+        <item>Pu</item>
+        <item>Vya</item>
+        <item>Ve</item>
+        <item>Sa</item>
+        <item>Nya</item>
+    </string-array>
+    <string name="story_close">Moodunga</string>
+    <string name="story_reply">Kai-kku reply pannunga…</string>
+    <string name="story_today_cta">Cash Note paarunga</string>
+    <string name="story_rem_late">%1$d late</string>
+    <string name="story_rem_none">Innaikku vasool nyabagam edhuvum illa.</string>
+    <string name="story_stock_tag">Stock kammi</string>
+    <string name="story_stock_value">%1$d porul</string>
+    <string name="story_stock_text">%1$s — order pannunga.</string>
+    <string name="story_stock_ok">Ellaa stock-um sari-a irukku.</string>
+    <string name="story_stock_loading">Stock innum load aagala.</string>
+    <string name="story_stock_cta">Stock paarunga</string>
+    <string name="home_cash_note">Cash Note</string>
+    <string name="home_vasool_title">Vasool nyabagam</string>
+    <string name="home_vasool_line">%1$d per-kitta vasool pannanum.</string>
+    <string name="home_see">Paarunga</string>
+    <string name="home_work_title">Innaikku velai</string>
+    <string name="home_work_line">Innaikku %1$d mukkiyamana velai irukku.</string>
+    <string name="home_work_none">Innaikku mukkiyamana velai edhuvum illa.</string>
 </resources>

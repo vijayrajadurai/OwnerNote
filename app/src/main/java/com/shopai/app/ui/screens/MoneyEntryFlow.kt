@@ -140,22 +140,23 @@ fun MoneyEntryFlow(
                     id = if (credit) container.partyRepository.createCustomer(CreatePartyInput(name = name, phone = prefillPhone)).id
                     else container.partyRepository.createSupplier(CreatePartyInput(name = name, phone = prefillPhone)).id
                 }
-                val saved = if (credit) container.transactionRepository.createCredit(
+                // The saved amount and due date (a credit and a debit are different types, so each is read in its own branch).
+                val (savedAmount, savedDue) = if (credit) container.transactionRepository.createCredit(
                     CreateCreditInput(customerId = id, customerName = if (id == null) name else null, amount = entered, description = null,
                         dueDate = localDateToIsoInstant(due)),
-                ) else container.transactionRepository.createDebit(
+                ).let { it.amount to it.dueDate } else container.transactionRepository.createDebit(
                     CreateDebitInput(supplierId = id, supplierName = if (id == null) name else null, amount = entered, description = null,
                         dueDate = localDateToIsoInstant(due)),
-                )
+                ).let { it.amount to it.dueDate }
                 // Kai reacts from the saved values (the database is the source of truth).
                 val brain = container.kaiBrain
                 container.appScope.launch {
                     brain.announce(
                         brain.saved(
                             name = name,
-                            amount = saved.amount.toDoubleOrNull() ?: entered,
+                            amount = savedAmount.toDoubleOrNull() ?: entered,
                             direction = if (credit) com.shopai.app.brain.Direction.RECEIVABLE else com.shopai.app.brain.Direction.PAYABLE,
-                            dueDate = com.shopai.app.util.parseIsoToLocalDate(saved.dueDate) ?: due,
+                            dueDate = com.shopai.app.util.parseIsoToLocalDate(savedDue) ?: due,
                             lang = com.shopai.app.brain.KaiLanguage.forAppLocale(),
                         ),
                     )
