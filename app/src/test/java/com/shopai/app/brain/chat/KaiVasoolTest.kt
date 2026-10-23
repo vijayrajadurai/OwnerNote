@@ -170,6 +170,20 @@ class KaiVasoolTest {
         assertNull(t.plan)
     }
 
+    /** The owner's phone (GPay, 23 Oct 2026): "Prabhakaran paid you ₹1.00" / "Payment from PhonePe" → Prabhakaran's draft. */
+    @Test fun ownersGpayNotification() {
+        val c = KaiUpiNotice.read("com.google.android.apps.nbu.paisa.user", "Prabhakaran paid you ₹1.00", "Payment from PhonePe", null, 5L)!!
+        val s = Shop(Party("c6", "Prabhakaran", true, BigDecimal("1")))
+        val t = runBlocking { s.kai.upiReceived(c, KaiLang.TAMIL) }
+        assertTrue(all(t), all(t).startsWith("ஓனர், ₹1 GPay-ல வந்துச்சு — Prabhakaran-கிட்ட இருந்து."))
+        assertEquals("c6", t.plan?.partyId)
+        assertEquals(PlanKind.PAYMENT_IN, t.plan?.kind)
+        // Not in the books yet (the demo): asked, never drafted for someone else.
+        val d = runBlocking { Shop().kai.upiReceived(c, KaiLang.TAMIL) }
+        assertNull(d.plan)
+        assertTrue(all(d), all(d).contains("யார் கணக்குல போடணும்?"))
+    }
+
     /** From the phone's notification to Kai's draft: the whole way. */
     @Test fun notificationToDraft() {
         val c = KaiUpiNotice.read("com.google.android.apps.nbu.paisa.user", "₹4,000 received", "Kumar paid you ₹4,000", null, 5L)!!

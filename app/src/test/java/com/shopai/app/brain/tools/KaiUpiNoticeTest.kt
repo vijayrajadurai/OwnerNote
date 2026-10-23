@@ -120,6 +120,17 @@ class KaiUpiNoticeTest {
 
     /** The owner's phone's own notifications go here (from screenshots) before release. */
     @Test fun ownersPhone() {
-        // (none yet)
+        // GPay, 23 Oct 2026 (owner's screenshots): collapsed, and expanded with the payer's app under it.
+        assertIn(read(gpay, "Prabhakaran paid you ₹1.00", "Tap to view."), "1", "Prabhakaran", "GPay")
+        assertIn(read(gpay, "Prabhakaran paid you ₹1.00", "Payment from PhonePe"), "1", "Prabhakaran", "GPay")
+        assertIn(read(gpay, "Prabhakaran paid you ₹1.00", "Tap to view.", "Payment from PhonePe"), "1", "Prabhakaran", "GPay")
+        // The same line as the text, no title.
+        assertIn(read(gpay, null, "Prabhakaran paid you ₹1.00"), "1", "Prabhakaran", "GPay")
+        // Another payer's app under it is never the payer.
+        listOf("Payment from Paytm", "Payment from Google Pay", "Payment from BHIM", "Payment from Amazon Pay", "Payment from WhatsApp").forEach { under ->
+            assertIn(read(gpay, "Selvi paid you ₹250.00", under), "250", "Selvi", "GPay")
+        }
+        // Payer's app only, no person: no name (asked), never "PhonePe".
+        assertIn(read(gpay, "₹1.00 received", "Payment from PhonePe"), "1", null, "GPay")
     }
 }

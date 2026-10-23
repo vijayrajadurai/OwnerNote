@@ -108,20 +108,23 @@ object KaiUpiNotice {
     private val namePaid = Regex("""(?i)^\s*($NAME)\s+(?:has\s+)?(?:paid|sent)\s+you\b""", RegexOption.MULTILINE)
     /** A title that is the app or a heading, not a person. */
     private val notAName = Regex(
-        """(?i)^(google\s*pay|gpay|g\s*pay|phonepe|phone\s*pe|paytm|bhim|upi|payment\w*|money|received|credited|you|your|""" +
+        """(?i)^(google\s*pay|gpay|g\s*pay|phonepe|phone\s*pe|paytm|bhim|upi|amazon\s*pay|whatsapp|cred|mobikwik|freecharge|navi|super\.?money|pop\s*upi|payment\w*|money|received|credited|you|your|""" +
             """transaction\w*|alert|success\w*|business|merchant|bank|account|a/c|wallet|new\s+payment|amount)\b""",
     )
     private val titles = Regex("""(?i)^(mr|mrs|ms|miss|dr|m/s)\.?\s+""")
 
     fun senderIn(title: String, body: String): String? {
-        val raw = fromName.find(body)?.groupValues?.get(1)
-            ?: namePaid.find(body)?.groupValues?.get(1)
-            ?: fromName.find(title)?.groupValues?.get(1)
-            ?: namePaid.find(title)?.groupValues?.get(1)
+        // Each place a name can be, in order; the first that is a person's name wins. GPay (owner's phone, 23 Oct 2026):
+        // title "Prabhakaran paid you ₹1.00", text "Payment from PhonePe" — "PhonePe" is the payer's app, not the payer.
+        val candidates = sequenceOf(
+            { namePaid.find(title)?.groupValues?.get(1) },
+            { namePaid.find(body)?.groupValues?.get(1) },
+            { fromName.find(body)?.groupValues?.get(1) },
+            { fromName.find(title)?.groupValues?.get(1) },
             // Title "Kumar", text "Paid you ₹500": the title is the payer.
-            ?: title.trim().takeIf { Regex("""(?i)^\s*(paid|sent)\s+you\b""").containsMatchIn(body) }
-            ?: return null
-        return cleanName(raw)
+            { title.trim().takeIf { Regex("""(?i)^\s*(paid|sent)\s+you\b""").containsMatchIn(body) } },
+        )
+        return candidates.mapNotNull { it()?.let(::cleanName) }.firstOrNull()
     }
 
     /** "MR KUMAR  S" → "Kumar S"; a UPI id, a number or an app / heading word → null. */
