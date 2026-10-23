@@ -141,6 +141,36 @@ class KaiUpiNoticeTest {
         assertEquals(KaiUpiFilter.Decision.QUIET, d("Sr Kannan"))
     }
 
+    /**
+     * "Shop owners rendu account vechiruppaanga — onnu shop, onnu personal; onnu PhonePe, innonnu GPay" (owner, 23 Oct 2026):
+     * the shop's apps chosen → every payer there is asked about; other apps (the personal account) stay quiet.
+     */
+    @Test fun shopAppsOnly() {
+        val books = listOf("Kumar")
+        fun d(app: String, sender: String?, shop: Set<String>, personal: Set<String> = emptySet(), ask: Boolean = false) =
+            KaiUpiFilter.decide(UpiCredit(BigDecimal("500"), sender, app, 0), books, personal, ask, shop)
+        val shop = setOf("PhonePe Business")
+        // On the shop's app: a customer, a stranger, no name — all asked.
+        assertEquals(KaiUpiFilter.Decision.CUSTOMER, d("PhonePe Business", "Kumar", shop))
+        assertEquals(KaiUpiFilter.Decision.UNKNOWN, d("PhonePe Business", "Praba", shop))
+        assertEquals(KaiUpiFilter.Decision.UNKNOWN, d("PhonePe Business", null, shop))
+        // On the personal app: quiet — even a customer's name, even with "ask about everyone" on.
+        assertEquals(KaiUpiFilter.Decision.QUIET, d("GPay", "Kumar", shop))
+        assertEquals(KaiUpiFilter.Decision.QUIET, d("GPay", "Praba", shop, ask = true))
+        // Marked personal: never, on any app.
+        assertEquals(KaiUpiFilter.Decision.PERSONAL, d("PhonePe Business", "Praba", shop, setOf("praba")))
+        // None chosen: customers only, as before.
+        assertEquals(KaiUpiFilter.Decision.CUSTOMER, d("GPay", "Kumar", emptySet()))
+        assertEquals(KaiUpiFilter.Decision.QUIET, d("GPay", "Praba", emptySet()))
+        // Two shop apps.
+        assertEquals(KaiUpiFilter.Decision.UNKNOWN, d("GPay Business", "Praba", setOf("PhonePe Business", "GPay Business")))
+    }
+
+    @Test fun phonePeBusinessIsRead() {
+        assertIn(KaiUpiNotice.read("com.phonepe.app.business", "Payment received", "Received ₹750 from Kumar", null, 1L), "750", "Kumar", "PhonePe Business")
+        assertEquals("phonepe", UpiCredit(BigDecimal.ONE, null, "PhonePe Business", 0).modeWord)
+    }
+
     /** The owner's phone's own notifications go here (from screenshots) before release. */
     @Test fun ownersPhone() {
         // GPay, 23 Oct 2026 (owner's screenshots): collapsed, and expanded with the payer's app under it.

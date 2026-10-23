@@ -54,7 +54,7 @@ class KaiUpiListener : NotificationListenerService() {
             // Customers only (owner, 23 Oct 2026): a friend's or family's money is the owner's own — no alert.
             container.appScope.launch {
                 val customers = runCatching { container.kaiBooks.snapshot()?.customers.orEmpty().map { it.name } }.getOrDefault(emptyList())
-                val decision = KaiUpiFilter.decide(credit, customers, KaiUpiPrefs.personal(app), KaiUpiPrefs.askUnknown(app))
+                val decision = KaiUpiFilter.decide(credit, customers, KaiUpiPrefs.personal(app), KaiUpiPrefs.askUnknown(app), KaiUpiPrefs.shopApps(app))
                 Log.i(TAG, "money in: ${credit.app} ${credit.amount.toPlainString()} (${if (credit.sender != null) "name" else "no name"}) → $decision")
                 if (decision == KaiUpiFilter.Decision.CUSTOMER || decision == KaiUpiFilter.Decision.UNKNOWN) KaiUpiAlert.show(app, credit)
             }
@@ -86,6 +86,12 @@ object KaiUpiPrefs {
     }
 
     fun clearPersonal(c: Context): Boolean = prefs(c).edit().remove(KEY_PERSONAL).commit()
+
+    private const val KEY_SHOP_APPS = "shop_apps"
+
+    /** The apps the shop's money comes on (names as in [KaiUpiNotice.apps]); empty: not chosen. */
+    fun shopApps(c: Context): Set<String> = prefs(c).getStringSet(KEY_SHOP_APPS, emptySet()).orEmpty().toSet()
+    fun setShopApps(c: Context, apps: Set<String>): Boolean = prefs(c).edit().putStringSet(KEY_SHOP_APPS, apps).commit()
 
     fun askUnknown(c: Context): Boolean = prefs(c).getBoolean(KEY_ASK_UNKNOWN, false)
     fun setAskUnknown(c: Context, on: Boolean): Boolean = prefs(c).edit().putBoolean(KEY_ASK_UNKNOWN, on).commit()

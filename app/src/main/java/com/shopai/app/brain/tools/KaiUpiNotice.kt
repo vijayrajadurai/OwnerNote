@@ -18,7 +18,7 @@ data class UpiCredit(
     /** "GPay", "PhonePe", "Paytm", "BHIM": said in Kai's line and used as the payment mode word. */
     val modeWord: String get() = when (app) {
         "GPay", "GPay Business" -> "gpay"
-        "PhonePe" -> "phonepe"
+        "PhonePe", "PhonePe Business" -> "phonepe"
         "Paytm", "Paytm Business" -> "paytm"
         else -> "upi"
     }
@@ -42,6 +42,7 @@ object KaiUpiNotice {
         "com.google.android.apps.nbu.paisa.user" to "GPay",
         "com.google.android.apps.nbu.paisa.merchant" to "GPay Business",
         "com.phonepe.app" to "PhonePe",
+        "com.phonepe.app.business" to "PhonePe Business",
         "net.one97.paytm" to "Paytm",
         "com.paytm.business" to "Paytm Business",
         "in.org.npci.upiapp" to "BHIM",
@@ -184,11 +185,17 @@ object KaiUpiFilter {
     /** A payer's name as kept in the owner's personal list: the same however the app spells its case or spaces. */
     fun key(name: String): String = name.trim().lowercase(java.util.Locale.ROOT).replace(Regex("""\s+"""), " ")
 
-    fun decide(c: UpiCredit, customers: List<String>, personal: Set<String>, askUnknown: Boolean): Decision {
+    /**
+     * [shopApps]: the apps the owner said take the shop's money (owner, 23 Oct 2026: "shop owners rendu account vechiruppaanga —
+     * onnu shop, onnu personal; onnu PhonePe, innonnu GPay"). Chosen: money on those apps is the shop's — Kai asks about every
+     * payer there; money on any other app is the owner's personal account — quiet. Empty (not chosen): customers only, as above.
+     */
+    fun decide(c: UpiCredit, customers: List<String>, personal: Set<String>, askUnknown: Boolean, shopApps: Set<String> = emptySet()): Decision {
         val sender = c.sender
         if (sender != null && key(sender) in personal) return Decision.PERSONAL
+        if (shopApps.isNotEmpty() && c.app !in shopApps) return Decision.QUIET
         if (sender != null && customers.any { likeCustomer(sender, it) }) return Decision.CUSTOMER
-        return if (askUnknown) Decision.UNKNOWN else Decision.QUIET
+        return if (askUnknown || shopApps.isNotEmpty()) Decision.UNKNOWN else Decision.QUIET
     }
 
     /**

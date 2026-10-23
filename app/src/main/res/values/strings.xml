@@ -1897,4 +1897,6 @@ NewonX — Owner Note. Use Help & Support in the app.]]></string>
     <string name="kai_upi_ask_unknown_hint">Off: money from friends and family stays quiet — Kai speaks only for your customers. Turn it on for a demo.</string>
     <string name="kai_upi_personal_count">Marked personal (never asked): %1$d</string>
     <string name="kai_upi_personal_clear">Clear</string>
+    <string name="kai_upi_shop_apps_title">Which app takes the shop\u2019s money?</string>
+    <string name="kai_upi_shop_apps_hint">Pick the shop\u2019s app(s): Kai asks about every payment on them and stays quiet on the others (your personal account). Pick none: Kai speaks only for your customers. If the shop and personal accounts are in the same app, Kai can\u2019t tell them apart — pick none.</string>
 </resources>

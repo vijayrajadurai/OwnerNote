@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
@@ -41,6 +42,8 @@ fun KaiVasoolSettings() {
     var granted by remember { mutableStateOf(KaiUpiAccess.granted(context)) }
     var explain by remember { mutableStateOf(false) }
     var askUnknown by remember { mutableStateOf(KaiUpiPrefs.askUnknown(context)) }
+    var shopApps by remember { mutableStateOf(KaiUpiPrefs.shopApps(context)) }
+    val shopAppChoices = remember { com.shopai.app.brain.tools.KaiUpiNotice.apps.values.distinct() }
     var personalCount by remember { mutableStateOf(KaiUpiPrefs.personal(context).size) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(Unit) {
@@ -73,6 +76,22 @@ fun KaiVasoolSettings() {
         if (!granted) {
             Text(stringResource(R.string.kai_upi_restricted_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+        // The shop's account on one app, the personal one on another (owner, 23 Oct 2026): the shop's apps only.
+        HorizontalDivider(Modifier.padding(vertical = 8.dp))
+        Text(stringResource(R.string.kai_upi_shop_apps_title), fontWeight = FontWeight.SemiBold)
+        for (app in shopAppChoices) {
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(
+                    checked = app in shopApps,
+                    onCheckedChange = { on ->
+                        val next = if (on) shopApps + app else shopApps - app
+                        if (KaiUpiPrefs.setShopApps(context, next)) shopApps = next
+                    },
+                )
+                Text(app, modifier = Modifier.weight(1f))
+            }
+        }
+        Text(stringResource(R.string.kai_upi_shop_apps_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         // Customers only by default: a friend's or family's money stays quiet (owner, 23 Oct 2026).
         HorizontalDivider(Modifier.padding(vertical = 8.dp))
         Row(

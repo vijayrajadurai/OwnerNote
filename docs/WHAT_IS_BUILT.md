@@ -218,6 +218,9 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
   (or may be) a customer of the books (`KaiUpiFilter`); anyone else, or no name, stays quiet. Settings → "Customer
   இல்லாதவங்க பணத்துக்கும் கேளு" (off by default; on for a demo). Kai's question has "சொந்த பணம் — X-க்கு இனி கேக்காதே":
   that payer is never asked about again (kept on the phone, `KaiUpiPrefs`; cleared from Settings).
+- The shop's app (owner, 23 Oct 2026: shop account on one app, personal on another): Settings → "கடை பணம் எந்த app-ல வரும்?"
+  (checkboxes; PhonePe Business, GPay Business, Paytm Business read too). Chosen → every payer on those apps is asked about
+  and every other app stays quiet; none → customers only. Same app for both accounts can't be told apart (said in Settings).
 - Owner's real GPay notification ("Prabhakaran paid you ₹1.00" / "Payment from PhonePe") is in the tests.
 - Not yet: bank apps, a walk-in UPI sale into the Cash Note, Tamil-language notifications.
 
