@@ -342,10 +342,10 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
     - Vaanganum / Kodukkanum as two small chips (`HomeMoneyChips`, the same books figures as the old summary card, late count
       shown) where the "KAI-ODA DIARY" heading was; tap → Customers / Suppliers.
     - A small "Kai-kitta kelunga" bar with a turning green-gold (veshti) border and rotating examples per business type → Kai Chat.
-    - Square tiles: Kai, today's cash in, reminders, Stock. Money shown short by `util/shortRupees`
-      (`ShortRupeesTest`); a figure not loaded shows "—".
+    - Square tiles: Kai, reminders, Stock (no Innaikku tile — owner, 23 Oct 2026: today's sales are in the "Innaikku sales"
+      card below).
     - Tile stories (`HomeStories.kt`, 23 Oct 2026): a tile tap opens a full-screen Kai story with golden progress bars — Kai's
-      brief, today's in / out, reminders (names, amounts, late count), Stock kammi (products at or under their minimum, read from
+      brief, reminders (names, amounts, late count), Stock kammi (products at or under their minimum, read from
       Inventory; the Stock tile carries that count). Six seconds each; right tap next, left tap back, ✕ closes; the white button
       and the reply bar open the existing screen / Kai Chat. Read only — nothing is saved.
     - Kai's diary cards (23 Oct 2026, "preview-la kattuna mari"): Kai's brief ("Seri, paathen", Kelunga plays it again), today's
