@@ -1700,7 +1700,7 @@ NewonX — Owner Note. ஆப்பில் உதவி & ஆதரவு.]]><
     <string name="party_customer_label">வாடிக்கையாளர்</string>
     <string name="party_entries_count">%1$d பதிவுகள்</string>
     <string name="party_to_receive">உங்களுக்கு வரவேண்டியது</string>
-    <string name="party_days_late">%1$d நாள் late</string>
+    <string name="party_days_late">%1$d நாள் லேட்</string>
     <string name="party_came_in">%1$s வந்துச்சு</string>
     <string name="party_total_label">மொத்தமா %1$s</string>
     <string name="party_payment_in">பணம் வந்துச்சு</string>
