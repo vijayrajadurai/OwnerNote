@@ -140,7 +140,7 @@ fun HomeSalesWeekCard(kind: HomeKind, figures: HomeFigures?, onOpen: () -> Unit,
                     painter = painterResource(R.drawable.kai_mascot_bust),
                     contentDescription = null,
                     contentScale = ContentScale.Fit,
-                    modifier = Modifier.align(Alignment.BottomEnd).height(206.dp),
+                    modifier = Modifier.align(Alignment.BottomEnd).height(196.dp),
                 )
                 Column(Modifier.padding(16.dp).fillMaxWidth(0.6f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
@@ -170,7 +170,7 @@ fun HomeSalesWeekCard(kind: HomeKind, figures: HomeFigures?, onOpen: () -> Unit,
                 if (week != null) {
                     val top = week.maxOf { it.total }.takeIf { it > 0.0 } ?: 1.0
                     Row(
-                        Modifier.align(Alignment.BottomStart).padding(start = 16.dp, bottom = 14.dp).fillMaxWidth(0.6f).height(84.dp),
+                        Modifier.align(Alignment.BottomStart).padding(start = 16.dp, bottom = 14.dp).fillMaxWidth(0.5f).height(84.dp),
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.Bottom,
                     ) {
