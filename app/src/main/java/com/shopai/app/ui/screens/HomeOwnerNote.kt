@@ -183,7 +183,7 @@ fun HomeMomentsRow(moments: List<HomeMoment>, modifier: Modifier = Modifier, edg
                             )
                             .padding(if (isSeen) 2.dp else 3.dp)
                             .clip(RoundedCornerShape(19.dp))
-                            .background(KaiInk.Paper)
+                            .background(KaiInk.Leaf)
                             .padding(2.5.dp)
                             .clip(RoundedCornerShape(17.dp))
                             .background(Brush.linearGradient(m.colors)),
@@ -214,7 +214,7 @@ fun HomeMomentsRow(moments: List<HomeMoment>, modifier: Modifier = Modifier, edg
                                 .align(Alignment.TopEnd)
                                 .clip(RoundedCornerShape(9.dp))
                                 .background(Color(0xFFDC2626))
-                                .border(2.dp, KaiInk.Paper, RoundedCornerShape(9.dp))
+                                .border(2.dp, KaiInk.Leaf, RoundedCornerShape(9.dp))
                                 .padding(horizontal = 5.dp, vertical = 1.dp),
                         ) {
                             Text(b, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1)

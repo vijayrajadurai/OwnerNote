@@ -358,7 +358,9 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
       and the reply bar open the existing screen / Kai Chat. Read only — nothing is saved.
     - Kai's diary cards (23 Oct 2026, "preview-la kattuna mari"): today's sales from the Daily Cash Note with Kai beside the figure (→ Cash Note), payments due from the reminders (→ each reminder /
       all), the morning work count (→ Morning Work), then quick actions as tiles (Speak, Reports, Inventory, Group buying, Offers,
-      Loans, See all — the same places, the same feature gates). Cream background; chips show whole rupees.
+      Loans, See all — the same places, the same feature gates). Chips show whole rupees.
+    - Mixed-green background for every business type (23 Oct 2026, `Modifier.kaiGreenBackdrop()` in `KaiVisuals.kt`): mint at
+      the top fading to green-white, two soft glows, a faint dot grid; tile edges in `KaiInk.Leaf`.
       Kai's brief has no card once spoken (owner, 23 Oct 2026: "ithu mattum remove pannu"); it is the Kai tile's story.
   - Bottom bar: dark and floating, with Kai's face (mic) raised in the middle → Kai Chat (`BottomNavBar(onKai)`).
   - Kai Chat (`KaiChatLook.kt`):

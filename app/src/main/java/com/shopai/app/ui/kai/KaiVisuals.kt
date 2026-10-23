@@ -70,9 +70,47 @@ object KaiInk {
     val Gold = Color(0xFFD4A537)
     val GoldLight = Color(0xFFFDE68A)
     val Paper = Color(0xFFF6F4EE)
+    /** The light green under the mixed-green backdrop — the gap around Home's tiles and badges. */
+    val Leaf = Color(0xFFE3F4E9)
     val Ink = Color(0xFF1C1917)
     val InkSoft = Color(0xFF78716C)
     val Line = Color(0xFFE7E3D8)
+}
+
+/**
+ * Home's mixed-green background (owner, 23 Oct 2026: "app background mixed green theme", every business type): light mint at
+ * the top fading to a soft green-white, two quiet green glows and a faint dot grid.
+ */
+fun Modifier.kaiGreenBackdrop(): Modifier = drawBehind {
+    drawRect(
+        Brush.verticalGradient(
+            0f to Color(0xFFD9F2E3),
+            0.3f to Color(0xFFE8F6EC),
+            0.7f to Color(0xFFF1F8F1),
+            1f to Color(0xFFF6F9F2),
+        ),
+    )
+    val r1 = size.width * 0.9f
+    drawCircle(
+        Brush.radialGradient(listOf(Color(0x99A7F3D0), Color.Transparent), center = androidx.compose.ui.geometry.Offset(size.width * 0.1f, size.width * 0.15f), radius = r1),
+        radius = r1,
+        center = androidx.compose.ui.geometry.Offset(size.width * 0.1f, size.width * 0.15f),
+    )
+    val r2 = size.width * 0.95f
+    val c2 = androidx.compose.ui.geometry.Offset(size.width * 1.05f, size.height * 0.55f)
+    drawCircle(Brush.radialGradient(listOf(Color(0x99BBF7D0), Color.Transparent), center = c2, radius = r2), radius = r2, center = c2)
+    val step = 18.dp.toPx()
+    val dot = 1.dp.toPx()
+    val ink = Color(0x14047857)
+    var y = step / 2
+    while (y < size.height) {
+        var x = step / 2
+        while (x < size.width) {
+            drawCircle(ink, radius = dot, center = androidx.compose.ui.geometry.Offset(x, y))
+            x += step
+        }
+        y += step
+    }
 }
 
 private val veshtiSweep = listOf(KaiInk.Green, KaiInk.GoldLight, KaiInk.GreenDeep, KaiInk.Gold, KaiInk.Green)

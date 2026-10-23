@@ -69,6 +69,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.shopai.app.R
+import com.shopai.app.ui.kai.kaiGreenBackdrop
 import com.shopai.app.data.AppContainer
 import com.shopai.app.data.model.Business
 import com.shopai.app.data.model.BusinessHealth
@@ -349,7 +350,7 @@ fun HomeScreen(
         padContent = false,
         applyTopInset = false,
     ) {
-        Column(modifier = Modifier.fillMaxSize().background(com.shopai.app.ui.kai.KaiInk.Paper)) {
+        Column(modifier = Modifier.fillMaxSize().then(Modifier.kaiGreenBackdrop())) {
             HomeGradientHeader {
                 OwnerNoteHomeHeader(
                     ownerName = business?.ownerName.orEmpty(),
@@ -688,7 +689,6 @@ private fun HomeGradientHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(com.shopai.app.ui.kai.KaiInk.Paper)
             .then(
                 if (view.isInEditMode) {
                     Modifier
