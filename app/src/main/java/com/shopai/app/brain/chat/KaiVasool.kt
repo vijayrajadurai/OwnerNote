@@ -57,10 +57,30 @@ internal class KaiVasool(private val tools: KaiTools, private val books: KaiBook
                 choices.map { p ->
                     KaiButton(p.name + if (p.owes.signum() > 0) " · " + pick(lang, ta = "பாக்கி ", tl = "baaki ", en = "owes ") + rupees(p.owes) else "",
                         KaiAction.Say(line(p.name, c, lang)))
-                },
+                } +
+                    // A friend's or family's money: the owner's own — never asked about again (owner, 23 Oct 2026).
+                    listOfNotNull(sender?.let { who ->
+                        KaiButton(pick(lang, ta = "சொந்த பணம் — $who-க்கு இனி கேக்காதே", tl = "Sondha panam — $who-ku ini kekkaadha",
+                            en = "Personal — don't ask about $who again"), KaiAction.UpiPersonal(who))
+                    }),
                 headline = pick(lang, ta = "${rupees(c.amount)} ${c.app}-ல வந்துச்சு", tl = "${rupees(c.amount)} ${c.app}-la vandhuchu", en = "${rupees(c.amount)} on ${c.app}"),
             ),
         )
+    }
+
+    /** "Sondha panam": this payer's money is personal — kept on the phone, never asked about again. */
+    fun personal(name: String, lang: KaiLang): KaiTurn {
+        val kept = runCatching { tools.markUpiPersonal(name) }.getOrDefault(false)
+        tools.log("upi personal", "kai vasool", name, if (kept) ActionStatus.CONFIRMED else ActionStatus.FAILED)
+        return if (kept) KaiTurn(ChatReply(pick(lang,
+            ta = "சரி ஓனர், $name-கிட்ட இருந்து வர்ற பணம் உங்க சொந்த பணம் — இனி கேக்க மாட்டேன். கணக்குல எதுவும் போடல. (Settings → Kai வசூல்-ல மாத்தலாம்.)",
+            tl = "Seri Owner, $name kitta irundhu varra panam unga sondha panam — ini kekka maatten. Kanakku-la edhuvum podala. (Settings → Kai வசூல்-la maathalaam.)",
+            en = "Okay Owner, money from $name is personal — I won't ask about it again. Nothing was put in your books. (You can change this in Settings → Kai வசூல்.)"),
+            KaiMood.HAPPY, ChatIntent.UNKNOWN))
+        else KaiTurn(ChatReply(pick(lang,
+            ta = "ஓனர், அதை நினைவு வெச்சுக்க முடியல — திரும்ப தொடுங்க.",
+            tl = "Owner, adha nyabagam vechukka mudiyala — thirumba thodunga.",
+            en = "Owner, I couldn't keep that — please tap it again."), KaiMood.CONCERNED, ChatIntent.UNKNOWN))
     }
 
     private suspend fun customers(): List<Customer> = runCatching { books.snapshot()?.customers.orEmpty() }.getOrDefault(emptyList())

@@ -3,8 +3,11 @@ package com.shopai.app.ui.settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -18,11 +21,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import com.shopai.app.R
 import com.shopai.app.notifications.KaiUpiAccess
+import com.shopai.app.notifications.KaiUpiPrefs
 import com.shopai.app.ui.components.ShopCard
 
 /**
@@ -35,9 +40,14 @@ fun KaiVasoolSettings() {
     val context = LocalContext.current
     var granted by remember { mutableStateOf(KaiUpiAccess.granted(context)) }
     var explain by remember { mutableStateOf(false) }
+    var askUnknown by remember { mutableStateOf(KaiUpiPrefs.askUnknown(context)) }
+    var personalCount by remember { mutableStateOf(KaiUpiPrefs.personal(context).size) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(Unit) {
-        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) { granted = KaiUpiAccess.granted(context) }
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            granted = KaiUpiAccess.granted(context)
+            personalCount = KaiUpiPrefs.personal(context).size
+        }
     }
 
     Text(stringResource(R.string.kai_upi_settings_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
@@ -62,6 +72,27 @@ fun KaiVasoolSettings() {
         }
         if (!granted) {
             Text(stringResource(R.string.kai_upi_restricted_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        // Customers only by default: a friend's or family's money stays quiet (owner, 23 Oct 2026).
+        HorizontalDivider(Modifier.padding(vertical = 8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(stringResource(R.string.kai_upi_ask_unknown), modifier = Modifier.weight(1f))
+            Switch(checked = askUnknown, onCheckedChange = { on -> if (KaiUpiPrefs.setAskUnknown(context, on)) askUnknown = on })
+        }
+        Text(stringResource(R.string.kai_upi_ask_unknown_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (personalCount > 0) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(stringResource(R.string.kai_upi_personal_count, personalCount), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                TextButton(onClick = { if (KaiUpiPrefs.clearPersonal(context)) personalCount = 0 }) { Text(stringResource(R.string.kai_upi_personal_clear)) }
+            }
         }
     }
 

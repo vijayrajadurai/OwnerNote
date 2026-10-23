@@ -134,6 +134,8 @@ sealed interface KaiAction {
     data class RelationPick(val same: Boolean) : KaiAction
     /** A choice button that says a line to Kai for the owner ("Kumar balance", "Colgate 5 vandhuchu") — read like any line. */
     data class Say(val line: String) : KaiAction
+    /** Kai வசூல்: money from this payer is personal (a friend, family) — Kai never asks about them again. */
+    data class UpiPersonal(val name: String) : KaiAction
 }
 
 /**
@@ -7260,6 +7262,7 @@ class KaiAgent(
             say(lang, KaiMood.NEUTRAL, null, ta = "சரி, எதுவும் சேமிக்கல ஓனர்.", tl = "Seri Owner, edhuvum save pannala.", en = "Okay, nothing was saved, Owner.")
         } else reminders.act(action, lang)
         // Reminder buttons go to the reminder conversation; phone actions (dialer, scanner, settings) and Edit to the screen.
+        is KaiAction.UpiPersonal -> vasool.personal(action.name, lang)
         else -> reminders.act(action, lang)
     }
 

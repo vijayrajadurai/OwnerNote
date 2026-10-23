@@ -1893,4 +1893,8 @@ NewonX — Owner Note. Use Help & Support in the app.]]></string>
     <string name="kai_upi_disclosure_allow">Continue</string>
     <string name="kai_upi_disclosure_deny">Not now</string>
     <string name="kai_upi_restricted_hint">If the switch is greyed out (an app installed outside Play Store): App info → ⋮ → Allow restricted settings, then try again.</string>
+    <string name="kai_upi_ask_unknown">Also ask about money from people who aren\u2019t customers</string>
+    <string name="kai_upi_ask_unknown_hint">Off: money from friends and family stays quiet — Kai speaks only for your customers. Turn it on for a demo.</string>
+    <string name="kai_upi_personal_count">Marked personal (never asked): %1$d</string>
+    <string name="kai_upi_personal_clear">Clear</string>
 </resources>

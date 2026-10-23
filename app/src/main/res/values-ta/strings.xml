@@ -1856,4 +1856,8 @@ NewonX — Owner Note. ஆப்பில் உதவி & ஆதரவு.]]><
     <string name="kai_upi_disclosure_allow">தொடரு</string>
     <string name="kai_upi_disclosure_deny">இப்போ வேணாம்</string>
     <string name="kai_upi_restricted_hint">Switch grey-ஆ இருந்தா (Play Store இல்லாம போட்ட app): App info → ⋮ → Allow restricted settings, அப்புறம் திரும்ப முயற்சி பண்ணுங்க.</string>
+    <string name="kai_upi_ask_unknown">Customer இல்லாதவங்க பணத்துக்கும் கேளு</string>
+    <string name="kai_upi_ask_unknown_hint">Off-ஆ இருந்தா friends, family பணத்துக்கு Kai எதுவும் சொல்லாது — customer பணத்துக்கு மட்டும் சொல்லும். Demo-க்கு on பண்ணுங்க.</string>
+    <string name="kai_upi_personal_count">சொந்த பணம்-னு குறிச்சவங்க (கேக்க மாட்டேன்): %1$d</string>
+    <string name="kai_upi_personal_clear">நீக்கு</string>
 </resources>

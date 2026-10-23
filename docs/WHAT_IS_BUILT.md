@@ -214,6 +214,11 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
 - Phone side: a heads-up alert ("Kai · ₹1 GPay-ல வந்துச்சு"), tap → Kai Chat on it; with Kai Chat open, shown at once
   (`KaiUpiInbox`). Settings → "Kai வசூல்": Kai's explanation first (Play's prominent disclosure), then Android's page. An APK
   installed outside Play needs App info → ⋮ → Allow restricted settings (Android 13+). Privacy policy section added.
+- Customers only (owner, 23 Oct 2026: a friend's / family's money must not irritate): the alert comes only when the payer is
+  (or may be) a customer of the books (`KaiUpiFilter`); anyone else, or no name, stays quiet. Settings → "Customer
+  இல்லாதவங்க பணத்துக்கும் கேளு" (off by default; on for a demo). Kai's question has "சொந்த பணம் — X-க்கு இனி கேக்காதே":
+  that payer is never asked about again (kept on the phone, `KaiUpiPrefs`; cleared from Settings).
+- Owner's real GPay notification ("Prabhakaran paid you ₹1.00" / "Payment from PhonePe") is in the tests.
 - Not yet: bank apps, a walk-in UPI sale into the Cash Note, Tamil-language notifications.
 
 ### Reminders

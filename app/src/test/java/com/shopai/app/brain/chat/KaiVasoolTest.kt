@@ -54,6 +54,9 @@ class KaiVasoolTest {
         override suspend fun prepare(kind: PlanKind, partyName: String, partyId: String?, amount: BigDecimal, mode: PaymentMode, said: String) =
             ActionPlan("p${n++}", kind, partyName, partyId, amount, mode, balanceBefore = ps.firstOrNull { it.id == partyId }?.owes, said = said)
         override suspend fun confirm(plan: ActionPlan): ActionOutcome { saved += plan; return ActionOutcome.Done("TXN-${saved.size}", plan.amount) }
+        val personal = mutableSetOf<String>()
+        override fun markUpiPersonal(name: String): Boolean = personal.add(com.shopai.app.brain.tools.KaiUpiFilter.key(name)) || true
+        override fun upiPersonal(): Set<String> = personal
     }
 
     private inner class Shop(vararg extra: Party) {
@@ -109,7 +112,7 @@ class KaiVasoolTest {
         assertTrue(a, a.contains("₹1 GPay-la vandhuchu — Praba kitta irundhu.") && a.contains("Yaar kanakku-la podanum?"))
         val labels = t.card!!.buttons.map { it.label }
         // Selvi owes exactly ₹1: first; then the biggest dues.
-        assertEquals(listOf("Selvi · baaki ₹1", "Kumar · baaki ₹4,000", "Ramesh · baaki ₹2,500"), labels)
+        assertEquals(listOf("Selvi · baaki ₹1", "Kumar · baaki ₹4,000", "Ramesh · baaki ₹2,500", "Sondha panam — Praba-ku ini kekkaadha"), labels)
         // Never a supplier.
         assertFalse(a, a.contains("Sri Balaji"))
         assertTrue(s.tools.saved.isEmpty())
@@ -118,6 +121,28 @@ class KaiVasoolTest {
         assertEquals(PlanKind.PAYMENT_IN, d.plan?.kind)
         assertEquals("c2", d.plan?.partyId)
         assertTrue(s.tools.saved.isEmpty())
+    }
+
+    /** "Customer vara personal payment notification-um…" (owner, 23 Oct 2026): a friend's money is marked personal — nothing saved. */
+    @Test fun personalMoneyIsNeverAskedAgain() {
+        val s = Shop()
+        val t = s.upi("500", "Praba")
+        val btn = t.card!!.buttons.last()
+        assertEquals(KaiAction.UpiPersonal("Praba"), btn.action)
+        val r = s.act(btn.action)
+        assertTrue(all(r), all(r).contains("Praba kitta irundhu varra panam unga sondha panam — ini kekka maatten"))
+        assertEquals(setOf("praba"), s.tools.personal)
+        assertTrue(s.tools.saved.isEmpty())
+        assertNull(r.plan)
+        // In Tamil.
+        val ta = Shop()
+        val q = ta.upi("500", "Praba", KaiLang.TAMIL)
+        assertEquals("சொந்த பணம் — Praba-க்கு இனி கேக்காதே", q.card!!.buttons.last().label)
+        assertTrue(all(ta.act(q.card!!.buttons.last().action, KaiLang.TAMIL)).contains("இனி கேக்க மாட்டேன்"))
+        // No name shown: nothing to mark.
+        assertTrue(Shop().upi("300", null).card!!.buttons.none { it.action is KaiAction.UpiPersonal })
+        // A customer's draft has no such button.
+        assertTrue(Shop().upi("2000", "Kumar").card!!.buttons.none { it.action is KaiAction.UpiPersonal })
     }
 
     @Test fun aTapInTamilStaysTamil() {

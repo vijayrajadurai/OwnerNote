@@ -118,6 +118,29 @@ class KaiUpiNoticeTest {
         assertEquals("upi", UpiCredit(BigDecimal.ONE, null, "BHIM", 0).modeWord)
     }
 
+    /** Only customers' money gets Kai's alert; a friend's or family's stays quiet (owner, 23 Oct 2026). */
+    @Test fun customersOnly() {
+        val books = listOf("Kumar", "Selvi", "முருகன்", "Sri Balaji Agencies")
+        fun d(sender: String?, personal: Set<String> = emptySet(), ask: Boolean = false) =
+            KaiUpiFilter.decide(UpiCredit(BigDecimal("500"), sender, "GPay", 0), books, personal, ask)
+        assertEquals(KaiUpiFilter.Decision.CUSTOMER, d("Kumar"))
+        assertEquals(KaiUpiFilter.Decision.CUSTOMER, d("KUMAR".lowercase().replaceFirstChar { it.uppercase() }))
+        assertEquals(KaiUpiFilter.Decision.CUSTOMER, d("Murugan"))
+        // A full name with a customer's first name: may be them — Kai asks (never drafts).
+        assertEquals(KaiUpiFilter.Decision.CUSTOMER, d("Kumar Selvam"))
+        // A friend: quiet. No name: quiet.
+        assertEquals(KaiUpiFilter.Decision.QUIET, d("Praba"))
+        assertEquals(KaiUpiFilter.Decision.QUIET, d(null))
+        // The owner asked about everyone (a demo): asked.
+        assertEquals(KaiUpiFilter.Decision.UNKNOWN, d("Praba", ask = true))
+        assertEquals(KaiUpiFilter.Decision.UNKNOWN, d(null, ask = true))
+        // Marked personal: never — even a customer's name, even with "ask about everyone" on.
+        assertEquals(KaiUpiFilter.Decision.PERSONAL, d("Praba", setOf("praba"), ask = true))
+        assertEquals(KaiUpiFilter.Decision.PERSONAL, d("PRABA ", setOf(KaiUpiFilter.key("Praba"))))
+        // Two letters of a first name are not a match ("Sr" is not Sri Balaji).
+        assertEquals(KaiUpiFilter.Decision.QUIET, d("Sr Kannan"))
+    }
+
     /** The owner's phone's own notifications go here (from screenshots) before release. */
     @Test fun ownersPhone() {
         // GPay, 23 Oct 2026 (owner's screenshots): collapsed, and expanded with the payer's app under it.

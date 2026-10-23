@@ -169,3 +169,36 @@ class KaiUpiSeen(private val windowMs: Long = WINDOW_MS) {
         const val WINDOW_MS = 90_000L
     }
 }
+
+/**
+ * Which UPI money Kai speaks up for (owner, 23 Oct 2026: "customer vara personal payment notification-um add panna customer
+ * irritate aaga maattaangalaa"). A friend's or family's money is the owner's own — Kai stays quiet:
+ * - [Decision.CUSTOMER]: the payer is (or is like) a customer of the books → Kai's alert.
+ * - [Decision.UNKNOWN]: not a customer, and the owner asked Kai to ask about everyone (Settings) → Kai's alert.
+ * - [Decision.QUIET]: not a customer (or no name shown) → no alert at all.
+ * - [Decision.PERSONAL]: the owner said "this one is personal" before → nothing, ever.
+ */
+object KaiUpiFilter {
+    enum class Decision { CUSTOMER, UNKNOWN, QUIET, PERSONAL }
+
+    /** A payer's name as kept in the owner's personal list: the same however the app spells its case or spaces. */
+    fun key(name: String): String = name.trim().lowercase(java.util.Locale.ROOT).replace(Regex("""\s+"""), " ")
+
+    fun decide(c: UpiCredit, customers: List<String>, personal: Set<String>, askUnknown: Boolean): Decision {
+        val sender = c.sender
+        if (sender != null && key(sender) in personal) return Decision.PERSONAL
+        if (sender != null && customers.any { likeCustomer(sender, it) }) return Decision.CUSTOMER
+        return if (askUnknown) Decision.UNKNOWN else Decision.QUIET
+    }
+
+    /**
+     * The payer is this customer, or may be: the same name (or in Tamil letters), or the same first name ("Kumar Selvam" pays,
+     * the books have "Kumar"). Kai then asks which — a may-be is asked, never drafted (KaiVasool).
+     */
+    fun likeCustomer(sender: String, customer: String): Boolean {
+        if (sender.equals(customer, ignoreCase = true) || com.shopai.app.util.NameSound.same(sender, customer)) return true
+        val s = sender.trim().split(Regex("""\s+""")).firstOrNull()?.takeIf { it.length >= 3 } ?: return false
+        val first = customer.trim().split(Regex("""\s+""")).firstOrNull() ?: return false
+        return s.equals(first, ignoreCase = true) || com.shopai.app.util.NameSound.same(s, first)
+    }
+}

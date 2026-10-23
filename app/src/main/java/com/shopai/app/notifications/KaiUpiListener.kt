@@ -16,10 +16,12 @@ import androidx.core.app.NotificationManagerCompat
 import com.shopai.app.MainActivity
 import com.shopai.app.R
 import com.shopai.app.brain.KaiFormat
+import com.shopai.app.brain.tools.KaiUpiFilter
 import com.shopai.app.brain.tools.KaiUpiNotice
 import com.shopai.app.brain.tools.KaiUpiSeen
 import com.shopai.app.brain.tools.UpiCredit
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.StateFlow
 
 /**
@@ -47,8 +49,15 @@ class KaiUpiListener : NotificationListenerService() {
                 n.postTime,
             ) ?: return
             if (!seen.firstTime(credit)) return
-            Log.i(TAG, "money in: ${credit.app} ${credit.amount.toPlainString()} (${if (credit.sender != null) "name" else "no name"})")
-            KaiUpiAlert.show(applicationContext, credit)
+            val app = applicationContext
+            val container = (app as? com.shopai.app.ShopAiApplication)?.container ?: return
+            // Customers only (owner, 23 Oct 2026): a friend's or family's money is the owner's own — no alert.
+            container.appScope.launch {
+                val customers = runCatching { container.kaiBooks.snapshot()?.customers.orEmpty().map { it.name } }.getOrDefault(emptyList())
+                val decision = KaiUpiFilter.decide(credit, customers, KaiUpiPrefs.personal(app), KaiUpiPrefs.askUnknown(app))
+                Log.i(TAG, "money in: ${credit.app} ${credit.amount.toPlainString()} (${if (credit.sender != null) "name" else "no name"}) → $decision")
+                if (decision == KaiUpiFilter.Decision.CUSTOMER || decision == KaiUpiFilter.Decision.UNKNOWN) KaiUpiAlert.show(app, credit)
+            }
         }.onFailure { Log.w(TAG, "payment notification not read: ${it.message}") }
     }
 
@@ -57,6 +66,29 @@ class KaiUpiListener : NotificationListenerService() {
         /** One payment seen twice (an updated notification, a second app) is one payment. */
         private val seen = KaiUpiSeen()
     }
+}
+
+/**
+ * The owner's Kai வசூல் choices, on this phone: the payers marked personal (never asked about), and whether Kai also asks
+ * about money from people who aren't customers (off by default — a friend's or family's money is the owner's own).
+ */
+object KaiUpiPrefs {
+    private const val FILE = "kai_vasool"
+    private const val KEY_PERSONAL = "personal"
+    private const val KEY_ASK_UNKNOWN = "ask_unknown"
+    private fun prefs(c: Context) = c.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+
+    fun personal(c: Context): Set<String> = prefs(c).getStringSet(KEY_PERSONAL, emptySet()).orEmpty().toSet()
+
+    fun markPersonal(c: Context, name: String): Boolean {
+        val k = KaiUpiFilter.key(name).ifBlank { return false }
+        return prefs(c).edit().putStringSet(KEY_PERSONAL, personal(c) + k).commit()
+    }
+
+    fun clearPersonal(c: Context): Boolean = prefs(c).edit().remove(KEY_PERSONAL).commit()
+
+    fun askUnknown(c: Context): Boolean = prefs(c).getBoolean(KEY_ASK_UNKNOWN, false)
+    fun setAskUnknown(c: Context, on: Boolean): Boolean = prefs(c).edit().putBoolean(KEY_ASK_UNKNOWN, on).commit()
 }
 
 /** Is Kai வசூல் allowed on this phone (Android's notification access for OwnerNote)? And where the owner turns it on. */
