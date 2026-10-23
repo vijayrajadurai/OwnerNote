@@ -143,7 +143,9 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
 - Goods arriving ("kadaiku saraku vandhuruku") → items one by one into a list, saved together on the list's Confirm.
 - A product name said into the mic is read as said (owner, 23 Oct 2026: "Tyre en USB-nu padikkudhu"): English "-yre / -ire" names
   (Tyre, Wire, Fire) are heard "-ayar" as the mic writes them ("டயர்", "வயர்") — "டயர் 7" is Tyre, never USB pen drive / Drive
-  belt; "பினாயில்" alone or with "சின்ன பேக்" is Phenyl, never a new product (Flagyl stays flajil) (`KaiProductSound.spoken`,
+  belt; "பினாயில்" alone or with "சின்ன பேக்" is Phenyl, never a new product (Flagyl stays flajil); a word-and-number code
+  said apart ("கேட் 6 கேபிள் 7") is the shop's code again — Cat6 cable, never 6 as the quantity (`KaiProductSound.withWordCodes`,
+  only the shop's own codes, the same number) (`KaiProductSound.spoken`,
   test `KaiProductSoundTest.catalogue0610NamesSaidIntoTheMic`).
 - Expiry for goods that can expire, in any shop. Batches and a 7-day alert. Old stock becomes an "OLD-STOCK" batch on
   Confirm.

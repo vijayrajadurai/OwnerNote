@@ -275,6 +275,15 @@ class KaiProductSoundTest {
             val got = KaiProductSound.withProductWords(KaiProductSound.withProducts(mic, clean, people), clean, people)
             assertTrue("$mic → $got", got.startsWith(want))
         }
+        // Hardware (owner's shop, failing on main): "கேட் 6 கேபிள் 7" is Cat6 cable — the 6 is the code's, never the quantity.
+        val hw = listOf("Cat6 cable 1 sq mm", "Cat6 cable 1.5 sq mm", "Gate valve 1 inch", "Cable tie 100 mm")
+        for ((mic, want) in listOf("கேட் 6 கேபிள் 7" to "Cat6 cable 7", "கேட் 6 கேபிள் 1.5 ஸ்கொயர் எம்எம் 7" to "Cat6 cable 1.5 ")) {
+            val got = KaiProductSound.withProducts(mic, hw, people)
+            assertTrue("$mic → $got", got.startsWith(want))
+        }
+        // Only the shop's own code, with the same number: "கேட் 5 கேபிள்" (no Cat5 kept) and "கேட் வால்வ் 6" stay as said.
+        assertEquals("கேட் 5 கேபிள் 7", KaiProductSound.withWordCodes("கேட் 5 கேபிள் 7", hw))
+        assertEquals("கேட் வால்வ் 6", KaiProductSound.withWordCodes("கேட் வால்வ் 6", hw))
         // A word Kai has no product for stays as said: "ஹோட்டல்" is not Hoe.
         assertTrue(KaiProductSound.withProducts("ஹோட்டல் 7", shop, people).startsWith("ஹோட்டல்"))
     }

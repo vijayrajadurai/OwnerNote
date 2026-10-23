@@ -132,8 +132,9 @@ object KaiProductSound {
         return base.split(" / ").map { it.trim() }.filter { it.any(Char::isLetter) }.map { it + m?.value.orEmpty() }
     }
 
-    fun withProducts(text: String, productNames: List<String>, people: List<String> = emptyList(), goods: Boolean = true): String {
-        if (!KaiSpokenWords.hasTamil(text)) return text
+    fun withProducts(text0: String, productNames: List<String>, people: List<String> = emptyList(), goods: Boolean = true): String {
+        if (!KaiSpokenWords.hasTamil(text0)) return text0
+        val text = withWordCodes(text0, productNames)
         val prep = prepared(productNames, goods) ?: return text
         val products = prep.products
         val sizeless = prep.sizeless
@@ -254,6 +255,23 @@ object KaiProductSound {
     /** Every Tamil word of the goods names Kai knows (KaiFeed) — read by those names, not by a product word's sound. */
     private val feedGoodsWords: Set<String> by lazy {
         KaiFeed.goodsNames.flatMap { (names, _) -> names.filter(KaiSpokenWords::hasTamil).flatMap { it.split(Regex("""\s+""")) } }.toSet()
+    }
+
+    /**
+     * A word-and-number code in a product's name ("Cat6 cable") said into the mic as the word, then the number ("கேட் 6
+     * கேபிள்") is that code again — never the number taken as a quantity (owner's hardware shop: "கேட் 6 கேபிள் 7" asked
+     * "cable-னா என்ன?"). Only a code the shop's own names have, the same number, and a Tamil word with the word's sound.
+     */
+    fun withWordCodes(text: String, productNames: List<String>): String {
+        val codes = productNames.flatMap { it.split(Regex("""[\s/()\-_,|]+""")) }
+            .mapNotNull { w -> Regex("""^([A-Za-z]{2,})(\d+)$""").find(w)?.let { m -> Triple(w, m.groupValues[1], m.groupValues[2]) } }
+            .distinctBy { it.first.lowercase() }
+        if (codes.isEmpty()) return text
+        return Regex("""(?<![\p{L}\p{M}])([\u0B80-\u0BFF]+)\s+(\d+)(?![\d.])""").replace(text) { m ->
+            val (word, digits) = m.destructured
+            val key = NameSound.key(word).takeIf { it.length >= 2 } ?: return@replace m.value
+            codes.firstOrNull { (_, letters, number) -> number == digits && NameSound.key(spoken(letters)) == key }?.first ?: m.value
+        }
     }
 
     fun withProductWords(text: String, productNames: List<String>, people: List<String> = emptyList()): String {
