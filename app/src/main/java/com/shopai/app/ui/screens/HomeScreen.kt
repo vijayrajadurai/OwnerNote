@@ -400,21 +400,10 @@ fun HomeScreen(
                     onCustomers = { onNavigate(Routes.Customers) },
                     onSuppliers = { onNavigate(Routes.Suppliers) },
                 )
-                // Kai's diary under the money chips (owner, 23 Oct 2026: "preview-la kattuna mari"): Kai's brief, today's sales,
-                // payments due, the morning work, then the quick actions — the same places the old cards opened.
-                if (kaiBriefDone) {
-                    KaiDiaryCard(
-                        title = stringResource(R.string.home_kai_brief),
-                        line = when {
-                            kaiBrief != null -> kaiBrief!!.display
-                            priorities.isEmpty() -> stringResource(R.string.kai_brief_clear)
-                            else -> stringResource(R.string.kai_brief_count, priorities.size)
-                        },
-                        onAsk = { onNavigate(Routes.KaiChat) },
-                        actionLabel = kaiBrief?.let { stringResource(R.string.home_listen) },
-                        onAction = kaiBrief?.let { brief -> { container.kaiBrain.say(brief) {} } },
-                    )
-                } else {
+                // Kai's diary under the money chips (owner, 23 Oct 2026: "preview-la kattuna mari"): today's sales, payments due,
+                // the morning work, then the quick actions — the same places the old cards opened. Kai's brief has no card of its
+                // own once spoken (owner, 23 Oct 2026); it is the Kai tile's story.
+                if (!kaiBriefDone) {
                     KaiBriefCard(
                         state = if (kaiSpeaking) KaiState.SPEAKING else KaiState.GREETING,
                         line = when {

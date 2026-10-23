@@ -348,10 +348,10 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
       brief, today's in / out, reminders (names, amounts, late count), Stock kammi (products at or under their minimum, read from
       Inventory; the Stock tile carries that count). Six seconds each; right tap next, left tap back, ✕ closes; the white button
       and the reply bar open the existing screen / Kai Chat. Read only — nothing is saved.
-    - Kai's diary cards (23 Oct 2026, "preview-la kattuna mari"): Kai's brief ("Seri, paathen", Kelunga plays it again), today's
-      sales from the Daily Cash Note with Kai beside the figure (→ Cash Note), payments due from the reminders (→ each reminder /
+    - Kai's diary cards (23 Oct 2026, "preview-la kattuna mari"): today's sales from the Daily Cash Note with Kai beside the figure (→ Cash Note), payments due from the reminders (→ each reminder /
       all), the morning work count (→ Morning Work), then quick actions as tiles (Speak, Reports, Inventory, Group buying, Offers,
       Loans, See all — the same places, the same feature gates). Cream background; chips show whole rupees.
+      Kai's brief has no card once spoken (owner, 23 Oct 2026: "ithu mattum remove pannu"); it is the Kai tile's story.
   - Bottom bar: dark and floating, with Kai's face (mic) raised in the middle → Kai Chat (`BottomNavBar(onKai)`).
   - Kai Chat (`KaiChatLook.kt`):
     - Night-green backdrop with a dot grid; Kai in a turning ring of light; glass bubbles; hopping typing dots.
