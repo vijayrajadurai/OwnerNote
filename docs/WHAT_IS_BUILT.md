@@ -336,6 +336,63 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
 - The voice / bill screen no longer has the "Your sentence" box (its "Kumar-ku 2000-ku tharanum" example) or the Parse button.
 - Customers: a small Import beside the title. More → "Pazhaiya kanakku import" reads another app's Customer / Supplier
   List PDF and adds people with opening balances on Confirm. No other app's name is shown anywhere.
+- Kai Chat first, OwnerNote's own look (owner, 22 Oct 2026). UI only; what is sent, answered and saved is unchanged:
+  - Home (`HomeScreen`, `HomeOwnerNote.kt`, `ui/kai/KaiVisuals.kt`):
+    - "Vanakkam Owner 👋" header — "Owner" is OwnerNote's own word, kept.
+    - Vaanganum / Kodukkanum as two small chips (`HomeMoneyChips`, the same books figures as the old summary card, late count
+      shown) where the "KAI-ODA DIARY" heading was; tap → Customers / Suppliers.
+    - A small "Kai-kitta kelunga" bar with a turning green-gold (veshti) border and rotating examples per business type → Kai Chat.
+    - A separate Home per business type (23 Oct 2026, `HomeKinds.kt`, `util/HomeFigures.kt`, `HomeFiguresTest`; service-only →
+      service, any wholesale → wholesale, else retail). Tiles: shop — Kai, Sales, Vasool, Stock; service — Kai, Sales, Services,
+      Vasool; wholesale — Kai, Late, Anuppinadhu, Kodukkanum, Stock. Money shown short by `util/shortRupees` (`ShortRupeesTest`);
+      a figure not loaded shows "—".
+    - Sales card with the Daily Cash Note's details: today's total, against yesterday (no percent when yesterday was empty),
+      cash · UPI, seven bars (tap a day) — green for a shop, deep pink for service; read from this phone only
+      (`DailyCashRepository.listLocalEntries`). Wholesale opens with "Kadaigal tharanum": customer dues by age from the books
+      (on time / 1–30 / 30+ days late) and what is owed to suppliers.
+    - Stock card for retail and wholesale: products at or under twice their minimum, emptiest first, with red / amber / green
+      bars; the send button opens WhatsApp with the order list typed in (the owner sends), "Order list" opens Stock.
+    - Tile stories (`HomeStories.kt`, 23 Oct 2026): a tile tap opens a full-screen Kai story with golden progress bars — Kai's
+      brief, today's sales, dues and reminders, Stock kammi (products at or under their minimum, read from
+      Inventory; the Stock tile carries that count). Six seconds each; right tap next, left tap back, ✕ closes; the white button
+      and the reply bar open the existing screen / Kai Chat. Read only — nothing is saved.
+    - Kai's diary cards (23 Oct 2026, "preview-la kattuna mari"): today's sales from the Daily Cash Note with Kai beside the figure (→ Cash Note), payments due from the reminders (→ each reminder /
+      all), the morning work count (→ Morning Work), then quick actions as tiles (Speak, Reports, Inventory, Group buying, Offers,
+      Loans, See all — the same places, the same feature gates). Chips show whole rupees.
+    - Mixed-green background for every business type (23 Oct 2026, `Modifier.kaiGreenBackdrop()` in `KaiVisuals.kt`): mint at
+      the top fading to green-white, two soft glows, a faint dot grid; tile edges in `KaiInk.Leaf`.
+    - Diary cards end with their one action only (23 Oct 2026: no "Seri, paathen", no message button; the stock card keeps
+      its WhatsApp send).
+      Kai's brief has no card once spoken (owner, 23 Oct 2026: "ithu mattum remove pannu"); it is the Kai tile's story.
+  - Bottom bar: dark and floating, with Kai's face (mic) raised in the middle → Kai Chat (`BottomNavBar(onKai)`).
+  - Kai Chat (`KaiChatLook.kt`):
+    - Night-green backdrop with a dot grid; Kai in a turning ring of light; glass bubbles; hopping typing dots.
+    - The mic as a glowing orb; while it records, a full-screen voice mode (Kai standing, the words heard,
+      "Mudinjudhu ✓" = the same as tapping the mic).
+  - Customers / Suppliers lists (23 Oct 2026, `PartyListComponents.kt`, `util/PartyGroups.kt`, `PartyGroupsTest`):
+    - Mixed-green background; on top the total still open ("Vaanganum" green / "Kodukkanum" red), how many people, and how
+      much is late against on time.
+    - Search by name or phone digits; chips Ellaam / Late / Indha vaaram / Mudinjadhu.
+    - Rows grouped late first (most days late on top), then due this week, later, cleared; each row says "25 naal late",
+      "3 naal-la due · 26 Oct", "Due 20 Nov" or "Mudinjadhu ✓" — no empty "—" line.
+    - A late customer row has a WhatsApp button (the customer page's message, the owner sends).
+    - At the bottom one big "Kadan kudunga" / "Vaangunadhu podunga" (the same Add Credit / Add Debit) and "Contact".
+  - Customer detail 4b (`CustomerDetailHero.kt`):
+    - Supplier detail in the same design (23 Oct 2026, `CustomerHeroSection(incoming = false)`): "Neenga kodukkanum", what was
+      paid so far, "Panam kuduthen" (Books payment) and "Vaangunadhu podunga" (Add Debit), Statement PDF and purchase bill, no
+      WhatsApp reminder.
+    - Tamil all the way down: the transaction / history words had no Tamil strings; the app's own entry words ("Payment made",
+      "Balance brought from the OwnerNote ledger") show in the app's language (`ledgerLabelText`); hero buttons wrap to two lines.
+    - The balance big with what came in so far and the days late.
+    - "Panam vandhuchu" (Books payment), "Kadan kudunga" (Add Credit).
+    - One green WhatsApp reminder: the Tamil / Tanglish message is shown, then WhatsApp opens with it typed (`util/WhatsAppText.kt`;
+      the owner sends).
+    - Statement PDF (the same `shareStatement` as Kai) and Sale bill. No call button.
+  - Stock 5b: Items · Value · Kammi counts, "Kammi mudhalla / Ellaam", a bar per product. − / + open the same Stock out / in box.
+  - Error / empty 7b (`ui/components/FriendlyState.kt`): plain words, "Neenga pottadhu edhuvum azhiyala", one main button,
+    details on request. Used on Stock and Customer detail.
+  - Respectful wording: button words end in -unga / -ங்க ("paduthunga", "Save பண்ணுங்க", "பணம் வந்துச்சு").
+  - Pictures: the owner's transparent Kai (`drawable-nodpi/kai_mascot*.webp`).
 
 ## 4. Fixes from the owner's phone (examples worth knowing)
 - "sri balaji ku 786 kuduthutan" was drafted as a new debit (786 → 1,572). "-ku" now means the owner paid
@@ -348,6 +405,7 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
 
 ## 5. Still open / to check on a real phone
 - Android UI that was written without compiling here needs an Android Studio build and a phone check:
+  - Home / bottom bar / Kai Chat look / Customer 4b / Stock 5b / FriendlyState (22 Oct 2026)
   - bill upload (PDF / Excel / CSV, `DocumentCaptureSection`)
   - CashNoteShare
   - the note scene's images

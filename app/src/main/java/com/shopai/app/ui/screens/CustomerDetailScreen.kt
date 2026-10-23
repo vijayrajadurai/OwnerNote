@@ -35,6 +35,7 @@ import com.shopai.app.ui.theme.LedgerCredit
 import com.shopai.app.ui.theme.ShopAiThemeColors
 import com.shopai.app.util.buildReceivableLedger
 import com.shopai.app.util.formatInr
+import kotlinx.coroutines.launch
 
 @Composable
 fun CustomerDetailScreen(
@@ -65,6 +66,11 @@ fun CustomerDetailScreen(
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
+    var showReminder by remember { mutableStateOf(false) }
+    var shopName by remember { mutableStateOf("") }
+    LaunchedEffect(Unit) { shopName = runCatching { container.businessRepository.getMyBusiness()?.businessName }.getOrNull().orEmpty() }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
     val errorLoad = stringResource(R.string.customers_error)
     val paymentError = stringResource(R.string.party_payment_error)
 
@@ -99,10 +105,15 @@ fun CustomerDetailScreen(
             ) {
                 CircularProgressIndicator(color = ShopAiThemeColors.primary)
             }
-            error != null -> Text(
-                text = error!!,
-                color = Danger,
-                modifier = contentModifier.padding(24.dp),
+            error != null -> com.shopai.app.ui.components.FriendlyState(
+                kind = com.shopai.app.ui.components.FriendlyKind.NET,
+                title = stringResource(R.string.friendly_load_title),
+                body = stringResource(R.string.friendly_load_body),
+                safe = stringResource(R.string.friendly_nothing_lost),
+                primaryLabel = stringResource(R.string.friendly_try_again),
+                onPrimary = { reloadKey++ },
+                details = error,
+                modifier = contentModifier,
             )
             customer != null -> {
                 val detail = customer!!
@@ -118,31 +129,58 @@ fun CustomerDetailScreen(
                         .padding(horizontal = 24.dp, vertical = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    if (detail.phone != null) {
-                        Text(
-                            text = detail.phone,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = ShopAiThemeColors.onSurfaceVariant,
+                    // Version 4b (owner, 22 Oct 2026): the balance big, the two money buttons, one WhatsApp reminder. Each button opens
+                    // the flow this screen already had (Add Credit, Books payment, statement PDF, sale bill).
+                    val total = detail.transactions.sumOf { com.shopai.app.data.model.parseMoney(it.amount) }
+                    val today = java.time.LocalDate.now()
+                    val lateDays = detail.transactions
+                        .filter { it.status != "PAID" && it.pendingAmount() > 0 }
+                        .mapNotNull { com.shopai.app.util.parseIsoToLocalDate(it.dueDate) }
+                        .filter { it.isBefore(today) }
+                        .maxOfOrNull { java.time.temporal.ChronoUnit.DAYS.between(it, today).toInt() } ?: 0
+                    CustomerHeroSection(
+                        name = detail.name,
+                        phone = detail.phone,
+                        entries = detail.transactions.size,
+                        pending = totalPending,
+                        total = total,
+                        lateDays = lateDays,
+                        onPaymentIn = if (booksOn) ({ onPayment(detail.id) }) else null,
+                        onCredit = { onAddCredit(detail.id, detail.name) },
+                        onWhatsApp = { showReminder = true },
+                        onStatement = {
+                            scope.launch {
+                                val lang = if (java.util.Locale.getDefault().language == "ta") com.shopai.app.brain.KaiLang.TAMIL else com.shopai.app.brain.KaiLang.TANGLISH
+                                val shared = runCatching {
+                                    com.shopai.app.ui.kaichat.shareStatement(
+                                        container, context,
+                                        com.shopai.app.brain.chat.KaiAction.ShareStatement(detail.id, detail.name, true, null, today, whatsapp = false),
+                                        lang,
+                                    )
+                                }
+                                if (shared.isFailure) android.widget.Toast.makeText(context, com.shopai.app.ui.kaichat.pdfFailed(lang), android.widget.Toast.LENGTH_LONG).show()
+                            }
+                        },
+                        onSaleBill = if (booksOn && com.shopai.app.ui.components.hasFeature(com.shopai.app.data.model.Feature.BILLING)) ({ onNewBill(detail.id) }) else null,
+                    )
+                    if (showReminder) {
+                        val nextDue = detail.transactions
+                            .filter { it.status != "PAID" && it.pendingAmount() > 0 }
+                            .mapNotNull { com.shopai.app.util.parseIsoToLocalDate(it.dueDate) }
+                            .minOrNull()
+                        val dueText = nextDue?.let { stringResource(R.string.party_wa_due, it.format(java.time.format.DateTimeFormatter.ofPattern("d MMM", java.util.Locale.ENGLISH))) }.orEmpty()
+                        val message = stringResource(R.string.party_wa_message, detail.name, formatInr(totalPending), dueText, shopName.ifBlank { "OwnerNote" })
+                        WhatsAppReminderSheet(
+                            name = detail.name,
+                            message = message,
+                            onSend = {
+                                showReminder = false
+                                runCatching { com.shopai.app.util.openWhatsAppText(context, detail.phone, message) }
+                            },
+                            onDismiss = { showReminder = false },
                         )
                     }
                     com.shopai.app.ui.books.PartyMasterInfo(container, detail.id, reloadKey)
-                    Text(
-                        text = stringResource(R.string.party_total_pending, formatInr(totalPending)),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = LedgerCredit,
-                    )
-                    PrimaryButton(
-                        label = stringResource(R.string.party_add_credit),
-                        onClick = { onAddCredit(detail.id, detail.name) },
-                    )
-                    if (booksOn) {
-                        androidx.compose.foundation.layout.Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            // (bills only for a business that keeps them — a salon records its services by chat)
-                            if (com.shopai.app.ui.components.hasFeature(com.shopai.app.data.model.Feature.BILLING)) com.shopai.app.ui.components.OutlinedButton(onClick = { onNewBill(detail.id) }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.bill_new_sale)) }
-                            com.shopai.app.ui.components.OutlinedButton(onClick = { onPayment(detail.id) }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.bill_receive_payment)) }
-                        }
-                    }
                     Text(
                         text = stringResource(R.string.party_transactions_title),
                         style = MaterialTheme.typography.titleMedium,

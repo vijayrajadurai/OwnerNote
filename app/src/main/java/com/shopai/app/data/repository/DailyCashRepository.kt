@@ -39,6 +39,11 @@ class DailyCashRepository(
         sortEntriesNewestFirst(dao.listEntriesByDate(dateKey).map { it.toDomain() })
     }
 
+    /** One day's entries from this phone only — no server call (Home's 7-day sales bars). Read only. */
+    suspend fun listLocalEntries(dateKey: String): List<DailyCashEntry> = withContext(Dispatchers.IO) {
+        dao.listEntriesByDate(dateKey).map { it.toDomain() }
+    }
+
     suspend fun getTodayCashSummary(dateKey: String): TodayCashSummary = withContext(Dispatchers.IO) {
         val entries = listDailyCashEntries(dateKey)
         val totals = computeDailyCashTotals(entries)

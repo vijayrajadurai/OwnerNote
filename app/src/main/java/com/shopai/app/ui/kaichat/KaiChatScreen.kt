@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -25,7 +26,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -56,9 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.shopai.app.R
 import com.shopai.app.data.AppContainer
-import com.shopai.app.ui.components.DetailScaffold
 import com.shopai.app.ui.kai.KaiCharacter
-import com.shopai.app.ui.kai.KaiContentCard
 import com.shopai.app.ui.kai.KaiState
 import com.shopai.app.ui.kai.state
 import com.shopai.app.ui.theme.Primary
@@ -75,6 +73,7 @@ import kotlin.math.sin
  * a spoken question is answered aloud too. Kai learns the owner's own words
  * right here in the chat — there is no separate language screen.
  */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun KaiChatScreen(
     container: AppContainer,
@@ -320,40 +319,35 @@ fun KaiChatScreen(
         }
     }
 
-    DetailScaffold(title = stringResource(R.string.kai_chat_title), onBack = onBack) { contentModifier ->
-        Column(modifier = contentModifier.fillMaxSize().imePadding()) {
-            KaiContentCard(
+    androidx.activity.compose.BackHandler(onBack = onBack)
+    // The digital look (owner, 22 Oct 2026): night green, Kai in a ring of light, the mic as a glowing orb. Layout only — what is
+    // sent, answered and saved is the same as before.
+    Box(Modifier.fillMaxSize().kaiChatBackdrop()) {
+        Column(modifier = Modifier.fillMaxSize().imePadding()) {
+            KaiChatTopBar(onBack = onBack, canClear = session.messages.isNotEmpty(), onClear = { session.clear() })
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(Color(0x0DFFFFFF))
+                    .border(1.dp, Color(0x14FFFFFF), RoundedCornerShape(22.dp))
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
+                Box(contentAlignment = Alignment.Center) {
+                    KaiHaloRing(size = 108.dp)
                     KaiCharacter(
                         state = kaiState,
                         mouthLevel = mouth,
                         speakingAs = session.lastMood?.state(),
-                        size = 120.dp,
+                        size = 100.dp,
                     )
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Kai", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = com.shopai.app.ui.theme.TextPrimary)
-                        Text(stringResource(R.string.kai_chat_subtitle), color = com.shopai.app.ui.theme.TextSecondary)
-                        Text(
-                            stringResource(R.string.kai_chat_mic_tip),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = com.shopai.app.ui.theme.TextSecondary,
-                            modifier = Modifier.padding(top = 4.dp),
-                        )
-                    }
-                    Column(horizontalAlignment = Alignment.End) {
-                        if (session.messages.isNotEmpty()) {
-                            TextButton(onClick = { session.clear() }) { Text(stringResource(R.string.kai_chat_clear)) }
-                        }
-                    }
+                }
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text(stringResource(R.string.kai_chat_subtitle), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold)
+                    Text(stringResource(R.string.kai_chat_mic_tip), color = Color(0xFFA7F3D0), fontSize = 13.sp, lineHeight = 18.sp)
                 }
             }
 
@@ -361,22 +355,26 @@ fun KaiChatScreen(
                 state = listState,
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                item { KaiBubble(stringResource(R.string.kai_chat_hello)) }
+                item { KaiDarkBubble(stringResource(R.string.kai_chat_hello)) }
                 if (session.messages.isEmpty()) {
                     item {
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(top = 4.dp)) {
+                        androidx.compose.foundation.layout.FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.padding(top = 4.dp),
+                        ) {
                             for (s in listOf(R.string.kai_chat_suggest_1, R.string.kai_chat_suggest_2, R.string.kai_chat_suggest_3, R.string.kai_chat_suggest_4)) {
                                 val text = stringResource(s)
-                                AssistChip(onClick = { send(text) }, label = { Text(text) })
+                                KaiDarkChip(text) { send(text) }
                             }
                         }
                     }
                 }
                 items(session.messages, key = { it.id }) { m ->
                     val note = session.note.note?.takeIf { it.messageId == m.id }
-                    if (m.fromOwner) OwnerBubble(if (m.voice) "🎙 ${m.text}" else m.text)
+                    if (m.fromOwner) OwnerGreenBubble(m.text, m.voice)
                     // Kai asking the one thing he needs: a clear question card (owner, 17 Oct 2026).
                     else if (note == null && m.mood == com.shopai.app.brain.KaiMood.CLARIFY) {
                         val newest = m.id == session.messages.lastOrNull()?.id
@@ -390,7 +388,7 @@ fun KaiChatScreen(
                             onAnswer = if (newest) ({ answer -> send(answer) }) else null,
                         )
                     } else {
-                        KaiBubble(m.text)
+                        KaiDarkBubble(m.text)
                         m.card?.let { card ->
                             // A money draft: the Confirm card — the amount big, the balance before → after, one big Confirm.
                             if (isMoneyDraft(card)) com.shopai.app.ui.kai.KaiConfirmCard(
@@ -407,51 +405,57 @@ fun KaiChatScreen(
                         }
                     }
                 }
-                if (session.thinking) item { KaiBubble("…") }
+                if (session.thinking) item { KaiTypingBubble() }
             }
 
-            if (listening) {
-                Text(
-                    heard ?: stringResource(R.string.kai_chat_listening),
-                    color = Primary,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(start = 20.dp, top = 4.dp),
-                )
-            }
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                IconButton(
-                    onClick = { onMic() },
-                    modifier = Modifier.padding(end = 6.dp).size(48.dp)
-                        .background(if (listening) com.shopai.app.ui.theme.Danger else Primary.copy(alpha = 0.12f), CircleShape),
-                ) {
-                    Icon(
-                        androidx.compose.material.icons.Icons.Filled.Mic,
-                        contentDescription = stringResource(R.string.kai_chat_speak),
-                        tint = if (listening) Color.White else Primary,
-                    )
-                }
                 OutlinedTextField(
                     value = input,
                     onValueChange = { input = it },
-                    placeholder = { Text(stringResource(R.string.kai_chat_hint)) },
+                    placeholder = { Text(stringResource(R.string.kai_chat_hint), color = Color(0xFF6B8F82)) },
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(24.dp),
+                    shape = RoundedCornerShape(18.dp),
                     maxLines = 4,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                     keyboardActions = KeyboardActions(onSend = { send(input) }),
+                    trailingIcon = {
+                        IconButton(onClick = { send(input) }, enabled = input.isNotBlank() && !session.thinking) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.Send,
+                                contentDescription = stringResource(R.string.kai_chat_send),
+                                tint = if (input.isNotBlank()) com.shopai.app.ui.kai.KaiInk.GreenLight else Color(0x666EE7B7),
+                            )
+                        }
+                    },
+                    colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedContainerColor = com.shopai.app.ui.kai.KaiInk.NightCard,
+                        unfocusedContainerColor = com.shopai.app.ui.kai.KaiInk.NightCard,
+                        focusedBorderColor = com.shopai.app.ui.kai.KaiInk.Green,
+                        unfocusedBorderColor = com.shopai.app.ui.kai.KaiInk.Gold.copy(alpha = 0.6f),
+                        cursorColor = com.shopai.app.ui.kai.KaiInk.GreenLight,
+                    ),
                 )
-                IconButton(
-                    onClick = { send(input) },
-                    enabled = input.isNotBlank() && !session.thinking,
-                    modifier = Modifier.padding(start = 6.dp).size(48.dp).background(if (input.isNotBlank()) Primary else Primary.copy(alpha = 0.35f), CircleShape),
+                Box(
+                    modifier = Modifier
+                        .size(58.dp)
+                        .clip(CircleShape)
+                        .clickable { onMic() },
+                    contentAlignment = Alignment.Center,
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = stringResource(R.string.kai_chat_send), tint = Color.White)
+                    com.shopai.app.ui.kai.KaiMicOrb(size = 56.dp, listening = listening)
                 }
             }
         }
+        if (listening) KaiVoiceOverlay(heard = heard, onFinish = { onMic() })
     }
 }
 
@@ -562,35 +566,4 @@ private fun EditPlanDialog(
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
-}
-
-@Composable
-private fun OwnerBubble(text: String) {
-    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
-        Text(
-            text,
-            color = Color.White,
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier
-                .widthIn(max = 300.dp)
-                .background(Primary, RoundedCornerShape(18.dp, 18.dp, 4.dp, 18.dp))
-                .padding(horizontal = 14.dp, vertical = 10.dp),
-        )
-    }
-}
-
-@Composable
-private fun KaiBubble(text: String) {
-    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
-        Column(
-            modifier = Modifier
-                .widthIn(max = 310.dp)
-                .background(Color.White, RoundedCornerShape(18.dp, 18.dp, 18.dp, 4.dp))
-                .border(1.dp, Primary.copy(alpha = 0.18f), RoundedCornerShape(18.dp, 18.dp, 18.dp, 4.dp))
-                .padding(horizontal = 14.dp, vertical = 10.dp),
-        ) {
-            Text("Kai", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Primary)
-            Text(text, style = MaterialTheme.typography.bodyLarge, color = com.shopai.app.ui.theme.TextPrimary)
-        }
-    }
 }
