@@ -260,6 +260,14 @@ class KaiProductSoundTest {
             val got = KaiProductSound.withProducts(mic, shop, people)
             assertTrue("$mic → $got", got.startsWith(want))
         }
+        // The owner (23 Oct 2026): "டயர்" alone (no pack said) was read as "drive" (USB pen drive / Drive belt). Tyre / Wire / Fire are
+        // said "-ayar" ("டயர்", "வயர்", "ஃபயர்").
+        val auto = shop + listOf("USB pen drive Small pack", "Drive belt Small pack", "Wire Small pack", "Fire extinguisher Small pack")
+        for ((mic, want) in listOf("டயர் 7" to "Tyre 7", "டயர் சின்ன பேக் 7" to "Tyre சின்ன", "வயர் 7" to "Wire 7", "ஃபயர் எக்ஸ்டிங்விஷர் 7" to "Fire extinguisher 7",
+                "யுஎஸ்பி பென் டிரைவ் 7" to "USB pen drive 7", "டிரைவ் பெல்ட் 7" to "Drive belt 7")) {
+            val got = KaiProductSound.withProductWords(KaiProductSound.withProducts(mic, auto, people), auto, people)
+            assertTrue("$mic → $got", got.startsWith(want))
+        }
         // A word Kai has no product for stays as said: "ஹோட்டல்" is not Hoe.
         assertTrue(KaiProductSound.withProducts("ஹோட்டல் 7", shop, people).startsWith("ஹோட்டல்"))
     }

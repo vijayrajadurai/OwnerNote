@@ -657,6 +657,9 @@ object KaiProductSound {
                 // "Borges" = borjes ("போர்ஜஸ்"): a g before -es is soft.
                 .replace(Regex("""(?<=[rn])ges$"""), "jes")
                 .replace(Regex("""(?<=.)aged$"""), "ejd").replace(Regex("""(?<=a)chet(s?)$"""), "shay$1")
+                // "Tyre", "Tire", "Wire", "Fire" = tayar, wayar, fayar — as the mic writes them ("டயர்", "வயர்", "ஃபயர்"), never "tire" heard
+                // as drive (owner, 23 Oct 2026: "Tyre en USB-nu padikkudhu — namba enna solromo adhaan varanum").
+                .replace(Regex("""(?<=[^aeiou])[iy]re$"""), "ayar")
                 // "Hydraulic" = haidraulic, "Nylon" = nailon: a y between consonants is a vowel; "Gel", "Emergency", "Agent": a soft g.
                 .replace(Regex("""^gy"""), "jy").replace(Regex("""(?<=^[^aeiouy]{1,2})y(?=[^aeiouy])"""), "i").replace(Regex("""^ge(?=[lmnr])"""), "je")
                 .replace(Regex("""(?<=[aeiour])g(?=en)"""), "j")
