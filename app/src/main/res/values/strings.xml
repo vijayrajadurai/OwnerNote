@@ -532,7 +532,7 @@
     <string name="version_format">%1$s (%2$d)</string>
     <string name="privacy_policy">Privacy Policy</string>
     <string name="privacy_policy_read_full">Read full privacy policy</string>
-    <string name="privacy_policy_full"><![CDATA[Last updated: 3 October 2026
+    <string name="privacy_policy_full"><![CDATA[Last updated: 24 October 2026
 
 Owner Note (“we”, “the app”) is an Android app from NewonX (package com.ownernote.app). This policy explains what information we use when you run the app.
 
@@ -540,6 +540,7 @@ Owner Note (“we”, “the app”) is an Android app from NewonX (package com.
 • Phone number, used to send an OTP and create your account (Firebase Authentication).
 • Shop profile: owner name, shop name, category, city, pincode, year started, approximate monthly income, and optional shop location.
 • Business records you enter or scan: customers, suppliers, credit and debit, daily cash, inventory, bills, handwritten notes, voice entries, and reminders.
+• Contacts you choose: when you add a customer or supplier from your phone’s contacts, that contact’s name and phone number are saved to your Owner Note account on our servers. With your permission, Kai can also look up a name in your phone’s contacts to fill in a reminder’s phone number; that lookup happens on your phone and your contact list is never uploaded.
 • Device identifiers needed for push notifications (FCM token).
 • App language, theme, and similar settings stored on this phone.
 
@@ -550,7 +551,7 @@ We use this information only to run Owner Note: sign-in, books, reminders, Kai a
 Some data stays on this device (for example captured bills, notes, and local books). Account and business data may also be stored on our API so you can use Owner Note. Location is used to match nearby group-buying requests; exact map pins are not shown to other shops.
 
 4. Sharing
-We share data with service providers who operate the app on our behalf, including Firebase (authentication, messaging, crash reports) and our hosting API. We share information if the law requires it.
+We share data with service providers who operate the app on our behalf, including Firebase (authentication, messaging, crash reports), our hosting API, and a text-to-speech service that makes Kai’s voice (it receives only the sentence Kai speaks, which can include a customer’s name and an amount). We share information if the law requires it.
 
 5. Notifications
 If you allow notifications, we may send reminders, payment alerts, and optional daily voice check-in. You can turn these off in Settings.
