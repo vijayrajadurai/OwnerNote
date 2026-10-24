@@ -2128,6 +2128,8 @@ class KaiAgent(
         briefJustShown = false
         // The Daily Sales Note's own question (a service's price, the opening Kallapetti, Confirm on a sale / the day close): its answer.
         // "purchase register", "item wise sales report", "Cinthol evlo vaanginen": the item register from the bills (owner, 21 Oct 2026).
+        // A product word heard but not surely ("டயர் 7" sounding like "drive"): asked which, never guessed (owner, 24 Oct 2026).
+        if (tamil && plans.isEmpty()) unsureProduct(heard, lang, people0)?.let { return it }
         if (plans.isEmpty()) itemRegisterAsked(said, lang, people0)?.let { return it }
         if (plans.isEmpty()) dailySales.answer(said, raw, lang)?.let { return it }
         // "blouse stitching service ku 250 vaanginom", "plumbing work service sale 7500 note pannu": a service sale said in full.
@@ -7986,6 +7988,41 @@ class KaiAgent(
      * line of the purchase / sales bills in the period (this month unless said), summed item by item — or one product's lines,
      * bill by bill. Read-only, from the books; nothing kept means it says so and where the lines come from. Null: not this question.
      */
+    /**
+     * The mic's Tamil word for a product that Kai can't be sure of (owner, 24 Oct 2026: "shop enna solraangalo adhaan varanum"):
+     * "டயர் 7" once became "drive" — USB pen drive. Now a word that only sounds near the shop's product words is asked about,
+     * with those products as buttons; a tap is the same line with that product's name. Only a stock line (a number, not money,
+     * a reminder or a sum) is asked about; anything else goes on as before.
+     */
+    private suspend fun unsureProduct(heard: String, lang: KaiLang, people: List<String>): KaiTurn? {
+        val products = runCatching { tools.products() }.getOrNull().orEmpty().map { it.name }.ifEmpty { return null }
+        val unsure = com.shopai.app.brain.tools.KaiProductSound.unsureWords(heard, products, people).firstOrNull() ?: return null
+        val n = com.shopai.app.brain.tools.KaiSpokenWords.normalize(heard)
+        if (n.none(Char::isDigit)) return null
+        if (com.shopai.app.brain.tools.KaiPaymentDirection.of(n) != null) return null
+        when (KaiCommands.route(n, now(), people)) {
+            is KaiCommand.Payment, is KaiCommand.Reminder, is KaiCommand.Calculate, is KaiCommand.Call -> return null
+            else -> Unit
+        }
+        val pack = Regex("""(?i)\s+(?:small|medium|large|family)\s+pack$""")
+        fun wordsOf(p: String) = p.lowercase(Locale.ROOT).split(Regex("""[\s/()\-_,.|]+"""))
+        // Each near word as the shop's item (the pack left for Kai's next question); a word in many items is said as itself.
+        val choices = unsure.candidates.flatMap { c ->
+            val items = products.filter { c in wordsOf(it) }.map { it.replace(pack, "").trim() }.distinct()
+            if (items.size > 3) listOf(c.replaceFirstChar { it.titlecase(Locale.ROOT) }) else items
+        }.distinct().take(4)
+        if (choices.isEmpty()) return null
+        tools.log("unsure product word", "kai", "${unsure.said} → ${choices.joinToString()}", ActionStatus.ANSWERED)
+        val listed = choices.joinToString(pick(lang, ta = "-ஆ, ", tl = "-aa, ", en = ", ")) + pick(lang, ta = "-ஆ", tl = "-aa", en = "")
+        return KaiTurn(
+            ChatReply(pick(lang,
+                ta = "ஓனர், “${unsure.said}”-னு கேட்டேன் — எந்த product? $listed? இதுல இல்லைனா product பேரை சொல்லுங்க.",
+                tl = "Owner, “${unsure.said}”-nu kettein — endha product? $listed? Idhula illana product per sollunga.",
+                en = "Owner, I heard “${unsure.said}” — which product? $listed? If it isn't here, say the product's name."), KaiMood.CLARIFY, ChatIntent.UNKNOWN),
+            KaiCard(emptyList(), choices.map { c -> KaiButton(c, KaiAction.Say(heard.replace(unsure.said, c))) }),
+        )
+    }
+
     private suspend fun itemRegisterAsked(said: String, lang: KaiLang, people: List<String>): KaiTurn? {
         val ask = com.shopai.app.brain.tools.KaiCommands.asksItemRegister(said) ?: return null
         val side = ask.side

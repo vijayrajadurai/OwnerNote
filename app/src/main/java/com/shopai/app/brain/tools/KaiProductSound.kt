@@ -288,25 +288,59 @@ object KaiProductSound {
 
     fun withProductWords(text: String, productNames: List<String>, people: List<String> = emptyList()): String {
         if (!KaiSpokenWords.hasTamil(text)) return text
-        val vocab = productNames.flatMap { it.split(Regex("""[\s/()\-_,.|]+""")) }
-            .filter { w -> w.length >= 3 && w.all(Char::isLetter) && !KaiSpokenWords.hasTamil(w) }
-            .map { it.lowercase() }.distinct()
+        val vocab = vocabOf(productNames)
         if (vocab.isEmpty()) return text
-        return tamilWord.replace(text) { m ->
-            val w = m.value
-            // (a goods word Kai knows in Tamil — "பினாயில்" = phenyl — is read by its own name, never turned into another word)
-            if (KaiSpokenWords.normalize(w) != w || w in stockAsk || w in feedGoodsWords) return@replace w
-            // (a shop name's last word, with its "-க்கு" — "ஷாப்புக்கு", "ஸ்டோருக்கு" — is never a product's: "Shop" is no "Soap")
-            if (KaiCommands.isShopWord(w) || KaiCommands.isShopWord(w.removeSuffix("க்கு").removeSuffix("கிட்ட"))) return@replace w
-            if (people.any { p -> p.split(Regex("""\s+""")).any { NameSound.same(w, it) } }) return@replace w
-            // A whole product name by its sound ("பினாயில்" = Phenyl) is read as that name further on — never a word of another.
-            if (productNames.any { n -> !KaiSpokenWords.hasTamil(n) && NameSound.same(w, n.replace(" ", "")) }) return@replace w
-            // The name word with the same sound skeleton first ("phenyl", not "fennel" for "பினாயில்"), else the closest in shape.
-            vocab.filter { e -> NameSound.same(w, e) }.singleOrNull()?.let { return@replace it }
-            val gaps = vocab.mapNotNull { e -> wordGap(w, e)?.let { e to it } }
-            val best = gaps.minOfOrNull { it.second } ?: return@replace w
-            gaps.filter { it.second == best }.map { it.first }.singleOrNull() ?: w
-        }
+        return tamilWord.replace(text) { m -> (readWord(m.value, productNames, vocab, people) as? WordRead.Sure)?.word ?: m.value }
+    }
+
+    /** A Tamil word Kai heard but couldn't be sure of, and the shop's product words it may be ("டயர்" → drive, tyre…). */
+    data class UnsureWord(val said: String, val candidates: List<String>)
+
+    /**
+     * The Tamil words of [text] (after [withProducts] / [withProductWords]) that sound like a product word of the shop but not
+     * surely enough to take (owner, 24 Oct 2026: "shop enna solraangalo adhaan varanum" — "டயர்" was taken as "drive"): Kai asks
+     * which instead of guessing. A word with no near product word at all is not here (it is a new product, as before).
+     */
+    fun unsureWords(text: String, productNames: List<String>, people: List<String> = emptyList()): List<UnsureWord> {
+        if (!KaiSpokenWords.hasTamil(text)) return emptyList()
+        val vocab = vocabOf(productNames)
+        if (vocab.isEmpty()) return emptyList()
+        return tamilWord.findAll(text).mapNotNull { m -> (readWord(m.value, productNames, vocab, people) as? WordRead.Unsure)?.let { UnsureWord(m.value, it.candidates) } }
+            .distinctBy { it.said }.toList()
+    }
+
+    private sealed interface WordRead {
+        /** Not a product word (a Tamil word Kai knows, a person, a shop word, a whole product name, or nothing near). */
+        data object Keep : WordRead
+        /** The same sound, surely: taken. */
+        data class Sure(val word: String) : WordRead
+        /** Near, not sure: asked. */
+        data class Unsure(val candidates: List<String>) : WordRead
+    }
+
+    private fun vocabOf(productNames: List<String>): List<String> = productNames.flatMap { it.split(Regex("""[\s/()\-_,.|]+""")) }
+        .filter { w -> w.length >= 3 && w.all(Char::isLetter) && !KaiSpokenWords.hasTamil(w) }
+        .map { it.lowercase() }.distinct()
+
+    private fun readWord(w: String, productNames: List<String>, vocab: List<String>, people: List<String>): WordRead {
+        // (a goods word Kai knows in Tamil — "பினாயில்" = phenyl — is read by its own name, never turned into another word)
+        if (KaiSpokenWords.normalize(w) != w || w in stockAsk || w in feedGoodsWords) return WordRead.Keep
+        // (a shop name's last word, with its "-க்கு" — "ஷாப்புக்கு", "ஸ்டோருக்கு" — is never a product's: "Shop" is no "Soap")
+        if (KaiCommands.isShopWord(w) || KaiCommands.isShopWord(w.removeSuffix("க்கு").removeSuffix("கிட்ட"))) return WordRead.Keep
+        if (people.any { p -> p.split(Regex("""\s+""")).any { NameSound.same(w, it) } }) return WordRead.Keep
+        // A whole product name by its sound ("பினாயில்" = Phenyl) is read as that name further on — never a word of another.
+        if (productNames.any { n -> !KaiSpokenWords.hasTamil(n) && NameSound.same(w, n.replace(" ", "")) }) return WordRead.Keep
+        // The name word with the same sound skeleton ("phenyl", not "fennel" for "பினாயில்") — sure when its first vowel is heard too.
+        val same = vocab.filter { e -> NameSound.same(w, e) }
+        val gaps = vocab.mapNotNull { e -> wordGap(w, e)?.let { e to it } }.sortedBy { it.second }
+        same.singleOrNull()?.let { e -> if (firstVowelHeard(w, spoken(e))) return WordRead.Sure(e) }
+        // Else the closest in shape — sure only when it is the one word with the very same shape (gap 0).
+        val best = gaps.firstOrNull()?.second
+        val atBest = gaps.filter { it.second == best }.map { it.first }
+        if (best == 0 && atBest.size == 1 && same.size <= 1 && (same.isEmpty() || same.single() == atBest.single())) return WordRead.Sure(atBest.single())
+        // Near but not sure: the owner is asked (never a guess). Only words truly near: the same skeleton, or two syllables apart at most.
+        val candidates = (same + gaps.filter { it.second <= 2 }.map { it.first }).distinct().take(4)
+        return if (candidates.isEmpty()) WordRead.Keep else WordRead.Unsure(candidates)
     }
 
     /** A name the shop keeps in Tamil letters said in English letters ("Clutch plate" for "கிளட்ச் பிளேட்"): the same name, by sound. */
