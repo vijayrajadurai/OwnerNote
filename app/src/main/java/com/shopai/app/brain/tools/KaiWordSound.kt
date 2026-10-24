@@ -94,6 +94,21 @@ object KaiWordSound {
 
     private val vowels = setOf('a', 'e', 'i', 'u')
 
+    /**
+     * Two words that sound the same by this rule — the same sound, or one vowel apart, or one consonant / two vowels apart for a word of six
+     * sounds or more ("remot" / "remote", "charjer" / "charger"). For the owner's own lists (Enga Vechen's places and things, [KaiKept]).
+     */
+    fun near(a: String, b: String): Boolean {
+        val x = sound(a)
+        val y = sound(b)
+        if (x.length < 3 || y.length < 3) return x.isNotEmpty() && x == y
+        if (x == y) return true
+        if (x[0] != y[0] && !(x[0] in vowels && y[0] in vowels)) return false
+        // (a whole consonant only between longer words: "medal" is never "methai")
+        val most = if (minOf(x.length, y.length) >= 6) 2 else 1
+        return distance(x, y) <= most
+    }
+
     /** The one word of Kai's this sounds like, or null (too short, nothing near, or near words of two meanings). */
     private fun nearest(word: String): Known? {
         val s = sound(word)

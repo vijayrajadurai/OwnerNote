@@ -212,6 +212,13 @@ interface KaiTools {
     fun markUpiPersonal(name: String): Boolean = false
     /** The payers the owner marked personal ([KaiUpiFilter.key] form). */
     fun upiPersonal(): Set<String> = emptySet()
+    // ---- Enga Vechen? (the owner's own kept things — a local table, nothing goes to the books) ----
+    /** Every kept thing of this login ([KeptItem]), closed ones too; null: the table can't be read. */
+    suspend fun keptItems(): List<KeptItem>? = null
+    /** Writes one kept thing (new or changed) — only after the owner's Confirm; false: not saved. */
+    suspend fun saveKept(item: KeptItem): Boolean = false
+    /** Removes one kept thing for good (the screen's Delete, after its own question). */
+    suspend fun deleteKept(id: String): Boolean = false
     suspend fun itemRegister(purchase: Boolean, from: LocalDate, to: LocalDate): List<RegisterLine>? = null
     suspend fun parties(name: String): List<PartyMatch>? = null
 

@@ -213,9 +213,9 @@ fun HomeStoryViewer(
  * Kodukkanum, Stock. Stock only when the business keeps stock.
  */
 fun homeTileKeys(kind: com.shopai.app.util.HomeKind, stock: Boolean): List<String> = when (kind) {
-    com.shopai.app.util.HomeKind.RETAIL -> listOfNotNull("kai", "sales", "vasool", "stock".takeIf { stock })
-    com.shopai.app.util.HomeKind.SERVICE -> listOf("kai", "sales", "services", "vasool")
-    com.shopai.app.util.HomeKind.WHOLESALE -> listOfNotNull("kai", "late", "sent", "give", "stock".takeIf { stock })
+    com.shopai.app.util.HomeKind.RETAIL -> listOfNotNull("kai", "sales", "vasool", "stock".takeIf { stock }, "kept")
+    com.shopai.app.util.HomeKind.SERVICE -> listOf("kai", "sales", "services", "vasool", "kept")
+    com.shopai.app.util.HomeKind.WHOLESALE -> listOfNotNull("kai", "late", "sent", "give", "stock".takeIf { stock }, "kept")
 }
 
 /**
@@ -230,6 +230,8 @@ fun homeStories(
     fallbackToGet: Double?,
     reminders: List<com.shopai.app.ui.reminders.PaymentReminder>,
     lowStock: List<com.shopai.app.data.model.InventoryProduct>?,
+    /** "Enga Vechen?": the kept things' count (null: not read yet). */
+    kept: Int? = null,
 ): List<HomeStory> {
     val routes = com.shopai.app.ui.navigation.Routes
     val inr = { v: Double -> com.shopai.app.util.formatInr(v) }
@@ -284,6 +286,11 @@ fun homeStories(
                 key, stringResource(R.string.story_sent_tag), figures?.salesTodayPaise?.let { inr(it / 100.0) } ?: dash,
                 if (figures?.salesTodayPaise != null) stringResource(R.string.story_sent_text) else notLoaded,
                 stringResource(R.string.story_late_cta), routes.Customers, listOf(Color(0xFF1D4ED8), Color(0xFF172554)),
+            )
+            "kept" -> HomeStory(
+                key, stringResource(R.string.kept_title), kept?.toString() ?: dash,
+                if (kept == null || kept == 0) stringResource(R.string.kept_story_empty) else stringResource(R.string.kept_story_text, kept),
+                stringResource(R.string.kept_story_cta), routes.engaVechen(), listOf(Color(0xFF0E7490), Color(0xFF083344)),
             )
             "give" -> {
                 val p = figures?.payable

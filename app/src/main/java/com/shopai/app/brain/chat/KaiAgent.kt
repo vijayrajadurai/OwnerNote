@@ -136,6 +136,15 @@ sealed interface KaiAction {
     data class Say(val line: String) : KaiAction
     /** Kai வசூல்: money from this payer is personal (a friend, family) — Kai never asks about them again. */
     data class UpiPersonal(val name: String) : KaiAction
+    // ---- Enga Vechen? (the owner's kept things — a draft, then Confirm, then the local table) ----
+    data class ConfirmKept(val key: String) : KaiAction
+    data class CancelKept(val key: String) : KaiAction
+    /** "kannadi" — specs or a mirror: the meaning the owner picked ([name] = the list's name). */
+    data class KeptMeaning(val key: String, val name: String) : KaiAction
+    /** "Eduthuten" on a kept thing: its Confirm card (closed only after Confirm). */
+    data class KeptClose(val id: String) : KaiAction
+    /** "Idam maathu" on a kept thing: Kai asks the new place. */
+    data class KeptMove(val id: String) : KaiAction
 }
 
 /**
@@ -695,6 +704,15 @@ class KaiAgent(
     private val reminders = KaiReminderAssistant(tools, books, now)
     /** The Daily Sales Note by chat: a service sale, its price (asked once), the day's total, the day close, the PDF. */
     private val dailySales = KaiDailySales(tools, books, memory, now)
+    /** "Enga Vechen?": where the owner kept a thing — said, asked, moved, taken, listed (its own table; never the books). */
+    private val engaVechen = KaiEngaVechen(tools, now)
+
+    /** (its own function — answerOwner is near the JVM's 64 KB method limit) */
+    private suspend fun keptAnswer(line: String, lang: KaiLang, people: List<String>): KaiTurn? {
+        if (plans.isNotEmpty() || stockPlans.isNotEmpty() || goodsOpen()) return null
+        return engaVechen.answer(line, lang, people, runCatching { tools.products()?.map { it.name } }.getOrNull().orEmpty())
+            ?.also { tools.log("enga vechen", "kai", it.reply.text.take(60), ActionStatus.ANSWERED, null, line) }
+    }
 
     fun plan(key: String): ActionPlan? = plans[key]
 
@@ -2129,6 +2147,8 @@ class KaiAgent(
         conversationState.conversationTurn++
         turnRaw = raw.trim()
         // "Ammu illa Ammu anna", "Colgate illa Rice", "Kumar illa Ramesh": the last request, for the one the owner meant.
+        // "passport almirah la vechen", "veetu saavi enga", "ennalam nyabagam vechikka sonnen": the owner's kept things.
+        keptAnswer(raw0, lang, people0)?.let { return it }
         correctionReplay(said, lang, people0)?.let { return it }
         val afterBrief = briefJustShown
         briefJustShown = false
@@ -7146,6 +7166,8 @@ class KaiAgent(
             is KaiAction.SameName -> return sameNamePicked(action.same, lang)
             is KaiAction.RelationPick -> return relationAsk?.let { relationPicked(it, action.same) }
             is KaiAction.Say -> return ask(action.line)
+            is KaiAction.ConfirmKept, is KaiAction.CancelKept, is KaiAction.KeptMeaning, is KaiAction.KeptClose, is KaiAction.KeptMove ->
+                return engaVechen.act(action, lang)
             is KaiAction.BuyerCash -> {
                 val a = buyerAsk?.takeIf { it.key == action.key } ?: return null
                 buyerAsk = null
@@ -7284,6 +7306,7 @@ class KaiAgent(
         recentAsks.clear()
         lastReminderTurn = -1L
         kaiAskedAfterDraft = false
+        engaVechen.reset()
         plans.clear()
         requests.clear()
         incompletePayment = null

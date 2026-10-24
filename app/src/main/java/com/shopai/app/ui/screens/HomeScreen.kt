@@ -219,6 +219,12 @@ fun HomeScreen(
         if (loading) return@LaunchedEffect
         figures = runCatching { loadHomeFigures(container) }.getOrNull()
     }
+    // "Enga Vechen?" tile: how many things the owner told Kai where they kept (this phone's table; read only).
+    var keptCount by remember { mutableStateOf<Int?>(null) }
+    LaunchedEffect(loading) {
+        if (loading) return@LaunchedEffect
+        keptCount = runCatching { container.keptItems.all().count { it.active } }.getOrNull()
+    }
     val kinds = com.shopai.app.data.model.FeatureSet.kindsOf(business)
     val homeKind = com.shopai.app.util.homeKindOf(kinds)
     val tileKeys = homeTileKeys(homeKind, inventoryOn)
@@ -337,6 +343,7 @@ fun HomeScreen(
                 fallbackToGet = cashFlow?.pendingReceivables,
                 reminders = carouselItems,
                 lowStock = lowStock,
+                kept = keptCount,
             ),
             start = start,
             onClose = { storyAt = null },
@@ -399,6 +406,7 @@ fun HomeScreen(
                         figures = figures,
                         fallbackToGet = cashFlow?.pendingReceivables,
                         lowStock = lowStock?.size,
+                        kept = keptCount,
                         onStory = { storyAt = it },
                     ),
                     edge = 0.dp,

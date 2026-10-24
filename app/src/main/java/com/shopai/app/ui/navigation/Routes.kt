@@ -27,6 +27,9 @@ object Routes {
     /** Kai — Do My Morning Work. [mode] = voice / text (how the owner asked); [start] = go straight to the first task. */
     const val MorningWork = "morning_work?mode={mode}&start={start}"
     const val Reminders = "reminders"
+    /** "Enga Vechen?": the owner's kept things ([focus] = one thing's id, opened from Kai Chat). */
+    const val EngaVechen = "enga_vechen?focus={focus}"
+    fun engaVechen(focus: String = ""): String = "enga_vechen?focus=$focus"
     const val ReminderDetail = "reminder_detail/{reminderId}"
     const val AiInsights = "ai_insights"
     const val DailyCashNote = "daily_cash_note"

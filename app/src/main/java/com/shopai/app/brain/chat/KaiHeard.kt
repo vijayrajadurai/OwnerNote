@@ -38,10 +38,12 @@ object KaiHeard {
         for (w in Regex("""\p{L}+""").findAll(text).map { it.value.lowercase(Locale.ROOT) }) {
             score += when {
                 w in own -> 0
-                w.any { it in '஀'..'௿' } -> -2 // a Tamil word the mic left that Kai's words don't read
+                // (a word of Enga Vechen's list — "பாஸ்போர்ட்", "அலமாரி", "வச்சேன்" — is a word Kai reads)
+                w.any { it in '஀'..'௿' } -> if (com.shopai.app.brain.tools.KaiKept.knows(w)) 1 else -2 // a Tamil word the mic left that Kai's words don't read
                 KaiLexicon.knows(w) || KaiUnderstanding.isNumberWord(w) -> 1
                 KaiWordSound.readsAs(w) != null -> if (KaiWordSound.readsAs(w) == w) 1 else 0
                 w.length <= 2 -> 0
+                com.shopai.app.brain.tools.KaiKept.knows(w) -> 1
                 else -> -2
             }
         }

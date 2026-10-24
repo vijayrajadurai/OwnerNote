@@ -64,7 +64,13 @@ class AppKaiTools(
     private val business: (suspend () -> com.shopai.app.data.model.Business?)? = null,
     /** The signed-in business + owner (from the session — never from a screen); reminders are theirs only. */
     private val scope: () -> Pair<String?, String?> = { null to null },
+    /** "Enga Vechen?": the owner's kept things (this phone's table; written only after Confirm). */
+    private val kept: com.shopai.app.data.local.room.KeptItemsRepository? = null,
 ) : KaiTools {
+
+    override suspend fun keptItems(): List<com.shopai.app.brain.tools.KeptItem>? = kept?.let { runCatching { it.all() }.getOrNull() }
+    override suspend fun saveKept(item: com.shopai.app.brain.tools.KeptItem): Boolean = kept?.save(item) ?: false
+    override suspend fun deleteKept(id: String): Boolean = kept?.delete(id) ?: false
 
     private suspend fun session(): BooksSession? = runCatching { books.session() }.getOrNull()
 

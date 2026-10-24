@@ -15,8 +15,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         CapturedDocumentEntity::class,
         HandwrittenNoteEntity::class,
         NoteTransactionEntity::class,
+        KeptItemEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = false,
 )
 abstract class ShopAiLocalDatabase : RoomDatabase() {
@@ -24,6 +25,7 @@ abstract class ShopAiLocalDatabase : RoomDatabase() {
     abstract fun voiceCheckinDao(): VoiceCheckinDao
     abstract fun capturedDocumentDao(): CapturedDocumentDao
     abstract fun handwrittenNotesDao(): HandwrittenNotesDao
+    abstract fun keptItemsDao(): KeptItemsDao
 
     companion object {
         @Volatile
@@ -151,13 +153,39 @@ abstract class ShopAiLocalDatabase : RoomDatabase() {
             }
         }
 
+        // "Enga Vechen?" (24 Oct 2026): the owner's kept things — a new table, nothing else changes.
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS kept_items (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        businessId TEXT NOT NULL,
+                        ownerId TEXT NOT NULL,
+                        item TEXT NOT NULL,
+                        itemKey TEXT,
+                        placeParts TEXT NOT NULL,
+                        person TEXT,
+                        keptBy TEXT,
+                        photo TEXT,
+                        createdAt TEXT NOT NULL,
+                        updatedAt TEXT NOT NULL,
+                        status TEXT NOT NULL,
+                        history TEXT NOT NULL
+                    )
+                    """.trimIndent(),
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_kept_items_businessId_ownerId ON kept_items (businessId, ownerId)")
+            }
+        }
+
         fun get(context: Context): ShopAiLocalDatabase =
             instance ?: synchronized(this) {
                 instance ?: Room.databaseBuilder(
                     context.applicationContext,
                     ShopAiLocalDatabase::class.java,
                     "shop_ai_local.db",
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5).build().also { instance = it }
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6).build().also { instance = it }
             }
     }
 }

@@ -1902,4 +1902,31 @@ NewonX — Owner Note. Use Help & Support in the app.]]></string>
     <string name="kai_upi_personal_clear">Clear</string>
     <string name="kai_upi_shop_apps_title">Which app takes the shop\u2019s money?</string>
     <string name="kai_upi_shop_apps_hint">Pick the shop\u2019s app(s): Kai asks about every payment on them and stays quiet on the others (your personal account). Pick none: Kai speaks only for your customers. If the shop and personal accounts are in the same app, Kai can\u2019t tell them apart — pick none.</string>
+    <!-- Enga Vechen? (owner, 24 Oct 2026) -->
+    <string name="kept_title">Enga Vechen?</string>
+    <string name="kept_tile">Enga Vechen</string>
+    <string name="kept_tell_kai">Kai kitta sollunga 🎤</string>
+    <string name="kept_hint">Kai Chat-la sollunga (type or mic): “passport bedroom almirah la vechen”, “veetu saavi enga?”, “ennalam nyabagam vechikka sonnen”.</string>
+    <string name="kept_show_old">Pazhaya list (eduthadhu)</string>
+    <string name="kept_not_saved">Save aagala — edhuvum maaRala. Innoru thadava try pannunga.</string>
+    <string name="kept_empty">Innum edhuvum nyabagam vechikka sollala. Example: \"Kai, passport almirah la vechen\" nu sollunga.</string>
+    <string name="kept_summary">%1$d porul · %2$d idam · %3$d per kitta</string>
+    <string name="kept_with_people">Aatkal kitta</string>
+    <string name="kept_no_place">Idam sollaadhadhu</string>
+    <string name="kept_with_person">%1$s kitta — %2$d naal aachu</string>
+    <string name="kept_closed">eduthaachu</string>
+    <string name="kept_move">Idam maathu</string>
+    <string name="kept_taken">Eduthuten</string>
+    <string name="kept_photo">Photo add</string>
+    <string name="kept_delete">Delete</string>
+    <string name="kept_confirm">Confirm</string>
+    <string name="kept_move_title">%1$s — pudhu idam?</string>
+    <string name="kept_move_label">Pudhu idam</string>
+    <string name="kept_move_placeholder">bedroom almirah mela drawer</string>
+    <string name="kept_close_title">%1$s — list-la irundhu edukkava?</string>
+    <string name="kept_delete_title">%1$s — delete pannava?</string>
+    <string name="kept_delete_text">Idhu list-la irundhu muzhusaa poyidum (pazhaya list-laiyum varaadhu).</string>
+    <string name="kept_story_empty">Passport, saavi, nagai — enga vecheenga nu Kai kitta sollunga; ketta solluvaar.</string>
+    <string name="kept_story_text">%1$d porul enga irukku nu Kai-ku theriyum.</string>
+    <string name="kept_story_cta">List paarunga</string>
 </resources>

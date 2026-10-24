@@ -128,6 +128,10 @@ class AppContainer(context: Context) {
     val voiceCheckinRepository = VoiceCheckinRepository(appContext, localDatabase.voiceCheckinDao())
     val capturedDocumentRepository = CapturedDocumentRepository(localDatabase.capturedDocumentDao())
     val handwrittenNotesRepository = HandwrittenNotesRepository(appContext, localDatabase.handwrittenNotesDao(), transactionRepository)
+    /** "Enga Vechen?": the owner's kept things, for the signed-in login (Kai and the Enga Vechen screen). */
+    val keptItems: com.shopai.app.data.local.room.KeptItemsRepository by lazy {
+        com.shopai.app.data.local.room.KeptItemsRepository(localDatabase.keptItemsDao()) { kaiMemory.businessId to kaiMemory.ownerId }
+    }
 
     /** Kai Chat's books: the existing ledger, party details and Daily Cash Note (no AI service). */
     val kaiBooks: com.shopai.app.brain.chat.RepositoryKaiBooks by lazy {
@@ -163,10 +167,9 @@ class AppContainer(context: Context) {
         com.shopai.app.data.kai.AppKaiTools(appContext, books, transactionRepository, kaiReminders, kaiActionLog, inventoryRepository, dailyCashRepository,
             // (the business last read or saved first — a type changed in Profile is Kai's at once)
             { (businessRepository.current.value ?: businessRepository.getMyBusiness())?.category },
-            business = { businessRepository.current.value ?: businessRepository.getMyBusiness() }) {
+            business = { businessRepository.current.value ?: businessRepository.getMyBusiness() },
             // The login whose Kai memory is open (business + owner) — reminders are scoped to it.
-            kaiMemory.businessId to kaiMemory.ownerId
-        }
+            scope = { kaiMemory.businessId to kaiMemory.ownerId }, kept = keptItems)
     }
 
     /**

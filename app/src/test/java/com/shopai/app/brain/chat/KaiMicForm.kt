@@ -57,6 +57,14 @@ object KaiMicForm {
         salon=சலூன் gym=ஜிம் pakkathula=பக்கத்துல
         poiruchi=போயிருச்சு vangiirukan=வாங்கியிருக்கான் irukan=இருக்கான் vangi=வாங்கி
         cigarette=சிகரெட் pipe=பைப் flake=ஃப்ளேக் lights=லைட்ஸ் inch=இன்ச்
+        passport=பாஸ்போர்ட் paasport=பாஸ்போர்ட் bedroom=பெட்ரூம் almirah=அலமாரி almara=அலமாரா beero=பீரோ mela=மேல vechen=வச்சேன் veetu=வீட்டு enga=எங்க
+        thodu=தோடு nagai=நகை vechirukken=வச்சிருக்கேன் bike=பைக் rc=ஆர்சி dicky=டிக்கி potten=போட்டேன் charger=சார்ஜர் kaanom=காணோம் patta=பட்டா locker=லாக்கர்
+        remote=ரிமோட் kidaichiduchu=கிடைச்சிடுச்சு laptop=லேப்டாப் ennenna=என்னென்ன bp=பிபி maathirai=மாத்திரை fridge=ஃபிரிட்ஜ் left=லெஃப்ட் side=சைடு dabba=டப்பா
+        carton=கார்ட்டன் godown=கோடவுன் rack=ரேக் keezha=கீழ insurance=இன்சூரன்ஸ் file=ஃபைல் vechom=வச்சோம் ennalam=என்னலாம் vechikka=வச்சிக்க sonnen=சொன்னேன்
+        un=உன் vechaanga=வச்சாங்க poona=போன documents=டாக்குமெண்ட்ஸ் ellam=எல்லாம் amma=அம்மா kitchen=கிச்சன் aadhaar=ஆதார் card=கார்டு kannadi=கண்ணாடி
+        eduthuten=எடுத்துட்டேன் pazhaya=பழைய thambi=தம்பி cupboard=கப்போர்டு hall=ஹால் shelf=ஷெல்ஃப் gold=கோல்டு chain=செயின் suitcase=சூட்கேஸ் loft=லாஃப்ட்
+        umbrella=அம்ப்ரெல்லா helmet=ஹெல்மெட் counter=கவுண்டர் thaali=தாலி watch=வாட்ச் pooja=பூஜை room=ரூம் maathiten=மாத்திட்டேன் nethu=நேத்து kattil=கட்டில் adiyila=அடியில
+        pinnadi=பின்னாடி marunthu=மருந்து thattu=தட்டு purse=பர்ஸ் chavi=சாவி vandi=வண்டி ration=ரேஷன் theduren=தேடுறேன் kedaikala=கிடைக்கல yaar=யார் pen=பென் drive=டிரைவ்
         athu=அது innoru=இன்னொரு adhe=அதே paadhi=பாதி munnadi=முன்னாடி ketten=கேட்டேன்
         business=பிசினஸ் pannalam=பண்ணலாம் idea=ஐடியா jaasthi=ஜாஸ்தி aaga=ஆக leave=லீவு light=லைட் water=வாட்டர் eb=ஈபி sales=சேல்ஸ்
         poyiduchu=போயிடுச்சு kattiten=கட்டிட்டேன்

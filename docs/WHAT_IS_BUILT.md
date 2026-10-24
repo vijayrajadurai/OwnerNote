@@ -239,6 +239,33 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
 - Owner's real GPay notification ("Prabhakaran paid you ₹1.00" / "Payment from PhonePe") is in the tests.
 - Not yet: bank apps, a walk-in UPI sale into the Cash Note, Tamil-language notifications.
 
+### Enga Vechen? — where a thing is kept (owner, 24 Oct 2026; Android screen not yet checked on a phone)
+- The owner's word list is the source of truth: `app/src/main/resources/kai/enga_vechen_words.json` (intents, place markers,
+  positions, places, items, people, time, filler words, 19 test sentences, how the full list is shown). Read by
+  `brain/tools/KaiKeptWords.kt`; a new spelling or word goes in that JSON.
+- Reading a line: `brain/tools/KaiKept.kt` — save / ask / move / taken / list / list_all (filters: person, time, room, type,
+  "yaar yaar kitta", "pazhaya list"). Words are matched by sound (`KaiWordSound.near`, `NameSound.same` for the mic's Tamil
+  script). An unknown word is the owner's own and kept as said; a word of two meanings ("kannadi", "cell", "kaasu", "kudai")
+  comes back with both. A line with money, stock or a books question (amount, "stock", "evlo", "ku … enna", "remind") is never
+  read here.
+- Kai Chat: `brain/chat/KaiEngaVechen.kt`, called from `KaiAgent.answerOwner` (`keptAnswer`) before the corrections, only when no
+  money / stock draft is open. Save / move / close are a small Confirm card (`ConfirmKept`); "Save aagiduchu" only after
+  `KaiTools.saveKept` returned true. A question card for two meanings (`KeptMeaning`); the place is asked when not said; "almirah
+  illa cupboard" changes the open card. Ask: "Passport: Bedroom almirah, mela drawer — 12 Aug vechinga" (+ "Munnaadi almirah la
+  irundhuchu"); not kept: said plainly with the closest kept things by sound. A thing that is neither kept nor in the list
+  ("supermarket enga irukku", "Colgate enga irukku") goes on to Kai's other answers as before.
+- Full list (`list_all_answer`): spoken count summary first; "Aatkal kitta" group on top (30+ days ⚠), then one group per top place,
+  newest first (`KeptGroups`); more than 10 → groups only; the voice reads only the summary; closed hidden unless "pazhaya list
+  kaattu"; the JSON's empty message.
+- Table: `kept_items` in `ShopAiLocalDatabase` (v6, `MIGRATION_5_6`), per login (business + owner), this phone only
+  (`data/local/room/KeptItems.kt`, `AppContainer.keptItems`, `AppKaiTools.keptItems/saveKept/deleteKept`).
+- Screen: `ui/screens/EngaVechenScreen.kt` (`Routes.EngaVechen`), from Kai Chat ("Full list paaru", "Photo add" →
+  `OpenRecord("KEPT")`) and the Home tile "kept" (all three Home kinds). Per thing: Idam maathu, Eduthuten, Photo add (system Photo
+  Picker, copied into the app's folder — no permission), Delete; each asks first.
+- The mic's five guesses: `KaiHeard.score` counts the list's words as known (`KaiKept.knows`).
+- Tests: `KaiTrainingLinesTest.engaVechenSentencesOfTheOwnersList` (the JSON's 19, typed + mic),
+  `engaVechenMoreWaysAndShopLinesUnchanged` (60 more + the shop's lines unchanged), `KaiEngaVechenTest` (flows), owner-lines.
+
 ### Reminders
 - "naalaiku 10 manikku Kumar ku call panna remind pannu", typed or spoken, relative or absolute. "naalu naal kazhichu
   kaalai 10" is that day at 10.
@@ -454,6 +481,7 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
   - bill upload (PDF / Excel / CSV, `DocumentCaptureSection`)
   - CashNoteShare
   - the note scene's images
+  - the Enga Vechen screen, its Home tile and the `kept_items` migration (24 Oct 2026)
 - Real-device acceptance list: `docs/KAI_PRODUCTION_FIXES.md`.
 - Kai 2.0 roadmap (owner, Oct 2026): understand everything → know the business → never make silent mistakes → learn
   automatically → predict before problems happen (cash-flow risk, stock running out). Step 5 is not started; the owner

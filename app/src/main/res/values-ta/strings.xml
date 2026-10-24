@@ -1865,4 +1865,31 @@ NewonX — Owner Note. ஆப்பில் உதவி & ஆதரவு.]]><
     <string name="kai_upi_personal_clear">நீக்கு</string>
     <string name="kai_upi_shop_apps_title">கடை பணம் எந்த app-ல வரும்?</string>
     <string name="kai_upi_shop_apps_hint">கடை app-ஐ தேர்ந்தெடுங்க: அதுல வர்ற எல்லா பணத்துக்கும் Kai கேக்கும், மத்த app (உங்க சொந்த account) பணத்துக்கு அமைதியா இருக்கும். ஒண்ணும் தேர்ந்தெடுக்கலைனா: customer பணத்துக்கு மட்டும் சொல்லும். கடை account-உம் சொந்த account-உம் ஒரே app-ல இருந்தா Kai-ஆல பிரிக்க முடியாது — அப்போ ஒண்ணும் தேர்ந்தெடுக்காதீங்க.</string>
+    <!-- Enga Vechen? (owner, 24 Oct 2026) -->
+    <string name="kept_title">எங்க வச்சேன்?</string>
+    <string name="kept_tile">எங்க வச்சேன்</string>
+    <string name="kept_tell_kai">Kai கிட்ட சொல்லுங்க 🎤</string>
+    <string name="kept_hint">Kai Chat-ல சொல்லுங்க (type அல்லது mic): “பாஸ்போர்ட் பெட்ரூம் அலமாரி ல வச்சேன்”, “வீட்டு சாவி எங்க?”, “என்னலாம் ஞாபகம் வச்சிக்க சொன்னேன்”.</string>
+    <string name="kept_show_old">பழைய லிஸ்ட் (எடுத்தது)</string>
+    <string name="kept_not_saved">Save ஆகல — எதுவும் மாறல. இன்னொரு தடவ try பண்ணுங்க.</string>
+    <string name="kept_empty">இன்னும் எதுவும் ஞாபகம் வச்சிக்க சொல்லல. உதாரணம்: “கை, பாஸ்போர்ட் அலமாரி ல வச்சேன்”னு சொல்லுங்க.</string>
+    <string name="kept_summary">%1$d பொருள் · %2$d இடம் · %3$d பேர் கிட்ட</string>
+    <string name="kept_with_people">ஆட்கள் கிட்ட</string>
+    <string name="kept_no_place">இடம் சொல்லாதது</string>
+    <string name="kept_with_person">%1$s கிட்ட — %2$d நாள் ஆச்சு</string>
+    <string name="kept_closed">எடுத்தாச்சு</string>
+    <string name="kept_move">இடம் மாத்து</string>
+    <string name="kept_taken">எடுத்துட்டேன்</string>
+    <string name="kept_photo">Photo சேர்</string>
+    <string name="kept_delete">நீக்கு</string>
+    <string name="kept_confirm">Confirm</string>
+    <string name="kept_move_title">%1$s — புது இடம்?</string>
+    <string name="kept_move_label">புது இடம்</string>
+    <string name="kept_move_placeholder">பெட்ரூம் அலமாரி மேல drawer</string>
+    <string name="kept_close_title">%1$s — லிஸ்ட்-ல இருந்து எடுக்கவா?</string>
+    <string name="kept_delete_title">%1$s — நீக்கவா?</string>
+    <string name="kept_delete_text">இது லிஸ்ட்-ல இருந்து முழுசா போயிடும் (பழைய லிஸ்ட்-லயும் வராது).</string>
+    <string name="kept_story_empty">பாஸ்போர்ட், சாவி, நகை — எங்க வச்சீங்கன்னு Kai கிட்ட சொல்லுங்க; கேட்டா சொல்லுவார்.</string>
+    <string name="kept_story_text">%1$d பொருள் எங்க இருக்குன்னு Kai-க்கு தெரியும்.</string>
+    <string name="kept_story_cta">லிஸ்ட் பாருங்க</string>
 </resources>

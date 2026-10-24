@@ -21,6 +21,7 @@ import com.shopai.app.ui.navigation.navigateUpOrHome
 import com.shopai.app.ui.screens.AddCreditScreen
 import com.shopai.app.ui.screens.AddDebitScreen
 import com.shopai.app.ui.screens.AiInsightsScreen
+import com.shopai.app.ui.screens.EngaVechenScreen
 import com.shopai.app.ui.screens.BusinessSetupScreen
 import com.shopai.app.ui.screens.CustomerDetailScreen
 import com.shopai.app.ui.screens.CustomersScreen
@@ -391,6 +392,14 @@ private fun ShopAiAppContent(container: AppContainer) {
                 onBack = { navController.navigateUpOrHome() },
             )
         }
+        composable(Routes.EngaVechen, arguments = listOf(navArgument("focus") { type = NavType.StringType; defaultValue = "" })) { entry ->
+            EngaVechenScreen(
+                container = container,
+                onBack = { navController.navigateUpOrHome() },
+                onOpenKaiChat = { navController.navigate(Routes.KaiChat) },
+                focusId = entry.arguments?.getString("focus")?.ifBlank { null },
+            )
+        }
         composable(Routes.Reminders) {
             RemindersScreen(
                 container = container,
@@ -642,6 +651,8 @@ private fun ShopAiAppContent(container: AppContainer) {
                         "PRODUCT" -> navController.navigate(if (id.isNotBlank()) Routes.productDetail(id) else Routes.Inventory)
                         "INVENTORY" -> navController.navigate(Routes.Inventory)
                         "REMINDERS" -> navController.navigate(Routes.Reminders)
+                        // "Enga Vechen?": the kept things (one of them, for its photo).
+                        "KEPT" -> navController.navigate(Routes.engaVechen(id))
                         // "GST bill podu": Kai chat doesn't make bills — the bill editor does (for that customer when Kai knew who).
                         "SALE_BILL" -> navController.navigate(Routes.billEditor("SALE", id.ifBlank { null }))
                         // The screens Kai points to by chat or voice: purchase bill, draft bills, Add Product, the shop's categories.

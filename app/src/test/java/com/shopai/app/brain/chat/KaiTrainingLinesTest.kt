@@ -73,6 +73,11 @@ class KaiTrainingLinesTest {
             if (from.monthValue == 9) listOf(ProductSalesFact("Soap", BigDecimal("40"), BigDecimal("1600"))) else emptyList()
         override suspend fun sales(from: LocalDate, to: LocalDate) = if (from.monthValue == 8) BigDecimal("52000") else null
         override suspend fun expenses(from: LocalDate, to: LocalDate) = if (from == LocalDate.of(2026, 10, 15)) BigDecimal("3400") else null
+        /** Enga Vechen's table (in memory): written only by Confirm. */
+        val kept = mutableListOf<com.shopai.app.brain.tools.KeptItem>()
+        override suspend fun keptItems() = kept.toList()
+        override suspend fun saveKept(item: com.shopai.app.brain.tools.KeptItem): Boolean { kept.removeAll { it.id == item.id }; kept += item; return true }
+        override suspend fun deleteKept(id: String) = kept.removeAll { it.id == id }
     }
 
     private class Access(val memory: KaiPrivateMemory) : KaiMemoryAccess {
@@ -97,7 +102,7 @@ class KaiTrainingLinesTest {
             val b = last?.card?.buttons?.firstOrNull { pick(it.action) } ?: return null
             return runBlocking { kai.act(b.action, KaiLang.TANGLISH) }.also { last = it }
         }
-        fun nothingWritten() = tools.saved.isEmpty() && tools.cash.isEmpty() && tools.sales.isEmpty() && inv.moves.isEmpty() && inv.bills.isEmpty()
+        fun nothingWritten() = tools.saved.isEmpty() && tools.cash.isEmpty() && tools.sales.isEmpty() && inv.moves.isEmpty() && inv.bills.isEmpty() && tools.kept.isEmpty()
     }
 
     private fun all(t: KaiTurn?) = (t?.reply?.text.orEmpty() + " | " + t?.card?.lines.orEmpty().joinToString(" | ")).replace("\n", " ")
@@ -278,5 +283,151 @@ class KaiTrainingLinesTest {
         }
         for (line in ways("send aagala status check pannu")) assertTrue(line, Shop().say(line).reply.text.contains("WhatsApp"))
         for (line in ways("reminder save aagala pola")) assertTrue(line, Regex("(?i)reminder").containsMatchIn(Shop().say(line).reply.text))
+    }
+
+    // ------------------------------------------------------------------ Enga Vechen? (owner, 24 Oct 2026)
+
+    private val people = listOf("Kumar", "Selvam", "Ramesh", "Meena", "Ravi")
+
+    private fun samePart(a: String, b: String) = a.equals(b, true) || com.shopai.app.util.NameSound.same(a, b)
+
+    /** What Kai did with a kept-thing line, read from the turn (nothing is written by any of them). */
+    private fun keptTurn(t: KaiTurn, intent: String) = when (intent) {
+        "save", "move" -> t.card?.buttons?.any { it.action is KaiAction.ConfirmKept } == true || t.card?.buttons?.any { it.action is KaiAction.KeptMeaning } == true
+        "taken" -> Regex("list-la illa|லிஸ்ட்-ல இல்ல|isn't on your list").containsMatchIn(t.reply.text)
+        "ask" -> Regex("innum sollala|இன்னும் சொல்லல|haven't told me").containsMatchIn(t.reply.text) || t.card?.buttons?.any { it.action is KaiAction.KeptMeaning } == true
+        "list" -> Regex("edhuvum vechadha sollala|எதுவும் வச்சதா சொல்லல|Nothing kept").containsMatchIn(t.reply.text)
+        "list_all" -> Regex("Innum edhuvum nyabagam vechikka sollala|இன்னும் எதுவும் ஞாபகம்|haven't asked me to remember").containsMatchIn(t.reply.text)
+        else -> false
+    }
+
+    /** The 19 sentences of the owner's word list (`kai/enga_vechen_words.json` › test_sentences), typed and as the mic writes them. */
+    @Test fun engaVechenSentencesOfTheOwnersList() {
+        val json = com.google.gson.JsonParser.parseString(javaClass.getResourceAsStream("/kai/enga_vechen_words.json")!!.readBytes().toString(Charsets.UTF_8)).asJsonObject
+        val sentences = json["test_sentences"].asJsonArray
+        assertEquals(19, sentences.size())
+        var played = 0
+        for (t in sentences) {
+            val say = t.asJsonObject["say"].asString
+            val expect = t.asJsonObject["expect"].asJsonObject
+            for (line in ways(say)) {
+                played++
+                val r = com.shopai.app.brain.tools.KaiKept.read(line.removePrefix("Kai ").removePrefix("கை "), people)
+                val intent = expect["intent"].asString
+                assertEquals("$line → $r", intent, r?.intent?.name?.lowercase())
+                expect["item"]?.asString?.let { assertEquals("$line → $r", it, r!!.itemKey) }
+                expect["place"]?.asJsonArray?.map { it.asString }?.let { want ->
+                    assertTrue("$line → ${r!!.place} (want $want)", want.size == r.place.size && want.zip(r.place).all { (a, b) -> samePart(a, b) })
+                }
+                expect["person"]?.asString?.let { assertTrue("$line → $r", samePart(it, r!!.person.orEmpty())) }
+                expect["filter"]?.asJsonObject?.let { f ->
+                    val got = r!!.filter!!
+                    f["person"]?.asString?.let { assertTrue("$line → $got", samePart(it, got.person.orEmpty())) }
+                    f["time"]?.asString?.let { assertEquals(line, it, got.time) }
+                    f["type"]?.asString?.let { assertEquals(line, it, got.type) }
+                    f["given_to_people"]?.asBoolean?.let { assertEquals(line, it, got.givenToPeople) }
+                }
+                // Through Kai Chat, on an empty list: the Confirm card / "not told yet" / the empty list — nothing written.
+                val s = Shop()
+                val turn = s.say(line)
+                assertTrue("$line → ${all(turn)}", keptTurn(turn, intent))
+                assertTrue(line, s.nothingWritten())
+            }
+        }
+        assertTrue(played >= 19)
+    }
+
+    /**
+     * More of the owner's ways (spellings, Tamil script, English mixed in, the list's filters, words of two meanings, the owner's own
+     * words) — and the shop's own lines that must stay what they were. Typed and as the mic writes them.
+     */
+    @Test fun engaVechenMoreWaysAndShopLinesUnchanged() {
+        data class L(val line: String, val intent: String?, val key: String? = null, val place: List<String>? = null, val person: String? = null,
+            val meanings: Int = 0, val filter: (com.shopai.app.brain.tools.KaiKept.Filter) -> Boolean = { true })
+        val lines = listOf(
+            // spellings
+            L("paasport almara la vechen", "save", "passport", listOf("almirah")),
+            L("pass port beero la vachen", "save", "passport", listOf("almirah")),
+            L("aadhar card kabbord la vechiruken", "save", "aadhaar card", listOf("cupboard")),
+            L("veedu saavi key holder la maattiten", "save", "house key", listOf("key holder")),
+            L("vandi saavi enga", "ask", "bike key"),
+            L("charjer kaanom", "ask", "charger"),
+            L("remot enga", "ask", "remote"),
+            L("Kai, laptop almirah la vechen", "save", "laptop", listOf("almirah")),
+            L("umbrella car dicky la potten", "save", "umbrella", listOf("car", "dicky")),
+            L("gold chain bank locker la", "save", "gold", listOf("bank", "locker")),
+            L("passport ippo suitcase la maathiten", "move", "passport", listOf("suitcase")),
+            L("patta ippo amma veedu la", "move", "patta", listOf("amma veedu")),
+            L("charger eduthuten", "taken", "charger"),
+            L("phone kandupidichiten", "taken", "phone"),
+            L("kitchen la ennenna irukku", "list", place = listOf("kitchen")),
+            L("hall la enna irukku", "list", place = listOf("hall")),
+            L("helmet kattil adiyila vechen", "save", "helmet", listOf("cot", "adiyila")),
+            L("marunthu fridge mela vechen", "save", "medicine", listOf("fridge", "mela")),
+            // Tamil script (the mic)
+            L("பாஸ்போர்ட் அலமாரி ல வச்சேன்", "save", "passport", listOf("almirah")),
+            L("சாவி எங்க", "ask", "house key"),
+            L("ஆதார் கார்டு பீரோ ல வச்சேன்", "save", "aadhaar card", listOf("almirah")),
+            L("ரிமோட் கிடைச்சிடுச்சு", "taken", "remote"),
+            L("அலமாரி ல என்னென்ன இருக்கு", "list", place = listOf("almirah")),
+            L("நான் என்னலாம் வச்சேன்", "list_all"),
+            L("யார் யார் கிட்ட என்ன குடுத்தேன்", "list_all", filter = { it.givenToPeople }),
+            L("மாத்திரை ஃபிரிட்ஜ் மேல வச்சேன்", "save", "medicine", listOf("fridge", "mela")),
+            L("தம்பி கிட்ட வண்டி சாவி குடுத்தேன்", "save", "bike key", person = "thambi"),
+            L("கண்ணாடி எங்க", "ask", meanings = 2),
+            L("பாஸ்போர்ட் அலமாரிலே வச்சேன்", "save", "passport", listOf("almirah")),
+            // English mixed in
+            L("I kept passport in bedroom cupboard", "save", "passport", listOf("bedroom", "cupboard")),
+            L("where is my charger", "ask", "charger"),
+            L("where did i keep the aadhaar card", "ask", "aadhaar card"),
+            L("car key kitchen drawer la vechen", "save", "car key", listOf("kitchen", "drawer")),
+            L("laptop office bag la put pannen", "save", "laptop", listOf("office", "bag")),
+            L("what all did i ask you to remember", "list_all"),
+            // the list's filters
+            L("Ravi kitta ennalam kuduthen", "list_all", filter = { it.person == "Ravi" }),
+            L("innaiku ennalam vechen", "list_all", filter = { it.time == "today" }),
+            L("nethu ennalam vechen", "list_all", filter = { it.time == "yesterday" }),
+            L("bedroom la ennalam vechen", "list_all", filter = { it.room == listOf("bedroom") }),
+            L("saavi ellam enga", "list_all", filter = { it.type == "keys" }),
+            L("nagai ellam enga irukku", "list_all", filter = { it.type == "money_and_gold" }),
+            L("thambi ennalam vechaan", "list_all", filter = { it.person == "thambi" }),
+            L("pazhaya list kaattu", "list_all", filter = { it.closed }),
+            // a word of two meanings: asked, never guessed
+            L("kannadi drawer la vechen", "save", meanings = 2),
+            L("cell drawer la vechen", "save", meanings = 2),
+            L("kaasu petti la vechen", "save", meanings = 2),
+            L("kudai loft la vechen", "save", meanings = 2),
+            // the owner's own words: kept as said, never rejected
+            L("thatha medal almirah la vechen", "save", null, listOf("almirah"), person = "thatha"),
+            L("golu bommai loft la vechen", "save", "festival items", listOf("loft")),
+            L("pudhu chappal showcase keezha vechen", "save", "shoes", listOf("showcase", "keezha")),
+            L("Murugan photo frame showcase la vechen", "save", "photos", listOf("showcase")),
+            // the shop's lines stay the shop's
+            L("Kumar ku 2000 kuduthen", null), L("Rice stock enga irukku?", null), L("Kumaran store ku enna kuduthen", null),
+            L("Kumar ku enna vithen", null), L("Kumar 500 kuduthan", null), L("naalaiku 10 manikku passport edukka remind pannu", null),
+            L("Kumar kitta irukku", null), L("pakkathula hardware kadai irukka?", null), L("Soap 2 box vandhuchu", null),
+        )
+        assertTrue(lines.size >= 50)
+        for (l in lines) for (line in ways(l.line)) {
+            val r = com.shopai.app.brain.tools.KaiKept.read(line.removePrefix("Kai, "), people)
+            assertEquals("$line → $r", l.intent, r?.intent?.name?.lowercase())
+            if (r == null) continue
+            l.key?.let { assertEquals("$line → $r", it, r.itemKey) }
+            assertEquals("$line → $r", l.meanings, r.meanings.size)
+            l.place?.let { want -> assertTrue("$line → ${r.place} (want $want)", want.size == r.place.size && want.zip(r.place).all { (a, b) -> samePart(a, b) }) }
+            l.person?.let { assertTrue("$line → $r", samePart(it, r.person.orEmpty())) }
+            r.filter?.let { assertTrue("$line → $it", l.filter(it)) }
+        }
+        // Through Kai Chat: the shop's lines are answered as before (never a kept-thing card), and nothing is written.
+        for (typed in listOf("Kumar ku 2000 kuduthen", "Rice stock enga irukku?", "supermarket enga irukku?", "Colgate enga irukku", "Kumaran store ku enna kuduthen", "Kumar ku enna vithen"))
+            for (line in ways(typed)) {
+                val s = Shop()
+                val t = s.say(line)
+                assertTrue("$line → ${all(t)}", t.card?.buttons.orEmpty().none { it.action is KaiAction.ConfirmKept || it.action is KaiAction.KeptMeaning } &&
+                    !Regex("innum sollala|இன்னும் சொல்லல|Nyabagam vechukkava").containsMatchIn(all(t)))
+                assertTrue(line, s.tools.kept.isEmpty())
+            }
+        // "Kumar ku 2000 kuduthen" is still the money draft.
+        assertTrue(Shop().say("Kumar ku 2000 kuduthen").card?.buttons?.any { it.action is KaiAction.ConfirmPlan } == true)
     }
 }

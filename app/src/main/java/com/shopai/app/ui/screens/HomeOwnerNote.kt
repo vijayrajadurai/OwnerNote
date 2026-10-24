@@ -244,6 +244,8 @@ fun homeMoments(
     figures: HomeFigures?,
     fallbackToGet: Double?,
     lowStock: Int?,
+    /** "Enga Vechen?": the kept things' count (null: not read yet). */
+    kept: Int? = null,
     onStory: (Int) -> Unit,
 ): List<HomeMoment> {
     val dash = "—"
@@ -265,6 +267,7 @@ fun homeMoments(
             )
             "late" -> HomeMoment(stringResource(R.string.home_tile_late), figures?.receivable?.overdueCount?.toString() ?: dash, listOf(Color(0xFFF87171), Color(0xFFB91C1C)), onClick = open)
             "sent" -> HomeMoment(stringResource(R.string.home_tile_sent), money(figures?.salesTodayPaise?.let { it / 100.0 }), listOf(Color(0xFF60A5FA), Color(0xFF1D4ED8)), onClick = open)
+            "kept" -> HomeMoment(stringResource(R.string.kept_tile), kept?.toString() ?: dash, listOf(Color(0xFF22D3EE), Color(0xFF0E7490)), onClick = open)
             "give" -> HomeMoment(stringResource(R.string.home_tile_give), money(figures?.payable?.let { it.totalPaise / 100.0 }), listOf(Color(0xFFFBBF24), Color(0xFFB45309)), onClick = open)
             else -> HomeMoment(
                 stringResource(R.string.home_tile_stock), lowStock?.toString(), listOf(Color(0xFFF87171), Color(0xFFB91C1C)),

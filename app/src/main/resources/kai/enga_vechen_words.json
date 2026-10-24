@@ -1,0 +1,327 @@
+{
+  "_about": "Kai 'Enga Vechen?' feature - words Kai must understand. Tamil script + Tanglish spellings + English. Kai already matches by sound, so add spelling variants freely.",
+
+  "intents": {
+    "save": {
+      "_meaning": "User is putting something somewhere - save item + place",
+      "words": [
+        "vechen", "vechiruken", "vechirukken", "vechitten", "vachen", "vaichen", "vachiten", "vachirukken",
+        "pottuten", "pottirukken", "potten", "pottachu", "pottu vechen",
+        "sorugi vechen", "soruguniten", "ottinen", "maatti vechen", "maattiten", "thongavittuten",
+        "thinichu vechen", "adukki vechen", "olichu vechen", "olichiruken", "pathirama vechen", "safe-a vechen",
+        "kuduthuten", "kuduthen", "kitta kuduthen", "kitta irukku",
+        "kept", "put", "placed", "stored", "hid", "left it",
+        "வச்சேன்", "வைச்சேன்", "வைத்தேன்", "வச்சிருக்கேன்", "வச்சிட்டேன்", "போட்டேன்", "போட்டுட்டேன்", "போட்டிருக்கேன்",
+        "சொருகி வச்சேன்", "மாட்டி வச்சேன்", "ஒளிச்சு வச்சேன்", "அடுக்கி வச்சேன்", "பத்திரமா வச்சேன்", "கொடுத்தேன்", "குடுத்துட்டேன்"
+      ]
+    },
+    "ask": {
+      "_meaning": "User wants to know where an item is",
+      "words": [
+        "enga", "engey", "enge", "yenga", "engada", "engadi", "enga irukku", "enga iruku", "enga vechen", "enga vechom",
+        "enga potten", "enga pochu", "enga poachu", "kaanom", "kaanum", "kanom", "kidaikkala", "kedaikala", "theriyala",
+        "thedren", "theduren", "thedi kidaikala", "nyabagam illa", "maranthuten", "marandhuten",
+        "yaar kitta irukku", "yaar eduthaa", "yaar eduthanga",
+        "where", "where is", "where did i keep", "cant find", "missing", "lost",
+        "எங்க", "எங்கே", "எங்க இருக்கு", "எங்க வச்சேன்", "காணோம்", "கிடைக்கல", "தேடுறேன்", "ஞாபகம் இல்ல", "மறந்துட்டேன்", "யார் கிட்ட இருக்கு"
+      ]
+    },
+    "move": {
+      "_meaning": "Item moved to a new place - update, keep history",
+      "words": [
+        "ippo", "ippo ange", "maathiten", "maathi vechen", "edam maathiten", "shift panniten", "anga konduponen",
+        "ippo ... la irukku", "inime ... la",
+        "moved", "now in", "shifted", "changed place",
+        "இப்போ", "மாத்திட்டேன்", "மாத்தி வச்சேன்", "இடம் மாத்திட்டேன்"
+      ]
+    },
+    "taken": {
+      "_meaning": "Item taken out / given away / no longer kept - close the entry",
+      "words": [
+        "eduthuten", "eduthutten", "eduthachu", "veliya eduthen", "use panniten", "kuduthutten", "thirumba kuduthuten",
+        "tholanjuduchu", "tholainjiduchu", "thoolachuten", "kidaichiduchu", "kedaichiduchu", "kandupidichiten",
+        "taken", "found it", "got it", "returned", "gave away", "lost it",
+        "எடுத்துட்டேன்", "எடுத்தாச்சு", "கிடைச்சிடுச்சு", "கண்டுபிடிச்சிட்டேன்", "தொலைஞ்சிடுச்சு", "திரும்ப கொடுத்துட்டேன்"
+      ]
+    },
+    "list_all": {
+      "_meaning": "Show EVERYTHING the user asked Kai to remember (all saved items, all places). Can be filtered by person / time / room if those words also appear.",
+      "words": [
+        "ennalam nyabagam vechikka sonnen", "ennalam nyabagam vechikka sonna", "ennalam nayabaga vachika sonnen", "enna enna nyabagam vechirukka",
+        "ennalam nyabagam irukku", "ennalam ezhudhi vechirukka", "ennalam save panna", "ennalam save pannirukka", "ennalam vechen nu sonnen",
+        "naan enna enna vechen", "naan ennalam vechen", "ellam sollu", "ellathayum sollu", "full list", "full list kaattu", "motha list",
+        "un kitta enna irukku", "unaku enna nyabagam irukku", "ennalam theriyum", "enga vechen list", "ellaa porulum", "ellaa idamum",
+        "what all did i ask you to remember", "what do you remember", "show all", "list everything", "all items", "my list",
+        "என்னலாம் ஞாபகம் வச்சிக்க சொன்னேன்", "என்னென்ன ஞாபகம் வச்சிருக்க", "என்னலாம் ஞாபகம் இருக்கு", "நான் என்னென்ன வச்சேன்",
+        "எல்லாம் சொல்லு", "எல்லாத்தையும் சொல்லு", "முழு லிஸ்ட்", "உனக்கு என்ன ஞாபகம் இருக்கு"
+      ],
+      "filters": {
+        "_meaning": "Optional words in the same sentence that narrow the list",
+        "person": "'Amma ennalam vechaanga' / 'Ravi kitta ennalam kuduthen' -> only that person's entries",
+        "time": "'poona maasam ennalam vechen' / 'innaiku ennalam' -> only that time range",
+        "room": "'bedroom la ennalam' -> same as list intent for that place",
+        "type": "'documents ellam enga' / 'saavi ellam enga' / 'nagai ellam' -> only that item category",
+        "given_to_people": "'yaar yaar kitta enna kuduthen' -> only entries where item is with a person"
+      }
+    },
+    "list": {
+      "_meaning": "Show everything in a place",
+      "words": [
+        "enna irukku", "ennalam irukku", "ennenna irukku", "ullae enna", "list kaattu",
+        "what is in", "show all in",
+        "என்ன இருக்கு", "என்னென்ன இருக்கு", "உள்ள என்ன"
+      ]
+    }
+  },
+
+  "place_markers": {
+    "_meaning": "Suffixes / words that mark the place part of the sentence",
+    "words": [
+      "la", "le", "laa", "ulla", "ulle", "ullae", "mela", "mele", "keezha", "keela", "kizha", "pakkathula", "pakkam",
+      "pinnadi", "pinnaadi", "munnadi", "munnaadi", "naduvula", "oorathula", "moolaila", "moolayila", "idathula", "kitta",
+      "adiyila", "adila", "ulla pakkam", "veliya", "ottiyirukku",
+      "in", "inside", "on", "on top of", "under", "below", "behind", "beside", "next to", "near", "corner", "with",
+      "ல", "உள்ள", "மேல", "கீழ", "பக்கத்துல", "பின்னாடி", "முன்னாடி", "நடுவுல", "மூலையில", "கிட்ட", "அடியில"
+    ]
+  },
+
+  "positions": {
+    "levels": ["mela", "naduvula", "keezha", "first", "second", "third", "1st", "2nd", "3rd", "last", "kadaisi", "top", "middle", "bottom", "மேல", "நடு", "கீழ", "கடைசி"],
+    "sides": ["left", "right", "idathu", "idadhu", "valathu", "valadhu", "idathu pakkam", "valathu pakkam", "இடது", "வலது"],
+    "parts": ["drawer", "dravar", "draw", "shelf", "thattu", "rack", "arai", "pocket", "zip", "kadhavu", "door", "lock", "locker", "thatti", "தட்டு", "அறை", "டிராயர்", "பாக்கெட்", "லாக்கர்"]
+  },
+
+  "places": {
+    "rooms": [
+      {"name": "bedroom", "aliases": ["bed room", "beedroom", "padukkai arai", "thoongura room", "பெட்ரூம்", "படுக்கை அறை"]},
+      {"name": "hall", "aliases": ["haal", "living room", "front room", "munnaadi room", "ஹால்"]},
+      {"name": "kitchen", "aliases": ["kichen", "samayal arai", "adupangarai", "aduppadi", "சமையல் அறை", "அடுப்பங்கரை", "கிச்சன்"]},
+      {"name": "pooja room", "aliases": ["poojai arai", "saami room", "saami arai", "saami madam", "பூஜை அறை", "சாமி ரூம்"]},
+      {"name": "bathroom", "aliases": ["bath room", "kuliyal arai", "toilet", "பாத்ரூம்", "குளியல் அறை"]},
+      {"name": "store room", "aliases": ["storeroom", "store", "sarakku arai", "சாமான் ரூம்", "ஸ்டோர் ரூம்"]},
+      {"name": "balcony", "aliases": ["balkani", "பால்கனி"]},
+      {"name": "terrace", "aliases": ["mottai maadi", "maadi", "roof", "மொட்டை மாடி", "மாடி"]},
+      {"name": "upstairs", "aliases": ["maadi room", "mela room", "மாடி ரூம்"]},
+      {"name": "verandah", "aliases": ["thinnai", "porch", "vaasal", "veetu vaasal", "வாசல்", "திண்ணை"]},
+      {"name": "parking", "aliases": ["car shed", "garage", "shed", "ஷெட்"]},
+      {"name": "loft", "aliases": ["paran", "paraN", "attic", "mela loft", "பரண்", "லாஃப்ட்"]},
+      {"name": "study room", "aliases": ["padikkura room", "office room", "computer room"]},
+      {"name": "guest room", "aliases": ["virundhinar arai", "extra room"]},
+      {"name": "kids room", "aliases": ["pasanga room", "paiyan room", "ponnu room"]},
+      {"name": "staircase", "aliases": ["padi", "padikattu", "stairs", "படி"]}
+    ],
+    "furniture": [
+      {"name": "almirah", "aliases": ["almara", "almari", "almira", "beero", "bero", "bureau", "steel almirah", "godrej", "godrej beero", "wardrobe", "அலமாரி", "பீரோ"]},
+      {"name": "cupboard", "aliases": ["kabbord", "kabod", "kappad", "wall shelf", "செல்ஃப்", "கப்போர்டு"]},
+      {"name": "cot", "aliases": ["kattil", "bed", "padukkai", "bed adiyila", "கட்டில்", "படுக்கை"]},
+      {"name": "pillow", "aliases": ["thalaiyani", "thalaganai", "pillow cover", "தலையணை"]},
+      {"name": "mattress", "aliases": ["methai", "மெத்தை"]},
+      {"name": "table", "aliases": ["mesai", "meja", "dining table", "study table", "டேபிள்", "மேசை"]},
+      {"name": "TV stand", "aliases": ["tv table", "tv unit", "tv mela", "டிவி ஸ்டாண்ட்"]},
+      {"name": "sofa", "aliases": ["sofaa", "chair", "naarkali", "நாற்காலி", "சோபா"]},
+      {"name": "dressing table", "aliases": ["kannadi table", "mirror table", "kannadi", "கண்ணாடி"]},
+      {"name": "shoe rack", "aliases": ["seruppu rack", "seruppu stand", "செருப்பு ரேக்"]},
+      {"name": "fridge", "aliases": ["frij", "refrigerator", "fridge mela", "freezer", "ஃபிரிட்ஜ்"]},
+      {"name": "washing machine", "aliases": ["washing mishin", "வாஷிங் மெஷின்"]},
+      {"name": "showcase", "aliases": ["show case", "glass shelf", "ஷோகேஸ்"]},
+      {"name": "pooja shelf", "aliases": ["saami padam pinnadi", "saami shelf", "சாமி படம் பின்னாடி"]},
+      {"name": "wall hook", "aliases": ["aani", "hook", "kokki", "ஆணி", "கொக்கி"]},
+      {"name": "key holder", "aliases": ["saavi stand", "saavi hook", "சாவி ஸ்டாண்ட்"]},
+      {"name": "locker", "aliases": ["safe", "iron safe", "bank locker", "லாக்கர்"]},
+      {"name": "desk", "aliases": ["computer table", "office table"]}
+    ],
+    "containers": [
+      {"name": "bag", "aliases": ["paiyi", "pai", "handbag", "hand bag", "school bag", "office bag", "laptop bag", "பை", "பேக்"]},
+      {"name": "suitcase", "aliases": ["suit case", "petti", "trolley", "trolly", "travel bag", "பெட்டி", "சூட்கேஸ்"]},
+      {"name": "box", "aliases": ["dabba", "dappa", "carton", "atta petti", "tin", "டப்பா", "பாக்ஸ்"]},
+      {"name": "file", "aliases": ["faile", "folder", "document file", "plastic file", "ஃபைல்"]},
+      {"name": "cover", "aliases": ["kavar", "envelope", "plastic cover", "kavaru", "கவர்"]},
+      {"name": "purse", "aliases": ["parse", "wallet", "money purse", "பர்ஸ்"]},
+      {"name": "jewel box", "aliases": ["nagai petti", "nagai dabba", "நகை பெட்டி"]},
+      {"name": "trunk", "aliases": ["thagara petti", "iron petti", "ட்ரங்க் பெட்டி"]},
+      {"name": "basket", "aliases": ["koodai", "kudai", "கூடை"]},
+      {"name": "pouch", "aliases": ["chinna pai", "zip pouch", "kit"]},
+      {"name": "drawer", "aliases": ["dravar", "draw", "டிராயர்"]},
+      {"name": "pocket", "aliases": ["paakettu", "sattai pocket", "pant pocket", "பாக்கெட்"]}
+    ],
+    "vehicle": [
+      {"name": "bike", "aliases": ["vandi", "two wheeler", "scooty", "activa", "dicky", "bike seat adiyila", "வண்டி", "டிக்கி"]},
+      {"name": "car", "aliases": ["kaar", "car dashboard", "glove box", "car dicky", "கார்"]}
+    ],
+    "shop": [
+      {"name": "counter", "aliases": ["kounter", "cash counter", "billing counter", "கவுண்டர்"]},
+      {"name": "kallapetti", "aliases": ["kalla petti", "cash box", "cash drawer", "galla", "கல்லாப்பெட்டி"]},
+      {"name": "godown", "aliases": ["gowdown", "godaun", "store", "sarakku arai", "கோடவுன்"]},
+      {"name": "rack", "aliases": ["raak", "rak", "shelf", "thattu", "ரேக்"]},
+      {"name": "back side", "aliases": ["pinnadi", "kadai pinnadi", "பின்னாடி"]},
+      {"name": "front", "aliases": ["munnadi", "kadai munnadi", "display", "முன்னாடி"]},
+      {"name": "shutter", "aliases": ["shuttar", "ஷட்டர்"]}
+    ],
+    "outside": [
+      {"name": "office", "aliases": ["aafis", "aapis", "work place", "ஆபீஸ்"]},
+      {"name": "amma veedu", "aliases": ["ammavudu", "amma vidu", "thaai veedu", "அம்மா வீடு"]},
+      {"name": "native", "aliases": ["ooru", "sondha ooru", "village", "ஊர்"]},
+      {"name": "bank", "aliases": ["baank", "bank locker", "பேங்க்"]},
+      {"name": "friend house", "aliases": ["friend veedu", "nanban veedu", "நண்பன் வீடு"]}
+    ]
+  },
+
+  "items": {
+    "documents": [
+      {"name": "passport", "aliases": ["paasport", "pass port", "பாஸ்போர்ட்"]},
+      {"name": "aadhaar card", "aliases": ["aadhar", "adhar", "aadar", "ஆதார்"]},
+      {"name": "PAN card", "aliases": ["pan", "paan card", "பான் கார்டு"]},
+      {"name": "ration card", "aliases": ["resan card", "family card", "smart card", "ரேஷன் கார்டு"]},
+      {"name": "voter id", "aliases": ["voter card", "election card", "ஓட்டர் ஐடி"]},
+      {"name": "driving licence", "aliases": ["license", "licence", "DL", "லைசென்ஸ்"]},
+      {"name": "RC book", "aliases": ["RC", "vandi RC", "ஆர்சி புக்"]},
+      {"name": "insurance", "aliases": ["insurans", "policy", "LIC", "bond", "vandi insurance", "இன்சூரன்ஸ்"]},
+      {"name": "patta", "aliases": ["pattaa", "chitta", "land document", "nilam papers", "பட்டா", "சிட்டா"]},
+      {"name": "property document", "aliases": ["veedu papers", "document", "pathiram", "sale deed", "EC", "பத்திரம்"]},
+      {"name": "birth certificate", "aliases": ["pirappu saandridhal", "birth cert", "பிறப்பு சான்றிதழ்"]},
+      {"name": "certificates", "aliases": ["certificate", "marks card", "mark sheet", "TC", "degree certificate", "சர்டிபிகேட்"]},
+      {"name": "bank passbook", "aliases": ["passbook", "pass book", "cheque book", "check book", "பாஸ்புக்", "செக் புக்"]},
+      {"name": "ATM card", "aliases": ["debit card", "credit card", "card", "ஏடிஎம் கார்டு"]},
+      {"name": "warranty card", "aliases": ["guarantee card", "warranty bill", "வாரண்டி"]},
+      {"name": "bill", "aliases": ["receipt", "rasidhu", "EB bill", "gas bill", "பில்", "ரசீது"]},
+      {"name": "medical file", "aliases": ["hospital file", "report", "scan report", "prescription", "mandhu cheettu", "ரிப்போர்ட்"]},
+      {"name": "gas book", "aliases": ["cylinder book", "gas card", "கேஸ் புக்"]},
+      {"name": "will", "aliases": ["uyil", "uyil pathiram", "உயில்"]},
+      {"name": "chit book", "aliases": ["seettu book", "seettu card", "சீட்டு புக்"]},
+      {"name": "photos", "aliases": ["photo", "album", "kalyana album", "passport photo", "போட்டோ"]}
+    ],
+    "keys": [
+      {"name": "house key", "aliases": ["veetu saavi", "veedu saavi", "saavi", "chavi", "key", "வீட்டு சாவி", "சாவி"]},
+      {"name": "bike key", "aliases": ["vandi saavi", "scooty key", "வண்டி சாவி"]},
+      {"name": "car key", "aliases": ["kaar saavi", "car remote", "கார் சாவி"]},
+      {"name": "almirah key", "aliases": ["beero saavi", "bero key", "பீரோ சாவி"]},
+      {"name": "shop key", "aliases": ["kadai saavi", "shutter key", "கடை சாவி"]},
+      {"name": "locker key", "aliases": ["locker saavi", "லாக்கர் சாவி"]},
+      {"name": "spare key", "aliases": ["duplicate key", "extra saavi", "maatru saavi"]},
+      {"name": "padlock key", "aliases": ["poottu saavi", "poottu", "lock", "பூட்டு சாவி"]}
+    ],
+    "money_and_gold": [
+      {"name": "cash", "aliases": ["panam", "kaasu", "rupees", "money", "note", "பணம்", "காசு"]},
+      {"name": "gold", "aliases": ["thangam", "nagai", "jewel", "jewellery", "தங்கம்", "நகை"]},
+      {"name": "chain", "aliases": ["sangili", "thali chain", "செயின்", "சங்கிலி"]},
+      {"name": "ring", "aliases": ["mothiram", "modhiram", "மோதிரம்"]},
+      {"name": "earring", "aliases": ["thodu", "kammal", "jimikki", "தோடு", "கம்மல்", "ஜிமிக்கி"]},
+      {"name": "bangle", "aliases": ["valayal", "kaappu", "வளையல்"]},
+      {"name": "silver", "aliases": ["velli", "kolusu", "anklet", "வெள்ளி", "கொலுசு"]},
+      {"name": "thali", "aliases": ["mangalyam", "தாலி"]},
+      {"name": "coins", "aliases": ["chillarai", "chillara", "kaasu", "சில்லறை"]},
+      {"name": "gift cover", "aliases": ["moi cover", "moi kavar", "மொய் கவர்"]}
+    ],
+    "electronics": [
+      {"name": "phone", "aliases": ["mobile", "cell", "cellphone", "old phone", "போன்", "மொபைல்"]},
+      {"name": "charger", "aliases": ["chargar", "cable", "wire", "சார்ஜர்"]},
+      {"name": "power bank", "aliases": ["powerbank", "பவர் பேங்க்"]},
+      {"name": "earphones", "aliases": ["earphone", "headset", "earbuds", "buds", "headphones", "இயர்போன்"]},
+      {"name": "remote", "aliases": ["tv remote", "AC remote", "set top box remote", "ரிமோட்"]},
+      {"name": "laptop", "aliases": ["lap top", "லேப்டாப்"]},
+      {"name": "pendrive", "aliases": ["pen drive", "usb", "memory card", "sim card", "பென்டிரைவ்"]},
+      {"name": "watch", "aliases": ["vaatch", "kadigaram", "கடிகாரம்"]},
+      {"name": "battery", "aliases": ["battary", "cell", "பேட்டரி"]},
+      {"name": "torch", "aliases": ["tarch", "torch light", "டார்ச்"]},
+      {"name": "camera", "aliases": ["kamera", "கேமரா"]}
+    ],
+    "daily_use": [
+      {"name": "specs", "aliases": ["kannadi", "glasses", "spectacles", "cooling glass", "கண்ணாடி"]},
+      {"name": "umbrella", "aliases": ["kudai", "kodai", "குடை"]},
+      {"name": "helmet", "aliases": ["helmat", "ஹெல்மெட்"]},
+      {"name": "medicine", "aliases": ["maathirai", "marunthu", "mandhu", "tablet", "BP maathirai", "sugar maathirai", "மாத்திரை", "மருந்து"]},
+      {"name": "scissors", "aliases": ["kathirikkol", "kathiri", "கத்திரிக்கோல்"]},
+      {"name": "tools", "aliases": ["screwdriver", "spanner", "tool box", "suthiyal", "சுத்தியல்"]},
+      {"name": "needle", "aliases": ["oosi", "thread", "nool", "ஊசி", "நூல்"]},
+      {"name": "pen", "aliases": ["pena", "பேனா"]},
+      {"name": "diary", "aliases": ["notebook", "nottu", "kanakku nottu", "நோட்டு", "டைரி"]},
+      {"name": "calculator", "aliases": ["kalkulator", "கால்குலேட்டர்"]},
+      {"name": "shoes", "aliases": ["seruppu", "chappal", "shoe", "செருப்பு"]},
+      {"name": "dress", "aliases": ["thuni", "saree", "pudavai", "shirt", "veshti", "uniform", "துணி", "புடவை"]},
+      {"name": "blanket", "aliases": ["porvai", "bedsheet", "போர்வை"]},
+      {"name": "toys", "aliases": ["vilayattu saamaan", "bommai", "பொம்மை"]},
+      {"name": "school items", "aliases": ["school bag", "books", "puthagam", "id card", "புத்தகம்"]}
+    ],
+    "household": [
+      {"name": "vessels", "aliases": ["paathiram", "periya paathiram", "cooker", "kadai", "vaanali", "பாத்திரம்"]},
+      {"name": "pooja items", "aliases": ["vilakku", "kalasam", "saami saamaan", "விளக்கு"]},
+      {"name": "festival items", "aliases": ["deepavali saamaan", "golu bommai", "christmas star", "pongal paanai"]},
+      {"name": "gas cylinder", "aliases": ["cylinder", "silindar", "சிலிண்டர்"]},
+      {"name": "ladder", "aliases": ["eni", "ஏணி"]},
+      {"name": "extension box", "aliases": ["extension board", "multi plug"]},
+      {"name": "first aid", "aliases": ["first aid box", "bandage", "dettol"]}
+    ],
+    "shop_items_example": [
+      {"name": "stock items", "aliases": ["sarakku", "saamaan", "box", "case", "carton", "bag", "சரக்கு"]},
+      {"name": "weighing scale", "aliases": ["thaaraasu", "weight machine", "தராசு"]},
+      {"name": "bill book", "aliases": ["bill buk", "receipt book", "பில் புக்"]},
+      {"name": "stamp", "aliases": ["seal", "rubber stamp", "முத்திரை"]}
+    ]
+  },
+
+  "people": {
+    "_meaning": "'X kitta kuduthen' - item is with a person. Reuse existing relation-words list.",
+    "words": [
+      "amma", "appa", "anna", "akka", "thambi", "thangachi", "paati", "thaatha", "maama", "athai", "chithi", "chithappa",
+      "periyamma", "periyappa", "pondatti", "manaivi", "wife", "purushan", "husband", "paiyan", "ponnu", "magan", "magal",
+      "nanban", "friend", "pakkathu veetu", "neighbour", "kadai paiyan", "staff",
+      "அம்மா", "அப்பா", "அண்ணா", "அக்கா", "தம்பி", "தங்கச்சி", "பாட்டி", "தாத்தா", "மாமா", "அத்தை", "பொண்டாட்டி", "புருஷன்", "பையன்", "பொண்ணு", "நண்பன்"
+    ]
+  },
+
+  "time_words": {
+    "_meaning": "Optional - when it was kept",
+    "words": [
+      "innaiku", "nethu", "netthu", "munnaal", "poona vaaram", "poona maasam", "kalyanathukku munnadi", "deepavali appo",
+      "today", "yesterday", "last week", "last month",
+      "இன்னைக்கு", "நேத்து", "போன வாரம்", "போன மாசம்"
+    ]
+  },
+
+  "filler_words_to_ignore": [
+    "kai", "hey kai", "da", "di", "pa", "ma", "anna", "konjam", "sollu", "sollen", "paaru", "please", "pls", "ok", "sari", "andha", "indha", "oru", "ennoda", "en", "namma",
+    "டா", "டி", "பா", "மா", "கொஞ்சம்", "சொல்லு", "பாரு", "அந்த", "இந்த", "என்னோட", "நம்ம"
+  ],
+
+  "test_sentences": [
+    {"say": "Kai passport bedroom almirah mela drawer la vechen", "expect": {"intent": "save", "item": "passport", "place": ["bedroom", "almirah", "mela", "drawer"]}},
+    {"say": "veetu saavi enga", "expect": {"intent": "ask", "item": "house key"}},
+    {"say": "Amma thodu nagai petti la vechirukken", "expect": {"intent": "save", "item": "earring", "place": ["jewel box"], "person": "amma"}},
+    {"say": "bike RC dicky la potten", "expect": {"intent": "save", "item": "RC book", "place": ["bike", "dicky"]}},
+    {"say": "charger kaanom", "expect": {"intent": "ask", "item": "charger"}},
+    {"say": "patta ippo bank locker la", "expect": {"intent": "move", "item": "patta", "place": ["bank", "locker"]}},
+    {"say": "remote kidaichiduchu", "expect": {"intent": "taken", "item": "remote"}},
+    {"say": "Ravi kitta laptop kuduthen", "expect": {"intent": "save", "item": "laptop", "person": "Ravi"}},
+    {"say": "almirah la ennenna irukku", "expect": {"intent": "list", "place": ["almirah"]}},
+    {"say": "BP maathirai fridge mela left side dabba la", "expect": {"intent": "save", "item": "medicine", "place": ["fridge", "mela", "left", "box"]}},
+    {"say": "Cinthol carton godown rack 3 keezha", "expect": {"intent": "save", "item": "stock items", "place": ["godown", "rack 3", "keezha"]}},
+    {"say": "insurance file enga vechom", "expect": {"intent": "ask", "item": "insurance"}},
+    {"say": "Kai ennalam nyabagam vechikka sonnen", "expect": {"intent": "list_all"}},
+    {"say": "naan ennalam vechen nu sollu", "expect": {"intent": "list_all"}},
+    {"say": "un kitta enna enna irukku", "expect": {"intent": "list_all"}},
+    {"say": "Amma ennalam vechaanga", "expect": {"intent": "list_all", "filter": {"person": "amma"}}},
+    {"say": "poona maasam ennalam vechen", "expect": {"intent": "list_all", "filter": {"time": "last month"}}},
+    {"say": "documents ellam enga irukku", "expect": {"intent": "list_all", "filter": {"type": "documents"}}},
+    {"say": "yaar yaar kitta enna kuduthen", "expect": {"intent": "list_all", "filter": {"given_to_people": true}}}
+  ],
+
+  "list_all_answer": {
+    "_meaning": "How Kai shows the full list",
+    "spoken_summary": "Kai first says a short count: 'Neenga 23 porul nyabagam vechikka sonneenga — 8 bedroom, 5 kitchen, 3 per kitta kuduthadhu.'",
+    "grouping": "Group by top place (room / almirah / person). Inside a group, newest first.",
+    "each_line": "Item — full place — date (and who kept it, if family share). Photo thumbnail if saved.",
+    "given_to_people_group": "Separate group 'Aatkal kitta' at the top: 'Ravi kitta laptop — 12 naal aachu'. Old ones (30+ days) highlighted.",
+    "long_list": "If more than 10, show groups collapsed with counts; tap to open. Voice answer reads only the summary + groups, not every item.",
+    "actions_per_item": ["Idam maathu", "Eduthuten (close)", "Photo add", "Delete"],
+    "empty": "'Innum edhuvum nyabagam vechikka sollala. Example: \"Kai, passport almirah la vechen\" nu sollunga.'",
+    "taken_items": "Closed (eduthuten / kidaichiduchu) entries are hidden by default; 'pazhaya list kaattu' shows them."
+  },
+
+  "rules_for_kai": [
+    "Unknown item word: save it as-is (user's own word). Never reject - 'Thatha kannadi petti' is a valid item.",
+    "Unknown place word: save as-is too. Places are free text; lists above only help split and match.",
+    "If item matches more than one entry (e.g. 'kannadi' = specs or mirror), ask with buttons.",
+    "Ask query with no saved entry: say so plainly, show closest matches by sound.",
+    "Keep history on move: 'munnaadi almirah la irundhuchu'."
+  ]
+}
