@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Owner Note</string>
-    <string name="brand_name">Owner Note</string>
+    <string name="app_name">OwnerNote</string>
+    <string name="brand_name">OwnerNote</string>
 
     <string name="nav_home">முகப்பு</string>
     <string name="nav_discover">கண்டுபிடி</string>
@@ -21,7 +21,7 @@
     <string name="guide_next">அடுத்தது</string>
     <string name="guide_get_started">தொடங்குவோம்</string>
     <string name="guide_step_of">படி %1$d / %2$d</string>
-    <string name="guide_welcome_title">Owner Note-க்கு வரவேற்கிறோம்</string>
+    <string name="guide_welcome_title">OwnerNote-க்கு வரவேற்கிறோம்</string>
     <string name="guide_welcome_body">உங்கள் கடை உதவியாளர் தயார். வியாபாரத்தை அமைக்கலாம்.</string>
     <string name="cd_guide_funding">உங்கள் வியாபாரத்திற்கு நிதி பெறுங்கள்</string>
     <string name="cd_guide_kai">Kai உடன் வியாபாரத்தை எளிதாக நிர்வகிக்கவும்</string>
