@@ -309,6 +309,14 @@ object KaiProductSound {
             .distinctBy { it.said }.toList()
     }
 
+    /** The Tamil word and the English word have the same consonants in the same order (a y heard or not). */
+    private fun sameConsonants(tamil: String, english: String): Boolean {
+        val t = NameSound.key(tamil).replace("y", "")
+        val e = NameSound.key(spoken(english)).replace("y", "")
+        // (the mic's "வு" for an "ou" / "ow" — "கிரவுண்ட்" — is a v only on the Tamil side)
+        return t.length >= 3 && (t == e || t.replace("v", "") == e)
+    }
+
     private sealed interface WordRead {
         /** Not a product word (a Tamil word Kai knows, a person, a shop word, a whole product name, or nothing near). */
         data object Keep : WordRead
@@ -334,10 +342,12 @@ object KaiProductSound {
         val same = vocab.filter { e -> NameSound.same(w, e) }
         val gaps = vocab.mapNotNull { e -> wordGap(w, e)?.let { e to it } }.sortedBy { it.second }
         same.singleOrNull()?.let { e -> if (firstVowelHeard(w, spoken(e))) return WordRead.Sure(e) }
-        // Else the closest in shape — sure only when it is the one word with the very same shape (gap 0).
+        // Else the closest in shape — sure only when it is the one closest word and its consonants are the very same, in order
+        // ("கிரவுண்ட்நட்" = groundnut, its extra syllables only the mic's vowels); "டயர்" (t-y-r) is no "drive" (t-r-v).
         val best = gaps.firstOrNull()?.second
         val atBest = gaps.filter { it.second == best }.map { it.first }
-        if (best == 0 && atBest.size == 1 && same.size <= 1 && (same.isEmpty() || same.single() == atBest.single())) return WordRead.Sure(atBest.single())
+        val one = atBest.singleOrNull()
+        if (one != null && (same.isEmpty() || same.singleOrNull() == one) && (best == 0 || sameConsonants(w, one))) return WordRead.Sure(one)
         // Near but not sure: the owner is asked (never a guess). Only words truly near: the same skeleton, or two syllables apart at most.
         val candidates = (same + gaps.filter { it.second <= 2 }.map { it.first }).distinct().take(4)
         return if (candidates.isEmpty()) WordRead.Keep else WordRead.Unsure(candidates)
