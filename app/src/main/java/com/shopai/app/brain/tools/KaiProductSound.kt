@@ -132,8 +132,9 @@ object KaiProductSound {
         return base.split(" / ").map { it.trim() }.filter { it.any(Char::isLetter) }.map { it + m?.value.orEmpty() }
     }
 
-    fun withProducts(text: String, productNames: List<String>, people: List<String> = emptyList(), goods: Boolean = true): String {
-        if (!KaiSpokenWords.hasTamil(text)) return text
+    fun withProducts(text0: String, productNames: List<String>, people: List<String> = emptyList(), goods: Boolean = true): String {
+        if (!KaiSpokenWords.hasTamil(text0)) return text0
+        val text = withWordCodes(text0, productNames)
         val prep = prepared(productNames, goods) ?: return text
         val products = prep.products
         val sizeless = prep.sizeless
@@ -254,6 +255,35 @@ object KaiProductSound {
     /** Every Tamil word of the goods names Kai knows (KaiFeed) — read by those names, not by a product word's sound. */
     private val feedGoodsWords: Set<String> by lazy {
         KaiFeed.goodsNames.flatMap { (names, _) -> names.filter(KaiSpokenWords::hasTamil).flatMap { it.split(Regex("""\s+""")) } }.toSet()
+    }
+
+    /**
+     * A word-and-number code in a product's name ("Cat6 cable") said into the mic as the word, then the number ("கேட் 6
+     * கேபிள்") is that code again — never the number taken as a quantity (owner's hardware shop: "கேட் 6 கேபிள் 7" asked
+     * "cable-னா என்ன?"). Only a code the shop's own names have, the same number, and a Tamil word with the word's sound.
+     */
+    fun withWordCodes(text: String, productNames: List<String>): String {
+        val codes = wordCodes(productNames)
+        if (codes.isEmpty()) return text
+        return Regex("""(?<![\p{L}\p{M}])([\u0B80-\u0BFF]+)\s+(\d+)(?![\d.])""").replace(text) { m ->
+            val (word, digits) = m.destructured
+            val key = NameSound.key(word).takeIf { it.length >= 2 } ?: return@replace m.value
+            codes.firstOrNull { (_, letters, number) -> number == digits && NameSound.key(spoken(letters)) == key }?.first ?: m.value
+        }
+    }
+
+    /** The shop's word-and-number codes (Cat6 → "Cat6", cat, 6) with each code word's sound — worked out once per list of names. */
+    private val codeCache = object : LinkedHashMap<List<String>, List<Triple<String, String, String>>>(8, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<List<String>, List<Triple<String, String, String>>>?) = size > 4
+    }
+
+    private fun wordCodes(productNames: List<String>): List<Triple<String, String, String>> {
+        synchronized(codeCache) { codeCache[productNames]?.let { return it } }
+        val codes = productNames.flatMap { it.split(Regex("""[\s/()\-_,|]+""")) }
+            .mapNotNull { w -> Regex("""^([A-Za-z]{2,})(\d+)$""").find(w)?.let { m -> Triple(w, m.groupValues[1], m.groupValues[2]) } }
+            .distinctBy { it.first.lowercase() }
+        synchronized(codeCache) { codeCache[productNames.toList()] = codes }
+        return codes
     }
 
     fun withProductWords(text: String, productNames: List<String>, people: List<String> = emptyList()): String {
@@ -657,6 +687,12 @@ object KaiProductSound {
                 // "Borges" = borjes ("போர்ஜஸ்"): a g before -es is soft.
                 .replace(Regex("""(?<=[rn])ges$"""), "jes")
                 .replace(Regex("""(?<=.)aged$"""), "ejd").replace(Regex("""(?<=a)chet(s?)$"""), "shay$1")
+                // "Tyre", "Tire", "Wire", "Fire" = tayar, wayar, fayar — as the mic writes them ("டயர்", "வயர்", "ஃபயர்"), never "tire" heard
+                // as drive (owner, 23 Oct 2026: "Tyre en USB-nu padikkudhu — namba enna solromo adhaan varanum").
+                .replace(Regex("""(?<=[^aeiou])[iy]re$"""), "ayar")
+                // "Phenyl", "Phenol" = finayil, finol — as said and as the mic writes it ("பினாயில்"): the ph-e is a "fi", its -yl is
+                // "-ayil" — Flagyl stays flajil (owner, 23 Oct 2026: "பினாயில்" alone was a new product).
+                .replace(Regex("""^phe(?=n[aeiouy])"""), "fi").replace(Regex("""(?<=^fin)yl$"""), "ayil")
                 // "Hydraulic" = haidraulic, "Nylon" = nailon: a y between consonants is a vowel; "Gel", "Emergency", "Agent": a soft g.
                 .replace(Regex("""^gy"""), "jy").replace(Regex("""(?<=^[^aeiouy]{1,2})y(?=[^aeiouy])"""), "i").replace(Regex("""^ge(?=[lmnr])"""), "je")
                 .replace(Regex("""(?<=[aeiour])g(?=en)"""), "j")

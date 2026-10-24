@@ -260,6 +260,30 @@ class KaiProductSoundTest {
             val got = KaiProductSound.withProducts(mic, shop, people)
             assertTrue("$mic → $got", got.startsWith(want))
         }
+        // The owner (23 Oct 2026): "டயர்" alone (no pack said) was read as "drive" (USB pen drive / Drive belt). Tyre / Wire / Fire are
+        // said "-ayar" ("டயர்", "வயர்", "ஃபயர்").
+        val auto = shop + listOf("USB pen drive Small pack", "Drive belt Small pack", "Wire Small pack", "Fire extinguisher Small pack")
+        for ((mic, want) in listOf("டயர் 7" to "Tyre 7", "டயர் சின்ன பேக் 7" to "Tyre சின்ன", "வயர் 7" to "Wire 7", "ஃபயர் எக்ஸ்டிங்விஷர் 7" to "Fire extinguisher 7",
+                "யுஎஸ்பி பென் டிரைவ் 7" to "USB pen drive 7", "டிரைவ் பெல்ட் 7" to "Drive belt 7")) {
+            val got = KaiProductSound.withProductWords(KaiProductSound.withProducts(mic, auto, people), auto, people)
+            assertTrue("$mic → $got", got.startsWith(want))
+        }
+        // "பினாயில்" alone or with "சின்ன பேக்" is Phenyl (it was a new product) — and still not fennel.
+        val clean = listOf("Phenyl Small pack", "Phenyl Large pack", "Fennel seeds Small pack", "Floor cleaner Small pack")
+        for ((mic, want) in listOf("பினாயில் 7" to "Phenyl 7", "பினாயில் சின்ன பேக் 7" to "Phenyl சின்ன", "பினாயில் ஸ்மால் பேக் 7" to "Phenyl Small pack 7",
+                "ஃபென்னல் சீட்ஸ் 7" to "Fennel seeds 7")) {
+            val got = KaiProductSound.withProductWords(KaiProductSound.withProducts(mic, clean, people), clean, people)
+            assertTrue("$mic → $got", got.startsWith(want))
+        }
+        // Hardware (owner's shop, failing on main): "கேட் 6 கேபிள் 7" is Cat6 cable — the 6 is the code's, never the quantity.
+        val hw = listOf("Cat6 cable 1 sq mm", "Cat6 cable 1.5 sq mm", "Gate valve 1 inch", "Cable tie 100 mm")
+        for ((mic, want) in listOf("கேட் 6 கேபிள் 7" to "Cat6 cable 7", "கேட் 6 கேபிள் 1.5 ஸ்கொயர் எம்எம் 7" to "Cat6 cable 1.5 ")) {
+            val got = KaiProductSound.withProducts(mic, hw, people)
+            assertTrue("$mic → $got", got.startsWith(want))
+        }
+        // Only the shop's own code, with the same number: "கேட் 5 கேபிள்" (no Cat5 kept) and "கேட் வால்வ் 6" stay as said.
+        assertEquals("கேட் 5 கேபிள் 7", KaiProductSound.withWordCodes("கேட் 5 கேபிள் 7", hw))
+        assertEquals("கேட் வால்வ் 6", KaiProductSound.withWordCodes("கேட் வால்வ் 6", hw))
         // A word Kai has no product for stays as said: "ஹோட்டல்" is not Hoe.
         assertTrue(KaiProductSound.withProducts("ஹோட்டல் 7", shop, people).startsWith("ஹோட்டல்"))
     }
