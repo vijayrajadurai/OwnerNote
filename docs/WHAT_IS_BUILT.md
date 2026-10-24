@@ -419,6 +419,7 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
 - Kai 2.0 roadmap (owner, Oct 2026): understand everything → know the business → never make silent mistakes → learn
   automatically → predict before problems happen (cash-flow risk, stock running out). Step 5 is not started; the owner
   said to wait until after launch.
+- Play account deletion (24 Oct 2026): public page `https://vijayrajadurai.github.io/OwnerNote-Backend/delete-account.html` in `OwnerNote-Backend` `docs/`. The in-app policy (`privacy_policy_full`) and `docs/privacy.html` name the same steps.
 - The backend (`OwnerNote-Backend`, Prisma) has no `category` enum change; the app maps categories on its side. Several
   categories and the "Other" name are kept in `Business.categories` / `otherCategoryName` (migration
   `20261020180000_business_categories`); the server must be deployed with it for the picks to be kept.

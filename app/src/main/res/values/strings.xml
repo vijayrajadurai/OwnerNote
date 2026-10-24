@@ -122,7 +122,7 @@
     <string name="category_other">Other</string>
 
     <!-- Home -->
-    <string name="home_fallback_name">Owner Note</string>
+    <string name="home_fallback_name">OwnerNote</string>
     <string name="home_greeting">Hello, %1$s 👋</string>
     <string name="home_receivable">Vaanganum</string>
     <string name="home_payable">Kodukkanum</string>
@@ -271,9 +271,9 @@
     <string name="more_notifications">Notifications</string>
     <string name="more_help_support">Help &amp; Support</string>
     <string name="more_about_us">About Us</string>
-    <string name="more_help_body">Need a hand with Owner Note? Use Reminders for follow-ups, Sales &amp; purchases for bills, and Settings to change language or appearance. Voice entry on the home screen lets you add credit and debit by speaking.</string>
-    <string name="more_about_body">Owner Note is an AI business assistant for Indian shop owners — voice-first transactions, cash flow, billing, and insights. Built to keep day-to-day books simple on your phone.</string>
-    <string name="more_privacy_body">We use your shop data only to run Owner Note on this device and our API — ledger, reminders, and sign-in. Exact map pins are never shown in group buying. Read the full Owner Note privacy policy for details.</string>
+    <string name="more_help_body">Need a hand with OwnerNote? Use Reminders for follow-ups, Sales &amp; purchases for bills, and Settings to change language or appearance. Voice entry on the home screen lets you add credit and debit by speaking.</string>
+    <string name="more_about_body">OwnerNote is an AI business assistant for Indian shop owners — voice-first transactions, cash flow, billing, and insights. Built to keep day-to-day books simple on your phone.</string>
+    <string name="more_privacy_body">We use your shop data only to run OwnerNote on this device and our API — ledger, reminders, and sign-in. Exact map pins are never shown in group buying. Read the full OwnerNote privacy policy for details.</string>
     <string name="more_notifications_body">Reminders and important business alerts appear here as notifications. Daily voice check-in can speak a short summary at set times — turn it on in Settings.</string>
     <string name="cd_more_profile">Profile</string>
     <string name="cd_more_categories">Categories</string>
@@ -309,7 +309,7 @@
     <string name="more_reports_caption">Business insights and reports</string>
     <string name="more_notifications_caption">Alerts and updates</string>
     <string name="more_help_caption">Get help and contact us</string>
-    <string name="more_about_caption">Who we are and what Owner Note does</string>
+    <string name="more_about_caption">Who we are and what OwnerNote does</string>
     <string name="more_privacy_caption">How we use your shop data</string>
     <string name="more_reminders">Reminders</string>
     <string name="more_reminders_caption">Set payment &amp; business reminders</string>
@@ -320,7 +320,7 @@
     <string name="more_subscription">Subscription</string>
     <string name="more_subscription_caption">Plans and premium benefits</string>
     <string name="logout">Log out</string>
-    <string name="notification_channel_name">Owner Note alerts</string>
+    <string name="notification_channel_name">OwnerNote alerts</string>
     <string name="notification_channel_description">Reminders and important business updates</string>
 
     <!-- Add credit / debit -->
@@ -532,22 +532,25 @@
     <string name="version_format">%1$s (%2$d)</string>
     <string name="privacy_policy">Privacy Policy</string>
     <string name="privacy_policy_read_full">Read full privacy policy</string>
-    <string name="privacy_policy_full"><![CDATA[Last updated: 3 October 2026
+    <string name="privacy_policy_full"><![CDATA[Last updated: 24 October 2026
 
-Owner Note (“we”, “the app”) is an Android app from NewonX (package com.ownernote.app). This policy explains what information we use when you run the app.
+OwnerNote (“we”, “the app”) is an Android app from NewonX (package com.ownernote.app). This policy explains what information we use when you run the app.
+
+Delete your account: email supportownernote@gmail.com with the subject “Delete OwnerNote account” and the mobile number you used to sign in. You do not need to open the app. Within 30 days after we confirm, we delete the account, phone number, shop profile, customers and suppliers (including a contact name and number you chose), and business records stored on our servers. Backup copies go in those same 30 days. We keep a record only when the law requires it. Data stored only on this phone is removed when you uninstall OwnerNote or clear app storage. We do not erase your phone’s own contact list. Steps: https://vijayrajadurai.github.io/OwnerNote-Backend/delete-account.html
 
 1. Information we collect
 • Phone number, used to send an OTP and create your account (Firebase Authentication).
 • Shop profile: owner name, shop name, category, city, pincode, year started, approximate monthly income, and optional shop location.
 • Business records you enter or scan: customers, suppliers, credit and debit, daily cash, inventory, bills, handwritten notes, voice entries, and reminders.
+• If you allow contacts, a contact you pick (name and phone number) can be saved as a customer or supplier. We do not upload your whole address book.
 • Device identifiers needed for push notifications (FCM token).
 • App language, theme, and similar settings stored on this phone.
 
 2. How we use it
-We use this information only to run Owner Note: sign-in, books, reminders, Kai assistant, group buying with nearby shops in your category, offers, and support. We do not sell your shop data.
+We use this information only to run OwnerNote: sign-in, books, reminders, Kai assistant, group buying with nearby shops in your category, offers, and support. We do not sell your shop data. Data sent off the phone is encrypted in transit (HTTPS).
 
 3. Where it is stored
-Some data stays on this device (for example captured bills, notes, and local books). Account and business data may also be stored on our API so you can use Owner Note. Location is used to match nearby group-buying requests; exact map pins are not shown to other shops.
+Some data stays on this device (for example captured bills, notes, and local books). Account and business data may also be stored on our API so you can use OwnerNote. Location is used to match nearby group-buying requests; exact map pins are not shown to other shops.
 
 4. Sharing
 We share data with service providers who operate the app on our behalf, including Firebase (authentication, messaging, crash reports) and our hosting API. We share information if the law requires it.
@@ -556,29 +559,29 @@ We share data with service providers who operate the app on our behalf, includin
 If you allow notifications, we may send reminders, payment alerts, and optional daily voice check-in. You can turn these off in Settings.
 
 6. Your choices
-You can log out, change language, and refuse location or microphone permission. Some features will not work without those permissions. To delete your account or data, contact us through Help in the app.
+You can log out, change language, and refuse location, microphone, or contacts permission. Some features will not work without those permissions. To delete your account and the data on our servers, use the steps at the top of this policy.
 
 7. Children
-Owner Note is for shop owners and is not directed at children.
+OwnerNote is for shop owners and is not directed at children.
 
 8. Changes
 We may update this policy in the app. The date at the top will change when we do.
 
 9. Contact
-NewonX — Owner Note. Use Help & Support in the app.]]></string>
+NewonX — OwnerNote. Email supportownernote@gmail.com. Account deletion: https://vijayrajadurai.github.io/OwnerNote-Backend/delete-account.html]]></string>
     <string name="terms_and_conditions">Terms and Conditions</string>
     <string name="terms_full"><![CDATA[Last updated: 3 October 2026
 
-These terms apply when you use the Owner Note Android app from NewonX.
+These terms apply when you use the OwnerNote Android app from NewonX.
 
 1. The app
-Owner Note helps shop owners keep books, scan bills, track stock, set reminders, and talk to Kai. It is provided as-is for business use in India.
+OwnerNote helps shop owners keep books, scan bills, track stock, set reminders, and talk to Kai. It is provided as-is for business use in India.
 
 2. Your account
 You must use a mobile number you control. You are responsible for entries you save and for keeping the phone secure.
 
 3. Acceptable use
-Do not misuse the app, attempt to access other shops’ accounts, or use Owner Note for anything illegal.
+Do not misuse the app, attempt to access other shops’ accounts, or use OwnerNote for anything illegal.
 
 4. Data
 Your use of shop data is described in the Privacy Policy. You confirm that records you enter belong to your business.
@@ -593,7 +596,7 @@ Kai, reports, and funding information are helpers only. They are not legal, tax,
 Features may change, and the service may be unavailable at times. We are not liable for lost sales or lost notes beyond what the law requires.
 
 8. Contact
-NewonX — Owner Note. Use Help & Support in the app.]]></string>
+NewonX — OwnerNote. Use Help & Support in the app.]]></string>
     <string name="about_description">AI business assistant for Indian shop owners — voice-first transactions, cash flow, and insights.</string>
     <string name="cd_app_icon">Application icon</string>
 
