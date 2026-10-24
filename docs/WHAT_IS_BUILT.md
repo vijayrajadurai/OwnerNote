@@ -73,6 +73,10 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
 - The chat's language is kept: a one-word English reply never switches it.
 - Speed: product and service sound keys are prepared when Kai Chat opens. The first mic line takes ~0.2 s, and Kai
   thinks off the main thread.
+- Mic start (owner's video, 23 Oct 2026; `util/MicStart.kt`, test `MicStartTest`): when the phone's speech service stops the mic
+  at once with nothing heard (Listening flashed and closed), the mic starts once more plainly — no shop words, one guess, as before
+  21 Oct. Still stopped (not silence) → Kai Chat says so with the error number; no speech service → said. Logcat tag `KaiMic`.
+  Android code: needs an Android Studio build and a phone check.
 
 ### Money (credit / debit / payments)
 - Everything as a draft with Confirm / Edit / Cancel; saves go through the books' engine.

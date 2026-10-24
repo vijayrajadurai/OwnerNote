@@ -221,7 +221,11 @@ fun KaiChatScreen(
         session.warmUp(shopCategory)
     }
     fun listen() {
-        if (!speech.isAvailable()) return
+        // No speech service on this phone: said, never a mic that silently does nothing (owner, 23 Oct 2026).
+        if (!speech.isAvailable()) {
+            android.widget.Toast.makeText(context, context.getString(R.string.kai_mic_unavailable), android.widget.Toast.LENGTH_LONG).show()
+            return
+        }
         container.naturalTtsSpeaker.stop()
         listening = true
         heard = null
@@ -240,13 +244,18 @@ fun KaiChatScreen(
                 heard = null
                 scope.launch { send(session.bestHeard(guesses), voice = true) }
             },
-            onError = {
+            onError = { code ->
                 // The recognizer gave up (silence, no final match) after it had already heard words: those words go to Kai —
                 // never dropped (owner, 18 Oct 2026: "mic-la sonna varamatikuthu").
                 val partial = heard?.trim()
                 listening = false
                 heard = null
                 if (!partial.isNullOrEmpty()) send(partial, voice = true)
+                // The mic stopped before anything was heard, and not because the owner was silent (owner's video, 23 Oct 2026:
+                // "Listening" flashed and closed): said, with the phone's error number — never a screen that just closes.
+                else if (com.shopai.app.util.MicStart.tellOwner(code, heardAnything = false)) {
+                    android.widget.Toast.makeText(context, context.getString(R.string.kai_mic_failed, code), android.widget.Toast.LENGTH_LONG).show()
+                }
             },
         )
     }
