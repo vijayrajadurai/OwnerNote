@@ -151,6 +151,11 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
   said apart ("கேட் 6 கேபிள் 7") is the shop's code again — Cat6 cable, never 6 as the quantity (`KaiProductSound.withWordCodes`,
   only the shop's own codes, the same number) (`KaiProductSound.spoken`,
   test `KaiProductSoundTest.catalogue0610NamesSaidIntoTheMic`).
+- Kai asks, never guesses a product by its sound (owner, 24 Oct 2026: "shop enna solraangalo adhaan varanum"): a mic word that
+  only sounds near the shop's product words ("டயர்" with no Tyre kept — near "drive") is not turned into one any more; on a
+  stock line (a number, not money / reminder / sum) Kai asks "“டயர்”-னு கேட்டேன் — எந்த product? USB pen drive-ஆ, Drive
+  belt-ஆ?" with them as buttons (`KaiProductSound.unsureWords`, `KaiAgent.unsureProduct`, test `KaiUnsureProductTest`).
+  Taken at once only the same sound with its first vowel heard, or the one word of the very same shape.
 - Expiry for goods that can expire, in any shop. Batches and a 7-day alert. Old stock becomes an "OLD-STOCK" batch on
   Confirm.
 - Reports: stock on hand, low stock, fast and slow movers, profit and loss. A stock card shows the product's photo.
