@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Owner Note</string>
-    <string name="brand_name">Owner Note</string>
+    <string name="app_name">OwnerNote</string>
+    <string name="brand_name">OwnerNote</string>
 
     <!-- Navigation -->
     <string name="nav_home">Home</string>
@@ -24,7 +24,7 @@
     <string name="guide_next">Next</string>
     <string name="guide_get_started">Get Started</string>
     <string name="guide_step_of">Step %1$d of %2$d</string>
-    <string name="guide_welcome_title">Welcome to Owner Note</string>
+    <string name="guide_welcome_title">Welcome to OwnerNote</string>
     <string name="guide_welcome_body">Your shop assistant is ready. Let\'s get your business set up.</string>
     <string name="cd_guide_funding">Get funding for your business</string>
     <string name="cd_guide_kai">Manage your business easily with Kai</string>

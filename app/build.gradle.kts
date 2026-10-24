@@ -15,8 +15,8 @@ android {
         applicationId = "com.ownernote.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 12
-        versionName = "0.1.8"
+        versionCode = 14
+        versionName = "0.1.10"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // Production API (Render). Debug defaults to the local Owner Note backend.
