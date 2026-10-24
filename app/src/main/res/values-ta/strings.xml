@@ -512,6 +512,8 @@ Owner Note இயக்க மட்டுமே: உள்நுழைவு, �
 6. உங்கள் தேர்வுகள்
 வெளியேறலாம், மொழி மாற்றலாம், இருப்பிடம் அல்லது மைக்ரோஃபோன் அனுமதியை மறுக்கலாம். சில அம்சங்கள் அனுமதி இல்லாமல் வேலை செய்யாது. கணக்கு அல்லது தரவை நீக்க ஆப்பில் உதவியைப் பயன்படுத்தவும்.
 
+பணம் வந்த notification (Kai வசூல், நீங்க on பண்ணா மட்டும்): Android notification அனுமதியோட, Owner Note Google Pay, PhonePe, Paytm, BHIM notification-ஐ மட்டும் பார்க்கும் — வந்த தொகை, app, அனுப்பினவர் பேர். மத்த app notification-ஐ படிக்காது. இது உங்க phone-லயே நடக்கும்: எதுவும் எங்க server-க்கு அனுப்பப்படாது, யாருக்கும் கொடுக்கப்படாது; Confirm அமுக்குற வரைக்கும் கணக்குல எதுவும் போகாது. Phone-ஓட notification அனுமதி settings-ல எப்போ வேணும்னாலும் off பண்ணலாம்.
+
 7. குழந்தைகள்
 Owner Note கடை உரிமையாளர்களுக்கானது; குழந்தைகளுக்காக அல்ல.
 
@@ -1836,4 +1838,28 @@ NewonX — Owner Note. ஆப்பில் உதவி & ஆதரவு.]]><
     <string name="home_work_title">இன்னைக்கு வேலை</string>
     <string name="home_work_line">இன்னைக்கு %1$d முக்கியமான வேலை இருக்கு.</string>
     <string name="home_work_none">இன்னைக்கு முக்கியமான வேலை எதுவும் இல்ல.</string>
+    <!-- Kai வசூல் (payments in by UPI) -->
+    <string name="kai_upi_listener_label">OwnerNote · Kai வசூல்</string>
+    <string name="kai_upi_channel">Kai: பணம் வந்தது</string>
+    <string name="kai_upi_channel_description">GPay, PhonePe, Paytm, BHIM-ல பணம் வந்ததும் Kai யார் கணக்குனு கேக்கும்.</string>
+    <string name="kai_upi_title">Kai · %1$s %2$s-ல வந்துச்சு</string>
+    <string name="kai_upi_from">%1$s-கிட்ட இருந்து. தொட்டு யார் கணக்குனு சொல்லுங்க.</string>
+    <string name="kai_upi_no_name">அனுப்பினவர் பேர் வரல. தொட்டு யார் கணக்குனு சொல்லுங்க.</string>
+    <string name="kai_upi_settings_title">Kai வசூல்</string>
+    <string name="kai_upi_settings_subtitle">Customer GPay, PhonePe, Paytm, BHIM-ல பணம் அனுப்பினதும் Kai உடனே சொல்லி, யார் கணக்குனு கேக்கும். Confirm அமுக்குற வரைக்கும் எதுவும் save ஆகாது.</string>
+    <string name="kai_upi_settings_on">On</string>
+    <string name="kai_upi_settings_off">Off</string>
+    <string name="kai_upi_settings_turn_on">On பண்ணு</string>
+    <string name="kai_upi_settings_turn_off">Phone settings-ல off பண்ணலாம்</string>
+    <string name="kai_upi_disclosure_title">பணம் வந்த notification-ஐ Kai படிக்கலாமா?</string>
+    <string name="kai_upi_disclosure_body">பணம் வந்ததும் சொல்ல, OwnerNote GPay, PhonePe, Paytm, BHIM notification-ஐ மட்டும் படிக்கும் — தொகையும் அனுப்பினவர் பேரும்.\n\n• மத்த எந்த app notification-ஐயும் படிக்காது.\n• உங்க phone-ஐ விட்டு எதுவும் வெளியே போகாது, யாருக்கும் கொடுக்காது.\n• Confirm அமுக்குற வரைக்கும் கணக்குல எதுவும் போகாது.\n• எப்போ வேணும்னாலும் Settings-ல off பண்ணலாம்.\n\nஅடுத்த screen-ல OwnerNote-ஐ on பண்ணுங்க.</string>
+    <string name="kai_upi_disclosure_allow">தொடரு</string>
+    <string name="kai_upi_disclosure_deny">இப்போ வேணாம்</string>
+    <string name="kai_upi_restricted_hint">Switch grey-ஆ இருந்தா (Play Store இல்லாம போட்ட app): App info → ⋮ → Allow restricted settings, அப்புறம் திரும்ப முயற்சி பண்ணுங்க.</string>
+    <string name="kai_upi_ask_unknown">Customer இல்லாதவங்க பணத்துக்கும் கேளு</string>
+    <string name="kai_upi_ask_unknown_hint">Off-ஆ இருந்தா friends, family பணத்துக்கு Kai எதுவும் சொல்லாது — customer பணத்துக்கு மட்டும் சொல்லும். Demo-க்கு on பண்ணுங்க.</string>
+    <string name="kai_upi_personal_count">சொந்த பணம்-னு குறிச்சவங்க (கேக்க மாட்டேன்): %1$d</string>
+    <string name="kai_upi_personal_clear">நீக்கு</string>
+    <string name="kai_upi_shop_apps_title">கடை பணம் எந்த app-ல வரும்?</string>
+    <string name="kai_upi_shop_apps_hint">கடை app-ஐ தேர்ந்தெடுங்க: அதுல வர்ற எல்லா பணத்துக்கும் Kai கேக்கும், மத்த app (உங்க சொந்த account) பணத்துக்கு அமைதியா இருக்கும். ஒண்ணும் தேர்ந்தெடுக்கலைனா: customer பணத்துக்கு மட்டும் சொல்லும். கடை account-உம் சொந்த account-உம் ஒரே app-ல இருந்தா Kai-ஆல பிரிக்க முடியாது — அப்போ ஒண்ணும் தேர்ந்தெடுக்காதீங்க.</string>
 </resources>

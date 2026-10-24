@@ -208,6 +208,10 @@ interface KaiTools {
      * The item register: every item line of the purchase bills ([purchase] true, with purchase returns) or the sales bills
      * (false, with sale returns) between two days, oldest first. Null: the books can't be read.
      */
+    /** Kai வசூல்: the owner said money from this payer is personal (a friend, family) — Kai never asks about them again. */
+    fun markUpiPersonal(name: String): Boolean = false
+    /** The payers the owner marked personal ([KaiUpiFilter.key] form). */
+    fun upiPersonal(): Set<String> = emptySet()
     suspend fun itemRegister(purchase: Boolean, from: LocalDate, to: LocalDate): List<RegisterLine>? = null
     suspend fun parties(name: String): List<PartyMatch>? = null
 

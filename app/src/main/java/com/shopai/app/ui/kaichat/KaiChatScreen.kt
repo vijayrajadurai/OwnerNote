@@ -159,6 +159,12 @@ fun KaiChatScreen(
     LaunchedEffect(openReminder) {
         com.shopai.app.notifications.KaiReminderInbox.take()?.let { session.showRang(it) }
     }
+    // Kai வசூல்: a payment alert tapped, or money that came in while Kai Chat is open — Kai says it and asks whose account.
+    val upiTapped by com.shopai.app.notifications.KaiUpiInbox.pending.collectAsState()
+    val upiLive by com.shopai.app.notifications.KaiUpiInbox.live.collectAsState()
+    LaunchedEffect(upiTapped, upiLive) {
+        com.shopai.app.notifications.KaiUpiInbox.take()?.let { session.showUpi(it) }
+    }
     var input by rememberSaveable { mutableStateOf("") }
     val listState = rememberLazyListState()
 

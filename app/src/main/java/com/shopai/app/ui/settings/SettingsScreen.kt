@@ -228,6 +228,9 @@ fun SettingsScreen(
                 }
             }
 
+            // Kai வசூல்: money in on GPay / PhonePe / Paytm / BHIM → Kai asks whose account (owner, 23 Oct 2026).
+            KaiVasoolSettings()
+
             Text(stringResource(R.string.morning_notification_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text(stringResource(R.string.morning_notification_subtitle), color = MaterialTheme.colorScheme.onSurfaceVariant)
             ShopCard {

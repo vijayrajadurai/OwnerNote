@@ -578,6 +578,8 @@ class AppKaiTools(
     override fun reminders(): List<KaiReminder> = scope().let { (b, o) -> com.shopai.app.brain.tools.KaiReminderScope.visible(reminders.open(), b, o) }
     override fun lastRang(): KaiReminder? = reminders.lastRang()?.takeIf { r -> scope().let { (b, o) -> com.shopai.app.brain.tools.KaiReminderScope.visible(listOf(r), b, o).isNotEmpty() } }
     override fun fullScreenAllowed(): Boolean? = reminders.fullScreenAllowed()
+    override fun markUpiPersonal(name: String): Boolean = com.shopai.app.notifications.KaiUpiPrefs.markPersonal(context, name)
+    override fun upiPersonal(): Set<String> = com.shopai.app.notifications.KaiUpiPrefs.personal(context)
 
     /** OwnerNote customers / suppliers (offline, the books), then the phone's contacts if the owner allowed it. */
     override suspend fun contacts(name: String, role: PartyRole?): List<ContactMatch>? {

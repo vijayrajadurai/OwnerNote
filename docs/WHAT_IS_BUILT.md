@@ -206,6 +206,30 @@ Last brought up to date: 20 Oct 2026 (main at PR #138).
 - Salon master list of 272 services. Hand / leg wax is asked full or half. The owner's Menu (their own items and prices)
   comes first, typed or by mic, even by part of the name.
 
+### Kai வசூல் — money in by UPI (owner, 23 Oct 2026; not yet checked on a phone)
+- GPay / PhonePe / Paytm / BHIM notifications for money in → Kai says it at once and asks whose account
+  (`notifications/KaiUpiListener.kt`, a `NotificationListenerService`; only those apps' packages are read, nothing leaves the phone).
+- Reading a notification: `brain/tools/KaiUpiNotice.kt` — money-in words, exactly one amount (a balance after it is not counted),
+  the payer's name ("from X", "X paid you"); the owner's own payments, requests, cashback, failed / pending, refunds, bills are
+  ignored; unsure → ignored, never misread. The same payment twice (updated, second app) is one (`KaiUpiSeen`). Test
+  `KaiUpiNoticeTest` — **add the owner's real GPay / PhonePe / Paytm / BHIM notification texts to `ownersPhone` before release.**
+- Kai's turn: `brain/chat/KaiVasool.kt` (`KaiAgent.upiReceived`). One customer with that name → their payment-in draft at once
+  (Confirm first); else "யார் கணக்கு?" with likely customers (a name like it, then whoever owes exactly that, then the biggest
+  dues). Customers only — money from a supplier is never drafted as a debit. The draft is the owner's own line
+  ("Kumar 2000 gpay-la kuduthaan"), Tamil or Tanglish by the app's language. Test `KaiVasoolTest`.
+- Phone side: a heads-up alert ("Kai · ₹1 GPay-ல வந்துச்சு"), tap → Kai Chat on it; with Kai Chat open, shown at once
+  (`KaiUpiInbox`). Settings → "Kai வசூல்": Kai's explanation first (Play's prominent disclosure), then Android's page. An APK
+  installed outside Play needs App info → ⋮ → Allow restricted settings (Android 13+). Privacy policy section added.
+- Customers only (owner, 23 Oct 2026: a friend's / family's money must not irritate): the alert comes only when the payer is
+  (or may be) a customer of the books (`KaiUpiFilter`); anyone else, or no name, stays quiet. Settings → "Customer
+  இல்லாதவங்க பணத்துக்கும் கேளு" (off by default; on for a demo). Kai's question has "சொந்த பணம் — X-க்கு இனி கேக்காதே":
+  that payer is never asked about again (kept on the phone, `KaiUpiPrefs`; cleared from Settings).
+- The shop's app (owner, 23 Oct 2026: shop account on one app, personal on another): Settings → "கடை பணம் எந்த app-ல வரும்?"
+  (checkboxes; PhonePe Business, GPay Business, Paytm Business read too). Chosen → every payer on those apps is asked about
+  and every other app stays quiet; none → customers only. Same app for both accounts can't be told apart (said in Settings).
+- Owner's real GPay notification ("Prabhakaran paid you ₹1.00" / "Payment from PhonePe") is in the tests.
+- Not yet: bank apps, a walk-in UPI sale into the Cash Note, Tamil-language notifications.
+
 ### Reminders
 - "naalaiku 10 manikku Kumar ku call panna remind pannu", typed or spoken, relative or absolute. "naalu naal kazhichu
   kaalai 10" is that day at 10.

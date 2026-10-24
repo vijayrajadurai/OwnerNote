@@ -558,6 +558,8 @@ If you allow notifications, we may send reminders, payment alerts, and optional 
 6. Your choices
 You can log out, change language, and refuse location or microphone permission. Some features will not work without those permissions. To delete your account or data, contact us through Help in the app.
 
+Payment notifications (Kai வசூல், only if you turn it on): with Android’s notification access, Owner Note looks only at notifications from Google Pay, PhonePe, Paytm and BHIM, to read money received — the amount, the app and the payer’s name. Other apps’ notifications are not read. This stays on your phone: nothing is sent to our servers or shared, and nothing goes into your books until you press Confirm. Turn it off any time in your phone’s notification-access settings.
+
 7. Children
 Owner Note is for shop owners and is not directed at children.
 
@@ -1873,4 +1875,28 @@ NewonX — Owner Note. Use Help & Support in the app.]]></string>
     <string name="home_work_title">Innaikku velai</string>
     <string name="home_work_line">Innaikku %1$d mukkiyamana velai irukku.</string>
     <string name="home_work_none">Innaikku mukkiyamana velai edhuvum illa.</string>
+    <!-- Kai வசூல் (payments in by UPI) -->
+    <string name="kai_upi_listener_label">OwnerNote · Kai payments</string>
+    <string name="kai_upi_channel">Kai: money received</string>
+    <string name="kai_upi_channel_description">When money comes in on GPay, PhonePe, Paytm or BHIM, Kai asks whose account it goes to.</string>
+    <string name="kai_upi_title">Kai · %1$s came in on %2$s</string>
+    <string name="kai_upi_from">From %1$s. Tap to put it in the right account.</string>
+    <string name="kai_upi_no_name">The payer\u2019s name wasn\u2019t shown. Tap to put it in the right account.</string>
+    <string name="kai_upi_settings_title">Kai payments (வசூல்)</string>
+    <string name="kai_upi_settings_subtitle">When a customer pays you on GPay, PhonePe, Paytm or BHIM, Kai tells you at once and asks whose account it goes to. Nothing is saved until you press Confirm.</string>
+    <string name="kai_upi_settings_on">On</string>
+    <string name="kai_upi_settings_off">Off</string>
+    <string name="kai_upi_settings_turn_on">Turn on</string>
+    <string name="kai_upi_settings_turn_off">Turn off in phone settings</string>
+    <string name="kai_upi_disclosure_title">Allow Kai to read payment notifications?</string>
+    <string name="kai_upi_disclosure_body">To tell you when money comes in, OwnerNote reads notifications from GPay, PhonePe, Paytm and BHIM only — the amount and the payer\u2019s name.\n\n• Notifications from every other app are ignored and never read.\n• Nothing is sent out of your phone or shared with anyone.\n• Nothing goes into your books until you press Confirm.\n• You can turn this off any time in Settings.\n\nOn the next screen, turn on OwnerNote.</string>
+    <string name="kai_upi_disclosure_allow">Continue</string>
+    <string name="kai_upi_disclosure_deny">Not now</string>
+    <string name="kai_upi_restricted_hint">If the switch is greyed out (an app installed outside Play Store): App info → ⋮ → Allow restricted settings, then try again.</string>
+    <string name="kai_upi_ask_unknown">Also ask about money from people who aren\u2019t customers</string>
+    <string name="kai_upi_ask_unknown_hint">Off: money from friends and family stays quiet — Kai speaks only for your customers. Turn it on for a demo.</string>
+    <string name="kai_upi_personal_count">Marked personal (never asked): %1$d</string>
+    <string name="kai_upi_personal_clear">Clear</string>
+    <string name="kai_upi_shop_apps_title">Which app takes the shop\u2019s money?</string>
+    <string name="kai_upi_shop_apps_hint">Pick the shop\u2019s app(s): Kai asks about every payment on them and stays quiet on the others (your personal account). Pick none: Kai speaks only for your customers. If the shop and personal accounts are in the same app, Kai can\u2019t tell them apart — pick none.</string>
 </resources>
